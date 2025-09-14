@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <memory>
 
@@ -257,38 +258,19 @@ void SingleBallPlacement::initialize()
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     const auto & ball_pos = world_model()->ball().pos;
-    Point target = ball_pos + (ball_pos - placement_target).normalized() * 0.2;
-    // ボールを避けて回り込む
-    if (
-      ((robot()->pose.pos - ball_pos).normalized())
-        .dot((placement_target - ball_pos).normalized()) > 0.1) {
-      Point around_point = [&]() {
-        Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) * 0.3;
-        Point around_point1 = ball_pos + vertical_vec;
-        Point around_point2 = ball_pos - vertical_vec;
-        if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
-          return around_point1;
-        } else {
-          return around_point2;
-        }
-      }();
-      command->setTargetPosition(around_point);
-    } else {
-      command->setTargetPosition(target);
-    }
-    if (robot()->getDistance(world_model()->ball().pos) < 0.2) {
-      // ロボットがボールに近い場合は一度引きの動作を入れる
-      // これは端からのPULLが終わった後の誤作動を防ぐための動きである
-      target << 0, 0;
-    }
-    command->lookAtBall();
+
+    constexpr double INTERVAL = 0.15;
+    constexpr double MAX_INTERVAL = 0.6;  // 初期は大きめ、上限あり
+    Point approach = computeAroundBallApproachTargetDynamic(
+      ball_pos, placement_target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
+    command->setTargetPosition(approach);
+    command->lookAtFrom(placement_target, ball_pos);
     command->disablePlacementAvoidance();
     command->disableGoalAreaAvoidance();
-    command->enableBallAvoidance();
     command->dribble(0.0);
     command->setOmegaLimit(10.0);
 
-    if (robot()->getDistance(target) < 0.02) {
+    if (command->getTargetDistance() < 0.02) {
       skill_status = Status::SUCCESS;
     } else {
       skill_status = Status::RUNNING;
@@ -533,7 +515,7 @@ void SingleBallPlacement::print(std::ostream & os) const
   using enum SingleBallPlacementStates;
   switch (getCurrentState()) {
     case GO_OVER_BALL:
-      go_over_ball->print(os);
+      os << " GO_OVER_BALL";
       break;
     case CONTACT_BALL:
       os << " CONTACT_BALL";

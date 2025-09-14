@@ -47,7 +47,6 @@ public:
     ball_motion_velocity_threshold_(
       getContextReference<double>("ball_motion_velocity_threshold", 0.5)),
     ball_avoidance_margin_(getContextReference<double>("ball_avoidance_margin", 0.3)),
-    intermediate_reach_threshold_(getContextReference<double>("intermediate_reach_threshold", 0.1)),
     calculated_kick_power_(getContextReference<double>("calculated_kick_power", 0.5)),
     target_stop_distance_(getContextReference<double>("target_stop_distance", 0.0)),
     max_retry_count_(getContextReference<int>("max_retry_count", 3)),
@@ -101,7 +100,6 @@ private:
   double & stop_time_threshold_;             ///< 停止時間閾値 (s)
   double & ball_motion_velocity_threshold_;  ///< ボール移動検出閾値 (m/s)
   double & ball_avoidance_margin_;           ///< ボール回避時のマージン距離 (m)
-  double & intermediate_reach_threshold_;    ///< 中間点到達判定閾値 (m)
   double & calculated_kick_power_;           ///< 計算されたキック力
   double & target_stop_distance_;            ///< 目標停止距離
   int & max_retry_count_;                    ///< 最大リトライ回数
@@ -116,10 +114,6 @@ private:
 
   // ボール回避用状態追跡
   bool has_started_positioning_;  ///< 位置取り開始フラグ
-  bool has_passed_intermediate_;  ///< 中間点通過フラグ
-  Point final_target_pos_;        ///< 最終目標位置
-  Point intermediate_pos_1_;      ///< 中間経由点1
-  Point intermediate_pos_2_;      ///< 中間経由点2
   Point last_ball_position_;      ///< 前回のボール位置（テレポート検出用）
 
   // キック完了追跡

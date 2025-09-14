@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -16,7 +17,6 @@ void CenterStopKick::initialize()
 
   // ボール回避用状態の初期化
   has_started_positioning_ = false;
-  has_passed_intermediate_ = false;
   last_ball_position_ = Point::Zero();
   kick_executed_ = false;
   kick_start_time_ = rclcpp::Clock().now();
@@ -66,60 +66,21 @@ void CenterStopKick::initialize()
 
         // 位置取り状態をリセットして再計算を強制
         has_started_positioning_ = false;
-        has_passed_intermediate_ = false;
         target_stop_distance_ = calculateTargetStopDistance();
       }
     }
 
-    // 初回実行時または位置変化検出時：目標位置と中間経由点を計算
+    // 初回実行時または位置変化検出時：内部状態を初期化
     if (not has_started_positioning_) {
-      final_target_pos_ = getKickPosition();
-
-      // ボール中心から最終目標への方向ベクトル
-      Vector2 direction_to_target = (final_target_pos_ - current_ball_pos).normalized();
-      Vector2 margin_vec = direction_to_target * ball_avoidance_margin_;
-
-      // ボール回避のための中間経由点を計算（ボールを中心とした垂直方向）
-      auto vertical_vec = getVerticalVec(margin_vec);
-      intermediate_pos_1_ = current_ball_pos + vertical_vec;
-      intermediate_pos_2_ = current_ball_pos - vertical_vec;
-
       has_started_positioning_ = true;
       last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
-
-      RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"),
-        "位置取り目標設定: ボール(%.3f,%.3f) -> 最終目標(%.3f,%.3f)", current_ball_pos.x(),
-        current_ball_pos.y(), final_target_pos_.x(), final_target_pos_.y());
     }
+    // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
+    Point approach_target = computeAroundBallApproachTargetDynamic(
+      current_ball_pos, target_position_, robot()->pose.pos, approach_distance_,
+      approach_distance_);
 
-    // ロボットの現在位置から各地点への距離を計算
-    double final_distance = (robot()->pose.pos - final_target_pos_).norm();
-    double intermediate_distance_1 = (robot()->pose.pos - intermediate_pos_1_).norm();
-    double intermediate_distance_2 = (robot()->pose.pos - intermediate_pos_2_).norm();
-
-    // より近い中間経由点を選択
-    Point selected_intermediate = (intermediate_distance_1 < intermediate_distance_2)
-                                    ? intermediate_pos_1_
-                                    : intermediate_pos_2_;
-    double selected_intermediate_distance =
-      std::min(intermediate_distance_1, intermediate_distance_2);
-
-    // 経路選択：中間経由点経由 vs 直接最終目標
-    Point target_position;
-    if (selected_intermediate_distance < final_distance && !has_passed_intermediate_) {
-      // 中間経由点に向かう
-      target_position = selected_intermediate;
-
-      if (selected_intermediate_distance < intermediate_reach_threshold_) {
-        has_passed_intermediate_ = true;
-      }
-    } else {
-      // 最終目標に向かう
-      target_position = final_target_pos_;
-    }
-
-    command->setTargetPosition(target_position)
+    command->setTargetPosition(approach_target)
       .lookAtFrom(target_position_, world_model()->ball().pos)
       .setOmegaLimit(10.0)
       .disableBallAvoidance()
@@ -241,7 +202,6 @@ void CenterStopKick::initialize()
       // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
-        has_passed_intermediate_ = false;
         last_ball_position_ = Point::Zero();  // ボール位置記録もリセット
       }
 
@@ -398,7 +358,6 @@ void CenterStopKick::resetForRetry()
 
   // ボール回避状態をリセット
   has_started_positioning_ = false;
-  has_passed_intermediate_ = false;
   last_ball_position_ = Point::Zero();
 
   // タイムスタンプをリセット

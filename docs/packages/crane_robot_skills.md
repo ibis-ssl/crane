@@ -24,7 +24,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 - **KickSkill**: 精密キック実行
 - **ReceiveSkill**: パス受け取り
 - **StealBallSkill**: ボール奪取
-- **GoOverBallSkill**: ボール上通過
 
 ### 守備系スキル
 
@@ -34,7 +33,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 
 ### 特殊状況スキル
 
-- **KickoffAttackSkill**: キックオフ時攻撃
 - **KickoffSupportSkill**: キックオフ時支援
 - **SimpleKickoffSkill**: 基本キックオフ
 - **PenaltyKickSkill**: ペナルティキック実行

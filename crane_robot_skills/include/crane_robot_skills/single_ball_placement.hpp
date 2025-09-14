@@ -11,7 +11,6 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "go_over_ball.hpp"
 #include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
@@ -37,8 +36,6 @@ enum class SingleBallPlacementStates {
 class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
 {
 private:
-  std::shared_ptr<GoOverBall> go_over_ball;
-
   std::shared_ptr<Receive> receive;
 
   std::shared_ptr<Sleep> sleep = nullptr;

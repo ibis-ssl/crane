@@ -128,9 +128,9 @@ class CraneDebugger {
             this.availableSkills = [
                 "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
                 "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff",
-                "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition",
+                "KickOffSupport", "Marker", "TestMotionPosition",
                 "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
-                "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
+                "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
             ];
             this.populateSkillsList(this.availableSkills);
             this.addLog(`Demo mode: ${this.availableSkills.length} skills available`, 'info');
@@ -401,12 +401,6 @@ class CraneDebugger {
                 { name: 'back_point', type: 'text', label: 'Back Point (x,y)', value: '0,0' },
                 { name: 'max_ball_distance', type: 'number', label: 'Max Ball Distance', min: '0', max: '10', step: '0.1' },
                 { name: 'max_vel', type: 'number', label: 'Max Velocity', min: '0', max: '10', step: '0.1' }
-            ],
-            'GoOverBall': [
-                { name: 'next_target_x', type: 'number', label: 'Next Target X', step: '0.1' },
-                { name: 'next_target_y', type: 'number', label: 'Next Target Y', step: '0.1' },
-                { name: 'margin', type: 'number', label: 'Margin', min: '0', max: '1', step: '0.05' },
-                { name: 'reach_threshold', type: 'number', label: 'Reach Threshold', min: '0', max: '1', step: '0.05' }
             ],
             'Teleop': [
                 { name: 'rotation_deg', type: 'number', label: 'Rotation (degrees)', min: '-180', max: '180', step: '1', value: '0' },

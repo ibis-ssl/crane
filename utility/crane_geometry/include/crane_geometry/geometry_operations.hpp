@@ -7,6 +7,7 @@
 #ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
+#include <algorithm>
 #include <cmath>  // For std::fabs and std::sqrt
 #include <crane_geometry/boost_geometry.hpp>
 #include <optional>
@@ -214,6 +215,74 @@ inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> s
       segment1.first + segment_vec * (i + 1) / static_cast<double>(separated_num + 1));
   }
   return points;
+}
+
+/**
+ * @brief ボール回り込みのためのアプローチ目標を計算するユーティリティ
+ *
+ * 与えられた始点 from から、ボールの反対側（desired_opposite 方向）に offset だけ離れた
+ * 基準点へ向かう線分を取り、その線分上でボールに最も近い点の方向へ offset だけオフセットする。
+ *
+ * 直感的には、ロボット→目標の経路がボールを横切る場合に、ボールに接しない滑らかな回り込み点を返す。
+ *
+ * @param ball            ボール位置
+ * @param desired_opposite ボールから見た目標（例: 配置点、パスターゲット等）
+ * @param from            開始点（例: ロボット位置）
+ * @param offset          ボールから離れる距離（m）
+ * @param epsilon         最近傍判定の閾値
+ * @return Point          アプローチ目標位置
+ */
+inline auto computeAroundBallApproachTarget(
+  const Point & ball, const Point & desired_opposite, const Point & from, double offset,
+  double epsilon = 1e-4) -> Point
+{
+  Point base_target = ball + (ball - desired_opposite).normalized() * offset;
+  Segment from_to_base{from, base_target};
+  auto result = getClosestPointAndDistance(ball, from_to_base);
+  if (result.distance > epsilon) {
+    return ball + (result.closest_point - ball).normalized() * offset;
+  } else {
+    return base_target;
+  }
+}
+
+/**
+ * @brief 回り込み初期は大きめ、完了に向けて目標オフセットへ滑らかに収束させるアプローチ点計算
+ *
+ * ロボットの相対配置（ボールから見たdesired_opposite方向との整列度）を0..1の進捗として評価し、
+ * offset_eff = lerp(max_offset, base_offset, progress) を用いて周回半径を逐次調整する。
+ * そのうえで computeAroundBallApproachTarget を適用して接触回避かつ大回りし過ぎない経路を返す。
+ *
+ * progress は以下で計算:
+ *   a = normalize(desired_opposite - ball)
+ *   b = normalize(from - ball)
+ *   progress = clamp((1 - dot(a, b)) / 2, 0, 1)
+ *     - ロボットが目標と逆側に回り込めているほど 1 に近づく
+ *
+ * @param ball            ボール位置
+ * @param desired_opposite ボールから見た目標（例: 配置点、パスターゲット等）
+ * @param from            開始点（例: ロボット位置）
+ * @param base_offset     最終的に収束させたいオフセット（INTERVAL最終値）
+ * @param max_offset      初期に用いる上限オフセット（大回りの上限）
+ * @param epsilon         最近傍判定の閾値
+ * @return Point          アプローチ目標位置
+ */
+inline auto computeAroundBallApproachTargetDynamic(
+  const Point & ball, const Point & desired_opposite, const Point & from, double base_offset,
+  double max_offset, double epsilon = 1e-4) -> Point
+{
+  // 進捗（回り込みの達成度）を評価
+  Vector2 a = (desired_opposite - ball).normalized();
+  Vector2 b = (from - ball).normalized();
+  double dot = a.dot(b);
+  double progress = std::clamp((1.0 - dot) / 2.0, 0.0, 1.0);  // [0,1]
+
+  // 有効オフセット（初期はmax_offset、完了でbase_offset）
+  double offset_eff = max_offset + (base_offset - max_offset) * progress;
+  offset_eff =
+    std::clamp(offset_eff, std::min(base_offset, max_offset), std::max(base_offset, max_offset));
+
+  return computeAroundBallApproachTarget(ball, desired_opposite, from, offset_eff, epsilon);
 }
 }  // namespace crane
 

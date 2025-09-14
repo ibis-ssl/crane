@@ -49,14 +49,12 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::Kick>();
     setUpSkillDictionary<skills::Sleep>();
     setUpSkillDictionary<skills::Receive>();
-    setUpSkillDictionary<skills::GoOverBall>();
     setUpSkillDictionary<skills::SimpleKickOff>();
     setUpSkillDictionary<skills::StealBall>();
     setUpSkillDictionary<skills::SubAttacker>();
     setUpSkillDictionary<skills::TestMotionPosition>();
     setUpSkillDictionary<skills::Marker>();
     setUpSkillDictionary<skills::SingleBallPlacement>();
-    setUpSkillDictionary<skills::KickoffAttack>();
     setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
     setUpSkillDictionary<skills::TestMotionPosition>();

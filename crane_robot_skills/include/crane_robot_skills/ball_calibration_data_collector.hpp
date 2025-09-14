@@ -44,7 +44,6 @@ public:
     ball_motion_velocity_threshold_(
       getContextReference<double>("ball_motion_velocity_threshold", 0.5)),
     ball_avoidance_margin_(getContextReference<double>("ball_avoidance_margin", 0.3)),
-    intermediate_reach_threshold_(getContextReference<double>("intermediate_reach_threshold", 0.1)),
     kick_power_sequence_({0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0})
   {
     initialize();
@@ -81,7 +80,6 @@ private:
   double & stop_time_threshold_;             ///< 停止時間閾値 (s)
   double & ball_motion_velocity_threshold_;  ///< ボール移動検出閾値 (m/s)
   double & ball_avoidance_margin_;           ///< ボール回避時のマージン距離 (m)
-  double & intermediate_reach_threshold_;    ///< 中間点到達判定閾値 (m)
 
   // 固定配列（contextに保存できない複雑な型）
   std::vector<double> kick_power_sequence_;  ///< キックパワーシーケンス
@@ -91,10 +89,6 @@ private:
 
   // ボール回避用状態追跡
   bool has_started_positioning_;  ///< 位置取り開始フラグ
-  bool has_passed_intermediate_;  ///< 中間点通過フラグ
-  Point final_target_pos_;        ///< 最終目標位置
-  Point intermediate_pos_1_;      ///< 中間経由点1
-  Point intermediate_pos_2_;      ///< 中間経由点2
   Point last_ball_position_;      ///< 前回のボール位置（テレポート検出用）
 };
 

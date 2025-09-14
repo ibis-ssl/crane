@@ -104,7 +104,6 @@ addText(position, "Status: Running");
 - **Attacker**: メイン攻撃ロボット（状態遷移型）
 - **Kick**: ボールキック実行
 - **Receive**: パス受け取り
-- **GoOverBall**: ボール通過
 
 ### 守備系  
 
