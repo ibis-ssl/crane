@@ -41,8 +41,8 @@ struct TeamInfo
 
   uint8_t goalie_id;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
-    -> RobotList
+  [[nodiscard]] auto getAvailableRobotsView(uint8_t my_id = 255, bool except_goalie = false) const
+    -> decltype(auto)
   {
     return robots | ranges::views::filter([&](const auto & robot) {
              if (except_goalie) {
@@ -50,8 +50,13 @@ struct TeamInfo
              } else {
                return robot->available && robot->id != my_id;
              }
-           }) |
-           ranges::to<std::vector>();
+           });
+  }
+
+  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
+    -> RobotList
+  {
+    return getAvailableRobotsView(my_id, except_goalie) | ranges::to<std::vector>();
   }
 
   [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255, bool except_goalie = false) const

@@ -270,22 +270,10 @@ auto SessionControllerComponent::request(
     return;
   }
 
-  std::optional<uint8_t> pass_receiver = std::nullopt;
-
-  if (auto planner = ranges::find_if(
-        available_planners, [](const auto & planner) { return planner->name == "AttackerSkill"; });
-      planner != available_planners.end()) {
-    if (auto attacker_planner = std::dynamic_pointer_cast<AttackerSkillPlanner>(*planner);
-        attacker_planner && attacker_planner->skill) {
-      pass_receiver = attacker_planner->skill->pass_receiver_id;
-    }
-  }
-
-  if (pass_receiver) {
-    planner_context["AttackerSkill"]["pass_receiver"] = static_cast<double>(pass_receiver.value());
-  } else {
-    planner_context["AttackerSkill"]["pass_receiver"] = -1.0;
-  }
+  // Pass receiver is only provided when GameAnalysis selects one
+  const int pass_receiver = world_model->getMsg().game_analysis.pass_target_id;
+  planner_context["AttackerSkill"]["pass_receiver"] =
+    (pass_receiver >= 0) ? static_cast<double>(pass_receiver) : -1.0;
 
   auto prev_available_planners =
     std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());

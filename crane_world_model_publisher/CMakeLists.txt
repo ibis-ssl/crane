@@ -22,6 +22,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_data_provider.cpp
   src/visualization_manager.cpp
   src/kick_event_detector.cpp
+  src/pass_target_selector.cpp
   src/calibration/ball_calibration_data_extractor.cpp
   src/calibration/simple_ball_physics_optimizer.cpp
 )
