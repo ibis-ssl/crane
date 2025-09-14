@@ -68,15 +68,16 @@ void Attacker::initialize()
       (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
        game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
       world_model()->ball().isStopped()) {
-      if (auto best_receiver = selectPassReceiver(); best_receiver) {
-        forced_pass_receiver_id = best_receiver->id;
-        auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
-        pass_receiver_id = best_receiver->id;
-        kick_skill.setParameter("target", receiver->pose.pos);
-        return true;
-      } else {
+      // 上位層のパス先が未選択なら強制パスに入らない
+      if (world_model()->getMsg().game_analysis.pass_target_id < 0) {
         return false;
       }
+      forced_pass_receiver_id =
+        static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
+      pass_receiver_id = forced_pass_receiver_id;
+      auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
+      kick_skill.setParameter("target", receiver->pose.pos);
+      return true;
     } else {
       return false;
     }
@@ -194,27 +195,17 @@ void Attacker::initialize()
   addStateFunction(AttackerState::KICK, [this]() -> Status {
     double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
 
-    auto our_robots = world_model()->ours().getAvailableRobots(robot()->id, true);
-    const auto enemy_robots = world_model()->theirs().getAvailableRobots();
-
-    auto pass_scores =
-      world_model()->getMsg().game_analysis.pass_scores |
-      ranges::view::filter([&](const auto & score_with_id) {
-        // 自分自身とキーパーを除外
-        auto target_robot_pos = world_model()->getOurRobot(score_with_id.id)->pose.pos;
-        return score_with_id.id != robot()->id &&
-               score_with_id.id != world_model()->getOurGoalieId() &&
-               ((std::abs(world_model()->ball().pos.x() - world_model()->getTheirGoalCenter().x()) >
-                 std::abs(target_robot_pos.x() - world_model()->getTheirGoalCenter().x())) ||
-                std::abs(target_robot_pos.x() - world_model()->getTheirGoalCenter().x()) < 2.0);
-      }) |
-      ranges::to<std::vector>();
-
-    if (not pass_scores.empty()) {
-      // pass_scoresの先頭が一番スコアが高い
-      kick_target = world_model()->getOurRobot(pass_scores.front().id)->pose.pos;
-      pass_receiver_id = pass_scores.front().id;
+    // パスは pass_target_id がある場合のみ検討
+    if (world_model()->getMsg().game_analysis.pass_target_id >= 0) {
+      auto target_id = static_cast<uint8_t>(world_model()->getMsg().game_analysis.pass_target_id);
+      if (target_id != robot()->id) {
+        pass_receiver_id = target_id;
+        kick_target = world_model()->getOurRobot(target_id)->pose.pos;
+      } else {
+        pass_receiver_id = std::nullopt;
+      }
     } else {
+      // 未選択時はパスしない
       pass_receiver_id = std::nullopt;
     }
 
@@ -268,24 +259,6 @@ void Attacker::initialize()
   });
 }
 
-std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
-{
-  auto our_robots = world_model()->ours().getAvailableRobots(robot()->id, true);
-  const auto enemy_robots = world_model()->theirs().getAvailableRobots();
-  double best_score = 0.0;
-  std::shared_ptr<RobotInfo> best_bot = nullptr;
-  for (auto & our_robot : our_robots) {
-    auto target = our_robot->pose.pos;
-    double score = calculatePassScore(target);
-
-    if (score > best_score) {
-      best_score = score;
-      best_bot = our_robot;
-    }
-  }
-
-  return best_bot;
-}
 auto Attacker::OverDribbleInfo::update(const Point & current_position, const Point & ball_position)
   -> void
 {

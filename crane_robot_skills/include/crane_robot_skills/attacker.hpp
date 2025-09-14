@@ -57,8 +57,6 @@ public:
       .build();
   }
 
-  std::shared_ptr<RobotInfo> selectPassReceiver();
-
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
 
   Point & kick_target;
