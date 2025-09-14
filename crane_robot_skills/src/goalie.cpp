@@ -113,7 +113,6 @@ void Goalie::emitBallFromPenaltyArea()
 
   visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
 
-  Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
