@@ -22,7 +22,6 @@
 #include "marker_planner.hpp"
 #include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
-#include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
 #include "pass_receiver_planner.hpp"
 #include "placement_avoidance_planner.hpp"
@@ -67,7 +66,6 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"catch_ball",                                [](Ts... ts) { return std::make_shared<CatchBallPlanner>(ts...); }},
       {"tigers_goalie",                             [](Ts... ts) { return std::make_shared<TigersGoaliePlanner>(ts...); }},
       {"waiter",                                    [](Ts... ts) { return std::make_shared<WaiterPlanner>(ts...); }},
-      {"our_kickoff",                               [](Ts... ts) { return std::make_shared<OurKickOffPlanner>(ts...); }},
       {"our_penalty_kick",                          [](Ts... ts) { return std::make_shared<OurPenaltyKickPlanner>(ts...); }},
       {"pass_receive",                              [](Ts... ts) { return std::make_shared<PassReceiverPlanner>(ts...); }},
       {"their_penalty_kick",                        [](Ts... ts) { return std::make_shared<TheirPenaltyKickPlanner>(ts...); }},
