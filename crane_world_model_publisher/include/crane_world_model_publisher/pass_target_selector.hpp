@@ -68,7 +68,7 @@ private:
 
   // 内部状態（ヒステリシス用）
   std::optional<int> last_pass_target_id_{std::nullopt};
-  rclcpp::Time last_switch_time_{};
+  rclcpp::Time last_switch_time_{static_cast<int64_t>(0), RCL_ROS_TIME};
 
   // パラメータ（ヒステリシス）
   double min_hold_duration_sec_ = 0.5;

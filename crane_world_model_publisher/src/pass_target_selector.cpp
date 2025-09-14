@@ -82,12 +82,15 @@ auto PassTargetSelector::calcScore(
     ranges::views::transform([&](const auto & enemy) {
       double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
       return std::make_pair(std::abs(angle_diff), enemy);
-    });
-  auto best_intercepter = ranges::min(
-    enemys_with_angle_diff, [](const auto & a, const auto & b) { return a.first < b.first; });
-  using boost::math::constants::degree;
-  // 0~5°で0~1を遷移
-  score *= std::clamp(best_intercepter.first * degree<double>() / 5.0, 0.0, 1.0);
+    }) |
+    ranges::to<std::vector>();
+  if (!enemys_with_angle_diff.empty()) {
+    const auto & best_intercepter = *ranges::min_element(
+      enemys_with_angle_diff, [](const auto & a, const auto & b) { return a.first < b.first; });
+    using boost::math::constants::degree;
+    // 0~5°で0~1を遷移
+    score *= std::clamp(best_intercepter.first * degree<double>() / 5.0, 0.0, 1.0);
+  }
 
   if (world_model->point_checker.isPenaltyArea(p)) {
     score = 0.0;
