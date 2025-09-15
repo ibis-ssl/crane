@@ -496,51 +496,18 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
 }
 
 auto VisualizationManager::drawRefereeInfo(
-  const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void
+  const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
+  const std::string & command_text) -> void
 {
-  // レフェリー状態の表示
-  std::string command_name = "UNKNOWN";
-  switch (msg.command) {
-    case robocup_ssl_msgs::msg::Referee::COMMAND_HALT:
-      command_name = "HALT";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-      command_name = "STOP";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_NORMAL_START:
-      command_name = "NORMAL_START";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_FORCE_START:
-      command_name = "FORCE_START";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_PREPARE_KICKOFF_YELLOW:
-      command_name = "PREPARE_KICKOFF_YELLOW";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_PREPARE_KICKOFF_BLUE:
-      command_name = "PREPARE_KICKOFF_BLUE";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_PREPARE_PENALTY_YELLOW:
-      command_name = "PREPARE_PENALTY_YELLOW";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_PREPARE_PENALTY_BLUE:
-      command_name = "PREPARE_PENALTY_BLUE";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
-      command_name = "DIRECT_FREE_YELLOW";
-      break;
-    case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
-      command_name = "DIRECT_FREE_BLUE";
-      break;
-    default:
-      command_name = "COMMAND_" + std::to_string(msg.command);
-      break;
-  }
+  // レフェリー状態の表示: 文字列は PlaySituation の string 化を使用（フォールバックは行わない）
+  std::string command_name =
+    command_text.empty() ? ("COMMAND_" + std::to_string(msg.command)) : command_text;
 
   // レフェリー情報をフィールド上部に表示
   referee_builder->text()
     .text("Referee: " + command_name)
-    .position(-field_height / 2, field_width / 2 + 0.5)
-    .fontSize(100)
+    .position(-field_width / 2, field_height / 2 + 0.5)
+    .fontSize(500)
     .fill("white")
     .build();
 

@@ -111,6 +111,11 @@ public:
   [[nodiscard]] auto getLastVisionTSent() const -> double { return last_t_sent_; }
   auto setOurTeamColor(TeamColor color) -> void { our_team_color_ = color; }
 
+  [[nodiscard]] auto getLatestPlaySituation() const -> const crane_msgs::msg::PlaySituation &
+  {
+    return latest_play_situation;
+  }
+
 private:
   rclcpp::Node & node;
 
