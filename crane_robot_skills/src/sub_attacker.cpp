@@ -12,9 +12,6 @@ namespace crane::skills
 {
 void SubAttacker::initialize()
 {
-  //  setParameter("passer_id", 0);
-  //  setParameter("receive_x", 0.0);
-  //  setParameter("receive_y", 0.0);
   setParameter("ball_vel_threshold", 0.2);
   setParameter("kicker_power", 0.8);
 }
@@ -118,14 +115,6 @@ Status SubAttacker::update()
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball().pos - target_pos).normalized();
-  {
-    visualizer->line()
-      .start(target_pos)
-      .end(target_pos + to_goal * 3.0)
-      .stroke("yellow")
-      .strokeWidth(20)
-      .build();
-  }
   command->setTargetTheta(getAngle(to_goal + to_ball));
   command->liftUpDribbler();
   command->kickStraight(getParameter<double>("kicker_power"));
