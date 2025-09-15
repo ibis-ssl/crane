@@ -436,53 +436,107 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       .build();
   }
 
-  // トラッキング済みロボット（味方）
-  for (const auto & robot : world_model->ours().getAvailableRobots()) {
-    const Point & pos = robot->pose.pos;
+  auto visualize_velocity = [this](const std::shared_ptr<RobotInfo> & robot) {
+    // 速度矢印
+    const double speed = robot->vel.linear.norm();
+    auto speed_color = [&](double s) {
+      if (s < 0.2) return std::string("#7f8c8d");  // slow: gray
+      if (s < 1.0) return std::string("#00d1ff");  // walking: cyan
+      if (s < 2.0) return std::string("#00ff5a");  // jog: lime
+      if (s < 3.0) return std::string("#ffd400");  // run: yellow
+      return std::string("#ff4d4d");               // sprint: red
+    }(speed);
+    if (speed > 0.05) {
+      // チェブロン（V字マーカー）+ トレイルのみで速度/方向を表現
+      const double len = std::clamp(speed * 0.5, 0.10, 1.5);
+      Point v = robot->vel.linear;
+      const double inv = 1.0 / (speed + 1e-6);
+      Point vn = v * inv;
+      Point pos = robot->pose.pos;
 
-    // ロボット本体（SvgRobotBuilderを使用、トラッキング済みは太い線）
+      // 矢印ヘッド（三角形）
+      Point base = pos + vn * len;
+      Point v_norm = v.normalized();
+      Point v_norm_vertical = getVerticalVec(v_norm);
+      Point base_left = base + v_norm_vertical * 0.06 - v_norm * 0.03;
+      Point base_right = base - v_norm_vertical * 0.06 - v_norm * 0.03;
+      tracked_builder->line()
+        .start(base)
+        .end(base_left)
+        .stroke(speed_color, 0.5)
+        .strokeWidth(20)
+        .build();
+      tracked_builder->line()
+        .start(base)
+        .end(base_right)
+        .stroke(speed_color, 0.5)
+        .strokeWidth(20)
+        .build();
+
+      // トレイル（減衰する点）
+      for (int i = 1; i <= 5; ++i) {
+        const double s = i / (5.0 + 0.5);
+        Point p = pos + s * (base - pos);
+        tracked_builder->circle()
+          .center(p)
+          .radius(0.02)
+          .fill(speed_color, s * 0.5)
+          .stroke("none")
+          .build();
+      }
+    }
+  };
+
+  // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
+  for (const auto & robot : world_model->ours().robots) {
+    // 直近で検出されていない個体はスキップ
+    const auto stamp = robot->vision_detection_stamp;
+    const auto now = node_.now();
+    const bool clock_ok = (stamp.get_clock_type() == now.get_clock_type());
+    const bool has_recent_detection = clock_ok && (now - stamp).seconds() < 1.0;
+    if (!has_recent_detection) continue;
+
+    const Point & pos = robot->pose.pos;
+    const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
+
+    // ロボット本体
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
+    robot_shape.position(pos.x(), pos.y(), theta)
       .fill("green", 1.0)
       .stroke("black", 1.0)
       .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
 
+    visualize_velocity(robot);
+
+    // ID（数値の速度表示は矢印ゲージに置き換え）
     tracked_builder->text()
       .text(std::to_string(robot->id))
-      .position(robot->pose.pos.x() - 0.05, robot->pose.pos.y() - 0.05)
+      .position(pos.x() - 0.05, pos.y() - 0.05)
       .fontSize(150)
       .fill("white")
       .build();
-
-    // 速度ベクトル
-    if (robot->vel.linear.norm() > 0.1) {
-      double vel_end_x = pos.x() + robot->vel.linear.x() * 0.3;
-      double vel_end_y = pos.y() + robot->vel.linear.y() * 0.3;
-      tracked_builder->line()
-        .start(pos.x(), pos.y())
-        .end(vel_end_x, vel_end_y)
-        .stroke("green")
-        .strokeWidth(1)
-        .build();
-    }
   }
 
   // トラッキング済みロボット（敵）
   for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     const Point & pos = robot->pose.pos;
+    const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
 
-    // ロボット本体（SvgRobotBuilderを使用）
+    // ロボット本体
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
+    robot_shape.position(pos.x(), pos.y(), theta)
       .fill("red", 1.0)
       .stroke("black", 1.0)
       .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
 
+    visualize_velocity(robot);
+
+    // ID（数値の速度表示は矢印ゲージに置き換え）
     tracked_builder->text()
       .text(std::to_string(robot->getID().id))
-      .position(robot->pose.pos.x() - 0.05, robot->pose.pos.y() - 0.05)
+      .position(pos.x() - 0.05, pos.y() - 0.05)
       .fontSize(150)
       .fill("white")
       .build();
