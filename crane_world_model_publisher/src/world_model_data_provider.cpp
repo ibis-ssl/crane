@@ -25,11 +25,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   our_team_color_(TeamColor::BLUE),
   has_vision_updated_(false),
   has_latest_detection_frame_(false),
-  has_tracked_frame_updated_(false),
   last_t_capture_(0.0),
   last_t_sent_(0.0),
   last_ball_detect_time_(node.get_clock()->now()),
-  last_prediction_time_(node.get_clock()->now())
+  last_prediction_time_(node.get_clock()->now()),
+  last_vision_recv_time_(node.get_clock()->now()),
+  last_tracker_recv_time_(node.get_clock()->now()),
+  has_tracked_frame_updated_(false)
 {
   using std::chrono_literals::operator""ms;
 
@@ -101,6 +103,30 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   area_mask.max_corner() << 20., 10.;
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
+
+  // 受信監視: 1秒周期でVision/Trackerの受信有無をチェックし、欠損時のみログ出力
+  status_check_timer_ = node.create_wall_timer(1000ms, [this]() {
+    auto now = this->node.get_clock()->now();
+
+    if (multicast_receiver_ && use_udp_detection_) {
+      if ((now - last_vision_recv_time_).seconds() > 1.0) {
+        RCLCPP_WARN(
+          this->node.get_logger(), "Vision受信が直近1秒間ありません (%s:%d)",
+          config_.vision_address.c_str(), config_.vision_port);
+      }
+    }
+
+    if (tracker_receiver_) {
+      if ((now - last_tracker_recv_time_).seconds() > 1.0) {
+        // trackerアドレス/ポートはパラメータから取得
+        auto tracker_addr = this->node.get_parameter("tracker_address").get_value<std::string>();
+        auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
+        RCLCPP_WARN(
+          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)", tracker_addr.c_str(),
+          tracker_port);
+      }
+    }
+  });
 
   // /play_situationのトピック統計はsession_controllerで取得
   sub_play_situation = node.create_subscription<crane_msgs::msg::PlaySituation>(
@@ -206,9 +232,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
             if (use_udp_detection_ && packet.has_detection()) {
               processDetectionFrame(packet.detection());
               has_vision_updated_ = true;
-              RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, "Vision受信: frame=%u",
-                packet.detection().frame_number());
+              last_vision_recv_time_ = node.get_clock()->now();
             }
             if (packet.has_geometry()) {
               processGeometryData(packet.geometry());
@@ -239,9 +263,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
               latest_tracked_frame = tracked_frame_msg;
               has_tracked_frame_updated_ = true;
-              RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, "Tracker受信: frame=%u",
-                wrapper_packet.tracked_frame().frame_number());
+              last_tracker_recv_time_ = node.get_clock()->now();
               processTrackedFrame(tracked_frame_msg);
             }
           }
