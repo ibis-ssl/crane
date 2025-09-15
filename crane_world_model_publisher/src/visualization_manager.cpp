@@ -118,10 +118,7 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/placement");
   slack_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/slack");
   pass_score_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/pass_score");
-  debug_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/debug");
-  performance_builder =
-    std::make_shared<crane::VisualizerMessageBuilder>("world_model/performance");
-  performance_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/kick_event");
+  kick_event_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/kick_event");
 
   crane::CraneVisualizerBuffer::activate(node_);
 

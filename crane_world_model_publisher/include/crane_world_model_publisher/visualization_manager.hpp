@@ -67,8 +67,6 @@ public:
   crane::VisualizerMessageBuilder::SharedPtr trajectory_builder;
   crane::VisualizerMessageBuilder::SharedPtr slack_builder;
   crane::VisualizerMessageBuilder::SharedPtr pass_score_builder;
-  crane::VisualizerMessageBuilder::SharedPtr debug_builder;
-  crane::VisualizerMessageBuilder::SharedPtr performance_builder;
   crane::VisualizerMessageBuilder::SharedPtr kick_event_builder;
 
 private:
