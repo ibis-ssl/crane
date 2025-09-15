@@ -11,8 +11,21 @@
 #include <ranges>
 #include <sstream>
 
+namespace
+{
+inline std::string speedToColor(double s)
+{
+  if (s < 0.2) return "#7f8c8d";  // slow: gray
+  if (s < 1.0) return "#00d1ff";  // walking: cyan
+  if (s < 2.0) return "#00ff5a";  // jog: lime
+  if (s < 3.0) return "#ffd400";  // run: yellow
+  return "#ff4d4d";               // sprint: red
+}
+}  // namespace
+
 namespace crane
 {
+
 struct SvgRobotBuilder
 {
   SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
@@ -399,54 +412,28 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       .build();
   }
 
-  auto visualize_velocity = [this](const std::shared_ptr<RobotInfo> & robot) {
-    // 速度矢印
+  auto draw_velocity_marker = [this](
+                                const std::shared_ptr<RobotInfo> & robot, int trail_points = 5,
+                                double min_speed = 0.05, double length_scale = 0.5,
+                                double min_length = 0.10, double max_length = 1.5) {
     const double speed = robot->vel.linear.norm();
-    auto speed_color = [&](double s) {
-      if (s < 0.2) return std::string("#7f8c8d");  // slow: gray
-      if (s < 1.0) return std::string("#00d1ff");  // walking: cyan
-      if (s < 2.0) return std::string("#00ff5a");  // jog: lime
-      if (s < 3.0) return std::string("#ffd400");  // run: yellow
-      return std::string("#ff4d4d");               // sprint: red
-    }(speed);
-    if (speed > 0.05) {
-      // チェブロン（V字マーカー）+ トレイルのみで速度/方向を表現
-      const double len = std::clamp(speed * 0.5, 0.10, 1.5);
-      Point v = robot->vel.linear;
-      const double inv = 1.0 / (speed + 1e-6);
-      Point vn = v * inv;
-      Point pos = robot->pose.pos;
-
-      // 矢印ヘッド（三角形）
-      Point base = pos + vn * len;
-      Point v_norm = v.normalized();
-      Point v_norm_vertical = getVerticalVec(v_norm);
-      Point base_left = base + v_norm_vertical * 0.06 - v_norm * 0.03;
-      Point base_right = base - v_norm_vertical * 0.06 - v_norm * 0.03;
-      tracked_builder->line()
-        .start(base)
-        .end(base_left)
-        .stroke(speed_color, 0.5)
-        .strokeWidth(20)
-        .build();
-      tracked_builder->line()
-        .start(base)
-        .end(base_right)
-        .stroke(speed_color, 0.5)
-        .strokeWidth(20)
-        .build();
-
-      // トレイル（減衰する点）
-      for (int i = 1; i <= 5; ++i) {
-        const double s = i / (5.0 + 0.5);
-        Point p = pos + s * (base - pos);
-        tracked_builder->circle()
-          .center(p)
-          .radius(0.02)
-          .fill(speed_color, s * 0.5)
-          .stroke("none")
-          .build();
-      }
+    if (speed <= min_speed) return;
+    const std::string color = speedToColor(speed);
+    const double len = std::clamp(speed * length_scale, min_length, max_length);
+    const Point pos = robot->pose.pos;
+    const Point vn = robot->vel.linear.normalized();
+    const Point base = pos + vn * len;
+    // ヘッド（V字）
+    const Point v_perp = getVerticalVec(vn);
+    const Point base_left = base + v_perp * 0.06 - vn * 0.03;
+    const Point base_right = base - v_perp * 0.06 - vn * 0.03;
+    tracked_builder->line().start(base).end(base_left).stroke(color, 0.5).strokeWidth(20).build();
+    tracked_builder->line().start(base).end(base_right).stroke(color, 0.5).strokeWidth(20).build();
+    // トレイル（減衰する点）
+    for (int i = 1; i <= trail_points; ++i) {
+      const double s = i / (static_cast<double>(trail_points) + 0.5);
+      const Point p = pos + s * (base - pos);
+      tracked_builder->circle().center(p).radius(0.02).fill(color, s * 0.5).stroke("none").build();
     }
   };
 
@@ -483,13 +470,13 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
   for (const auto & robot : world_model->ours().robots) {
     draw_robot(robot, true);
-    visualize_velocity(robot);
+    draw_velocity_marker(robot);
   }
 
   // トラッキング済みロボット（敵）
   for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     draw_robot(robot, false);
-    visualize_velocity(robot);
+    draw_velocity_marker(robot);
   }
 
   tracked_builder->flush();
