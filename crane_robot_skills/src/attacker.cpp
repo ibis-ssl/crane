@@ -226,13 +226,6 @@ void Attacker::initialize()
       // STANDARD_PASS
       printTextOnRobot("KICK::STANDARD_PASS");
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-      visualizer->line()
-        .start(world_model()->ball().pos)
-        .end(kick_target)
-        .stroke("red")
-        .strokeWidth(10)
-        .build();
-
       kick_skill.setParameter("target", kick_target);
       configurePassKick(kick_target, kick_skill);
       return kick_skill.run();
