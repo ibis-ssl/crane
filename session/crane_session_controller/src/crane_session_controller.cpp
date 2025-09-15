@@ -168,7 +168,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
-        RCLCPP_INFO_STREAM(
+        RCLCPP_DEBUG_STREAM(
           get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
                                                                  << ", 観測数："
                                                                  << observed_robot_ids.size());
@@ -176,7 +176,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            RCLCPP_INFO_STREAM(
+            RCLCPP_DEBUG_STREAM(
               get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
                               << "\tbefore: " << assigned_robot_ids
                               << "\tafter : " << observed_robot_ids;);
@@ -314,7 +314,7 @@ auto SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          RCLCPP_INFO_STREAM(
+          RCLCPP_DEBUG_STREAM(
             get_logger(), "\tセッション「" << p.session_name << "」のロボット選択："
                                            << selectable_robot_ids << " -> "
                                            << response.selected_robots);
