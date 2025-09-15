@@ -43,10 +43,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider.setVisualizationCallbacks(
     [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
-      visualization_manager_->visualizeGeometry(geometry_data, half_court_mode);
+      visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
     },
     [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
-      visualization_manager_->visualizeReferee(msg, field_w, field_h);
+      visualization_manager_->drawRefereeInfo(msg, field_w, field_h);
     });
 
   declare_parameter("position_history_size", 200);
@@ -193,7 +193,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
   -> void
 {
   // VisualizationManagerによる統合可視化処理
-  visualization_manager_->visualizeTrackedData(world_model);
+  visualization_manager_->drawTrackedObjects(world_model);
 
   // 軌跡履歴データをVisualizationManagerに渡す
   VisualizationManager::TrajectoryHistoryData trajectory_data;

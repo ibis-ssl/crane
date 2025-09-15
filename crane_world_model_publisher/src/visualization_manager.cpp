@@ -114,43 +114,6 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   RCLCPP_INFO(node_.get_logger(), "VisualizationManager initialized with direct builders");
 }
 
-auto VisualizationManager::visualizeGeometry(
-  const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
-{
-  drawFieldGeometry(geometry_data, half_court_mode);
-}
-
-auto VisualizationManager::visualizeDetection(
-  const SSL_DetectionFrame & detection, bool half_court_mode) -> void
-{
-  drawVisionDetections(detection, half_court_mode);
-}
-
-auto VisualizationManager::visualizeTrackedData(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  drawTrackedObjects(world_model);
-}
-
-auto VisualizationManager::visualizeReferee(
-  const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void
-{
-  drawRefereeInfo(msg, field_width, field_height);
-}
-
-auto VisualizationManager::visualizeTrajectories(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  drawRobotTrajectories(world_model);
-  drawBallTrajectory(world_model);
-}
-
-auto VisualizationManager::visualizeSlackAnalysis(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  drawSlackTimes(world_model);
-}
-
 auto VisualizationManager::visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
