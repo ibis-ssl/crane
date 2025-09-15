@@ -130,12 +130,7 @@ void Kick::initialize()
       Point arrow_end = ball_pos + dir * arrow_len;
 
       // メインの矢印シャフト
-      visualizer->line()
-        .start(ball_pos)
-        .end(arrow_end)
-        .stroke("lime")
-        .strokeWidth(20)
-        .build();
+      visualizer->line().start(ball_pos).end(arrow_end).stroke("lime").strokeWidth(20).build();
 
       // アローヘッド（左右の羽根）
       Vector2 perp(-dir.y(), dir.x());
@@ -152,7 +147,8 @@ void Kick::initialize()
       double arc_radius = 0.9;
       // 境界線
       auto dir_left = Vector2(std::cos(base_theta + half_angle), std::sin(base_theta + half_angle));
-      auto dir_right = Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
+      auto dir_right =
+        Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
       visualizer->line()
         .start(ball_pos)
         .end(ball_pos + dir_left * arc_radius)
