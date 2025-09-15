@@ -196,12 +196,6 @@ private:
     double penalty_area_h;
   } game_data;
 
-  struct Data
-  {
-    double ball_placement_target_x;
-    double ball_placement_target_y;
-  } data;
-
   bool on_positive_half;
 
   bool is_emplace_positive_side;

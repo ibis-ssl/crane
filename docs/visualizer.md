@@ -142,8 +142,8 @@ visualizer->asClear().flush();
 crane::CraneVisualizerBuffer::publish();
 
 // 送信前のローカル更新バッファからレイヤーを取り除きたい場合
-crane::CraneVisualizerBuffer::clear("my_layer"); // 未送信の updates から該当レイヤーを削除
-crane::CraneVisualizerBuffer::clear();           // 未送信の全 updates を破棄
+crane::CraneVisualizerBuffer::clear("my_layer"); // 該当レイヤーを空で上書きする更新を積む（表示クリア）
+crane::CraneVisualizerBuffer::clear();           // 未送信の全 updates を破棄（送信はしない）
 ## 実用的な例
 
 ### ロボットの状態を可視化する例

@@ -174,11 +174,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         reportError(what.str());
       }
 
-      if (not msg.designated_position.empty()) {
-        data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
-        data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
-      }
-
       if (referee_visualization_callback_) {
         referee_visualization_callback_(msg, game_data.field_w, game_data.field_h);
       }

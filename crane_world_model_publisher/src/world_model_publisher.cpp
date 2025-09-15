@@ -205,6 +205,8 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
 
   visualization_manager_->drawTrajectoryHistory(trajectory_data);
 
+  visualization_manager_->drawBallPlacement(world_model);
+
   crane::CraneVisualizerBuffer::publish();
 }
 

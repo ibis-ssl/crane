@@ -115,6 +115,7 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/tracked");
   referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/referee");
   trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/placement");
   slack_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/slack");
   pass_score_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/pass_score");
   debug_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/debug");
@@ -470,32 +471,38 @@ auto VisualizationManager::drawRefereeInfo(
     .fontSize(500)
     .fill("white")
     .build();
-
-  // ボール位置（指定されている場合）
-  if (!msg.designated_position.empty()) {
-    double ball_x = msg.designated_position.front().x / 1000.0;
-    double ball_y = msg.designated_position.front().y / 1000.0;
-    referee_builder->circle()
-      .center(ball_x, ball_y)
-      .radius(0.1)
-      .stroke("white")
-      .strokeWidth(2)
-      .build();
-    referee_builder->text()
-      .text("Ball")
-      .position(ball_x, ball_y + 0.2)
-      .fontSize(12)
-      .fill("white")
-      .build();
-  }
-
   referee_builder->flush();
 }
 
-auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void
+auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model)
+  -> void
 {
-  // 実装予定: スラック時間分析結果の描画
-  // WorldModelPublisherComponentのpostProcessWorldModelからの移行対象
+  if (auto target = world_model->getBallPlacementTarget(); target) {
+    Point ball = world_model->ball().pos;
+    placement_builder->circle()
+      .center(target.value())
+      .radius(0.5)
+      .stroke("white")
+      .strokeWidth(5)
+      .build();
+    Vector2 vertical = getVerticalVec((ball - target.value()).normalized()) * 0.5;
+    placement_builder->line()
+      .start(ball + vertical)
+      .end(target.value() + vertical)
+      .stroke("white")
+      .strokeWidth(5)
+      .build();
+    placement_builder->line()
+      .start(ball - vertical)
+      .end(target.value() - vertical)
+      .stroke("white")
+      .strokeWidth(5)
+      .build();
+    placement_builder->flush();
+  } else {
+    placement_builder->clearBuffer();
+    placement_builder->flush();
+  }
 }
 
 auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data)

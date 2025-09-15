@@ -44,8 +44,7 @@ public:
   auto drawRefereeInfo(
     const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
     const std::string & command_text) -> void;
-  auto drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model) -> void;
+  auto drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
   // 軌跡履歴データ構造
   struct TrajectoryHistoryData
@@ -64,6 +63,7 @@ public:
   crane::VisualizerMessageBuilder::SharedPtr vision_builder;
   crane::VisualizerMessageBuilder::SharedPtr tracked_builder;
   crane::VisualizerMessageBuilder::SharedPtr referee_builder;
+  crane::VisualizerMessageBuilder::SharedPtr placement_builder;
   crane::VisualizerMessageBuilder::SharedPtr trajectory_builder;
   crane::VisualizerMessageBuilder::SharedPtr slack_builder;
   crane::VisualizerMessageBuilder::SharedPtr pass_score_builder;
