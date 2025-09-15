@@ -565,20 +565,6 @@ auto VisualizationManager::drawRefereeInfo(
   referee_builder->flush();
 }
 
-auto VisualizationManager::drawRobotTrajectories(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  // 実装予定: ロボット軌跡の描画
-  // WorldModelPublisherComponentからの移行対象
-}
-
-auto VisualizationManager::drawBallTrajectory(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  // 実装予定: ボール軌跡の描画
-  // WorldModelPublisherComponentからの移行対象
-}
-
 auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void
 {
   // 実装予定: スラック時間分析結果の描画
@@ -590,13 +576,12 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
 {
   static constexpr int SAMPLING_NUM = 4;
 
-  // 味方ロボットの履歴描画
-  for (const auto & [robot_id, history] :
-       trajectory_data.friend_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+  auto draw_team_history = [&](const auto & histories, const std::string & color) {
+    for (const auto & [robot_id, history] : histories | ranges::views::enumerate) {
+      if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
+        for (int i = 0; i < 10; i++) {
+          int start = static_cast<int>((history.size() / 10.) * i);
+          int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
         auto polyline_builder = trajectory_builder->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
@@ -612,27 +597,9 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
     }
   }
 
-  // 敵ロボットの履歴描画
-  for (const auto & [robot_id, history] :
-       trajectory_data.enemy_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
-
-        auto polyline_builder = trajectory_builder->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        polyline_builder.stroke("red", start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
+  // 味方・敵の履歴描画（共通処理）
+  draw_team_history(trajectory_data.friend_history, "green");
+  draw_team_history(trajectory_data.enemy_history, "red");
 
   // ボール軌跡描画
   if (trajectory_data.ball_info_history.size() > SAMPLING_NUM + 1) {

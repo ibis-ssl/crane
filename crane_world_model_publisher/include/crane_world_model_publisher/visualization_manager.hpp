@@ -42,9 +42,8 @@ public:
     -> void;
   auto drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto drawRefereeInfo(
-    const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void;
-  auto drawRobotTrajectories(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto drawBallTrajectory(const WorldModelWrapper::SharedPtr & world_model) -> void;
+    const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
+    const std::string & command_text_override = std::string()) -> void;
   auto drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
