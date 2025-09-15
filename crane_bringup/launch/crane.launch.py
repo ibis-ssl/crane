@@ -470,7 +470,7 @@ def generate_launch_description():
                 ],
                 output="log",
                 on_exit=default_exit_behavior,
-                ros_arguments=['--log-level', 'warn'],
+                ros_arguments=["--log-level", "warn"],
             ),
         ]
     )
