@@ -57,6 +57,9 @@ void Attacker::initialize()
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
     pass_receiver_id = std::nullopt;
     command->clearMaxVelocityFactors();
+    receive_skill.clearVisualizer();
+    kick_skill.clearVisualizer();
+    goal_kick_skill.clearVisualizer();
     return false;
   });
 
@@ -226,13 +229,6 @@ void Attacker::initialize()
       // STANDARD_PASS
       printTextOnRobot("KICK::STANDARD_PASS");
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-      visualizer->line()
-        .start(world_model()->ball().pos)
-        .end(kick_target)
-        .stroke("red")
-        .strokeWidth(10)
-        .build();
-
       kick_skill.setParameter("target", kick_target);
       configurePassKick(kick_target, kick_skill);
       return kick_skill.run();

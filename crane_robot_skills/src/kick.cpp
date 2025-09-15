@@ -122,12 +122,55 @@ void Kick::initialize()
   addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball().pos;
-    visualizer->line()
-      .start(ball_pos)
-      .end(ball_pos + (target - ball_pos).normalized() * 1.0)
-      .stroke("blue")
-      .strokeWidth(10)
-      .build();
+    // 視認性の高いキック方向の可視化: 太い矢印 + 角度しきい値の扇
+    {
+      Vector2 dir = (target - ball_pos).normalized();
+      // 長めの矢印（フィールド半分+余裕）
+      double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
+      Point arrow_end = ball_pos + dir * arrow_len;
+
+      // メインの矢印シャフト
+      visualizer->line().start(ball_pos).end(arrow_end).stroke("lime").strokeWidth(20).build();
+
+      // アローヘッド（左右の羽根）
+      Vector2 perp(-dir.y(), dir.x());
+      Point tip = arrow_end;
+      Point left = tip - dir * 0.35 + perp * 0.20;
+      Point right = tip - dir * 0.35 - perp * 0.20;
+      visualizer->line().start(tip).end(left).stroke("lime").strokeWidth(20).build();
+      visualizer->line().start(tip).end(right).stroke("lime").strokeWidth(20).build();
+
+      // 角度しきい値の扇（境界線 + アーク）
+      using boost::math::constants::degree;
+      double half_angle = getParameter<double>("angle_threshold_deg") * degree<double>();
+      double base_theta = getAngle(dir);
+      double arc_radius = 0.9;
+      // 境界線
+      auto dir_left = Vector2(std::cos(base_theta + half_angle), std::sin(base_theta + half_angle));
+      auto dir_right =
+        Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_left * arc_radius)
+        .stroke("white", 0.6)
+        .strokeWidth(10)
+        .build();
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_right * arc_radius)
+        .stroke("white", 0.6)
+        .strokeWidth(10)
+        .build();
+      // アーク（扇の円弧）
+      auto arc = visualizer->polyline().stroke("white", 0.4).strokeWidth(10);
+      int steps = 16;
+      for (int i = 0; i <= steps; ++i) {
+        double a = base_theta - half_angle + (2.0 * half_angle) * (static_cast<double>(i) / steps);
+        Point p = ball_pos + Vector2(std::cos(a), std::sin(a)) * arc_radius;
+        arc.addPoint(p.x(), p.y());
+      }
+      arc.build();
+    }
     {
       visualizer->text()
         .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)

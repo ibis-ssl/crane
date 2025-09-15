@@ -7,6 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_update.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
@@ -707,16 +708,25 @@ struct CraneVisualizerBuffer
     }
   }
 
-  static auto clear(std::string layer = "") -> void
+  static auto clear(const std::string & layer = "") -> void
   {
     if (CraneVisualizerBuffer::active()) {
+      auto & updates = CraneVisualizerBuffer::buffer->message_buffer.updates;
       if (layer == "") {
-        CraneVisualizerBuffer::buffer->message_buffer.updates.clear();
+        updates.clear();
       } else {
-        for (auto & upd : CraneVisualizerBuffer::buffer->message_buffer.updates |
-                            ranges::views::filter([&](auto u) { return u.layer == layer; })) {
-          upd.svg_primitives.clear();
-        }
+        // 指定レイヤーに対する未送信更新をローカルバッファから除去
+        updates.erase(
+          std::remove_if(
+            updates.begin(), updates.end(), [&](const auto & u) { return u.layer == layer; }),
+          updates.end());
+
+        // 受信側の該当レイヤーを空にするため、空の更新を追加（publish() 時に送信される）
+        crane_visualization_interfaces::msg::SvgLayerUpdate empty_layer;
+        empty_layer.layer = layer;
+        empty_layer.operation = "replace";  // 空レイヤーで置換 = 実質クリア
+        // svg_primitives は空のまま
+        updates.push_back(std::move(empty_layer));
       }
     }
   }

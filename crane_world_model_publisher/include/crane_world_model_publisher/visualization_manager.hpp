@@ -35,21 +35,16 @@ public:
   explicit VisualizationManager(rclcpp::Node & node);
   ~VisualizationManager() = default;
 
-  // SSL Vision データ可視化
-  auto visualizeGeometry(const SSL_GeometryData & geometry_data, bool half_court_mode = false)
+  // 可視化（直接実装）
+  auto drawFieldGeometry(const SSL_GeometryData & geometry_data, bool half_court_mode = false)
     -> void;
-  auto visualizeDetection(const SSL_DetectionFrame & detection, bool half_court_mode = false)
+  auto drawVisionDetections(const SSL_DetectionFrame & detection, bool half_court_mode = false)
     -> void;
-  auto visualizeTrackedData(const WorldModelWrapper::SharedPtr & world_model) -> void;
-
-  // レフェリー情報可視化
-  auto visualizeReferee(
-    const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void;
-
-  // 軌跡・分析結果可視化
-  auto visualizeTrajectories(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto visualizeSlackAnalysis(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model) -> void;
+  auto drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model) -> void;
+  auto drawRefereeInfo(
+    const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
+    const std::string & command_text) -> void;
+  auto drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
   // 軌跡履歴データ構造
   struct TrajectoryHistoryData
@@ -61,37 +56,21 @@ public:
   };
 
   // 軌跡履歴可視化
-  auto visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
-
-  // デバッグ情報可視化
-  auto visualizeDebugInfo(const std::string & category, const std::string & info) -> void;
-  auto visualizePerformanceMetrics(const std::string & component, double processing_time_ms)
-    -> void;
+  auto drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
 
   // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
   crane::VisualizerMessageBuilder::SharedPtr vision_builder;
   crane::VisualizerMessageBuilder::SharedPtr tracked_builder;
   crane::VisualizerMessageBuilder::SharedPtr referee_builder;
+  crane::VisualizerMessageBuilder::SharedPtr placement_builder;
   crane::VisualizerMessageBuilder::SharedPtr trajectory_builder;
   crane::VisualizerMessageBuilder::SharedPtr slack_builder;
   crane::VisualizerMessageBuilder::SharedPtr pass_score_builder;
-  crane::VisualizerMessageBuilder::SharedPtr debug_builder;
-  crane::VisualizerMessageBuilder::SharedPtr performance_builder;
   crane::VisualizerMessageBuilder::SharedPtr kick_event_builder;
 
 private:
   rclcpp::Node & node_;
-
-  // 内部可視化実装
-  auto drawFieldGeometry(const SSL_GeometryData & geometry_data, bool half_court_mode) -> void;
-  auto drawVisionDetections(const SSL_DetectionFrame & detection, bool half_court_mode) -> void;
-  auto drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto drawRefereeInfo(
-    const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void;
-  auto drawRobotTrajectories(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto drawBallTrajectory(const WorldModelWrapper::SharedPtr & world_model) -> void;
-  auto drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void;
 };
 
 }  // namespace crane

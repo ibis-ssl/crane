@@ -111,6 +111,11 @@ public:
   [[nodiscard]] auto getLastVisionTSent() const -> double { return last_t_sent_; }
   auto setOurTeamColor(TeamColor color) -> void { our_team_color_ = color; }
 
+  [[nodiscard]] auto getLatestPlaySituation() const -> const crane_msgs::msg::PlaySituation &
+  {
+    return latest_play_situation;
+  }
+
 private:
   rclcpp::Node & node;
 
@@ -190,12 +195,6 @@ private:
 
     double penalty_area_h;
   } game_data;
-
-  struct Data
-  {
-    double ball_placement_target_x;
-    double ball_placement_target_y;
-  } data;
 
   bool on_positive_half;
 

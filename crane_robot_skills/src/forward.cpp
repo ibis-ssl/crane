@@ -46,7 +46,7 @@ auto Forward::update() -> Status
         planner_visualizer->circle()
           .center(p)
           .radius(score * 0.25)
-          .stroke("lime")
+          .stroke("lime", 0.5)
           .strokeWidth(5)
           .build();
       }

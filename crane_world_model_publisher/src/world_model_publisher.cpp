@@ -43,10 +43,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider.setVisualizationCallbacks(
     [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
-      visualization_manager_->visualizeGeometry(geometry_data, half_court_mode);
+      visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
     },
     [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
-      visualization_manager_->visualizeReferee(msg, field_w, field_h);
+      visualization_manager_->drawRefereeInfo(
+        msg, field_w, field_h, data_provider.getLatestPlaySituation().command.name);
     });
 
   declare_parameter("position_history_size", 200);
@@ -193,7 +194,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
   -> void
 {
   // VisualizationManagerによる統合可視化処理
-  visualization_manager_->visualizeTrackedData(world_model);
+  visualization_manager_->drawTrackedObjects(world_model);
 
   // 軌跡履歴データをVisualizationManagerに渡す
   VisualizationManager::TrajectoryHistoryData trajectory_data;
@@ -202,7 +203,9 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
   trajectory_data.ball_info_history = ball_info_history;
   trajectory_data.is_yellow = world_model->isYellow();
 
-  visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
+  visualization_manager_->drawTrajectoryHistory(trajectory_data);
+
+  visualization_manager_->drawBallPlacement(world_model);
 
   crane::CraneVisualizerBuffer::publish();
 }
