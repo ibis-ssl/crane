@@ -487,14 +487,15 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     }
   };
 
-  // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
-  for (const auto & robot : world_model->ours().robots) {
-    // 直近で検出されていない個体はスキップ
-    const auto stamp = robot->vision_detection_stamp;
-    const auto now = node_.now();
-    const bool clock_ok = (stamp.get_clock_type() == now.get_clock_type());
-    const bool has_recent_detection = clock_ok && (now - stamp).seconds() < 1.0;
-    if (!has_recent_detection) continue;
+  auto draw_robot = [this](const std::shared_ptr<RobotInfo> & robot, bool is_friend) {
+    // 味方のみ直近検出チェック（エラーでも表示はOK）
+    if (is_friend) {
+      const auto now = node_.now();
+      const auto stamp = robot->vision_detection_stamp;
+      const bool clock_ok = (stamp.get_clock_type() == now.get_clock_type());
+      const bool has_recent_detection = clock_ok && (now - stamp).seconds() < 1.0;
+      if (!has_recent_detection) return;
+    }
 
     const Point & pos = robot->pose.pos;
     const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
@@ -502,44 +503,30 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     // ロボット本体
     SvgRobotBuilder robot_shape;
     robot_shape.position(pos.x(), pos.y(), theta)
-      .fill("green", 1.0)
+      .fill(is_friend ? "green" : "red", 1.0)
       .stroke("black", 1.0)
       .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
 
-    visualize_velocity(robot);
-
-    // ID（数値の速度表示は矢印ゲージに置き換え）
+    // ID
     tracked_builder->text()
       .text(std::to_string(robot->id))
       .position(pos.x() - 0.05, pos.y() - 0.05)
       .fontSize(150)
       .fill("white")
       .build();
+  };
+
+  // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
+  for (const auto & robot : world_model->ours().robots) {
+    draw_robot(robot, true);
+    visualize_velocity(robot);
   }
 
   // トラッキング済みロボット（敵）
   for (const auto & robot : world_model->theirs().getAvailableRobots()) {
-    const Point & pos = robot->pose.pos;
-    const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
-
-    // ロボット本体
-    SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), theta)
-      .fill("red", 1.0)
-      .stroke("black", 1.0)
-      .strokeWidth(10);
-    tracked_builder->add(robot_shape.getSvgString());
-
+    draw_robot(robot, false);
     visualize_velocity(robot);
-
-    // ID（数値の速度表示は矢印ゲージに置き換え）
-    tracked_builder->text()
-      .text(std::to_string(robot->getID().id))
-      .position(pos.x() - 0.05, pos.y() - 0.05)
-      .fontSize(150)
-      .fill("white")
-      .build();
   }
 
   tracked_builder->flush();
