@@ -127,33 +127,6 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   RCLCPP_INFO(node_.get_logger(), "VisualizationManager initialized with direct builders");
 }
 
-auto VisualizationManager::visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
-{
-  // パススコア可視化の実装（将来的に実装）
-  // 実装予定: パス評価結果の描画
-}
-
-auto VisualizationManager::visualizeDebugInfo(
-  const std::string & category, const std::string & info) -> void
-{
-  debug_builder->text()
-    .text(category + ": " + info)
-    .position(0, 0)
-    .fontSize(12)
-    .fill("white")
-    .build();
-  debug_builder->flush();
-}
-
-auto VisualizationManager::visualizePerformanceMetrics(
-  const std::string & component, double processing_time_ms) -> void
-{
-  std::string text = component + ": " + std::to_string(processing_time_ms) + "ms";
-  performance_builder->text().text(text).position(0, 0).fontSize(10).fill("yellow").build();
-  performance_builder->flush();
-}
-
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
   const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
@@ -525,7 +498,7 @@ auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & w
   // WorldModelPublisherComponentのpostProcessWorldModelからの移行対象
 }
 
-auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data)
+auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data)
   -> void
 {
   static constexpr int SAMPLING_NUM = 4;

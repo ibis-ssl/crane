@@ -203,7 +203,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
   trajectory_data.ball_info_history = ball_info_history;
   trajectory_data.is_yellow = world_model->isYellow();
 
-  visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
+  visualization_manager_->drawTrajectoryHistory(trajectory_data);
 
   crane::CraneVisualizerBuffer::publish();
 }

@@ -57,12 +57,7 @@ public:
   };
 
   // 軌跡履歴可視化
-  auto visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
-
-  // デバッグ情報可視化
-  auto visualizeDebugInfo(const std::string & category, const std::string & info) -> void;
-  auto visualizePerformanceMetrics(const std::string & component, double processing_time_ms)
-    -> void;
+  auto drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
 
   // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
