@@ -46,7 +46,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
     },
     [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
-      visualization_manager_->drawRefereeInfo(msg, field_w, field_h);
+      visualization_manager_->drawRefereeInfo(
+        msg, field_w, field_h, data_provider.getLatestPlaySituation().command.name);
     });
 
   declare_parameter("position_history_size", 200);

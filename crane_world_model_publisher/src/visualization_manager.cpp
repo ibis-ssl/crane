@@ -550,19 +550,20 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
           int start = static_cast<int>((history.size() / 10.) * i);
           int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto polyline_builder = trajectory_builder->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+          auto polyline_builder = trajectory_builder->polyline();
+          for (int index = start; index < end; index += SAMPLING_NUM) {
+            polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+          }
+          if (i != 9) {
+            polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+          }
+          polyline_builder.stroke(color, 0.5 * start / static_cast<double>(history.size()))
+            .strokeWidth(15)
+            .build();
         }
-        if (i != 9) {
-          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        polyline_builder.stroke("green", start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
       }
     }
-  }
+  };
 
   // 味方・敵の履歴描画（共通処理）
   draw_team_history(trajectory_data.friend_history, "green");
