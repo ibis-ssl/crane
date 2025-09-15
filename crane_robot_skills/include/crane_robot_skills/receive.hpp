@@ -30,6 +30,12 @@ public:
     setParameter("redirect_kick_power", 0.3);
     setParameter("robot_acc_for_prediction", 2.5);
     setParameter("robot_max_vel_for_prediction", 5.0);
+
+    // Visualization toggles
+    setParameter("viz_ball_traj", true);
+    setParameter("viz_candidates", true);
+    setParameter("viz_offset_arrow", true);
+    setParameter("viz_redirect_preview", true);
   }
 
   Status update() override;

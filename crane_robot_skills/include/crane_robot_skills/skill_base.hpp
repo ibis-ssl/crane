@@ -242,6 +242,8 @@ public:
 
   void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
 
+  void clearVisualizer() { visualizer->clearBuffer(); }
+
 protected:
   std::shared_ptr<RobotCommandWrapper> command;
 
