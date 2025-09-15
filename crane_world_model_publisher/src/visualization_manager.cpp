@@ -330,18 +330,6 @@ auto VisualizationManager::drawFieldGeometry(
 auto VisualizationManager::drawVisionDetections(
   const SSL_DetectionFrame & detection, bool half_court_mode) -> void
 {
-  // ボール検出の描画
-  for (const auto & ball : detection.balls()) {
-    double x = ball.x() / 1000.0;
-    double y = ball.y() / 1000.0;
-    vision_builder->circle()
-      .center(x, y)
-      .radius(0.043)
-      .stroke("orange")
-      .strokeWidth(2)
-      .build();  // SSL規格ボール半径
-  }
-
   // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {
     double x = robot.x() / 1000.0;
@@ -392,23 +380,59 @@ auto VisualizationManager::drawVisionDetections(
 auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  // トラッキング済みボール
+  // トラッキング済みボール（強調表示 + 回転スコープ）
   const auto ball = world_model->ball();
+  const double ball_radius = 0.043;  // SSL official ball radius
   tracked_builder->circle()
     .center(ball.pos.x(), ball.pos.y())
-    .radius(0.043)
-    .stroke("red")
-    .strokeWidth(3)
+    .radius(ball_radius)
+    .stroke("orange")
+    .strokeWidth(5)
+    .fill("orange", 1.0)
     .build();
+  // ベースの円（オレンジ枠 + 薄い塗り）
+  tracked_builder->circle()
+    .center(ball.pos.x(), ball.pos.y())
+    .radius(0.5)
+    .stroke("orange")
+    .strokeWidth(5)
+    .fill("orange", 0.15)
+    .build();
+  // 回転するスコープ飾り（クロスヘア）
 
+  if (world_model->ball().detected) {
+    const double t = node_.now().seconds();
+    const double omega = 2.0;  // rad/s
+    const double base_angle = std::fmod(t * omega, 2.0 * M_PI);
+    auto add_tick = [&](
+                      double angle, double r1, double r2, const std::string & color, double width,
+                      double alpha) {
+      const double dx1 = std::cos(angle) * r1;
+      const double dy1 = std::sin(angle) * r1;
+      const double dx2 = std::cos(angle) * r2;
+      const double dy2 = std::sin(angle) * r2;
+      tracked_builder->line()
+        .start(ball.pos.x() + dx1, ball.pos.y() + dy1)
+        .end(ball.pos.x() + dx2, ball.pos.y() + dy2)
+        .stroke(color, alpha)
+        .strokeWidth(width)
+        .build();
+    };
+
+    // 十字のティック（長め）
+    for (int i = 0; i < 4; ++i) {
+      const double ang = base_angle + (i * M_PI_2);
+      add_tick(ang, 0.45, 0.55, "orange", 10, 0.9);
+    }
+  }
   // 速度ベクトル
   if (ball.vel.norm() > 0.1) {                  // 0.1 m/s 以上で表示
     Point vel_end = ball.pos + ball.vel * 0.5;  // 0.5秒後の位置
     tracked_builder->line()
       .start(ball.pos.x(), ball.pos.y())
       .end(vel_end.x(), vel_end.y())
-      .stroke("red")
-      .strokeWidth(2)
+      .stroke("orange")
+      .strokeWidth(12)
       .build();
   }
 
@@ -425,7 +449,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     tracked_builder->add(robot_shape.getSvgString());
 
     tracked_builder->text()
-      .text(std::to_string(robot->getID().id))
+      .text(std::to_string(robot->id))
       .position(robot->pose.pos.x() - 0.05, robot->pose.pos.y() - 0.05)
       .fontSize(150)
       .fill("white")
