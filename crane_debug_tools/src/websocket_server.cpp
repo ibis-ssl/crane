@@ -274,11 +274,12 @@ public:
         });
 
     // High-frequency incremental SVG updates
-    visualizer_svgs_sub_ = this->create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
-      "/visualizer_svgs", rclcpp::SensorDataQoS(),
-      [this](const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg) {
-        broadcastSvgUpdates(msg);
-      });
+    visualizer_svgs_sub_ =
+      this->create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
+        "/visualizer_svgs", rclcpp::SensorDataQoS(),
+        [this](const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg) {
+          broadcastSvgUpdates(msg);
+        });
 
     // Initialize publisher for session injection
     session_injection_pub_ =
