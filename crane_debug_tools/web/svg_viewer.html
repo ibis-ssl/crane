@@ -210,6 +210,16 @@
                     <div class="stats-label">SVG要素数</div>
                 </div>
 
+                <div class="stats-card">
+                    <div class="stats-value" id="lastSnapshotTime">--:--:--</div>
+                    <div class="stats-label">最終スナップショット <small id="snapshotSeq" class="text-muted">(未受信)</small> <small id="snapshotAge" class="text-muted"></small></div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-value" id="lastUpdateTime">--:--:--</div>
+                    <div class="stats-label">最終更新 <small id="updateSeq" class="text-muted">(未受信)</small> <small id="updateAge" class="text-muted"></small></div>
+                </div>
+
                 <!-- レイヤー制御 -->
                 <div class="layer-control">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -266,7 +276,7 @@
                             <div class="text-center">
                                 <i class="fas fa-vector-square fa-3x mb-3"></i><br>
                                 SVGデータを受信中...<br>
-                                <small class="text-muted">/aggregated_svgsトピックからのデータを待機しています</small>
+                                <small class="text-muted">/aggregated_svgs（スナップショット）と /visualizer_svgs（更新）を待機しています</small>
                             </div>
                         </div>
                     </div>

@@ -9,6 +9,14 @@ class SvgViewer {
         this.isPanning = false;
         this.lastPanPoint = { x: 0, y: 0 };
 
+        this.lastSnapshotReceivedAt = null;
+        this.lastUpdateReceivedAt = null;
+
+        // 高頻度更新の取りこぼし対策（クライアント側でバッファリング＆凝縮）
+        this.pendingUpdateBatch = [];
+        this.flushTimer = null;
+        this.flushIntervalMs = 50; // 最大20FPSで適用
+
         this.init();
     }
 
@@ -16,6 +24,9 @@ class SvgViewer {
         this.setupWebSocket();
         this.setupEventListeners();
         this.updateConnectionStatus(false);
+
+        // 定期的に「〜前」を更新
+        setInterval(() => this.updateTimingAges(), 1000);
     }
 
     setupWebSocket() {
@@ -68,7 +79,6 @@ class SvgViewer {
             // 新しいレイヤーのみを自動的に表示リストに追加
             if (data.layers) {
                 data.layers.forEach(layer => {
-                    // まだ知らないレイヤーの場合のみ追加
                     if (!this.seenLayers.has(layer.layer)) {
                         this.seenLayers.add(layer.layer);
                         this.visibleLayers.add(layer.layer);
@@ -76,9 +86,182 @@ class SvgViewer {
                 });
             }
 
+            // 更新タイミング表示
+            this.lastSnapshotReceivedAt = new Date();
+            this.updateTimingDisplays({ snapshot: data });
+
             this.updateSvgDisplay();
             this.updateLayerList();
             this.updateStats();
+        } else if (data.type === 'svg_update') {
+            // 高頻度更新はバッファに追加し、一定間隔で凝縮適用
+            if (Array.isArray(data.updates) && data.updates.length > 0) {
+                this.pendingUpdateBatch.push(...data.updates);
+            }
+
+            // 更新タイミング（受信時点）を即時反映
+            this.lastUpdateReceivedAt = new Date();
+            this.updateTimingDisplays({ update: data });
+
+            // 遅延フラッシュをスケジュール
+            this.scheduleFlushUpdates();
+        }
+    }
+
+    scheduleFlushUpdates() {
+        if (this.flushTimer) return;
+        this.flushTimer = setTimeout(() => {
+            const batch = this.pendingUpdateBatch.splice(0, this.pendingUpdateBatch.length);
+            this.flushTimer = null;
+            if (batch.length === 0) return;
+
+            // スナップショット未受信時のベース
+            if (!this.currentSvgData) {
+                this.currentSvgData = { layers: [] };
+            }
+
+            // レイヤーごとに凝縮
+            const coalesced = this.coalesceLayerUpdates(batch);
+            this.applySvgUpdates(coalesced);
+
+            this.updateSvgDisplay();
+            this.updateLayerList();
+            this.updateStats();
+        }, this.flushIntervalMs);
+    }
+
+    coalesceLayerUpdates(updates) {
+        const byLayer = new Map();
+        for (const upd of updates) {
+            const layer = upd.layer;
+            const op = (upd.operation || '').toLowerCase();
+            const prim = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
+            if (!layer || !op) continue;
+
+            if (!byLayer.has(layer)) byLayer.set(layer, { operation: null, svg_primitives: [] });
+            const entry = byLayer.get(layer);
+
+            if (op === 'replace') {
+                entry.operation = 'replace';
+                entry.svg_primitives = [...prim];
+            } else if (op === 'clear') {
+                entry.operation = 'clear';
+                entry.svg_primitives = [];
+            } else if (op === 'append') {
+                if (entry.operation === 'replace' || entry.operation === 'append') {
+                    entry.svg_primitives.push(...prim);
+                    if (!entry.operation) entry.operation = 'append';
+                } else if (entry.operation === 'clear') {
+                    // clear の後の append は置換として扱う
+                    entry.operation = 'replace';
+                    entry.svg_primitives = [...prim];
+                } else if (!entry.operation) {
+                    entry.operation = 'append';
+                    entry.svg_primitives = [...prim];
+                }
+            }
+        }
+
+        // 連想配列を配列に戻す
+        return Array.from(byLayer.entries()).map(([layer, v]) => ({ layer, ...v }));
+    }
+
+    updateTimingDisplays({ snapshot = null, update = null } = {}) {
+        if (snapshot) {
+            const t = this.formatTime(this.lastSnapshotReceivedAt);
+            const el = document.getElementById('lastSnapshotTime');
+            if (el) { el.textContent = t; el.title = `ROS stamp_ns: ${snapshot.stamp_ns ?? '-'}`; }
+            const seq = document.getElementById('snapshotSeq');
+            if (seq) seq.textContent = `(e:${snapshot.epoch ?? '-'} s:${snapshot.seq ?? '-'})`;
+        }
+        if (update) {
+            const t = this.formatTime(this.lastUpdateReceivedAt);
+            const el = document.getElementById('lastUpdateTime');
+            if (el) { el.textContent = t; el.title = `ROS stamp_ns: ${update.stamp_ns ?? '-'}`; }
+            const seq = document.getElementById('updateSeq');
+            if (seq) seq.textContent = `(e:${update.epoch ?? '-'} s:${update.seq ?? '-'})`;
+
+            // スナップショット未受信だが更新は来ている場合のヒント表示
+            if (!this.lastSnapshotReceivedAt) {
+                const sseq = document.getElementById('snapshotSeq');
+                if (sseq) sseq.textContent = '(更新のみ受信)';
+            }
+        }
+
+        // age表示も更新
+        this.updateTimingAges();
+    }
+
+    formatTime(dateObj) {
+        if (!dateObj) return '--:--:--';
+        const pad = (n, w = 2) => String(n).padStart(w, '0');
+        const h = pad(dateObj.getHours());
+        const m = pad(dateObj.getMinutes());
+        const s = pad(dateObj.getSeconds());
+        return `${h}:${m}:${s}`;
+    }
+
+    updateTimingAges() {
+        const now = Date.now();
+        const ageText = (t) => {
+            if (!t) return '';
+            const diffMs = Math.max(0, now - t.getTime());
+            if (diffMs < 1500) return '(1s未満)';
+            if (diffMs < 60000) return `(${Math.floor(diffMs / 1000)}s前)`;
+            const m = Math.floor(diffMs / 60000);
+            return `(${m}m前)`;
+        };
+
+        const snapAgeEl = document.getElementById('snapshotAge');
+        if (snapAgeEl) snapAgeEl.textContent = ageText(this.lastSnapshotReceivedAt);
+
+        const updAgeEl = document.getElementById('updateAge');
+        if (updAgeEl) updAgeEl.textContent = ageText(this.lastUpdateReceivedAt);
+    }
+
+    applySvgUpdates(updates) {
+        if (!Array.isArray(updates) || updates.length === 0) return;
+
+        // レイヤー検索ヘルパ
+        const findLayerIndex = (name) => {
+            if (!this.currentSvgData || !Array.isArray(this.currentSvgData.layers)) return -1;
+            return this.currentSvgData.layers.findIndex(l => l.layer === name);
+        };
+
+        for (const upd of updates) {
+            const layerName = upd.layer;
+            const op = (upd.operation || '').toLowerCase();
+            const primitives = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
+
+            let idx = findLayerIndex(layerName);
+
+            if (op === 'append') {
+                if (idx >= 0) {
+                    this.currentSvgData.layers[idx].svg_primitives.push(...primitives);
+                } else {
+                    // ベースがない場合のappendは無視（ドキュメント方針に準拠）
+                }
+            } else if (op === 'replace') {
+                if (idx >= 0) {
+                    this.currentSvgData.layers[idx].svg_primitives = [...primitives];
+                } else {
+                    // レイヤーが無ければ新規作成
+                    this.currentSvgData.layers.push({ layer: layerName, svg_primitives: [...primitives] });
+                    // 新規レイヤーは既定で可視化
+                    if (!this.seenLayers.has(layerName)) {
+                        this.seenLayers.add(layerName);
+                        this.visibleLayers.add(layerName);
+                    }
+                }
+            } else if (op === 'clear') {
+                if (idx >= 0) {
+                    this.currentSvgData.layers[idx].svg_primitives = [];
+                } else {
+                    // レイヤーが無い場合は何もしない
+                }
+            } else {
+                // 未知のオペレーションは無視
+            }
         }
     }
 
@@ -189,6 +372,27 @@ class SvgViewer {
 
         // パンとズームを適用
         this.applySvgTransform(svg);
+
+        // フォールバック: 表示できているのにラベルが未受信のままの場合に更新印を付ける
+        try {
+            const hasLayers = Array.isArray(this.currentSvgData?.layers) && this.currentSvgData.layers.length > 0;
+            if (hasLayers) {
+                if (!this.lastUpdateReceivedAt) {
+                    this.lastUpdateReceivedAt = new Date();
+                    this.updateTimingDisplays({ update: {} });
+                }
+                const sseq = document.getElementById('snapshotSeq');
+                if (sseq && /未受信/.test(sseq.textContent)) {
+                    sseq.textContent = '(表示中)';
+                }
+                const useq = document.getElementById('updateSeq');
+                if (useq && /未受信/.test(useq.textContent)) {
+                    useq.textContent = '(表示中)';
+                }
+            }
+        } catch (_) {
+            // no-op
+        }
     }
 
     applySvgTransform(svg) {
