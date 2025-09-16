@@ -25,11 +25,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   our_team_color_(TeamColor::BLUE),
   has_vision_updated_(false),
   has_latest_detection_frame_(false),
-  has_tracked_frame_updated_(false),
   last_t_capture_(0.0),
   last_t_sent_(0.0),
   last_ball_detect_time_(node.get_clock()->now()),
-  last_prediction_time_(node.get_clock()->now())
+  last_prediction_time_(node.get_clock()->now()),
+  last_vision_recv_time_(node.get_clock()->now()),
+  last_tracker_recv_time_(node.get_clock()->now()),
+  has_tracked_frame_updated_(false)
 {
   using std::chrono_literals::operator""ms;
 
@@ -54,8 +56,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     multicast_receiver_ =
       std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
     RCLCPP_INFO(
-      node.get_logger(), "WorldModelDataProvider Vision initialized on %s:%d",
-      config_.vision_address.c_str(), config_.vision_port);
+      node.get_logger(), "WorldModelDataProvider Vision設定: %s:%d", config_.vision_address.c_str(),
+      config_.vision_port);
   } catch (const std::exception & e) {
     reportError("Failed to initialize vision stream: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Vision initialization failed: %s", e.what());
@@ -67,11 +69,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     auto tracker_port = node.get_parameter("tracker_port").get_value<int>();
     tracker_receiver_ = std::make_unique<multicast::MulticastReceiver>(tracker_addr, tracker_port);
     RCLCPP_INFO(
-      node.get_logger(), "WorldModelDataProvider Tracker initialized on %s:%d",
-      tracker_addr.c_str(), tracker_port);
+      node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
+      tracker_port);
   } catch (const std::exception & e) {
-    reportError("Failed to initialize tracker stream: " + std::string(e.what()));
-    RCLCPP_ERROR(node.get_logger(), "Tracker initialization failed: %s", e.what());
+    reportError("Trackerの初期化に失敗しました: " + std::string(e.what()));
+    RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", e.what());
   }
 
   // ロボット情報初期化
@@ -101,6 +103,30 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   area_mask.max_corner() << 20., 10.;
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
+
+  // 受信監視: 1秒周期でVision/Trackerの受信有無をチェックし、欠損時のみログ出力
+  status_check_timer_ = node.create_wall_timer(1000ms, [this]() {
+    auto now = this->node.get_clock()->now();
+
+    if (multicast_receiver_ && use_udp_detection_) {
+      if ((now - last_vision_recv_time_).seconds() > 1.0) {
+        RCLCPP_WARN(
+          this->node.get_logger(), "Vision受信が直近1秒間ありません (%s:%d)",
+          config_.vision_address.c_str(), config_.vision_port);
+      }
+    }
+
+    if (tracker_receiver_) {
+      if ((now - last_tracker_recv_time_).seconds() > 1.0) {
+        // trackerアドレス/ポートはパラメータから取得
+        auto tracker_addr = this->node.get_parameter("tracker_address").get_value<std::string>();
+        auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
+        RCLCPP_WARN(
+          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)", tracker_addr.c_str(),
+          tracker_port);
+      }
+    }
+  });
 
   // /play_situationのトピック統計はsession_controllerで取得
   sub_play_situation = node.create_subscription<crane_msgs::msg::PlaySituation>(
@@ -167,10 +193,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         }
       } else {
         std::stringstream what;
-        what << "Cannot find our team name, " << std::string(game_data.team_name)
-             << " in referee message. ";
-        what << "blue team name: " << std::string(msg.blue.name)
-             << ", yellow team name: " << std::string(msg.yellow.name);
+        what << "味方チーム名, " << std::string(game_data.team_name)
+             << " がレフェリー信号の中に見当たりません。 ";
+        what << "青チーム: " << std::string(msg.blue.name)
+             << ", 黄色チーム: " << std::string(msg.yellow.name);
         reportError(what.str());
       }
 
@@ -187,7 +213,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
 {
   if (!multicast_receiver_) {
     RCLCPP_WARN_THROTTLE(
-      node.get_logger(), *node.get_clock(), 5000, "MulticastReceiver is not initialized");
+      node.get_logger(), *node.get_clock(), 5000, "MulticastReceiverが初期化されていません");
     return;
   }
 
@@ -206,18 +232,16 @@ auto WorldModelDataProvider::on_udp_timer() -> void
             if (use_udp_detection_ && packet.has_detection()) {
               processDetectionFrame(packet.detection());
               has_vision_updated_ = true;
-              RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, "Vision data received: frame=%u",
-                packet.detection().frame_number());
+              last_vision_recv_time_ = node.get_clock()->now();
             }
             if (packet.has_geometry()) {
               processGeometryData(packet.geometry());
             }
           } else {
-            RCLCPP_DEBUG(node.get_logger(), "Failed to parse SSL_WrapperPacket");
+            RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
           }
         } catch (const std::exception & e) {
-          RCLCPP_WARN(node.get_logger(), "Packet parsing error: %s", e.what());
+          RCLCPP_WARN(node.get_logger(), "パケットのパースエラー: %s", e.what());
         }
       }
     } catch (const std::exception & e) {
@@ -239,9 +263,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
               latest_tracked_frame = tracked_frame_msg;
               has_tracked_frame_updated_ = true;
-              RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, "Tracker data received: frame=%u",
-                wrapper_packet.tracked_frame().frame_number());
+              last_tracker_recv_time_ = node.get_clock()->now();
               processTrackedFrame(tracked_frame_msg);
             }
           }
@@ -289,8 +311,8 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
   if (geometry_changed) {
     RCLCPP_INFO(
       node.get_logger(),
-      "Field geometry %s: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
-      geometry_initialized ? "updated" : "initialized", game_data.field_w, game_data.field_h,
+      "フィールド情報受信（%s）: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+      geometry_initialized ? "更新" : "初期化", game_data.field_w, game_data.field_h,
       game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
   }
 
@@ -322,7 +344,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     // Use default ball info when vision is not available
     msg.ball_info = crane_msgs::msg::BallInfo{};
     RCLCPP_WARN_THROTTLE(
-      node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
+      node.get_logger(), *node.get_clock(), 5000, "新しいボールデータがありません");
   }
 
   auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
@@ -404,8 +426,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   // チーム配置確認ログ
   RCLCPP_DEBUG_THROTTLE(
     node.get_logger(), *node.get_clock(), 5000,
-    "Team assignment: our_color=%s, ours=%zu robots, theirs=%zu robots",
-    (our_team_color_ == TeamColor::BLUE) ? "BLUE" : "YELLOW", msg.robot_info_ours.size(),
+    "チーム割当: 味方カラー=%s, 味方ロボット数=%zu, 敵ロボット数=%zu",
+    (our_team_color_ == TeamColor::BLUE) ? "青" : "黄", msg.robot_info_ours.size(),
     msg.robot_info_theirs.size());
 
   msg.field_info.x = game_data.field_w;
@@ -434,7 +456,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     if ((now - last_warning_time).seconds() > 5.0) {
       RCLCPP_WARN(
         node.get_logger(),
-        "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, "
+        "不正なフィールド情報です: field=%.3fx%.3f, goal=%.3fx%.3f, "
         "penalty_area=%.3fx%.3f",
         game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
         game_data.penalty_area_w, game_data.penalty_area_h);

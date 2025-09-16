@@ -248,16 +248,14 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     play_situation_msg.command = getSituationCommandNamedInt(next_play_situation.value());
     play_situation_msg.reason_text = inplay_command_info.reason;
 
-    RCLCPP_INFO(get_logger(), "---");
-    RCLCPP_INFO(
-      get_logger(), "RAW_CMD      : %d (%s)", msg.command,
-      getRefereeCommandText(msg.command).c_str());
-    RCLCPP_INFO(
-      get_logger(), "INPLAY_CMD   : %d (%s)", play_situation_msg.command.value,
-      play_situation_msg.command.name.c_str());
-    RCLCPP_INFO(get_logger(), "REASON       : %s", inplay_command_info.reason.c_str());
-    RCLCPP_INFO(
-      get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state.stamp).seconds());
+    RCLCPP_DEBUG_STREAM(
+      get_logger(), "---\n"
+                      << "RAW_CMD      : " << msg.command << " ("
+                      << getRefereeCommandText(msg.command) << ")\n"
+                      << "INPLAY_CMD   : " << play_situation_msg.command.value << " ("
+                      << play_situation_msg.command.name << ")\n"
+                      << "REASON       : " << inplay_command_info.reason << "\n"
+                      << "PREV_CMD_TIME: " << (now() - last_command_changed_state.stamp).seconds());
 
     last_command_changed_state.stamp = now();
     last_command_changed_state.ball_position = world_model->ball().pos;

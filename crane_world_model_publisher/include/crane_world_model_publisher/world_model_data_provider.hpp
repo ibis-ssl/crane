@@ -155,6 +155,8 @@ private:
   double last_t_sent_;
   rclcpp::Time last_ball_detect_time_;
   rclcpp::Time last_prediction_time_;
+  rclcpp::Time last_vision_recv_time_;
+  rclcpp::Time last_tracker_recv_time_;
 
   static constexpr size_t MAX_ROBOT_COUNT = 20;
 
@@ -164,6 +166,7 @@ private:
   bool ball_data_initialized_ = false;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
+  rclcpp::TimerBase::SharedPtr status_check_timer_;
 
   enum class Color { BLUE, YELLOW };
 
