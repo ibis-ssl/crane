@@ -192,6 +192,10 @@ class CraneDebugger {
             case 'robot_commands':
                 this.handleRobotCommands(message.commands);
                 break;
+            case 'svg_data':
+            case 'svg_update':
+                // SVG系メッセージはsvg_viewerで処理。ここでは無視。
+                break;
             case 'skill_execution_started':
                 this.addLog(`Skill execution started: ${message.skill_name} on robot ${message.robot_id}`, 'info');
                 this.executingSkills.set(message.robot_id, {
