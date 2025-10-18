@@ -1,0 +1,98 @@
+name: Codespaces Prebuild
+
+# GitHub Codespaces の事前ビルドを自動化
+# これにより、Codespaces の起動時間を大幅に短縮できます
+
+on:
+  # main/develop ブランチへの push 時に実行
+  push:
+    branches:
+      - main
+      - develop
+      - devcontainer
+    paths:
+      - '.devcontainer/**'
+      - 'dependency_jazzy.repos'
+      - 'package.xml'
+      - 'CMakeLists.txt'
+      - '.github/workflows/codespaces-prebuild.yml'
+
+  # 手動実行も可能
+  workflow_dispatch:
+
+  # 週次で実行（依存関係の更新を反映）
+  schedule:
+    - cron: '0 0 * * 0'  # 毎週日曜日 0:00 UTC
+
+jobs:
+  prebuild:
+    name: Prebuild Codespaces Container
+    runs-on: ubuntu-latest
+
+    # Codespaces Prebuild 専用の権限
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/devcontainer
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push devcontainer image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          build-args: |
+            BASE_IMAGE=osrf/ros:jazzy-desktop
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/devcontainer:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/devcontainer:buildcache,mode=max
+
+      - name: Trigger Codespaces prebuild
+        run: |
+          echo "✅ Devcontainer image が正常にビルドされました"
+          echo "🚀 GitHub Codespaces でこのイメージを使用できます"
+          echo ""
+          echo "次のステップ:"
+          echo "1. リポジトリの Settings > Codespaces を開く"
+          echo "2. 'Set up prebuild' をクリック"
+          echo "3. ブランチを選択して有効化"
+
+      - name: Summary
+        run: |
+          echo "## Prebuild Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ DevContainer イメージのビルドが完了しました" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### イメージ情報" >> $GITHUB_STEP_SUMMARY
+          echo "- ベースイメージ: osrf/ros:jazzy-desktop" >> $GITHUB_STEP_SUMMARY
+          echo "- ブランチ: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- コミット: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 次のステップ" >> $GITHUB_STEP_SUMMARY
+          echo "1. [Settings > Codespaces](https://github.com/${{ github.repository }}/settings/codespaces) を開く" >> $GITHUB_STEP_SUMMARY
+          echo "2. Prebuild を有効化する" >> $GITHUB_STEP_SUMMARY
+          echo "3. Codespaces を起動して高速セットアップを体験！" >> $GITHUB_STEP_SUMMARY

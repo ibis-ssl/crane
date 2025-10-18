@@ -1,29 +1,115 @@
 {
-  "name": "crane workspace",
+  "name": "Crane ROS 2 Workspace",
   "dockerComposeFile": "docker-compose.yaml",
   "service": "crane",
-  "workspaceFolder": "/home/developer/ibis_ws/src/crane",
-  "forwardPorts": [8081, 8082, 9090],
+  "workspaceFolder": "/home/developer/ibis_ws",
+  // Codespaces ではシミュレータを起動しない（軽量化のため）
+  "runServices": ["crane"],
+
+  "forwardPorts": [8081, 8082, 8083, 9090],
   "portsAttributes": {
     "8081": {
-      "label": "ssl-game-controller"
+      "label": "SSL Game Controller",
+      "onAutoForward": "notify"
     },
     "8082": {
-      "label": "vision-client"
+      "label": "SSL Vision Client",
+      "onAutoForward": "notify"
+    },
+    "8083": {
+      "label": "SSL Status Board",
+      "onAutoForward": "notify"
+    },
+    "9090": {
+      "label": "ROS Bridge",
+      "onAutoForward": "ignore"
     }
   },
+
   "remoteUser": "developer",
   "updateRemoteUserUID": true,
+
   "customizations": {
     "vscode": {
       "extensions": [
-        "mutantdino.resourcemonitor",
+        // C++ 開発
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "xaver.clang-format",
+
+        // ROS 2 開発
+        "ms-iot.vscode-ros",
+
+        // Python 開発
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // Git & Collaboration
+        "eamodio.gitlens",
+        "GitHub.copilot",
+
+        // Docker & Containers
         "ms-azuretools.vscode-docker",
-        "GitHub.copilot"
-      ]
+
+        // ユーティリティ
+        "mutantdino.resourcemonitor",
+        "usernamehw.errorlens",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": ["-l"]
+          }
+        },
+        "files.associations": {
+          "*.repos": "yaml",
+          "*.launch.py": "python"
+        },
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "cmake.configureOnOpen": false,
+        "editor.formatOnSave": true,
+        "editor.rulers": [80, 100],
+        "files.trimTrailingWhitespace": true
+      }
     },
     "codespaces": {
-      "openFiles": ["README.md"]
+      "openFiles": [
+        "src/crane/README.md",
+        "src/crane/AGENTS.md"
+      ]
     }
+  },
+
+  // Codespaces 環境では高速セットアップ、ローカルでは完全セットアップ
+  "onCreateCommand": "if [ -n \"${CODESPACES}\" ]; then bash /home/developer/ibis_ws/src/crane/.devcontainer/setup-codespaces.sh; fi",
+  "postCreateCommand": "if [ -z \"${CODESPACES}\" ]; then bash /home/developer/ibis_ws/src/crane/.devcontainer/postCreate.sh; fi",
+  "updateContentCommand": "if [ -n \"${CODESPACES}\" ]; then echo 'Codespaces: 差分更新をスキップ（必要に応じて手動ビルド）'; fi",
+  "postStartCommand": "source /opt/ros/jazzy/setup.bash && if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi",
+  "waitFor": "onCreateCommand",
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false,
+      "installOhMyZsh": false,
+      "upgradePackages": true
+    }
+  },
+
+  // ローカル環境のみマウント（Codespaces では不要）
+  "mounts": [],
+
+  "containerEnv": {
+    "ROS_DOMAIN_ID": "0",
+    "PYTHONUNBUFFERED": "1"
+  },
+
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/developer/.local/bin"
   }
 }

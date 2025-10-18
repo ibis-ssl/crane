@@ -1,30 +1,54 @@
+networks:
+  ssl-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+
 services:
   crane:
     build:
-      # contextをリポジトリにしないとDockerfile内からのCOPYができない
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
+      # ワークスペース全体をコンテキストに設定
+      context: ../../..
+      dockerfile: src/crane/.devcontainer/Dockerfile
+      args:
+        # GitHub Codespaces では軽量版、ローカルでは完全版を使用
+        BASE_IMAGE: ${BASE_IMAGE:-osrf/ros:jazzy-desktop-full}
     volumes:
-      - ../:/home/developer/ibis_ws/src/crane
+      # ワークスペース全体をマウント（ビルド成果物も共有）
+      - ../../../:/home/developer/ibis_ws
+    environment:
+      - ROS_DOMAIN_ID=0
+      - ROS_LOCALHOST_ONLY=0
+      - CYCLONE_DDS_ENABLED_TRANSPORTS=udp
+      - DISPLAY=${DISPLAY:-:0}
+    network_mode: host
+    privileged: true
     tty: true
+    stdin_open: true
+    working_dir: /home/developer/ibis_ws
+
   grsim:
-    image: robocupssl/grsim
+    image: robocupssl/grsim:latest
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    network_mode: host
+    privileged: true
+
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
       - -visionAddress
       - 224.5.23.2:10020
       - -trackerAddress
-      - 224.5.23.2:11010 # not yet overridable by autoRefs
+      - 224.5.23.2:11010
       - -publishAddress
       - 224.5.23.1:11111
       - -address
       - :8081
-    # volumes:
-      # - ./config:/config:rw
-    # network_mode: host
-    ports:
-      - 8081:8081/tcp
+    network_mode: host
+
   ssl-vision-client:
     image: robocupssl/ssl-vision-client:1.6.0
     command:
@@ -32,9 +56,15 @@ services:
       - :8082
       - -visionAddress
       - 224.5.23.2:10020
-    # network_mode: host
-    ports:
-      - 8082:8082/tcp
+    network_mode: host
+
+  ssl-status-board:
+    image: robocupssl/ssl-status-board:latest
+    command:
+      - -address
+      - :8083
+    network_mode: host
+
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0
     command:
@@ -46,4 +76,4 @@ services:
       - 224.5.23.1:11003
       - --trackerAddress
       - 224.5.23.2:11010
-    # network_mode: host
+    network_mode: host
