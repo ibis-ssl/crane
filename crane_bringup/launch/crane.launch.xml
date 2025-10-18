@@ -19,15 +19,36 @@ limitations under the License.
     <!-- ============================================================ -->
     <!-- ネットワーク設定 -->
     <!-- ============================================================ -->
-    <arg name="vision_port" default="10020" description="SSL-Visionと接続するためのマルチキャストポート"/>
-    <arg name="referee_port" default="11003" description="Game Controllerと接続するためのマルチキャストポート"/>
-    <arg name="tracker_port" default="11010" description="SSL Trackerと接続するためのマルチキャストポート"/>
+    <arg name="vision_port" default="" description="SSL-Visionと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+    <arg name="referee_port" default="" description="Game Controllerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+    <arg name="tracker_port" default="" description="SSL Trackerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
 
     <!-- ============================================================ -->
     <!-- チーム/動作モード設定 -->
     <!-- ============================================================ -->
     <arg name="team" default="ibis" description="チーム名"/>
     <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
+
+    <!-- ============================================================ -->
+    <!-- ネットワークポート自動設定（sim引数に基づく） -->
+    <!-- ============================================================ -->
+    <!-- sim=trueの場合（独自ポート） -->
+    <let name="vision_port_final" value="10020" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+    <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+    <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+
+    <!-- sim=falseの場合（公式ポート） -->
+    <let name="vision_port_final" value="10006" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+    <let name="referee_port_final" value="10003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+    <let name="tracker_port_final" value="10010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+
+    <!-- ユーザー指定がある場合はそれを使用 -->
+    <let name="vision_port_final" value="$(var vision_port)" unless="$(eval &quot;'$(var vision_port)' == ''&quot;)"/>
+    <let name="referee_port_final" value="$(var referee_port)" unless="$(eval &quot;'$(var referee_port)' == ''&quot;)"/>
+    <let name="tracker_port_final" value="$(var tracker_port)" unless="$(eval &quot;'$(var tracker_port)' == ''&quot;)"/>
+
+    <!-- 使用ポート情報の表示 -->
+    <log message="[crane.launch.xml] sim=$(var sim) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
 
     <!-- ============================================================ -->
     <!-- デバッグツール設定 -->
@@ -128,7 +149,7 @@ limitations under the License.
     <!-- ============================================================ -->
     <node pkg="robocup_ssl_comm" exec="game_controller_node">
         <param name="multicast_address" value="224.5.23.1"/>
-        <param name="multicast_port" value="$(var referee_port)"/>
+        <param name="multicast_port" value="$(var referee_port_final)"/>
     </node>
 
     <node pkg="robocup_ssl_comm" exec="grsim_node"/>
@@ -155,9 +176,9 @@ limitations under the License.
         <param name="initial_team_color" value="YELLOW"/>
         <param name="team_name" value="$(var team)"/>
         <param name="vision_address" value="224.5.23.2"/>
-        <param name="vision_port" value="$(var vision_port)"/>
+        <param name="vision_port" value="$(var vision_port_final)"/>
         <param name="tracker_address" value="224.5.23.2"/>
-        <param name="tracker_port" value="$(var tracker_port)"/>
+        <param name="tracker_port" value="$(var tracker_port_final)"/>
         <param name="is_emplace_positive_side" value="$(var is_emplace_positive_side)"/>
         <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
         <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
