@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!--
+Copyright (c) 2025 ibis-ssl
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<launch>
+    <!-- Foxglove Bridge Configuration -->
+    <!-- https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml -->
+
+    <arg name="port" default="8765" description="Foxgloveのポート番号"/>
+    <arg name="address" default="0.0.0.0" description="Foxgloveのバインドアドレス"/>
+
+    <node pkg="foxglove_bridge" exec="foxglove_bridge" output="log">
+        <param name="port" value="$(var port)"/>
+        <param name="address" value="$(var address)"/>
+        <param name="tls" value="false"/>
+        <param name="certfile" value=""/>
+        <param name="keyfile" value=""/>
+        <param name="topic_whitelist" value="['.*']"/>
+        <param name="service_whitelist" value="['.*']"/>
+        <param name="param_whitelist" value="['.*']"/>
+        <param name="client_topic_whitelist" value="['.*']"/>
+        <param name="min_qos_depth" value="1"/>
+        <param name="max_qos_depth" value="10"/>
+        <param name="num_threads" value="0"/>
+        <param name="send_buffer_limit" value="10000000"/>
+        <param name="use_sim_time" value="false"/>
+        <param name="capabilities" value="['clientPublish', 'parameters', 'parametersSubscribe', 'services', 'connectionGraph', 'assets']"/>
+        <param name="include_hidden" value="false"/>
+        <param name="asset_uri_allowlist" value="['^package://(?:\\w+/)*\\w+\\.(?:dae|fbx|glb|gltf|jpeg|jpg|mtl|obj|png|stl|tif|tiff|urdf|webp|xacro)$']"/>
+    </node>
+</launch>
