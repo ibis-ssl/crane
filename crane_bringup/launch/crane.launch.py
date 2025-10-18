@@ -63,12 +63,18 @@ def generate_launch_description():
                 default_value="11010",
                 description="SSL Trackerと接続するためのマルチキャストポート",
             ),
-            DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
+            # ============================================================
+            # チーム・動作モード設定
+            # ============================================================
             DeclareLaunchArgument(
-                "sim", default_value="true", description="シミュレータフラグ"
+                "team",
+                default_value="ibis",
+                description="チーム名",
             ),
             DeclareLaunchArgument(
-                "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
+                "sim",
+                default_value="true",
+                description="シミュレータフラグ（true: シミュレーション, false: 実機）",
             ),
             DeclareLaunchArgument(
                 "debug_tools",
@@ -159,14 +165,10 @@ def generate_launch_description():
                 ],
                 on_exit=default_exit_behavior,
             ),
-            Node(
-                condition=IfCondition(LaunchConfiguration("simple_ai")),
-                package="crane_simple_ai",
-                executable="crane_simple_ai",
-                output="screen",
-                on_exit=default_exit_behavior,
-            ),
-            # デバッグツール - WebSocketサーバー
+            # ============================================================
+            # 可視化・デバッグ系
+            # ============================================================
+            # WebSocketサーバー
             Node(
                 condition=IfCondition(LaunchConfiguration("debug_tools")),
                 package="crane_debug_tools",
