@@ -15,7 +15,7 @@ echo ""
 echo "[1/6] 依存パッケージのインポート中..."
 if [ -f src/crane/dependency_jazzy.repos ]; then
     # 既存のパッケージは更新しない（開発中の変更を保護）
-    vcs import src < src/crane/dependency_jazzy.repos --skip-existing
+    vcs import src --skip-existing <src/crane/dependency_jazzy.repos
     echo "✓ 依存パッケージのインポート完了"
 else
     echo "⚠ dependency_jazzy.repos が見つかりません。スキップします。"
