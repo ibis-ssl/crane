@@ -17,12 +17,13 @@
 
 #include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
 
+#include <crane_comm/multicast.hpp>
+#include <crane_msgs/msg/game_event.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/team_info.hpp>
 
-#include "multicast.hpp"
 #include "visibility_control.h"
 
 namespace robocup_ssl_comm
@@ -38,12 +39,14 @@ protected:
 
 private:
   robocup_ssl_msgs::msg::TeamInfo parse_team_info(const Referee_TeamInfo & team_info);
+  crane_msgs::msg::GameEvent parse_game_event(const GameEvent & proto_event);
 
   rclcpp::TimerBase::SharedPtr timer;
 
   std::unique_ptr<multicast::MulticastReceiver> receiver;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
+  rclcpp::Publisher<crane_msgs::msg::GameEvent>::SharedPtr pub_game_event;
 };
 
 }  // namespace robocup_ssl_comm

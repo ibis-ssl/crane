@@ -46,24 +46,23 @@ extern "C" {
 }
 #endif
 
-#include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
-#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
-#include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
-
+#include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/multicast.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
-#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/multicast.hpp>
-#include <crane_world_model_publisher/visualization_data_handler.hpp>
+#include <crane_world_model_publisher/kick_event_detector.hpp>
+#include <crane_world_model_publisher/pass_target_selector.hpp>
+#include <crane_world_model_publisher/visualization_manager.hpp>
+#include <crane_world_model_publisher/world_model_data_provider.hpp>
+#include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/referee.hpp>
-#include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
-#include <string>
-#include <vector>
 
 namespace crane
 {
@@ -78,88 +77,53 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const TrackedFrame & tracked_frame);
-
-  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
-
 private:
-  void publishWorldModel();
+  auto publishWorldModel() -> void;
 
-  void updateBallContact();
+  auto publishVisualization(WorldModelWrapper::SharedPtr world_model) -> void;
 
-  void on_udp_timer();
+  auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
 
-  VisualizationDataHandler vis_data_handler;
+  auto postProcessWorldModel(WorldModelWrapper::SharedPtr) -> void;
 
-  std::string team_name;
+  auto updateBallContact() -> void;
 
-  Color our_color;
-
-  Color their_color;
-
-  bool on_positive_half;
-
-  uint8_t our_goalie_id, their_goalie_id;
-
-  uint8_t max_id;
+  WorldModelDataProvider data_provider;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
-  double field_w, field_h;
-
-  double goal_w, goal_h;
-
-  double penalty_area_w, penalty_area_h;
-
-  double ball_placement_target_x, ball_placement_target_y;
-
-  bool ball_detected[20] = {};
-
-  crane_msgs::msg::BallInfo ball_info;
-
-  std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
-
-  std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
-
-  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
-
-  rclcpp::TimerBase::SharedPtr udp_timer;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
-
-  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
-
-  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
-
-  crane_msgs::msg::RobotFeedbackArray robot_feedback;
-
-  crane_msgs::msg::PlaySituation latest_play_situation;
-
-  rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
+  DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  bool has_vision_updated = false;
+  std::unique_ptr<VisualizationManager> visualization_manager_;
 
-  bool has_geometry_updated = false;
+  std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
 
-  bool is_our_ball = false;
+  std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> enemy_history;
 
-  bool is_their_ball = false;
+  std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
-  bool ball_event_detected = false;
+  int history_size{};
 
   enum class BallEvent {
     NONE,
     OUR_BALL,
     THEIR_BALL,
   } last_ball_event = BallEvent::NONE;
+
+  WorldModelWrapper::SharedPtr wrapper;
+
+  KickEventDetector kick_event_detector;
+
+  double robot_acc_for_prediction;
+
+  double robot_max_vel_for_prediction;
+
+  // パス先選定（専用クラス）
+  PassTargetSelector pass_target_selector_;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

@@ -7,7 +7,8 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
-#include <crane_basics/parameter_with_event.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
@@ -27,13 +28,13 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10)),
+    pub_commands(this, "/commands", 10, 50., 70.),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
-    theta_k_gain("theta_k_gain", *this, 4.0),
+    theta_p_gain("theta_p_gain", *this, 4.0),
     theta_i_gain("theta_i_gain", *this, 0.0),
-    theta_d_gain("theta_p_gain", *this, 0.1)
+    theta_d_gain("theta_d_gain", *this, 0.1)
   {
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
@@ -74,27 +75,27 @@ public:
     }
 
     for (auto & controller : theta_controllers) {
-      controller.setGain(theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
     }
     // the parameters of the PID controller
-    theta_k_gain.callback = [this](double value) {
+    theta_p_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
-    theta_i_gain.callback = [this](double value) {
+    theta_i_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
-    theta_d_gain.callback = [this](double value) {
+    theta_d_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
   }
@@ -146,11 +147,13 @@ public:
             vy_controllers[command.robot_id].update(
               command.position_target_mode.front().target_y - command.current_pose.y, 1.f / 30.f);
           vel += vel.normalized() * command.local_planner_config.terminal_velocity;
-          double max_velocity = command.local_planner_config.max_velocity;
+          double max_velocity = command.local_planner_config.final_planned_max_velocity.value;
           double current_velocity =
             std::hypot(command.current_velocity.x, command.current_velocity.y);
           max_velocity = std::min(
-            max_velocity, current_velocity + command.local_planner_config.max_acceleration * 0.1);
+            max_velocity,
+            current_velocity +
+              command.local_planner_config.final_planned_max_acceleration.value * 0.1);
           if (vel.norm() > max_velocity) {
             vel = vel.normalized() * max_velocity;
           }
@@ -214,7 +217,7 @@ public:
       commands.robot_commands.emplace_back(cmd);
     }
 
-    pub_commands->publish(commands);
+    pub_commands.publish(commands);
   }
 
   //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
@@ -245,7 +248,7 @@ public:
   //    return is_nan;
   //  }
 
-  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+  DiagnosedPublisher<robocup_ssl_msgs::msg::Commands> pub_commands;
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
@@ -255,7 +258,7 @@ public:
   ParameterWithEvent<double> i_gain;
   ParameterWithEvent<double> d_gain;
 
-  ParameterWithEvent<double> theta_k_gain;
+  ParameterWithEvent<double> theta_p_gain;
   ParameterWithEvent<double> theta_i_gain;
   ParameterWithEvent<double> theta_d_gain;
 

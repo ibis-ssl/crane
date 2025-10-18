@@ -8,13 +8,7 @@
 
 namespace crane::skills
 {
-Sleep::Sleep(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("Sleep", base), is_started(getContextReference<bool>("is_started", false))
-{
-  setParameter("duration", 0.0);
-}
-
-Status Sleep::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Sleep::update()
 {
   if (not is_started) {
     start_time = std::chrono::steady_clock::now();

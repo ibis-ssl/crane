@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__SIMPLE_KICKOFF_HPP_
 
 #include <algorithm>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
@@ -19,12 +19,19 @@
 
 namespace crane::skills
 {
-class SimpleKickOff : public SkillBase<RobotCommandWrapperPosition>
+class SimpleKickOff : public SkillBase
 {
 public:
-  explicit SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit SimpleKickOff(Args &&... args)
+  : SkillBase("SimpleKickOff", std::forward<Args>(args)...), kick_skill(command)
+  {
+    initializeParameters();
+  }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  void initializeParameters();
+
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[SimpleKickOff]"; }
 

@@ -9,20 +9,21 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+DefenderPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
   }
 
-  auto ball = world_model->ball.pos;
+  auto ball = world_model->ball().pos;
   [[maybe_unused]] const double OFFSET_X = 0.2;
   [[maybe_unused]] const double OFFSET_Y = 0.2;
 
   //
   // calc ball line
   //
-  Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+  Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
   {
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
@@ -39,7 +40,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
     if (
       world_model->getDistanceFromBall(world_model->getOurGoalCenter()) <
-      world_model->field_size.y() * 0.5) {
+      world_model->fieldSize().y() * 0.5) {
       return getDefenseLinePoints(robots.size(), ball_line);
     } else {
       return getDefenseArcPoints(robots.size(), ball_line);
@@ -59,14 +60,23 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner", robot_id->robot_id, world_model);
+      auto command =
+        std::make_shared<crane::RobotCommandWrapper>("defender_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
+      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
+      if (
+        world_model->getMsg().play_situation.command.value ==
+        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+        command->disableAnyAreaAvoidance();
+        command->enablePlacementAvoidance();
+      } else {
+        command->disableAnyAreaAvoidance();
+        command->enableGoalAreaAvoidance();
+      }
 
       robot_commands.emplace_back(command->getMsg());
     }
@@ -83,8 +93,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         }
       }();
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner/stop", robot_id->robot_id, world_model);
+      auto command = std::make_shared<crane::RobotCommandWrapper>(
+        "defender_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 
@@ -105,7 +115,7 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
   std::vector<Point> defense_points;
   // ペナルティエリアの一番遠い点を通る円の半径
   const double RADIUS =
-    std::hypot(world_model->penalty_area_size.x(), world_model->penalty_area_size.y() * 0.5) +
+    std::hypot(world_model->penaltyAreaSize().x(), world_model->penaltyAreaSize().y() * 0.5) +
     RADIUS_OFFSET;
   // r * theta = interval
   // theta = interval / e
@@ -120,7 +130,7 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
       case 0: {
         // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
         return world_model->getOurGoalCenter() +
-               (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+               (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
       }
       case 1: {
         return intersections[0];
@@ -130,9 +140,9 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
         double min_distance = std::numeric_limits<double>::max();
         Point best_intersection =
           world_model->getOurGoalCenter() +
-          (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+          (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
         for (auto & intersection : intersections) {
-          double distance = (world_model->ball.pos, intersection).norm();
+          double distance = (world_model->ball().pos - intersection).norm();
           if (distance < min_distance) {
             min_distance = distance;
             best_intersection = intersection;
@@ -159,14 +169,15 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
   const double DEFENSE_INTERVAL = 0.2;
   std::vector<Point> defense_points;
 
-  if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
+  if (auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model)) {
     double upper_parameter = *defense_parameter;
     double lower_parameter = upper_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
-      const double OFFSET_X = 0.2, OFFSET_Y = 0.2;
+      const double OFFSET_X = 0.2;
+      const double OFFSET_Y = 0.2;
       auto [threshold1, threshold2, threshold3] =
-        getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
+        getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y, world_model);
       if (parameter < 0. || parameter > threshold3) {
         return false;
       } else {
@@ -176,7 +187,7 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
         if (lower_parameter > parameter) {
           lower_parameter = parameter;
         }
-        defense_points.push_back(getDefenseLinePoint(parameter));
+        defense_points.push_back(getDefenseLinePoint(parameter, world_model));
         return true;
       }
     };

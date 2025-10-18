@@ -7,26 +7,27 @@
 #ifndef CRANE_ROBOT_SKILLS__KICKOFF_SUPPORT_HPP_
 #define CRANE_ROBOT_SKILLS__KICKOFF_SUPPORT_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
-class KickoffSupport : public SkillBase<RobotCommandWrapperPosition>
+class KickoffSupport : public SkillBase
 {
 public:
-  explicit KickoffSupport(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("KickoffSupport", base)
+  template <typename... Args>
+  explicit KickoffSupport(Args &&... args)
+  : SkillBase("KickoffSupport", std::forward<Args>(args)...)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 0.5f);
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update() override
   {
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-    command.lookAtBallFrom(target).setDribblerTargetPosition(target);
+    command->lookAtBallFrom(target).setDribblerTargetPosition(target);
     return Status::RUNNING;
   }
 

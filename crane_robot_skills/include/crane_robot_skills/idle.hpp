@@ -7,20 +7,23 @@
 #ifndef CRANE_ROBOT_SKILLS__IDLE_HPP_
 #define CRANE_ROBOT_SKILLS__IDLE_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
-class Idle : public SkillBase<RobotCommandWrapperPosition>
+class Idle : public SkillBase
 {
 public:
-  explicit Idle(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Idle", base) {}
-
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  template <typename... Args>
+  explicit Idle(Args &&... args) : SkillBase("Idle", std::forward<Args>(args)...)
   {
-    command.stopHere();
+  }
+
+  Status update() override
+  {
+    command->stopHere();
     return Status::RUNNING;
   }
 

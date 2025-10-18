@@ -4,61 +4,59 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_planner_plugins/catch_ball_planner.hpp>
 
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+CatchBallPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "catch_ball_planner", robot.robot_id, world_model);
+    auto command =
+      std::make_shared<crane::RobotCommandWrapper>("catch_ball_planner", robot.id, world_model);
 
     [[maybe_unused]] Point target_point = default_point;
-    auto ball = world_model->ball.pos;
+    auto ball = world_model->ball().pos;
 
     // シュートチェック
     Vector2 norm_vec = getVerticalVec(getNormVec(command->getRobot()->pose.theta)) * 0.8;
     Segment receive_line(
       command->getRobot()->pose.pos + norm_vec, command->getRobot()->pose.pos - norm_vec);
-    Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+    Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
     auto intersections =
       getIntersections(ball_line, Segment{receive_line.first, receive_line.second});
 
-    if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
+    if (not intersections.empty() && world_model->ball().vel.norm() > 0.3f) {
       // シュートブロック
       std::cout << "シュートブロック" << std::endl;
       auto result = getClosestPointAndDistance(ball_line, command->getRobot()->pose.pos);
       command->setTargetPosition(result.closest_point);
-      command->setTargetTheta(getAngle(-world_model->ball.vel));
+      command->setTargetTheta(getAngle(-world_model->ball().vel));
       if (command->getRobot()->getDistance(result.closest_point) > 0.2) {
         command->setTerminalVelocity(2.0);
       }
     } else {
       if (
-        world_model->ball.isStopped(0.3) &&
+        world_model->ball().isStopped(0.3) &&
         not world_model->point_checker.isFriendPenaltyArea(ball)) {
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
-        auto passable_robot_list = world_model->ours.getAvailableRobots(command->getRobot()->id);
-        passable_robot_list.erase(
-          std::remove_if(
-            passable_robot_list.begin(), passable_robot_list.end(),
-            [&](const RobotInfo::SharedPtr & r) {
-              // 敵に塞がれていたら除外
-              Segment ball_to_robot_line(ball, r->pose.pos);
-              for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
-                auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
-                if (dist < 0.2) {
-                  return true;
-                }
-              }
-              return false;
-            }),
-          passable_robot_list.end());
+        auto passable_robot_list = world_model->ours().getAvailableRobots(command->getRobot()->id);
+        std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+          // 敵に塞がれていたら除外
+          Segment ball_to_robot_line(ball, r->pose.pos);
+          for (const auto & enemy : world_model->theirs().getAvailableRobots()) {
+            auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
+            if (dist < 0.2) {
+              return true;
+            }
+          }
+          return false;
+        });
 
         std::cout << "パスターゲット: ";
         for (auto a : passable_robot_list) {
@@ -76,11 +74,15 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         }();
 
         std::cout << pass_target.x() << ", " << pass_target.y() << std::endl;
-        Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
+        // 改良: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
+        constexpr double INTERVAL = 0.2;
+        constexpr double MAX_INTERVAL = 0.4;
+        Point intermediate_point = computeAroundBallApproachTargetDynamic(
+          ball, pass_target, command->getRobot()->pose.pos, INTERVAL, MAX_INTERVAL);
         double angle_ball_to_target = getAngle(pass_target - ball);
-        double dot = (world_model->ball.pos - command->getRobot()->pose.pos)
+        double dot = (world_model->ball().pos - command->getRobot()->pose.pos)
                        .normalized()
-                       .dot((pass_target - world_model->ball.pos).normalized());
+                       .dot((pass_target - world_model->ball().pos).normalized());
         // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
         if (
           dot < 0.9 ||
@@ -90,7 +92,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
           command->enableCollisionAvoidance();
         } else {
           std::cout << "ボール突撃" << std::endl;
-          command->setTargetPosition(world_model->ball.pos);
+          command->setTargetPosition(world_model->ball().pos);
           command->liftUpDribbler();
           command->kickStraight(0.1).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
@@ -120,13 +122,14 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 
 auto crane::CatchBallPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobot(robot->id, default_point);
     },
-    prev_roles);
+    prev_roles, context);
 }
 }  // namespace crane

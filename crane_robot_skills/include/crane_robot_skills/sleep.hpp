@@ -7,18 +7,24 @@
 #ifndef CRANE_ROBOT_SKILLS__SLEEP_HPP_
 #define CRANE_ROBOT_SKILLS__SLEEP_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
-class Sleep : public SkillBase<RobotCommandWrapperPosition>
+class Sleep : public SkillBase
 {
 public:
-  explicit Sleep(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Sleep(Args &&... args)
+  : SkillBase("Sleep", std::forward<Args>(args)...),
+    is_started(getContextReference<bool>("is_started", false))
+  {
+    setParameter("duration", 0.0);
+  }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override;
 

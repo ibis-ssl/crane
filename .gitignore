@@ -1,17 +1,76 @@
+# Build directories
+build/
+install/
+log/
 
-#**/.idea/
-# User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-#.idea/**/dictionaries
-.idea/**/shelf
+# Build logs and temporary files
+BUILD_LOG_*.txt
+*.log
 
-# Generated files
-.idea/**/contentModel.xml
-
-#**/.vscode/
+# IDE specific
+.vscode/
+.idea/
 **/cmake-build-debug/
-docker/config/state-store.json.stream
-env/
+**/cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+CTestConfiguration.ini
+CTestCustom.cmake
+CTestTestfile.cmake
+
+# Compiled Object files
+*.o
+*.obj
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Testing
+Testing/
+
+# Ament
+ament_cmake_*/
+
+# Python cache
+__pycache__/
 **/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker config
+docker/config/state-store.json.stream
+
+env/
+
+docker/config/*-UTC_state-store.json.stream
+docker/sim_match/config/
+
+# Node.js
+node_modules/
+package*.json
+
+# Temporary files
+error.c
+3rdparty/AMENT_IGNORE_
+
+# Development logs
+docs/logs/portal/
+
+# Configuration files
+crane_bringup/config/diagnostics.yaml

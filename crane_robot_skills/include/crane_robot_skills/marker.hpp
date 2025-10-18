@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__MARKER_HPP_
 
 #include <algorithm>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -18,12 +18,18 @@
 
 namespace crane::skills
 {
-class Marker : public SkillBase<RobotCommandWrapperPosition>
+class Marker : public SkillBase
 {
 public:
-  explicit Marker(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Marker(Args &&... args) : SkillBase("Marker", std::forward<Args>(args)...)
+  {
+    initialize();
+  }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  void initialize();
+
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[Marker]"; }
 };

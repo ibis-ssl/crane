@@ -1,0 +1,23 @@
+name: INPLAY
+description: INPLAY
+sessions:
+  - name: emplace_robot
+    capacity: 1
+  # - name: goalie_skill
+  #   capacity: 1
+  - name: total_defense
+    capacity: 3
+  - name: attacker_skill
+    capacity: 1
+  - name: pass_receive
+    capacity: 1
+  # - name: defender
+  #   capacity: 2
+  - name: sub_attacker_skill
+    capacity: 1
+  - name: marker
+    capacity: 2
+  - name: second_threat_defender
+    capacity: 1
+  - name: forward
+    capacity: 20

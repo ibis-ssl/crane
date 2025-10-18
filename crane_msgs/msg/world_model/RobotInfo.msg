@@ -1,20 +1,37 @@
-uint8 robot_id
+uint8 id
 
 geometry_msgs/Pose2D pose
 
 geometry_msgs/Pose2D velocity
+float32 velocity_norm
+
+geometry_msgs/Pose2D acceleration
+float32 acceleration_norm
 
 # If robot is detected by vision in this frame, this field is set to true
+
+Pose2DStamped vision
+
+bool vision_detected
+bool feedback_detected
+bool internal_tracker_detected
 bool detected
 
-# Latest vision detection time
-builtin_interfaces/Time detection_stamp
+# Latest detection time
+builtin_interfaces/Time last_tracker_detection_stamp
+builtin_interfaces/Time last_feedback_detection_stamp
 
-#  Latest detected pose.
-# This field is NOT filtered. This is a raw vision value.
-geometry_msgs/Pose2D last_detection_pose
-
-# If a robot disappear from field,  this field is set to true
-bool disappeared
 
 BallContact ball_contact
+
+builtin_interfaces/Time last_ball_sensor_stamp
+bool ball_sensor
+
+# ロボットのエラー情報（/robot_feedback 由来）
+# id または info が非ゼロであればエラー有りとみなす
+bool has_error
+uint16 error_id
+uint16 error_info
+float32 error_value
+builtin_interfaces/Time last_error_stamp
+float32 error_duration_sec

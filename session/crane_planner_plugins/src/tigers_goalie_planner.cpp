@@ -9,10 +9,11 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+TigersGoaliePlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   auto robot = world_model->getRobot(robots.front());
-  crane::RobotCommandWrapperPosition command("tigers_goalie_planner", robot->id, world_model);
+  crane::RobotCommandWrapper command("tigers_goalie_planner", robot->id, world_model);
   switch (state) {
     case State::STOP:
       // KeeperStoppedState
@@ -87,7 +88,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::RAMBO: {
       // RamboKeeper
-      if (world_model->point_checker.isPenaltyArea(world_model->ball.pos) or isGoalKick()) {
+      if (world_model->point_checker.isPenaltyArea(world_model->ball().pos) or isGoalKick()) {
         state = State::DEFEND;
       } else if (isStopped()) {
         state = State::STOP;
@@ -146,7 +147,8 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
 
 auto TigersGoaliePlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -154,6 +156,6 @@ auto TigersGoaliePlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles);
+    prev_roles, context);
 }
 }  // namespace crane

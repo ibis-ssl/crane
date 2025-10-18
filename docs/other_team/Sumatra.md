@@ -1,4 +1,8 @@
-# TIGERs Sumatra
+# TIGERs Sumatra - 競合チーム分析
+
+> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **分析対象**: TIGERs Sumatra SSL フレームワーク  
+> **GitHubリポジトリ**: <https://github.com/TIGERs-Mannheim/Sumatra>
 
 ## Attackerの状態機械
 
@@ -238,7 +242,7 @@ build関数はOffensiveActionTypeのラインナップをサポート
 ボールをゴール中心から離れる方向にチップキックする
 
 - TRUE
-  - ボールがゴールに近い＆壁デフェンスが間に合ってない＆ボールが相手に近い＆自コートにボールがある＆ボールが0.3m/s以下
+  - ボールがゴールに近い＆壁ディフェンスが間に合ってない＆ボールが相手に近い＆自コートにボールがある＆ボールが0.3m/s以下
 - FALSE
   - それ以外
 

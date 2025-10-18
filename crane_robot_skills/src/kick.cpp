@@ -4,238 +4,237 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/kick.hpp>
+
+#include "../include/crane_robot_skills/single_ball_placement.hpp"
 
 namespace crane::skills
 {
 
-Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<KickState>("Kick", base, KickState::ENTRY_POINT),
-  receive_skill(std::make_shared<Receive>(base)),
-  phase(getContextReference<std::string>("phase"))
+void Kick::initialize()
 {
+  command->usePositionMode();
   setParameter("target", Point(0, 0));
-  setParameter("kick_power", 0.5f);
+  setParameter("kick_power", 0.7f);
+  setParameter("use_target_kick_speed", false);
+  setParameter("target_kick_speed", 2.0);
+  setParameter("use_target_chip_distance", false);
+  setParameter("target_chip_distance", 2.0);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
-  setParameter("dot_threshold", 0.95f);
-  setParameter("angle_threshold", 0.1f);
-  setParameter("around_interval", 0.3f);
+  setParameter("angle_threshold_deg", 15.0f);
+  setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
 
-  receive_skill->setParameter("dribble_power", 0.3);
-  receive_skill->setParameter("enable_software_bumper", false);
-  receive_skill->setParameter("policy", std::string("min_slack"));
-  receive_skill->setParameter("enable_active_receive", true);
-  receive_skill->setParameter("enable_redirect", true);
-  receive_skill->setParameter("redirect_target", Point(0, 0));
-  receive_skill->setParameter("redirect_kick_power", 0.3);
+  receive_skill.setParameter("dribble_power", 0.3);
+  receive_skill.setParameter("enable_software_bumper", false);
+  receive_skill.setParameter("policy", std::string("min_slack"));
+  receive_skill.setParameter("enable_active_receive", true);
+  receive_skill.setParameter("enable_redirect", true);
+  receive_skill.setParameter("redirect_target", Point(0, 0));
+  receive_skill.setParameter("redirect_kick_power", 0.3);
 
-  addStateFunction(
-    KickState::ENTRY_POINT, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
-      return Status::RUNNING;
-    });
-
-  addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
-    return world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
+  addStateFunction(KickState::ENTRY_POINT, [this]() {
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+      .text("Kick::ENTRY_POINT")
+      .fill("white")
+      .fontSize(100)
+      .build();
+    return Status::RUNNING;
   });
 
-  addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL, [this]() { return true; });
+  addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL_AND_KICK, [this]() { return true; });
 
-  addStateFunction(
-    KickState::CHASE_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      std::stringstream state;
-      state << "Kick::CHASE_BALL::";
-      // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
-      auto [min_slack_pos, max_slack_pos] =
-        world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.3, 1., 2.0);
-      if (min_slack_pos) {
-        state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
-        command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
-      } else {
-        // ball_lineとフィールドラインの交点を目指す
-        Point ball_exit_point = getBallExitPointFromField(0.3);
-        command.setTargetPosition(ball_exit_point)
-          .lookAtFrom(world_model()->ball.pos, ball_exit_point);
-        state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
-      }
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
-      return Status::RUNNING;
-    });
+  addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+      .text("Kick::POSITIVE_REDIRECT_KICK")
+      .fill("white")
+      .fontSize(100)
+      .build();
+    // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
+    const auto & ball_pos = world_model()->ball().pos;
+    command->lookAtFrom(getParameter<Point>("target"), ball_pos);
 
-  addTransition(KickState::CHASE_BALL, KickState::AROUND_BALL, [this]() {
-    // ボールが止まったら回り込みへ
-    command.disableBallAvoidance();
-    return not world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
+    const auto & ball_vel_normed = world_model()->ball().vel.normalized();
+    Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.);
+    auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
+    if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
+      // 通り過ぎていれば追いかけて蹴る
+      auto target_pos = [&]() -> Point {
+        if (distance < 0.1) {
+          return ball_pos + ball_vel_normed;
+        } else {
+          return closest_point + ball_vel_normed * distance;
+        }
+      }();
+      command->setDribblerTargetPosition(target_pos);
+      // TODO(HansRobo): 速度指定対応
+      command->kickStraight(0.3);
+      command->disableBallAvoidance();
+    } else {
+      // まだだったら避ける
+      command->setTargetPosition(
+        closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
+    }
+
+    return Status::RUNNING;
   });
-
-  addTransition(KickState::CHASE_BALL, KickState::REDIRECT_KICK, [this]() {
-    // ボールライン上に乗ったらリダイレクトキックへ
-    command.disableBallAvoidance();
-    return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0) &&
-           getAngleDiff(
-             getAngle(world_model()->ball.vel),
-             getAngle(getParameter<Point>("target") - robot()->pose.pos) < M_PI / 2.0);
-  });
-
-  addTransition(KickState::CHASE_BALL, KickState::POSITIVE_REDIRECT_KICK, [this]() {
-    command.disableBallAvoidance();
-    return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
-  });
-
-  addStateFunction(
-    KickState::POSITIVE_REDIRECT_KICK,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
-      // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
-      const auto & ball_pos = world_model()->ball.pos;
-      command.lookAtFrom(getParameter<Point>("target"), ball_pos);
-
-      const auto & ball_vel_normed = world_model()->ball.vel.normalized();
-      Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
-      auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
-      if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
-        // 通り過ぎていれば追いかけて蹴る
-        auto target_pos = [&]() -> Point {
-          if (distance < 0.1) {
-            return ball_pos + ball_vel_normed;
-          } else {
-            return closest_point + ball_vel_normed * distance;
-          }
-        }();
-        command.setDribblerTargetPosition(target_pos);
-        command.kickStraight(0.3);
-        command.disableBallAvoidance();
-      } else {
-        // まだだったら避ける
-        command.setTargetPosition(
-          closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
-      }
-
-      return Status::RUNNING;
-    });
 
   addTransition(KickState::POSITIVE_REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
-    return !world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) or
-           !world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
+    return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) or
+           !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
   });
 
-  addStateFunction(
-    KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
-      receive_skill->setParameter("target", getParameter<Point>("target"));
-      if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
-        receive_skill->setParameter("policy", std::string("closest"));
-      } else {
-        receive_skill->setParameter("policy", std::string("min_slack"));
-      }
-      command.disableBallAvoidance();
-      return receive_skill->update(visualizer);
-    });
+  addStateFunction(KickState::REDIRECT_KICK, [this]() {
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+      .text("Kick::REDIRECT_KICK")
+      .fill("white")
+      .fontSize(100)
+      .build();
+    receive_skill.setParameter("target", getParameter<Point>("target"));
+    if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
+      receive_skill.setParameter("policy", std::string("closest"));
+    } else {
+      receive_skill.setParameter("policy", std::string("min_slack"));
+    }
+    command->disableBallAvoidance();
+    return receive_skill.update();
+  });
 
-  addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL, [this]() {
+  addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL_AND_KICK, [this]() {
     // ボールが止まったら回り込みへ
-    return not world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
+    return not world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
   });
 
   addTransition(KickState::REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
     // 素早く遠ざかっていったら終了
-    return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
+    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 
-  addStateFunction(
-    KickState::AROUND_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL");
-      auto target = getParameter<Point>("target");
-      Point ball_pos = world_model()->ball.pos;
-
-      // 経由ポイント
-      Point intermediate_point =
-        ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
-      command.setTargetPosition(intermediate_point)
-        .lookAtFrom(target, ball_pos)
-        .enableCollisionAvoidance();
-
-      // ボールを避けて回り込む
-      if (
-        ((robot()->pose.pos - ball_pos).normalized()).dot((target - ball_pos).normalized()) > 0.1) {
-        Point around_point = [&]() {
-          Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) *
-                                 getParameter<double>("around_interval");
-          Point around_point1 = ball_pos + vertical_vec;
-          Point around_point2 = ball_pos - vertical_vec;
-          if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
-            return around_point1;
-          } else {
-            return around_point2;
-          }
-        }();
-        command.setTargetPosition(around_point).lookAtFrom(target, ball_pos);
-      } else {
-        // 経由ポイントへGO
-        command.setTargetPosition(intermediate_point)
-          .lookAtFrom(target, ball_pos)
-          .enableCollisionAvoidance();
-      }
-      return Status::RUNNING;
-    });
-
-  addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() {
-    // 中間地点に到達したらキックへ
-    Point intermediate_point =
-      world_model()->ball.pos +
-      (world_model()->ball.pos - getParameter<Point>("target")).normalized() *
-        getParameter<double>("around_interval");
-    return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.15;
-  });
-
-  addStateFunction(KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::KICK");
+  addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
-    Point ball_pos = world_model()->ball.pos;
-    command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
-      .disableCollisionAvoidance()
-      .disableBallAvoidance();
-    if (getParameter<bool>("chip_kick")) {
-      command.kickWithChip(getParameter<double>("kick_power"));
-    } else {
-      command.kickStraight(getParameter<double>("kick_power"));
+    Point ball_pos = world_model()->ball().pos;
+    // 視認性の高いキック方向の可視化: 太い矢印 + 角度しきい値の扇
+    {
+      Vector2 dir = (target - ball_pos).normalized();
+      // 長めの矢印（フィールド半分+余裕）
+      double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
+      Point arrow_end = ball_pos + dir * arrow_len;
+
+      // メインの矢印シャフト
+      visualizer->line().start(ball_pos).end(arrow_end).stroke("lime").strokeWidth(20).build();
+
+      // アローヘッド（左右の羽根）
+      Vector2 perp(-dir.y(), dir.x());
+      Point tip = arrow_end;
+      Point left = tip - dir * 0.35 + perp * 0.20;
+      Point right = tip - dir * 0.35 - perp * 0.20;
+      visualizer->line().start(tip).end(left).stroke("lime").strokeWidth(20).build();
+      visualizer->line().start(tip).end(right).stroke("lime").strokeWidth(20).build();
+
+      // 角度しきい値の扇（境界線 + アーク）
+      using boost::math::constants::degree;
+      double half_angle = getParameter<double>("angle_threshold_deg") * degree<double>();
+      double base_theta = getAngle(dir);
+      double arc_radius = 0.9;
+      // 境界線
+      auto dir_left = Vector2(std::cos(base_theta + half_angle), std::sin(base_theta + half_angle));
+      auto dir_right =
+        Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_left * arc_radius)
+        .stroke("white", 0.6)
+        .strokeWidth(10)
+        .build();
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_right * arc_radius)
+        .stroke("white", 0.6)
+        .strokeWidth(10)
+        .build();
+      // アーク（扇の円弧）
+      auto arc = visualizer->polyline().stroke("white", 0.4).strokeWidth(10);
+      int steps = 16;
+      for (int i = 0; i <= steps; ++i) {
+        double a = base_theta - half_angle + (2.0 * half_angle) * (static_cast<double>(i) / steps);
+        Point p = ball_pos + Vector2(std::cos(a), std::sin(a)) * arc_radius;
+        arc.addPoint(p.x(), p.y());
+      }
+      arc.build();
     }
+    {
+      visualizer->text()
+        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        .text("Kick::AROUND_BALL")
+        .fill("white")
+        .fontSize(100)
+        .build();
+    }
+    // 改良回り込み: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
+    constexpr double INTERVAL = 0.15;
+    constexpr double MAX_INTERVAL = 0.3;  // 大回り上限
+    Point approach = computeAroundBallApproachTargetDynamic(
+      ball_pos, target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
+
+    Vector2 kick_vec = (target - ball_pos).normalized();
+    double kick_vec_gain = [&]() {
+      Segment ball_kick_zone{ball_pos, ball_pos - kick_vec * INTERVAL};
+      if (bg::distance(ball_kick_zone, robot()->pose.pos) < 0.1) {
+        command->disableCollisionAvoidance();
+        return 0.5;
+      } else {
+        return 0.0;
+      }
+    }();
+
+    command->setTargetPosition(approach + kick_vec * kick_vec_gain).lookAtFrom(target, ball_pos);
+    command->disableBallAvoidance();
+    using boost::math::constants::degree;
+    if (
+      std::abs(getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
+      20. * degree<double>()) {
+      if (getParameter<bool>("chip_kick")) {
+        kickWithChip();
+      } else {
+        kickStraight();
+      }
+    } else {
+      command->kickStraight(0.0);
+    }
+
     if (getParameter<bool>("with_dribble")) {
-      command.dribble(getParameter<double>("dribble_power"));
+      command->withDribble(getParameter<double>("dribble_power"));
     } else {
       // ドリブラーを止める
-      command.withDribble(0.0);
+      command->withDribble(0.0);
     }
     return Status::RUNNING;
   });
 
-  addTransition(KickState::KICK, KickState::ENTRY_POINT, [this]() {
+  addTransition(KickState::AROUND_BALL_AND_KICK, KickState::ENTRY_POINT, [this]() {
     // 素早く遠ざかっていったら終了
-    return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
-  });
-
-  addTransition(KickState::KICK, KickState::ENTRY_POINT, [this]() -> bool {
-    // 素早く遠ざかっていったら終了
-    auto target = getParameter<Point>("target");
-    Point ball_pos = world_model()->ball.pos;
-    Point p = ball_pos + (target - ball_pos).normalized() * 0.3;
-    return robot()->getDistance(p) < 0.1;
+    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 }
+
 auto Kick::getBallExitPointFromField(const double offset) -> Point
 {
   Segment ball_line{
-    world_model()->ball.pos, world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0};
+    world_model()->ball().pos,
+    world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0};
 
-  const double X = world_model()->field_size.x() / 2.0 - offset;
-  const double Y = world_model()->field_size.y() / 2.0 - offset;
+  const double X = world_model()->fieldSize().x() / 2.0 - offset;
+  const double Y = world_model()->fieldSize().y() / 2.0 - offset;
 
   std::vector<Segment> segments;
   segments.emplace_back(Point(X, Y), Point(X, -Y));
@@ -248,6 +247,40 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
       return intersections.front();
     }
   }
-  return world_model()->ball.pos;
+  return world_model()->ball().pos;
+}
+
+auto Kick::kickWithChip() -> void
+{
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
+  if (getParameter<bool>("use_target_chip_distance")) {
+    command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
+  } else {
+    command->kickWithChip(getParameter<double>("kick_power"));
+  }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
+}
+
+auto Kick::kickStraight() -> void
+{
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
+  if (getParameter<bool>("use_target_kick_speed")) {
+    command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
+  } else {
+    command->kickStraight(getParameter<double>("kick_power"));
+  }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
 }
 }  // namespace crane::skills

@@ -7,19 +7,24 @@
 #ifndef CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_
 #define CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
-class GoalKick : public SkillBase<RobotCommandWrapperPosition>
+class GoalKick : public SkillBase
 {
 public:
-  explicit GoalKick(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit GoalKick(Args &&... args)
+  : SkillBase("GoalKick", std::forward<Args>(args)...), kick_skill(command)
+  {
+    initialize();
+  }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[GoalKick] "; }
 
@@ -27,7 +32,11 @@ public:
 
   static double getBestAngleToShootFromPoint(
     double minimum_angle_accuracy, const Point from_point,
-    const WorldModelWrapper::SharedPtr & world_model);
+    const WorldModelWrapper::SharedPtr & world_model,
+    const VisualizerMessageBuilder::SharedPtr & visualizer);
+
+private:
+  void initialize();
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_

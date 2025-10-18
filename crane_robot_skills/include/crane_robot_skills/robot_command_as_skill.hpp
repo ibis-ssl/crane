@@ -7,50 +7,55 @@
 #ifndef CRANE_ROBOT_SKILLS__ROBOT_COMMAND_AS_SKILL_HPP_
 #define CRANE_ROBOT_SKILLS__ROBOT_COMMAND_AS_SKILL_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
 
-#define DEFINE_SKILL_COMMAND(name, type)                                           \
-  class Cmd##name : public SkillBase<RobotCommandWrapper##type>                    \
-  {                                                                                \
-  public:                                                                          \
-    explicit Cmd##name(RobotCommandWrapperBase::SharedPtr & base);                 \
-    Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override; \
-    void print(std::ostream & os) const override;                                  \
+#define DEFINE_SKILL_COMMAND(name)                                                            \
+  class Cmd##name : public SkillBase                                                          \
+  {                                                                                           \
+  public:                                                                                     \
+    template <typename... Args>                                                               \
+    explicit Cmd##name(Args &&... args) : SkillBase("Cmd" #name, std::forward<Args>(args)...) \
+    {                                                                                         \
+      initialize();                                                                           \
+    }                                                                                         \
+    Status update() override;                                                                 \
+    void print(std::ostream & os) const override;                                             \
+    void initialize();                                                                        \
   }
 
-DEFINE_SKILL_COMMAND(KickWithChip, Position);
-DEFINE_SKILL_COMMAND(KickStraight, Position);
-DEFINE_SKILL_COMMAND(Dribble, Position);
-DEFINE_SKILL_COMMAND(SetVelocity, PolarVelocity);
-DEFINE_SKILL_COMMAND(SetTargetPosition, Position);
-DEFINE_SKILL_COMMAND(SetDribblerTargetPosition, Position);
-DEFINE_SKILL_COMMAND(SetTargetTheta, Position);
-DEFINE_SKILL_COMMAND(StopHere, Position);
-DEFINE_SKILL_COMMAND(DisablePlacementAvoidance, Position);
-DEFINE_SKILL_COMMAND(EnablePlacementAvoidance, Position);
-DEFINE_SKILL_COMMAND(DisableBallAvoidance, Position);
-DEFINE_SKILL_COMMAND(EnableBallAvoidance, Position);
-DEFINE_SKILL_COMMAND(DisableCollisionAvoidance, Position);
-DEFINE_SKILL_COMMAND(EnableCollisionAvoidance, Position);
-DEFINE_SKILL_COMMAND(DisableGoalAreaAvoidance, Position);
-DEFINE_SKILL_COMMAND(EnableGoalAreaAvoidance, Position);
-DEFINE_SKILL_COMMAND(SetGoalieDefault, Position);
-DEFINE_SKILL_COMMAND(EnableBallCenteringControl, Position);
-DEFINE_SKILL_COMMAND(EnableLocalGoalie, Position);
-DEFINE_SKILL_COMMAND(SetMaxVelocity, Position);
-DEFINE_SKILL_COMMAND(SetMaxAcceleration, Position);
-DEFINE_SKILL_COMMAND(SetTerminalVelocity, Position);
-DEFINE_SKILL_COMMAND(EnableStopFlag, Position);
-DEFINE_SKILL_COMMAND(DisableStopFlag, Position);
-DEFINE_SKILL_COMMAND(LiftUpDribbler, Position);
-DEFINE_SKILL_COMMAND(LookAt, Position);
-DEFINE_SKILL_COMMAND(LookAtBall, Position);
-DEFINE_SKILL_COMMAND(LookAtBallFrom, Position);
+DEFINE_SKILL_COMMAND(KickWithChip);
+DEFINE_SKILL_COMMAND(KickStraight);
+DEFINE_SKILL_COMMAND(Dribble);
+DEFINE_SKILL_COMMAND(SetVelocity);
+DEFINE_SKILL_COMMAND(SetTargetPosition);
+DEFINE_SKILL_COMMAND(SetDribblerTargetPosition);
+DEFINE_SKILL_COMMAND(SetTargetTheta);
+DEFINE_SKILL_COMMAND(StopHere);
+DEFINE_SKILL_COMMAND(DisablePlacementAvoidance);
+DEFINE_SKILL_COMMAND(EnablePlacementAvoidance);
+DEFINE_SKILL_COMMAND(DisableBallAvoidance);
+DEFINE_SKILL_COMMAND(EnableBallAvoidance);
+DEFINE_SKILL_COMMAND(DisableCollisionAvoidance);
+DEFINE_SKILL_COMMAND(EnableCollisionAvoidance);
+DEFINE_SKILL_COMMAND(DisableGoalAreaAvoidance);
+DEFINE_SKILL_COMMAND(EnableGoalAreaAvoidance);
+DEFINE_SKILL_COMMAND(SetGoalieDefault);
+DEFINE_SKILL_COMMAND(EnableBallCenteringControl);
+DEFINE_SKILL_COMMAND(EnableLocalGoalie);
+DEFINE_SKILL_COMMAND(SetMaxVelocity);
+DEFINE_SKILL_COMMAND(SetMaxAcceleration);
+DEFINE_SKILL_COMMAND(SetTerminalVelocity);
+DEFINE_SKILL_COMMAND(EnableStopFlag);
+DEFINE_SKILL_COMMAND(DisableStopFlag);
+DEFINE_SKILL_COMMAND(LiftUpDribbler);
+DEFINE_SKILL_COMMAND(LookAt);
+DEFINE_SKILL_COMMAND(LookAtBall);
+DEFINE_SKILL_COMMAND(LookAtBallFrom);
 
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ROBOT_COMMAND_AS_SKILL_HPP_

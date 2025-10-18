@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>modern_orca</name>
+  <version>0.1.0</version>
+  <description>Modern C++ ORCA Library with Extensible Constraints</description>
+
+  <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <depend>crane_geometry</depend>
+  <depend>crane_msg_wrappers</depend>
+  <depend>eigen</depend>
+  <depend>robocup_ssl_msgs</depend>
+  <depend>tbb</depend>
+
+  <test_depend>ament_cmake_catch2</test_depend>
+  <test_depend>ament_cmake_copyright</test_depend>
+  <test_depend>ament_cmake_cppcheck</test_depend>
+  <test_depend>ament_cmake_lint_cmake</test_depend>
+  <test_depend>ament_cmake_uncrustify</test_depend>
+  <test_depend>ament_cmake_xmllint</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

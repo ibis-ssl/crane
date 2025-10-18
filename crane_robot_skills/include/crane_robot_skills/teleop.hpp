@@ -7,20 +7,27 @@
 #ifndef CRANE_ROBOT_SKILLS__TELEOP_HPP_
 #define CRANE_ROBOT_SKILLS__TELEOP_HPP_
 
-#include <Eigen/Geometry>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <sensor_msgs/msg/joy.hpp>
 
 namespace crane::skills
 {
-class Teleop : public SkillBase<RobotCommandWrapperPosition>, public rclcpp::Node
+class Teleop : public SkillBase, public rclcpp::Node
 {
 public:
-  explicit Teleop(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Teleop(Args &&... args)
+  : SkillBase("Teleop", std::forward<Args>(args)...), Node("teleop_skill")
+  {
+    setParameter("rotation_deg", 0.);
+    setParameter("use_local_coordinate", false);
+    joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
+      "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) { last_joy_msg = msg; });
+  }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[Teleop]"; }
 

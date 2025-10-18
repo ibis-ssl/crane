@@ -13,7 +13,7 @@ RUN rosdep update && \
     sudo rm -rf /var/lib/apt/lists/
 
 RUN cd .. && \
-    source /opt/ros/humble/setup.bash && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
 
 RUN cd .. && rm -rf src/ && mkdir src

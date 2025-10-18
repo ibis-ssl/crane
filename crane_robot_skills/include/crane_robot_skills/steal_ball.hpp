@@ -7,7 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
 #define CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -19,10 +19,17 @@ enum class StealBallState {
   MOVE_TO_FRONT,
   STEAL,
 };
-class StealBall : public SkillBaseWithState<StealBallState, RobotCommandWrapperPosition>
+class StealBall : public SkillBaseWithState<StealBallState>
 {
 public:
-  explicit StealBall(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit StealBall(Args &&... args)
+  : SkillBaseWithState<StealBallState>("StealBall", std::forward<Args>(args)...)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override { os << "[StealBall]"; }
 

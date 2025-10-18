@@ -8,10 +8,10 @@
 #define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_basics/pid_controller.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_physics/pid_controller.hpp>
 #include <functional>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
@@ -26,43 +26,48 @@
 
 namespace crane
 {
-// Eigen::Arrayのためのカスタム等価性判定関数
-struct EigenArrayEqual
-{
-  bool operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
-  {
-    // 全要素が等しいかどうかを判断
-    return (a == b).all();
-  }
-};
-
-// Eigen::Arrayのためのカスタムハッシュ関数
-struct EigenArrayHash
-{
-  std::size_t operator()(const Eigen::Array<int, 2, 1> & array) const
-  {
-    std::size_t seed = 0;
-    for (int i = 0; i < array.size(); ++i) {
-      // 各要素に基づいてハッシュ値を計算
-      seed ^= std::hash<int>()(array[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-  }
-};
+// // Eigen::Arrayのためのカスタム等価性判定関数
+// struct EigenArrayEqual
+// {
+//   auto operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
+//     -> bool
+//   {
+//     // 全要素が等しいかどうかを判断
+//     return (a == b).all();
+//   }
+// };
+//
+// // Eigen::Arrayのためのカスタムハッシュ関数
+// struct EigenArrayHash
+// {
+//   auto operator()(const Eigen::Array<int, 2, 1> & array) const -> std::size_t
+//   {
+//     std::size_t seed = 0;
+//     for (int i = 0; i < array.size(); ++i) {
+//       // 各要素に基づいてハッシュ値を計算
+//       seed ^= std::hash<int>()(array[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//     }
+//     return seed;
+//   }
+// };
 struct AStarNode
 {
   grid_map::Index index;
-  double g, h;
+
+  double g;
+
+  double h;
+
   std::optional<grid_map::Index> parent_index = std::nullopt;
 
-  [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
+  [[nodiscard]] auto calcHeuristic(const grid_map::Index & goal_index) const -> double
   {
     return std::hypot(index.x() - goal_index.x(), index.y() - goal_index.y());
   }
 
-  float getScore() const { return g + h; }
+  auto getScore() const -> float { return g + h; }
 
-  bool operator<(const AStarNode & other) const { return getScore() < other.getScore(); }
+  auto operator<(const AStarNode & other) const -> bool { return getScore() < other.getScore(); }
 };
 
 class GridMapPlanner : public LocalPlannerBase
@@ -70,12 +75,12 @@ class GridMapPlanner : public LocalPlannerBase
 public:
   explicit GridMapPlanner(rclcpp::Node & node);
 
-  std::vector<grid_map::Index> findPathAStar(
+  auto findPathAStar(
     const Point & start_point, const Point & goal_point, const std::string & layer,
-    const uint8_t robot_id) const;
+    const uint8_t robot_id) const -> std::vector<grid_map::Index>;
 
-  crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg) override;
+  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands override;
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;

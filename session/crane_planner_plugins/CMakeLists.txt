@@ -17,6 +17,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
 
 # for matplotlib
@@ -29,20 +30,26 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
 
+target_link_libraries(${PROJECT_NAME} ${YAML_CPP_LIBRARIES})
+
+# Enable Unity Build for faster compilation
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
+
 target_precompile_headers(${PROJECT_NAME}
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/interval.hpp>"
-    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/interval.hpp>"
     "<crane_msg_wrappers/robot_command_wrapper.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
-    "<crane_planner_base/planner_base.hpp>"
+    "<crane_planner_plugins/planner_base.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
     "<rclcpp/rclcpp.hpp>"
     "<Eigen/Geometry>"
     "<crane_msgs/srv/robot_select.hpp>"
     "<crane_robot_skills/kick.hpp>"
+    "<yaml-cpp/yaml.h>"
 )
 
 if (BUILD_TESTING)
@@ -50,4 +57,4 @@ if (BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif ()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)

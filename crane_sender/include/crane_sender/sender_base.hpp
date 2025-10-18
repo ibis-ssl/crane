@@ -7,11 +7,11 @@
 #ifndef CRANE_SENDER__SENDER_BASE_HPP_
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/parameter_with_event.hpp>
-#include <crane_basics/pid_controller.hpp>
+#include <crane_comm/parameter_with_event.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_physics/pid_controller.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -22,9 +22,10 @@ class SenderBase : public rclcpp::Node
 public:
   explicit SenderBase(const std::string name, const rclcpp::NodeOptions & options)
   : Node(name, options),
-    sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
+    sub_commands(
+      create_subscription<crane_msgs::msg::RobotCommands>(
+        "/robot_commands", 10,
+        [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
     clock(RCL_ROS_TIME)
   {
     declare_parameter<bool>("no_movement", false);
@@ -87,7 +88,8 @@ private:
       command.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
 
       try {
-        auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+        auto elapsed_time =
+          now - world_model->getOurRobot(command.robot_id)->vision_detection_stamp;
         command.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
       } catch (...) {
         std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
@@ -100,7 +102,7 @@ private:
           previous_command != previous_commands.robot_commands.end()) {
         if (
           std::abs(command.target_theta - previous_command->target_theta) <
-          command.theta_tolerance) {
+          command.local_planner_config.theta_tolerance) {
           // 前回目標値と今回目標値との差分が許容誤差以下の場合、前回の目標値を引き継ぐ
           command.target_theta = previous_command->target_theta;
         }

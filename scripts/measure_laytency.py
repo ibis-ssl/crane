@@ -26,9 +26,11 @@ class MeasureLatency(Node):
     def detection_callback(self, msg: TrackedFrame):
         # print("detection_callback")
         if self.move_start_time is not None:
-            robot = None
             for r in msg.robots:
-                if r.robot_id.id == self.robot_id and r.robot_id.team == RobotId.TEAM_COLOR_BLUE:
+                if (
+                    r.robot_id.id == self.robot_id
+                    and r.robot_id.team == RobotId.TEAM_COLOR_BLUE
+                ):
                     if len(r.vel) > 0:
                         vel_2d = r.vel[0]
                         vel = math.sqrt(vel_2d.x**2 + vel_2d.y**2)

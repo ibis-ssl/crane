@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__FREEKICK_SAVER_HPP_
 
 #include <algorithm>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -18,23 +18,29 @@
 
 namespace crane::skills
 {
-class FreeKickSaver : public SkillBase<RobotCommandWrapperPosition>
+class FreeKickSaver : public SkillBase
 {
 public:
-  explicit FreeKickSaver(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("FreeKickSaver", base)
+  FreeKickSaver() = delete;
+
+  template <typename... Args>
+  explicit FreeKickSaver(Args &&... args) : SkillBase("FreeKickSaver", std::forward<Args>(args)...)
   {
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update() override
   {
-    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-    auto & ball = world_model()->ball.pos;
-    auto [their_nearest, distance] = world_model()->getNearestRobotWithDistanceFromPoint(
-      ball, world_model()->theirs.getAvailableRobots());
-    Point target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
-    cmd->setTargetPosition(target);
-    command.lookAtBallFrom(target);
+    auto & ball = world_model()->ball().pos;
+    Point target;
+    if (auto their_nearest = world_model()->getNearestRobotWithDistanceFromPoint(
+          ball, world_model()->theirs().getAvailableRobots());
+        their_nearest.has_value()) {
+      target = ball + (ball - their_nearest->robot->pose.pos).normalized() * 0.7;
+    } else {
+      target = ball + (ball - world_model()->getOurGoalCenter()).normalized() * 0.7;
+    }
+    command->setTargetPosition(target);
+    command->lookAtBallFrom(target);
     return Status::RUNNING;
   }
 

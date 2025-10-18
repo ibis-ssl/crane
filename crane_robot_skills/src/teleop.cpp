@@ -8,21 +8,7 @@
 
 namespace crane::skills
 {
-Teleop::Teleop(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("Teleop", base), Node("teleop_skill")
-{
-  setParameter("rotation_deg", 0.);
-  setParameter("use_local_coordinate", false);
-  std::cout << "Teleop skill created" << std::endl;
-  joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
-    "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) {
-      std::cout << "joy message received" << std::endl;
-      last_joy_msg = msg;
-    });
-  std::cout << "joy subscriber created" << std::endl;
-}
-
-Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Teleop::update()
 {
   rclcpp::spin_some(this->get_node_base_interface());
   if (last_joy_msg.buttons.empty()) {
@@ -130,35 +116,35 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
     if (getParameter<bool>("use_local_coordinate")) {
       rotation_angle += robot()->pose.theta;
     }
-    Eigen::Rotation2Dd rotation(rotation_angle);
-    return robot()->pose.pos +
-           rotation.toRotationMatrix() * Point{
-                                           last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
-                                           last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
+    Eigen::Rotation2Dd rotation(rotation_angle);  // NEW
+    return robot()->pose.pos + rotation * Point(
+                                            // NEW
+                                            last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
+                                            last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY);
   }();
 
-  command.setTargetPosition(target);
+  command->setTargetPosition(target);
 
   double angular =
     (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_R]) - (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_L]);
 
   theta += angular;
-  command.setTargetTheta(normalizeAngle(theta));
+  command->setTargetTheta(normalizeAngle(theta));
 
   if (is_kick_enable) {
     if (is_kick_mode_straight) {
-      command.kickStraight(kick_power);
+      command->kickStraight(kick_power);
     } else {
-      command.kickWithChip(kick_power);
+      command->kickWithChip(kick_power);
     }
   } else {
-    command.kickStraight(0.0);
+    command->kickStraight(0.0);
   }
 
   if (is_dribble_enable) {
-    command.dribble(dribble_power);
+    command->dribble(dribble_power);
   } else {
-    command.dribble(0.0);
+    command->dribble(0.0);
   }
 
   return Status::RUNNING;

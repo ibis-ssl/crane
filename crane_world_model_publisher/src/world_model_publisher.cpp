@@ -4,463 +4,328 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/time.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_comm/ddps.hpp>
+#include <crane_comm/time.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
 {
+static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_t>
+{
+  std::vector<uint8_t> result;
+  std::stringstream ss(str);
+  int value;
+  char comma;
+  while (ss >> value) {
+    result.push_back(static_cast<uint8_t>(value));
+    // 次のカンマをスキップ（もしあれば）
+    ss >> comma;
+  }
+  return result;
+}
+
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
+: rclcpp::Node("world_model_publisher", options),
+  data_provider(*this),
+  pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
-  declare_parameter("tracker_address", "224.5.23.2");
-  declare_parameter("tracker_port", 11010);
-  tracker_receiver = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("tracker_address").get_value<std::string>(),
-    get_parameter("tracker_port").get_value<int>());
-  declare_parameter("vision_address", "224.5.23.2");
-  declare_parameter("vision_port", 10006);
-  geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("vision_address").get_value<std::string>(),
-    get_parameter("vision_port").get_value<int>());
-  udp_timer = rclcpp::create_timer(
-    this, get_clock(), 10ms, std::bind(&WorldModelPublisherComponent::on_udp_timer, this));
 
-  pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
-  for (int i = 0; i < 20; i++) {
-    crane_msgs::msg::RobotInfo info;
-    info.detected = false;
-    info.robot_id = i;
-    robot_info[0].emplace_back(info);
-    robot_info[1].emplace_back(info);
+  // VisualizationManager初期化（統合された可視化システム）
+  visualization_manager_ = std::make_unique<VisualizationManager>(*this);
+
+  // DataProviderのVisualization callbackをVisualizationManagerに接続
+  data_provider.setVisualizationCallbacks(
+    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+      visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
+    },
+    [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
+      visualization_manager_->drawRefereeInfo(
+        msg, field_w, field_h, data_provider.getLatestPlaySituation().command.name);
+    });
+
+  declare_parameter("position_history_size", 200);
+  get_parameter<int>("position_history_size", history_size);
+
+  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
+  std::string robot_id_mask_str;
+  get_parameter("robot_id_mask", robot_id_mask_str);
+  data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
+
+  declare_parameter("robot_acc_for_prediction", 2.5);
+  get_parameter("robot_acc_for_prediction", robot_acc_for_prediction);
+
+  declare_parameter("robot_max_vel_for_prediction", 5.0);
+  get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+
+  // パス先スイッチ抑制のパラメータ
+  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
+  declare_parameter("pass_target.min_improvement_margin", 0.2);
+  double min_hold = 0.5, min_improve = 0.2;
+  get_parameter("pass_target.min_hold_duration_sec", min_hold);
+  get_parameter("pass_target.min_improvement_margin", min_improve);
+  pass_target_selector_.setHysteresisParams(min_hold, min_improve);
+
+  // ボール物理設定ファイルパス
+  declare_parameter("ball_physics_config_path", std::string(""));
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+
+  // ボール物理モデル初期化
+  if (!ball_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = ball_physics_config_path;
+    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    try {
+      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      RCLCPP_INFO(
+        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        full_config_path.c_str(), e.what());
+      // エラー時はデフォルトファクトリーインスタンスを作成
+      BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
+    BallPhysicsModelFactory::getInstance();
   }
 
-  sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
-    "/play_situation", 1,
-    [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
+  pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
-  sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-      robot_feedback = *msg;
-      auto now = rclcpp::Clock().now();
-      for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-        auto & contact = robot.ball_contact;
-        contact.current_time = now;
-        if (auto feedback = std::find_if(
-              robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
-              [&](const crane_msgs::msg::RobotFeedback & f) {
-                return f.robot_id == robot.robot_id;
-              });
-            feedback != robot_feedback.feedback.end()) {
-          contact.is_vision_source = false;
-          if (feedback->ball_sensor) {
-            contact.last_contacted_time = now;
-          }
-          ball_detected[robot.robot_id] = feedback->ball_sensor;
-        }
-      }
-    });
-
-  sub_robots_status_blue = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::BLUE) {
-        auto now = rclcpp::Clock().now();
-        for (auto status : msg->robots_status) {
-          ball_detected[status.robot_id] = status.infrared;
-          auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
-          contact.current_time = now;
-          contact.is_vision_source = false;
-          if (status.infrared) {
-            contact.last_contacted_time = now;
-          }
-        }
-      }
-    });
-
-  sub_robots_status_yellow = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::YELLOW) {
-        auto now = rclcpp::Clock().now();
-        for (auto status : msg->robots_status) {
-          ball_detected[status.robot_id] = status.infrared;
-          auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
-          contact.current_time = now;
-          contact.is_vision_source = false;
-          if (status.infrared) {
-            contact.last_contacted_time = now;
-          }
-        }
-      }
-    });
-
-  pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
+  // 自動/world_modelサブスクライブはOFF
+  wrapper = std::make_shared<WorldModelWrapper>(*this, false);
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (has_vision_updated && has_geometry_updated) {
+    bool available = data_provider.available();
+    RCLCPP_DEBUG_THROTTLE(
+      get_logger(), *get_clock(), 1000, "data_provider.available() = %s",
+      available ? "true" : "false");
+
+    if (available) {
       publishWorldModel();
+      publishVisualization(wrapper);
+    } else {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 10000,
+        "No vision or tracker data available - world_model not published");
     }
   });
-
-  declare_parameter("team_name", "ibis-ssl");
-  team_name = get_parameter("team_name").as_string();
-
-  declare_parameter("initial_team_color", "BLUE");
-  auto initial_team_color = get_parameter("initial_team_color").as_string();
-  if (initial_team_color == "BLUE") {
-    our_color = Color::BLUE;
-    their_color = Color::YELLOW;
-  } else {
-    our_color = Color::YELLOW;
-    their_color = Color::BLUE;
-  }
-
-  sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
-    "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
-      if (msg.yellow.name == team_name) {
-        // YELLOW
-        our_color = Color::YELLOW;
-        their_color = Color::BLUE;
-        our_goalie_id = msg.yellow.goalkeeper;
-        their_goalie_id = msg.blue.goalkeeper;
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = not msg.blue_team_on_positive_half[0];
-        }
-      } else if (msg.blue.name == team_name) {
-        // BLUE
-        our_color = Color::BLUE;
-        their_color = Color::YELLOW;
-        our_goalie_id = msg.blue.goalkeeper;
-        their_goalie_id = msg.yellow.goalkeeper;
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = msg.blue_team_on_positive_half[0];
-        }
-      } else {
-        std::stringstream what;
-        what << "Cannot find our team name, " << std::string(team_name) << " in referee message. ";
-        what << "blue team name: " << std::string(msg.blue.name)
-             << ", yellow team name: " << std::string(msg.yellow.name);
-        //        throw std::runtime_error(what.str());
-      }
-
-      if (not msg.designated_position.empty()) {
-        ball_placement_target_x = msg.designated_position.front().x / 1000.;
-        ball_placement_target_y = msg.designated_position.front().y / 1000.;
-      }
-    });
 }
 
-void WorldModelPublisherComponent::on_udp_timer()
+// updateHistory
+auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
-  while (tracker_receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = tracker_receiver->receive(buf);
-
-    if (size > 0) {
-      TrackerWrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (packet.has_tracked_frame()) {
-        visionDetectionsCallback(packet.tracked_frame());
-      }
-    }
-  }
-
-  while (geometry_receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = geometry_receiver->receive(buf);
-
-    if (size > 0) {
-      SSL_WrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-      if (packet.has_geometry()) {
-        visionGeometryCallback(packet.geometry());
-      }
-    }
-  }
-}
-
-void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame & tracked_frame)
-{
-  ScopedTimer process_timer(pub_process_time);
-  for (auto & robot : robot_info[0]) {
-    robot.detected = false;
-  }
-  for (auto & robot : robot_info[1]) {
-    robot.detected = false;
-  }
-
-  for (const auto & robot : tracked_frame.robots()) {
-    int team_index = (robot.robot_id().team() == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-                       ? static_cast<int>(Color::YELLOW)
-                       : static_cast<int>(Color::BLUE);
-
-    auto & each_robot_info = robot_info[team_index].at(robot.robot_id().id());
-    if (robot.has_visibility()) {
-      each_robot_info.detected = (robot.visibility() > 0.5);
-    } else {
-      each_robot_info.detected = false;
-    }
-
-    //    each_robot_info.robot_id = robot.robot_id.id;
-    each_robot_info.pose.x = robot.pos().x();
-    each_robot_info.pose.y = robot.pos().y();
-    each_robot_info.pose.theta = robot.orientation();
-    // each_robot_info.detection_stamp = robot.stamp;
-    if (not robot.has_vel()) {
-      each_robot_info.velocity.x = robot.vel().x();
-      each_robot_info.velocity.y = robot.vel().y();
-    } else {
-      // calc from diff
-    }
-    if (robot.has_vel_angular()) {
-      each_robot_info.velocity.theta = robot.vel_angular();
-    } else {
-      // calc from diff
-    }
-  }
-
-  if (not tracked_frame.balls().empty()) {
-    auto ball = tracked_frame.balls().begin();
-    ball_info.pose.x = ball->pos().x();
-    ball_info.pose.y = ball->pos().y();
-
-    if (ball->has_vel()) {
-      ball_info.velocity.x = ball->vel().x();
-      ball_info.velocity.y = ball->vel().y();
-    }
-
-    ball_info.detected = true;
-    ball_info.detection_time = tracked_frame.timestamp();
-    ball_info.disappeared = false;
-  } else {
-    ball_info.detected = false;
-  }
-
-  has_vision_updated = true;
-
-  vis_data_handler.publish_vis_tracked(tracked_frame);
-}
-
-void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData & geometry_data)
-{
-  field_h = geometry_data.field().field_width() / 1000.;
-  field_w = geometry_data.field().field_length() / 1000.;
-
-  goal_h = geometry_data.field().goal_depth() / 1000.;
-  goal_w = geometry_data.field().goal_width() / 1000.;
-
-  if (geometry_data.field().has_penalty_area_depth()) {
-    penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
-  }
-
-  if (geometry_data.field().has_penalty_area_width()) {
-    penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
-  }
-
-  // msg.boundary_width
-  // msg.field_lines
-  // msg.field_arcs
-
-  has_geometry_updated = true;
-
-  vis_data_handler.publish_vis_geometry(geometry_data);
-}
-
-void WorldModelPublisherComponent::publishWorldModel()
-{
-  crane_msgs::msg::WorldModel wm;
-
-  wm.is_yellow = (our_color == Color::YELLOW);
-  wm.on_positive_half = on_positive_half;
-  wm.ball_info = ball_info;
-
-  updateBallContact();
-
-  wm.ball_info.state_changed = false;
-  if (ball_event_detected) {
-    switch (last_ball_event) {
-      case BallEvent::NONE:
-        if (is_our_ball && not is_their_ball) {
-          last_ball_event = BallEvent::OUR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_their_ball && not is_our_ball) {
-          last_ball_event = BallEvent::THEIR_BALL;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-      case BallEvent::OUR_BALL:
-        if (is_their_ball && not is_our_ball) {
-          last_ball_event = BallEvent::THEIR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_our_ball == is_their_ball) {
-          last_ball_event = BallEvent::NONE;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-      case BallEvent::THEIR_BALL:
-        if (is_our_ball && not is_their_ball) {
-          last_ball_event = BallEvent::OUR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_their_ball == is_our_ball) {
-          last_ball_event = BallEvent::NONE;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-    }
-  }
-
-  switch (last_ball_event) {
-    case BallEvent::OUR_BALL:
-      wm.ball_info.is_our_ball = true;
-      wm.ball_info.is_their_ball = false;
-      break;
-    case BallEvent::THEIR_BALL:
-      wm.ball_info.is_our_ball = false;
-      wm.ball_info.is_their_ball = true;
-      break;
-    case BallEvent::NONE:
-      wm.ball_info.is_our_ball = false;
-      wm.ball_info.is_their_ball = false;
-      break;
-    default:
-      break;
-  }
-
-  wm.ball_info.event_detected = ball_event_detected;
-
-  for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    crane_msgs::msg::RobotInfoOurs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_ours.emplace_back(info);
-  }
-  for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
-    crane_msgs::msg::RobotInfoTheirs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_theirs.emplace_back(info);
-  }
-
-  wm.field_info.x = field_w;
-  wm.field_info.y = field_h;
-
-  wm.penalty_area_size.x = penalty_area_h;
-  wm.penalty_area_size.y = penalty_area_w;
-
-  wm.goal_size.x = goal_h;
-  wm.goal_size.y = goal_w;
-
-  wm.our_goalie_id = our_goalie_id;
-  wm.their_goalie_id = their_goalie_id;
-
-  wm.play_situation = latest_play_situation;
-
-  wm.header.stamp = rclcpp::Clock().now();
-
-  pub_world_model->publish(wm);
-}
-
-void WorldModelPublisherComponent::updateBallContact()
-{
-  auto now = rclcpp::Clock().now();
-  static std::deque<crane_msgs::msg::BallInfo> ball_info_history;
-
-  ball_info_history.emplace_back(ball_info);
-  if (ball_info_history.size() > 10) {
+  if (ball_info_history.size() >= history_size) {
     ball_info_history.pop_front();
   }
+  ball_info_history.emplace_back(msg.ball_info);
 
-  //  bool pre_is_our_ball = std::exchange(is_our_ball, false);
-  is_their_ball = false;
-  ball_event_detected = false;
-
-  if (ball_info_history.size() > 2) {
-    const auto & latest = ball_info_history.at(ball_info_history.size() - 1);
-    const auto & pre = ball_info_history.at(ball_info_history.size() - 2);
-    double pre_vel = std::hypot(pre.velocity.x, pre.velocity.y);
-    double vel_diff =
-      std::hypot(latest.velocity.x - pre.velocity.x, latest.velocity.y - pre.velocity.y);
-
-    int count = vel_diff / (pre_vel + 0.1) * 100;
-    if (count > 50) {
-      ball_event_detected = true;
-      std::cout << "イベント発生: " << count << std::endl;
-
-      crane_msgs::msg::RobotInfo nearest_friend;
-      crane_msgs::msg::RobotInfo nearest_enemy;
-      double nearest_friend_dist = 1000.0;
-      for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-        if (robot.detected) {
-          double dist = std::hypot(latest.pose.x - robot.pose.x, latest.pose.y - robot.pose.y);
-          if (dist < nearest_friend_dist) {
-            nearest_friend = robot;
-            nearest_friend_dist = dist;
-          }
-        }
-      }
-
-      double nearest_enemy_dist = 1000.0;
-      for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
-        if (robot.detected) {
-          double dist = std::hypot(latest.pose.x - robot.pose.x, latest.pose.y - robot.pose.y);
-          if (dist < nearest_enemy_dist) {
-            nearest_enemy = robot;
-            nearest_enemy_dist = dist;
-          }
-        }
-      }
-      {
-        double ball_angle =
-          std::atan2(latest.pose.y - nearest_friend.pose.y, latest.pose.x - nearest_friend.pose.x);
-        double angle_diff = std::abs(getAngleDiff(nearest_friend.pose.theta, ball_angle));
-        if (nearest_friend_dist < 0.3 && angle_diff < 0.4) {
-          std::cout << "味方ボール接触" << std::endl;
-          is_our_ball = true;
-        }
-      }
-      {
-        double ball_angle =
-          std::atan2(latest.pose.y - nearest_enemy.pose.y, latest.pose.x - nearest_enemy.pose.x);
-        double angle_diff = std::abs(getAngleDiff(nearest_enemy.pose.theta, ball_angle));
-        if (nearest_enemy_dist < 0.3 && angle_diff < 0.4) {
-          std::cout << "敵ボール接触" << std::endl;
-          is_their_ball = true;
-        }
-      }
+  for (const auto & robot : msg.robot_info_ours) {
+    if (robot.detected) {
+      friend_history[robot.id].push_back(robot);
+    }
+    if (friend_history[robot.id].size() > history_size) {
+      friend_history[robot.id].pop_front();
     }
   }
 
-  // ローカルセンサーの情報でボール情報を更新
-  for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
-    // ボールがロボットに近いときのみ接触とみなす（誤作動防止）
-    double ball_distance = std::hypot(
-      ball_info.pose.x - robot_info[static_cast<uint8_t>(our_color)][i].pose.x,
-      ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
-    if (
-      ball_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
-      ball_distance < 0.3) {
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
-      if (not is_our_ball) {
-        std::cout << "敵ボール接触" << std::endl;
-        is_our_ball = true;
-        ball_event_detected = true;
+  for (const auto & robot : msg.robot_info_theirs) {
+    if (robot.detected) {
+      enemy_history[robot.id].push_back(robot);
+    }
+    if (enemy_history[robot.id].size() > history_size) {
+      enemy_history[robot.id].pop_front();
+    }
+  }
+}
+
+auto WorldModelPublisherComponent::publishWorldModel() -> void
+{
+  // 遅延監視: データ取得開始
+  auto msg = data_provider.getMsg();
+  wrapper->clearDelayCheckpoints();
+
+  // VisionタイムスタンプをWorldModelWrapperに統合
+  wrapper->mergeDelayCheckpoints(msg.delay_checkpoints);
+
+  // ROS 2でのVisionパケット受信時刻を追加
+  wrapper->addDelayCheckpoint("vision_packet_received", "ros2_received");
+  wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+
+  updateHistory(msg);
+  wrapper->addDelayCheckpoint("history_updated", "");
+
+  wrapper->update(msg);
+  wrapper->addDelayCheckpoint("wrapper_updated", "");
+
+  updateBallContact();
+  wrapper->addDelayCheckpoint("ball_contact_updated", "");
+
+  postProcessWorldModel(wrapper);
+  wrapper->addDelayCheckpoint("post_processed", "");
+
+  pub_world_model.publish(wrapper->getMsg());
+  wrapper->addDelayCheckpoint("world_model_published", "30Hz");
+}
+
+auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
+  -> void
+{
+  // VisualizationManagerによる統合可視化処理
+  visualization_manager_->drawTrackedObjects(world_model);
+
+  // 軌跡履歴データをVisualizationManagerに渡す
+  VisualizationManager::TrajectoryHistoryData trajectory_data;
+  trajectory_data.friend_history = friend_history;
+  trajectory_data.enemy_history = enemy_history;
+  trajectory_data.ball_info_history = ball_info_history;
+  trajectory_data.is_yellow = world_model->isYellow();
+
+  visualization_manager_->drawTrajectoryHistory(trajectory_data);
+
+  visualization_manager_->drawBallPlacement(world_model);
+
+  crane::CraneVisualizerBuffer::publish();
+}
+
+auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+  -> void
+{
+  kick_event_detector.update(*world_model, visualization_manager_->kick_event_builder);
+  crane_msgs::msg::GameAnalysis game_analysis_msg;
+  if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
+    game_analysis_msg.ongoing_kick.push_back(*kick);
+  }
+
+  // ボールラインの長さを計算
+  game_analysis_msg.ball_horizon = [&]() {
+    Segment ball_line = world_model->ball().getTrajectorySegmentByTime(3.0);
+    auto robots = world_model->theirs().getAvailableRobots();
+    auto ball_line_lengths =
+      robots |
+      ranges::views::transform(
+        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
+      // 距離が0.5m以下のものを抽出
+      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
+      // ball.posとの距離を計算
+      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+          return (pair.closest_point - world_model->ball().pos).norm();
+        });
+    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  }();
+
+  for (const auto & robot : wrapper->ours().getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+
+      auto slack_builder = visualization_manager_->slack_builder;
+      slack_builder->text()
+        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .fill("white")
+        .fontSize(100)
+        .build();
+      slack_builder->line()
+        .start(robot->pose.pos)
+        .end(min_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5)
+        .build();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+
+      if (max_slack->slack_time > 0.) {
+        auto slack_builder = visualization_manager_->slack_builder;
+        slack_builder->text()
+          .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+          .text("max slack: " + std::to_string(max_slack->slack_time))
+          .fill("white")
+          .fontSize(100)
+          .build();
+        slack_builder->line()
+          .start(robot->pose.pos)
+          .end(max_slack->intercept_point)
+          .stroke("red", 0.5)
+          .strokeWidth(5)
+          .build();
       }
+    }
+    game_analysis_msg.our_slack.push_back(slack_msg);
+  }
+
+  for (const auto & robot : wrapper->theirs().getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+    }
+    game_analysis_msg.their_slack.push_back(slack_msg);
+  }
+
+  // パススコア算出とパス先選定（専用クラスへ委譲）
+  visualization_manager_->pass_score_builder->flush();
+  pass_target_selector_.update(
+    world_model, ball_info_history, visualization_manager_->pass_score_builder, game_analysis_msg);
+
+  world_model->update(game_analysis_msg);
+}
+
+auto WorldModelPublisherComponent::updateBallContact() -> void
+{
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+
+  // ローカルセンサーの情報でボール情報を更新
+  auto friend_robots = wrapper->ours().getAvailableRobots();
+  for (std::size_t i = 0; i < friend_robots.size(); i++) {
+    auto robot = friend_robots[i];
+    // ビジョンがボールを見失っているときに
+    // ボールセンサが反応している間は、接触しているものとみなす。
+    if (robot->getBallSensorAvailable(now) && not wrapper->ball().detected) {
+      // ビジョンはボール見失っているけどロボットが保持しているので、
+      // ロボットの座標にボールがあることにする
+      wrapper->overwriteBallPos(robot->kicker_center());
     }
   }
 }

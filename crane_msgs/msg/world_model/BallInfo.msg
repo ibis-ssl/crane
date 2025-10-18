@@ -1,17 +1,18 @@
-# ボールが消えたかどうか
-bool disappeared
-
-# カーブボールかどうか
-bool curved
-
 # 位置・速度
-geometry_msgs/Pose2D pose
-geometry_msgs/Pose2D velocity
+geometry_msgs/Vector3 position
+geometry_msgs/Vector3 velocity
+
+float32 velocity_norm
+
+Vector3Stamped vision
 
 bool detected
-float64 detection_time
 
-bool is_our_ball
-bool is_their_ball
-bool event_detected
-bool state_changed
+# ボール状態
+uint8 STOPPED = 0
+uint8 ROLLING = 1
+uint8 FLYING = 2
+uint8 state
+
+# 物理モデル設定（BallPhysicsModel対応）
+BallPhysicsConfig physics_config

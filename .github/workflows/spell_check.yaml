@@ -3,6 +3,7 @@ name: spell_check
 on:
   workflow_dispatch:
   pull_request:
+  merge_group:
 
 jobs:
   spell-check:

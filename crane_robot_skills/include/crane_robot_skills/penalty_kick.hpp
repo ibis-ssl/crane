@@ -7,8 +7,8 @@
 #ifndef CRANE_ROBOT_SKILLS__PENALTY_KICK_HPP_
 #define CRANE_ROBOT_SKILLS__PENALTY_KICK_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
-#include <crane_basics/interval.hpp>
+#include <crane_geometry/interval.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
@@ -22,13 +22,22 @@ enum class PenaltyKickState {
   DONE,
 };
 
-class PenaltyKick : public SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>
+class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
 {
 private:
   std::optional<Point> & start_ball_point;
 
 public:
-  explicit PenaltyKick(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit PenaltyKick(Args &&... args)
+  : SkillBaseWithState<PenaltyKickState>("PenaltyKick", std::forward<Args>(args)...),
+    start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
+    kick_skill(command)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override
   {

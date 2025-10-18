@@ -7,22 +7,42 @@
 #ifndef CRANE_ROBOT_SKILLS__RECEIVE_HPP_
 #define CRANE_ROBOT_SKILLS__RECEIVE_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
 namespace crane::skills
 {
-class Receive : public SkillBase<RobotCommandWrapperPosition>
+class Receive : public SkillBase
 {
 public:
-  explicit Receive(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Receive(Args &&... args) : SkillBase("Receive", std::forward<Args>(args)...)
+  {
+    setParameter("dribble_power", 0.3);
+    setParameter("enable_software_bumper", true);
+    setParameter("software_bumper_start_time", 0.5);
+    // min_slack, max_slack, closest
+    setParameter("policy", std::string("closest"));
+    setParameter("enable_active_receive", true);
+    setParameter("enable_redirect", false);
+    setParameter("redirect_target", Point(0, 0));
+    setParameter("redirect_kick_power", 0.3);
+    setParameter("robot_acc_for_prediction", 2.5);
+    setParameter("robot_max_vel_for_prediction", 5.0);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+    // Visualization toggles
+    setParameter("viz_ball_traj", true);
+    setParameter("viz_candidates", true);
+    setParameter("viz_offset_arrow", true);
+    setParameter("viz_redirect_preview", true);
+  }
+
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[Receive]"; }
 
-  Point getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & visualizer) const;
+  Point getInterceptionPoint() const;
 };
 
 }  // namespace crane::skills
