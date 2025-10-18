@@ -169,6 +169,9 @@ def generate_launch_description():
                 default_value="grsim_ball_physics.yaml",
                 description="ボール物理パラメータ設定ファイル名（configフォルダ内）",
             ),
+            # ============================================================
+            # コアシステム
+            # ============================================================
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -206,7 +209,10 @@ def generate_launch_description():
                 ],
                 output="screen",
             ),
-            # シミュレータ
+            # ============================================================
+            # プランニング・制御系
+            # ============================================================
+            # シミュレータ用（local_planner + sender）
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -257,7 +263,7 @@ def generate_launch_description():
                     ),
                 ],
             ),
-            # 実機のパラメータ
+            # 実機用（local_planner + sender）
             GroupAction(
                 condition=UnlessCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -309,6 +315,9 @@ def generate_launch_description():
                     ),
                 ],
             ),
+            # ============================================================
+            # 通信系
+            # ============================================================
             Node(
                 package="robocup_ssl_comm",
                 executable="game_controller_node",
@@ -323,6 +332,9 @@ def generate_launch_description():
                 executable="grsim_node",
                 on_exit=default_exit_behavior,
             ),
+            # ============================================================
+            # モニタリング・診断系
+            # ============================================================
             Node(
                 package="crane_robot_receiver",
                 executable="ping_status_node",
@@ -349,11 +361,13 @@ def generate_launch_description():
                 executable="grsim_robot_status_node",
                 parameters=[{"blue_port": 30011}, {"yellow_port": 30012}],
             ),
+            # 可視化情報の集約
             Node(
                 package="crane_visualization_aggregator",
                 executable="crane_visualization_aggregator_node",
                 output="screen",
             ),
+            # ワールドモデル（世界状態の推定と管理）
             Node(
                 package="crane_world_model_publisher",
                 executable="crane_world_model_publisher_node",
@@ -401,6 +415,7 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
+            # プレイ選択（試合状況に応じた戦略切り替え）
             Node(
                 package="crane_play_switcher",
                 executable="play_switcher_node",
@@ -410,7 +425,10 @@ def generate_launch_description():
                 ],
                 on_exit=Shutdown(),
             ),
-            # Group with speak condition
+            # ============================================================
+            # その他機能
+            # ============================================================
+            # 音声出力（条件付き起動）
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("speak")),
                 actions=[
@@ -420,6 +438,7 @@ def generate_launch_description():
                     )
                 ],
             ),
+            # 音声合成エンジン
             Node(
                 package="speak_ros",
                 executable="speak_ros_node",
@@ -430,6 +449,7 @@ def generate_launch_description():
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
+            # 診断情報の配信
             Node(
                 package="crane_robot_receiver",
                 executable="diagnostic_publisher_node",
@@ -439,7 +459,7 @@ def generate_launch_description():
             #     executable="aggregator_node",
             #     output="log",
             # ),
-            # rosbag recordの起動設定
+            # ROSバッグ記録（条件付き起動）
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
@@ -457,6 +477,7 @@ def generate_launch_description():
                     ),
                 ],
             ),
+            # Foxglove Bridge（可視化ツール連携、条件付き起動）
             # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
             Node(
                 condition=IfCondition(LaunchConfiguration("foxglove")),
