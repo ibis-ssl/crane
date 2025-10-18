@@ -131,21 +131,6 @@ def generate_launch_description():
                 default_value="true",
                 description="ロボットの退場方向（true: +X側, false: -X側）",
             ),
-            DeclareLaunchArgument(
-                "half_court_practice_mode",
-                default_value="false",
-                description="ハーフコート練習モード有効化",
-            ),
-            DeclareLaunchArgument(
-                "half_court_is_positive_side",
-                default_value="true",
-                description="ハーフコート練習時のサイド（true: +X側, false: -X側）",
-            ),
-            DeclareLaunchArgument(
-                "robot_id_mask",
-                default_value="",
-                description="マスクするロボットID（カンマ区切り）。マスクされたIDは敵ロボット扱いになる",
-            ),
             # ============================================================
             # 機能フラグ
             # ============================================================
@@ -228,16 +213,6 @@ def generate_launch_description():
                                 "acceleration_factor": 1.0
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {"rvo_radius": 0.15},
-                            {
-                                "half_court_practice_mode": LaunchConfiguration(
-                                    "half_court_practice_mode"
-                                ),
-                            },
-                            {
-                                "half_court_is_positive_side": LaunchConfiguration(
-                                    "half_court_is_positive_side"
-                                ),
-                            },
                             # KickerModel統合：YAML設定ファイルから読み込み
                             {"kicker_physics_config": kicker_physics_config_path},
                         ],
@@ -279,16 +254,6 @@ def generate_launch_description():
                                 # "acceleration_factor": 1.3
                                 "acceleration_factor": 1.0
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
-                            {
-                                "half_court_practice_mode": LaunchConfiguration(
-                                    "half_court_practice_mode"
-                                ),
-                            },
-                            {
-                                "half_court_is_positive_side": LaunchConfiguration(
-                                    "half_court_is_positive_side"
-                                ),
-                            },
                             {"straight_kick_power_array": [0.0, 0.4, 1.0, 1.0]},
                             {"straight_kick_speed_array": [0.0, 2.0, 4.0, 7.5]},
                             {"chip_kick_power_array": [0.0, 0.8, 1.0]},
@@ -382,19 +347,6 @@ def generate_launch_description():
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"
                         )
-                    },
-                    {
-                        "half_court_practice_mode": LaunchConfiguration(
-                            "half_court_practice_mode"
-                        ),
-                    },
-                    {
-                        "half_court_is_positive_side": LaunchConfiguration(
-                            "half_court_is_positive_side"
-                        ),
-                    },
-                    {
-                        "robot_id_mask": LaunchConfiguration("robot_id_mask"),
                     },
                     {
                         "robot_acc_for_prediction": LaunchConfiguration(
