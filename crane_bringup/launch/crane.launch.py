@@ -34,7 +34,9 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            # Launch Arguments
+            # ============================================================
+            # ネットワーク設定
+            # ============================================================
             DeclareLaunchArgument(
                 "vision_addr",
                 default_value="224.5.23.2",
@@ -51,8 +53,12 @@ def generate_launch_description():
                 default_value="224.5.23.1",
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
-            DeclareLaunchArgument("referee_port", default_value="10003"),  # 公式
-            # DeclareLaunchArgument("referee_port", default_value="11003"),# 独自のやつ
+            DeclareLaunchArgument(
+                "referee_port",
+                default_value="10003",  # 公式
+                # default_value="11003", # 独自のやつ
+                description="Game Controllerと接続するためのマルチキャストポート",
+            ),
             DeclareLaunchArgument(
                 "tracker_addr",
                 default_value="224.5.23.2",
@@ -76,6 +82,9 @@ def generate_launch_description():
                 default_value="true",
                 description="シミュレータフラグ（true: シミュレーション, false: 実機）",
             ),
+            # ============================================================
+            # デバッグツール設定
+            # ============================================================
             DeclareLaunchArgument(
                 "debug_tools",
                 default_value="true",
@@ -96,49 +105,64 @@ def generate_launch_description():
                 default_value="8090",
                 description="デバッグツールのWebサーバーポート",
             ),
+            # ============================================================
+            # ロボット性能パラメータ
+            # ============================================================
             DeclareLaunchArgument(
-                "max_vel", default_value="8.0", description="ロボットの最大速度"
-            ),
-            DeclareLaunchArgument(
-                "speak", default_value="false", description="音声ノードの起動フラグ"
-            ),
-            DeclareLaunchArgument(
-                "is_emplace_positive_side",
-                default_value="true",
-                description="ロボットの退場する方向",
-            ),
-            DeclareLaunchArgument(
-                "record", default_value="true", description="rosbag記録フラグ"
-            ),
-            DeclareLaunchArgument(
-                "half_court_practice_mode",
-                default_value="false",
-                description="ハーフコート練習モード",
-            ),
-            DeclareLaunchArgument(
-                "half_court_is_positive_side",
-                default_value="true",
-                description="ハーフコート練習のサイド",
-            ),
-            DeclareLaunchArgument(
-                "robot_id_mask",
-                default_value="",
-                description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
-            ),
-            DeclareLaunchArgument(
-                "foxglove",
-                default_value="true",
-                description="foxglove",
+                "max_vel",
+                default_value="8.0",
+                description="ロボットの最大速度 [m/s]",
             ),
             DeclareLaunchArgument(
                 "robot_acc_for_prediction",
                 default_value="2.0",
-                description="slack timeの計算などに用いられるロボットの加速度",
+                description="予測計算（slack timeなど）に用いるロボットの加速度 [m/s^2]",
             ),
             DeclareLaunchArgument(
                 "robot_max_vel_for_prediction",
                 default_value="5.0",
-                description="slack timeの計算などに用いられるロボットの最大速度",
+                description="予測計算（slack timeなど）に用いるロボットの最大速度 [m/s]",
+            ),
+            # ============================================================
+            # フィールド・試合設定
+            # ============================================================
+            DeclareLaunchArgument(
+                "is_emplace_positive_side",
+                default_value="true",
+                description="ロボットの退場方向（true: +X側, false: -X側）",
+            ),
+            DeclareLaunchArgument(
+                "half_court_practice_mode",
+                default_value="false",
+                description="ハーフコート練習モード有効化",
+            ),
+            DeclareLaunchArgument(
+                "half_court_is_positive_side",
+                default_value="true",
+                description="ハーフコート練習時のサイド（true: +X側, false: -X側）",
+            ),
+            DeclareLaunchArgument(
+                "robot_id_mask",
+                default_value="",
+                description="マスクするロボットID（カンマ区切り）。マスクされたIDは敵ロボット扱いになる",
+            ),
+            # ============================================================
+            # 機能フラグ
+            # ============================================================
+            DeclareLaunchArgument(
+                "speak",
+                default_value="false",
+                description="音声ノードの起動フラグ",
+            ),
+            DeclareLaunchArgument(
+                "record",
+                default_value="true",
+                description="rosbag記録フラグ",
+            ),
+            DeclareLaunchArgument(
+                "foxglove",
+                default_value="true",
+                description="Foxglove Bridge起動フラグ",
             ),
             DeclareLaunchArgument(
                 "ball_physics_config_path",
