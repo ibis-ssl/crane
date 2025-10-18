@@ -206,8 +206,8 @@ private:
   Config config_;                                         ///< キッカーモデルの設定
   std::shared_ptr<BallPhysicsModel> ball_physics_model_;  ///< ボール物理モデル
 
-  static constexpr double kKickPowerMin = 0.0;        ///< 許容される最小キック力
-  static constexpr double kKickPowerMax = 1.0;        ///< 許容される最大キック力
+  static constexpr double kKickPowerMin = 0.0;         ///< 許容される最小キック力
+  static constexpr double kKickPowerMax = 1.0;         ///< 許容される最大キック力
   static constexpr double kKickPowerTolerance = 0.25;  ///< 許容される範囲外のマージン
 
   // ===== 内部ヘルパー関数 =====

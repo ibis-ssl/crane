@@ -39,8 +39,7 @@ KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_
 
   bool straight_valid =
     hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
-  bool chip_valid =
-    hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
+  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
 
   if (!straight_valid) {
     throw std::runtime_error("KickerModel: invalid straight kick configuration");
@@ -68,8 +67,7 @@ KickerModel::KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel
 
   bool straight_valid =
     hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
-  bool chip_valid =
-    hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
+  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
 
   if (!straight_valid) {
     throw std::runtime_error("KickerModel: invalid straight kick configuration");
