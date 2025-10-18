@@ -7,8 +7,8 @@
 #ifndef CRANE_PLANNER_PLUGINS__TOTAL_DEFENSE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TOTAL_DEFENSE_PLANNER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/stream.hpp>
+#include <crane_comm/stream.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/defense_functions.hpp>

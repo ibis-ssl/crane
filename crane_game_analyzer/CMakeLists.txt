@@ -21,6 +21,18 @@ message("closest_point_vendor_DIR")
 message(${closest_point_vendor_DIR})
 ament_auto_add_library(${PROJECT_NAME}_component SHARED src/crane_game_analyzer.cpp src/evaluations.cpp)
 
+target_precompile_headers(${PROJECT_NAME}_component
+  PUBLIC
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/geometry_operations.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<crane_msgs/msg/world_model.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+    "<algorithm>"
+    "<vector>"
+    "<cmath>"
+)
+
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp)
 
@@ -29,4 +41,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

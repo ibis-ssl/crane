@@ -99,20 +99,14 @@ Attackerスキルは以下の内部スキルを保持し、状態に応じて適
 
 ## コンテキスト変数
 
+(注意: `Point` 型は通常 `crane::Vector2d` を指します。詳細は `packages/crane_geometry.md` を参照してください。)
+
 - `kick_target` (Point型) - キックの目標位置
 - `forced_pass_receiver_id` (int型) - 強制パスの対象となるロボットのID
 - `pass_receiver_id` (std::optional<uint8_t>型) - 選択されたパス先ロボットのID
 - `goal_front_dance_target` (std::optional<Point>型) - ゴール前での動きの目標位置
 
 ## 主要な関数
-
-### selectPassReceiver()
-
-最適なパス先のロボットを選択する関数です。各味方ロボットに対して以下の要素を考慮してスコアを計算し、最も高いスコアのロボットを選びます：
-
-1. パス先からのゴールの角度 - 角度が広いほどスコアが高い
-2. 敵ゴールまでの距離 - 敵ゴールに近いほどスコアが高い
-3. パスコース上の敵ロボットの存在 - パスコースに敵がいるとスコアが下がる
 
 ### printTextOnRobot(std::string s)
 

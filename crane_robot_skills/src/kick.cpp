@@ -4,7 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/kick.hpp>
+
+#include "../include/crane_robot_skills/single_ball_placement.hpp"
 
 namespace crane::skills
 {
@@ -21,7 +24,7 @@ void Kick::initialize()
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
-  setParameter("angle_threshold", 0.1f);
+  setParameter("angle_threshold_deg", 15.0f);
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("moving_speed_threshold", 0.2);
@@ -59,7 +62,7 @@ void Kick::initialize()
     command->lookAtFrom(getParameter<Point>("target"), ball_pos);
 
     const auto & ball_vel_normed = world_model()->ball().vel.normalized();
-    Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
+    Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.);
     auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
     if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
       // 通り過ぎていれば追いかけて蹴る
@@ -119,108 +122,102 @@ void Kick::initialize()
   addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball().pos;
-    visualizer->line()
-      .start(ball_pos)
-      .end(ball_pos + (target - ball_pos).normalized() * 1.0)
-      .stroke("blue")
-      .strokeWidth(10)
-      .build();
-    constexpr double SWITCH_DISTANCE = 1.0;
+    // 視認性の高いキック方向の可視化: 太い矢印 + 角度しきい値の扇
     {
-      visualizer->circle()
-        .center(ball_pos)
-        .radius(SWITCH_DISTANCE)
-        .stroke("yellow")
+      Vector2 dir = (target - ball_pos).normalized();
+      // 長めの矢印（フィールド半分+余裕）
+      double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
+      Point arrow_end = ball_pos + dir * arrow_len;
+
+      // メインの矢印シャフト
+      visualizer->line().start(ball_pos).end(arrow_end).stroke("lime").strokeWidth(20).build();
+
+      // アローヘッド（左右の羽根）
+      Vector2 perp(-dir.y(), dir.x());
+      Point tip = arrow_end;
+      Point left = tip - dir * 0.35 + perp * 0.20;
+      Point right = tip - dir * 0.35 - perp * 0.20;
+      visualizer->line().start(tip).end(left).stroke("lime").strokeWidth(20).build();
+      visualizer->line().start(tip).end(right).stroke("lime").strokeWidth(20).build();
+
+      // 角度しきい値の扇（境界線 + アーク）
+      using boost::math::constants::degree;
+      double half_angle = getParameter<double>("angle_threshold_deg") * degree<double>();
+      double base_theta = getAngle(dir);
+      double arc_radius = 0.9;
+      // 境界線
+      auto dir_left = Vector2(std::cos(base_theta + half_angle), std::sin(base_theta + half_angle));
+      auto dir_right =
+        Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_left * arc_radius)
+        .stroke("white", 0.6)
         .strokeWidth(10)
         .build();
-    }
-    if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
-      {
-        visualizer->text()
-          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-          .text("Kick::AROUND_BALL(遠い)")
-          .fill("white")
-          .fontSize(100)
-          .build();
+      visualizer->line()
+        .start(ball_pos)
+        .end(ball_pos + dir_right * arc_radius)
+        .stroke("white", 0.6)
+        .strokeWidth(10)
+        .build();
+      // アーク（扇の円弧）
+      auto arc = visualizer->polyline().stroke("white", 0.4).strokeWidth(10);
+      int steps = 16;
+      for (int i = 0; i <= steps; ++i) {
+        double a = base_theta - half_angle + (2.0 * half_angle) * (static_cast<double>(i) / steps);
+        Point p = ball_pos + Vector2(std::cos(a), std::sin(a)) * arc_radius;
+        arc.addPoint(p.x(), p.y());
       }
-      command->setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
-        .lookAtFrom(target, ball_pos)
-        .setTerminalVelocity(0.4);
-      return Status::RUNNING;
+      arc.build();
+    }
+    {
+      visualizer->text()
+        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        .text("Kick::AROUND_BALL")
+        .fill("white")
+        .fontSize(100)
+        .build();
+    }
+    // 改良回り込み: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
+    constexpr double INTERVAL = 0.15;
+    constexpr double MAX_INTERVAL = 0.3;  // 大回り上限
+    Point approach = computeAroundBallApproachTargetDynamic(
+      ball_pos, target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
+
+    Vector2 kick_vec = (target - ball_pos).normalized();
+    double kick_vec_gain = [&]() {
+      Segment ball_kick_zone{ball_pos, ball_pos - kick_vec * INTERVAL};
+      if (bg::distance(ball_kick_zone, robot()->pose.pos) < 0.1) {
+        command->disableCollisionAvoidance();
+        return 0.5;
+      } else {
+        return 0.0;
+      }
+    }();
+
+    command->setTargetPosition(approach + kick_vec * kick_vec_gain).lookAtFrom(target, ball_pos);
+    command->disableBallAvoidance();
+    using boost::math::constants::degree;
+    if (
+      std::abs(getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
+      20. * degree<double>()) {
+      if (getParameter<bool>("chip_kick")) {
+        kickWithChip();
+      } else {
+        kickStraight();
+      }
     } else {
-      {
-        visualizer->text()
-          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-          .text("Kick::AROUND_BALL（近い）")
-          .fill("white")
-          .fontSize(100)
-          .build();
-      }
-      auto calculateRatio =
-        [](const double distance, const double min_distance, const double max_distance) {
-          return (distance - min_distance) / (max_distance - min_distance);
-        };
-
-      // ボールを避けて回り込む
-      using boost::math::constants::degree;
-      double ratio =
-        1.5 +
-        std::clamp(
-          -calculateRatio(robot()->getDistance(world_model()->ball().pos), 0.2, 1.5), -0.5, 0.);
-
-      double move_direction = getAngle(target - robot()->pose.pos) +
-                              (getAngleDiff(
-                                getAngle(world_model()->ball().pos - robot()->pose.pos),
-                                getAngle(target - robot()->pose.pos))) *
-                                ratio;
-      Vector2 move_vec = getNormVec(move_direction);
-      double move_vec_gain = [&]() {
-        if (
-          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 2.5 * degree<double>()) {
-          return 0.4;
-        } else {
-          return 0.2;
-        }
-      }();
-
-      Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball().pos).normalized();
-      double ball_away_gain = 0.0;
-      if (
-        robot()->getDistance(world_model()->ball().pos) < 0.2 &&
-        getAngleDiff(
-          getAngle(target - ball_pos), getAngle(world_model()->ball().pos - robot()->pose.pos)) >
-          10. * degree<double>()) {
-        ball_away_gain = 0.0;
-      }
-
-      command->lookAtFrom(target, ball_pos)
-        .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball().vel * 0.3 +
-          ball_away_vec * ball_away_gain)
-        .disableCollisionAvoidance()
-        .disableBallAvoidance();
-
-      if (
-        std::abs(
-          getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
-        20. * degree<double>()) {
-        if (getParameter<bool>("chip_kick")) {
-          kickWithChip();
-        } else {
-          kickStraight();
-        }
-      } else {
-        command->kickStraight(0.0);
-      }
-
-      if (getParameter<bool>("with_dribble")) {
-        command->withDribble(getParameter<double>("dribble_power"));
-      } else {
-        // ドリブラーを止める
-        command->withDribble(0.0);
-      }
-      return Status::RUNNING;
+      command->kickStraight(0.0);
     }
+
+    if (getParameter<bool>("with_dribble")) {
+      command->withDribble(getParameter<double>("dribble_power"));
+    } else {
+      // ドリブラーを止める
+      command->withDribble(0.0);
+    }
+    return Status::RUNNING;
   });
 
   addTransition(KickState::AROUND_BALL_AND_KICK, KickState::ENTRY_POINT, [this]() {
@@ -255,19 +252,35 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
 
 auto Kick::kickWithChip() -> void
 {
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
   if (getParameter<bool>("use_target_chip_distance")) {
     command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
   } else {
     command->kickWithChip(getParameter<double>("kick_power"));
   }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
 }
 
 auto Kick::kickStraight() -> void
 {
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
   if (getParameter<bool>("use_target_kick_speed")) {
     command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
   } else {
     command->kickStraight(getParameter<double>("kick_power"));
   }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
 }
 }  // namespace crane::skills

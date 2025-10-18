@@ -7,11 +7,10 @@
 #ifndef CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
 #define CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
 
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "go_over_ball.hpp"
 #include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
@@ -37,8 +36,6 @@ enum class SingleBallPlacementStates {
 class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
 {
 private:
-  std::shared_ptr<GoOverBall> go_over_ball;
-
   std::shared_ptr<Receive> receive;
 
   std::shared_ptr<Sleep> sleep = nullptr;

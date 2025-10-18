@@ -35,7 +35,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
       // 引く側
       placers.first->setTargetPosition(ball + sandwich_direction * 0.2)
         .lookAtBall()
-        .setMaxVelocity(1.5)
+        .setMaxVelocity("SandwichBallPlacementPlanner pull", 1.5)
         .enableBallAvoidance()
         .disableCollisionAvoidance()
         .disableGoalAreaAvoidance()
@@ -43,7 +43,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
       // 押す側
       placers.second->setTargetPosition(ball - sandwich_direction * 0.2)
         .lookAtBall()
-        .setMaxVelocity(1.5)
+        .setMaxVelocity("SandwichBallPlacementPlanner push", 1.5)
         .enableBallAvoidance()
         .disableCollisionAvoidance()
         .disableGoalAreaAvoidance()
@@ -60,7 +60,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         .setDribblerTargetPosition(last_ball)
         .lookAt(last_ball)
         .dribble(0.2)
-        .setMaxVelocity(0.2)
+        .setMaxVelocity("SandwichBallPlacementPlanner APPROACH", 0.2)
         .disableBallAvoidance()
         .disableCollisionAvoidance()
         .disableGoalAreaAvoidance()
@@ -68,7 +68,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
       placers.second->lookAt(last_ball)
         .setDribblerTargetPosition(last_ball - sandwich_direction * 0.05)
         .dribble(0.2)
-        .setMaxVelocity(0.2)
+        .setMaxVelocity("SandwichBallPlacementPlanner APPROACH", 0.2)
         .disableBallAvoidance()
         .disableCollisionAvoidance()
         .disableGoalAreaAvoidance()
@@ -90,11 +90,11 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         placers.first->setDribblerTargetPosition(target.value())
           .setTargetTheta(to_target_angle + M_PI)
           .dribble(0.2)
-          .setMaxVelocity(1.0);
+          .setMaxVelocity("SandwichBallPlacementPlanner MOVE pull", 1.0);
         placers.second->setDribblerTargetPosition(target.value())
           .setTargetTheta(to_target_angle)
           .dribble(0.2)
-          .setMaxVelocity(1.2);
+          .setMaxVelocity("SandwichBallPlacementPlanner MOVE push", 1.2);
 
         if (
           placers.first->getTargetDistance() < 0.10 && placers.second->getTargetDistance() < 0.10) {
@@ -113,11 +113,11 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         placers.first->setTargetPosition(target.value() + sandwich_direction * 0.4)
           .setTargetTheta(to_target_angle + M_PI)
           .dribble(0.0)
-          .setMaxVelocity(0.2);
+          .setMaxVelocity("SandwichBallPlacementPlanner LEAVE", 0.2);
         placers.second->setTargetPosition(target.value() - sandwich_direction * 0.4)
           .setTargetTheta(to_target_angle)
           .dribble(0.0)
-          .setMaxVelocity(0.2);
+          .setMaxVelocity("SandwichBallPlacementPlanner LEAVE", 0.2);
       } else {
         state = State::PREPARE;
       }

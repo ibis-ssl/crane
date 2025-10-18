@@ -134,6 +134,9 @@ public:
   : SkillInterface(std::forward<Args>(args)...)
   {
     this->name = name;
+    if (visualizer->layer == "skill/") {
+      visualizer->layer = "skill/" + name;
+    }
   }
 
   SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
@@ -238,6 +241,8 @@ public:
   void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
 
   void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
+
+  void clearVisualizer() { visualizer->clearBuffer(); }
 
 protected:
   std::shared_ptr<RobotCommandWrapper> command;

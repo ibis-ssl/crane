@@ -51,9 +51,36 @@ target_link_libraries(grsim_node grsim_component)
 
 rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")
 
+# Tracker Component
+ament_auto_add_library(tracker_component SHARED
+  src/tracker_component.cpp
+)
+target_link_libraries(tracker_component ${robocup_ssl_msgs_LIBRARIES})
+
+ament_auto_add_executable(tracker_node
+  src/tracker_node.cpp
+)
+target_link_libraries(tracker_node tracker_component)
+
+rclcpp_components_register_nodes(tracker_component "robocup_ssl_comm::Tracker")
+
+# Vision Component
+ament_auto_add_library(vision_component SHARED
+  src/vision_component.cpp
+)
+target_link_libraries(vision_component ${robocup_ssl_msgs_LIBRARIES})
+
+ament_auto_add_executable(vision_node
+  src/vision_node.cpp
+)
+target_link_libraries(vision_node vision_component)
+
+rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
+
 ament_export_libraries(vision_component)
 ament_export_libraries(game_controller_component)
 ament_export_libraries(grsim_component)
+ament_export_libraries(tracker_component)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

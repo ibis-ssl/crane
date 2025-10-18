@@ -107,7 +107,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
     }
 
     double max_vel = std::min(4.0, kicker->getRobot()->getDistance(world_model->ball().pos) + 0.5);
-    kicker->setMaxVelocity(max_vel);
+    kicker->setMaxVelocity("OurDirectFreeKickPlanner", max_vel);
 
     robot_commands.push_back(kicker->getMsg());
   }

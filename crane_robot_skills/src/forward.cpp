@@ -46,7 +46,7 @@ auto Forward::update() -> Status
         planner_visualizer->circle()
           .center(p)
           .radius(score * 0.25)
-          .stroke("lime")
+          .stroke("lime", 0.5)
           .strokeWidth(5)
           .build();
       }
@@ -59,7 +59,9 @@ auto Forward::update() -> Status
     points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
   if (best_point != points_with_score.end()) {
-    command->setTargetPosition(best_point->first).lookAtBall().setMaxVelocity(max_vel);
+    command->setTargetPosition(best_point->first)
+      .lookAtBall()
+      .setMaxVelocity("Forward::max_vel", max_vel);
   } else {
     command->stopHere();
   }

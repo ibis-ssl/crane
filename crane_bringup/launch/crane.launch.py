@@ -18,6 +18,8 @@ from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, Execute
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
+from ament_index_python.packages import get_package_share_directory
+import os
 
 default_exit_behavior = Shutdown()
 
@@ -25,6 +27,14 @@ os.environ["RMW_IMPLEMENTATION"] = "rmw_zenoh_cpp"
 
 
 def generate_launch_description():
+    # キッカー物理設定ファイルのパス
+    crane_world_model_publisher_share_dir = get_package_share_directory(
+        "crane_world_model_publisher"
+    )
+    kicker_physics_config_path = os.path.join(
+        crane_world_model_publisher_share_dir, "config", "kicker_physics.yaml"
+    )
+
     return LaunchDescription(
         [
             # Launch Arguments
@@ -35,8 +45,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                # default_value="10006",
-                default_value="10020",
+                default_value="10006",  # 公式
+                # default_value="10020", #独自のやつ
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -44,14 +54,44 @@ def generate_launch_description():
                 default_value="224.5.23.1",
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
-            # DeclareLaunchArgument('referee_port', default_value='10003'),
-            DeclareLaunchArgument("referee_port", default_value="11003"),
+            DeclareLaunchArgument("referee_port", default_value="10003"),  # 公式
+            # DeclareLaunchArgument("referee_port", default_value="11003"),# 独自のやつ
+            DeclareLaunchArgument(
+                "tracker_addr",
+                default_value="224.5.23.2",
+                description="SSL Trackerと接続するためのマルチキャストアドレス",
+            ),
+            DeclareLaunchArgument(
+                "tracker_port",
+                default_value="11010",
+                description="SSL Trackerと接続するためのマルチキャストポート",
+            ),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
             ),
             DeclareLaunchArgument(
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
+            ),
+            DeclareLaunchArgument(
+                "debug_tools",
+                default_value="true",
+                description="デバッグツールの起動フラグ",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_web",
+                default_value="true",
+                description="デバッグツールのWebインターフェース有効化",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_cli",
+                default_value="false",
+                description="デバッグツールのCLIインターフェース有効化",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_port",
+                default_value="8090",
+                description="デバッグツールのWebサーバーポート",
             ),
             DeclareLaunchArgument(
                 "max_vel", default_value="8.0", description="ロボットの最大速度"
@@ -97,6 +137,11 @@ def generate_launch_description():
                 default_value="5.0",
                 description="slack timeの計算などに用いられるロボットの最大速度",
             ),
+            DeclareLaunchArgument(
+                "ball_physics_config_path",
+                default_value="grsim_ball_physics.yaml",
+                description="ボール物理パラメータ設定ファイル名（configフォルダ内）",
+            ),
             Node(
                 package="rmw_zenoh_cpp",
                 executable="rmw_zenohd",
@@ -131,6 +176,20 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
+            # デバッグツール - WebSocketサーバー
+            Node(
+                condition=IfCondition(LaunchConfiguration("debug_tools")),
+                package="crane_debug_tools",
+                executable="crane_websocket_server",
+                name="crane_websocket_server",
+                parameters=[
+                    {
+                        "port": LaunchConfiguration("debug_tools_port"),
+                        "websocket_port": 8091,
+                    }
+                ],
+                output="screen",
+            ),
             # シミュレータ
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("sim")),
@@ -141,10 +200,6 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 3.0},
-                            {"i_gain": 0.00},
-                            {"i_saturation": 0.00},
-                            {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
                             {
@@ -161,10 +216,8 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.25, 0.6, 0.9]},
-                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 6.0]},
-                            {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
+                            # KickerModel統合：YAML設定ファイルから読み込み
+                            {"kicker_physics_config": kicker_physics_config_path},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -176,10 +229,10 @@ def generate_launch_description():
                             {"no_movement": False},
                             {"latency_ms": 0.0},
                             {"sim_mode": LaunchConfiguration("sim")},
-                            {"kick_power_limit_straight": 0.50},
+                            {"kick_power_limit_straight": 1.00},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 6.0},
+                            {"theta_p_gain": 3.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
@@ -198,14 +251,11 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 5.5},
-                            {"i_gain": 0.0},
-                            {"i_saturation": 0.0},
-                            {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.2},
+                            {"max_acc": 2.0},
                             {
-                                "acceleration_factor": 1.3
+                                # "acceleration_factor": 1.3
+                                "acceleration_factor": 1.0
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -217,16 +267,17 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.2, 0.4, 0.9]},
+                            {"straight_kick_power_array": [0.0, 0.4, 1.0, 1.0]},
                             {"straight_kick_speed_array": [0.0, 2.0, 4.0, 7.5]},
-                            {"chip_kick_power_array": [0.0, 0.5, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 0.7, 1.5]},
+                            {"chip_kick_power_array": [0.0, 0.8, 1.0]},
+                            {"chip_kick_distance_array": [0.0, 0.5, 1.5]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
                     Node(
                         package="crane_sender",
                         executable="ibis_sender_node",
+                        # output="screen",
                         parameters=[
                             {"no_movement": False},
                             {"latency_ms": 100.0},
@@ -236,6 +287,7 @@ def generate_launch_description():
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                            {"acc_limit_offset": 1.0},  # 加速度制限のオフセット値
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -294,8 +346,8 @@ def generate_launch_description():
                     {"team_name": LaunchConfiguration("team")},
                     {"vision_address": LaunchConfiguration("vision_addr")},
                     {"vision_port": LaunchConfiguration("vision_port")},
-                    {"tracker_address": "224.5.23.2"},
-                    {"tracker_port": 11010},
+                    {"tracker_address": LaunchConfiguration("tracker_addr")},
+                    {"tracker_port": LaunchConfiguration("tracker_port")},
                     {
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"
@@ -322,6 +374,11 @@ def generate_launch_description():
                     {
                         "robot_max_vel_for_prediction": LaunchConfiguration(
                             "robot_max_vel_for_prediction"
+                        ),
+                    },
+                    {
+                        "ball_physics_config_path": LaunchConfiguration(
+                            "ball_physics_config_path"
                         ),
                     },
                 ],
@@ -423,6 +480,7 @@ def generate_launch_description():
                 ],
                 output="log",
                 on_exit=default_exit_behavior,
+                ros_arguments=["--log-level", "warn"],
             ),
         ]
     )

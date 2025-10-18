@@ -116,11 +116,11 @@ Status Teleop::update()
     if (getParameter<bool>("use_local_coordinate")) {
       rotation_angle += robot()->pose.theta;
     }
-    Eigen::Rotation2Dd rotation(rotation_angle);
-    return robot()->pose.pos +
-           rotation.toRotationMatrix() * Point{
-                                           last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
-                                           last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
+    Eigen::Rotation2Dd rotation(rotation_angle);  // NEW
+    return robot()->pose.pos + rotation * Point(
+                                            // NEW
+                                            last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
+                                            last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY);
   }();
 
   command->setTargetPosition(target);

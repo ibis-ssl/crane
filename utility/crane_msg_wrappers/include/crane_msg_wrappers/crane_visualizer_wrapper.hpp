@@ -7,8 +7,10 @@
 #ifndef CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
+#include <algorithm>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_update.hpp>
+#include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -26,10 +28,11 @@ struct SvgPathBuilder;
 
 struct VisualizerMessageBuilder : public std::enable_shared_from_this<VisualizerMessageBuilder>
 {
-  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SvgLayerUpdate = crane_visualization_interfaces::msg::SvgLayerUpdate;
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
+  std::string operation = "replace";  // default operation
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
@@ -42,6 +45,23 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   std::vector<std::string> message_buffer;
 
   auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
+
+  // Operation modifiers
+  [[nodiscard]] auto asReplace() -> VisualizerMessageBuilder &
+  {
+    operation = "replace";
+    return *this;
+  }
+  [[nodiscard]] auto asAppend() -> VisualizerMessageBuilder &
+  {
+    operation = "append";
+    return *this;
+  }
+  [[nodiscard]] auto asClear() -> VisualizerMessageBuilder &
+  {
+    operation = "clear";
+    return *this;
+  }
 
   SvgCircleBuilder circle();
 
@@ -98,7 +118,7 @@ struct SvgCircleBuilder : public SvgBuilderBase
   auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
-    oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << circle_center.y() * 1000.
+    oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << -circle_center.y() * 1000.
         << "\" r=\"" << circle_radius * 1000. << "\" fill=\"" << fill_color << "\" fill-opacity=\""
         << fill_opacity << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\""
         << stroke_opacity << "\" stroke-width=\"" << stroke_width << "\" />";
@@ -163,8 +183,8 @@ struct SvgLineBuilder : public SvgBuilderBase
   auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
-    oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << p1.y() * 1000. << "\" x2=\""
-        << p2.x() * 1000. << "\" y2=\"" << p2.y() * 1000. << "\" stroke=\"" << stroke_color
+    oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << -p1.y() * 1000. << "\" x2=\""
+        << p2.x() * 1000. << "\" y2=\"" << -p2.y() * 1000. << "\" stroke=\"" << stroke_color
         << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\"" << stroke_width
         << "\" />";
     return oss.str();
@@ -224,7 +244,7 @@ struct SvgRectBuilder : public SvgBuilderBase
   auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
-    oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << rect_top_left.y() * 1000.
+    oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << -rect_top_left.y() * 1000.
         << "\" width=\"" << rect_size.x() * 1000. << "\" height=\"" << rect_size.y() * 1000.
         << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" stroke=\""
         << stroke_color << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\""
@@ -310,9 +330,10 @@ struct SvgTextBuilder : public SvgBuilderBase
     std::ostringstream oss;
     oss << "<text ";
     if (view_box_position) {
-      oss << "x=\"" << text_position.x() << "%\" y=\"" << text_position.y() << "%\" ";
+      oss << "x=\"" << text_position.x() << "%\" y=\"" << -text_position.y() << "%\" ";
     } else {
-      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000. << "\" ";
+      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << -text_position.y() * 1000.
+          << "\" ";
     }
     oss << "fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
         << font_size << "\" text-anchor=\"" << anchor << "\">" << text_string << "</text>";
@@ -389,7 +410,7 @@ struct SvgPolyLineBuilder : public SvgBuilderBase
     std::ostringstream oss;
     oss << "<polyline points=\"";
     for (const auto & p : points) {
-      oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
+      oss << p.x() * 1000. << "," << -p.y() * 1000. << " ";
     }
     oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width;
     if (stroke_opacity != 1.) {
@@ -449,7 +470,7 @@ struct SvgPolygonBuilder : public SvgBuilderBase
     std::ostringstream oss;
     oss << "<polygon points=\"";
     for (const auto & p : points) {
-      oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
+      oss << p.x() * 1000. << "," << -p.y() * 1000. << " ";
     }
     oss << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
         << stroke_width << "\" />";
@@ -540,7 +561,7 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " M" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " M" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -548,7 +569,7 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     SvgPathDefinitionBuilder & lineTo(double x, double y)
     {
-      path += " L" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " L" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -562,7 +583,7 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto verticalTo(double y) -> SvgPathDefinitionBuilder &
     {
-      path += " V" + std::to_string(y * 1000.);
+      path += " V" + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -575,9 +596,9 @@ struct SvgPathBuilder : public SvgBuilderBase
     auto cubicBezierTo(double x1, double y1, double x2, double y2, double x, double y)
       -> SvgPathDefinitionBuilder &
     {
-      path += " C" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
-              std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " C" + std::to_string(x1 * 1000.) + "," + std::to_string(-y1 * 1000.) + " " +
+              std::to_string(x2 * 1000.) + "," + std::to_string(-y2 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -588,8 +609,8 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " S" + std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " S" + std::to_string(x2 * 1000.) + "," + std::to_string(-y2 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -600,8 +621,8 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " Q" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " Q" + std::to_string(x1 * 1000.) + "," + std::to_string(-y1 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -612,7 +633,7 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto smoothQuadraticBezierTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " T" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " T" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -625,10 +646,10 @@ struct SvgPathBuilder : public SvgBuilderBase
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y) -> SvgPathDefinitionBuilder &
     {
-      path += " A" + std::to_string(rx * 1000.) + "," + std::to_string(ry * 1000.) + " " +
+      path += " A" + std::to_string(rx * 1000.) + "," + std::to_string(-ry * 1000.) + " " +
               std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
               std::to_string(sweep_flag) + " " + std::to_string(x * 1000.) + "," +
-              std::to_string(y * 1000.);
+              std::to_string(-y * 1000.);
       return *this;
     }
 
@@ -642,17 +663,20 @@ struct SvgPathBuilder : public SvgBuilderBase
 
 struct CraneVisualizerBuffer
 {
-  using SvgLayerArray = crane_visualization_interfaces::msg::SvgLayerArray;
+  using SvgUpdates = crane_visualization_interfaces::msg::SvgUpdates;
   static inline std::unique_ptr<CraneVisualizerBuffer> buffer = nullptr;
 
-  rclcpp::Publisher<SvgLayerArray>::SharedPtr publisher;
+  rclcpp::Publisher<SvgUpdates>::SharedPtr publisher;
 
-  SvgLayerArray message_buffer;
+  SvgUpdates message_buffer;
+
+  static inline uint32_t s_epoch = 0;
+  static inline uint32_t s_seq = 0;
 
   template <typename Node>
   CraneVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<SvgLayerArray>(topic, rclcpp::SensorDataQoS());
+    publisher = node.template create_publisher<SvgUpdates>(topic, rclcpp::SensorDataQoS());
   }
 
   template <typename Node>
@@ -675,25 +699,42 @@ struct CraneVisualizerBuffer
   static auto publish() -> void
   {
     if (active()) {
+      // Stamp and sequence
+      buffer->message_buffer.header.stamp = rclcpp::Clock().now();
+      buffer->message_buffer.epoch = s_epoch;
+      buffer->message_buffer.seq = s_seq++;
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.svg_primitive_arrays.clear();
+      buffer->message_buffer.updates.clear();
     }
   }
 
-  static auto clear(std::string layer = "") -> void
+  static auto clear(const std::string & layer = "") -> void
   {
     if (CraneVisualizerBuffer::active()) {
+      auto & updates = CraneVisualizerBuffer::buffer->message_buffer.updates;
       if (layer == "") {
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.clear();
+        updates.clear();
       } else {
-        for (auto & svg_layer : CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays |
-                                  ranges::views::filter([&](auto svg_primitive_array) {
-                                    return svg_primitive_array.layer == layer;
-                                  })) {
-          svg_layer.svg_primitives.clear();
-        }
+        // 指定レイヤーに対する未送信更新をローカルバッファから除去
+        updates.erase(
+          std::remove_if(
+            updates.begin(), updates.end(), [&](const auto & u) { return u.layer == layer; }),
+          updates.end());
+
+        // 受信側の該当レイヤーを空にするため、空の更新を追加（publish() 時に送信される）
+        crane_visualization_interfaces::msg::SvgLayerUpdate empty_layer;
+        empty_layer.layer = layer;
+        empty_layer.operation = "replace";  // 空レイヤーで置換 = 実質クリア
+        // svg_primitives は空のまま
+        updates.push_back(std::move(empty_layer));
       }
     }
+  }
+
+  static auto setEpoch(uint32_t epoch) -> void
+  {
+    s_epoch = epoch;
+    s_seq = 0;
   }
 };
 }  // namespace crane

@@ -22,10 +22,8 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
-    "<Eigen/Geometry>"
     "<crane_robot_skills/receive.hpp>"
     "<crane_robot_skills/kick.hpp>"
 )
@@ -40,4 +38,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

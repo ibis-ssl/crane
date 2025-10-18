@@ -4,7 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
 #include <crane_robot_skills/receive.hpp>
+#include <iomanip>
+#include <iostream>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 namespace crane::skills
 {
@@ -19,8 +25,8 @@ Status Receive::update()
       if (
         robot()->getDistance(world_model()->ball().pos) <
         ball_speed * getParameter<double>("software_bumper_start_time")) {
-        // ボールから逃げ切らないようにするため、速度の0.5倍に制限
-        command->setMaxVelocity(ball_speed * 0.5);
+        command->setMaxVelocity(
+          "ボールから逃げ切らないようにするため、速度の0.5倍に制限", ball_speed * 0.5);
         // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
         offset += world_model()->ball().vel.normalized() * (world_model()->ball().vel.norm() * 0.5);
       }
@@ -30,19 +36,37 @@ Status Receive::update()
       if (world_model()->ball().isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
         offset += (world_model()->ball().pos - robot()->pose.pos);
         double distance = (world_model()->ball().pos - robot()->pose.pos).norm();
-        command->setMaxVelocity(distance);
+        command->setMaxVelocity("Receive::active_receive", distance);
       }
     }
     return offset;
   }();
-  Point interception_point = getInterceptionPoint() + offset;
 
-  visualizer->line()
-    .start(interception_point)
-    .end(robot()->pose.pos)
-    .stroke("red")
-    .strokeWidth(10)
+  // Base interception point before offset (also draws candidate visuals inside)
+  Point base_interception_point = getInterceptionPoint();
+  Point interception_point = base_interception_point + offset;
+
+  // Minimal HUD near robot: policy only
+  visualizer->text()
+    .position(robot()->pose.pos + Vector2(0.0, 0.35))
+    .text(std::string("Receive[") + getParameter<std::string>("policy") + "]")
+    .fontSize(60)
+    .fill("white")
+    .textAnchor("middle")
     .build();
+
+  // Offset arrow (from base to final) for clarity
+  if (getParameter<bool>("viz_offset_arrow")) {
+    Vector2 off_vec = interception_point - base_interception_point;
+    if (off_vec.squaredNorm() > 1e-6) {
+      visualizer->line()
+        .start(base_interception_point)
+        .end(interception_point)
+        .stroke("cyan")
+        .strokeWidth(8)
+        .build();
+    }
+  }
 
   if (getParameter<bool>("enable_redirect")) {
     command->addStateFactor("Receive", "enable redirect");
@@ -56,6 +80,32 @@ Status Receive::update()
     command->dribble(0.0)
       .kickStraight(getParameter<double>("redirect_kick_power"))
       .setTargetTheta(target_angle);
+
+    // Redirect preview (incoming and outgoing directions)
+    if (getParameter<bool>("viz_redirect_preview")) {
+      Vector2 in_vec = interception_point - world_model()->ball().pos;
+      if (in_vec.norm() < 1e-6 && world_model()->ball().vel.norm() > 1e-6) {
+        in_vec =
+          interception_point - (interception_point - world_model()->ball().vel.normalized() * 0.3);
+      }
+      Vector2 out_vec = redirect_target - interception_point;
+      if (in_vec.norm() > 1e-6) {
+        visualizer->line()
+          .start(interception_point - in_vec.normalized() * 0.35)
+          .end(interception_point)
+          .stroke("red")
+          .strokeWidth(10)
+          .build();
+      }
+      if (out_vec.norm() > 1e-6) {
+        visualizer->line()
+          .start(interception_point)
+          .end(interception_point + out_vec.normalized() * 0.6)
+          .stroke("lime")
+          .strokeWidth(10)
+          .build();
+      }
+    }
   } else {
     command->lookAtBall().kickStraight(0.);
   }
@@ -66,11 +116,37 @@ Status Receive::update()
 
 Point Receive::getInterceptionPoint() const
 {
-  Segment ball_line(
-    world_model()->ball().pos,
-    (world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0));
-  Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+  // NaN値チェックのヘルパー関数
+  auto isValidPoint = [](const Point & p) -> bool {
+    return std::isfinite(p.x()) && std::isfinite(p.y());
+  };
+
+  Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.0);
+  Point closest_point =
+    world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0).closest_point;
+
+  // Optionally draw ball trajectory thin and semi-transparent for both policies
+  if (getParameter<bool>("viz_ball_traj")) {
+    visualizer->line()
+      .start(ball_line.first)
+      .end(ball_line.second)
+      .stroke("#00aaff", 0.5)
+      .strokeWidth(6)
+      .build();
+  }
+
+  // closest_pointのNaN値チェック
+  if (!isValidPoint(closest_point)) {
+    std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用"
+              << std::endl;
+    command->addStateFactor(
+      "Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
+    closest_point = robot()->pose.pos;
+  }
+
   if (robot()->getDistance(closest_point) < 0.1) {
+    command->addStateFactor(
+      "Receive", "ロボットがclosest_pointに十分近いため、closest policyを強制適用");
     return closest_point;
   }
 
@@ -78,72 +154,133 @@ Point Receive::getInterceptionPoint() const
   auto acc = getParameter<double>("robot_acc_for_prediction");
   auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
   command->addStateFactor("Receive::policy", policy);
+
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
       {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
+    // Slack color mapper: [-0.5, 0, +0.5] -> red, yellow, green
+    auto slackColor = [](double s) -> std::string {
+      double v = std::clamp(s, -0.5, 0.5);
+      // map to [0,1]
+      double t = (v + 0.5) / 1.0;
+      // simple red->yellow->green gradient
+      int r, g, b = 0;
+      if (t < 0.5) {
+        // red (255,0,0) to yellow (255,255,0)
+        double k = t / 0.5;
+        r = 255;
+        g = static_cast<int>(255 * k);
+      } else {
+        // yellow (255,255,0) to green (0,200,0)
+        double k = (t - 0.5) / 0.5;
+        r = static_cast<int>(255 * (1.0 - k));
+        g = static_cast<int>(255 - 55 * k);  // 255 -> ~200
+      }
+      std::ostringstream oss;
+      oss << "rgb(" << r << "," << g << ",0)";
+      return oss.str();
+    };
 
-    for (auto slack : slack_times) {
-      visualizer->text()
-        .position(slack.intercept_point)
-        .text(std::to_string(slack.robot->id) + ": " + std::to_string(slack.slack_time))
-        .fontSize(50)
-        .fill([&]() -> std::string {
-          if (slack.slack_time > 0) {
-            return "black";
-          } else {
-            return "red";
-          }
-        }())
-        .build();
-    }
-
-    // マイナスのスラックタイムは削除
+    // マイナスのスラックタイムとNaN値を含むエントリを削除
     slack_times.erase(
       std::remove_if(
         slack_times.begin(), slack_times.end(),
-        [](const auto & slack) { return slack.slack_time < 0; }),
+        [&](const auto & slack) {
+          return slack.slack_time < 0 || !isValidPoint(slack.intercept_point);
+        }),
       slack_times.end());
 
     if (slack_times.empty()) {
-      return getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+      std::string message = "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック";
+      std::cout << message << std::endl;
+      command->addStateFactor("Receive", message);
+      Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+      if (!isValidPoint(fallback_point)) {
+        // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
+        std::string message = "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用";
+        std::cout << message << std::endl;
+        command->addStateFactor("Receive", message);
+        return robot()->pose.pos;
+      }
+      return fallback_point;
     }
 
     auto [min_slack, max_slack] = std::minmax_element(
       slack_times.begin(), slack_times.end(),
       [](const auto & a, const auto & b) { return a.slack_time < b.slack_time; });
+    // Draw candidate points colored by slack
+    if (getParameter<bool>("viz_candidates")) {
+      for (const auto & s : slack_times) {
+        visualizer->circle()
+          .center(s.intercept_point)
+          .radius(0.06)
+          .fill(slackColor(s.slack_time), 0.6)
+          .stroke("black", 0.3)
+          .strokeWidth(4)
+          .build();
+      }
+    }
 
-    if (max_slack != slack_times.end()) {
-      std::string text = "max_slack: " + std::to_string(max_slack->slack_time);
-      visualizer->text()
-        .position(max_slack->intercept_point)
-        .text(text)
-        .fill("black")
-        .fontSize(100)
-        .build();
-    }
-    if (min_slack != slack_times.end()) {
-      std::string text = "min_slack: " + std::to_string(min_slack->slack_time);
-      visualizer->text()
-        .position(min_slack->intercept_point)
-        .text(text)
-        .fill("black")
-        .fontSize(100)
-        .build();
-    }
+    Point selected_point;
+    double selected_slack = 0.0;
     if (policy == "max_slack" && max_slack != slack_times.end()) {
-      return max_slack->intercept_point;
+      selected_point = max_slack->intercept_point;
+      selected_slack = max_slack->slack_time;
     } else if (policy == "min_slack" && min_slack != slack_times.end()) {
-      return min_slack->intercept_point;
+      selected_point = min_slack->intercept_point;
+      selected_slack = min_slack->slack_time;
+    } else {
+      selected_point = world_model()->ball().pos;
     }
-    return world_model()->ball().pos;
+
+    // 選択されたポイントのNaN値チェック
+    if (!isValidPoint(selected_point)) {
+      std::string message = "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
+      std::cout << message << std::endl;
+      command->addStateFactor("Receive", message);
+      return robot()->pose.pos;
+    }
+
+    // Emphasize selected point with double circle and small label
+    if (getParameter<bool>("viz_candidates")) {
+      visualizer->circle()
+        .center(selected_point)
+        .radius(0.09)
+        .stroke("#222")
+        .strokeWidth(8)
+        .build();
+      visualizer->circle().center(selected_point).radius(0.06).fill("#ffffff", 0.25).build();
+      std::ostringstream ss;
+      if (policy == "max_slack") ss << "max ";
+      if (policy == "min_slack") ss << "min ";
+      ss << std::fixed << std::setprecision(2) << selected_slack << "s";
+      visualizer->text()
+        .position(selected_point + Vector2(0.0, -0.18))
+        .text(ss.str())
+        .fontSize(60)
+        .fill("white")
+        .textAnchor("middle")
+        .build();
+    }
+    return selected_point;
+
   } else if (policy == "closest") {
-    visualizer->line()
-      .start(ball_line.first)
-      .end(ball_line.second)
-      .stroke("blue")
-      .strokeWidth(10)
+    // Highlight closest point slightly and annotate
+    visualizer->circle()
+      .center(closest_point)
+      .radius(0.06)
+      .fill("#ffffff", 0.25)
+      .stroke("#222")
+      .strokeWidth(6)
       .build();
-    return getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+    visualizer->text()
+      .position(closest_point + Vector2(0.0, -0.18))
+      .text("closest")
+      .fontSize(50)
+      .fill("white")
+      .textAnchor("middle")
+      .build();
+    return closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
   }

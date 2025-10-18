@@ -184,7 +184,7 @@ void CmdSetMaxVelocity::initialize() { setParameter("max_velocity", 0.5); }
 
 Status CmdSetMaxVelocity::update()
 {
-  command->setMaxVelocity(getParameter<double>("max_velocity"));
+  command->setMaxVelocity("CmdSetMaxVelocity::update", getParameter<double>("max_velocity"));
   return Status::SUCCESS;
 }
 
@@ -197,7 +197,8 @@ void CmdSetMaxAcceleration::initialize() { setParameter("max_acceleration", 0.5)
 
 Status CmdSetMaxAcceleration::update()
 {
-  command->setMaxAcceleration(getParameter<double>("max_acceleration"));
+  command->setMaxAcceleration(
+    "CmdSetMaxAcceleration skill", getParameter<double>("max_acceleration"));
   return Status::SUCCESS;
 }
 

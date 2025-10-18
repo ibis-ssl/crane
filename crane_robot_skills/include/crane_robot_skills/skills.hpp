@@ -8,16 +8,16 @@
 #define CRANE_ROBOT_SKILLS__SKILLS_HPP_
 
 #include <crane_robot_skills/attacker.hpp>
+#include <crane_robot_skills/ball_calibration_data_collector.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
+#include <crane_robot_skills/center_stop_kick.hpp>
 #include <crane_robot_skills/emplace_robot.hpp>
 #include <crane_robot_skills/forward.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
-#include <crane_robot_skills/go_over_ball.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/idle.hpp>
 #include <crane_robot_skills/kick.hpp>
-#include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
 #include <crane_robot_skills/receive.hpp>

@@ -22,7 +22,6 @@
 #include "marker_planner.hpp"
 #include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
-#include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
 #include "pass_receiver_planner.hpp"
 #include "placement_avoidance_planner.hpp"
@@ -31,6 +30,8 @@
 #include "skill_planner.hpp"
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
+#include "ball_calibration_data_collector_planner.hpp"
+#include "center_stop_kick_planner.hpp"
 #include "emplace_robot_planner.hpp"
 #include "passable_ball_placement_planner.hpp"
 #include "sandwich_ball_placement_planner.hpp"
@@ -65,7 +66,6 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"catch_ball",                                [](Ts... ts) { return std::make_shared<CatchBallPlanner>(ts...); }},
       {"tigers_goalie",                             [](Ts... ts) { return std::make_shared<TigersGoaliePlanner>(ts...); }},
       {"waiter",                                    [](Ts... ts) { return std::make_shared<WaiterPlanner>(ts...); }},
-      {"our_kickoff",                               [](Ts... ts) { return std::make_shared<OurKickOffPlanner>(ts...); }},
       {"our_penalty_kick",                          [](Ts... ts) { return std::make_shared<OurPenaltyKickPlanner>(ts...); }},
       {"pass_receive",                              [](Ts... ts) { return std::make_shared<PassReceiverPlanner>(ts...); }},
       {"their_penalty_kick",                        [](Ts... ts) { return std::make_shared<TheirPenaltyKickPlanner>(ts...); }},
@@ -81,7 +81,9 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"total_defense",                             [](Ts... ts) { return std::make_shared<TotalDefensePlanner>(ts...); }},
       {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }},
       {"forward",                                   [](Ts... ts) { return std::make_shared<ForwardPlanner>(ts...); }},
-      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }}
+      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }},
+      {"ball_calibration_data_collector",          [](Ts... ts) { return std::make_shared<BallCalibrationDataCollectorPlanner>(ts...); }},
+      {"center_stop_kick",                          [](Ts... ts) { return std::make_shared<CenterStopKickPlanner>(ts...); }}
       // NOLINTEND
       // clang-format on
     };

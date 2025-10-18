@@ -7,8 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__TELEOP_HPP_
 #define CRANE_ROBOT_SKILLS__TELEOP_HPP_
 
-#include <Eigen/Geometry>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <sensor_msgs/msg/joy.hpp>

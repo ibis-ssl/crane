@@ -11,3 +11,5 @@ sessions:
     capacity: 1
   - name: forward
     capacity: 20
+  - name: waiter
+    capacity: 20

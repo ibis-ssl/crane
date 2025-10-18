@@ -46,8 +46,8 @@ extern "C" {
 }
 #endif
 
-#include <crane_basics/diagnosed_publisher.hpp>
-#include <crane_basics/multicast.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/multicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
@@ -55,10 +55,13 @@ extern "C" {
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
+#include <crane_world_model_publisher/pass_target_selector.hpp>
+#include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
 
 namespace crane
@@ -95,11 +98,7 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  VisualizerMessageBuilder::SharedPtr traj_visualizer;
-
-  VisualizerMessageBuilder::SharedPtr slack_visualizer;
-
-  VisualizerMessageBuilder::SharedPtr pass_score_visualizer;
+  std::unique_ptr<VisualizationManager> visualization_manager_;
 
   std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
 
@@ -122,6 +121,9 @@ private:
   double robot_acc_for_prediction;
 
   double robot_max_vel_for_prediction;
+
+  // パス先選定（専用クラス）
+  PassTargetSelector pass_target_selector_;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

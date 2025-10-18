@@ -1,0 +1,51 @@
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#ifndef CRANE_COMM__TIME_HPP_
+#define CRANE_COMM__TIME_HPP_
+
+#include <chrono>
+#include <cmath>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
+
+namespace crane
+{
+template <typename TClock>
+auto getDiffSec(std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
+  -> double
+{
+  return std::abs(std::chrono::duration<double>(end - start).count());
+}
+
+template <typename TClock>
+auto getElapsedSec(std::chrono::time_point<TClock> start) -> double
+{
+  return getDiffSec(start, TClock::now());
+}
+
+class ScopedTimer
+{
+public:
+  explicit ScopedTimer(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub) : publisher(pub) {}
+
+  ~ScopedTimer()
+  {
+    std_msgs::msg::Float32 msg;
+    msg.data = getElapsedSec(start);
+    publisher->publish(msg);
+  }
+  auto elapsedSec() const -> double { return getElapsedSec(start); }
+
+private:
+  std::chrono::time_point<std::chrono::high_resolution_clock> start =
+    std::chrono::high_resolution_clock::now();
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr publisher;
+};
+}  // namespace crane
+
+#endif  // CRANE_COMM__TIME_HPP_

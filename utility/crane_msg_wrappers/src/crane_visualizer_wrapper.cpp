@@ -11,10 +11,11 @@ namespace crane
 auto VisualizerMessageBuilder::flush() -> void
 {
   if (CraneVisualizerBuffer::active()) {
-    SvgPrimitiveArray layer_msg;
-    layer_msg.layer = layer;
-    layer_msg.svg_primitives = message_buffer;
-    CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
+    SvgLayerUpdate update_msg;
+    update_msg.layer = layer;
+    update_msg.operation = operation;
+    update_msg.svg_primitives = message_buffer;
+    CraneVisualizerBuffer::buffer->message_buffer.updates.push_back(update_msg);
     message_buffer.clear();
   }
 }

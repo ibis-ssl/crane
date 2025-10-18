@@ -4,9 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ball_model.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/robot_info.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/robot_info.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 namespace crane::skills
@@ -18,6 +17,7 @@ void Goalie::initialize()
   setParameter("block_distance", 0.5);
   setParameter("robot_acc_for_prediction", 2.0);
   setParameter("robot_max_vel_for_prediction", 5.0);
+  setPreUpdateFunction([&]() { command->clearSkillStates(); });
 }
 
 Status Goalie::update()
@@ -113,7 +113,6 @@ void Goalie::emitBallFromPenaltyArea()
 
   visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
 
-  Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
@@ -128,14 +127,14 @@ void Goalie::inplay(bool enable_emit)
   const auto & ball = world_model()->ball();
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
-  Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
+  Segment ball_line = ball.getTrajectorySegmentByDistance(10.0);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0).disableGoalAreaAvoidance().disableBallAvoidance();
 
   if (not intersections.empty() && world_model()->ball().vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
-    auto result = getClosestPointAndDistance(ball_line, command->getRobot()->pose.pos);
+    auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
     auto target = [&]() {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
@@ -147,8 +146,10 @@ void Goalie::inplay(bool enable_emit)
 
     command->setTargetPosition(target).lookAtBallFrom(target);
     if (command->getRobot()->getDistance(target) > 0.05) {
-      // なりふり構わず爆加速
-      // command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+      // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
+      // command->setTerminalVelocity(2.0)
+      //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
+      //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
     }
   } else {
     if (
@@ -164,7 +165,7 @@ void Goalie::inplay(bool enable_emit)
       command->setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
-        Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
+        Segment ball_prediction_4s = ball.getTrajectorySegmentByTime(4.0);
         auto [next_their_attacker, distance] = [&]() {
           std::shared_ptr<RobotInfo> nearest_enemy = nullptr;
           double min_distance = 1000000.0;
@@ -272,9 +273,10 @@ void Goalie::inplay(bool enable_emit)
                                       .front()
                                       ->pose.pos);
 
-            // ボールが敵ロボットに届くまでの時間
+            // ボールが敵ロボットに最も近い点に到達するまでの時間
             double ball_to_enemy_dist = bg::distance(ball.pos, result.closest_point);
-            auto estimated_ball_reach_time = getBallReachTime(ball_to_enemy_dist, ball.vel.norm());
+            auto estimated_ball_reach_time =
+              ball.getTimeToReachClosestPointFrom(result.closest_point);
             if (not estimated_ball_reach_time) {
               threat_point = result.closest_point;
             } else {
@@ -294,7 +296,7 @@ void Goalie::inplay(bool enable_emit)
             }
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";
-            threat_point = ball.pos + ball.vel * 0.5;
+            threat_point = ball.getPredictedPosition(0.5);
           }
 
           auto [weak_point, dist] = [&]() {
@@ -341,8 +343,10 @@ void Goalie::inplay(bool enable_emit)
 
           command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
           if (command->getRobot()->getDistance(wait_point) > 0.03) {
-            // なりふり構わず爆加速
-            //              command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+            // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
+            // command->setTerminalVelocity(2.0)
+            //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
+            //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
           }
           // }
         }

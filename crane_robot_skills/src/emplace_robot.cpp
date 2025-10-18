@@ -20,7 +20,8 @@ Status EmplaceRobot::update()
   double position_y_side = getParameter<bool>("emplace_line_positive") ? 1.0 : -1.0;
   target_position.y() = position_y_side * world_model()->fieldSize().y() * 0.5;
 
-  command->setTargetPosition(target_position).setMaxVelocity(getParameter<double>("max_speed"));
+  command->setTargetPosition(target_position)
+    .setMaxVelocity("EmplaceRobot::max_speed", getParameter<double>("max_speed"));
   return Status::RUNNING;
 }
 }  // namespace crane::skills

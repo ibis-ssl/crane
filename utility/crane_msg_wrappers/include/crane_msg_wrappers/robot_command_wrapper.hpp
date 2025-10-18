@@ -7,15 +7,17 @@
 #ifndef CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/pid_controller.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
+#include <crane_physics/kicker_model.hpp>
+#include <crane_physics/pid_controller.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "delay_monitor_wrapper.hpp"
 #include "world_model_wrapper.hpp"
 
 namespace crane
@@ -32,6 +34,9 @@ private:
 
   WorldModelWrapper::SharedPtr world_model;
 
+  // キッカーモデル（停止距離指定キック用）
+  std::shared_ptr<KickerModel> kicker_model;
+
   // 現在のモード
   uint8_t current_mode;
 
@@ -44,6 +49,7 @@ public:
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)),
     world_model(world_model_wrapper),
+    kicker_model(nullptr),
     current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE),
     name(skill_name)
   {
@@ -132,6 +138,45 @@ public:
     latest_msg.chip_enable = true;
     latest_msg.local_planner_config.target_chip_distance = distance;
     return *this;
+  }
+
+  auto kickStraightToStopAt(double stop_distance) -> RobotCommandWrapper &
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateKickPowerForStopDistance(stop_distance);
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = kick_power;
+    return *this;
+  }
+
+  auto kickStraightWithInitialSpeed(double initial_speed) -> RobotCommandWrapper &
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = kick_power;
+    return *this;
+  }
+
+  auto predictStraightKickStopDistance(double initial_speed) const -> double
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
+    return kicker_model->predictStopDistance(kick_power);
   }
 
   auto dribble(double power) -> RobotCommandWrapper &
@@ -256,16 +301,30 @@ public:
     return *this;
   }
 
-  auto setMaxVelocity(double max_velocity) -> RobotCommandWrapper &
+  auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_velocity = max_velocity;
+    latest_msg.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_velocity));
     return *this;
   }
 
-  auto setMaxAcceleration(double max_acceleration) -> RobotCommandWrapper &
+  auto clearMaxVelocityFactors() -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    latest_msg.local_planner_config.max_velocity_factors.clear();
     return *this;
+  }
+
+  auto setMaxAcceleration(const std::string & factor_name, double max_acceleration)
+    -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_acceleration));
+    return *this;
+  }
+
+  auto clearMaxAccelerationFactors() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.clear();
   }
 
   auto setOmegaLimit(double omega_limit) -> RobotCommandWrapper &
@@ -324,15 +383,58 @@ public:
     if (auto state_factor = ranges::find_if(
           latest_msg.state_factors,
           [name](const auto & state_factor) { return state_factor.name == name; });
-        state_factor == latest_msg.state_factors.end() || state_factor->state != state) {
-      crane_msgs::msg::StateFactor msg;
+        state_factor == latest_msg.state_factors.end() || state_factor->value != state) {
+      crane_msgs::msg::NamedString msg;
       msg.name = name;
-      msg.state = state;
+      msg.value = state;
       latest_msg.state_factors.emplace_back(msg);
     }
   }
 
   auto clearSkillStates() -> void { latest_msg.state_factors.clear(); }
+
+  // ===== 遅延監視関連メソッド =====
+
+  auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
+  {
+    DelayMonitorWrapper::addDelayCheckpoint(latest_msg.delay_checkpoints, name, value);
+  }
+
+  auto clearDelayCheckpoints() -> void
+  {
+    DelayMonitorWrapper::clearCheckpoints(latest_msg.delay_checkpoints);
+  }
+
+  auto calculateDelayMs(const std::string & start_name, const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateDelayMs(
+      latest_msg.delay_checkpoints, start_name, end_name);
+  }
+
+  auto calculateTotalDelayMs(const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateTotalDelayMs(latest_msg.delay_checkpoints, end_name);
+  }
+
+  auto getDelayCheckpointsString() -> std::string
+  {
+    return DelayMonitorWrapper::checkpointsToString(latest_msg.delay_checkpoints);
+  }
+
+  auto mergeDelayCheckpoints(const crane_msgs::msg::DelayCheckpoints & source_checkpoints) -> void
+  {
+    DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
+  }
+
+  // ===== KickerModel管理メソッド =====
+
+  auto setKickerModel(std::shared_ptr<KickerModel> kicker) -> RobotCommandWrapper &
+  {
+    kicker_model = kicker;
+    return *this;
+  }
+
+  auto getKickerModel() const -> std::shared_ptr<KickerModel> { return kicker_model; }
 
   // ===== PositionTargetMode固有の関数 =====
 
@@ -364,7 +466,7 @@ public:
 
   auto getTargetDistance() -> double
   {
-    if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+    if (current_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       return std::hypot(
         latest_msg.position_target_mode.front().target_x - robot->pose.pos.x(),
         latest_msg.position_target_mode.front().target_y - robot->pose.pos.y());

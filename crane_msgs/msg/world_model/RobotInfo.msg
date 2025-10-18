@@ -14,6 +14,7 @@ Pose2DStamped vision
 
 bool vision_detected
 bool feedback_detected
+bool internal_tracker_detected
 bool detected
 
 # Latest detection time
@@ -25,3 +26,12 @@ BallContact ball_contact
 
 builtin_interfaces/Time last_ball_sensor_stamp
 bool ball_sensor
+
+# ロボットのエラー情報（/robot_feedback 由来）
+# id または info が非ゼロであればエラー有りとみなす
+bool has_error
+uint16 error_id
+uint16 error_info
+float32 error_value
+builtin_interfaces/Time last_error_stamp
+float32 error_duration_sec

@@ -8,7 +8,7 @@
 #define CRANE_PLANNER_PLUGINS__PLACEMENT_AVOIDANCE_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_basics/boost_geometry.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -124,10 +124,11 @@ public:
         break;
       }
 
-      commands.emplace_back(CommandWithOriginalPosition{
-        std::make_shared<RobotCommandWrapper>(
-          "ball_placement_avoidance_planner", robot_id, world_model),
-        world_model->getOurRobot(robot_id)->pose.pos});
+      commands.emplace_back(
+        CommandWithOriginalPosition{
+          std::make_shared<RobotCommandWrapper>(
+            "ball_placement_avoidance_planner", robot_id, world_model),
+          world_model->getOurRobot(robot_id)->pose.pos});
       ++index;
     }
     // commandsからrobot_idのリストを作成

@@ -49,14 +49,12 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::Kick>();
     setUpSkillDictionary<skills::Sleep>();
     setUpSkillDictionary<skills::Receive>();
-    setUpSkillDictionary<skills::GoOverBall>();
     setUpSkillDictionary<skills::SimpleKickOff>();
     setUpSkillDictionary<skills::StealBall>();
     setUpSkillDictionary<skills::SubAttacker>();
     setUpSkillDictionary<skills::TestMotionPosition>();
     setUpSkillDictionary<skills::Marker>();
     setUpSkillDictionary<skills::SingleBallPlacement>();
-    setUpSkillDictionary<skills::KickoffAttack>();
     setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
     setUpSkillDictionary<skills::TestMotionPosition>();
@@ -84,21 +82,28 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
         skill_status = skills::Status::RUNNING;
         parameters.clear();
+
+        // Apply parameters to the skill
         for (auto e : goal->parameter.bool_values) {
           parameters[e.name] = e.value;
+          running_skill->setParameter(e.name, e.value);
         }
         for (auto e : goal->parameter.float_values) {
           parameters[e.name] = static_cast<double>(e.value);
+          running_skill->setParameter(e.name, static_cast<double>(e.value));
         }
         for (auto e : goal->parameter.int_values) {
           parameters[e.name] = static_cast<int>(e.value);
+          running_skill->setParameter(e.name, static_cast<int>(e.value));
         }
         for (auto e : goal->parameter.string_values) {
           parameters[e.name] = e.value;
+          running_skill->setParameter(e.name, e.value);
         }
         for (auto e : goal->parameter.position_values) {
           Point p(e.x, e.y);
           parameters[e.name] = p;
+          running_skill->setParameter(e.name, p);
         }
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       } else {
@@ -123,13 +128,12 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
       std::cout << "accept goal callback" << std::endl;
     });
 
-  action_sync_timer = action_node->create_wall_timer(std::chrono::milliseconds(20), [this]() {
+  action_sync_timer = action_node->create_wall_timer(std::chrono::milliseconds(200), [this]() {
     if (skill_execution_goal_handle && skill_execution_goal_handle->is_active() && running_skill) {
       if (skill_status == skills::Status::RUNNING) {
         auto feedback = std::make_shared<SkillExecution::Feedback>();
-        std::stringstream feedback_ss;
-        running_skill->print(feedback_ss);
-        feedback->message = feedback_ss.str();
+        // Use simple skill name instead of expensive print() method for performance
+        feedback->message = "Executing skill: " + running_skill->name;
         skill_execution_goal_handle->publish_feedback(feedback);
       } else {
         auto result = std::make_shared<SkillExecution::Result>();
@@ -163,6 +167,12 @@ auto SimpleAIPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
 {
+  // For SimpleAI planner, if we have a running skill, always return the robot_id
+  // even if it's not in selectable_robots. This ensures WebUI skill execution works.
+  if (running_skill) {
+    return {robot_id};
+  }
+
   // if robot_id is in selectable_robots, add it to selected robots.
   if (
     std::find(selectable_robots.begin(), selectable_robots.end(), robot_id) !=

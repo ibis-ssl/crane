@@ -7,8 +7,8 @@
 #ifndef CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 #define CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/interval.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/receive.hpp>
@@ -57,8 +57,6 @@ public:
       .build();
   }
 
-  std::shared_ptr<RobotInfo> selectPassReceiver();
-
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
 
   Point & kick_target;
@@ -81,6 +79,17 @@ public:
 
     auto update(const Point & current_position, const Point & ball_position) -> void;
   } over_dribble;
+
+private:
+  void configurePassKick(const Point & target, Kick & kick_skill);
+
+  bool shouldUseChipKick(const Point & target);
+
+  double evaluateGoalAngle(const Point & position);
+
+  bool isPassBlocked(const Point & target);
+
+  double calculatePassScore(const Point & target);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
