@@ -38,31 +38,16 @@ def generate_launch_description():
             # ネットワーク設定
             # ============================================================
             DeclareLaunchArgument(
-                "vision_addr",
-                default_value="224.5.23.2",
-                description="SSL-Visionと接続するためのマルチキャストアドレス",
-            ),
-            DeclareLaunchArgument(
                 "vision_port",
                 default_value="10006",  # 公式
                 # default_value="10020", #独自のやつ
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
-                "referee_addr",
-                default_value="224.5.23.1",
-                description="Game Controllerと接続するためのマルチキャストアドレス",
-            ),
-            DeclareLaunchArgument(
                 "referee_port",
                 default_value="10003",  # 公式
                 # default_value="11003", # 独自のやつ
                 description="Game Controllerと接続するためのマルチキャストポート",
-            ),
-            DeclareLaunchArgument(
-                "tracker_addr",
-                default_value="224.5.23.2",
-                description="SSL Trackerと接続するためのマルチキャストアドレス",
             ),
             DeclareLaunchArgument(
                 "tracker_port",
@@ -89,21 +74,6 @@ def generate_launch_description():
                 "debug_tools",
                 default_value="true",
                 description="デバッグツールの起動フラグ",
-            ),
-            DeclareLaunchArgument(
-                "debug_tools_web",
-                default_value="true",
-                description="デバッグツールのWebインターフェース有効化",
-            ),
-            DeclareLaunchArgument(
-                "debug_tools_cli",
-                default_value="false",
-                description="デバッグツールのCLIインターフェース有効化",
-            ),
-            DeclareLaunchArgument(
-                "debug_tools_port",
-                default_value="8090",
-                description="デバッグツールのWebサーバーポート",
             ),
             # ============================================================
             # ロボット性能パラメータ
@@ -145,11 +115,6 @@ def generate_launch_description():
                 description="rosbag記録フラグ",
             ),
             DeclareLaunchArgument(
-                "foxglove",
-                default_value="true",
-                description="Foxglove Bridge起動フラグ",
-            ),
-            DeclareLaunchArgument(
                 "ball_physics_config_path",
                 default_value="grsim_ball_physics.yaml",
                 description="ボール物理パラメータ設定ファイル名（configフォルダ内）",
@@ -188,7 +153,7 @@ def generate_launch_description():
                 name="crane_websocket_server",
                 parameters=[
                     {
-                        "port": LaunchConfiguration("debug_tools_port"),
+                        "port": 8090,
                         "websocket_port": 8091,
                     }
                 ],
@@ -287,7 +252,7 @@ def generate_launch_description():
                 package="robocup_ssl_comm",
                 executable="game_controller_node",
                 parameters=[
-                    {"multicast_address": LaunchConfiguration("referee_addr")},
+                    {"multicast_address": "224.5.23.1"},
                     {"multicast_port": LaunchConfiguration("referee_port")},
                 ],
                 on_exit=default_exit_behavior,
@@ -339,9 +304,9 @@ def generate_launch_description():
                 parameters=[
                     {"initial_team_color": "YELLOW"},
                     {"team_name": LaunchConfiguration("team")},
-                    {"vision_address": LaunchConfiguration("vision_addr")},
+                    {"vision_address": "224.5.23.2"},
                     {"vision_port": LaunchConfiguration("vision_port")},
-                    {"tracker_address": LaunchConfiguration("tracker_addr")},
+                    {"tracker_address": "224.5.23.2"},
                     {"tracker_port": LaunchConfiguration("tracker_port")},
                     {
                         "is_emplace_positive_side": LaunchConfiguration(
@@ -432,7 +397,6 @@ def generate_launch_description():
             # Foxglove Bridge（可視化ツール連携、条件付き起動）
             # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
             Node(
-                condition=IfCondition(LaunchConfiguration("foxglove")),
                 package="foxglove_bridge",
                 executable="foxglove_bridge",
                 parameters=[
