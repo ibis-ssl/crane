@@ -12,7 +12,7 @@ Craneシステム管理用のGUIパッケージ（**現在開発中止**）で�
 
 - **consai_visualizer**: SSL専用可視化GUI
 - **crane_visualization_aggregator**: 統合可視化システム
-- **foxglove**: 外部可視化ツール（crane.launch.py経由）
+- **foxglove**: 外部可視化ツール（crane.launch.xml経由）
 
 ## アーキテクチャ上の役割
 

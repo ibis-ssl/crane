@@ -13,14 +13,14 @@ Craneシステム全体の**起動統合パッケージ**として、複数のRO
 
 ## 起動スクリプト
 
-### crane.launch.py
+### crane.launch.xml
 
 ```bash
 # メインシステム起動（シミュレーション）
-ros2 launch crane_bringup crane.launch.py sim:=true
+ros2 launch crane_bringup crane.launch.xml sim:=true
 
 # 実機システム起動
-ros2 launch crane_bringup crane.launch.py sim:=false
+ros2 launch crane_bringup crane.launch.xml sim:=false
 ```
 
 ### data.launch.py

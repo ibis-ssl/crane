@@ -72,7 +72,7 @@ ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrat
 2. グローバル減速度パラメータを0.01刻みで最適化
 3. 各パワー値（0.0-1.0の0.1刻み）での平均初速度を算出
 4. KickerModel + BallPhysicsModel統合YAML設定ファイルを生成
-5. crane.launch.py用設定パスを標準出力に表示
+5. crane.launch.xml用設定パスを標準出力に表示
 
 ### 可視化確認
 
@@ -99,7 +99,7 @@ KickerModel + BallPhysicsModel統合キャリブレーション結果
 以下のファイルが生成されました:
 /path/to/calibrated_kicker_physics.yaml
 
-crane.launch.pyで以下を設定してください:
+crane.launch.xmlで以下を設定してください:
 {"kicker_physics_config": "/path/to/calibrated_kicker_physics.yaml"}
 
 測定結果詳細:
@@ -149,7 +149,7 @@ calibration_info:
 ### 自動適用（推奨）
 
 1. キャリブレーション実行で統合YAML設定ファイルが自動生成
-2. `crane.launch.py`が自動的に統合設定ファイルを参照
+2. `crane.launch.xml`が自動的に統合設定ファイルを参照
 3. システム再起動で新しいKickerModel + BallPhysicsModel設定が適用
 
 ### 手動適用
@@ -161,7 +161,7 @@ calibration_info:
 cp /path/to/calibrated_kicker_physics.yaml src/crane/crane_world_model_publisher/config/kicker_physics.yaml
 
 # システム再起動
-ros2 launch crane_bringup crane.launch.py
+ros2 launch crane_bringup crane.launch.xml
 ```
 
 ### 新機能の使用
