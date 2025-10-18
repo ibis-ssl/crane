@@ -158,7 +158,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 ros2 run crane_session_controller crane_session_controller_node
 
 # システム全体起動（含む）
-ros2 launch crane_bringup crane.launch.py
+ros2 launch crane_bringup crane.launch.xml
 ```
 
 ### カスタム設定

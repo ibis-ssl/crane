@@ -84,7 +84,7 @@
 - ビルド（ワークスペースルートで実行）
   - `colcon build --symlink-install --packages-select crane_msgs crane_world_model_publisher crane_robot_skills crane_session_controller`
 - 起動（例）
-  - `ros2 launch crane_bringup crane.launch.py sim:=true`
+  - `ros2 launch crane_bringup crane.launch.xml sim:=true`
 - 可視化・デバッグ
   - 受け手整列点やスコアは可視化トピックに反映（Session/WorldModel の可視化レイヤ参照）。
   - `ongoing_kick`, `pass_scores`, `pass_target_id` は `/world_model` を購読して確認。

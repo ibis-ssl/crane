@@ -17,7 +17,7 @@ services:
     command: |
       bash -c "
       source ../install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.py sim:=true speak:=false vision_port:=10020 referee_port:=10003
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003
       "
     tty: true
     stdin_open: true

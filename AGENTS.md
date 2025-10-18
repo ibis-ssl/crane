@@ -103,7 +103,7 @@ source install/local_setup.bash
 
 ```bash
 # シミュレーション込みのメイン起動
-ros2 launch crane_bringup crane.launch.py sim:=true
+ros2 launch crane_bringup crane.launch.xml sim:=true
 
 # 通信系のみ
 ros2 launch robocup_ssl_comm comm.launch.py

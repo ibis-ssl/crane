@@ -233,7 +233,7 @@ private:
 
     publishStatus("キャリブレーション完了");
 
-    // crane.launch.pyで使用できる形式で標準出力に出力
+    // crane.launch.xmlで使用できる形式で標準出力に出力
     outputLaunchFileArrays(optimization_result);
 
     RCLCPP_INFO(this->get_logger(), "JSONベースキャリブレーションが正常に完了しました");
@@ -396,7 +396,7 @@ private:
   }
 
   /**
-   * @brief crane.launch.pyで使用できる配列形式を標準出力に出力
+   * @brief crane.launch.xmlで使用できる配列形式を標準出力に出力
    */
   void outputLaunchFileArrays(
     const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
@@ -425,11 +425,11 @@ private:
       }
     }
 
-    // crane.launch.pyで使用できる形式で出力
+    // crane.launch.xmlで使用できる形式で出力
     std::cout << "\n==================================================\n";
-    std::cout << "crane.launch.py用キャリブレーション結果\n";
+    std::cout << "crane.launch.xml用キャリブレーション結果\n";
     std::cout << "==================================================\n";
-    std::cout << "以下の値をcrane.launch.pyのL198-199に貼り付けてください:\n\n";
+    std::cout << "以下の値をcrane.launch.xmlに設定してください:\n\n";
 
     // パワー配列（変更なし）
     std::cout << "                            {\"straight_kick_power_array\": [";

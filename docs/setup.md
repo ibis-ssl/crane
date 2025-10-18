@@ -135,9 +135,26 @@ make -j$(nproc)
 # 環境の読み込み
 source ~/ibis_ws/install/setup.bash
 
-# シミュレーションモードでの起動
-ros2 launch crane_bringup crane.launch.py
+# シミュレーションモードでの起動（独自ポート: Vision=10020, Referee=11003, Tracker=11010）
+ros2 launch crane_bringup crane.launch.xml sim:=true
+
+# 実機モードでの起動（公式ポート: Vision=10006, Referee=10003, Tracker=10010）
+ros2 launch crane_bringup crane.launch.xml sim:=false
+
+# カスタムポート設定での起動
+ros2 launch crane_bringup crane.launch.xml sim:=true vision_port:=12345
+
+# デバッグツールなしで起動
+ros2 launch crane_bringup crane.launch.xml debug_tools:=false
 ```
+
+**ポート設定について:**
+
+- `sim`引数により、ネットワークポート（Vision/Referee/Tracker）が自動的に切り替わります
+- `sim=true`: 独自ポート（grSimなどのシミュレータ用）
+- `sim=false`: 公式ポート（公式試合環境用）
+- 起動時にログに使用ポート番号が表示されます: `[crane.launch.xml] sim=true | Ports: Vision=10020, Referee=11003, Tracker=11010`
+- 個別ポート指定も可能: `vision_port:=`, `referee_port:=`, `tracker_port:=`
 
 ## トラブルシューティング
 
