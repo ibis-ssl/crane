@@ -206,7 +206,28 @@ private:
   Config config_;                                         ///< キッカーモデルの設定
   std::shared_ptr<BallPhysicsModel> ball_physics_model_;  ///< ボール物理モデル
 
+  static constexpr double kKickPowerMin = 0.0;        ///< 許容される最小キック力
+  static constexpr double kKickPowerMax = 1.0;        ///< 許容される最大キック力
+  static constexpr double kKickPowerTolerance = 0.25;  ///< 許容される範囲外のマージン
+
   // ===== 内部ヘルパー関数 =====
+
+  /**
+   * @brief 許容範囲外のキック力を安全な値にクランプ
+   * @param kick_power 入力キック力
+   * @return クランプされたキック力
+   * @throws std::runtime_error 許容範囲を大きく外れている場合
+   */
+  [[nodiscard]] auto clampKickPower(double kick_power) const -> double;
+
+  /**
+   * @brief 設定配列の構造的な妥当性を検証（空配列は許容）
+   * @param x_array X軸配列
+   * @param y_array Y軸配列
+   * @return 構造的に妥当な場合はtrue
+   */
+  [[nodiscard]] auto hasValidArrayStructure(
+    const std::vector<double> & x_array, const std::vector<double> & y_array) const -> bool;
 
   /**
    * @brief 線形補間による値の計算
