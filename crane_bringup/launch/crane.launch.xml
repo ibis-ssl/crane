@@ -14,206 +14,205 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-
 <launch>
-    <!-- ============================================================ -->
-    <!-- ネットワーク設定 -->
-    <!-- ============================================================ -->
-    <arg name="vision_port" default="" description="SSL-Visionと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-    <arg name="referee_port" default="" description="Game Controllerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-    <arg name="tracker_port" default="" description="SSL Trackerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+  <!-- ============================================================ -->
+  <!-- ネットワーク設定 -->
+  <!-- ============================================================ -->
+  <arg name="vision_port" default="" description="SSL-Visionと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+  <arg name="referee_port" default="" description="Game Controllerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+  <arg name="tracker_port" default="" description="SSL Trackerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
 
-    <!-- ============================================================ -->
-    <!-- チーム/動作モード設定 -->
-    <!-- ============================================================ -->
-    <arg name="team" default="ibis" description="チーム名"/>
-    <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
+  <!-- ============================================================ -->
+  <!-- チーム/動作モード設定 -->
+  <!-- ============================================================ -->
+  <arg name="team" default="ibis" description="チーム名"/>
+  <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
 
-    <!-- ============================================================ -->
-    <!-- ネットワークポート自動設定（sim引数に基づく） -->
-    <!-- ============================================================ -->
-    <!-- sim=trueの場合（独自ポート） -->
-    <let name="vision_port_final" value="10020" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
-    <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
-    <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+  <!-- ============================================================ -->
+  <!-- ネットワークポート自動設定（sim引数に基づく） -->
+  <!-- ============================================================ -->
+  <!-- sim=trueの場合（独自ポート） -->
+  <let name="vision_port_final" value="10020" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+  <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+  <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
 
-    <!-- sim=falseの場合（公式ポート） -->
-    <let name="vision_port_final" value="10006" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
-    <let name="referee_port_final" value="10003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
-    <let name="tracker_port_final" value="10010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+  <!-- sim=falseの場合（公式ポート） -->
+  <let name="vision_port_final" value="10006" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+  <let name="referee_port_final" value="10003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
+  <let name="tracker_port_final" value="10010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
 
-    <!-- ユーザー指定がある場合はそれを使用 -->
-    <let name="vision_port_final" value="$(var vision_port)" unless="$(eval &quot;'$(var vision_port)' == ''&quot;)"/>
-    <let name="referee_port_final" value="$(var referee_port)" unless="$(eval &quot;'$(var referee_port)' == ''&quot;)"/>
-    <let name="tracker_port_final" value="$(var tracker_port)" unless="$(eval &quot;'$(var tracker_port)' == ''&quot;)"/>
+  <!-- ユーザー指定がある場合はそれを使用 -->
+  <let name="vision_port_final" value="$(var vision_port)" unless="$(eval &quot;'$(var vision_port)' == ''&quot;)"/>
+  <let name="referee_port_final" value="$(var referee_port)" unless="$(eval &quot;'$(var referee_port)' == ''&quot;)"/>
+  <let name="tracker_port_final" value="$(var tracker_port)" unless="$(eval &quot;'$(var tracker_port)' == ''&quot;)"/>
 
-    <!-- 使用ポート情報の表示 -->
-    <log message="[crane.launch.xml] sim=$(var sim) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
+  <!-- 使用ポート情報の表示 -->
+  <log message="[crane.launch.xml] sim=$(var sim) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
 
-    <!-- ============================================================ -->
-    <!-- デバッグツール設定 -->
-    <!-- ============================================================ -->
-    <arg name="debug_tools" default="true" description="デバッグツールの起動フラグ"/>
+  <!-- ============================================================ -->
+  <!-- デバッグツール設定 -->
+  <!-- ============================================================ -->
+  <arg name="debug_tools" default="true" description="デバッグツールの起動フラグ"/>
 
-    <!-- ============================================================ -->
-    <!-- ロボット性能パラメータ -->
-    <!-- ============================================================ -->
-    <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
-    <arg name="robot_acc_for_prediction" default="2.0" description="予測計算（slack timeなど）に用いるロボットの加速度 [m/s^2]"/>
-    <arg name="robot_max_vel_for_prediction" default="5.0" description="予測計算（slack timeなど）に用いるロボットの最大速度 [m/s]"/>
+  <!-- ============================================================ -->
+  <!-- ロボット性能パラメータ -->
+  <!-- ============================================================ -->
+  <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
+  <arg name="robot_acc_for_prediction" default="2.0" description="予測計算（slack timeなど）に用いるロボットの加速度 [m/s^2]"/>
+  <arg name="robot_max_vel_for_prediction" default="5.0" description="予測計算（slack timeなど）に用いるロボットの最大速度 [m/s]"/>
 
-    <!-- ============================================================ -->
-    <!-- フィールド/試合設定 -->
-    <!-- ============================================================ -->
-    <arg name="is_emplace_positive_side" default="true" description="ロボットの退場方向（true: +X側, false: -X側）"/>
+  <!-- ============================================================ -->
+  <!-- フィールド/試合設定 -->
+  <!-- ============================================================ -->
+  <arg name="is_emplace_positive_side" default="true" description="ロボットの退場方向（true: +X側, false: -X側）"/>
 
-    <!-- ============================================================ -->
-    <!-- 機能フラグ -->
-    <!-- ============================================================ -->
-    <arg name="speak" default="false" description="音声ノードの起動フラグ"/>
-    <arg name="record" default="true" description="rosbag記録フラグ"/>
-    <arg name="ball_physics_config_path" default="grsim_ball_physics.yaml" description="ボール物理パラメータ設定ファイル名（configフォルダ内）"/>
+  <!-- ============================================================ -->
+  <!-- 機能フラグ -->
+  <!-- ============================================================ -->
+  <arg name="speak" default="false" description="音声ノードの起動フラグ"/>
+  <arg name="record" default="true" description="rosbag記録フラグ"/>
+  <arg name="ball_physics_config_path" default="grsim_ball_physics.yaml" description="ボール物理パラメータ設定ファイル名（configフォルダ内）"/>
 
-    <!-- ============================================================ -->
-    <!-- コアシステム -->
-    <!-- ============================================================ -->
-    <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
-        <param name="initial_session" value="HALT"/>
-        <param name="event_config_file_name" value="normal.yaml"/>
-        <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
-        <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
+  <!-- ============================================================ -->
+  <!-- コアシステム -->
+  <!-- ============================================================ -->
+  <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
+    <param name="initial_session" value="HALT"/>
+    <param name="event_config_file_name" value="normal.yaml"/>
+    <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
+    <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
+  </node>
+
+  <!-- ============================================================ -->
+  <!-- 可視化/デバッグ系 -->
+  <!-- ============================================================ -->
+  <!-- WebSocketサーバー -->
+  <node pkg="crane_debug_tools" exec="crane_websocket_server" name="crane_websocket_server" output="screen" if="$(var debug_tools)">
+    <param name="port" value="8090"/>
+    <param name="websocket_port" value="8091"/>
+  </node>
+
+  <!-- ============================================================ -->
+  <!-- プランニング/制御系 -->
+  <!-- ============================================================ -->
+  <!-- シミュレータ用（local_planner + sender） -->
+  <group if="$(var sim)">
+    <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
+      <param name="planner" value="rvo2"/>
+      <param name="max_vel" value="$(var max_vel)"/>
+      <param name="max_acc" value="2.0"/>
+      <param name="acceleration_factor" value="1.0"/>
+      <param name="rvo_radius" value="0.15"/>
+      <!-- KickerModel統合：YAML設定ファイルから読み込み -->
+      <param name="kicker_physics_config" value="$(find-pkg-share crane_world_model_publisher)/config/kicker_physics.yaml"/>
     </node>
 
-    <!-- ============================================================ -->
-    <!-- 可視化/デバッグ系 -->
-    <!-- ============================================================ -->
-    <!-- WebSocketサーバー -->
-    <node pkg="crane_debug_tools" exec="crane_websocket_server" name="crane_websocket_server" output="screen" if="$(var debug_tools)">
-        <param name="port" value="8090"/>
-        <param name="websocket_port" value="8091"/>
+    <node pkg="crane_sender" exec="sim_sender_node">
+      <param name="no_movement" value="false"/>
+      <param name="latency_ms" value="0.0"/>
+      <param name="sim_mode" value="$(var sim)"/>
+      <param name="kick_power_limit_straight" value="1.0"/>
+      <param name="kick_power_limit_chip" value="1.0"/>
+      <param name="chip_angle_deg" value="30.0"/>
+      <param name="theta_p_gain" value="3.0"/>
+      <param name="use_simple_velocity" value="false"/>
+    </node>
+  </group>
+
+  <!-- 実機用（local_planner + sender） -->
+  <group unless="$(var sim)">
+    <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
+      <param name="planner" value="rvo2"/>
+      <param name="max_vel" value="$(var max_vel)"/>
+      <param name="max_acc" value="2.0"/>
+      <param name="acceleration_factor" value="1.0"/>
+      <param name="straight_kick_power_array" value="[0.0, 0.4, 1.0, 1.0]"/>
+      <param name="straight_kick_speed_array" value="[0.0, 2.0, 4.0, 7.5]"/>
+      <param name="chip_kick_power_array" value="[0.0, 0.8, 1.0]"/>
+      <param name="chip_kick_distance_array" value="[0.0, 0.5, 1.5]"/>
     </node>
 
-    <!-- ============================================================ -->
-    <!-- プランニング/制御系 -->
-    <!-- ============================================================ -->
-    <!-- シミュレータ用（local_planner + sender） -->
-    <group if="$(var sim)">
-        <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-            <param name="planner" value="rvo2"/>
-            <param name="max_vel" value="$(var max_vel)"/>
-            <param name="max_acc" value="2.0"/>
-            <param name="acceleration_factor" value="1.0"/>
-            <param name="rvo_radius" value="0.15"/>
-            <!-- KickerModel統合：YAML設定ファイルから読み込み -->
-            <param name="kicker_physics_config" value="$(find-pkg-share crane_world_model_publisher)/config/kicker_physics.yaml"/>
-        </node>
-
-        <node pkg="crane_sender" exec="sim_sender_node">
-            <param name="no_movement" value="false"/>
-            <param name="latency_ms" value="0.0"/>
-            <param name="sim_mode" value="$(var sim)"/>
-            <param name="kick_power_limit_straight" value="1.0"/>
-            <param name="kick_power_limit_chip" value="1.0"/>
-            <param name="chip_angle_deg" value="30.0"/>
-            <param name="theta_p_gain" value="3.0"/>
-            <param name="use_simple_velocity" value="false"/>
-        </node>
-    </group>
-
-    <!-- 実機用（local_planner + sender） -->
-    <group unless="$(var sim)">
-        <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-            <param name="planner" value="rvo2"/>
-            <param name="max_vel" value="$(var max_vel)"/>
-            <param name="max_acc" value="2.0"/>
-            <param name="acceleration_factor" value="1.0"/>
-            <param name="straight_kick_power_array" value="[0.0, 0.4, 1.0, 1.0]"/>
-            <param name="straight_kick_speed_array" value="[0.0, 2.0, 4.0, 7.5]"/>
-            <param name="chip_kick_power_array" value="[0.0, 0.8, 1.0]"/>
-            <param name="chip_kick_distance_array" value="[0.0, 0.5, 1.5]"/>
-        </node>
-
-        <node pkg="crane_sender" exec="ibis_sender_node">
-            <param name="no_movement" value="false"/>
-            <param name="latency_ms" value="100.0"/>
-            <param name="sim_mode" value="$(var sim)"/>
-            <param name="kick_power_limit_straight" value="0.5"/>
-            <param name="kick_power_limit_chip" value="1.0"/>
-            <param name="use_simple_velocity" value="false"/>
-            <param name="acc_limit_offset" value="1.0"/>
-        </node>
-    </group>
-
-    <!-- ============================================================ -->
-    <!-- 通信系 -->
-    <!-- ============================================================ -->
-    <node pkg="robocup_ssl_comm" exec="game_controller_node">
-        <param name="multicast_address" value="224.5.23.1"/>
-        <param name="multicast_port" value="$(var referee_port_final)"/>
+    <node pkg="crane_sender" exec="ibis_sender_node">
+      <param name="no_movement" value="false"/>
+      <param name="latency_ms" value="100.0"/>
+      <param name="sim_mode" value="$(var sim)"/>
+      <param name="kick_power_limit_straight" value="0.5"/>
+      <param name="kick_power_limit_chip" value="1.0"/>
+      <param name="use_simple_velocity" value="false"/>
+      <param name="acc_limit_offset" value="1.0"/>
     </node>
+  </group>
 
-    <node pkg="robocup_ssl_comm" exec="grsim_node"/>
+  <!-- ============================================================ -->
+  <!-- 通信系 -->
+  <!-- ============================================================ -->
+  <node pkg="robocup_ssl_comm" exec="game_controller_node">
+    <param name="multicast_address" value="224.5.23.1"/>
+    <param name="multicast_port" value="$(var referee_port_final)"/>
+  </node>
 
-    <!-- ============================================================ -->
-    <!-- モニタリング/診断系 -->
-    <!-- ============================================================ -->
-    <node pkg="crane_robot_receiver" exec="ping_status_node"/>
+  <node pkg="robocup_ssl_comm" exec="grsim_node"/>
 
-    <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen"/>
+  <!-- ============================================================ -->
+  <!-- モニタリング/診断系 -->
+  <!-- ============================================================ -->
+  <node pkg="crane_robot_receiver" exec="ping_status_node"/>
 
-    <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true"/>
+  <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen"/>
 
-    <node pkg="crane_robot_receiver" exec="grsim_robot_status_node" if="$(var sim)">
-        <param name="blue_port" value="30011"/>
-        <param name="yellow_port" value="30012"/>
-    </node>
+  <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true"/>
 
-    <!-- 可視化情報の集約 -->
-    <node pkg="crane_visualization_aggregator" exec="crane_visualization_aggregator_node" output="screen"/>
+  <node pkg="crane_robot_receiver" exec="grsim_robot_status_node" if="$(var sim)">
+    <param name="blue_port" value="30011"/>
+    <param name="yellow_port" value="30012"/>
+  </node>
 
-    <!-- ワールドモデル（世界状態の推定と管理） -->
-    <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node" output="screen">
-        <param name="initial_team_color" value="YELLOW"/>
-        <param name="team_name" value="$(var team)"/>
-        <param name="vision_address" value="224.5.23.2"/>
-        <param name="vision_port" value="$(var vision_port_final)"/>
-        <param name="tracker_address" value="224.5.23.2"/>
-        <param name="tracker_port" value="$(var tracker_port_final)"/>
-        <param name="is_emplace_positive_side" value="$(var is_emplace_positive_side)"/>
-        <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
-        <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
-        <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
-    </node>
+  <!-- 可視化情報の集約 -->
+  <node pkg="crane_visualization_aggregator" exec="crane_visualization_aggregator_node" output="screen"/>
 
-    <!-- プレイ選択（試合状況に応じた戦略切り替え） -->
-    <node pkg="crane_play_switcher" exec="play_switcher_node" output="screen">
-        <param name="team_name" value="$(var team)"/>
-    </node>
+  <!-- ワールドモデル（世界状態の推定と管理） -->
+  <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node" output="screen">
+    <param name="initial_team_color" value="YELLOW"/>
+    <param name="team_name" value="$(var team)"/>
+    <param name="vision_address" value="224.5.23.2"/>
+    <param name="vision_port" value="$(var vision_port_final)"/>
+    <param name="tracker_address" value="224.5.23.2"/>
+    <param name="tracker_port" value="$(var tracker_port_final)"/>
+    <param name="is_emplace_positive_side" value="$(var is_emplace_positive_side)"/>
+    <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
+    <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
+    <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
+  </node>
 
-    <!-- ============================================================ -->
-    <!-- その他機能 -->
-    <!-- ============================================================ -->
-    <!-- 音声出力（条件付き起動） -->
-    <group if="$(var speak)">
-        <node pkg="crane_speaker" exec="crane_speaker_node"/>
-    </group>
+  <!-- プレイ選択（試合状況に応じた戦略切り替え） -->
+  <node pkg="crane_play_switcher" exec="play_switcher_node" output="screen">
+    <param name="team_name" value="$(var team)"/>
+  </node>
 
-    <!-- 音声合成エンジン -->
-    <node pkg="speak_ros" exec="speak_ros_node">
-        <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
-        <param name="voicevox_plugin/speaker" value="13"/>
-        <param name="voicevox_plugin/speedScale" value="0.8"/>
-        <param name="voicevox_plugin/volumeScale" value="1.0"/>
-    </node>
+  <!-- ============================================================ -->
+  <!-- その他機能 -->
+  <!-- ============================================================ -->
+  <!-- 音声出力（条件付き起動） -->
+  <group if="$(var speak)">
+    <node pkg="crane_speaker" exec="crane_speaker_node"/>
+  </group>
 
-    <!-- 診断情報の配信 -->
-    <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node"/>
+  <!-- 音声合成エンジン -->
+  <node pkg="speak_ros" exec="speak_ros_node">
+    <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
+    <param name="voicevox_plugin/speaker" value="13"/>
+    <param name="voicevox_plugin/speedScale" value="0.8"/>
+    <param name="voicevox_plugin/volumeScale" value="1.0"/>
+  </node>
 
-    <!-- ROSバッグ記録（条件付き起動） -->
-    <group if="$(var record)">
-        <executable cmd="ros2 bag record -a -s mcap --log-level fatal"/>
-    </group>
+  <!-- 診断情報の配信 -->
+  <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node"/>
 
-    <!-- Foxglove Bridge（可視化ツール連携） -->
-    <include file="$(find-pkg-share crane_bringup)/launch/foxglove_bridge.launch.xml"/>
+  <!-- ROSバッグ記録（条件付き起動） -->
+  <group if="$(var record)">
+    <executable cmd="ros2 bag record -a -s mcap --log-level fatal"/>
+  </group>
+
+  <!-- Foxglove Bridge（可視化ツール連携） -->
+  <include file="$(find-pkg-share crane_bringup)/launch/foxglove_bridge.launch.xml"/>
 </launch>

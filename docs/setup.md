@@ -149,6 +149,7 @@ ros2 launch crane_bringup crane.launch.xml debug_tools:=false
 ```
 
 **ポート設定について:**
+
 - `sim`引数により、ネットワークポート（Vision/Referee/Tracker）が自動的に切り替わります
 - `sim=true`: 独自ポート（grSimなどのシミュレータ用）
 - `sim=false`: 公式ポート（公式試合環境用）
