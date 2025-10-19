@@ -141,12 +141,12 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     double opacity = 1.0) -> void;
 
   auto drawCircle(
-    Point center, double radius, const std::string & color = "white",
-    double stroke_width = 10.0, double opacity = 1.0) -> void;
+    Point center, double radius, const std::string & color = "white", double stroke_width = 10.0,
+    double opacity = 1.0) -> void;
 
   auto drawFilledCircle(
-    Point center, double radius, const std::string & fill_color = "white",
-    double opacity = 0.5) -> void;
+    Point center, double radius, const std::string & fill_color = "white", double opacity = 0.5)
+    -> void;
 
   auto drawText(
     Point position, const std::string & text_str, const std::string & color = "white",

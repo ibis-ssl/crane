@@ -178,6 +178,12 @@ auto VisualizerMessageBuilder::drawText(
   Point position, const std::string & text_str, const std::string & color, double font_size,
   const std::string & anchor) -> void
 {
-  text().position(position).text(text_str).fill(color).fontSize(font_size).textAnchor(anchor).build();
+  text()
+    .position(position)
+    .text(text_str)
+    .fill(color)
+    .fontSize(font_size)
+    .textAnchor(anchor)
+    .build();
 }
 }  // namespace crane
