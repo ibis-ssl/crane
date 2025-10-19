@@ -62,6 +62,7 @@ jobs:
 
       - name: Generate rosdep keys file
         run: |
+          rosdep update
           colcon list -p --base-paths . dependency_ws > packages.txt
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
@@ -70,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dependency_ws
-          key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles('dependency_${{ matrix.rosdistro }}.repos') }}
+          key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles(format('dependency_{0}.repos', matrix.rosdistro)) }}
           restore-keys: |
             dependency_ws-${{ matrix.rosdistro }}-
 
