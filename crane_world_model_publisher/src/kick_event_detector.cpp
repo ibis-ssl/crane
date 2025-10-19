@@ -115,13 +115,11 @@ auto KickEventDetector::hasInterruptedOnGoingKick(const WorldModelWrapper & worl
   constexpr double MIN_ABS_VEL_CHANGE = 0.35;
   constexpr double MIN_REL_VEL_CHANGE = 0.3;
 
-  const bool ball_was_moving =
-    pre_speed > MIN_RELEVANT_SPEED || latest_speed > MIN_RELEVANT_SPEED;
+  const bool ball_was_moving = pre_speed > MIN_RELEVANT_SPEED || latest_speed > MIN_RELEVANT_SPEED;
 
   const double reference_speed = std::max(std::max(pre_speed, latest_speed), 1.0);
-  const bool significant_change =
-    ball_was_moving && vel_diff > MIN_ABS_VEL_CHANGE &&
-    vel_diff / reference_speed > MIN_REL_VEL_CHANGE;
+  const bool significant_change = ball_was_moving && vel_diff > MIN_ABS_VEL_CHANGE &&
+                                  vel_diff / reference_speed > MIN_REL_VEL_CHANGE;
 
   return world_model.ball().isStopped(0.5) or significant_change;
 }
