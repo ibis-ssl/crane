@@ -321,10 +321,9 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
   auto best_robot = ranges::min(
     robots | ranges::views::transform([&](const auto & robot) {
       return std::make_pair(
-        robot,
-        getTravelTimeTrapezoidal(
-          robot, intercept_point, slack_config_.robot_max_acceleration,
-          slack_config_.robot_max_velocity));
+        robot, getTravelTimeTrapezoidal(
+                 robot, intercept_point, slack_config_.robot_max_acceleration,
+                 slack_config_.robot_max_velocity));
     }),
     ranges::less{}, [](const auto & pair) {
       return pair.second;  // 移動時間が小さい順にソート

@@ -253,7 +253,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 
   for (const auto & robot : wrapper_->ours().getAvailableRobots()) {
     RobotList single_robot{robot};
-    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
+    auto [min_slack, max_slack] =
+      world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -301,7 +302,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 
   for (const auto & robot : wrapper_->theirs().getAvailableRobots()) {
     RobotList single_robot{robot};
-    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
+    auto [min_slack, max_slack] =
+      world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {

@@ -7,8 +7,8 @@
 #ifndef CRANE_PHYSICS__SLACK_TIME_CONFIG_HPP_
 #define CRANE_PHYSICS__SLACK_TIME_CONFIG_HPP_
 
-#include <rclcpp/rclcpp.hpp>
 #include <iostream>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 
 namespace crane
@@ -87,10 +87,8 @@ struct SlackTimeConfig
       node.get_parameter_or(prefix + "robot_max_acceleration", config.robot_max_acceleration);
     config.robot_max_velocity =
       node.get_parameter_or(prefix + "robot_max_velocity", config.robot_max_velocity);
-    config.time_horizon =
-      node.get_parameter_or(prefix + "time_horizon", config.time_horizon);
-    config.time_step =
-      node.get_parameter_or(prefix + "time_step", config.time_step);
+    config.time_horizon = node.get_parameter_or(prefix + "time_horizon", config.time_horizon);
+    config.time_step = node.get_parameter_or(prefix + "time_step", config.time_step);
     config.slack_time_offset =
       node.get_parameter_or(prefix + "slack_time_offset", config.slack_time_offset);
     config.distance_horizon =
