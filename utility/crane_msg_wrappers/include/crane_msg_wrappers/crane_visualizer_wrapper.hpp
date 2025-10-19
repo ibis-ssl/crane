@@ -233,7 +233,9 @@ struct SvgCircleBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgCircl
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     return std::format(
       "<circle cx=\"{:.3f}\" cy=\"{:.3f}\" r=\"{:.3f}\" "
       "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" "
@@ -273,7 +275,9 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     return std::format(
       "<line x1=\"{:.3f}\" y1=\"{:.3f}\" x2=\"{:.3f}\" y2=\"{:.3f}\" "
       "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
@@ -318,7 +322,9 @@ struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBui
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     return std::format(
       "<rect x=\"{:.3f}\" y=\"{:.3f}\" width=\"{:.3f}\" height=\"{:.3f}\" "
       "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" "
@@ -376,7 +382,9 @@ struct SvgTextBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgTextBui
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     if (view_box_position) {
       return std::format(
         "<text x=\"{}%\" y=\"{}%\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
@@ -446,7 +454,9 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     std::ostringstream points_str;
     for (const auto & p : points) {
       points_str << std::format("{:.3f},{:.3f} ", toSvgX(p.x()), toSvgY(p.y()));
@@ -488,7 +498,9 @@ struct SvgPolygonBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPoly
 
   auto getSvgString() const -> std::string override
   {
-    using namespace SvgCoord;
+    using SvgCoord::SCALE;
+    using SvgCoord::toSvgX;
+    using SvgCoord::toSvgY;
     std::ostringstream points_str;
     for (const auto & p : points) {
       points_str << std::format("{:.3f},{:.3f} ", toSvgX(p.x()), toSvgY(p.y()));
@@ -540,7 +552,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(" M{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
@@ -549,7 +563,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto lineTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(" L{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
@@ -558,14 +574,18 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto horizontalTo(double x) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(" H{:.3f}", toSvgX(x));
       return *this;
     }
 
     auto verticalTo(double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(" V{:.3f}", toSvgY(y));
       return *this;
     }
@@ -579,7 +599,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
     auto cubicBezierTo(double x1, double y1, double x2, double y2, double x, double y)
       -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(
         " C{:.3f},{:.3f} {:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x2),
         toSvgY(y2), toSvgX(x), toSvgY(y));
@@ -593,7 +615,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path +=
         std::format(" S{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x2), toSvgY(y2), toSvgX(x), toSvgY(y));
       return *this;
@@ -606,7 +630,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path +=
         std::format(" Q{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x), toSvgY(y));
       return *this;
@@ -619,7 +645,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto smoothQuadraticBezierTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(" T{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
@@ -633,7 +661,9 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y) -> SvgPathDefinitionBuilder &
     {
-      using namespace SvgCoord;
+      using SvgCoord::SCALE;
+      using SvgCoord::toSvgX;
+      using SvgCoord::toSvgY;
       path += std::format(
         " A{:.3f},{:.3f} {:.3f} {},{} {:.3f},{:.3f}", toSvgX(rx), toSvgY(ry), x_axis_rotation,
         static_cast<int>(large_arc_flag), static_cast<int>(sweep_flag), toSvgX(x), toSvgY(y));
