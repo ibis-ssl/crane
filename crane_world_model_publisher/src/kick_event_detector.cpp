@@ -6,6 +6,9 @@
 
 #include "crane_world_model_publisher/kick_event_detector.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 namespace crane
 {
 auto KickEventDetector::update(
@@ -104,13 +107,23 @@ auto KickEventDetector::hasInterruptedOnGoingKick(const WorldModelWrapper & worl
 {
   const auto & latest = records.back();
   const auto & pre = records.at(records.size() - 2);
-  double pre_vel = pre.velocity.norm();
-  double vel_diff = (latest.velocity - pre.velocity).norm();
+  const double pre_speed = pre.velocity.norm();
+  const double latest_speed = latest.velocity.norm();
+  const double vel_diff = (latest.velocity - pre.velocity).norm();
 
-  double score = vel_diff / (pre_vel + 0.1) * 100;
-  bool event_detected = score > 30;
+  constexpr double MIN_RELEVANT_SPEED = 0.3;
+  constexpr double MIN_ABS_VEL_CHANGE = 0.35;
+  constexpr double MIN_REL_VEL_CHANGE = 0.3;
 
-  return world_model.ball().isStopped(0.5) or event_detected;
+  const bool ball_was_moving =
+    pre_speed > MIN_RELEVANT_SPEED || latest_speed > MIN_RELEVANT_SPEED;
+
+  const double reference_speed = std::max(std::max(pre_speed, latest_speed), 1.0);
+  const bool significant_change =
+    ball_was_moving && vel_diff > MIN_ABS_VEL_CHANGE &&
+    vel_diff / reference_speed > MIN_REL_VEL_CHANGE;
+
+  return world_model.ball().isStopped(0.5) or significant_change;
 }
 
 auto KickEventDetector::filterByDistance(
@@ -190,7 +203,7 @@ auto KickEventDetector::filterByBotAngle(
   for (const auto id : available_bots.friends) {
     const auto robot_pose = world_model.getOurRobot(id)->pose;
     const auto ball_angle = getAngle(records.front().position - robot_pose.pos);
-    if (getAngleDiff(ball_angle, robot_pose.theta) < threshold) {
+    if (std::abs(getAngleDiff(ball_angle, robot_pose.theta)) < threshold) {
       detected_bots.friends.push_back(id);
     }
   }
@@ -198,7 +211,7 @@ auto KickEventDetector::filterByBotAngle(
   for (const auto id : available_bots.enemies) {
     const auto robot_pose = world_model.getTheirRobot(id)->pose;
     const auto ball_angle = getAngle(records.front().position - robot_pose.pos);
-    if (getAngleDiff(ball_angle, robot_pose.theta) < threshold) {
+    if (std::abs(getAngleDiff(ball_angle, robot_pose.theta)) < threshold) {
       detected_bots.enemies.push_back(id);
     }
   }
