@@ -8,13 +8,13 @@
 #define CRANE_PLANNER_PLUGINS__PLANNER_BASE_HPP_
 
 #include <algorithm>
-#include <crane_utils/stream.hpp>
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
+#include <crane_utils/stream.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>

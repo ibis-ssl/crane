@@ -8,8 +8,8 @@
 #define CRANE_PLANNER_PLUGINS__PASS_RECEIVER_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_geometry/ddps.hpp>
 #include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/ddps.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
