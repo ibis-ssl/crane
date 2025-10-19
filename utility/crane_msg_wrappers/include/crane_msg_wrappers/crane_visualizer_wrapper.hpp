@@ -99,6 +99,13 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto rect() -> SvgRectBuilder;
 
   auto path() -> SvgPathBuilder;
+
+  // 便利メソッド: よく使うパターンのヘルパー（宣言のみ）
+  [[nodiscard]] auto circleAt(Point center, double radius) -> SvgCircleBuilder;
+
+  [[nodiscard]] auto lineFrom(Point start, Point end) -> SvgLineBuilder;
+
+  [[nodiscard]] auto lineFrom(const Segment & seg) -> SvgLineBuilder;
 };
 
 // スタイル属性の共通基底クラス（CRTP パターン）
@@ -245,6 +252,13 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
     return *this;
   }
 
+  // 便利メソッド: Segmentから直接生成
+  [[nodiscard]] auto fromSegment(const Segment & seg) -> SvgLineBuilder &
+  {
+    p1 = seg.first;
+    p2 = seg.second;
+    return *this;
+  }
 };
 
 struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBuilder>
@@ -410,6 +424,13 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
     points.push_back(p);
     return *this;
   }
+
+  // 便利メソッド: 複数の点を一度に設定
+  [[nodiscard]] auto setPoints(const std::vector<Point> & pts) -> SvgPolyLineBuilder &
+  {
+    points = pts;
+    return *this;
+  }
 };
 
 struct SvgPolygonBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPolygonBuilder>
@@ -443,6 +464,13 @@ struct SvgPolygonBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPoly
   [[nodiscard]] auto addPoint(Point p) -> SvgPolygonBuilder &
   {
     points.push_back(p);
+    return *this;
+  }
+
+  // 便利メソッド: 複数の点を一度に設定
+  [[nodiscard]] auto setPoints(const std::vector<Point> & pts) -> SvgPolygonBuilder &
+  {
+    points = pts;
     return *this;
   }
 };
@@ -652,5 +680,22 @@ struct CraneVisualizerBuffer
     s_seq = 0;
   }
 };
+
+// 便利メソッドの実装（全てのクラス定義の後にインライン関数として定義）
+inline auto VisualizerMessageBuilder::circleAt(Point center, double radius) -> SvgCircleBuilder
+{
+  return circle().center(center).radius(radius);
+}
+
+inline auto VisualizerMessageBuilder::lineFrom(Point start, Point end) -> SvgLineBuilder
+{
+  return line().start(start).end(end);
+}
+
+inline auto VisualizerMessageBuilder::lineFrom(const Segment & seg) -> SvgLineBuilder
+{
+  return line().fromSegment(seg);
+}
+
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
