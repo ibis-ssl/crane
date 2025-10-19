@@ -32,17 +32,10 @@ class AttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
-  double robot_acc_for_prediction;
-
-  double robot_max_vel_for_prediction;
-
   COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("AttackerSkill", world_model)
   {
-    robot_acc_for_prediction = node.get_parameter_or<double>("robot_acc_for_prediction", 2.5);
-    robot_max_vel_for_prediction =
-      node.get_parameter_or<double>("robot_max_vel_for_prediction", 5.0);
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
@@ -102,8 +95,6 @@ public:
       if (not selected_robots.empty()) {
         skill =
           std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);
-        skill->setParameter("robot_acc_for_prediction", robot_acc_for_prediction);
-        skill->setParameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
       }
       return {selected_robots.front()};
     }

@@ -66,12 +66,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   get_parameter("robot_id_mask", robot_id_mask_str);
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
-  declare_parameter("robot_acc_for_prediction", 2.5);
-  get_parameter("robot_acc_for_prediction", robot_acc_for_prediction);
-
-  declare_parameter("robot_max_vel_for_prediction", 5.0);
-  get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
-
   // パス先スイッチ抑制のパラメータ
   declare_parameter("pass_target.min_hold_duration_sec", 0.5);
   declare_parameter("pass_target.min_improvement_margin", 0.2);
@@ -123,6 +117,19 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // 自動/world_modelサブスクライブはOFF
   wrapper_ = std::make_shared<WorldModelWrapper>(*this, false);
+
+  // slack時間計算設定をWorldModelWrapperに設定（wrapper_初期化後）
+  auto slack_config = SlackTimeConfig::fromNode(*this);
+  wrapper_->setSlackConfig(slack_config);
+
+  // デバッグ出力
+  RCLCPP_INFO(get_logger(), "SlackTimeConfig loaded:");
+  RCLCPP_INFO(
+    get_logger(), "  robot_max_acceleration: %.2f m/s^2", slack_config.robot_max_acceleration);
+  RCLCPP_INFO(get_logger(), "  robot_max_velocity: %.2f m/s", slack_config.robot_max_velocity);
+  RCLCPP_INFO(get_logger(), "  time_horizon: %.2f s", slack_config.time_horizon);
+  RCLCPP_INFO(get_logger(), "  time_step: %.2f s", slack_config.time_step);
+  RCLCPP_INFO(get_logger(), "  slack_time_offset: %.2f s", slack_config.slack_time_offset);
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
@@ -246,9 +253,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 
   for (const auto & robot : wrapper_->ours().getAvailableRobots()) {
     RobotList single_robot{robot};
-    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      single_robot, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
-      game_analysis_msg.ball_horizon);
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -296,9 +301,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 
   for (const auto & robot : wrapper_->theirs().getAvailableRobots()) {
     RobotList single_robot{robot};
-    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      single_robot, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
-      game_analysis_msg.ball_horizon);
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {

@@ -137,13 +137,10 @@ Point Receive::getInterceptionPoint() const
   }
 
   std::string policy = getParameter<std::string>("policy");
-  auto acc = getParameter<double>("robot_acc_for_prediction");
-  auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
   command->addStateFactor("Receive::policy", policy);
 
   if (policy.ends_with("slack")) {
-    auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
-      {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
+    auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray({robot()});
     // Slack color mapper: [-0.5, 0, +0.5] -> red, yellow, green
     auto slackColor = [](double s) -> std::string {
       double v = std::clamp(s, -0.5, 0.5);

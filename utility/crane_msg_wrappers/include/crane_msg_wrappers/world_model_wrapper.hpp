@@ -279,19 +279,13 @@ struct WorldModelWrapper
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step)
     -> std::vector<std::pair<Point, double>>;
 
-  [[nodiscard]] auto getBallSlackTime(
-    double time, const RobotList & robots, const double max_acc, const double max_vel)
+  [[nodiscard]] auto getBallSlackTime(double time, const RobotList & robots)
     -> std::optional<SlackTimeResult>;
 
-  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
-    const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100., double velocity_epsilon = 0.2) -> std::vector<SlackTimeResult>;
+  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(const RobotList & robots)
+    -> std::vector<SlackTimeResult>;
 
-  [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
-    const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100., double velocity_epsilon = 0.2)
+  [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(const RobotList & robots)
     -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
 
   // slack時間計算設定の取得・設定
@@ -324,10 +318,9 @@ private:
 
     auto update() -> void;
 
-    auto updateScore(bool our_team, double ball_distance_horizon) -> void;
+    auto updateScore(bool our_team) -> void;
 
-    [[nodiscard]] auto calculateScore(
-      const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const
+    [[nodiscard]] auto calculateScore(const std::shared_ptr<RobotInfo> & robot) const
       -> RobotWithScore;
 
     [[nodiscard]] auto getOurFrontier() const -> std::optional<RobotWithScore>
