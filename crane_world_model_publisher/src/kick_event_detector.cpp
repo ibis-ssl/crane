@@ -117,39 +117,52 @@ auto KickEventDetector::filterByDistance(
   double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
   -> DetectedBots
 {
-  using ranges::views::filter;
   DetectedBots detected_bots;
-  detected_bots.friends = available_bots.friends | filter([&](const auto & id) {
-                            auto robot_pos = world_model.getOurRobot(id)->pose.pos;
-                            auto oldest_distance = (records.front().position - robot_pos).norm();
-                            if (oldest_distance > threshold) {
-                              return false;
-                            }
-                            for (const auto & record : records) {
-                              auto distance = (record.position - robot_pos).norm();
-                              if (distance < oldest_distance) {
-                                return false;
-                              }
-                            }
-                            return true;
-                          }) |
-                          ranges::to<std::vector>();
 
-  detected_bots.enemies = available_bots.enemies | filter([&](const auto & id) {
-                            auto robot_pos = world_model.getTheirRobot(id)->pose.pos;
-                            auto oldest_distance = (records.front().position - robot_pos).norm();
-                            if (oldest_distance > threshold) {
-                              return false;
-                            }
-                            for (const auto & record : records) {
-                              auto distance = (record.position - robot_pos).norm();
-                              if (distance < oldest_distance) {
-                                return false;
-                              }
-                            }
-                            return true;
-                          }) |
-                          ranges::to<std::vector>();
+  for (const auto id : available_bots.friends) {
+    const auto robot_pos = world_model.getOurRobot(id)->pose.pos;
+    double oldest_distance = (records.front().position - robot_pos).norm();
+    if (oldest_distance > threshold) {
+      continue;
+    }
+
+    bool always_farther = true;
+    for (const auto & record : records) {
+      const double distance = (record.position - robot_pos).norm();
+      if (distance < oldest_distance) {
+        always_farther = false;
+        break;
+      }
+      oldest_distance = distance;
+    }
+
+    if (always_farther) {
+      detected_bots.friends.push_back(id);
+    }
+  }
+
+  for (const auto id : available_bots.enemies) {
+    const auto robot_pos = world_model.getTheirRobot(id)->pose.pos;
+    double oldest_distance = (records.front().position - robot_pos).norm();
+    if (oldest_distance > threshold) {
+      continue;
+    }
+
+    bool always_farther = true;
+    for (const auto & record : records) {
+      const double distance = (record.position - robot_pos).norm();
+      if (distance < oldest_distance) {
+        always_farther = false;
+        break;
+      }
+      oldest_distance = distance;
+    }
+
+    if (always_farther) {
+      detected_bots.enemies.push_back(id);
+    }
+  }
+
   return detected_bots;
 }
 
@@ -158,16 +171,13 @@ auto KickEventDetector::filterByVelocity(
   -> DetectedBots
 {
   // records内にthresholdより速いボールがあるかどうかを確認する
-  auto faster_records =
-    records |
-    ranges::view::filter([&](const auto & record) { return record.velocity.norm() > threshold; }) |
-    ranges::to<std::vector>();
-
-  if (not faster_records.empty()) {
-    return available_bots;
-  } else {
-    return DetectedBots();
+  for (const auto & record : records) {
+    if (record.velocity.norm() > threshold) {
+      return available_bots;
+    }
   }
+
+  return DetectedBots();
 }
 
 auto KickEventDetector::filterByBotAngle(
@@ -176,18 +186,23 @@ auto KickEventDetector::filterByBotAngle(
 {
   // ロボットの向いている方向にボールがあるかどうかを確認する
   DetectedBots detected_bots;
-  detected_bots.friends = available_bots.friends | ranges::views::filter([&](const auto & id) {
-                            auto robot_pose = world_model.getOurRobot(id)->pose;
-                            auto ball_angle = getAngle(records.front().position - robot_pose.pos);
-                            return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
-                          }) |
-                          ranges::to<std::vector>();
-  detected_bots.enemies = available_bots.enemies | ranges::views::filter([&](const auto & id) {
-                            auto robot_pose = world_model.getTheirRobot(id)->pose;
-                            auto ball_angle = getAngle(records.front().position - robot_pose.pos);
-                            return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
-                          }) |
-                          ranges::to<std::vector>();
+
+  for (const auto id : available_bots.friends) {
+    const auto robot_pose = world_model.getOurRobot(id)->pose;
+    const auto ball_angle = getAngle(records.front().position - robot_pose.pos);
+    if (getAngleDiff(ball_angle, robot_pose.theta) < threshold) {
+      detected_bots.friends.push_back(id);
+    }
+  }
+
+  for (const auto id : available_bots.enemies) {
+    const auto robot_pose = world_model.getTheirRobot(id)->pose;
+    const auto ball_angle = getAngle(records.front().position - robot_pose.pos);
+    if (getAngleDiff(ball_angle, robot_pose.theta) < threshold) {
+      detected_bots.enemies.push_back(id);
+    }
+  }
+
   return detected_bots;
 }
 
@@ -196,32 +211,31 @@ auto KickEventDetector::filterByDistanceIncrease(
 {
   // ボールがロボットから遠ざかり続けているかどうかをrecordsをずらしながら確認する
   DetectedBots detected_bots;
-  detected_bots.friends = available_bots.friends | ranges::views::filter([&](const auto & id) {
-                            auto robot_pose = world_model.getOurRobot(id)->pose;
-                            auto distance = (records.front().position - robot_pose.pos).norm();
-                            for (const auto & record : records) {
-                              auto new_distance = (record.position - robot_pose.pos).norm();
-                              if (new_distance < distance) {
-                                return false;
-                              }
-                              distance = new_distance;
-                            }
-                            return true;
-                          }) |
-                          ranges::to<std::vector>();
-  detected_bots.enemies = available_bots.enemies | ranges::views::filter([&](const auto & id) {
-                            auto robot_pose = world_model.getTheirRobot(id)->pose;
-                            auto distance = (records.front().position - robot_pose.pos).norm();
-                            for (const auto & record : records) {
-                              auto new_distance = (record.position - robot_pose.pos).norm();
-                              if (new_distance < distance) {
-                                return false;
-                              }
-                              distance = new_distance;
-                            }
-                            return true;
-                          }) |
-                          ranges::to<std::vector>();
+
+  auto check_increasing = [&](const auto & robot_pose) {
+    double distance = (records.front().position - robot_pose.pos).norm();
+    for (const auto & record : records) {
+      const double new_distance = (record.position - robot_pose.pos).norm();
+      if (new_distance < distance) {
+        return false;
+      }
+      distance = new_distance;
+    }
+    return true;
+  };
+
+  for (const auto id : available_bots.friends) {
+    if (check_increasing(world_model.getOurRobot(id)->pose)) {
+      detected_bots.friends.push_back(id);
+    }
+  }
+
+  for (const auto id : available_bots.enemies) {
+    if (check_increasing(world_model.getTheirRobot(id)->pose)) {
+      detected_bots.enemies.push_back(id);
+    }
+  }
+
   return detected_bots;
 }
 }  // namespace crane
