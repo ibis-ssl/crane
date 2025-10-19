@@ -7,16 +7,15 @@
 #ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
-#include <Eigen/Core>
 #include <algorithm>
-#include <crane_basics/ball_info.hpp>
-#include <crane_basics/ball_model.hpp>
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/interval.hpp>
-#include <crane_basics/robot_info.hpp>
-#include <crane_basics/travel_time.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_geometry/interval.hpp>
+#include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_physics/ball_info.hpp>
+#include <crane_physics/robot_info.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -25,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "delay_monitor_wrapper.hpp"
 #include "play_situation_wrapper.hpp"
 
 namespace crane
@@ -41,8 +41,8 @@ struct TeamInfo
 
   uint8_t goalie_id;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
-    -> RobotList
+  [[nodiscard]] auto getAvailableRobotsView(uint8_t my_id = 255, bool except_goalie = false) const
+    -> decltype(auto)
   {
     return robots | ranges::views::filter([&](const auto & robot) {
              if (except_goalie) {
@@ -50,8 +50,13 @@ struct TeamInfo
              } else {
                return robot->available && robot->id != my_id;
              }
-           }) |
-           ranges::to<std::vector>();
+           });
+  }
+
+  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
+    -> RobotList
+  {
+    return getAvailableRobotsView(my_id, except_goalie) | ranges::to<std::vector>();
   }
 
   [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255, bool except_goalie = false) const
@@ -84,9 +89,15 @@ struct WorldModelWrapper
   auto overwriteBallPos(Point pos, double z = 0.0) -> void
   {
     ball_.pos = pos;
-    latest_msg.ball_info.position.x = pos.x();
-    latest_msg.ball_info.position.y = pos.y();
-    latest_msg.ball_info.position.z = z;
+    ball_.pos_z = z;
+    // Ball構造体からBallInfoメッセージに同期
+    ball_.toMsg(latest_msg.ball_info);
+  }
+
+  auto updateBallToMsg() -> void
+  {
+    // Ball構造体の現在状態をBallInfoメッセージに反映
+    ball_.toMsg(latest_msg.ball_info);
   }
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
@@ -240,14 +251,19 @@ struct WorldModelWrapper
     double center_angle;
     double angle_width;
   };
-  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange;
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(
+    const Point from, const std::pair<Point, Point> & goal_posts,
+    const RobotList & obstacle_robots) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(
-    Point from, const RobotList & robots) const -> GoalAngleRange;
-
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
   {
-    return getLargestOurGoalAngleRangeFromPoint(from, ours_.getAvailableRobots());
+    return getLargestGoalAngleRangeFromPoint(
+      from, getTheirGoalPosts(), theirs_.getAvailableRobots());
+  }
+
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
+  {
+    return getLargestGoalAngleRangeFromPoint(from, getOurGoalPosts(), ours_.getAvailableRobots());
   }
 
   struct SlackTimeResult
@@ -592,6 +608,44 @@ public:
 
     std::vector<std::function<bool(const Point &)>> checkers;
   } point_checker;
+
+  // ===== 遅延監視関連メソッド =====
+
+  auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
+  {
+    DelayMonitorWrapper::addDelayCheckpoint(latest_msg.delay_checkpoints, name, value);
+  }
+
+  auto clearDelayCheckpoints() -> void
+  {
+    DelayMonitorWrapper::clearCheckpoints(latest_msg.delay_checkpoints);
+  }
+
+  auto calculateDelayMs(const std::string & start_name, const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateDelayMs(
+      latest_msg.delay_checkpoints, start_name, end_name);
+  }
+
+  auto calculateTotalDelayMs(const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateTotalDelayMs(latest_msg.delay_checkpoints, end_name);
+  }
+
+  auto getDelayCheckpointsString() -> std::string
+  {
+    return DelayMonitorWrapper::checkpointsToString(latest_msg.delay_checkpoints);
+  }
+
+  auto mergeDelayCheckpoints(const crane_msgs::msg::DelayCheckpoints & source_checkpoints) -> void
+  {
+    DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
+  }
+
+  [[nodiscard]] auto getDelayCheckpoints() const -> const crane_msgs::msg::DelayCheckpoints &
+  {
+    return latest_msg.delay_checkpoints;
+  }
 
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber;

@@ -20,12 +20,36 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   DIRECTORY src include
 )
 
+set_target_properties(${PROJECT_NAME}_component
+  PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_BATCH_SIZE 8
+)
+
+target_precompile_headers(${PROJECT_NAME}_component
+  PRIVATE
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<array>"
+    "<optional>"
+    "<vector>"
+    "<string>"
+    "<format>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/geometry_operations.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<crane_msg_wrappers/robot_command_wrapper.hpp>"
+    "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
+    "<crane_msgs/msg/world_model.hpp>"
+    "<crane_physics/ball_info.hpp>"
+    "<crane_physics/robot_info.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+)
+
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
-    "<Eigen/Geometry>"
     "<crane_robot_skills/receive.hpp>"
     "<crane_robot_skills/kick.hpp>"
 )
@@ -40,4 +64,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

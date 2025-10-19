@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/position_assignments.hpp>
+#include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
 #include <range/v3/all.hpp>
 
@@ -53,8 +53,8 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
       }
     }) |
     ranges::views::transform([&](const auto & robot) {
-      auto [_, angle_width] =
-        world_model->getLargestOurGoalAngleRangeFromPoint(robot->pose.pos, defense_robots);
+      auto [_, angle_width] = world_model->getLargestGoalAngleRangeFromPoint(
+        robot->pose.pos, world_model->getOurGoalPosts(), defense_robots);
       double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
       double score = [&]() {
         double angle_deg_width = angle_width * boost::math::constants::radian<double>();
@@ -77,6 +77,7 @@ auto MarkerPlanner::assignMarkingTarget(
   uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
   -> std::vector<uint8_t>
 {
+  visualizer->clearBuffer();
   auto dander_enemies = getDangerEnemies();
 
   for (const auto & [robot, score] : dander_enemies) {
@@ -116,13 +117,15 @@ auto MarkerPlanner::assignMarkingTarget(
 
       // marking_target_map[best_marking_robot->id] = enemy_robot->id;
       selected_robots.push_back(best_marking_robot->id);
-      remaining_selectable_robots.erase(ranges::find_if(
-        remaining_selectable_robots,
-        [best_marking_robot](const auto & robot) { return robot->id == best_marking_robot->id; }));
+      remaining_selectable_robots.erase(
+        ranges::find_if(remaining_selectable_robots, [best_marking_robot](const auto & robot) {
+          return robot->id == best_marking_robot->id;
+        }));
 
       // skillを作って設定
-      markers.emplace_back(std::make_shared<skills::Marker>(
-        "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
+      markers.emplace_back(
+        std::make_shared<skills::Marker>(
+          "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
 
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       markers.back()->setParameter("mark_mode", std::string("intercept_pass"));

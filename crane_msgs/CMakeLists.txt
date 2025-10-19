@@ -16,6 +16,7 @@ ament_auto_find_build_dependencies()
 
 set(msg_files
   "msg/world_model/BallInfo.msg"
+  "msg/world_model/BallPhysicsConfig.msg"
   "msg/world_model/BallContact.msg"
   "msg/world_model/PenaltyArea.msg"
   "msg/world_model/Pose2DStamped.msg"
@@ -40,9 +41,11 @@ set(msg_files
   "msg/analysis/Slack.msg"
   "msg/analysis/SlackWithPoint.msg"
   "msg/analysis/FloatWithID.msg"
+  "msg/analysis/GameEvent.msg"
+  "msg/analysis/DelayCheckpoint.msg"
+  "msg/analysis/DelayCheckpoints.msg"
 
   "msg/control/LocalPlannerConfig.msg"
-  "msg/control/StateFactor.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"
@@ -76,4 +79,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

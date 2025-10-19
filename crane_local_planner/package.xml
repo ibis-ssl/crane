@@ -10,11 +10,15 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>closest_point_vendor</depend>
+  <depend>crane_comm</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_utils</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_updater</depend>
+  <depend>eigen</depend>
   <depend>libgoogle-glog-dev</depend>
+  <depend>modern_orca</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>rvo2_vendor</depend>

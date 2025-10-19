@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ddps.hpp>
+#include <crane_geometry/ddps.hpp>
 #include <crane_planner_plugins/skill_planner.hpp>
 
 namespace crane
@@ -270,8 +270,9 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
 
   int index = 0;
   for (auto robot : selected) {
-    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(
-      "ball_near_by_positioner_skill_planner", robot, world_model));
+    skills.emplace_back(
+      std::make_shared<skills::BallNearByPositioner>(
+        "ball_near_by_positioner_skill_planner", robot, world_model));
     skills.back()->setParameter("total_robot_number", static_cast<int>(selected.size()));
     skills.back()->setParameter("current_robot_index", index++);
     skills.back()->setParameter("line_policy", std::string("arc"));
@@ -312,8 +313,9 @@ auto PlacementTargetNearByPositionerSkillPlanner::getSelectedRobots(
 
   int index = 0;
   for (auto robot : selected) {
-    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(
-      "ball_near_by_positioner_skill_planner", robot, world_model));
+    skills.emplace_back(
+      std::make_shared<skills::BallNearByPositioner>(
+        "ball_near_by_positioner_skill_planner", robot, world_model));
     skills.back()->setParameter("total_robot_number", static_cast<int>(selected.size()));
     skills.back()->setParameter("current_robot_index", index++);
     skills.back()->setParameter("line_policy", std::string("arc"));

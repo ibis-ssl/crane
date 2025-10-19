@@ -4,7 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/time.hpp>
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
+#include <crane_utils/time.hpp>
 
 #include "crane_local_planner/local_planner.hpp"
 
@@ -19,12 +20,17 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   }
   ScopedTimer process_timer(process_time_pub);
 
+  // 遅延監視用の遅延チェックポイント保存
+  auto delay_checkpoints = msg.delay_checkpoints;
+  DelayMonitorWrapper::addDelayCheckpoint(
+    delay_checkpoints, "local_planner_start", "commands_received");
+
   auto aggregate_states =
-    [](const std::vector<crane_msgs::msg::StateFactor> state_factors) -> std::string {
+    [](const std::vector<crane_msgs::msg::NamedString> state_factors) -> std::string {
     std::stringstream ss;
     ss << "[";
     for (const auto & state_factor : state_factors) {
-      ss << state_factor.name << ":" << state_factor.state << ", ";
+      ss << state_factor.name << ":" << state_factor.value << ", ";
     }
     ss << "]";
     return ss.str();
@@ -137,44 +143,50 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   auto pub_msg = planner->calculateRobotCommand(commands, theta_offset);
   pub_msg.header.stamp = rclcpp::Clock().now();
   pub_msg.is_yellow = world_model->isYellow();
+
+  // 遅延監視: LocalPlanner処理完了、最終コマンド送信
+  pub_msg.delay_checkpoints = delay_checkpoints;
+  DelayMonitorWrapper::addDelayCheckpoint(
+    pub_msg.delay_checkpoints, "local_planner_end", "path_planned");
+
   commands_pub.publish(pub_msg);
 
   for (const auto & command : pub_msg.robot_commands) {
     auto robot = world_model->getOurRobot(command.robot_id);
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-        planner->visualizer->line()
-          .start(robot->pose.pos)
-          .end(
-            command.position_target_mode.front().target_x,
-            command.position_target_mode.front().target_y)
-          .stroke("yellow", 0.5)
-          .strokeWidth(10)
-          .build();
+        // planner->visualizer->line()
+        //   .start(robot->pose.pos)
+        //   .end(
+        //     command.position_target_mode.front().target_x,
+        //     command.position_target_mode.front().target_y)
+        //   .stroke("yellow", 0.5)
+        //   .strokeWidth(10)
+        //   .build();
       } break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        planner->visualizer->line()
-          .start(robot->pose.pos)
-          .end(
-            robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
-            robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5)
-          .stroke("white", 0.5)
-          .strokeWidth(10)
-          .build();
+        // planner->visualizer->line()
+        //   .start(robot->pose.pos)
+        //   .end(
+        //     robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
+        //     robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5)
+        //   .stroke("white", 0.5)
+        //   .strokeWidth(10)
+        //   .build();
       } break;
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        planner->visualizer->line()
-          .start(robot->pose.pos)
-          .end(
-            robot->pose.pos.x() +
-              0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-                std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
-            robot->pose.pos.y() +
-              0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-                std::sin(command.polar_velocity_target_mode.front().target_velocity_theta))
-          .stroke("white", 0.5)
-          .strokeWidth(10)
-          .build();
+        // planner->visualizer->line()
+        //   .start(robot->pose.pos)
+        //   .end(
+        //     robot->pose.pos.x() +
+        //       0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
+        //         std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
+        //     robot->pose.pos.y() +
+        //       0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
+        //         std::sin(command.polar_velocity_target_mode.front().target_velocity_theta))
+        //   .stroke("white", 0.5)
+        //   .strokeWidth(10)
+        //   .build();
       } break;
     }
   }

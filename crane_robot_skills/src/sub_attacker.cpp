@@ -4,16 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ddps.hpp>
+#include <crane_geometry/ddps.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills
 {
 void SubAttacker::initialize()
 {
-  //  setParameter("passer_id", 0);
-  //  setParameter("receive_x", 0.0);
-  //  setParameter("receive_y", 0.0);
   setParameter("ball_vel_threshold", 0.2);
   setParameter("kicker_power", 0.8);
 }
@@ -39,8 +37,7 @@ Status SubAttacker::update()
                                      (world_model()->ball().pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
-    Segment short_ball_line{
-      world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel * 3.0};
+    Segment short_ball_line = world_model()->ball().getTrajectorySegmentByTime(3.0);
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
     double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
@@ -118,14 +115,6 @@ Status SubAttacker::update()
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball().pos - target_pos).normalized();
-  {
-    visualizer->line()
-      .start(target_pos)
-      .end(target_pos + to_goal * 3.0)
-      .stroke("yellow")
-      .strokeWidth(20)
-      .build();
-  }
   command->setTargetTheta(getAngle(to_goal + to_ball));
   command->liftUpDribbler();
   command->kickStraight(getParameter<double>("kicker_power"));

@@ -15,9 +15,16 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
-    container: ros:${{ matrix.rosdistro }}
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
+      # ccache configuration
+      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      CC: /usr/lib/ccache/gcc
+      CXX: /usr/lib/ccache/g++
+      CCACHE_DIR: /root/.ccache
+      CCACHE_MAXSIZE: 10G
+      USE_CCACHE: 1
     strategy:
       fail-fast: false
       matrix:
@@ -40,22 +47,12 @@ jobs:
         run: echo "::add-matcher::.github/matchers/gcc.json"
 
       - name: Setup Problem Matchers for clang-format
-        if: steps.get-modified-packages.outputs.modified-packages != ''
         run: echo "::add-matcher::.github/matchers/clang-format.json"
-
-      - name: Get modified packages
-        id: get-modified-packages
-        uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
 
       - name: Set git config
         uses: autowarefoundation/autoware-github-actions/set-git-config@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install wget
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget libcpprest-dev
 
       - name: Clone dependency packages
         run: |
@@ -63,27 +60,39 @@ jobs:
           vcs import dependency_ws < dependency_${{ matrix.rosdistro }}.repos
         shell: bash
 
-      - name: Run rosdep install
+      - name: Generate rosdep keys file
         run: |
-          package_paths=$(colcon list -p --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --base-paths . dependency_ws)
-          sudo apt-get -yqq update
           rosdep update
-          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          colcon list -p --base-paths . dependency_ws > packages.txt
+          rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
 
-      - name: Set up colcon-mixin
-        run: |
-          colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml || true
-          colcon mixin update default
-        shell: bash
+      - name: Cache dependency_ws
+        uses: actions/cache@v4
+        with:
+          path: dependency_ws
+          key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles(format('dependency_{0}.repos', matrix.rosdistro)) }}
+          restore-keys: |
+            dependency_ws-${{ matrix.rosdistro }}-
 
-      - name: Build
-        run: |
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon build --event-handlers console_cohesion+ \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release \
-            --mixin coverage-gcc coverage-pytest compile-commands
-        shell: bash
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: /root/.ccache
+          key: ccache-${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.rosdistro }}-${{ runner.os }}-
+
+      - name: Cache rosdep
+        id: cache-rosdep
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/lib/apt/lists
+            /root/.ros/rosdep
+          key: rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-${{ hashFiles('rosdep_keys.txt') }}
+          restore-keys: |
+            rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-
 
       - name: Cache build artifacts
         uses: actions/cache@v4
@@ -91,13 +100,32 @@ jobs:
           path: |
             ./build
             ./install
-          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/package.xml') }}
+          restore-keys: |
+            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Run rosdep install
+        run: |
+          if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" != "true" ]]; then
+            echo "Installing dependencies..."
+            sudo apt-get -yqq update
+            DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          else
+            echo "Rosdep cache hit. Skipping installation."
+          fi
+        shell: bash
+
+      - name: Build
+        run: |
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon build --event-handlers console_cohesion+ \
+            --parallel-workers $(nproc) \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
+        shell: bash
 
       - name: Test
-        id: test
-        if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
-        uses: autowarefoundation/autoware-github-actions/colcon-test@v1
-        with:
-          rosdistro: ${{ matrix.rosdistro }}
-          target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
-          build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
+        run: |
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon test --event-handlers console_cohesion+ \
+            --parallel-workers $(nproc)
+        shell: bash

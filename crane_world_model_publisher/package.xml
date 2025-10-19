@@ -9,17 +9,25 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
   <depend>boost</depend>
-  <depend>crane_basics</depend>
+  <depend>crane_comm</depend>
+  <depend>crane_geometry</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_physics</depend>
+  <depend>crane_utils</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_updater</depend>
+  <depend>eigen</depend>
   <depend>libgoogle-glog-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
+  <depend>rosbag2_cpp</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>yaml-cpp</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>launch_ros</exec_depend>

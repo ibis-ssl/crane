@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_planner_plugins/catch_ball_planner.hpp>
 
 namespace crane
@@ -73,7 +74,11 @@ CatchBallPlanner::calculateRobotCommand(
         }();
 
         std::cout << pass_target.x() << ", " << pass_target.y() << std::endl;
-        Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
+        // 改良: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
+        constexpr double INTERVAL = 0.2;
+        constexpr double MAX_INTERVAL = 0.4;
+        Point intermediate_point = computeAroundBallApproachTargetDynamic(
+          ball, pass_target, command->getRobot()->pose.pos, INTERVAL, MAX_INTERVAL);
         double angle_ball_to_target = getAngle(pass_target - ball);
         double dot = (world_model->ball().pos - command->getRobot()->pose.pos)
                        .normalized()

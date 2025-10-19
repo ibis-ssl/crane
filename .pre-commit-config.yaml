@@ -3,7 +3,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-json
       - id: check-merge-conflict
@@ -18,7 +18,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.44.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         args: [-c, .markdownlint.yaml, --fix]
@@ -29,7 +29,7 @@ repos:
 #      - id: prettier
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
 
@@ -44,12 +44,12 @@ repos:
       - id: sort-package-xml
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
 
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.11.0-1
+    rev: v3.12.0-2
     hooks:
       - id: shfmt
         args: [-w, -s, -i=4]
@@ -60,21 +60,27 @@ repos:
 #      - id: isort
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.4
+    rev: v0.14.0
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v19.1.7
+    rev: v21.1.2
     hooks:
       - id: clang-format
         types_or: [c++, c, cuda]
 
   - repo: https://github.com/cpplint/cpplint
-    rev: 2.0.1
+    rev: 2.0.2
     hooks:
       - id: cpplint
         args: [--quiet]
         exclude: .cu
+
+#  - repo: https://github.com/streetsidesoftware/cspell-cli
+#    rev: v8.19.0
+#    hooks:
+#      - id: cspell
+#        args: [--config, "https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/.cspell.json", --config, .github/workflows/custom_dict.json]

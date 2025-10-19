@@ -8,9 +8,10 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
-#include <crane_basics/stream.hpp>
-#include <crane_basics/time.hpp>
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_planner_plugins/planners.hpp>
+#include <crane_utils/stream.hpp>
+#include <crane_utils/time.hpp>
 #include <filesystem>
 #include <fstream>
 #include <std_msgs/msg/string.hpp>
@@ -45,8 +46,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     if (config_file.extension() != ".yaml") {
       return;
     } else {
-      RCLCPP_INFO(
-        get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
       std::stringstream ss;
       ss << "NAME : " << config["name"] << std::endl;
@@ -67,7 +66,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
   };
 
-  std::cout << "----------------------------------------" << std::endl;
   using std::filesystem::directory_iterator;
   for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
@@ -89,9 +87,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
     event_config_file_name;
   auto event_config = YAML::LoadFile(event_config_path.c_str());
-  std::cout << "----------------------------------------" << std::endl;
   for (auto event_node : event_config["events"]) {
-    std::cout << "イベント「" << event_node["event"] << "」の設定を読み込みます" << std::endl;
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
@@ -130,7 +126,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           ofs << what.str() << std::endl;
           ofs.close();
         }
-        std::cout << what.str() << std::endl;
+        RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
       }
     }
   });
@@ -147,10 +143,17 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   world_model->addCallback([this]() {
     ScopedTimer timer(callback_process_time_pub);
+
+    // 遅延監視: WorldModel受信完了とSessionController処理開始
+    world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
+
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
+
+    // WorldModelのdelay_checkpointsをRobotCommandsにコピー
+    msg.delay_checkpoints = world_model->getDelayCheckpoints();
     // ロボットが過不足なく割り当てられているか確認
     bool robot_changed = [&]() {
       std::vector<uint8_t> assigned_robot_ids;
@@ -165,7 +168,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
-        RCLCPP_INFO_STREAM(
+        RCLCPP_DEBUG_STREAM(
           get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
                                                                  << ", 観測数："
                                                                  << observed_robot_ids.size());
@@ -173,11 +176,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            std::stringstream what;
-            what << "ロボットの数は変わっていないですが、ラインナップが変動しています\n";
-            what << "\tbefore: " << assigned_robot_ids;
-            what << "\tafter : " << observed_robot_ids;
-            RCLCPP_INFO(get_logger(), what.str().c_str());
+            RCLCPP_DEBUG_STREAM(
+              get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
+                              << "\tbefore: " << assigned_robot_ids
+                              << "\tafter : " << observed_robot_ids;);
             return true;
           }
         }
@@ -210,6 +212,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       robot_command.local_planner_config.priority = --robot_priority;
     }
     msg.header.stamp = now();
+    // 遅延監視: SessionController処理完了、RobotCommands送信
+    DelayMonitorWrapper::addDelayCheckpoint(
+      msg.delay_checkpoints, "session_controller_end", "strategy_computed");
+
     robot_commands_pub.publish(msg);
     visualizer->flush();
     CraneVisualizerBuffer::publish();
@@ -232,16 +238,15 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
       request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
     } catch (const std::exception & e) {
       std::stringstream what;
-      what << "例外が発生しました: " << e.what() << std::endl;
-      what << "スタックトレース: " << std::endl;
-      what << boost::stacktrace::stacktrace() << std::endl;
+      what << "例外が発生しました: \n"
+           << e.what() << "\nスタックトレース: \n"
+           << boost::stacktrace::stacktrace() << std::endl;
       static int count = 0;
-
       if (std::ofstream ofs(std::format("/tmp/stacktrace_robot_assign_{}", ++count)); ofs) {
         ofs << what.str() << std::endl;
         ofs.close();
       }
-      std::cout << what.str() << std::endl;
+      RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
     }
   } else {
     RCLCPP_ERROR(
@@ -265,22 +270,10 @@ auto SessionControllerComponent::request(
     return;
   }
 
-  std::optional<uint8_t> pass_receiver = std::nullopt;
-
-  if (auto planner = ranges::find_if(
-        available_planners, [](const auto & planner) { return planner->name == "AttackerSkill"; });
-      planner != available_planners.end()) {
-    if (auto attacker_planner = std::dynamic_pointer_cast<AttackerSkillPlanner>(*planner);
-        attacker_planner && attacker_planner->skill) {
-      pass_receiver = attacker_planner->skill->pass_receiver_id;
-    }
-  }
-
-  if (pass_receiver) {
-    planner_context["AttackerSkill"]["pass_receiver"] = static_cast<double>(pass_receiver.value());
-  } else {
-    planner_context["AttackerSkill"]["pass_receiver"] = -1.0;
-  }
+  // Pass receiver is only provided when GameAnalysis selects one
+  const int pass_receiver = world_model->getMsg().game_analysis.pass_target_id;
+  planner_context["AttackerSkill"]["pass_receiver"] =
+    (pass_receiver >= 0) ? static_cast<double>(pass_receiver) : -1.0;
 
   auto prev_available_planners =
     std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());
@@ -321,7 +314,7 @@ auto SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          RCLCPP_INFO_STREAM(
+          RCLCPP_DEBUG_STREAM(
             get_logger(), "\tセッション「" << p.session_name << "」のロボット選択："
                                            << selectable_robot_ids << " -> "
                                            << response.selected_robots);

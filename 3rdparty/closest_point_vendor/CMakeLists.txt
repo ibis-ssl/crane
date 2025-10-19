@@ -23,11 +23,25 @@ macro(build_closest_point)
   include(ExternalProject)
   set(closest_point_source_path ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/src/closest_point-ext)
   set(closest_point_cmake_file_path ${closest_point_source_path}/CMakeLists.txt)
+
+  # Check if already built or if SKIP_VENDOR_CLONE is set
+  if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/${PROJECT_NAME}/boost)
+    message(STATUS "closest_point_vendor already built, skipping")
+    return()
+  endif()
+
+  if(DEFINED ENV{SKIP_VENDOR_CLONE} OR SKIP_VENDOR_CLONE)
+    message(STATUS "SKIP_VENDOR_CLONE is set, skipping closest_point_vendor clone")
+    return()
+  endif()
+
   externalproject_add(closest_point-ext
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
     INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
     GIT_REPOSITORY https://github.com/artemp/closest_point.git
     GIT_TAG master
+    GIT_SHALLOW ON
+    GIT_PROGRESS ON
     TIMEOUT 6000
     PATCH_COMMAND
       COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}

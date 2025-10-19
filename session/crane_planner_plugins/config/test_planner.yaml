@@ -1,0 +1,19 @@
+# 本設定ファイルは、`/test_planner/reload` に Empty をpublishすると再読込されます。
+
+# 経由点で未指定の場合に適用する既定値
+defaults:
+  max_velocity: 3.0        # m/s
+  max_acceleration: 2.5    # m/s^2
+  sleep_sec: 5.0           # 各経由点での休憩秒数（省略時）
+
+waypoints:
+  # - position: [3.5, 2.0]
+  #   max_velocity: 0.5       # この区間の最高速度上書き
+  #   max_acceleration: 3.0   # この区間の最大加速度上書き
+  # - position: [3.5, -2.0]
+  # - position: [-3.5, -2.0]
+  # - position: [-3.5, 2.0]
+  - position: [4.5, 2.5]
+  - position: [-4.5, 2.5]
+# このプランナで動かす自チームロボットID
+robot_id: 0

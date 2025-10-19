@@ -4,11 +4,20 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ddps.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/time.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_geometry/ddps.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/ball_physics_model.hpp>
+#include <crane_world_model_publisher/kick_event_detector.hpp>
+#include <crane_world_model_publisher/pass_target_selector.hpp>
+#include <crane_world_model_publisher/visualization_manager.hpp>
+#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <filesystem>
+#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -29,37 +38,33 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
 
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
-  data_provider(*this),
+  data_provider_(std::make_unique<WorldModelDataProvider>(*this)),
   pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
 
-  CraneVisualizerBuffer::activate(*this);
-  traj_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  // VisualizationManager初期化（統合された可視化システム）
+  visualization_manager_ = std::make_unique<VisualizationManager>(*this);
+  kick_event_detector_ = std::make_unique<KickEventDetector>();
+  pass_target_selector_ = std::make_unique<PassTargetSelector>();
 
-  slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
-
-  pass_score_visualizer =
-    std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
+  // DataProviderのVisualization callbackをVisualizationManagerに接続
+  data_provider_->setVisualizationCallbacks(
+    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+      visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
+    },
+    [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
+      visualization_manager_->drawRefereeInfo(
+        msg, field_w, field_h, data_provider_->getLatestPlaySituation().command.name);
+    });
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
-  // 練習用モードの設定
-  bool half_court_practice_mode = false;
-  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
-  declare_parameter("half_court_practice_mode", half_court_practice_mode);
-  get_parameter("half_court_practice_mode", half_court_practice_mode);
-  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
-  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
-
-  // DataProviderにアフィン変換行列を渡す
-  data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
-
   declare_parameter("robot_id_mask", std::string("1, 2, 3"));
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);
-  data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
+  data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
   declare_parameter("robot_acc_for_prediction", 2.5);
   get_parameter("robot_acc_for_prediction", robot_acc_for_prediction);
@@ -67,19 +72,77 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("robot_max_vel_for_prediction", 5.0);
   get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
 
+  // パス先スイッチ抑制のパラメータ
+  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
+  declare_parameter("pass_target.min_improvement_margin", 0.2);
+  double min_hold = 0.5, min_improve = 0.2;
+  get_parameter("pass_target.min_hold_duration_sec", min_hold);
+  get_parameter("pass_target.min_improvement_margin", min_improve);
+  pass_target_selector_->setHysteresisParams(min_hold, min_improve);
+
+  // ボール物理設定ファイルパス
+  declare_parameter("ball_physics_config_path", std::string(""));
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+
+  // ボール物理モデル初期化
+  if (!ball_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = ball_physics_config_path;
+    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    try {
+      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      RCLCPP_INFO(
+        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        full_config_path.c_str(), e.what());
+      // エラー時はデフォルトファクトリーインスタンスを作成
+      BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
+    BallPhysicsModelFactory::getInstance();
+  }
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
-  wrapper = std::make_shared<WorldModelWrapper>(*this, false);
+  wrapper_ = std::make_shared<WorldModelWrapper>(*this, false);
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (data_provider.available()) {
+    bool available = data_provider_->available();
+    RCLCPP_DEBUG_THROTTLE(
+      get_logger(), *get_clock(), 1000, "data_provider.available() = %s",
+      available ? "true" : "false");
+
+    if (available) {
       publishWorldModel();
-      publishVisualization(wrapper);
+      publishVisualization(wrapper_);
+    } else {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 10000,
+        "No vision or tracker data available - world_model not published");
     }
   });
 }
+
+WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
 
 // updateHistory
 auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
@@ -110,104 +173,63 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
-  auto msg = data_provider.getMsg();
+  // 遅延監視: データ取得開始
+  auto msg = data_provider_->getMsg();
+  wrapper_->clearDelayCheckpoints();
+
+  // VisionタイムスタンプをWorldModelWrapperに統合
+  wrapper_->mergeDelayCheckpoints(msg.delay_checkpoints);
+
+  // ROS 2でのVisionパケット受信時刻を追加
+  wrapper_->addDelayCheckpoint("vision_packet_received", "ros2_received");
+  wrapper_->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+
   updateHistory(msg);
+  wrapper_->addDelayCheckpoint("history_updated", "");
 
-  wrapper->update(msg);
+  wrapper_->update(msg);
+  wrapper_->addDelayCheckpoint("wrapper_updated", "");
+
   updateBallContact();
-  postProcessWorldModel(wrapper);
+  wrapper_->addDelayCheckpoint("ball_contact_updated", "");
 
-  pub_world_model.publish(wrapper->getMsg());
+  postProcessWorldModel(wrapper_);
+  wrapper_->addDelayCheckpoint("post_processed", "");
+
+  pub_world_model.publish(wrapper_->getMsg());
+  wrapper_->addDelayCheckpoint("world_model_published", "30Hz");
 }
 
-auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
-  -> void
+auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
 {
-  constexpr int SAMPLING_NUM = 4;
-  for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+  // VisualizationManagerによる統合可視化処理
+  visualization_manager_->drawTrackedObjects(world_model);
 
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "yellow" : "blue",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
+  // 軌跡履歴データをVisualizationManagerに渡す
+  VisualizationManager::TrajectoryHistoryData trajectory_data;
+  trajectory_data.friend_history = friend_history;
+  trajectory_data.enemy_history = enemy_history;
+  trajectory_data.ball_info_history = ball_info_history;
+  trajectory_data.is_yellow = world_model->isYellow();
 
-  for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+  visualization_manager_->drawTrajectoryHistory(trajectory_data);
 
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "blue" : "yellow",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
+  visualization_manager_->drawBallPlacement(world_model);
 
-  if (ball_info_history.size() > SAMPLING_NUM + 1) {
-    for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
-
-      auto builder = traj_visualizer->polyline();
-      for (int index = start; index < end; index += SAMPLING_NUM) {
-        builder.addPoint(
-          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
-      }
-      if (i != 9) {
-        builder.addPoint(
-          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
-      }
-      builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
-        .strokeWidth(30)
-        .build();
-    }
-  }
-
-  data_provider.vis_data_handler.flushTrackerVisualization(wrapper);
-  traj_visualizer->flush();
-  CraneVisualizerBuffer::publish();
+  crane::CraneVisualizerBuffer::publish();
 }
 
-auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
-  -> void
+auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model) -> void
 {
-  kick_event_detector.update(*world_model, traj_visualizer);
+  kick_event_detector_->update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
-  if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
+  if (auto kick = kick_event_detector_->getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
 
   // ボールラインの長さを計算
   game_analysis_msg.ball_horizon = [&]() {
-    auto future_ball = getFutureBallPosition(world_model->ball().pos, world_model->ball().vel, 3.0);
-    Segment ball_line{world_model->ball().pos, future_ball};
+    Segment ball_line = world_model->ball().getTrajectorySegmentByTime(3.0);
     auto robots = world_model->theirs().getAvailableRobots();
     auto ball_line_lengths =
       robots |
@@ -222,9 +244,10 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();
 
-  for (const auto & robot : wrapper->ours().getAvailableRobots()) {
+  for (const auto & robot : wrapper_->ours().getAvailableRobots()) {
+    RobotList single_robot{robot};
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      single_robot, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
@@ -233,13 +256,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      slack_visualizer->text()
+      auto slack_builder = visualization_manager_->slack_builder;
+      slack_builder->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
         .fontSize(100)
         .build();
-      slack_visualizer->line()
+      slack_builder->line()
         .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
@@ -252,13 +276,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        slack_visualizer->text()
+        auto slack_builder = visualization_manager_->slack_builder;
+        slack_builder->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
           .fontSize(100)
           .build();
-        slack_visualizer->line()
+        slack_builder->line()
           .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
@@ -269,9 +294,10 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.our_slack.push_back(slack_msg);
   }
 
-  for (const auto & robot : wrapper->theirs().getAvailableRobots()) {
+  for (const auto & robot : wrapper_->theirs().getAvailableRobots()) {
+    RobotList single_robot{robot};
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      single_robot, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
@@ -288,95 +314,28 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.their_slack.push_back(slack_msg);
   }
 
-  auto our_robots = world_model->ours().getAvailableRobots(true);
-  const auto enemy_robots = world_model->theirs().getAvailableRobots();
-
-  auto calc_score = [&](Point p) {
-    Segment ball_to_target{world_model->ball().pos, p};
-    double score = 1.0;
-    // 0~4mで遠くなるほどスコアが高い
-    score += std::clamp((p - world_model->ball().pos).norm() * 0.5, 0.0, 2.0);
-    {
-      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-      auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
-      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-    }
-    {
-      // パス先が自チームのゴールを脅かす場合はスコアを下げる(30度以上で最大0.5減少)
-      auto [best_angle, goal_angle_width] =
-        world_model->getLargestOurGoalAngleRangeFromPoint(p, {});
-      score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-    }
-    // 敵ゴールに近いときはスコアを上げる
-    double normed_distance_to_their_goal =
-      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->fieldSize().x() * 0.5)) /
-      (world_model->fieldSize().x() * 0.5);
-    // マイナスのときはゴールに近い
-    score *= (1.0 - normed_distance_to_their_goal * 0.5);
-    if (auto nearest_enemy =
-          world_model->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-        nearest_enemy) {
-      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-      if (
-        nearest_enemy->robot->getDistance(world_model->ball().pos) > 1.0 &&
-        nearest_enemy->distance < 0.4) {
-        score = 0.0;
-      }
-      // パスラインに敵がいるときはスコアを下げる
-      score *= 1.0 / (1.0 + nearest_enemy->distance);
-    }
-
-    if (world_model->point_checker.isPenaltyArea(p)) {
-      score = 0.0;
-    }
-    return score;
-  };
-
-  constexpr double UNIT = 0.2;
-  auto grid_points = getPoints(
-    Point(0, 0), UNIT, UNIT, world_model->fieldSize().x() / UNIT,
-    world_model->fieldSize().y() / UNIT);
-  auto score_grid =
-    grid_points |
-    ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
-    ranges::to<std::vector>();
-
-  ranges::for_each(score_grid, [&]([[maybe_unused]] const auto & pair) {
-    //  pass_score_visualizer->circle().center(pair.first).
-    //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
-  });
-  pass_score_visualizer->flush();
-
-  auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
-                           return std::make_pair(robot, calc_score(robot->pose.pos));
-                         }) |
-                         ranges::to<std::vector>();
-  // larger score first
-  ranges::sort(score_with_bots, [](const auto & a, const auto & b) { return a.second > b.second; });
-
-  game_analysis_msg.pass_scores = score_with_bots | ranges::views::transform([](const auto & pair) {
-                                    crane_msgs::msg::FloatWithID msg;
-                                    return msg.set__id(pair.first->id).set__value(pair.second);
-                                  }) |
-                                  ranges::to<std::vector>();
+  // パススコア算出とパス先選定（専用クラスへ委譲）
+  visualization_manager_->pass_score_builder->flush();
+  pass_target_selector_->update(
+    world_model, ball_info_history, visualization_manager_->pass_score_builder, game_analysis_msg);
 
   world_model->update(game_analysis_msg);
 }
 
 auto WorldModelPublisherComponent::updateBallContact() -> void
 {
-  auto now = rclcpp::Clock().now();
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
   // ローカルセンサーの情報でボール情報を更新
-  auto friend_robots = wrapper->ours().getAvailableRobots();
+  auto friend_robots = wrapper_->ours().getAvailableRobots();
   for (std::size_t i = 0; i < friend_robots.size(); i++) {
     auto robot = friend_robots[i];
     // ビジョンがボールを見失っているときに
     // ボールセンサが反応している間は、接触しているものとみなす。
-    if (robot->getBallSensorAvailable(now) && not wrapper->ball().detected) {
+    if (robot->getBallSensorAvailable(now) && not wrapper_->ball().detected) {
       // ビジョンはボール見失っているけどロボットが保持しているので、
       // ロボットの座標にボールがあることにする
-      wrapper->overwriteBallPos(robot->kicker_center());
+      wrapper_->overwriteBallPos(robot->kicker_center());
     }
   }
 }

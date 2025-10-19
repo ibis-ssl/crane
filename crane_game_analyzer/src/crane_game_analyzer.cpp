@@ -40,12 +40,11 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     get_parameter("robot_collision.distance_threshold").as_double();
   config.robot_collision.time_window = get_parameter("robot_collision.time_window").as_double();
 
-  RCLCPP_INFO(get_logger(), "Robot collision detection parameters:");
-  RCLCPP_INFO(
+  RCLCPP_DEBUG(
     get_logger(), "  - Velocity threshold: %.2f m/s", config.robot_collision.velocity_threshold);
-  RCLCPP_INFO(
+  RCLCPP_DEBUG(
     get_logger(), "  - Distance threshold: %.2f m", config.robot_collision.distance_threshold);
-  RCLCPP_INFO(get_logger(), "  - Time window: %.2f s", config.robot_collision.time_window);
+  RCLCPP_DEBUG(get_logger(), "  - Time window: %.2f s", config.robot_collision.time_window);
 
   CraneVisualizerBuffer::activate(*this);
 
@@ -56,7 +55,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
     if (robot_collision_info) {
       //          robot_collision_info->attack_robot.robot_id
-      RCLCPP_INFO(
+      RCLCPP_DEBUG(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
         robot_collision_info->attack_robot.id, robot_collision_info->attacked_robot.id,
         robot_collision_info->relative_velocity);

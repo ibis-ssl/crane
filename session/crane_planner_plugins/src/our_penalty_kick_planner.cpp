@@ -20,7 +20,7 @@ OurPenaltyKickPlanner::calculateRobotCommand(
     target << (world_model->getOurGoalCenter().x() + world_model->ball().pos.x()) / 2,
       command->getRobot()->pose.pos.y();
     command->setTargetPosition(target);
-    command->setMaxVelocity(0.5);
+    command->setMaxVelocity("OurPenaltyKickPlanner", 0.5);
     command->enableBallAvoidance();
     robot_commands.push_back(command->getMsg());
   }

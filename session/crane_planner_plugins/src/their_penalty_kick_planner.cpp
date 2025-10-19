@@ -22,7 +22,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
     command->setTargetPosition(target);
     command->disableAnyAreaAvoidance();
     command->enableBallAvoidance();
-    command->setMaxVelocity(1.5);
+    command->setMaxVelocity("TheirPenaltyKickPlanner for non goalie", 1.5);
     robot_commands.push_back(command->getMsg());
   }
   if (goalie) {
@@ -32,7 +32,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
       auto & cmd = goalie->commander();
       cmd->setTargetPosition(world_model->getOurGoalCenter());
       cmd->lookAtBall();
-      cmd->setMaxVelocity(1.5);
+      cmd->setMaxVelocity("TheirPenaltyKickPlanner for goalie", 1.5);
       cmd->disableAnyAreaAvoidance();
     } else {
       [[maybe_unused]] auto status = goalie->run();

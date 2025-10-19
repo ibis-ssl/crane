@@ -55,14 +55,14 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
   theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  ball_.pos << world_model.ball_info.position.x, world_model.ball_info.position.y;
-  ball_.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+  // BallInfoメッセージからBall構造体への変換
+  ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
-  ball_.detected = world_model.ball_info.detected;
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
-    info->available = robot.detected;
+    // エラーがないかつ検出状態なら利用可能
+    info->available = robot.detected && !robot.has_error;
     if (info->available) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
@@ -72,7 +72,11 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       info->ball_contact.update((info->kicker_center() - ball_.pos).norm() < 0.1);
       // ボールセンサは味方だけ
       info->ball_sensor = robot.ball_sensor;
-      info->ball_sensor_stamp = robot.last_ball_sensor_stamp;
+      if (robot.last_ball_sensor_stamp.sec == 0 && robot.last_ball_sensor_stamp.nanosec == 0) {
+        info->ball_sensor_stamp = std::nullopt;
+      } else {
+        info->ball_sensor_stamp = rclcpp::Time(robot.last_ball_sensor_stamp, RCL_ROS_TIME);
+      }
     } else {
       info->ball_contact.update(false);
     }
@@ -235,11 +239,12 @@ auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::
   }
 }
 
-auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
+auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(
+  const Point from, const std::pair<Point, Point> & goal_posts,
+  const RobotList & obstacle_robots) const -> GoalAngleRange
 {
   Interval goal_range;
 
-  auto goal_posts = getTheirGoalPosts();
   if (goal_posts.first.x() < 0.) {
     goal_range.append(
       normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
@@ -248,15 +253,15 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
   }
 
-  for (auto & enemy : theirs_.getAvailableRobots()) {
-    double distance = enemy->getDistance(from);
+  for (auto & obstacle : obstacle_robots) {
+    double distance = obstacle->getDistance(from);
     constexpr double MACHINE_RADIUS = 0.1;
 
     double center_angle = [&]() {
       if (goal_posts.first.x() < 0.) {
-        return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        return normalizeAngle(getAngle(obstacle->pose.pos - from) + M_PI);
       } else {
-        return getAngle(enemy->pose.pos - from);
+        return getAngle(obstacle->pose.pos - from);
       }
     }();
     double diff_angle =
@@ -276,56 +281,12 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     }
   }();
 
+  if (std::abs(getAngleDiff(largest_interval.second, largest_interval.first)) < 0.0001) {
+    target_angle =
+      getIntermediateAngle(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+  }
+
   return {target_angle, getAngleDiff(largest_interval.second, largest_interval.first)};
-}
-
-auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
-  Point from, const RobotList & robots) const -> GoalAngleRange
-{
-  Interval goal_range;
-
-  auto goal_posts = getOurGoalPosts();
-  if (goal_posts.first.x() < 0.) {
-    goal_range.append(
-      normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
-      normalizeAngle(getAngle(goal_posts.second - from) + M_PI));
-  } else {
-    goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
-  }
-
-  if (ranges::empty(robots)) {
-    ranges::for_each(robots, [&](const auto & enemy) {
-      double distance = enemy->getDistance(from);
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = [&]() {
-        if (goal_posts.first.x() < 0.) {
-          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
-        } else {
-          return getAngle(enemy->pose.pos - from);
-        }
-      }();
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    });
-  }
-
-  auto largest_interval = goal_range.getLargestInterval();
-
-  double target_angle = [&]() {
-    if (goal_posts.first.x() < 0.) {
-      return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
-    } else {
-      return (largest_interval.first + largest_interval.second) / 2.0;
-    }
-  }();
-
-  GoalAngleRange range;
-  range.center_angle = target_angle;
-  range.angle_width = largest_interval.second - largest_interval.first;
-  return range;
 }
 
 auto WorldModelWrapper::getBallSlackTime(
@@ -334,12 +295,42 @@ auto WorldModelWrapper::getBallSlackTime(
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, time);
+  auto p_ball = ball_.getPredictedPosition(time);
   if (robots.empty()) {
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball + ball_.vel.normalized() * 0.3;
+  // NaN値チェック
+  if (!std::isfinite(p_ball.x()) || !std::isfinite(p_ball.y())) {
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: p_ballがNaN値のため処理をスキップ"
+              << std::endl;
+    return std::nullopt;
+  }
+
+  Point intercept_point;
+  if (ball_.vel.norm() < 1e-6) {
+    // ボール速度がほぼゼロの場合、正規化を避けてボール位置を使用
+    intercept_point = p_ball;
+  } else {
+    Vector2 normalized_vel = ball_.vel.normalized();
+    // 正規化後のNaN値チェック
+    if (!std::isfinite(normalized_vel.x()) || !std::isfinite(normalized_vel.y())) {
+      std::cout
+        << "WARN: [WorldModelWrapper] getBallSlackTime: normalized_velがNaN値のためp_ballを使用"
+        << std::endl;
+      intercept_point = p_ball;
+    } else {
+      intercept_point = p_ball + normalized_vel * 0.3;
+    }
+  }
+
+  // intercept_pointのNaN値チェック
+  if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
+    std::cout
+      << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ"
+      << std::endl;
+    return std::nullopt;
+  }
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
@@ -351,38 +342,21 @@ auto WorldModelWrapper::getBallSlackTime(
       return pair.second;  // 移動時間が小さい順にソート
     });
 
-  return std::make_optional<SlackTimeResult>(
-    {time - best_robot.second, intercept_point, best_robot.first});
+  double slack_time = time - best_robot.second;
+  // slack_timeのNaN値チェック
+  if (!std::isfinite(slack_time)) {
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: slack_timeがNaN値のため処理をスキップ"
+              << std::endl;
+    return std::nullopt;
+  }
+
+  return std::make_optional<SlackTimeResult>({slack_time, intercept_point, best_robot.first});
 }
 
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   -> std::vector<std::pair<Point, double>>
 {
-  std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
-  std::vector<std::pair<Point, double>> ball_sequence;
-
-  std::optional<Point> intercepted_point = std::nullopt;
-  for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, t_ball, 1.0);
-    if (not intercepted_point) {
-      auto our_robots = ours_.getAvailableRobots();
-      auto their_robots = theirs_.getAvailableRobots();
-      auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball, our_robots);
-      auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball, their_robots);
-      if (
-        (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
-        (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
-        intercepted_point = p_ball;
-      }
-    }
-
-    if (intercepted_point) {
-      ball_sequence.push_back({intercepted_point.value(), t_ball});
-    } else {
-      ball_sequence.push_back({p_ball, t_ball});
-    }
-  }
-  return ball_sequence;
+  return ball_.getBallSequence(t_horizon, t_step);
 }
 
 auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(

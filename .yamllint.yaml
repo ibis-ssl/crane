@@ -19,5 +19,5 @@ rules:
     level: error
     check-keys: false # To allow 'on' of GitHub Actions
   quoted-strings:
-    level: error
-    required: only-when-needed # To keep consistent style
+    level: warning
+    required: false # Allow quotes for URLs and special cases

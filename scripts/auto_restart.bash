@@ -8,7 +8,7 @@ WORKSPACE_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 # setup.bash のパスを構築
 SETUP_BASH="${WORKSPACE_DIR}/install/setup.bash"
 
-COMMAND="source ${SETUP_BASH} && ros2 launch crane_bringup crane.launch.py sim:=false"
+COMMAND="source ${SETUP_BASH} && ros2 launch crane_bringup crane.launch.xml sim:=false"
 
 echo "コマンドを実行します: ${COMMAND}"
 

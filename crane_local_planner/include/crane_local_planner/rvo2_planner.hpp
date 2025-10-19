@@ -9,11 +9,11 @@
 
 #include <rvo2_vendor/RVO/RVO.h>
 
-#include <crane_basics/parameter_with_event.hpp>
-#include <crane_basics/pid_controller.hpp>
+#include <crane_comm/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <crane_physics/pid_controller.hpp>
 #include <memory>
 
 #include "planner_base.hpp"

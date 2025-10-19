@@ -17,12 +17,12 @@ services:
       - 8081:8081/tcp
 
   ssl-vision-client:
-    image: robocupssl/ssl-vision-client:1.6.0
+    image: ghcr.io/ibis-ssl/ssl-vision-client:develop
     command:
       - -address
       - :8082
-      - -visionAddress
-      - 224.5.23.2:10020
+    volumes:
+      - ./ssl-vision-client-config.json:/config.json:rw
     network_mode: host
     ports:
       - 8082:8082/tcp
@@ -59,13 +59,13 @@ services:
 
 # To connect grSim use remmina and below command.
 # remmina -c vnc://localhost:5900?VncPassword=vnc
-  grsim:
-    image: robocupssl/grsim
-    environment:
-      - VNC_PASSWORD=vnc
-      - VNC_GEOMETRY=1920x1080
-    network_mode: host
-    command: vnc
+#  grsim:
+#    image: robocupssl/grsim
+#    environment:
+#      - VNC_PASSWORD=vnc
+#      - VNC_GEOMETRY=1920x1080
+#    network_mode: host
+#    command: vnc
 
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
