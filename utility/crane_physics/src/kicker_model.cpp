@@ -25,16 +25,56 @@ KickerModel::KickerModel() : config_(), ball_physics_model_(nullptr) {}
 
 KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_model_(nullptr)
 {
-  if (!validateConfig()) {
-    throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+  auto has_mismatched_sizes = [](const auto & x, const auto & y) {
+    return x.size() != y.size() && (!x.empty() || !y.empty());
+  };
+
+  if (has_mismatched_sizes(config_.straight_kick_powers, config_.straight_kick_speeds)) {
+    throw std::runtime_error("KickerModel: straight kick arrays must share the same length");
+  }
+
+  if (has_mismatched_sizes(config_.chip_kick_powers, config_.chip_kick_distances)) {
+    throw std::runtime_error("KickerModel: chip kick arrays must share the same length");
+  }
+
+  bool straight_valid =
+    hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
+  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
+
+  if (!straight_valid) {
+    throw std::runtime_error("KickerModel: invalid straight kick configuration");
+  }
+
+  if (!chip_valid) {
+    throw std::runtime_error("KickerModel: invalid chip kick configuration");
   }
 }
 
 KickerModel::KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel> ball_physics)
 : config_(config), ball_physics_model_(ball_physics)
 {
-  if (!validateConfig()) {
-    throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+  auto has_mismatched_sizes = [](const auto & x, const auto & y) {
+    return x.size() != y.size() && (!x.empty() || !y.empty());
+  };
+
+  if (has_mismatched_sizes(config_.straight_kick_powers, config_.straight_kick_speeds)) {
+    throw std::runtime_error("KickerModel: straight kick arrays must share the same length");
+  }
+
+  if (has_mismatched_sizes(config_.chip_kick_powers, config_.chip_kick_distances)) {
+    throw std::runtime_error("KickerModel: chip kick arrays must share the same length");
+  }
+
+  bool straight_valid =
+    hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
+  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
+
+  if (!straight_valid) {
+    throw std::runtime_error("KickerModel: invalid straight kick configuration");
+  }
+
+  if (!chip_valid) {
+    throw std::runtime_error("KickerModel: invalid chip kick configuration");
   }
 }
 
@@ -91,21 +131,18 @@ auto KickerModel::createWithYAMLConfig(const std::string & yaml_file_path) -> Ki
 
 auto KickerModel::predictStraightKickSpeed(double kick_power) const -> double
 {
-  if (!isValidKickPower(kick_power)) {
-    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
-  }
+  double clamped_power = clampKickPower(kick_power);
 
   return getLinearInterpolation(
-    kick_power, config_.straight_kick_powers, config_.straight_kick_speeds);
+    clamped_power, config_.straight_kick_powers, config_.straight_kick_speeds);
 }
 
 auto KickerModel::predictChipKickDistance(double kick_power) const -> double
 {
-  if (!isValidKickPower(kick_power)) {
-    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
-  }
+  double clamped_power = clampKickPower(kick_power);
 
-  return getLinearInterpolation(kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
+  return getLinearInterpolation(
+    clamped_power, config_.chip_kick_powers, config_.chip_kick_distances);
 }
 
 auto KickerModel::calculateStraightKickPower(double target_speed) const -> double
@@ -171,12 +208,10 @@ auto KickerModel::predictStopDistance(double kick_power) const -> double
     throw std::runtime_error("BallPhysicsModelが設定されていません");
   }
 
-  if (!isValidKickPower(kick_power)) {
-    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
-  }
+  double clamped_power = clampKickPower(kick_power);
 
   // キック力から初速度を予測
-  double initial_speed = predictStraightKickSpeed(kick_power);
+  double initial_speed = predictStraightKickSpeed(clamped_power);
 
   // BallPhysicsModelを使って停止距離を計算
   Point initial_velocity(initial_speed, 0.0);  // X方向にキック
@@ -227,11 +262,11 @@ auto KickerModel::getConfig() const -> const Config & { return config_; }
 
 auto KickerModel::setConfig(const Config & config) -> void
 {
-  if (!validateArrays(config.straight_kick_powers, config.straight_kick_speeds, "straight_kick")) {
+  if (!hasValidArrayStructure(config.straight_kick_powers, config.straight_kick_speeds)) {
     throw std::runtime_error("無効なストレートキック設定");
   }
 
-  if (!validateArrays(config.chip_kick_powers, config.chip_kick_distances, "chip_kick")) {
+  if (!hasValidArrayStructure(config.chip_kick_powers, config.chip_kick_distances)) {
     throw std::runtime_error("無効なチップキック設定");
   }
 
@@ -381,6 +416,37 @@ auto KickerModel::validateArrays(
   }
 
   return true;
+}
+
+auto KickerModel::clampKickPower(double kick_power) const -> double
+{
+  if (
+    kick_power < kKickPowerMin - kKickPowerTolerance ||
+    kick_power > kKickPowerMax + kKickPowerTolerance) {
+    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
+  }
+
+  return std::clamp(kick_power, kKickPowerMin, kKickPowerMax);
+}
+
+auto KickerModel::hasValidArrayStructure(
+  const std::vector<double> & x_array, const std::vector<double> & y_array) const -> bool
+{
+  if (x_array.size() != y_array.size()) {
+    return false;
+  }
+
+  if (x_array.empty()) {
+    return true;
+  }
+
+  for (size_t i = 1; i < x_array.size(); ++i) {
+    if (x_array[i] <= x_array[i - 1]) {
+      return false;
+    }
+  }
+
+  return std::none_of(y_array.begin(), y_array.end(), [](double value) { return value < 0.0; });
 }
 
 // ===== ファクトリー関数 =====

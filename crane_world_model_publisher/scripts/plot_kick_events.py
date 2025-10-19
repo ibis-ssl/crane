@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2025 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """
 キックイベント可視化スクリプト - ROS2版
 JSONデータファイルからキックイベントのグラフを生成する汎用スクリプト

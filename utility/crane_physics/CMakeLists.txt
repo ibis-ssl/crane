@@ -32,7 +32,7 @@ target_link_libraries(${PROJECT_NAME}
 ament_export_include_directories(
   include
 )
-ament_export_libraries(crane_physics_lib)
+ament_export_libraries(${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
