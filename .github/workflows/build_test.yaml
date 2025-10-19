@@ -15,7 +15,7 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
-    container: ros:${{ matrix.rosdistro }}
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
       # ccache configuration
@@ -54,11 +54,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install wget
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget libcpprest-dev
-
       - name: Clone dependency packages
         run: |
           mkdir -p dependency_ws
@@ -67,8 +62,6 @@ jobs:
 
       - name: Generate rosdep keys file
         run: |
-          sudo rosdep init || true
-          rosdep update
           colcon list -p --base-paths . dependency_ws > packages.txt
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
@@ -112,46 +105,26 @@ jobs:
 
       - name: Run rosdep install
         run: |
-          sudo apt-get -yqq update
-          if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" == "true" ]]; then
-            echo "Rosdep cache hit. Skipping rosdep update and install."
-          else
-            echo "Rosdep cache miss. Running rosdep update and install."
-            rosdep update
+          if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" != "true" ]]; then
+            echo "Installing dependencies..."
+            sudo apt-get -yqq update
             DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          else
+            echo "Rosdep cache hit. Skipping installation."
           fi
         shell: bash
-
-      - name: Cache rosdep
-        id: cache-rosdep
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/lib/apt/lists
-            /home/runner/.ros/rosdep
-          key: rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-${{ hashFiles('rosdep_keys.txt') }}
-          restore-keys: |
-            rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-
 
       - name: Build
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
           colcon build --event-handlers console_cohesion+ \
+            --parallel-workers $(nproc) \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
-
-      - name: Cache build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./build
-            ./install
-          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/package.xml') }}
-          restore-keys: |
-            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Test
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon test --event-handlers console_cohesion+
+          colcon test --event-handlers console_cohesion+ \
+            --parallel-workers $(nproc)
         shell: bash
