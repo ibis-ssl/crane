@@ -58,8 +58,15 @@ limitations under the License.
   <!-- ロボット性能パラメータ -->
   <!-- ============================================================ -->
   <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
-  <arg name="robot_acc_for_prediction" default="2.0" description="予測計算（slack timeなど）に用いるロボットの加速度 [m/s^2]"/>
-  <arg name="robot_max_vel_for_prediction" default="5.0" description="予測計算（slack timeなど）に用いるロボットの最大速度 [m/s]"/>
+
+  <!-- Slack時間計算パラメータ -->
+  <arg name="slack.robot_max_acceleration" default="2.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
+  <arg name="slack.robot_max_velocity" default="5.0" description="slack時間計算に用いるロボットの最大速度 [m/s]"/>
+  <arg name="slack.time_horizon" default="3.0" description="ボール軌道予測時間範囲 [s]"/>
+  <arg name="slack.time_step" default="0.1" description="ボール軌道サンプリング時間間隔 [s]"/>
+  <arg name="slack.slack_time_offset" default="0.5" description="slack時間の安全マージン [s]"/>
+  <arg name="slack.distance_horizon" default="100.0" description="slack時間評価の距離範囲 [m]"/>
+  <arg name="slack.velocity_epsilon" default="0.2" description="ボール静止判定の速度閾値 [m/s]"/>
 
   <!-- ============================================================ -->
   <!-- フィールド/試合設定 -->
