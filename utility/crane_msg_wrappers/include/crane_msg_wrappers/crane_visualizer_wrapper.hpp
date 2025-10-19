@@ -11,6 +11,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_update.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
+#include <format>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -18,6 +19,15 @@
 
 namespace crane
 {
+// 座標変換ユーティリティ（constexpr で高速化）
+namespace SvgCoord
+{
+constexpr double SCALE = 1000.0;
+constexpr double toSvgX(double x) { return x * SCALE; }
+constexpr double toSvgY(double y) { return -y * SCALE; }
+}  // namespace SvgCoord
+
+// 前方宣言
 struct SvgCircleBuilder;
 struct SvgPolygonBuilder;
 struct SvgPolyLineBuilder;
