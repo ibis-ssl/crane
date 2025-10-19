@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_COMM__DDPS_HPP_
-#define CRANE_COMM__DDPS_HPP_
+#ifndef CRANE_GEOMETRY__DDPS_HPP_
+#define CRANE_GEOMETRY__DDPS_HPP_
 
 #include <algorithm>
 #include <cmath>
@@ -67,4 +67,4 @@ inline auto getPoints(
 }
 
 }  // namespace crane
-#endif  // CRANE_COMM__DDPS_HPP_
+#endif  // CRANE_GEOMETRY__DDPS_HPP_

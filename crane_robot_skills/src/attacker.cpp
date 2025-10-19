@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_comm/ddps.hpp>
+#include <crane_geometry/ddps.hpp>
 #include <crane_physics/pass.hpp>
 #include <crane_robot_skills/attacker.hpp>
 
