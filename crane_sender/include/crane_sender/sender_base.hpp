@@ -8,13 +8,12 @@
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
 #include <array>
-#include <memory>
-#include <string>
-
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/pid_controller.hpp>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
 
 namespace crane
 {
