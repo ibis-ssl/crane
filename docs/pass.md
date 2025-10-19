@@ -1,4 +1,6 @@
-# 概要
+# パス連携システム（2025年版）
+
+> 最終更新: 2025年6月（JapanOpen2025運用後）
 
 - 本ドキュメントは Crane におけるパスの上位決定・受け手予約・受取準備・スイッチ抑制の仕組みを説明します。
 - 目的: キック中に受け手が別スキルへ移行して取りこぼす事象を低減し、安定したパス連携を実現すること。
@@ -13,8 +15,8 @@
 ## 関係コンポーネント
 
 - `crane_world_model_publisher`:
-  - `GameAnalysis.pass_scores` 算出に加え、`pass_target_id` を選定・配信。
-  - 連続切替え抑制（ヒステリシス）を実装。
+  - `PassTargetSelector` が `GameAnalysis.pass_scores` を算出し、`pass_target_id` を選定・配信。
+  - 連続切替え抑制（ヒステリシス）と可視化出力を実装。
 - `crane_session_controller`:
   - `GameAnalysis.pass_target_id` を `PlannerContext["AttackerSkill"]["pass_receiver"]` に反映。
   - `pass_receive` セッションで受け手ロボットに Receive スキルを割当（予約）。
@@ -31,13 +33,13 @@
 
 ## 選定とスイッチ抑制（上位レイヤ）
 
-- 実装: `crane_world_model_publisher` 内で `pass_scores` をもとに `pass_target_id` を選定。
+- 実装: `crane_world_model_publisher` の `PassTargetSelector::update()` が `pass_scores` を計算し、ヒステリシスを考慮して `pass_target_id` を決定。
 - 抑制パラメータ（ROS 2 パラメータ）:
-  - `pass_target.min_hold_duration_sec` 既定 1.5
+  - `pass_target.min_hold_duration_sec` 既定 0.5
   - `pass_target.min_improvement_margin` 既定 0.2
 - 振る舞い:
-  - 直近に選ばれたターゲットは一定時間ホールド。
-  - ホールド中により高いスコアが出ても「改善幅」がしきい値未満なら切り替えない。
+  - 最後に選ばれたターゲットは最低0.5秒保持される（値はパラメータで可変）。
+  - 改善値がしきい値を超えた場合のみ切り替え（わずかな差でのフリップを防止）。
 
 ## パス評価の基準点（動くボール対応）
 
@@ -57,6 +59,7 @@
 - `PassReceiverPlanner` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
   - ボールが十分動いている、または `ongoing_kick.is_kicker_friend` が真のときは能動受け取り（`Receive::update()` 実行）。
   - キック前は整列動作を行わず、その場で停止しボールを注視。
+  - 2025シーズンでは、PassTargetSelectorの確定まで待機する「遅延切替」ロジックが標準となり、受け手のスキルフリップが減少。
 
 ## セッション設定（例）
 
@@ -91,7 +94,7 @@
 
 ## チューニング指針
 
-- スイッチ抑制が強すぎる場合: `pass_target.min_hold_duration_sec` を短く、または `min_improvement_margin` を小さく。
+- スイッチ抑制が強すぎる場合: `pass_target.min_hold_duration_sec` を0.3程度に短縮、または `min_improvement_margin` を小さく。
 - 受け取り遅延がある場合: `Receive` の `robot_acc_for_prediction`, `robot_max_vel_for_prediction` を上げる。
 
 ## 既知の注意点
