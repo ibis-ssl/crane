@@ -47,6 +47,14 @@ target_precompile_headers(${PROJECT_NAME}_component
     "<rclcpp/rclcpp.hpp>"
     "<tf2_ros/transform_broadcaster.h>"
     "<tf2_geometry_msgs/tf2_geometry_msgs.hpp>"
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<yaml-cpp/yaml.h>"
+    "<glog/logging.h>"
+    "<vector>"
+    "<array>"
+    "<optional>"
+    "<unordered_map>"
 )
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")

@@ -9,6 +9,8 @@
 
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>

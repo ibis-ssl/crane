@@ -27,16 +27,6 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
 
 target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb Eigen3::Eigen)
 
-# target_precompile_headers(${PROJECT_NAME}_component
-#   PUBLIC
-#     "<crane_geometry/boost_geometry.hpp>"
-#     "<crane_physics/pid_controller.hpp>"
-#     "<crane_msgs/msg/robot_commands.hpp>"
-#     "<crane_msg_wrappers/world_model_wrapper.hpp>"
-#     "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
-#     "<rclcpp/rclcpp.hpp>"
-# )
-
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node

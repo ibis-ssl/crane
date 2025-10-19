@@ -34,11 +34,28 @@ target_link_libraries(simulation_protocol_sender_node
         ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 )
 
+add_library(crane_sender_base STATIC src/sender_base.cpp)
+set_target_properties(crane_sender_base PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ament_target_dependencies(crane_sender_base
+  rclcpp
+  crane_msgs
+  crane_msg_wrappers
+  crane_comm
+  crane_physics
+)
+target_include_directories(crane_sender_base PUBLIC include)
+
+target_link_libraries(sim_sender_component crane_sender_base)
+target_link_libraries(sim_sender_node crane_sender_base)
+target_link_libraries(ibis_sender_node crane_sender_base)
+target_link_libraries(simulation_protocol_sender_node crane_sender_base)
+
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_robot_packet test/test_robot_packet.cpp)
   target_link_libraries(test_robot_packet sim_sender_component)
+  target_link_libraries(test_robot_packet crane_sender_base)
 endif ()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
