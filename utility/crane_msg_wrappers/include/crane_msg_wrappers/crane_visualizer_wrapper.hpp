@@ -134,6 +134,23 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto rectangle(
     Point top_left, Point bottom_right, const std::string & color = "white",
     double stroke_width = 10.0) -> void;
+
+  // Quick描画メソッド（1行で完結）
+  auto drawLine(
+    Point start, Point end, const std::string & color = "white", double stroke_width = 10.0,
+    double opacity = 1.0) -> void;
+
+  auto drawCircle(
+    Point center, double radius, const std::string & color = "white",
+    double stroke_width = 10.0, double opacity = 1.0) -> void;
+
+  auto drawFilledCircle(
+    Point center, double radius, const std::string & fill_color = "white",
+    double opacity = 0.5) -> void;
+
+  auto drawText(
+    Point position, const std::string & text_str, const std::string & color = "white",
+    double font_size = 100.0, const std::string & anchor = "start") -> void;
 };
 
 // スタイル属性の共通基底クラス（CRTP パターン）

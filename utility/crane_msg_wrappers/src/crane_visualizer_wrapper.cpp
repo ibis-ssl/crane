@@ -153,4 +153,31 @@ auto VisualizerMessageBuilder::rectangle(
   line().start(bottom_right).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
   line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
 }
+
+// Quick描画メソッドの実装
+auto VisualizerMessageBuilder::drawLine(
+  Point start, Point end, const std::string & color, double stroke_width, double opacity) -> void
+{
+  line().start(start).end(end).stroke(color, opacity).strokeWidth(stroke_width).build();
+}
+
+auto VisualizerMessageBuilder::drawCircle(
+  Point center, double radius, const std::string & color, double stroke_width, double opacity)
+  -> void
+{
+  circle().center(center).radius(radius).stroke(color, opacity).strokeWidth(stroke_width).build();
+}
+
+auto VisualizerMessageBuilder::drawFilledCircle(
+  Point center, double radius, const std::string & fill_color, double opacity) -> void
+{
+  circle().center(center).radius(radius).fill(fill_color, opacity).stroke("none").build();
+}
+
+auto VisualizerMessageBuilder::drawText(
+  Point position, const std::string & text_str, const std::string & color, double font_size,
+  const std::string & anchor) -> void
+{
+  text().position(position).text(text_str).fill(color).fontSize(font_size).textAnchor(anchor).build();
+}
 }  // namespace crane

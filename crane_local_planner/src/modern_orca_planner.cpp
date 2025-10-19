@@ -543,15 +543,10 @@ void ModernORCAPlanner::visualizeConstraints(
     // Color code constraints: SSL constraints in blue, ORCA constraints in green
     std::string color = (i < 10) ? "blue" : "green";  // Rough heuristic
 
-    visualizer->line().start(line_start).end(line_end).stroke(color, 0.3).strokeWidth(5).build();
+    visualizer->drawLine(line_start, line_end, color, 5, 0.3);
 
     // 制約法線方向を表示
-    visualizer->line()
-      .start(point)
-      .end(point + normal * 0.5)
-      .stroke(color, 0.7)
-      .strokeWidth(8)
-      .build();
+    visualizer->drawLine(point, point + normal * 0.5, color, 8, 0.7);
   }
 
   // 制約数を表示
@@ -584,15 +579,10 @@ void ModernORCAPlanner::visualizeORCALines(
     Point line_start = point + tangent * 1.5;  // 1.5m ORCA線の長さ
     Point line_end = point - tangent * 1.5;
 
-    visualizer->line().start(line_start).end(line_end).stroke("orange", 0.6).strokeWidth(6).build();
+    visualizer->drawLine(line_start, line_end, "orange", 6, 0.6);
 
     // 速度空間制約方向を表示
-    visualizer->line()
-      .start(point)
-      .end(point + normal * 0.3)
-      .stroke("red", 0.8)
-      .strokeWidth(10)
-      .build();
+    visualizer->drawLine(point, point + normal * 0.3, "red", 10, 0.8);
   }
 
   // ORCA制約数を表示

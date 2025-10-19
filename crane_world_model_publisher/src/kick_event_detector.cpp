@@ -76,12 +76,8 @@ auto KickEventDetector::update(
   // 進行中のキックを可視化
   if (ongoing_kick_origin.has_value()) {
     if (visualizer) {
-      visualizer->line()
-        .start(ongoing_kick_origin.value().position)
-        .end(world_model.ball().pos)
-        .stroke("red", 0.3)
-        .strokeWidth(200)
-        .build();
+      visualizer->drawLine(
+        ongoing_kick_origin.value().position, world_model.ball().pos, "red", 200, 0.3);
     }
   }
 }
