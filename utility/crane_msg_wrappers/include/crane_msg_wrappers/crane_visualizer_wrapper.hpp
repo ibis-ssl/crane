@@ -101,37 +101,78 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto path() -> SvgPathBuilder;
 };
 
+// スタイル属性の共通基底クラス（CRTP パターン）
+template <typename Derived>
+struct SvgStyleBuilder
+{
+  std::string fill_color = "none";
+  double fill_opacity = 1.0;
+  std::string stroke_color = "black";
+  double stroke_opacity = 1.0;
+  double stroke_width = 1.0;
+
+  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> Derived &
+  {
+    fill_color = color;
+    fill_opacity = std::clamp(alpha, 0.0, 1.0);
+    return static_cast<Derived &>(*this);
+  }
+
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> Derived &
+  {
+    stroke_color = color;
+    stroke_opacity = std::clamp(alpha, 0.0, 1.0);
+    return static_cast<Derived &>(*this);
+  }
+
+  [[nodiscard]] auto strokeWidth(double width) -> Derived &
+  {
+    stroke_width = width;
+    return static_cast<Derived &>(*this);
+  }
+};
+
 struct SvgBuilderBase
 {
   std::shared_ptr<VisualizerMessageBuilder> builder;
+  bool auto_build = false;  // RAII用フラグ
+  bool built = false;       // 二重build防止
 
   explicit SvgBuilderBase(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : builder(builder)
   {
   }
 
-  virtual ~SvgBuilderBase() = default;
+  virtual ~SvgBuilderBase()
+  {
+    if (auto_build && !built) {
+      build();
+    }
+  }
 
   [[nodiscard]] virtual auto getSvgString() const -> std::string = 0;
 
-  auto build() const -> void { builder->add(getSvgString()); }
+  auto build() -> void
+  {
+    if (!built) {
+      builder->add(getSvgString());
+      built = true;
+    }
+  }
+
+  // RAII有効化（メソッドチェーンで使えるよう自身の参照を返す）
+  template <typename Derived>
+  [[nodiscard]] auto raii() -> Derived &
+  {
+    auto_build = true;
+    return static_cast<Derived &>(*this);
+  }
 };
 
-struct SvgCircleBuilder : public SvgBuilderBase
+struct SvgCircleBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgCircleBuilder>
 {
   Point circle_center;
-
   double circle_radius = 0.;
-
-  std::string fill_color = "none";
-
-  double fill_opacity = 1.;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
 
   explicit SvgCircleBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
@@ -140,12 +181,13 @@ struct SvgCircleBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << -circle_center.y() * 1000.
-        << "\" r=\"" << circle_radius * 1000. << "\" fill=\"" << fill_color << "\" fill-opacity=\""
-        << fill_opacity << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\""
-        << stroke_opacity << "\" stroke-width=\"" << stroke_width << "\" />";
-    return oss.str();
+    using namespace SvgCoord;
+    return std::format(
+      "<circle cx=\"{:.3f}\" cy=\"{:.3f}\" r=\"{:.3f}\" "
+      "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" "
+      "stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
+      toSvgX(circle_center.x()), toSvgY(circle_center.y()), circle_radius * SCALE, fill_color,
+      fill_opacity, stroke_color, stroke_opacity, stroke_width);
   }
 
   [[nodiscard]] auto center(double x, double y) -> SvgCircleBuilder &
@@ -165,38 +207,12 @@ struct SvgCircleBuilder : public SvgBuilderBase
     circle_radius = radius;
     return *this;
   }
-
-  [[nodiscard]] SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
-  {
-    fill_color = color;
-    fill_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgCircleBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgCircleBuilder &
-  {
-    stroke_width = width;
-    return *this;
-  }
 };
 
-struct SvgLineBuilder : public SvgBuilderBase
+struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBuilder>
 {
   Point p1;
   Point p2;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
 
   explicit SvgLineBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
@@ -205,12 +221,12 @@ struct SvgLineBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << -p1.y() * 1000. << "\" x2=\""
-        << p2.x() * 1000. << "\" y2=\"" << -p2.y() * 1000. << "\" stroke=\"" << stroke_color
-        << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\"" << stroke_width
-        << "\" />";
-    return oss.str();
+    using namespace SvgCoord;
+    return std::format(
+      "<line x1=\"{:.3f}\" y1=\"{:.3f}\" x2=\"{:.3f}\" y2=\"{:.3f}\" "
+      "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
+      toSvgX(p1.x()), toSvgY(p1.y()), toSvgX(p2.x()), toSvgY(p2.y()), stroke_color,
+      stroke_opacity, stroke_width);
   }
 
   [[nodiscard]] auto start(double x, double y) -> SvgLineBuilder & { return start(Point(x, y)); }
@@ -229,35 +245,12 @@ struct SvgLineBuilder : public SvgBuilderBase
     return *this;
   }
 
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgLineBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgLineBuilder &
-  {
-    stroke_width = width;
-    return *this;
-  }
 };
 
-struct SvgRectBuilder : public SvgBuilderBase
+struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBuilder>
 {
   Point rect_top_left;
-
   Point rect_size;
-
-  std::string fill_color = "none";
-
-  double fill_opacity = 1.;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
 
   explicit SvgRectBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
@@ -266,13 +259,14 @@ struct SvgRectBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << -rect_top_left.y() * 1000.
-        << "\" width=\"" << rect_size.x() * 1000. << "\" height=\"" << rect_size.y() * 1000.
-        << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" stroke=\""
-        << stroke_color << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\""
-        << stroke_width << "\" />";
-    return oss.str();
+    using namespace SvgCoord;
+    return std::format(
+      "<rect x=\"{:.3f}\" y=\"{:.3f}\" width=\"{:.3f}\" height=\"{:.3f}\" "
+      "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" "
+      "stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
+      toSvgX(rect_top_left.x()), toSvgY(rect_top_left.y()), rect_size.x() * SCALE,
+      rect_size.y() * SCALE, fill_color, fill_opacity, stroke_color, stroke_opacity,
+      stroke_width);
   }
 
   [[nodiscard]] auto top_left(double x, double y) -> SvgRectBuilder &
@@ -305,62 +299,39 @@ struct SvgRectBuilder : public SvgBuilderBase
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }
-
-  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgRectBuilder &
-  {
-    fill_color = color;
-    fill_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgRectBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgRectBuilder &
-  {
-    stroke_width = width;
-    return *this;
-  }
 };
 
-struct SvgTextBuilder : public SvgBuilderBase
+struct SvgTextBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgTextBuilder>
 {
   Point text_position;
-
   std::string text_string;
-
-  std::string fill_color = "white";
-
-  double fill_opacity = 1.;
-
   double font_size = 100.0;
-
   bool view_box_position = false;
-
   std::string anchor = "start";
 
   explicit SvgTextBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
   {
+    // Textのデフォルト色はwhite
+    fill_color = "white";
   }
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<text ";
+    using namespace SvgCoord;
     if (view_box_position) {
-      oss << "x=\"" << text_position.x() << "%\" y=\"" << -text_position.y() << "%\" ";
+      return std::format(
+        "<text x=\"{}%\" y=\"{}%\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
+        "font-size=\"{:.2f}\" text-anchor=\"{}\">{}</text>",
+        text_position.x(), -text_position.y(), fill_color, fill_opacity, font_size, anchor,
+        text_string);
     } else {
-      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << -text_position.y() * 1000.
-          << "\" ";
+      return std::format(
+        "<text x=\"{:.3f}\" y=\"{:.3f}\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
+        "font-size=\"{:.2f}\" text-anchor=\"{}\">{}</text>",
+        toSvgX(text_position.x()), toSvgY(text_position.y()), fill_color, fill_opacity, font_size,
+        anchor, text_string);
     }
-    oss << "fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
-        << font_size << "\" text-anchor=\"" << anchor << "\">" << text_string << "</text>";
-    return oss.str();
   }
 
   [[nodiscard]] auto position(double x, double y) -> SvgTextBuilder &
@@ -393,13 +364,6 @@ struct SvgTextBuilder : public SvgBuilderBase
     return *this;
   }
 
-  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgTextBuilder &
-  {
-    fill_color = color;
-    fill_opacity = alpha;
-    return *this;
-  }
-
   [[nodiscard]] auto fontSize(double size) -> SvgTextBuilder &
   {
     font_size = size;
@@ -413,15 +377,9 @@ struct SvgTextBuilder : public SvgBuilderBase
   }
 };
 
-struct SvgPolyLineBuilder : public SvgBuilderBase
+struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPolyLineBuilder>
 {
   std::vector<Point> points;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
 
   explicit SvgPolyLineBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
@@ -430,17 +388,15 @@ struct SvgPolyLineBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<polyline points=\"";
+    using namespace SvgCoord;
+    std::ostringstream points_str;
     for (const auto & p : points) {
-      oss << p.x() * 1000. << "," << -p.y() * 1000. << " ";
+      points_str << std::format("{:.3f},{:.3f} ", toSvgX(p.x()), toSvgY(p.y()));
     }
-    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width;
-    if (stroke_opacity != 1.) {
-      oss << "\" stroke-opacity=\"" << stroke_opacity;
-    }
-    oss << "\" fill=\"none\" />";
-    return oss.str();
+    return std::format(
+      "<polyline points=\"{}\" stroke=\"{}\" stroke-width=\"{:.2f}\" "
+      "stroke-opacity=\"{:.2f}\" fill=\"none\" />",
+      points_str.str(), stroke_color, stroke_width, stroke_opacity);
   }
 
   [[nodiscard]] auto addPoint(double x, double y) -> SvgPolyLineBuilder &
@@ -454,34 +410,11 @@ struct SvgPolyLineBuilder : public SvgBuilderBase
     points.push_back(p);
     return *this;
   }
-
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPolyLineBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgPolyLineBuilder &
-  {
-    stroke_width = width;
-    return *this;
-  }
 };
 
-struct SvgPolygonBuilder : public SvgBuilderBase
+struct SvgPolygonBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPolygonBuilder>
 {
   std::vector<Point> points;
-
-  std::string fill_color = "none";
-
-  double fill_opacity = 1.;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
 
   explicit SvgPolygonBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
@@ -490,14 +423,15 @@ struct SvgPolygonBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<polygon points=\"";
+    using namespace SvgCoord;
+    std::ostringstream points_str;
     for (const auto & p : points) {
-      oss << p.x() * 1000. << "," << -p.y() * 1000. << " ";
+      points_str << std::format("{:.3f},{:.3f} ", toSvgX(p.x()), toSvgY(p.y()));
     }
-    oss << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
-        << stroke_width << "\" />";
-    return oss.str();
+    return std::format(
+      "<polygon points=\"{}\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
+      "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
+      points_str.str(), fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
   }
 
   [[nodiscard]] auto addPoint(double x, double y) -> SvgPolygonBuilder &
@@ -511,40 +445,10 @@ struct SvgPolygonBuilder : public SvgBuilderBase
     points.push_back(p);
     return *this;
   }
-
-  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgPolygonBuilder &
-  {
-    fill_color = color;
-    fill_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPolygonBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgPolygonBuilder &
-  {
-    stroke_width = width;
-    return *this;
-  }
 };
 
-struct SvgPathBuilder : public SvgBuilderBase
+struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBuilder>
 {
-  std::string fill_color = "none";
-
-  double fill_opacity = 1.;
-
-  std::string stroke_color = "black";
-
-  double stroke_opacity = 1.;
-
-  double stroke_width = 1.0;
-
   explicit SvgPathBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
   {
@@ -552,30 +456,10 @@ struct SvgPathBuilder : public SvgBuilderBase
 
   auto getSvgString() const -> std::string override
   {
-    std::ostringstream oss;
-    oss << "<path d=\"" << definition.path << "\" fill=\"" << fill_color << "\" stroke=\""
-        << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
-    return oss.str();
-  }
-
-  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgPathBuilder &
-  {
-    fill_color = color;
-    fill_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPathBuilder &
-  {
-    stroke_color = color;
-    stroke_opacity = alpha;
-    return *this;
-  }
-
-  [[nodiscard]] auto strokeWidth(double width) -> SvgPathBuilder &
-  {
-    stroke_width = width;
-    return *this;
+    return std::format(
+      "<path d=\"{}\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
+      "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
+      definition.path, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
   }
 
   struct SvgPathDefinitionBuilder
@@ -584,15 +468,17 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " M" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(" M{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
 
     auto moveTo(Point p) -> SvgPathDefinitionBuilder & { return moveTo(p.x(), p.y()); }
 
-    SvgPathDefinitionBuilder & lineTo(double x, double y)
+    auto lineTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " L" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(" L{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -600,13 +486,15 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto horizontalTo(double x) -> SvgPathDefinitionBuilder &
     {
-      path += " H" + std::to_string(x * 1000.);
+      using namespace SvgCoord;
+      path += std::format(" H{:.3f}", toSvgX(x));
       return *this;
     }
 
     auto verticalTo(double y) -> SvgPathDefinitionBuilder &
     {
-      path += " V" + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(" V{:.3f}", toSvgY(y));
       return *this;
     }
 
@@ -619,9 +507,10 @@ struct SvgPathBuilder : public SvgBuilderBase
     auto cubicBezierTo(double x1, double y1, double x2, double y2, double x, double y)
       -> SvgPathDefinitionBuilder &
     {
-      path += " C" + std::to_string(x1 * 1000.) + "," + std::to_string(-y1 * 1000.) + " " +
-              std::to_string(x2 * 1000.) + "," + std::to_string(-y2 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(
+        " C{:.3f},{:.3f} {:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x2),
+        toSvgY(y2), toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -632,8 +521,9 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " S" + std::to_string(x2 * 1000.) + "," + std::to_string(-y2 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(
+        " S{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x2), toSvgY(y2), toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -644,8 +534,9 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " Q" + std::to_string(x1 * 1000.) + "," + std::to_string(-y1 * 1000.) + " " +
-              std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(
+        " Q{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -656,7 +547,8 @@ struct SvgPathBuilder : public SvgBuilderBase
 
     auto smoothQuadraticBezierTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      path += " T" + std::to_string(x * 1000.) + "," + std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(" T{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -669,10 +561,10 @@ struct SvgPathBuilder : public SvgBuilderBase
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y) -> SvgPathDefinitionBuilder &
     {
-      path += " A" + std::to_string(rx * 1000.) + "," + std::to_string(-ry * 1000.) + " " +
-              std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
-              std::to_string(sweep_flag) + " " + std::to_string(x * 1000.) + "," +
-              std::to_string(-y * 1000.);
+      using namespace SvgCoord;
+      path += std::format(
+        " A{:.3f},{:.3f} {:.3f} {},{} {:.3f},{:.3f}", toSvgX(rx), toSvgY(ry), x_axis_rotation,
+        static_cast<int>(large_arc_flag), static_cast<int>(sweep_flag), toSvgX(x), toSvgY(y));
       return *this;
     }
 
