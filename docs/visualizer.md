@@ -1,278 +1,187 @@
-# 可視化システム: VisualizerMessageBuilderとCraneVisualizerBuffer
+# 可視化APIガイド（VisualizerMessageBuilder / CraneVisualizerBuffer）
 
-このドキュメントでは、Craneプロジェクトで使用される可視化システムの主要コンポーネントである`VisualizerMessageBuilder`と`CraneVisualizerBuffer`の使い方について説明します。これらを使って、ロボットの動き、ボールの位置、戦略の
-判断などをリアルタイムで視覚的に表現できます。
+> 最終更新: 2025年6月（JapanOpen2025運用後のAPIに対応）
 
-Craneの可視化システムは、SVG（Scalable Vector Graphics）ベースの描画機能を提供します。この仕組みにより、フィールド上の様々な要素（ロボット、ボール、軌道、戦略情報など）を直感的に表示できます。
+このドキュメントでは、`crane_msg_wrappers/crane_visualizer_wrapper.hpp` が提供する最新の可視化APIと、`crane_visualization_aggregator` を使った描画パイプラインを解説します。
 
-主要なコンポーネント：
+## コンポーネント概要
 
-- VisualizerMessageBuilder: 個々の描画要素（円、線、テキストなど）を生成するためのビルダーパターンを実装したクラス
-- CraneVisualizerBuffer: 生成された描画要素をまとめてパブリッシュするためのバッファ機能を提供するクラス（更新トピック SvgUpdates を発行）
+- **VisualizerMessageBuilder**  
+  レイヤー単位でSVGプリミティブを生成するビルダークラス。フィールド座標（m）で渡した値を自動的にSVG座標（mm・Y軸反転）へ変換します。
+- **CraneVisualizerBuffer**  
+  各ビルダーから集めた描画更新を `/visualizer_svgs`（`SvgUpdates`）として送信。`activate(node)` を一度呼ぶだけで利用可能です。
+- **crane_visualization_aggregator**  
+  `/visualizer_svgs` を集約し、5秒ごとに `/aggregated_svgs`（`SvgSnapshot`）を配信。Foxglove・Webビューア・録画再生はこのスナップショット＋差分更新を組み合わせて描画します。
 
-## 使用の流れ
+```
+VisualizerMessageBuilder ─┐
+                          ├─ CraneVisualizerBuffer → /visualizer_svgs (SvgUpdates)
+VisualizerMessageBuilder ─┘             └─ crane_visualization_aggregator → /aggregated_svgs (SvgSnapshot, 5s周期)
+```
 
-基本的な使用の流れは以下の通りです：
-
-1. VisualizerMessageBuilder のインスタンスを作成
-2. CraneVisualizerBuffer を初期化（通常はノード起動時に一度だけ）
-3. 各種ビルダー（Circle、Line、Text など）で描画要素を生成
-4. 生成した描画要素を flush して更新に追加
-5. バッファの内容を publish して表示
-
-## 初期化
-
-### VisualizerMessageBuilder の作成
-
-通常、クラスのメンバ変数として VisualizerMessageBuilder のインスタンスを保持します：
+## 基本セットアップ
 
 ```cpp
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 
-class MyNode : public rclcpp::Node
-{
-private:
-  crane::VisualizerMessageBuilder::SharedPtr visualizer;
-
+class MyNode : public rclcpp::Node {
 public:
-  MyNode()
-  : Node("my_node")
-  {
-    // レイヤー名を指定してビルダーを作成
-    visualizer = std::make_shared<crane::VisualizerMessageBuilder>("my_layer");
-
-    // CraneVisualizerBufferを初期化
-    crane::CraneVisualizerBuffer::activate(*this);
+  MyNode() : Node("demo_node") {
+    crane::CraneVisualizerBuffer::activate(*this);                     // 1回だけ呼べばOK
+    visualizer_ = std::make_shared<crane::VisualizerMessageBuilder>("demo_layer");
   }
+
+  void tick(const Point & ball_pos) {
+    visualizer_->asReplace();                                          // レイヤーを丸ごと描き直す
+    visualizer_->drawFilledCircle(ball_pos, 0.1, "cyan", 0.4);         // 高レベルAPI
+    visualizer_->flush();                                              // バッファへ移動
+    crane::CraneVisualizerBuffer::publish();                           // /visualizer_svgs へ送信
+  }
+
+private:
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_;
 };
-"my_layer" は描画要素のグループ名です。
+```
 
-### CraneVisualizerBuffer の初期化
+- レイヤー名（ここでは `demo_layer`）ごとに描画が管理されます。同じレイヤー名を使うと上書きされます。
+- `activate(node, topic)` でカスタムトピックに変更できますが、通常はデフォルトの `/visualizer_svgs` を使います。
 
-CraneVisualizerBuffer はシングルトンパターンで、一度初期化するとプログラム全体で使用できます：
-// デフォルトのトピック名（/visualizer_svgs, SvgUpdates）で初期化
-crane::CraneVisualizerBuffer::activate(*this);
+## レイヤー操作と送信フロー
 
-// カスタムトピック名で初期化
-crane::CraneVisualizerBuffer::activate(*this, "/my_custom_visualizer_topic");
-## 描画要素の作成（SVGプリミティブ）
+1. プリミティブを組み立てる（`circle()`, `line()` など）
+2. `flush()` を呼んでメッセージバッファへ移動
+3. `CraneVisualizerBuffer::publish()` で更新を送信
 
-VisualizerMessageBuilder は、以下の様々な描画ビルダーを提供します。各ビルダーはメソッドチェーンで流暢に扱えます。
+レイヤーの操作種別は `operation` で制御します。
 
-- 円（Circle）
-- 線（Line）
-- テキスト（Text）
-- 折れ線（Polyline）
-- 多角形（Polygon）
-- 矩形（Rectangle）
-- パス（Path）
+```cpp
+visualizer->asReplace();  // レイヤー全体を置換（デフォルト）
+visualizer->asAppend();   // 既存描画に追記（軌跡など）
+visualizer->asClear();    // レイヤーを空にする命令を送信
+```
 
-例（円）：
-visualizer->circle()
-  .center(Point(1.0, 2.0))
-  .radius(0.2)
-  .fill("blue", 0.5)
-  .stroke("black")
-  .strokeWidth(2.0)
-  .build();
-他のビルダーも同様です（Line, Text, Polyline, Polygon, Rect, Path）。
+`append` だけを送るとベースが無い場合に無視されるため、初回や定期的に `replace` を挟むと安全です。
 
-## 描画要素のパブリッシュ
+## プリミティブビルダー
 
-作成した描画要素をパブリッシュするには、以下の手順が必要です：
-// 描画要素を更新メッセージに変換してバッファに追加（デフォルトは replace）
-visualizer->flush();
+| メソッド | 主な設定メンバー | 備考 |
+|----------|------------------|------|
+| `circle()` | `center(x,y)` / `radius(r)` | `fill()` / `stroke()` / `strokeWidth()` など |
+| `line()` | `start(p)` / `end(p)` / `fromSegment(segment)` | |
+| `polyline()` | `addPoint(p)` / `setPoints(vector)` | |
+| `polygon()` | `addPoint(p)` / `setPoints(vector)` | |
+| `rect()` | `top_left(p)` / `size(p)` / `box(box)` | |
+| `text()` | `position(p)` / `viewBoxPosition(x%,y%)` / `text("label")` / `fontSize()` / `textAnchor()` | |
+| `path()` | `definition().moveTo().lineTo().closePath()` など | 自由曲線を構築 |
 
-// バッファの内容をパブリッシュ
-crane::CraneVisualizerBuffer::publish();
-通常、この処理はコールバック関数の最後で行います：
-void onTimer()
-{
-  // ... 描画要素の作成 ...
+スタイル指定は `fill(color, alpha)`, `stroke(color, alpha)`, `strokeWidth(width)` で共通に行えます。すべての座標・長さはフィールド座標（m）で指定します。
 
-  // 描画要素をフラッシュしてパブリッシュ
+### RAII（`.raii()`）による自動 `build()`
+
+```cpp
+visualizer->circle().raii()
+  .center(ball.pos)
+  .radius(0.05)
+  .fill("red", 0.4)
+  .stroke("white")
+  .strokeWidth(8.0);
+```
+
+`.raii()` を呼ぶとスコープ終了時に自動で `build()` が呼ばれ、書き忘れを防げます。
+
+## 高レベルヘルパー（2025年追加機能）
+
+頻出パターンを1行で描画できます。
+
+- `drawLine(start, end, color = "white", stroke_width = 10.0, opacity = 1.0)`
+- `drawCircle(center, radius, color, stroke_width, opacity)`
+- `drawFilledCircle(center, radius, fill_color = "white", opacity = 0.5)`
+- `drawText(position, "label", color = "white", font_size = 100.0, anchor = "start")`
+- `arrow(start, direction, length, color = "white", stroke_width = 10.0, arrowhead_length = 0.35, arrowhead_width = 0.20)`
+- `velocityArrow(position, velocity_vector, color = "lime", scale = 1.0, stroke_width = 20.0)`
+- `labeledCircle(center, radius, "id", circle_color, text_color, ...)`
+- `doubleCircle(center, inner_radius, outer_radius, ...)`
+- `rectangle(top_left, bottom_right, color = "white", stroke_width = 10.0)`
+- `arc(center, radius, start_angle, end_angle, color = "white", stroke_width = 10.0, steps = 16)`
+
+これらは内部で `add()` 済みなので `build()` は不要です。素早いデバッグに最適です。
+
+## バッファの管理とスナップショット
+
+- `visualizer->clear()` / `clearBuffer()` を使うと未送信の描画を破棄できます。
+- `CraneVisualizerBuffer::clear(layer)` / `clear()` は未送信の `SvgUpdates` を削除します。
+- `crane_visualization_aggregator` は 5000ms ごとに `/aggregated_svgs` を送信します。巻き戻し再生時に描画が欠ける場合は、この周期を短くするか `replace` を定期的に送ると安定します。
+
+## 実践的なコード例
+
+### ロボット状態の描画
+
+```cpp
+void visualizeRobot(const RobotInfo & robot) {
+  visualizer->asReplace();
+  visualizer->labeledCircle(robot.pose.pos, 0.09, std::to_string(robot.id),
+                            crane::SvgColors::Yellow, crane::SvgColors::Black);
+  visualizer->arrow(robot.pose.pos, crane::Vector2::fromAngle(robot.pose.theta),
+                    0.20, crane::SvgColors::Blue, 12.0);
   visualizer->flush();
   crane::CraneVisualizerBuffer::publish();
 }
-発行されるメッセージは次の構造です：
+```
 
-- 型: crane_visualization_interfaces/msg/SvgUpdates
-    - std_msgs/Header header（stamp を設定）
-    - uint32 epoch（ノード再起動や状態初期化時にインクリメント推奨）
-    - uint32 seq（エポック内で単調増加）
-    - SvgLayerUpdate[] updates
-    - `string layer`
-    - `string operation`（`replace` | `append` | `clear`）
-    - `string[] svg_primitives`
-
-CraneVisualizerBuffer::publish() は header.stamp/epoch/seq を自動で設定します。必要に応じて CraneVisualizerBuffer::setEpoch() を呼び出してください。
-// 起動時や新しいログ区切り時にエポックを切り替える
-crane::CraneVisualizerBuffer::setEpoch(1);
-## レイヤー操作（replace/append/clear）
-
-デフォルトでは flush() はそのレイヤーに対して operation="replace" を発行し、レイヤーの内容を完全に置き換えます。用途に応じて操作種別を切り替えられます。
-// レイヤー全体の置換（デフォルト）
-visualizer->asReplace();
-// 既存の内容に追記（軌跡などの長尺データ向け）
-visualizer->asAppend();
-// レイヤーの全要素を削除
-visualizer->asClear();
-
-// 例：スコア表示を完全置換
-visualizer->asReplace();
-visualizer->text().position(Point(-4.5, -6.5)).text("Score: 1-0").fontSize(100).build();
-visualizer->flush();
-
-// 例：軌跡に追記（1点）
-visualizer->asAppend();
-visualizer->circle().center(ball_pos).radius(0.003).fill("red").build();
-visualizer->flush();
-
-// 例：一時マーカーをクリア
-visualizer->asClear().flush();
-
-crane::CraneVisualizerBuffer::publish();
-注意：append はベースが無い時（古い時刻へシークした場合など）に無視されることがあります。重要な動的表示は replace を基本とし、軌跡などのみ append を併用してください。
-
-## レイヤーの消去（バッファ vs 表示）
-
-「表示の消去」と「送信前バッファの消去」は異なります。
-// 送信済みの表示を消去したい場合（受信側にクリア命令を出す）
-visualizer->asClear().flush();
-crane::CraneVisualizerBuffer::publish();
-
-// 送信前のローカル更新バッファからレイヤーを取り除きたい場合
-crane::CraneVisualizerBuffer::clear("my_layer"); // 該当レイヤーを空で上書きする更新を積む（表示クリア）
-crane::CraneVisualizerBuffer::clear();           // 未送信の全 updates を破棄（送信はしない）
-## 実用的な例
-
-### ロボットの状態を可視化する例
+### 軌跡＋最新位置
 
 ```cpp
-void visualizeRobotState(const RobotInfo & robot)
-{
-  // ロボットの位置を円で表示
-  visualizer->circle()
-    .center(robot.pose.pos)
-    .radius(0.09)
-    .fill("blue", 0.5)
-    .stroke("black")
-    .strokeWidth(1.0)
-    .build();
+void visualizeTrajectory(const std::vector<Point> & samples) {
+  auto & poly = visualizer->polyline();
+  poly.stroke("green").strokeWidth(6.0);
+  for (const auto & p : samples) {
+    poly.addPoint(p);
+  }
+  poly.build();
 
-  // ロボットの向きを矢印で表示
-  Point arrow_end = robot.pose.pos + getNormVec(robot.pose.theta) * 0.15;
-  visualizer->line()
-    .start(robot.pose.pos)
-    .end(arrow_end)
-    .stroke("white")
-    .strokeWidth(2.0)
-    .build();
+  if (!samples.empty()) {
+    visualizer->drawFilledCircle(samples.back(), 0.04, "red", 0.7);
+  }
 
-  // ロボットIDを表示
-  visualizer->text()
-    .position(robot.pose.pos + Vector2(0, -0.15))
-    .text(std::to_string(robot.id))
-    .fontSize(30)
-    .fill("white")
-    .textAnchor("middle")
-    .build();
+  visualizer->flush();
+  crane::CraneVisualizerBuffer::publish();
 }
 ```
 
-### 軌道予測を可視化する例
+最新の点だけを追加したい場合は `visualizer->asAppend()` に切り替えて1点だけ送信し、一定周期で `asReplace()` へ戻して基礎データを更新します。
+
+### ヒートマップ表示
 
 ```cpp
-void visualizeTrajectory(const std::vector<Point> & trajectory_points)
-{
-  // 予測軌道を折れ線で表示
-  auto polyline_builder = visualizer->polyline();
-
-  for (const auto & point : trajectory_points) {
-    polyline_builder.addPoint(point);
-  }
-
-  polyline_builder.stroke("green")
-    .strokeWidth(2.0)
-    .build();
-
-  // 終点を円で強調
-  if (!trajectory_points.empty()) {
-    visualizer->circle()
-      .center(trajectory_points.back())
-      .radius(0.05)
-      .fill("red")
-      .build();
-  }
-}
-```
-
-軌跡を随時追加したい場合は append を利用します（適宜 clear でリセット）。
-
-```cpp
-// 新たな軌跡点を1つだけ追加
-visualizer->asAppend();
-visualizer->circle().center(next_point).radius(0.003).fill("cyan").build();
-visualizer->flush();
-crane::CraneVisualizerBuffer::publish();
-```
-
-### ヒートマップの描画例
-
-```cpp
-void visualizeHeatmap(const std::vector<std::vector<double>> & data,
-                     double x_min, double y_min, double cell_size)
-{
-  for (size_t i = 0; i < data.size(); ++i) {
-    for (size_t j = 0; j < data[i].size(); ++j) {
-      double value = std::clamp(data[i][j], 0.0, 1.0);
-      int r = static_cast<int>(255 * value);
-      int b = static_cast<int>(255 * (1.0 - value));
-      std::string color = "rgb(" + std::to_string(r) + ",0," + std::to_string(b) + ")";
-
-      double x = x_min + j * cell_size;
-      double y = y_min + i * cell_size;
-
+void visualizeHeatmap(const std::vector<std::vector<double>> & grid,
+                      double origin_x, double origin_y, double cell) {
+  visualizer->asReplace();
+  for (size_t y = 0; y < grid.size(); ++y) {
+    for (size_t x = 0; x < grid[y].size(); ++x) {
+      double v = std::clamp(grid[y][x], 0.0, 1.0);
+      int r = static_cast<int>(255 * v);
+      int b = static_cast<int>(255 * (1.0 - v));
       visualizer->rect()
-        .top_left(Point(x, y))
-        .size(Point(cell_size, cell_size))
-        .fill(color, 0.7)
+        .top_left(Point(origin_x + x * cell, origin_y + y * cell))
+        .size(Point(cell, cell))
+        .fill(std::format("rgb({},{},{})", r, 0, b), 0.7)
+        .stroke(crane::SvgColors::None)
         .build();
     }
   }
+  visualizer->flush();
+  crane::CraneVisualizerBuffer::publish();
 }
 ```
 
-## 注意点（パフォーマンスと時間シーク）
-
-- Foxgloveパネル側は /aggregated_svgs（スナップショット: SvgSnapshot）と /visualizer_svgs（更新: SvgUpdates）を合成して任意時刻を復元します。スナップショットが無い時刻でも、replace/clear は表示可能です（append はベース不在時に無視されることがあります）。
-- 過剰な描画要素の生成はパフォーマンスに影響するため、必要最小限の描画にとどめることを推奨します。
-- SVGの色は名前（"red", "blue"）や RGB 形式（"rgb(255,0,0)"）で指定できます。
-- 動的レイヤー（ロボット・ボール・ラベルなど）は原則 replace を推奨、長尺レイヤー（軌跡等）のみ append を併用し、適宜 clear でリセットしてください。
-
 ## トラブルシューティング
 
-### 描画要素が表示されない
+- **描画が出ない**: `flush()` と `publish()` を呼んでいるか確認。`append` だけで更新していないか。レイヤー名の重複にも注意。
+- **座標がずれる**: すべてフィールド座標（m）で渡す。内部で1000倍＆Y軸反転してSVG座標に変換されています。
+- **時間を巻き戻すと描画が欠ける**: `/aggregated_svgs` のスナップショット間隔が長い可能性。aggregator側のタイマー（5000ms）を短縮する、または `replace` をこまめに送信する。
+- **旧フォーマットを送っている**: 旧`svg_primitive_array`系APIを使っていないか確認し、`VisualizerMessageBuilder` に一本化する。
 
-- flush() と publish() が呼び出されていることを確認してください。
-- レイヤー名が正しく設定されていることを確認してください。
-- 座標値が適切な範囲内にあることを確認してください。
-- append のみを送っている場合、ベースが無くて表示されないことがあります（replace を先に送る／スナップショット間隔を短くする）。
+---
 
-### 描画要素が正しく表示されない
-
-- 座標系が正しいか確認してください（メートル単位で指定されているか）。
-- 色や線の太さなどのスタイルパラメータが適切か確認してください。
-- 複雑な描画要素の場合、パスの定義が正しいか確認してください。
-- 更新トピックに誤って旧形式（svg_primitive_arrays）を送っていないか確認してください（現行ラッパーは SvgUpdates を発行します）。
-
-## まとめ
-
-VisualizerMessageBuilder と CraneVisualizerBuffer を使うことで、ロボットサッカーの試合状況を視覚的に分かりやすく表示できます。適切な可視化は、デバッグ、分析、戦略の開発において非常に有用です。
-
-効果的な可視化のポイント：
-
-- 必要な情報を明確に表示する
-- 色や形状で情報を区別する
-- 複雑すぎる表示は避ける
-- 定期的に更新する情報と静的な情報を適切に使い分ける
+`VisualizerMessageBuilder` と `CraneVisualizerBuffer` を活用すれば、ロボット・ボール・戦術の状態を高速に可視化できます。  
+レイヤー管理とヒステリシス付き描画を意識しつつ、高レベルヘルパーを使って開発効率を高めてください。
