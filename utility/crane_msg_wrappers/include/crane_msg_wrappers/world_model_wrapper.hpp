@@ -15,6 +15,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/ball_info.hpp>
 #include <crane_physics/robot_info.hpp>
+#include <crane_physics/slack_time_config.hpp>
 #include <crane_physics/travel_time.hpp>
 #include <iostream>
 #include <limits>
@@ -292,6 +293,10 @@ struct WorldModelWrapper
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
     double distance_horizon = 100., double velocity_epsilon = 0.2)
     -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
+
+  // slack時間計算設定の取得・設定
+  [[nodiscard]] auto getSlackConfig() const -> const SlackTimeConfig & { return slack_config_; }
+  auto setSlackConfig(const SlackTimeConfig & config) -> void { slack_config_ = config; }
 
   // Getter methods for accessing member variables
   [[nodiscard]] auto ours() const -> const TeamInfo & { return ours_; }
@@ -664,6 +669,9 @@ private:
   Point goal_size_;
   Point goal_;
   Ball ball_;
+
+  // slack時間計算設定
+  SlackTimeConfig slack_config_;
 };
 }  // namespace crane
 
