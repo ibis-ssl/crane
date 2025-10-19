@@ -120,10 +120,6 @@ private:
 
   std::unique_ptr<KickEventDetector> kick_event_detector_;
 
-  double robot_acc_for_prediction;
-
-  double robot_max_vel_for_prediction;
-
   std::unique_ptr<PassTargetSelector> pass_target_selector_;
 };
 }  // namespace crane

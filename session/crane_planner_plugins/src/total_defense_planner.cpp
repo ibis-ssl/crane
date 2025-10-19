@@ -67,8 +67,6 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   if (goalie) {
-    goalie->setParameter("robot_acc_for_prediction", robot_acc_for_prediction);
-    goalie->setParameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
     goalie->run();
     robot_commands.emplace_back(goalie->getRobotCommand());
   }
