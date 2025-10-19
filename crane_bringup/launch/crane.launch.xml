@@ -65,7 +65,7 @@ limitations under the License.
   <arg name="slack.time_horizon" default="3.0" description="ボール軌道予測時間範囲 [s]"/>
   <arg name="slack.time_step" default="0.1" description="ボール軌道サンプリング時間間隔 [s]"/>
   <arg name="slack.slack_time_offset" default="0.5" description="slack時間の安全マージン [s]"/>
-  <arg name="slack.distance_horizon" default="100.0" description="slack時間評価の距離範囲 [m]"/>
+  <arg name="slack.distance_horizon" default="15.0" description="slack時間評価の距離範囲 [m]"/>
   <arg name="slack.velocity_epsilon" default="0.2" description="ボール静止判定の速度閾値 [m/s]"/>
 
   <!-- ============================================================ -->

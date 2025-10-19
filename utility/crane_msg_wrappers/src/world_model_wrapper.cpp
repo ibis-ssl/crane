@@ -306,22 +306,8 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
     return std::nullopt;
   }
 
-  Point intercept_point;
-  if (ball_.vel.norm() < 1e-6) {
-    // ボール速度がほぼゼロの場合、正規化を避けてボール位置を使用
-    intercept_point = p_ball;
-  } else {
-    Vector2 normalized_vel = ball_.vel.normalized();
-    // 正規化後のNaN値チェック
-    if (!std::isfinite(normalized_vel.x()) || !std::isfinite(normalized_vel.y())) {
-      std::cout
-        << "WARN: [WorldModelWrapper] getBallSlackTime: normalized_velがNaN値のためp_ballを使用"
-        << std::endl;
-      intercept_point = p_ball;
-    } else {
-      intercept_point = p_ball + normalized_vel * 0.3;
-    }
-  }
+  // ロボットが向かうべき位置は、time秒後のボール予測位置
+  Point intercept_point = p_ball;
 
   // intercept_pointのNaN値チェック
   if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
@@ -419,7 +405,9 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(const RobotList
     return {std::nullopt, std::nullopt};
   }
 
-  // min_slackはボールにできるだけ近い有効な位置
+  // min_slackは時系列で最初に到達可能な位置（ボール軌道上で最もボールに近い）
+  // slack_timesはボール軌道の時系列順にソートされているため、
+  // 最初に見つかった正のslack時間がボールに最も近い受取可能位置となる
   std::optional<SlackTimeResult> min_slack = std::nullopt;
   for (const auto & slack : slack_times) {
     if (slack.slack_time > 0.0) {

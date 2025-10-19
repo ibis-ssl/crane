@@ -54,7 +54,8 @@ struct SlackTimeConfig
 
   /// @brief 距離ホライズン [m]
   /// @details この距離以内のボール軌道のみを評価対象とする
-  double distance_horizon = 100.0;
+  /// SSLフィールドサイズ（約12m×9m）を考慮した現実的な値
+  double distance_horizon = 15.0;
 
   /// @brief 速度判定閾値 [m/s]
   /// @details ボール速度がこの値以下の場合、静止していると判定
