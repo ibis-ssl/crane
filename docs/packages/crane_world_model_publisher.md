@@ -25,7 +25,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
 ### Vision処理レイヤー
 
 - **VisionStreamProcessor**: SSL-Visionデータ専用処理
-  - MulticastReceiver(224.5.23.2:10020)による生データ受信
+  - MulticastReceiver(vision_address:vision_port)による生データ受信（sim=trueは10020、sim=falseは10006が既定）
   - SSL_WrapperPacket解析・Detection/Geometryフレーム処理
   - 座標変換(mm→m)・データ検証・チャタリング抑制
   - ボール・ロボット位置の基本推定
@@ -47,7 +47,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
 
 - **BallTrackerManager**: 複数ボールトラッカー統合管理
   - 最適トラッカー選択・古いトラッカー除去(1秒)
-  - 観測値への最適マッチング・新規トラッカー生成
+  - 外部Tracker(224.5.23.2:tracker_port)とVision観測のマッチング・新規トラッカー生成
 
 - **BallPhysicsModel**: 3D物理ボールモデル
   - 状態依存物理計算（STOPPED/ROLLING/FLYING）
@@ -74,7 +74,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
 ### データフロー全体像
 
 ```text
-SSL-Vision(224.5.23.2:10020)
+SSL-Vision(vision_address:vision_port)
 → VisionStreamProcessor::processIncomingData() [10ms周期]
 → SSL_WrapperPacket解析
 → Detection/Geometryフレーム処理
@@ -196,7 +196,7 @@ ros2 launch crane_bringup data.launch.py
 /world_model: crane_msgs/msg/WorldModel
 
 # SSL-Vision通信（UDP Multicast）
-SSL-Vision: 224.5.23.2:10020 (直接受信)
+SSL-Vision: vision_address:vision_port (sim=trueで10020、sim=falseで10006がデフォルト)
 ```
 
 ### WorldModelメッセージ構造

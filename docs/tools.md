@@ -73,10 +73,7 @@ RoboCup SSL関連のGo言語製ツール集です。試合のログ記録やデ�
 ```bash
 # インストール
 sudo apt install -y golang-go
-git clone https://github.com/RoboCup-SSL/ssl-go-tools.git
-cd ssl-go-tools
-make all
-sudo make install
+go install github.com/RoboCup-SSL/ssl-go-tools/cmd/...@latest
 echo 'export PATH="$(go env GOPATH)/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -89,7 +86,7 @@ Refereeの信号やビジョンデータを自動で記録するツールです�
 
 ```bash
 # 基本的な使用方法
-ssl-auto-recorder -referee-address "224.5.23.1:11003" # 注意: docs/network.md ではGCポートとして10003 (公式) または 11111 (ibis独自) が記載されています。11003はssl-go-tools特有か確認要。
+ssl-auto-recorder -referee-address "224.5.23.1:11003"
 
 # HTTPサーバーを立ち上げてログを提供
 ssl-auto-recorder -http-serve -http-port "8084"
@@ -111,7 +108,7 @@ ssl-auto-recorder -http-serve -http-port "8084"
 試合の状態を表示するクライアントツールです。
 
 ```bash
-ssl-match-client -address 224.5.23.1:11003 # 注意: 上記同様、ポート11003については確認が必要です。
+ssl-match-client -address 224.5.23.1:11003
 ```
 
 #### ssl-vision-tracker-tool
