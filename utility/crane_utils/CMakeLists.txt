@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_comm)
+project(crane_utils)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
@@ -9,8 +9,6 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
-
-add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
@@ -23,6 +21,10 @@ ament_export_include_directories(
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  # Utility tests
+  ament_auto_add_gtest(test_time test/test_time.cpp)
+  target_include_directories(test_time PUBLIC include)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

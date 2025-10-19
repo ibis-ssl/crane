@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_COMM__STREAM_HPP_
-#define CRANE_COMM__STREAM_HPP_
+#ifndef CRANE_UTILS__STREAM_HPP_
+#define CRANE_UTILS__STREAM_HPP_
 
 #include <cstdint>
 #include <ostream>
@@ -36,4 +36,4 @@ inline auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::os
 }
 }  // namespace crane
 
-#endif  // CRANE_COMM__STREAM_HPP_
+#endif  // CRANE_UTILS__STREAM_HPP_
