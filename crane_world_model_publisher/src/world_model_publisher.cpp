@@ -12,8 +12,8 @@
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
 #include <crane_world_model_publisher/pass_target_selector.hpp>
-#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
+#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <filesystem>
@@ -200,8 +200,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   wrapper_->addDelayCheckpoint("world_model_published", "30Hz");
 }
 
-auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model)
-  -> void
+auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
 {
   // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
@@ -220,8 +219,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr wor
   crane::CraneVisualizerBuffer::publish();
 }
 
-auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model)
-  -> void
+auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model) -> void
 {
   kick_event_detector_->update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;

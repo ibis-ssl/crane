@@ -156,8 +156,9 @@ auto PassTargetSelector::update(
     score_with_bots.emplace_back(robot, score);
   }
 
-  std::sort(score_with_bots.begin(), score_with_bots.end(),
-            [](const auto & a, const auto & b) { return a.second > b.second; });
+  std::sort(score_with_bots.begin(), score_with_bots.end(), [](const auto & a, const auto & b) {
+    return a.second > b.second;
+  });
 
   analysis_msg.pass_scores.clear();
   analysis_msg.pass_scores.reserve(score_with_bots.size());
