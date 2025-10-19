@@ -67,12 +67,7 @@ auto Forward::update() -> Status
   }
 
   if (planner_visualizer) {
-    planner_visualizer->line()
-      .start(front_point)
-      .end(back_point)
-      .stroke("green")
-      .strokeWidth(10)
-      .build();
+    planner_visualizer->drawLine(front_point, back_point, "green", 10);
   }
   return Status::RUNNING;
 }

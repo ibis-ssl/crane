@@ -39,8 +39,8 @@ target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
     "<crane_geometry/boost_geometry.hpp>"
     "<crane_geometry/geometry_operations.hpp>"
-    "<crane_comm/time.hpp>"
-    "<crane_comm/ddps.hpp>"
+    "<crane_geometry/ddps.hpp>"
+    "<crane_utils/time.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
     "<robocup_ssl_msgs/msg/referee.hpp>"

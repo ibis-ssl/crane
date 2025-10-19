@@ -129,16 +129,8 @@ void Kick::initialize()
       double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
       Point arrow_end = ball_pos + dir * arrow_len;
 
-      // メインの矢印シャフト
-      visualizer->line().start(ball_pos).end(arrow_end).stroke("lime").strokeWidth(20).build();
-
-      // アローヘッド（左右の羽根）
-      Vector2 perp(-dir.y(), dir.x());
-      Point tip = arrow_end;
-      Point left = tip - dir * 0.35 + perp * 0.20;
-      Point right = tip - dir * 0.35 - perp * 0.20;
-      visualizer->line().start(tip).end(left).stroke("lime").strokeWidth(20).build();
-      visualizer->line().start(tip).end(right).stroke("lime").strokeWidth(20).build();
+      // メインの矢印シャフト + アローヘッド
+      visualizer->arrow(ball_pos, dir, arrow_len, "lime", 20, 0.35, 0.20);
 
       // 角度しきい値の扇（境界線 + アーク）
       using boost::math::constants::degree;
@@ -162,14 +154,8 @@ void Kick::initialize()
         .strokeWidth(10)
         .build();
       // アーク（扇の円弧）
-      auto arc = visualizer->polyline().stroke("white", 0.4).strokeWidth(10);
-      int steps = 16;
-      for (int i = 0; i <= steps; ++i) {
-        double a = base_theta - half_angle + (2.0 * half_angle) * (static_cast<double>(i) / steps);
-        Point p = ball_pos + Vector2(std::cos(a), std::sin(a)) * arc_radius;
-        arc.addPoint(p.x(), p.y());
-      }
-      arc.build();
+      visualizer->arc(
+        ball_pos, arc_radius, base_theta - half_angle, base_theta + half_angle, "white", 10, 16);
     }
     {
       visualizer->text()

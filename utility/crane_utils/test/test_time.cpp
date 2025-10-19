@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_comm/time.hpp>
+#include <crane_utils/time.hpp>
 
 namespace crane
 {

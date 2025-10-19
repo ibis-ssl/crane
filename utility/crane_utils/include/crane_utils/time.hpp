@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_COMM__TIME_HPP_
-#define CRANE_COMM__TIME_HPP_
+#ifndef CRANE_UTILS__TIME_HPP_
+#define CRANE_UTILS__TIME_HPP_
 
 #include <chrono>
 #include <cmath>
@@ -48,4 +48,4 @@ private:
 };
 }  // namespace crane
 
-#endif  // CRANE_COMM__TIME_HPP_
+#endif  // CRANE_UTILS__TIME_HPP_

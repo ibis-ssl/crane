@@ -111,7 +111,7 @@ void Goalie::emitBallFromPenaltyArea()
   // }();
   Point pass_target = world_model()->getTheirGoalCenter();
 
-  visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
+  visualizer->drawLine(ball, pass_target, "blue", 10);
 
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
@@ -325,12 +325,8 @@ void Goalie::inplay(bool enable_emit)
                 double dist =
                   bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) *
                   (*ratio);
-                visualizer->line()
-                  .start(intersect_to_goal_line.front())  // 開始点
-                  .end(*intersect_to_penalty_area)        // 終了点
-                  .stroke("red")
-                  .strokeWidth(1.0)
-                  .build();
+                visualizer->drawLine(
+                  intersect_to_goal_line.front(), *intersect_to_penalty_area, "red", 1.0);
                 phase += "(前進守備量可変)";
                 command->addStateFactor("goalie", "dist:" + std::to_string(dist));
                 return std::make_pair(intersect_to_goal_line.front(), dist);
