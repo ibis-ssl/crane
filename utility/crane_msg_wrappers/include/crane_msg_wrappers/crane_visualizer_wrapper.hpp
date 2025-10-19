@@ -27,6 +27,19 @@ constexpr double toSvgX(double x) { return x * SCALE; }
 constexpr double toSvgY(double y) { return -y * SCALE; }
 }  // namespace SvgCoord
 
+// 基本色定数（よく使う色のみ）
+namespace SvgColors
+{
+constexpr const char * White = "white";
+constexpr const char * Black = "black";
+constexpr const char * Red = "red";
+constexpr const char * Green = "green";
+constexpr const char * Blue = "blue";
+constexpr const char * Yellow = "yellow";
+constexpr const char * Cyan = "cyan";
+constexpr const char * None = "none";
+}  // namespace SvgColors
+
 // 前方宣言
 struct SvgCircleBuilder;
 struct SvgPolygonBuilder;
