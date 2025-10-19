@@ -6,7 +6,7 @@
 
 #include "crane_world_model_publisher/pass_target_selector.hpp"
 
-#include <range/v3/all.hpp>
+#include <algorithm>
 
 namespace crane
 {
@@ -67,26 +67,21 @@ auto PassTargetSelector::calcScore(
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
   // パスカット
-  auto enemys_with_angle_diff =
-    world_model->theirs().getAvailableRobotsView() | ranges::views::filter([&](const auto & enemy) {
-      if (enemy->getDistance(pass_origin) < 1.0) {
-        // チップキックで飛び越せる近くのロボットは対象外
-        return false;
-      } else if ((p - pass_origin).dot(enemy->pose.pos - p) > 0.0) {
-        // パス先より向こうにいるロボットは対象外
-        return false;
-      } else {
-        return true;
-      }
-    }) |
-    ranges::views::transform([&](const auto & enemy) {
-      double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
-      return std::make_pair(std::abs(angle_diff), enemy);
-    }) |
-    ranges::to<std::vector>();
+  std::vector<std::pair<double, std::shared_ptr<RobotInfo>>> enemys_with_angle_diff;
+  for (const auto & enemy : world_model->theirs().getAvailableRobots()) {
+    if (enemy->getDistance(pass_origin) < 1.0) {
+      continue;  // チップキックで飛び越せる近くのロボットは対象外
+    }
+    if ((p - pass_origin).dot(enemy->pose.pos - p) > 0.0) {
+      continue;  // パス先より向こうにいるロボットは対象外
+    }
+    double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
+    enemys_with_angle_diff.emplace_back(std::abs(angle_diff), enemy);
+  }
   if (!enemys_with_angle_diff.empty()) {
-    const auto & best_intercepter = *ranges::min_element(
-      enemys_with_angle_diff, [](const auto & a, const auto & b) { return a.first < b.first; });
+    const auto & best_intercepter = *std::min_element(
+      enemys_with_angle_diff.begin(), enemys_with_angle_diff.end(),
+      [](const auto & a, const auto & b) { return a.first < b.first; });
     using boost::math::constants::degree;
     // 0~5°で0~1を遷移
     score *= std::clamp(best_intercepter.first * degree<double>() / 5.0, 0.0, 1.0);
@@ -145,25 +140,33 @@ auto PassTargetSelector::update(
 
   // 候補のスコア算出
   auto our_robots = world_model->ours().getAvailableRobots(true);
-  auto score_with_bots =
-    our_robots | ranges::views::filter([&](const auto & robot) {
-      if (robot->id == world_model->getOurGoalieId()) return false;                 // GK除外
-      if (robot->pose.pos.x() * world_model->getOurSideSign() > 0.0) return false;  // 自陣除外
-      if (world_model->point_checker.isPenaltyArea(robot->pose.pos)) return false;  // PA内除外
-      return true;
-    }) |
-    ranges::views::transform([&](const auto & robot) {
-      return std::make_pair(robot, calcScore(world_model, pass_origin, robot->pose.pos));
-    }) |
-    ranges::to<std::vector>();
+  std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> score_with_bots;
+  score_with_bots.reserve(our_robots.size());
+  for (const auto & robot : our_robots) {
+    if (robot->id == world_model->getOurGoalieId()) {
+      continue;  // GK除外
+    }
+    if (robot->pose.pos.x() * world_model->getOurSideSign() > 0.0) {
+      continue;  // 自陣除外
+    }
+    if (world_model->point_checker.isPenaltyArea(robot->pose.pos)) {
+      continue;  // PA内除外
+    }
+    double score = calcScore(world_model, pass_origin, robot->pose.pos);
+    score_with_bots.emplace_back(robot, score);
+  }
 
-  ranges::sort(score_with_bots, [](const auto & a, const auto & b) { return a.second > b.second; });
+  std::sort(score_with_bots.begin(), score_with_bots.end(), [](const auto & a, const auto & b) {
+    return a.second > b.second;
+  });
 
-  analysis_msg.pass_scores = score_with_bots | ranges::views::transform([](const auto & pair) {
-                               crane_msgs::msg::FloatWithID msg;
-                               return msg.set__id(pair.first->id).set__value(pair.second);
-                             }) |
-                             ranges::to<std::vector>();
+  analysis_msg.pass_scores.clear();
+  analysis_msg.pass_scores.reserve(score_with_bots.size());
+  for (const auto & [robot, score] : score_with_bots) {
+    crane_msgs::msg::FloatWithID msg;
+    msg.set__id(robot->id).set__value(score);
+    analysis_msg.pass_scores.push_back(msg);
+  }
 
   // ヒステリシスによるターゲット選定
   analysis_msg.pass_target_id = -1;

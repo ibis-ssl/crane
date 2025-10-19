@@ -46,22 +46,14 @@ extern "C" {
 }
 #endif
 
+#include <array>
 #include <crane_comm/diagnosed_publisher.hpp>
-#include <crane_comm/multicast.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
-#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
-#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/kick_event_detector.hpp>
-#include <crane_world_model_publisher/pass_target_selector.hpp>
-#include <crane_world_model_publisher/visualization_manager.hpp>
-#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
 
 namespace crane
@@ -71,24 +63,34 @@ enum class Color : uint8_t {
   YELLOW,
 };
 
+class WorldModelDataProvider;
+class VisualizationManager;
+class KickEventDetector;
+class PassTargetSelector;
+class WorldModelWrapper;
+
 class WorldModelPublisherComponent : public rclcpp::Node
 {
 public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
+  CRANE_PUBLIC
+  ~WorldModelPublisherComponent() override;
 
 private:
+  using WorldModelWrapperPtr = std::shared_ptr<WorldModelWrapper>;
+
   auto publishWorldModel() -> void;
 
-  auto publishVisualization(WorldModelWrapper::SharedPtr world_model) -> void;
+  auto publishVisualization(WorldModelWrapperPtr world_model) -> void;
 
   auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
 
-  auto postProcessWorldModel(WorldModelWrapper::SharedPtr) -> void;
+  auto postProcessWorldModel(WorldModelWrapperPtr) -> void;
 
   auto updateBallContact() -> void;
 
-  WorldModelDataProvider data_provider;
+  std::unique_ptr<WorldModelDataProvider> data_provider_;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
@@ -114,16 +116,15 @@ private:
     THEIR_BALL,
   } last_ball_event = BallEvent::NONE;
 
-  WorldModelWrapper::SharedPtr wrapper;
+  WorldModelWrapperPtr wrapper_;
 
-  KickEventDetector kick_event_detector;
+  std::unique_ptr<KickEventDetector> kick_event_detector_;
 
   double robot_acc_for_prediction;
 
   double robot_max_vel_for_prediction;
 
-  // パス先選定（専用クラス）
-  PassTargetSelector pass_target_selector_;
+  std::unique_ptr<PassTargetSelector> pass_target_selector_;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

@@ -10,6 +10,7 @@
 #include <robocup_ssl_msgs/ssl_vision_detection.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
 #include <crane_comm/multicast.hpp>
