@@ -18,6 +18,13 @@ jobs:
     container: ros:${{ matrix.rosdistro }}
     env:
       DEBIAN_FRONTEND: noninteractive
+      # ccache configuration
+      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      CC: /usr/lib/ccache/gcc
+      CXX: /usr/lib/ccache/g++
+      CCACHE_DIR: /root/.ccache
+      CCACHE_MAXSIZE: 10G
+      USE_CCACHE: 1
     strategy:
       fail-fast: false
       matrix:
@@ -73,6 +80,35 @@ jobs:
           key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles('dependency_${{ matrix.rosdistro }}.repos') }}
           restore-keys: |
             dependency_ws-${{ matrix.rosdistro }}-
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: /root/.ccache
+          key: ccache-${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.rosdistro }}-${{ runner.os }}-
+
+      - name: Cache rosdep
+        id: cache-rosdep
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/lib/apt/lists
+            /root/.ros/rosdep
+          key: rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-${{ hashFiles('rosdep_keys.txt') }}
+          restore-keys: |
+            rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./build
+            ./install
+          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/package.xml') }}
+          restore-keys: |
+            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Run rosdep install
         run: |
