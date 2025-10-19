@@ -86,8 +86,13 @@ limitations under the License.
   <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
     <param name="initial_session" value="HALT"/>
     <param name="event_config_file_name" value="normal.yaml"/>
-    <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
-    <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
+    <param name="slack.robot_max_acceleration" value="$(var slack.robot_max_acceleration)"/>
+    <param name="slack.robot_max_velocity" value="$(var slack.robot_max_velocity)"/>
+    <param name="slack.time_horizon" value="$(var slack.time_horizon)"/>
+    <param name="slack.time_step" value="$(var slack.time_step)"/>
+    <param name="slack.slack_time_offset" value="$(var slack.slack_time_offset)"/>
+    <param name="slack.distance_horizon" value="$(var slack.distance_horizon)"/>
+    <param name="slack.velocity_epsilon" value="$(var slack.velocity_epsilon)"/>
   </node>
 
   <!-- ============================================================ -->
@@ -186,8 +191,13 @@ limitations under the License.
     <param name="tracker_address" value="224.5.23.2"/>
     <param name="tracker_port" value="$(var tracker_port_final)"/>
     <param name="is_emplace_positive_side" value="$(var is_emplace_positive_side)"/>
-    <param name="robot_acc_for_prediction" value="$(var robot_acc_for_prediction)"/>
-    <param name="robot_max_vel_for_prediction" value="$(var robot_max_vel_for_prediction)"/>
+    <param name="slack.robot_max_acceleration" value="$(var slack.robot_max_acceleration)"/>
+    <param name="slack.robot_max_velocity" value="$(var slack.robot_max_velocity)"/>
+    <param name="slack.time_horizon" value="$(var slack.time_horizon)"/>
+    <param name="slack.time_step" value="$(var slack.time_step)"/>
+    <param name="slack.slack_time_offset" value="$(var slack.slack_time_offset)"/>
+    <param name="slack.distance_horizon" value="$(var slack.distance_horizon)"/>
+    <param name="slack.velocity_epsilon" value="$(var slack.velocity_epsilon)"/>
     <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
   </node>
 
