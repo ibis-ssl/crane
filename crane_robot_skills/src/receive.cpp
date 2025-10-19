@@ -59,12 +59,7 @@ Status Receive::update()
   if (getParameter<bool>("viz_offset_arrow")) {
     Vector2 off_vec = interception_point - base_interception_point;
     if (off_vec.squaredNorm() > 1e-6) {
-      visualizer->line()
-        .start(base_interception_point)
-        .end(interception_point)
-        .stroke("cyan")
-        .strokeWidth(8)
-        .build();
+      visualizer->arrow(base_interception_point, off_vec, off_vec.norm(), "cyan", 8);
     }
   }
 
@@ -90,20 +85,11 @@ Status Receive::update()
       }
       Vector2 out_vec = redirect_target - interception_point;
       if (in_vec.norm() > 1e-6) {
-        visualizer->line()
-          .start(interception_point - in_vec.normalized() * 0.35)
-          .end(interception_point)
-          .stroke("red")
-          .strokeWidth(10)
-          .build();
+        visualizer->arrow(
+          interception_point - in_vec.normalized() * 0.35, in_vec.normalized(), 0.35, "red", 10);
       }
       if (out_vec.norm() > 1e-6) {
-        visualizer->line()
-          .start(interception_point)
-          .end(interception_point + out_vec.normalized() * 0.6)
-          .stroke("lime")
-          .strokeWidth(10)
-          .build();
+        visualizer->arrow(interception_point, out_vec.normalized(), 0.6, "lime", 10);
       }
     }
   } else {
@@ -243,13 +229,7 @@ Point Receive::getInterceptionPoint() const
 
     // Emphasize selected point with double circle and small label
     if (getParameter<bool>("viz_candidates")) {
-      visualizer->circle()
-        .center(selected_point)
-        .radius(0.09)
-        .stroke("#222")
-        .strokeWidth(8)
-        .build();
-      visualizer->circle().center(selected_point).radius(0.06).fill("#ffffff", 0.25).build();
+      visualizer->doubleCircle(selected_point, 0.06, 0.09, "#ffffff", "#222", 0, 8);
       std::ostringstream ss;
       if (policy == "max_slack") ss << "max ";
       if (policy == "min_slack") ss << "min ";
@@ -266,20 +246,8 @@ Point Receive::getInterceptionPoint() const
 
   } else if (policy == "closest") {
     // Highlight closest point slightly and annotate
-    visualizer->circle()
-      .center(closest_point)
-      .radius(0.06)
-      .fill("#ffffff", 0.25)
-      .stroke("#222")
-      .strokeWidth(6)
-      .build();
-    visualizer->text()
-      .position(closest_point + Vector2(0.0, -0.18))
-      .text("closest")
-      .fontSize(50)
-      .fill("white")
-      .textAnchor("middle")
-      .build();
+    visualizer->labeledCircle(
+      closest_point, 0.06, "closest", "#222", "white", 6, 50);
     return closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
