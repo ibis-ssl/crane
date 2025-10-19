@@ -232,8 +232,8 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
     return std::format(
       "<line x1=\"{:.3f}\" y1=\"{:.3f}\" x2=\"{:.3f}\" y2=\"{:.3f}\" "
       "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
-      toSvgX(p1.x()), toSvgY(p1.y()), toSvgX(p2.x()), toSvgY(p2.y()), stroke_color,
-      stroke_opacity, stroke_width);
+      toSvgX(p1.x()), toSvgY(p1.y()), toSvgX(p2.x()), toSvgY(p2.y()), stroke_color, stroke_opacity,
+      stroke_width);
   }
 
   [[nodiscard]] auto start(double x, double y) -> SvgLineBuilder & { return start(Point(x, y)); }
@@ -279,8 +279,7 @@ struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBui
       "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" "
       "stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
       toSvgX(rect_top_left.x()), toSvgY(rect_top_left.y()), rect_size.x() * SCALE,
-      rect_size.y() * SCALE, fill_color, fill_opacity, stroke_color, stroke_opacity,
-      stroke_width);
+      rect_size.y() * SCALE, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
   }
 
   [[nodiscard]] auto top_left(double x, double y) -> SvgRectBuilder &
@@ -550,8 +549,8 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
     auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
     {
       using namespace SvgCoord;
-      path += std::format(
-        " S{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x2), toSvgY(y2), toSvgX(x), toSvgY(y));
+      path +=
+        std::format(" S{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x2), toSvgY(y2), toSvgX(x), toSvgY(y));
       return *this;
     }
 
@@ -563,8 +562,8 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
     auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
     {
       using namespace SvgCoord;
-      path += std::format(
-        " Q{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x), toSvgY(y));
+      path +=
+        std::format(" Q{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x), toSvgY(y));
       return *this;
     }
 
