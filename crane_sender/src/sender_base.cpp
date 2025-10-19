@@ -1,3 +1,5 @@
+// Copyright (c) 2025 ibis-ssl
+
 #include "crane_sender/sender_base.hpp"
 
 #include <algorithm>
