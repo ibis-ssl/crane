@@ -118,20 +118,18 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     double stroke_width = 20.0) -> void;
 
   auto labeledCircle(
-    Point center, double radius, const std::string & label, const std::string & circle_color =
-                                                                "white",
-    const std::string & text_color = "white", double circle_stroke_width = 10.0,
-    double text_font_size = 100.0) -> void;
+    Point center, double radius, const std::string & label,
+    const std::string & circle_color = "white", const std::string & text_color = "white",
+    double circle_stroke_width = 10.0, double text_font_size = 100.0) -> void;
 
   auto arc(
     Point center, double radius, double start_angle, double end_angle,
     const std::string & color = "white", double stroke_width = 10.0, int steps = 16) -> void;
 
   auto doubleCircle(
-    Point center, double inner_radius, double outer_radius, const std::string & inner_color =
-                                                                 "white",
-    const std::string & outer_color = "#222", double inner_stroke_width = 6.0,
-    double outer_stroke_width = 8.0) -> void;
+    Point center, double inner_radius, double outer_radius,
+    const std::string & inner_color = "white", const std::string & outer_color = "#222",
+    double inner_stroke_width = 6.0, double outer_stroke_width = 8.0) -> void;
 
   auto rectangle(
     Point top_left, Point bottom_right, const std::string & color = "white",

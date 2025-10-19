@@ -35,10 +35,8 @@ Status GoalKick::update()
       Point(world_model()->getTheirGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
       visualizer->arrow(
-        world_model()->ball().pos,
-        (intersections.front() - world_model()->ball().pos).normalized(),
-        (intersections.front() - world_model()->ball().pos).norm(),
-        "red", 20);
+        world_model()->ball().pos, (intersections.front() - world_model()->ball().pos).normalized(),
+        (intersections.front() - world_model()->ball().pos).norm(), "red", 20);
     }
   }
   if (auto dribble_power = getParameter<double>("dribble_power"); dribble_power > 0.0) {

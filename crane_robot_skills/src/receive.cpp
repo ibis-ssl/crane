@@ -246,8 +246,7 @@ Point Receive::getInterceptionPoint() const
 
   } else if (policy == "closest") {
     // Highlight closest point slightly and annotate
-    visualizer->labeledCircle(
-      closest_point, 0.06, "closest", "#222", "white", 6, 50);
+    visualizer->labeledCircle(closest_point, 0.06, "closest", "#222", "white", 6, 50);
     return closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);

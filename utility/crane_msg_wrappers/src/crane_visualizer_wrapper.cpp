@@ -68,8 +68,7 @@ auto VisualizerMessageBuilder::arrow(
 }
 
 auto VisualizerMessageBuilder::velocityArrow(
-  Point pos, Vector2 velocity, const std::string & color, double scale, double stroke_width)
-  -> void
+  Point pos, Vector2 velocity, const std::string & color, double scale, double stroke_width) -> void
 {
   double speed = std::sqrt(velocity.x() * velocity.x() + velocity.y() * velocity.y());
   if (speed < 0.01) return;  // 速度がほぼゼロなら描画しない
@@ -94,7 +93,12 @@ auto VisualizerMessageBuilder::labeledCircle(
   const std::string & text_color, double circle_stroke_width, double text_font_size) -> void
 {
   // 円を描画
-  circle().center(center).radius(radius).stroke(circle_color).strokeWidth(circle_stroke_width).build();
+  circle()
+    .center(center)
+    .radius(radius)
+    .stroke(circle_color)
+    .strokeWidth(circle_stroke_width)
+    .build();
 
   // ラベルを描画（円の下に配置）
   text()
@@ -134,12 +138,7 @@ auto VisualizerMessageBuilder::doubleCircle(
 
   // 内側の円（inner_stroke_widthは内側の円には枠線がないため使用しない）
   (void)inner_stroke_width;  // 未使用パラメータ警告を抑制（将来の拡張用に残す）
-  circle()
-    .center(center)
-    .radius(inner_radius)
-    .fill(inner_color, 0.25)
-    .stroke("none")
-    .build();
+  circle().center(center).radius(inner_radius).fill(inner_color, 0.25).stroke("none").build();
 }
 
 auto VisualizerMessageBuilder::rectangle(

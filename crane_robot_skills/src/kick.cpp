@@ -154,7 +154,8 @@ void Kick::initialize()
         .strokeWidth(10)
         .build();
       // アーク（扇の円弧）
-      visualizer->arc(ball_pos, arc_radius, base_theta - half_angle, base_theta + half_angle, "white", 10, 16);
+      visualizer->arc(
+        ball_pos, arc_radius, base_theta - half_angle, base_theta + half_angle, "white", 10, 16);
     }
     {
       visualizer->text()
