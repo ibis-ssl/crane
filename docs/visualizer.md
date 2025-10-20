@@ -13,7 +13,7 @@
 - **crane_visualization_aggregator**  
   `/visualizer_svgs` を集約し、5秒ごとに `/aggregated_svgs`（`SvgSnapshot`）を配信。Foxglove・Webビューア・録画再生はこのスナップショット＋差分更新を組み合わせて描画します。
 
-```
+```text
 VisualizerMessageBuilder ─┐
                           ├─ CraneVisualizerBuffer → /visualizer_svgs (SvgUpdates)
 VisualizerMessageBuilder ─┘             └─ crane_visualization_aggregator → /aggregated_svgs (SvgSnapshot, 5s周期)
