@@ -365,9 +365,7 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         if (not is_near_our_penalty_area) {
           switch (world_model->getMsg().play_situation.command_raw.value) {
             case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-            [[fallthrough]]
             case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
-            [[fallthrough]]
             case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
               PENALTY_AREA_OFFSET = 0.5;
               SURROUNDING_OFFSET = 0.6;

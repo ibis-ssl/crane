@@ -79,7 +79,7 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  auto updateBallPossession(crane_msgs::msg::BallAnalysis & analysis) -> void
+  auto updateBallPossession([[maybe_unused]] crane_msgs::msg::BallAnalysis & analysis) -> void
   {
     const auto & ours = world_model->ours().robots;
     const auto & theirs = world_model->theirs().robots;
@@ -96,10 +96,10 @@ private:
     //    analysis.nearest_to_ball_robot_id_ours = nearest_ours->id;
     //    analysis.nearest_to_ball_robot_id_theirs = nearest_theirs->id;
 
-    double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
-    double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
+    [[maybe_unused]] double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
+    [[maybe_unused]] double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
 
-    const auto & threshold = config.ball_possession.threshold_meter;
+    [[maybe_unused]] const auto & threshold = config.ball_possession.threshold_meter;
     //    analysis.ball_possession_ours = (ours_distance < threshold);
     //    analysis.ball_possession_theirs = (theirs_distance < threshold);
   }

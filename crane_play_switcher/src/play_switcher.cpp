@@ -107,7 +107,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     next_play_situation = PlaySituation::POST_GAME;
   } else {
     // 更新があれば判定
-    if (latest_raw_referee.command != static_cast<int>(msg.command)) {
+    if (latest_raw_referee.command != msg.command) {
       //-----------------------------------//
       // NORMAL_START
       //-----------------------------------//

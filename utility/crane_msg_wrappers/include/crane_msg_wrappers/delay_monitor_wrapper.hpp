@@ -183,7 +183,7 @@ public:
    * @return フォーマットされた遅延情報文字列
    */
   static std::string formatVisionDelayInfo(
-    double t_capture, double t_sent, const rclcpp::Time & ros_receive_time)
+    double t_capture, double t_sent, [[maybe_unused]] const rclcpp::Time & ros_receive_time)
   {
     // Vision内部処理時間
     double vision_processing_ms = (t_sent - t_capture) * 1000.0;

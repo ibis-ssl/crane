@@ -70,7 +70,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     tracker_receiver_ = std::make_unique<multicast::MulticastReceiver>(tracker_addr, tracker_port);
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
-      tracker_port);
+      static_cast<int>(tracker_port));
   } catch (const std::exception & e) {
     reportError("Trackerの初期化に失敗しました: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", e.what());
@@ -123,7 +123,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
         RCLCPP_WARN(
           this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)", tracker_addr.c_str(),
-          tracker_port);
+          static_cast<int>(tracker_port));
       }
     }
   });
@@ -348,7 +348,6 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   }
 
   auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
-  constexpr double FEEDBACK_TIMEOUT_SECONDS = 1.0;
 
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
@@ -726,7 +725,7 @@ auto WorldModelDataProvider::convertTrackedBall(
 }
 
 auto WorldModelDataProvider::convertTrackedRobot(
-  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, [[maybe_unused]] int team_index)
   -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;

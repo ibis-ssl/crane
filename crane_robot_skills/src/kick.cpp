@@ -127,7 +127,6 @@ void Kick::initialize()
       Vector2 dir = (target - ball_pos).normalized();
       // 長めの矢印（フィールド半分+余裕）
       double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
-      Point arrow_end = ball_pos + dir * arrow_len;
 
       // メインの矢印シャフト + アローヘッド
       visualizer->arrow(ball_pos, dir, arrow_len, "lime", 20, 0.35, 0.20);

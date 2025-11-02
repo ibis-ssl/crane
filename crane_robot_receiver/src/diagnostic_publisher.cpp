@@ -291,11 +291,12 @@ auto DiagnosticPublisherNode::worldModelCallback() -> void
   }
 
   // ロボットの状態を更新
-  for (int id = 0; id < robots_data.size(); ++id) {
+  for (size_t id = 0; id < robots_data.size(); ++id) {
     auto & data = robots_data.at(id);
     // 状態を更新
-    data->state =
-      ranges::contains(available_robot_ids, id) ? RobotState::ACTIVE : RobotState::INACTIVE;
+    data->state = ranges::contains(available_robot_ids, static_cast<int>(id))
+                    ? RobotState::ACTIVE
+                    : RobotState::INACTIVE;
   }
 }
 

@@ -154,7 +154,7 @@ WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
 // updateHistory
 auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
-  if (ball_info_history.size() >= history_size) {
+  if (ball_info_history.size() >= static_cast<size_t>(history_size)) {
     ball_info_history.pop_front();
   }
   ball_info_history.emplace_back(msg.ball_info);
@@ -163,7 +163,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
     if (robot.detected) {
       friend_history[robot.id].push_back(robot);
     }
-    if (friend_history[robot.id].size() > history_size) {
+    if (friend_history[robot.id].size() > static_cast<size_t>(history_size)) {
       friend_history[robot.id].pop_front();
     }
   }
@@ -172,7 +172,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
     if (robot.detected) {
       enemy_history[robot.id].push_back(robot);
     }
-    if (enemy_history[robot.id].size() > history_size) {
+    if (enemy_history[robot.id].size() > static_cast<size_t>(history_size)) {
       enemy_history[robot.id].pop_front();
     }
   }

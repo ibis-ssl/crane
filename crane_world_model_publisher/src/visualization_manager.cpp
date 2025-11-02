@@ -127,7 +127,7 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
-  const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
+  const SSL_GeometryData & geometry_data, [[maybe_unused]] bool half_court_mode) -> void
 {
   if (!geometry_data.has_field()) {
     return;
@@ -275,7 +275,7 @@ auto VisualizationManager::drawFieldGeometry(
 }
 
 auto VisualizationManager::drawVisionDetections(
-  const SSL_DetectionFrame & detection, bool half_court_mode) -> void
+  const SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
 {
   // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {
@@ -516,10 +516,12 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
 
           auto polyline_builder = trajectory_builder->polyline();
           for (int index = start; index < end; index += SAMPLING_NUM) {
-            polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+            polyline_builder =
+              polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
           }
           if (i != 9) {
-            polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+            polyline_builder =
+              polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
           }
           polyline_builder.stroke(color, 0.5 * start / static_cast<double>(history.size()))
             .strokeWidth(15)
@@ -541,12 +543,12 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
 
       auto polyline_builder = trajectory_builder->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        polyline_builder.addPoint(
+        polyline_builder = polyline_builder.addPoint(
           trajectory_data.ball_info_history.at(index).position.x,
           trajectory_data.ball_info_history.at(index).position.y);
       }
       if (i != 9) {
-        polyline_builder.addPoint(
+        polyline_builder = polyline_builder.addPoint(
           trajectory_data.ball_info_history.at(end).position.x,
           trajectory_data.ball_info_history.at(end).position.y);
       }

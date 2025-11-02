@@ -391,7 +391,7 @@ auto KickerModel::getInverseLinearInterpolation(
 
 auto KickerModel::validateArrays(
   const std::vector<double> & x_array, const std::vector<double> & y_array,
-  const std::string & array_name) const -> bool
+  [[maybe_unused]] const std::string & array_name) const -> bool
 {
   if (x_array.size() != y_array.size()) {
     return false;

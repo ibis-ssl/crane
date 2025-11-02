@@ -51,14 +51,14 @@ BroadcastCommandSender::BroadcastCommandSender()
 
 void BroadcastCommandSender::sendBroadcastPackets(
   const std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> & robot_packets,
-  int check_counter)
+  [[maybe_unused]] int check_counter)
 {
   char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
 
   int active_robots = 0;
-  for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
-    int offset = i * (CommConfig::AI_CMD_V2_SIZE + 1);
-    broadcast_buf[offset] = i;
+  for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
+    int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
+    broadcast_buf[offset] = static_cast<char>(i);
     memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
 
     // 空でないパケットの数をカウント
