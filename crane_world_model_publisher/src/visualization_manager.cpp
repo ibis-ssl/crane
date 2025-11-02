@@ -516,10 +516,12 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
 
           auto polyline_builder = trajectory_builder->polyline();
           for (int index = start; index < end; index += SAMPLING_NUM) {
-            polyline_builder = polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+            polyline_builder =
+              polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
           }
           if (i != 9) {
-            polyline_builder = polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+            polyline_builder =
+              polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
           }
           polyline_builder.stroke(color, 0.5 * start / static_cast<double>(history.size()))
             .strokeWidth(15)

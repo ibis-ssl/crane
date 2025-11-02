@@ -122,8 +122,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto tracker_addr = this->node.get_parameter("tracker_address").get_value<std::string>();
         auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
         RCLCPP_WARN(
-          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%ld)", tracker_addr.c_str(),
-          static_cast<long>(tracker_port));
+          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%ld)",
+          tracker_addr.c_str(), static_cast<long>(tracker_port));
       }
     }
   });
