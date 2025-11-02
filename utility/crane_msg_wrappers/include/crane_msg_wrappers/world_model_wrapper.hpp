@@ -349,6 +349,11 @@ private:
     WorldModelWrapper * world_model;
 
     std::uint8_t our_frontier = 255;
+
+    std::uint8_t previous_our_frontier_ = 255;
+
+    // ヒステリシススコアボーナス（0.4秒相当）
+    static constexpr double HYSTERESIS_SCORE_BONUS = 1.2;
   } ball_owner_calculator;
 
   bool ball_owner_calculator_enabled = false;
