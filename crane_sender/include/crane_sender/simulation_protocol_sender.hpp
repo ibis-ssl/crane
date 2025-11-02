@@ -11,10 +11,7 @@
 
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_comm/udp_sender.hpp>
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -104,110 +101,7 @@ public:
     chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
-  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
-  {
-    auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
-
-    RobotControl packet;
-
-    for (const auto & command : msg.robot_commands) {
-      auto cmd = packet.add_robot_commands();
-      cmd->set_id(command.robot_id);
-
-      auto move_command = new RobotMoveCommand();
-      auto move_local_velocity = new MoveLocalVelocity();
-
-      float omega = theta_controllers[command.robot_id].update(
-        -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
-      omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
-      move_local_velocity->set_angular(omega);
-
-      switch (command.control_mode) {
-        case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
-          double vx = command.local_camera_mode.front().target_global_vx;
-          double vy = command.local_camera_mode.front().target_global_vy;
-
-          double theta = command.current_pose.theta + omega * delay_s;
-          move_local_velocity->set_forward(vx * cos(-theta) - vy * sin(-theta));
-          move_local_velocity->set_left(vx * sin(-theta) + vy * cos(-theta));
-        } break;
-        case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-          Velocity vel;
-          vel << vx_controllers[command.robot_id].update(
-            command.position_target_mode.front().target_x - command.current_pose.x, 1.f / 30.f),
-            vy_controllers[command.robot_id].update(
-              command.position_target_mode.front().target_y - command.current_pose.y, 1.f / 30.f);
-          vel += vel.normalized() * command.local_planner_config.terminal_velocity;
-          double max_velocity = command.local_planner_config.final_planned_max_velocity.value;
-          double current_velocity =
-            std::hypot(command.current_velocity.x, command.current_velocity.y);
-          max_velocity = std::min(
-            max_velocity,
-            current_velocity +
-              command.local_planner_config.final_planned_max_acceleration.value * 0.1);
-          if (vel.norm() > max_velocity) {
-            vel = vel.normalized() * max_velocity;
-          }
-          Velocity vel_local;
-          vel_local << vel.x() * cos(-command.current_pose.theta) -
-                         vel.y() * sin(-command.current_pose.theta),
-            vel.x() * sin(-command.current_pose.theta) + vel.y() * cos(-command.current_pose.theta);
-          move_local_velocity->set_forward(vel_local.x());
-          move_local_velocity->set_left(vel_local.y());
-        } break;
-        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-          double vx = command.simple_velocity_target_mode.front().target_vx;
-          double vy = command.simple_velocity_target_mode.front().target_vy;
-          double theta = command.current_pose.theta + omega * delay_s;
-          move_local_velocity->set_forward(vx * cos(-theta) - vy * sin(-theta));
-          move_local_velocity->set_left(vx * sin(-theta) + vy * cos(-theta));
-        } break;
-        case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-          double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
-          double current_theta = command.current_pose.theta + omega * delay_s;
-          double velocity_theta =
-            command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
-          double vx = v_r * cos(velocity_theta);
-          double vy = v_r * sin(velocity_theta);
-          move_local_velocity->set_forward(vx);
-          move_local_velocity->set_left(vy);
-        } break;
-        default:
-          std::cout << "Invalid control mode" << std::endl;
-          break;
-      }
-
-      // ストップ
-      if (command.stop_flag) {
-        move_local_velocity->set_forward(0);
-        move_local_velocity->set_left(0);
-        move_local_velocity->set_angular(0);
-      }
-
-      move_command->set_allocated_local_velocity(move_local_velocity);
-      cmd->set_allocated_move_command(move_command);
-
-      // キック速度
-      constexpr double MAX_KICK_SPEED = 20.0;  // m/s
-      double kick_speed = MAX_KICK_SPEED * command.kick_power;
-
-      // チップキック
-      if (command.chip_enable) {
-        cmd->set_kick_angle(chip_angle_deg * M_PI / 180.);
-        cmd->set_kick_speed(kick_speed * 0.5);
-      } else {
-        cmd->set_kick_angle(0.);
-        cmd->set_kick_speed(kick_speed * 1.0);
-      }
-
-      // ドリブル(単位：rpm)
-      cmd->set_dribbler_speed(command.dribble_power * 1000.);
-    }
-
-    std::string output;
-    packet.SerializeToString(&output);
-    sender->send(output);
-  }
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
 
   std::unique_ptr<UDPSender> yellow_sender;
   std::unique_ptr<UDPSender> blue_sender;

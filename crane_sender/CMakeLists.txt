@@ -7,7 +7,12 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+
+  # Debug symbols only for Debug builds
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_compile_options(-g)
+  endif()
 endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -26,8 +31,11 @@ include_directories(
 ament_auto_add_library(sim_sender_component SHARED
   src/sim_sender.cpp)
 
+ament_auto_add_library(simulation_protocol_sender_component SHARED
+  src/simulation_protocol_sender.cpp)
+
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
-ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
+ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp src/broadcast_command_sender.cpp)
 ament_auto_add_executable(simulation_protocol_sender_node src/simulation_protocol_sender_node.cpp)
 
 target_link_libraries(simulation_protocol_sender_node
@@ -46,9 +54,29 @@ ament_target_dependencies(crane_sender_base
 target_include_directories(crane_sender_base PUBLIC include)
 
 target_link_libraries(sim_sender_component crane_sender_base)
+target_link_libraries(simulation_protocol_sender_component crane_sender_base ${robocup_ssl_msgs_LIBRARIES})
 target_link_libraries(sim_sender_node crane_sender_base)
 target_link_libraries(ibis_sender_node crane_sender_base)
-target_link_libraries(simulation_protocol_sender_node crane_sender_base)
+target_link_libraries(simulation_protocol_sender_node crane_sender_base simulation_protocol_sender_component)
+
+# Precompiled headers for faster compilation
+target_precompile_headers(sim_sender_component PRIVATE
+  <rclcpp/rclcpp.hpp>
+  <crane_geometry/boost_geometry.hpp>
+  <crane_geometry/geometry_operations.hpp>
+)
+
+target_precompile_headers(simulation_protocol_sender_component PRIVATE
+  <rclcpp/rclcpp.hpp>
+  <crane_geometry/boost_geometry.hpp>
+  <crane_geometry/geometry_operations.hpp>
+  <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
+)
+
+target_precompile_headers(crane_sender_base PRIVATE
+  <rclcpp/rclcpp.hpp>
+  <crane_msg_wrappers/world_model_wrapper.hpp>
+)
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
