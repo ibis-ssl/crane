@@ -7,10 +7,10 @@
 #ifndef CRANE_PHYSICS__ROBOT_INFO_HPP_
 #define CRANE_PHYSICS__ROBOT_INFO_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_physics/ball_contact.hpp>
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_physics/ball_contact.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/time.hpp>
@@ -25,7 +25,7 @@ auto getTravelTimeTrapezoidal(
 auto getPredictedPositionTrapezoidal(
   const Point & current_pos, const Vector2 & current_vel, const Point & target_pos,
   const double time, const double max_acceleration, const double max_velocity) -> Point;
-}
+}  // namespace crane
 
 namespace crane
 {
@@ -108,7 +108,7 @@ struct RobotInfo
   [[nodiscard]] auto predictFuturePosition(
     const Point & target_pos, double max_accel = 3.0, double max_vel = 2.0) const -> Point
   {
-    constexpr double MAX_HORIZON = 2.0;                         // 最大予測時間 [s]
+    constexpr double MAX_HORIZON = 2.0;                        // 最大予測時間 [s]
     constexpr double TIME_FOR_BOT_TO_REACT = 0.12;             // 反応時間 [s]
     constexpr double MAX_OPPONENT_REACTION_VEL = 1.5;          // 反応速度閾値 [m/s]
     constexpr double TIME_BEFORE_REACTION_USAGE_FACTOR = 0.1;  // 反応時間調整係数
@@ -120,7 +120,8 @@ struct RobotInfo
       TIME_FOR_BOT_TO_REACT * (1.0 - TIME_BEFORE_REACTION_USAGE_FACTOR * velocity_factor);
 
     // 台形速度プロファイルで目標位置までの移動時間を計算
-    double travel_time = getTravelTimeTrapezoidal(pose.pos, vel.linear, target_pos, max_accel, max_vel);
+    double travel_time =
+      getTravelTimeTrapezoidal(pose.pos, vel.linear, target_pos, max_accel, max_vel);
 
     // 実効予測時間 = 反応時間 + 移動時間（最大2.0s）
     double total_time = std::min(reaction_time + travel_time, MAX_HORIZON);
@@ -129,7 +130,8 @@ struct RobotInfo
     double actual_move_time = total_time - reaction_time;
 
     // 台形速度プロファイルで予測位置を計算（travel_time.hppの関数を使用）
-    return getPredictedPositionTrapezoidal(pose.pos, vel.linear, target_pos, actual_move_time, max_accel, max_vel);
+    return getPredictedPositionTrapezoidal(
+      pose.pos, vel.linear, target_pos, actual_move_time, max_accel, max_vel);
   }
 };
 }  // namespace crane

@@ -20,16 +20,16 @@ namespace crane
  */
 struct TrapezoidalProfile
 {
-  double distance;          ///< 目標までの距離 [m]
-  double initial_vel;       ///< 目標方向の初速度成分 [m/s]
-  double accel_time;        ///< 加速時間 [s]
-  double decel_time;        ///< 減速時間 [s]
-  double accel_distance;    ///< 加速距離 [m]
-  double decel_distance;    ///< 減速距離 [m]
-  bool has_cruise_phase;    ///< 定速区間の有無
-  double cruise_distance;   ///< 定速区間の距離 [m] (定速区間ありの場合)
-  double cruise_time;       ///< 定速時間 [s] (定速区間ありの場合)
-  double total_travel_time; ///< 総移動時間 [s]
+  double distance;           ///< 目標までの距離 [m]
+  double initial_vel;        ///< 目標方向の初速度成分 [m/s]
+  double accel_time;         ///< 加速時間 [s]
+  double decel_time;         ///< 減速時間 [s]
+  double accel_distance;     ///< 加速距離 [m]
+  double decel_distance;     ///< 減速距離 [m]
+  bool has_cruise_phase;     ///< 定速区間の有無
+  double cruise_distance;    ///< 定速区間の距離 [m] (定速区間ありの場合)
+  double cruise_time;        ///< 定速時間 [s] (定速区間ありの場合)
+  double total_travel_time;  ///< 総移動時間 [s]
 };
 
 inline auto getTravelTime(std::shared_ptr<RobotInfo> robot, Point target) -> double
@@ -95,8 +95,9 @@ inline auto calculateTrapezoidalProfile(
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
     //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
     profile.total_travel_time =
-      (-profile.initial_vel +
-       2 * sqrt(0.5 * profile.initial_vel * profile.initial_vel + max_acceleration * profile.distance)) /
+      (-profile.initial_vel + 2 * sqrt(
+                                    0.5 * profile.initial_vel * profile.initial_vel +
+                                    max_acceleration * profile.distance)) /
       max_acceleration;
   }
 
@@ -108,7 +109,8 @@ inline auto getTravelTimeTrapezoidal(
   const double max_acceleration, const double max_velocity) -> double
 {
   return calculateTrapezoidalProfile(
-    current_pos, current_vel, target, max_acceleration, max_velocity).total_travel_time;
+           current_pos, current_vel, target, max_acceleration, max_velocity)
+    .total_travel_time;
 }
 
 inline auto getTravelTimeTrapezoidal(
@@ -156,20 +158,18 @@ inline auto getPredictedPositionTrapezoidal(
     double t_half = std::sqrt(2.0 * profile.distance / max_acceleration);
     if (time <= t_half) {
       // 加速フェーズ
-      traveled_distance =
-        profile.initial_vel * time + 0.5 * max_acceleration * time * time;
+      traveled_distance = profile.initial_vel * time + 0.5 * max_acceleration * time * time;
     } else {
       // 減速フェーズ
-      traveled_distance = profile.distance -
-                          0.5 * max_acceleration * (profile.total_travel_time - time) *
-                          (profile.total_travel_time - time);
+      traveled_distance = profile.distance - 0.5 * max_acceleration *
+                                               (profile.total_travel_time - time) *
+                                               (profile.total_travel_time - time);
     }
   } else {
     // 定速区間あり
     if (time <= profile.accel_time) {
       // 加速区間
-      traveled_distance =
-        profile.initial_vel * time + 0.5 * max_acceleration * time * time;
+      traveled_distance = profile.initial_vel * time + 0.5 * max_acceleration * time * time;
     } else if (time <= profile.accel_time + profile.cruise_time) {
       // 加速→定速区間
       double cruise_time_elapsed = time - profile.accel_time;
