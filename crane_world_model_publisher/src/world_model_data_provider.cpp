@@ -348,7 +348,6 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   }
 
   auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
-  constexpr double FEEDBACK_TIMEOUT_SECONDS = 1.0;
 
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
