@@ -726,7 +726,7 @@ auto WorldModelDataProvider::convertTrackedBall(
 }
 
 auto WorldModelDataProvider::convertTrackedRobot(
-  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, [[maybe_unused]] int team_index)
   -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;

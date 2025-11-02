@@ -127,7 +127,7 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
-  const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
+  const SSL_GeometryData & geometry_data, [[maybe_unused]] bool half_court_mode) -> void
 {
   if (!geometry_data.has_field()) {
     return;
@@ -275,7 +275,7 @@ auto VisualizationManager::drawFieldGeometry(
 }
 
 auto VisualizationManager::drawVisionDetections(
-  const SSL_DetectionFrame & detection, bool half_court_mode) -> void
+  const SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
 {
   // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {

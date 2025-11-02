@@ -178,8 +178,8 @@ auto KickEventDetector::filterByDistance(
 }
 
 auto KickEventDetector::filterByVelocity(
-  double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
-  -> DetectedBots
+  double threshold, const DetectedBots & available_bots,
+  [[maybe_unused]] const WorldModelWrapper & world_model) -> DetectedBots
 {
   // records内にthresholdより速いボールがあるかどうかを確認する
   for (const auto & record : records) {
