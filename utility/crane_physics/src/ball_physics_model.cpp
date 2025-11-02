@@ -187,8 +187,8 @@ auto BallPhysicsModel::predictPosition(
 }
 
 auto BallPhysicsModel::predictVelocity(
-  const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
-  double time_ahead) const -> Point
+  [[maybe_unused]] const Point & position, const Point & velocity, Ball::State state,
+  double pos_z, double vel_z, double time_ahead) const -> Point
 {
   switch (state) {
     case Ball::State::STOPPED:
@@ -258,8 +258,8 @@ auto BallPhysicsModel::getStopTime(const Point & velocity, Ball::State state, do
 }
 
 auto BallPhysicsModel::getMaxDistance(
-  const Point & position, const Point & velocity, Ball::State state, double pos_z,
-  double vel_z) const -> double
+  const Point & position, const Point & velocity, Ball::State state,
+  [[maybe_unused]] double pos_z, double vel_z) const -> double
 {
   switch (state) {
     case Ball::State::STOPPED:

@@ -28,8 +28,8 @@ public:
   {
     publisher = this->create_publisher<crane_msgs::msg::PingStatusArray>("/ping", 10);
 
-    for (int i = 0; i < ping_statuses.size(); ++i) {
-      ping_statuses[i].first = getRobotIP(i);
+    for (size_t i = 0; i < ping_statuses.size(); ++i) {
+      ping_statuses[i].first = getRobotIP(static_cast<int>(i));
     }
 
     timer = this->create_wall_timer(

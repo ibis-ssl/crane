@@ -86,8 +86,8 @@ TEST_F(KickerModelTest, PredictChipKickDistance)
 
 TEST_F(KickerModelTest, InvalidKickPower)
 {
-  EXPECT_THROW(kicker_model_->predictStraightKickSpeed(-0.5), std::runtime_error);
-  EXPECT_THROW(kicker_model_->predictStraightKickSpeed(1.5), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->predictStraightKickSpeed(-0.5), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->predictStraightKickSpeed(1.5), std::runtime_error);
 }
 
 // ===== キック力計算テスト =====
@@ -108,8 +108,8 @@ TEST_F(KickerModelTest, CalculateChipKickPower)
 
 TEST_F(KickerModelTest, InvalidTargetValues)
 {
-  EXPECT_THROW(kicker_model_->calculateStraightKickPower(-1.0), std::runtime_error);
-  EXPECT_THROW(kicker_model_->calculateChipKickPower(-0.5), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->calculateStraightKickPower(-1.0), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->calculateChipKickPower(-0.5), std::runtime_error);
 }
 
 // ===== 双方向変換テスト =====
@@ -151,8 +151,8 @@ TEST_F(KickerModelTest, BallPhysicsModelIntegration)
 TEST_F(KickerModelTest, WithoutBallPhysicsModel)
 {
   // BallPhysicsModelが設定されていない場合の例外テスト
-  EXPECT_THROW(kicker_model_->calculateKickPowerForStopDistance(2.0), std::runtime_error);
-  EXPECT_THROW(kicker_model_->predictStopDistance(0.5), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->calculateKickPowerForStopDistance(2.0), std::runtime_error);
+  EXPECT_THROW((void)kicker_model_->predictStopDistance(0.5), std::runtime_error);
 }
 
 // ===== 設定検証テスト =====
