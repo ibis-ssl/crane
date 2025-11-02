@@ -254,14 +254,15 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(
   }
 
   for (auto & obstacle : obstacle_robots) {
-    double distance = obstacle->getDistance(from);
+    Point predicted_pos = obstacle->predictFuturePosition(from);
+    double distance = (predicted_pos - from).norm();
     constexpr double MACHINE_RADIUS = 0.1;
 
     double center_angle = [&]() {
       if (goal_posts.first.x() < 0.) {
-        return normalizeAngle(getAngle(obstacle->pose.pos - from) + M_PI);
+        return normalizeAngle(getAngle(predicted_pos - from) + M_PI);
       } else {
-        return getAngle(obstacle->pose.pos - from);
+        return getAngle(predicted_pos - from);
       }
     }();
     double diff_angle =
