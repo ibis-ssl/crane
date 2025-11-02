@@ -424,10 +424,16 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(const RobotList
 
 auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 {
+  previous_our_frontier_ = our_frontier;
+
   updateScore(true);
   updateScore(false);
 
-  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() { return our_frontier; }());
+  if (auto new_frontier = getOurFrontier()) {
+    our_frontier = new_frontier->robot->id;
+  } else {
+    our_frontier = 255;  // 利用可能ロボットなし
+  }
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
@@ -440,6 +446,16 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
                   return calculateScore(robot);
                 }) |
                 ranges::to<std::vector>();
+
+  // ヒステリシス適用: 前フレームのfrontierロボットにスコアボーナス
+  if (our_team && previous_our_frontier_ != 255) {
+    for (auto & score : scores) {
+      if (score.robot->id == previous_our_frontier_) {
+        score.score += HYSTERESIS_SCORE_BONUS;
+        break;
+      }
+    }
+  }
 
   // スコアの高い順にソート
   ranges::sort(
