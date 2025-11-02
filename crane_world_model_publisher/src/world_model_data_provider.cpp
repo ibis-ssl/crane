@@ -69,8 +69,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     auto tracker_port = node.get_parameter("tracker_port").get_value<int>();
     tracker_receiver_ = std::make_unique<multicast::MulticastReceiver>(tracker_addr, tracker_port);
     RCLCPP_INFO(
-      node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%ld", tracker_addr.c_str(),
-      static_cast<long>(tracker_port));
+      node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
+      static_cast<int>(tracker_port));
   } catch (const std::exception & e) {
     reportError("Trackerの初期化に失敗しました: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", e.what());
@@ -122,8 +122,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto tracker_addr = this->node.get_parameter("tracker_address").get_value<std::string>();
         auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
         RCLCPP_WARN(
-          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%ld)",
-          tracker_addr.c_str(), static_cast<long>(tracker_port));
+          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)", tracker_addr.c_str(),
+          static_cast<int>(tracker_port));
       }
     }
   });
