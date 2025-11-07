@@ -54,7 +54,17 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Cache dependency_ws
+        id: cache-dependency-ws
+        uses: actions/cache@v4
+        with:
+          path: dependency_ws
+          key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles(format('dependency_{0}.repos', matrix.rosdistro)) }}
+          restore-keys: |
+            dependency_ws-${{ matrix.rosdistro }}-
+
       - name: Clone dependency packages
+        if: steps.cache-dependency-ws.outputs.cache-hit != 'true'
         run: |
           mkdir -p dependency_ws
           vcs import dependency_ws < dependency_${{ matrix.rosdistro }}.repos
@@ -66,14 +76,6 @@ jobs:
           colcon list -p --base-paths . dependency_ws > packages.txt
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
-
-      - name: Cache dependency_ws
-        uses: actions/cache@v4
-        with:
-          path: dependency_ws
-          key: dependency_ws-${{ matrix.rosdistro }}-${{ hashFiles(format('dependency_{0}.repos', matrix.rosdistro)) }}
-          restore-keys: |
-            dependency_ws-${{ matrix.rosdistro }}-
 
       - name: Cache ccache
         uses: actions/cache@v4
