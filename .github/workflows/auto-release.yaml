@@ -95,13 +95,6 @@ jobs:
           )"
         shell: bash
 
-      - name: Create and push tag
-        run: |
-          git tag -a "${{ steps.release.outputs.new_version }}" -m "Release ${{ steps.release.outputs.new_version }}"
-          git push origin develop
-          git push origin "${{ steps.release.outputs.new_version }}"
-        shell: bash
-
       - name: Generate release notes
         id: release_notes
         run: |
