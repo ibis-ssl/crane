@@ -101,7 +101,7 @@ jobs:
             build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v2
+        uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.head_ref || github.ref_name }}
           max-size: 10G
