@@ -1,0 +1,44 @@
+# ビルド成果物
+build/
+install/
+log/
+.cache/
+
+# Git
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ROS
+*.bag
+*.db3
+
+# ドキュメント
+docs/
+*.md
+!README.md
+
+# テスト結果
+test_results/
+.pytest_cache/
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+.eggs/
+
+# 一時ファイル
+*.tmp
+*.bak
+*.orig
+
+# OS
+.DS_Store
+Thumbs.db
