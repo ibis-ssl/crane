@@ -32,11 +32,16 @@ jobs:
           file: docker/base/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:base
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=base
+            type=registry,ref=ghcr.io/${{ github.repository }}:base
+          cache-to: type=gha,mode=max,scope=base
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
   build_ccache:
     name: build ccache image
+    needs: build_base
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -61,11 +66,16 @@ jobs:
           file: docker/ccache/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:ccache
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=ccache
+            type=registry,ref=ghcr.io/${{ github.repository }}:ccache
+          cache-to: type=gha,mode=max,scope=ccache
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
   build_prebuilt:
     name: build prebuilt image
+    needs: build_base
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -90,5 +100,9 @@ jobs:
           file: docker/prebuilt/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:prebuilt
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=prebuilt
+            type=registry,ref=ghcr.io/${{ github.repository }}:prebuilt
+          cache-to: type=gha,mode=max,scope=prebuilt
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
