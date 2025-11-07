@@ -278,6 +278,45 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
   --prune-empty HEAD~20..HEAD
 ```
 
+## バージョニングとリリース管理
+
+このプロジェクトは自動バージョニング・リリースシステムを採用しています。
+
+### 自動バージョンアップ
+
+developブランチへのマージ時に、GitHub Actionsが自動的にpatchバージョンをインクリメントします。
+
+**フロー**:
+1. 機能開発ブランチでの作業
+2. PRレビュー・承認
+3. developへのマージ → 自動的に `X.Y.Z` → `X.Y.Z+1`
+4. GitHub Releaseが自動作成される
+
+### 手動バージョンアップ
+
+minor/majorバージョンアップが必要な場合は、GitHub ActionsのUIから手動実行します。
+
+**手順**:
+1. GitHub Actions → `Auto Version Bump and Release` を選択
+2. `workflow_dispatch` を実行
+3. バージョンバンプタイプを選択:
+   - `patch`: X.Y.Z → X.Y.Z+1（デフォルト）
+   - `minor`: X.Y.Z → X.Y+1.0
+   - `major`: X.Y.Z → X+1.0.0
+
+### バージョン管理ポリシー
+
+- **全パッケージ統一**: 32個の全パッケージを同一バージョンで管理
+- **セマンティックバージョニング**: メジャー.マイナー.パッチ形式
+- **Gitタグ**: 各バージョンにタグを付与（例: `1.0.0`）
+- **リリースノート**: GitHub Releaseで自動生成
+
+### AIエージェントへの指示
+
+- バージョン番号は手動で変更しないこと
+- package.xmlのバージョンは自動管理されていることを認識すること
+- リリースはGitHub Actionsに任せること
+
 ## コミット規約
 
 ### 言語ポリシー
