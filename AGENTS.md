@@ -287,6 +287,7 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
 developブランチへのマージ時に、GitHub Actionsが自動的にpatchバージョンをインクリメントします。
 
 **フロー**:
+
 1. 機能開発ブランチでの作業
 2. PRレビュー・承認
 3. developへのマージ → 自動的に `X.Y.Z` → `X.Y.Z+1`
@@ -297,6 +298,7 @@ developブランチへのマージ時に、GitHub Actionsが自動的にpatchバ
 minor/majorバージョンアップが必要な場合は、GitHub ActionsのUIから手動実行します。
 
 **手順**:
+
 1. GitHub Actions → `Auto Version Bump and Release` を選択
 2. `workflow_dispatch` を実行
 3. バージョンバンプタイプを選択:
