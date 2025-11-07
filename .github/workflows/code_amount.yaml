@@ -12,7 +12,7 @@ jobs:
         run: sudo apt-get install -y cloc
 
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run cloc
         run: cloc . --vcs=git

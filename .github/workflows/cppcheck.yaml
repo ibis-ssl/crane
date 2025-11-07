@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo snap install cppcheck
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Problem Matchers for cppcheck
         run: echo "::add-matcher::.github/matchers/cppcheck.json"
