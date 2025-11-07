@@ -1,0 +1,139 @@
+name: Auto Version Bump and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'バージョンバンプタイプ'
+        required: true
+        type: choice
+        default: 'patch'
+        options:
+          - patch
+          - minor
+          - major
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version-bump-release:
+    name: Version Bump and Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install bloom and dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yqq python3-pip python3-catkin-pkg
+          pip3 install bloom
+        shell: bash
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        shell: bash
+
+      - name: Determine bump type
+        id: bump_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ inputs.bump_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Get current version
+        id: current_version
+        run: |
+          # 最初のpackage.xmlからバージョンを取得
+          VERSION=$(grep -m1 '<version>' $(find . -name package.xml | head -1) | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+        shell: bash
+
+      - name: Run catkin_prepare_release
+        id: release
+        run: |
+          # バージョンバンプを実行
+          catkin_prepare_release --bump ${{ steps.bump_type.outputs.type }} --no-push -y
+
+          # 新しいバージョンを取得
+          NEW_VERSION=$(grep -m1 '<version>' $(find . -name package.xml | head -1) | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+        shell: bash
+
+      - name: Amend commit with custom message
+        run: |
+          # catkin_prepare_releaseが作成したコミットを修正して日本語メッセージに変更
+          git reset --soft HEAD~1
+          git add .
+          git commit -m "$(cat <<'EOF'
+          release: バージョン${{ steps.release.outputs.new_version }}をリリース
+
+          全パッケージのバージョンを${{ steps.current_version.outputs.version }}から${{ steps.release.outputs.new_version }}に更新
+          EOF
+          )"
+        shell: bash
+
+      - name: Create and push tag
+        run: |
+          git tag -a "${{ steps.release.outputs.new_version }}" -m "Release ${{ steps.release.outputs.new_version }}"
+          git push origin develop
+          git push origin "${{ steps.release.outputs.new_version }}"
+        shell: bash
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # 前回のタグを取得
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | sed -n '2p')
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # 最初のリリースの場合
+            echo "notes=🎉 crane v${{ steps.release.outputs.new_version }}の初回リリースです。" >> $GITHUB_OUTPUT
+          else
+            # 変更履歴を生成
+            CHANGES=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ steps.release.outputs.new_version }})
+            echo "notes<<EOF" >> $GITHUB_OUTPUT
+            echo "## 変更内容" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "$CHANGES" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "---" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ steps.release.outputs.new_version }}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.new_version }}
+          name: Release ${{ steps.release.outputs.new_version }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
