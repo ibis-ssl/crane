@@ -25,6 +25,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 COPY . crane
 
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rosdep install -iy --from-paths crane && \
+    rm -rf /var/lib/apt/lists/
+
 RUN ccache -sv
 
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
