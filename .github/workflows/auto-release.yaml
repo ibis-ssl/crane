@@ -70,6 +70,57 @@ jobs:
           echo "Current version: $VERSION"
         shell: bash
 
+      - name: Check and fix tag consistency
+        run: |
+          # 現在のバージョンを取得
+          CURRENT_VERSION=$(grep -m1 '<version>' $(find . -name package.xml | head -1) | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+
+          # 次のバージョンを計算（bump typeに応じて）
+          BUMP_TYPE="${{ steps.bump_type.outputs.type }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          case "$BUMP_TYPE" in
+            major)
+              NEXT_VERSION="$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NEXT_VERSION="${MAJOR}.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NEXT_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              ;;
+          esac
+
+          echo "Expected next version: $NEXT_VERSION"
+
+          # タグが既に存在するかチェック
+          if git rev-parse "$NEXT_VERSION" >/dev/null 2>&1; then
+            echo "⚠️ タグ $NEXT_VERSION が既に存在します。整合性を確認中..."
+
+            # タグが指すコミットのpackage.xmlバージョンを取得
+            PACKAGE_FILE=$(find . -name package.xml | head -1)
+            TAG_VERSION=$(git show "$NEXT_VERSION:$PACKAGE_FILE" 2>/dev/null | grep -m1 '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/' || echo "")
+
+            echo "Tag points to version: $TAG_VERSION"
+
+            if [ "$TAG_VERSION" != "$NEXT_VERSION" ]; then
+              echo "❌ タグとバージョンが不一致です（タグ: $NEXT_VERSION, package.xml: $TAG_VERSION）"
+              echo "🔧 不整合なタグを削除します..."
+
+              # ローカルとリモートのタグを削除
+              git tag -d "$NEXT_VERSION"
+              git push origin --delete "$NEXT_VERSION" || echo "リモートタグの削除に失敗しましたが続行します"
+
+              echo "✅ タグを削除しました。catkin_prepare_releaseで再作成されます。"
+            else
+              echo "✅ タグとバージョンは整合性があります。"
+              echo "⚠️ しかし、このタグは既に存在するため、catkin_prepare_releaseでエラーが発生する可能性があります。"
+            fi
+          else
+            echo "✅ タグ $NEXT_VERSION は存在しません。問題ありません。"
+          fi
+        shell: bash
+
       - name: Run catkin_prepare_release
         id: release
         run: |
