@@ -35,9 +35,10 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   publish_interval_ms_ =
     std::chrono::milliseconds(get_parameter("publish_interval_ms").get_value<int>());
 
-  receiver = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("multicast_address").get_value<std::string>(),
-    get_parameter("multicast_port").get_value<int>());
+  const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
+  const int multicast_port = get_parameter("multicast_port").get_value<int>();
+
+  receiver = std::make_unique<multicast::MulticastReceiver>(multicast_address, multicast_port);
 
   pub_detection_frame =
     create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame", 10);
@@ -47,8 +48,7 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 
   RCLCPP_INFO(
     get_logger(), "Vision component initialized - listening on %s:%d",
-    get_parameter("multicast_address").get_value<std::string>().c_str(),
-    get_parameter("multicast_port").get_value<int>());
+    multicast_address.c_str(), multicast_port);
 }
 
 void Vision::on_timer()

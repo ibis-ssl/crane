@@ -60,22 +60,22 @@ struct HalfPlane
   Vector2 point;
 
   HalfPlane() = default;
-  constexpr HalfPlane(const Vector2 & n, const Vector2 & p) noexcept
+  HalfPlane(const Vector2 & n, const Vector2 & p) noexcept
   : normal(n.normalized()), point(p)
   {
   }
 
-  constexpr auto signedDistance(const Vector2 & test_point) const noexcept -> double
+  auto signedDistance(const Vector2 & test_point) const noexcept -> double
   {
     return dot(normal, test_point - point);
   }
 
-  constexpr bool contains(const Vector2 & test_point, double tolerance = EPSILON) const noexcept
+  bool contains(const Vector2 & test_point, double tolerance = EPSILON) const noexcept
   {
     return signedDistance(test_point) >= -tolerance;
   }
 
-  constexpr auto project(const Vector2 & test_point) const noexcept -> Vector2
+  auto project(const Vector2 & test_point) const noexcept -> Vector2
   {
     const auto dist = signedDistance(test_point);
     return test_point - dist * normal;
@@ -88,25 +88,25 @@ struct Line
   Vector2 direction;
 
   Line() = default;
-  constexpr Line(const Vector2 & p, const Vector2 & d) noexcept
+  Line(const Vector2 & p, const Vector2 & d) noexcept
   : point(p), direction(d.normalized())
   {
   }
 
-  static constexpr auto fromTwoPoints(const Vector2 & p1, const Vector2 & p2) noexcept -> Line
+  static auto fromTwoPoints(const Vector2 & p1, const Vector2 & p2) noexcept -> Line
   {
     return {p1, p2 - p1};
   }
 
-  constexpr auto at(double t) const noexcept -> Vector2 { return point + t * direction; }
+  auto at(double t) const noexcept -> Vector2 { return point + t * direction; }
 
-  constexpr auto closestPoint(const Vector2 & test_point) const noexcept -> Vector2
+  auto closestPoint(const Vector2 & test_point) const noexcept -> Vector2
   {
     const auto t = dot(test_point - point, direction);
     return at(t);
   }
 
-  constexpr auto distanceTo(const Vector2 & test_point) const noexcept -> double
+  auto distanceTo(const Vector2 & test_point) const noexcept -> double
   {
     return distance(test_point, closestPoint(test_point));
   }

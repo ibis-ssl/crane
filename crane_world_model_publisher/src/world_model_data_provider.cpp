@@ -173,7 +173,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           game_data.their_max_allowed_bots = msg.blue.max_allowed_bots[0];
         }
         if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = not msg.blue_team_on_positive_half[0];
+          on_positive_half = (msg.blue_team_on_positive_half[0] == 0);
         }
       } else if (msg.blue.name == game_data.team_name) {
         // BLUE
@@ -189,7 +189,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           game_data.their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
         }
         if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = msg.blue_team_on_positive_half[0];
+          on_positive_half = (msg.blue_team_on_positive_half[0] != 0);
         }
       } else {
         std::stringstream what;
