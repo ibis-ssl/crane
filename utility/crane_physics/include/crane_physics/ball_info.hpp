@@ -578,7 +578,7 @@ public:
   // 軌道セグメント作成と最近点計算用の便利関数
   [[nodiscard]] auto getTrajectorySegmentByTime(double time_horizon) const -> Segment
   {
-    Point end_point;
+    Point end_point = Point::Zero();
     switch (state) {
       case State::STOPPED:
         // 停止しているボールについて、現在位置にゼロ長セグメントを作成
@@ -600,7 +600,7 @@ public:
 
   [[nodiscard]] auto getTrajectorySegmentByDistance(double distance) const -> Segment
   {
-    Point end_point;
+    Point end_point = Point::Zero();
     switch (state) {
       case State::STOPPED:
         // 停止ボールについて、可能であれば速度方向にセグメントを作成

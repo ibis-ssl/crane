@@ -86,6 +86,16 @@ using ParameterType = std::variant<double, bool, int, std::string, Point>;
 
 using ContextType = std::variant<double, bool, int, std::string, Point, std::optional<Point>>;
 
+template <typename T>
+constexpr auto defaultContextValue() -> T
+{
+  if constexpr (std::is_same_v<T, Point>) {
+    return Point::Zero();
+  } else {
+    return T{};
+  }
+}
+
 inline std::string getTypeString(const ContextType & type)
 {
   std::string type_string;
@@ -190,7 +200,7 @@ public:
   }
 
   template <typename T>
-  T & getContextReference(const std::string & key, const T initial_value = T())
+  T & getContextReference(const std::string & key, const T initial_value = defaultContextValue<T>())
   {
     // メモ：std::unordered_mapの要素への参照はリハッシュや要素の挿入などでは変化しない
     // 　　　（該当要素の削除は当然アウト）
