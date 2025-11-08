@@ -22,7 +22,6 @@ jobs:
       PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       CC: /usr/lib/ccache/gcc
       CXX: /usr/lib/ccache/g++
-      CCACHE_DIR: /root/.ccache
       CCACHE_MAXSIZE: 10G
       USE_CCACHE: 1
     strategy:
@@ -77,14 +76,6 @@ jobs:
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
 
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: /root/.ccache
-          key: ccache-${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            ccache-${{ matrix.rosdistro }}-${{ runner.os }}-
-
       - name: Cache rosdep
         id: cache-rosdep
         uses: actions/cache@v4
@@ -95,6 +86,7 @@ jobs:
           key: rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-${{ hashFiles('rosdep_keys.txt') }}
           restore-keys: |
             rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-
+            rosdep-${{ matrix.rosdistro }}-
 
       - name: Cache build artifacts
         uses: actions/cache@v4
@@ -102,9 +94,17 @@ jobs:
           path: |
             ./build
             ./install
-          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/package.xml') }}
+          key: build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/package.xml') }}
           restore-keys: |
+            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-
+            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-develop-
             build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.head_ref || github.ref_name }}
+          max-size: 10G
 
       - name: Run rosdep install
         run: |

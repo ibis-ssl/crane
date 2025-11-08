@@ -6,10 +6,11 @@ SHELL ["/bin/bash", "-c"]
 
 COPY dependency_*.repos ./crane/
 
-RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    vcs import . < crane/dependency_${ROS_DISTRO}.repos && \
     rosdep update && \
-    rosdep install -iy --from-paths . && \
-    rm -rf /var/lib/apt/lists/*
+    rosdep install -iy --from-paths .
 
 COPY . crane
 

@@ -5,18 +5,37 @@ ENV PATH $PATH:/usr/local/go/bin
 WORKDIR $ROS_OVERLAY/src
 SHELL ["/bin/bash", "-c"]
 
-# 依存関係ファイルを先にコピー（変更頻度が低い）
+# cspell:ignore MAXSIZE
+ENV PATH="/usr/lib/ccache:${PATH}"
+ENV CC="/usr/lib/ccache/gcc"
+ENV CXX="/usr/lib/ccache/g++"
+ENV CCACHE_DIR=/root/.ccache
+ENV CCACHE_MAXSIZE=10G
+ENV USE_CCACHE=1
+
 COPY dependency_*.repos crane/
 
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 
-RUN rosdep update && \
-    rosdep install -iy --from-paths . && \
-    rm -rf /var/lib/apt/lists/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rosdep update && \
+    rosdep install -riy --from-paths .
 
-# ソースコードを最後にコピー（変更頻度が高い）
 COPY . crane
 
-RUN cd .. && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    rosdep install -riy --from-paths crane
+
+RUN ccache -sv
+
+RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
+    cd .. && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+
+RUN ccache -sv
+
+RUN cd .. && rm -rf build/ log/
