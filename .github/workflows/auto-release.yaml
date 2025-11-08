@@ -39,7 +39,7 @@ jobs:
         with:
           fetch-depth: 0
           # Protected branchへのpushにはPATが必要
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
 
       - name: Setup Python
         uses: actions/setup-python@v6
