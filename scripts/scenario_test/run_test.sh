@@ -13,10 +13,15 @@ VISION_PORT="${VISION_PORT:-10020}"
 USE_LOCAL="${USE_LOCAL:-1}"  # デフォルトはローカルモード
 CRANE_TAG="${CRANE_TAG:-local-scenario}"
 
+# ワークスペースルートのパス（REPO_ROOTの2階層上）
+WORKSPACE_ROOT="$(cd "${REPO_ROOT}/../.." && pwd)"
+
 # Docker Compose設定（ローカルモードとリモートモードで切り替え）
 if [ "${USE_LOCAL}" = "1" ]; then
     COMPOSE_FILE="${REPO_ROOT}/docker/scenario/docker-compose.local.yaml"
     MODE_NAME="ローカル（マウント）"
+    # ローカルモード用にワークスペースルートを環境変数で設定
+    export IBIS_WS="${WORKSPACE_ROOT}"
 else
     COMPOSE_FILE="${REPO_ROOT}/docker/scenario/docker-compose.yaml"
     MODE_NAME="リモート（イメージ）"
@@ -51,10 +56,25 @@ if [ ! -f "${LOG_RECORDER}" ]; then
     echo "ダウンロード完了"
 fi
 
-# Docker Composeでサービスを起動
+# Docker Composeでサービスを起動（grSimとauto-referee）
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
 CRANE_TAG="${CRANE_TAG}" docker compose -f "${COMPOSE_FILE}" up -d
+
+# ローカルモードの場合、craneをローカルで起動
+CRANE_PID=""
+if [ "${USE_LOCAL}" = "1" ]; then
+    echo "ローカル環境でcraneを起動中..."
+    cd "${WORKSPACE_ROOT}"
+
+    # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
+    source "${WORKSPACE_ROOT}/install/setup.bash"
+    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 > /tmp/crane_local.log 2>&1 &
+    CRANE_PID=$!
+    echo "craneプロセスID: ${CRANE_PID}"
+
+    cd "${REPO_ROOT}"
+fi
 
 # サービスの起動を待機
 echo "サービスの起動を待機中..."
@@ -129,6 +149,26 @@ if [ ${TEST_RESULT} -ne 0 ]; then
 fi
 
 # クリーンアップ
+echo ""
+
+# ローカルモードの場合、craneプロセスを停止
+if [ -n "${CRANE_PID}" ]; then
+    echo "=== ローカルcraneプロセスを停止中 ==="
+    # プロセスグループ全体を終了（子プロセスも含む）
+    kill -TERM -${CRANE_PID} 2>/dev/null || true
+    sleep 2
+    # まだ残っている場合は強制終了
+    kill -KILL -${CRANE_PID} 2>/dev/null || true
+    echo "craneプロセスを停止しました"
+
+    # craneのログを表示
+    if [ -f "/tmp/crane_local.log" ]; then
+        echo ""
+        echo "=== ローカルcraneのログ ==="
+        tail -50 /tmp/crane_local.log
+    fi
+fi
+
 echo ""
 echo "=== Docker Composeサービスを停止中 ==="
 docker compose -f "${COMPOSE_FILE}" down
