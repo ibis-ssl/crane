@@ -16,7 +16,7 @@ services:
     network_mode: host
     command: |
       bash -c "
-      source ../install/setup.bash &&
+      source /root/ibis_ws/install/setup.bash &&
       ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow
       "
     tty: true
