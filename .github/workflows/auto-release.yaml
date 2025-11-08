@@ -146,6 +146,21 @@ jobs:
           )"
         shell: bash
 
+      - name: Create and push tag
+        run: |
+          # タグを作成してpush
+          git tag -a "${{ steps.release.outputs.new_version }}" -m "Release ${{ steps.release.outputs.new_version }}"
+          echo "Created tag ${{ steps.release.outputs.new_version }}"
+        shell: bash
+
+      - name: Push version bump commit and tag
+        run: |
+          # バージョンアップコミットとタグをpush
+          git push origin develop
+          git push origin ${{ steps.release.outputs.new_version }}
+          echo "Pushed commit and tag to remote repository"
+        shell: bash
+
       - name: Generate release notes
         id: release_notes
         run: |
