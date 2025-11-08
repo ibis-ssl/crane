@@ -12,6 +12,11 @@ on:
           - patch
           - minor
           - major
+      dry_run:
+        description: 'ドライランモード（実際のpush・リリースは行わない）'
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - develop
@@ -49,6 +54,19 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        shell: bash
+
+      - name: Display mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🔍 =========================================="
+            echo "🔍   ドライランモード（DRY RUN MODE）"
+            echo "🔍 =========================================="
+            echo "🔍 実際のpush・リリースは行いません"
+            echo "🔍 =========================================="
+          else
+            echo "✅ 通常モード（実際のpush・リリースを実行）"
+          fi
         shell: bash
 
       - name: Determine bump type
@@ -105,13 +123,18 @@ jobs:
 
             if [ "$TAG_VERSION" != "$NEXT_VERSION" ]; then
               echo "❌ タグとバージョンが不一致です（タグ: $NEXT_VERSION, package.xml: $TAG_VERSION）"
-              echo "🔧 不整合なタグを削除します..."
 
-              # ローカルとリモートのタグを削除
-              git tag -d "$NEXT_VERSION"
-              git push origin --delete "$NEXT_VERSION" || echo "リモートタグの削除に失敗しましたが続行します"
-
-              echo "✅ タグを削除しました。catkin_prepare_releaseで再作成されます。"
+              if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+                echo "🔍 [DRY RUN] 不整合なタグを削除する予定:"
+                echo "  - git tag -d $NEXT_VERSION"
+                echo "  - git push origin --delete $NEXT_VERSION"
+              else
+                echo "🔧 不整合なタグを削除します..."
+                # ローカルとリモートのタグを削除
+                git tag -d "$NEXT_VERSION"
+                git push origin --delete "$NEXT_VERSION" || echo "リモートタグの削除に失敗しましたが続行します"
+                echo "✅ タグを削除しました。catkin_prepare_releaseで再作成されます。"
+              fi
             else
               echo "✅ タグとバージョンは整合性があります。"
               echo "⚠️ しかし、このタグは既に存在するため、catkin_prepare_releaseでエラーが発生する可能性があります。"
@@ -144,6 +167,25 @@ jobs:
           全パッケージのバージョンを${{ steps.current_version.outputs.version }}から${{ steps.release.outputs.new_version }}に更新
           EOF
           )"
+
+          # タグを再作成（catkin_prepare_releaseが作成したタグを削除して、新しいコミットに再作成）
+          git tag -d "${{ steps.release.outputs.new_version }}"
+          git tag -a "${{ steps.release.outputs.new_version }}" -m "Release ${{ steps.release.outputs.new_version }}"
+          echo "Recreated tag ${{ steps.release.outputs.new_version }} on the amended commit"
+        shell: bash
+
+      - name: Push version bump commit and tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🔍 [DRY RUN] 以下のコマンドを実行する予定:"
+            echo "  - git push origin develop"
+            echo "  - git push origin ${{ steps.release.outputs.new_version }}"
+          else
+            # バージョンアップコミットとタグをpush
+            git push origin develop
+            git push origin ${{ steps.release.outputs.new_version }}
+            echo "✅ Pushed commit and tag to remote repository"
+          fi
         shell: bash
 
       - name: Generate release notes
@@ -170,7 +212,18 @@ jobs:
           fi
         shell: bash
 
+      - name: Display dry run message for release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: |
+          echo "🔍 [DRY RUN] 以下の内容でGitHub Releaseを作成する予定:"
+          echo "  - Tag: ${{ steps.release.outputs.new_version }}"
+          echo "  - Name: Release ${{ steps.release.outputs.new_version }}"
+          echo "  - Draft: false"
+          echo "  - Prerelease: false"
+        shell: bash
+
       - name: Create GitHub Release
+        if: ${{ ! (github.event_name == 'workflow_dispatch' && inputs.dry_run == true) }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release.outputs.new_version }}
