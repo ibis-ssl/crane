@@ -127,6 +127,7 @@ jobs:
           docker compose -f docker/scenario/docker-compose.yaml up -d
         env:
           CRANE_TAG: scenario-${{ github.sha }}
+          USE_LOCAL: '0'
 
       - name: Wait for crane to start
         timeout-minutes: 5
