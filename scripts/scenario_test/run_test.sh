@@ -46,6 +46,7 @@ if [ ! -d "${VENV_DIR}" ]; then
 fi
 
 # 仮想環境の有効化
+# shellcheck source=/dev/null
 source "${VENV_DIR}/bin/activate"
 
 # ssl-log-recorderをダウンロード（ログ記録用）
@@ -68,6 +69,7 @@ if [ "${USE_LOCAL}" = "1" ]; then
     cd "${WORKSPACE_ROOT}"
 
     # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
+    # shellcheck source=/dev/null
     source "${WORKSPACE_ROOT}/install/setup.bash"
     ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
@@ -87,16 +89,20 @@ echo "=== テストを実行中 ==="
 cd "${REPO_ROOT}"
 
 # pytestコマンドの構築（常にログ記録を有効化）
-PYTEST_ARGS="--vision_port=${VISION_PORT} --logging --log_recorder=${LOG_RECORDER}"
+PYTEST_ARGS=(
+    "--vision_port=${VISION_PORT}"
+    "--logging"
+    "--log_recorder=${LOG_RECORDER}"
+)
 
 # テストの実行（失敗してもスクリプトは継続）
 set +e # 一時的にエラーで終了しないようにする
 if [ "${TEST_NAME}" = "all" ]; then
     echo "全テストを実行します（ログ記録有効）..."
-    pytest scenario_test/ ${PYTEST_ARGS}
+    pytest scenario_test/ "${PYTEST_ARGS[@]}"
 else
     echo "テスト ${TEST_NAME} を実行します（ログ記録有効）..."
-    pytest "scenario_test/${TEST_NAME}.py" ${PYTEST_ARGS}
+    pytest "scenario_test/${TEST_NAME}.py" "${PYTEST_ARGS[@]}"
 fi
 
 TEST_RESULT=$?
@@ -178,15 +184,15 @@ if [ ${TEST_RESULT} -eq 0 ]; then
     echo "✅ テストが成功しました"
     echo ""
     echo "生成されたログファイル:"
-    ls -lh *.log* 2>/dev/null || echo "  (ログファイルなし)"
+    ls -lh ./*.log* 2>/dev/null || echo "  (ログファイルなし)"
 else
     echo "❌ テストが失敗しました"
     echo ""
     echo "生成されたログファイル:"
-    ls -lh *.log* 2>/dev/null || echo "  (ログファイルなし)"
+    ls -lh ./*.log* 2>/dev/null || echo "  (ログファイルなし)"
     echo ""
     echo "生成された動画ファイル:"
-    ls -lh *.mp4 2>/dev/null || echo "  (動画ファイルなし)"
+    ls -lh ./*.mp4 2>/dev/null || echo "  (動画ファイルなし)"
 fi
 
 exit ${TEST_RESULT}

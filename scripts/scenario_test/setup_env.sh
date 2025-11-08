@@ -18,6 +18,7 @@ else
 fi
 
 # 仮想環境の有効化
+# shellcheck source=/dev/null
 source "${VENV_DIR}/bin/activate"
 
 # pipのアップグレード

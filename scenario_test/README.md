@@ -141,7 +141,7 @@ make scenario-test-clean
 
 ### Python仮想環境が見つからない
 
-```
+```text
 エラー: Python仮想環境が見つかりません
 ```
 
@@ -153,7 +153,7 @@ make scenario-test-setup
 
 ### ベースイメージが見つからない（ローカルモード）
 
-```
+```text
 Error response from daemon: pull access denied for ghcr.io/ibis-ssl/crane:base
 ```
 
@@ -165,7 +165,7 @@ docker pull ghcr.io/ibis-ssl/crane:base
 
 ### ワークスペースがビルドされていない（ローカルモード）
 
-```
+```text
 bash: ../install/setup.bash: No such file or directory
 ```
 
