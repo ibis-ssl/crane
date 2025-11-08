@@ -20,15 +20,13 @@ RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     rosdep update && \
-    rosdep install -riy --from-paths . && \
-    rm -rf /var/lib/apt/lists/
+    rosdep install -riy --from-paths .
 
 COPY . crane
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    rosdep install -riy --from-paths crane && \
-    rm -rf /var/lib/apt/lists/
+    rosdep install -riy --from-paths crane
 
 RUN ccache -sv
 
