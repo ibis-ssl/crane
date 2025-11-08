@@ -1,0 +1,42 @@
+version: "3.1"
+services:
+  grsim:
+    image: ghcr.io/ssl-roots/docker_images/grsim:main
+    container_name: grsim
+    network_mode: host
+    command: |
+      grSim --headless -platform offscreen
+    tty: true
+    stdin_open: true
+    restart: "no"
+
+  crane:
+    # ローカル開発用：ベースイメージを使用し、ローカルのワークスペースをマウント
+    image: ghcr.io/ibis-ssl/crane:base
+    container_name: crane
+    network_mode: host
+    volumes:
+      # ローカルのワークスペースをマウント
+      # リポジトリルートの2階層上がワークスペースルート（ibis_ws_3）
+      - ../../..:/root/ibis_ws:cached
+    working_dir: /root/ibis_ws
+    command: |
+      bash -c "
+      source install/setup.bash &&
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003
+      "
+    tty: true
+    stdin_open: true
+    restart: "no"
+
+  autoref-tigers:
+    image: tigersmannheim/auto-referee:1.2.0
+    command:
+      - --headless
+      - --visionAddress
+      - 224.5.23.2:10020
+      - --refereeAddress
+      - 224.5.23.1:10003
+      - --trackerAddress
+      - 224.5.23.2:11010
+    network_mode: host

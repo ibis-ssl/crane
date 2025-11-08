@@ -70,3 +70,11 @@ docs/logs/portal/
 
 # Configuration files
 crane_bringup/config/diagnostics.yaml
+
+# Scenario test temporary files and artifacts
+scenario_test_env/
+ssl-log-recorder
+ssl-go-tools/
+*.log.gz
+*.mp4
+*.avi
