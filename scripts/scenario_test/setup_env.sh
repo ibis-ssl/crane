@@ -25,7 +25,7 @@ echo "pipをアップグレード中..."
 python -m pip install --upgrade pip --quiet
 
 # protobuf-compilerのインストール確認
-if ! command -v protoc &> /dev/null; then
+if ! command -v protoc &>/dev/null; then
     echo "protobuf-compilerをインストールしています..."
     sudo apt update
     sudo apt install -y protobuf-compiler

@@ -10,7 +10,7 @@ VENV_DIR="${REPO_ROOT}/scenario_test_env"
 # 引数の解析
 TEST_NAME="${1:-all}"
 VISION_PORT="${VISION_PORT:-10020}"
-USE_LOCAL="${USE_LOCAL:-1}"  # デフォルトはローカルモード
+USE_LOCAL="${USE_LOCAL:-1}" # デフォルトはローカルモード
 CRANE_TAG="${CRANE_TAG:-local-scenario}"
 
 # ワークスペースルートのパス（REPO_ROOTの2階層上）
@@ -69,7 +69,7 @@ if [ "${USE_LOCAL}" = "1" ]; then
 
     # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
     source "${WORKSPACE_ROOT}/install/setup.bash"
-    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 > /tmp/crane_local.log 2>&1 &
+    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
     echo "craneプロセスID: ${CRANE_PID}"
 
@@ -90,7 +90,7 @@ cd "${REPO_ROOT}"
 PYTEST_ARGS="--vision_port=${VISION_PORT} --logging --log_recorder=${LOG_RECORDER}"
 
 # テストの実行（失敗してもスクリプトは継続）
-set +e  # 一時的にエラーで終了しないようにする
+set +e # 一時的にエラーで終了しないようにする
 if [ "${TEST_NAME}" = "all" ]; then
     echo "全テストを実行します（ログ記録有効）..."
     pytest scenario_test/ ${PYTEST_ARGS}
@@ -100,7 +100,7 @@ else
 fi
 
 TEST_RESULT=$?
-set -e  # エラー終了を再び有効化
+set -e # エラー終了を再び有効化
 
 # ログの表示
 echo ""
@@ -129,7 +129,7 @@ if [ ${TEST_RESULT} -ne 0 ]; then
     fi
 
     # ffmpegのインストール確認
-    if ! command -v ffmpeg &> /dev/null; then
+    if ! command -v ffmpeg &>/dev/null; then
         echo "ffmpegをインストール中..."
         sudo apt update
         sudo apt install -y ffmpeg
@@ -140,7 +140,7 @@ if [ ${TEST_RESULT} -ne 0 ]; then
     for logfile in *.log.gz; do
         if [ -f "${logfile}" ]; then
             echo "動画を生成中: ${logfile}"
-            gunzip -c "${logfile}" > "${logfile%.gz}"
+            gunzip -c "${logfile}" >"${logfile%.gz}"
             "${SSL_LOG_VIDEO_DIR}/cmd/ssl-log-video/ssl-log-video" -file "${logfile%.gz}" -output "${logfile%.gz}.avi"
             ffmpeg -i "${logfile%.gz}.avi" -vcodec libx264 -acodec aac "${logfile%.gz}.mp4" -y
             echo "動画を生成しました: ${logfile%.gz}.mp4"

@@ -17,7 +17,7 @@ echo ""
 cd "${REPO_ROOT}"
 
 # buildxのセットアップ確認
-if ! docker buildx version &> /dev/null; then
+if ! docker buildx version &>/dev/null; then
     echo "警告: docker buildxが利用できません。通常のdocker buildを使用します。"
     docker build \
         -f docker/scenario/Dockerfile \
