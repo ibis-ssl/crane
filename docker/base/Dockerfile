@@ -7,7 +7,9 @@ WORKDIR $ROS_OVERLAY/src
 
 COPY dependency_*.repos ./crane/
 
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
         ccache \
@@ -23,8 +25,7 @@ RUN apt-get update && \
     rosdep update && \
     rosdep install -iy --from-paths . && \
     # クリーンアップ
-    rm -rf /var/lib/apt/lists/* \
-           /tmp/* \
+    rm -rf /tmp/* \
            /var/tmp/* \
            ./* && \
     mkdir -p $ROS_OVERLAY/src
