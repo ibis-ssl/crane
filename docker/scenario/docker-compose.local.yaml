@@ -10,18 +10,9 @@ services:
     stdin_open: true
     restart: "no"
 
-  crane:
-    image: ghcr.io/ibis-ssl/crane:${CRANE_TAG}
-    container_name: crane
-    network_mode: host
-    command: |
-      bash -c "
-      source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow
-      "
-    tty: true
-    stdin_open: true
-    restart: "no"
+  # crane: ローカルモードではDockerではなくホスト上で直接実行する
+  # （run_test.shスクリプトから起動される）
+
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0
     command:

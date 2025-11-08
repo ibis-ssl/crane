@@ -89,10 +89,18 @@ colcon test --packages-select crane_physics crane_sender --event-handlers consol
 # 個別テスト（正規表現）
 colcon test --packages-select crane_physics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
 
-# シナリオテスト（Python）
-cd scenario_test
-python3 emit_from_penalty_01.py
-python3 STOP_ROBOT_SPEED.py
+# シナリオテスト（推奨：Makefileを使用）
+# 初回のみ環境セットアップ
+make scenario-test-setup
+
+# 全テスト実行
+make scenario-test
+
+# 個別テスト実行
+make scenario-test TEST=STOP_ROBOT_SPEED
+make scenario-test TEST=emit_from_penalty_01
+
+# 詳細はscenario_test/README.mdを参照
 
 # 変更後はビルドと環境読込を実施
 colcon build --packages-select <package_name>
