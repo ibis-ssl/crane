@@ -71,7 +71,7 @@ if [ "${USE_LOCAL}" = "1" ]; then
     # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
     # shellcheck source=/dev/null
     source "${WORKSPACE_ROOT}/install/setup.bash"
-    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 >/tmp/crane_local.log 2>&1 &
+    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
     echo "craneプロセスID: ${CRANE_PID}"
 
