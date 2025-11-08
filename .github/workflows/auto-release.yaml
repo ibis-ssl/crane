@@ -30,8 +30,11 @@ jobs:
     name: Version Bump and Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Merge queueによるマージは除外（バージョンバンプは実際のマージ後のみ実行）
-    if: github.actor != 'github-merge-queue[bot]'
+    # 無限ループ防止: Merge queue botとgithub-actions botによるコミットを除外
+    # ただし手動実行は許可
+    if: |
+      github.actor != 'github-merge-queue[bot]' &&
+      (github.event.head_commit.author.name != 'github-actions[bot]' || github.event_name == 'workflow_dispatch')
 
     steps:
       - name: Checkout repository
@@ -168,6 +171,8 @@ jobs:
           release: バージョン${{ steps.release.outputs.new_version }}をリリース
 
           全パッケージのバージョンを${{ steps.current_version.outputs.version }}から${{ steps.release.outputs.new_version }}に更新
+
+          [skip ci]
           EOF
           )"
 
