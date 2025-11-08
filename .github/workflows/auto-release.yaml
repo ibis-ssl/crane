@@ -30,13 +30,16 @@ jobs:
     name: Version Bump and Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Merge queueによるマージは除外（バージョンバンプは実際のマージ後のみ実行）
+    if: github.actor != 'github-merge-queue[bot]'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Protected branchへのpushにはPATが必要
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v6
