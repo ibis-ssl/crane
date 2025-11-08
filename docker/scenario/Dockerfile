@@ -26,6 +26,7 @@ COPY . crane
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     rosdep install -riy --from-paths crane
 
 RUN ccache -sv
