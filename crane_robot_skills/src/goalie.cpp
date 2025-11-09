@@ -272,7 +272,6 @@ void Goalie::inplay(bool enable_emit)
                                       ->pose.pos);
 
             // ボールが敵ロボットに最も近い点に到達するまでの時間
-            double ball_to_enemy_dist = bg::distance(ball.pos, result.closest_point);
             auto estimated_ball_reach_time =
               ball.getTimeToReachClosestPointFrom(result.closest_point);
             if (not estimated_ball_reach_time) {
@@ -316,8 +315,6 @@ void Goalie::inplay(bool enable_emit)
                 if (not intersect_to_penalty_area || not ratio) {
                   return std::make_pair(goal_center, BLOCK_DIST);
                 }
-                auto segment_goal_to_penalty_area =
-                  Segment(intersect_to_goal_line.front(), *intersect_to_penalty_area);
                 // ペナルティエリアライン上にボールがあるときにペナルティエリア上まで前進すると
                 // シュートをずらして打たれて決められてしまう?
                 double dist =

@@ -16,8 +16,6 @@ Status Teleop::update()
     return Status::RUNNING;
   }
 
-  const int BUTTON_POWER_ENABLE = 9;
-
   const int AXIS_VEL_SURGE = 1;
   const int AXIS_VEL_SWAY = 0;
   const int AXIS_VEL_ANGULAR_R = 2;
@@ -37,7 +35,6 @@ Status Teleop::update()
 
   const double MAX_VEL_SURGE = 1.0;
   const double MAX_VEL_SWAY = 1.0;
-  const double MAX_VEL_ANGULAR = M_PI * 0.1;
 
   static bool is_kick_mode_straight = true;
   static bool is_kick_enable = false;

@@ -147,7 +147,8 @@ Point Receive::getInterceptionPoint() const
       // map to [0,1]
       double t = (v + 0.5) / 1.0;
       // simple red->yellow->green gradient
-      int r, g, b = 0;
+      int r = 0;
+      int g = 0;
       if (t < 0.5) {
         // red (255,0,0) to yellow (255,255,0)
         double k = t / 0.5;

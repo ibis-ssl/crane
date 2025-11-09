@@ -131,8 +131,6 @@ void SingleBallPlacement::initialize()
     command->setTargetPosition(world_model()->ball().pos);
     command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH", 0.5);
 
-    const auto & ball_pos = world_model()->ball().pos;
-    const Vector2 field = world_model()->fieldSize() * 0.5;
     // 引っ張る
     command->dribble(0.5);
 
@@ -159,8 +157,6 @@ void SingleBallPlacement::initialize()
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-      const auto & ball_pos = world_model()->ball().pos;
-      const Vector2 field = world_model()->fieldSize() * 0.5;
       // 500ms以上ボールに触れたらバック
       return robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
     });

@@ -45,12 +45,13 @@ struct TeamInfo
   [[nodiscard]] auto getAvailableRobotsView(uint8_t my_id = 255, bool except_goalie = false) const
     -> decltype(auto)
   {
-    return robots | ranges::views::filter([&](const auto & robot) {
+    const uint8_t excluded_id = my_id;
+    const uint8_t goalie = goalie_id;
+    return robots | ranges::views::filter([excluded_id, except_goalie, goalie](const auto & robot) {
              if (except_goalie) {
-               return robot->available && robot->id != my_id && robot->id != goalie_id;
-             } else {
-               return robot->available && robot->id != my_id;
+               return robot->available && robot->id != excluded_id && robot->id != goalie;
              }
+             return robot->available && robot->id != excluded_id;
            });
   }
 

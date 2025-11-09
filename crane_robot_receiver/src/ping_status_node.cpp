@@ -12,6 +12,7 @@
 #include <boost/thread.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
+#include <cstdio>
 #include <cstdlib>
 #include <format>
 #include <memory>
@@ -46,7 +47,12 @@ private:
       std::string result;
 
       // Execute the ping command
-      std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+      auto pipe_deleter = [](FILE * pipe_handle) {
+        if (pipe_handle != nullptr) {
+          (void)pclose(pipe_handle);
+        }
+      };
+      std::unique_ptr<FILE, decltype(pipe_deleter)> pipe(popen(command.c_str(), "r"), pipe_deleter);
       if (!pipe) {
         RCLCPP_ERROR(this->get_logger(), "Failed to run ping command");
         continue;

@@ -122,7 +122,7 @@ void GrSim::set_robot_replacement(
   robot_replacement->set_id(msg_robot_replacement.id);
   robot_replacement->set_yellowteam(msg_robot_replacement.yellowteam);
   if (msg_robot_replacement.turnon.size() > 0) {
-    robot_replacement->set_turnon(msg_robot_replacement.turnon[0]);
+    robot_replacement->set_turnon(msg_robot_replacement.turnon[0] != 0);
   }
 }
 

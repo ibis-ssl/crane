@@ -112,7 +112,7 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
       }
     },
     // キャンセルのコールバック
-    [&](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle)
+    [&](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> &)
       -> rclcpp_action::CancelResponse {
       std::cout << "Canceling goal: " << std::endl;
       skill_execution_goal_handle.reset();
