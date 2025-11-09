@@ -60,10 +60,7 @@ struct HalfPlane
   Vector2 point;
 
   HalfPlane() = default;
-  HalfPlane(const Vector2 & n, const Vector2 & p) noexcept
-  : normal(n.normalized()), point(p)
-  {
-  }
+  HalfPlane(const Vector2 & n, const Vector2 & p) noexcept : normal(n.normalized()), point(p) {}
 
   auto signedDistance(const Vector2 & test_point) const noexcept -> double
   {
@@ -88,10 +85,7 @@ struct Line
   Vector2 direction;
 
   Line() = default;
-  Line(const Vector2 & p, const Vector2 & d) noexcept
-  : point(p), direction(d.normalized())
-  {
-  }
+  Line(const Vector2 & p, const Vector2 & d) noexcept : point(p), direction(d.normalized()) {}
 
   static auto fromTwoPoints(const Vector2 & p1, const Vector2 & p2) noexcept -> Line
   {

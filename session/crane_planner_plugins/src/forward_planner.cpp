@@ -49,8 +49,7 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
 }
 
 auto ForwardPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots,
-  [[maybe_unused]] PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext &)
   -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;

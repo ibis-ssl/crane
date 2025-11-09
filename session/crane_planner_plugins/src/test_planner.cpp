@@ -76,8 +76,7 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, 
 auto TestPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  [[maybe_unused]] PlannerContext & context)
-  -> std::vector<uint8_t>
+  [[maybe_unused]] PlannerContext & context) -> std::vector<uint8_t>
 {
   if (ranges::find(selectable_robots, target_robot_id) != selectable_robots.end()) {
     command =

@@ -47,8 +47,8 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
     this, get_clock(), publish_interval_ms_, std::bind(&Vision::on_timer, this));
 
   RCLCPP_INFO(
-    get_logger(), "Vision component initialized - listening on %s:%d",
-    multicast_address.c_str(), multicast_port);
+    get_logger(), "Vision component initialized - listening on %s:%d", multicast_address.c_str(),
+    multicast_port);
 }
 
 void Vision::on_timer()

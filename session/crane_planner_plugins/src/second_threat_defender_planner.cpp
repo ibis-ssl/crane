@@ -11,8 +11,7 @@
 namespace crane
 {
 auto SecondThreatDefenderPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots,
-  [[maybe_unused]] PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext &)
   -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (skill) {

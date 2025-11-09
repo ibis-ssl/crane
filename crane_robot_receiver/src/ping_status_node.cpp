@@ -10,9 +10,9 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <cstdio>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
+#include <cstdio>
 #include <cstdlib>
 #include <format>
 #include <memory>
