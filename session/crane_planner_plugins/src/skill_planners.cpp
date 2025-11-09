@@ -6,6 +6,7 @@
 
 #include <crane_geometry/ddps.hpp>
 #include <crane_planner_plugins/skill_planner.hpp>
+#include <limits>
 
 namespace crane
 {
@@ -96,8 +97,8 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
                               not world_model->point_checker.isPenaltyArea(p);
                      }) |
                      ranges::to<std::vector>();
-  double best_score = 0.0;
-  Point best_position;
+  double best_score = -std::numeric_limits<double>::infinity();
+  Point best_position = Point::Zero();
   for (const auto & dpps_point : dpps_points) {
     double score =
       skills::SubAttacker::getPointScore(dpps_point, world_model->ball().pos, world_model);

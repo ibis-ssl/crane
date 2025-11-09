@@ -14,5 +14,5 @@ uint8 ROLLING = 1
 uint8 FLYING = 2
 uint8 state
 
-# 物理モデル設定（BallPhysicsModel対応）
+# 物理モデル設定 (BallPhysicsModel対応)
 BallPhysicsConfig physics_config
