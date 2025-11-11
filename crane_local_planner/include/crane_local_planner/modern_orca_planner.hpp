@@ -49,7 +49,6 @@ private:
   double ORCA_TIME_HORIZON = 2.0;
   double ORCA_RADIUS = 0.05;
   double ORCA_MAX_SPEED = 4.0;
-  double ORCA_TRAPEZOIDAL_FRAME_RATE = 60.0;
 
   // デバッグ可視化パラメータ
   bool debug_visualize_constraints_ = false;

@@ -38,8 +38,6 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   ORCA_RADIUS = node.get_parameter("orca_radius").as_double();
   node.declare_parameter("orca_max_speed", ORCA_MAX_SPEED);
   ORCA_MAX_SPEED = node.get_parameter("orca_max_speed").as_double();
-  node.declare_parameter("orca_trapezoidal_frame_rate", ORCA_TRAPEZOIDAL_FRAME_RATE);
-  ORCA_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("orca_trapezoidal_frame_rate").as_double();
 
   // Initialize SSL constraint manager
   ssl_constraint_manager_ = std::make_unique<modern_orca::SSLConstraintManagerForCircularAgent>();

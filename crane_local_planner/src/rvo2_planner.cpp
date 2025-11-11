@@ -31,8 +31,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   RVO_RADIUS = node.get_parameter("rvo_radius").as_double();
   node.declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
   RVO_MAX_SPEED = node.get_parameter("rvo_max_speed").as_double();
-  node.declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
-  RVO_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("rvo_trapezoidal_frame_rate").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
