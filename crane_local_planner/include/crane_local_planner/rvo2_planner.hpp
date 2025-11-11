@@ -56,6 +56,7 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
+  double STOP_STATE_MAX_VELOCITY = 1.0;
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 

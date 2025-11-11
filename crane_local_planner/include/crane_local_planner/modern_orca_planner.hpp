@@ -43,6 +43,7 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
+  double STOP_STATE_MAX_VELOCITY = 1.0;
   double ORCA_TIME_STEP = 0.1;
   double ORCA_NEIGHBOR_DIST = 15.0;
   int ORCA_MAX_NEIGHBORS = 10;

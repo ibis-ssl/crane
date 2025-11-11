@@ -38,6 +38,9 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
 
+  node.declare_parameter("stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
+  STOP_STATE_MAX_VELOCITY = node.get_parameter("stop_state_max_velocity").as_double();
+
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -58,9 +61,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   if (
     world_model->getMsg().play_situation.command_raw.value ==
     robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
-    // 1.5m/sだとたまに超えるので1.0m/sにしておく
     for (int i = 0; i < 40; i++) {
-      rvo_sim->setAgentMaxSpeed(i, 1.0f);
+      rvo_sim->setAgentMaxSpeed(i, STOP_STATE_MAX_VELOCITY);
     }
   } else {
     for (int i = 0; i < 40; i++) {
@@ -168,9 +170,10 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         if (
           world_model->getMsg().play_situation.command_raw.value ==
           robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
-          // 1.5m/sだとたまに超えるので1.0m/sにしておく
           command.local_planner_config.max_velocity_factors.emplace_back(
-            crane_msgs::msg::NamedFloat().set__name("RVO2Planner STOP制限").set__value(1.0));
+            crane_msgs::msg::NamedFloat()
+              .set__name("RVO2Planner STOP制限")
+              .set__value(STOP_STATE_MAX_VELOCITY));
         }
 
         double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
