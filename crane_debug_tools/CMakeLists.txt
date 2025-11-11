@@ -41,12 +41,6 @@ else()
   target_include_directories(crane_websocket_server PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-# Install launch files
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
-# Install web files
-install(DIRECTORY web DESTINATION share/${PROJECT_NAME})
-
 # Install scripts
 install(PROGRAMS scripts/crane_skill DESTINATION lib/${PROJECT_NAME})
 
@@ -55,4 +49,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE web launch)
