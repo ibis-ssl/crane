@@ -156,13 +156,6 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             .set__name("RVO2Planner::max_vel_by_decel")
             .set__value(max_vel_by_decel));
 
-        // v = v0 + at
-        double max_vel_by_acc = pre_vel + max_acc * RVO_TIME_STEP;
-        command.local_planner_config.max_velocity_factors.emplace_back(
-          crane_msgs::msg::NamedFloat()
-            .set__name("RVO2Planner::max_vel_by_acc")
-            .set__value(max_vel_by_acc));
-
         command.local_planner_config.max_velocity_factors.emplace_back(
           crane_msgs::msg::NamedFloat()
             .set__name("RVO2Planner::max_vel from parameter")
