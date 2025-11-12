@@ -25,6 +25,9 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
 
+  node.declare_parameter("stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
+  STOP_STATE_MAX_VELOCITY = node.get_parameter("stop_state_max_velocity").as_double();
+
   // Declare ORCA-specific parameters (equivalent to RVO2 parameters)
   node.declare_parameter("orca_time_step", ORCA_TIME_STEP);
   ORCA_TIME_STEP = node.get_parameter("orca_time_step").as_double();
@@ -38,8 +41,6 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   ORCA_RADIUS = node.get_parameter("orca_radius").as_double();
   node.declare_parameter("orca_max_speed", ORCA_MAX_SPEED);
   ORCA_MAX_SPEED = node.get_parameter("orca_max_speed").as_double();
-  node.declare_parameter("orca_trapezoidal_frame_rate", ORCA_TRAPEZOIDAL_FRAME_RATE);
-  ORCA_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("orca_trapezoidal_frame_rate").as_double();
 
   // Initialize SSL constraint manager
   ssl_constraint_manager_ = std::make_unique<modern_orca::SSLConstraintManagerForCircularAgent>();
@@ -409,7 +410,7 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
   if (
     world_model && world_model->getMsg().play_situation.referee_raw.command.value ==
                      robocup_ssl_msgs::msg::RefereeCommand::STOP) {
-    max_vel = std::min(max_vel, 1.0);
+    max_vel = std::min(max_vel, STOP_STATE_MAX_VELOCITY);
   }
 
   // Store final planned values (these will be set in the calling function)

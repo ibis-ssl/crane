@@ -59,15 +59,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
           vy_controllers[command.robot_id].update(
             command.position_target_mode.front().target_y - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
-        double max_velocity = command.local_planner_config.final_planned_max_velocity.value;
-        double current_velocity =
-          std::hypot(command.current_velocity.x, command.current_velocity.y);
-        max_velocity = std::min(
-          max_velocity, current_velocity +
-                          command.local_planner_config.final_planned_max_acceleration.value * 0.1);
-        if (vel.norm() > max_velocity) {
-          vel = vel.normalized() * max_velocity;
-        }
+
         Velocity vel_local;
         vel_local << vel.x() * cos(-command.current_pose.theta) -
                        vel.y() * sin(-command.current_pose.theta),

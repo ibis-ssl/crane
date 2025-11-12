@@ -54,10 +54,9 @@ private:
   float RVO_RADIUS = 0.09f;
   float RVO_MAX_SPEED = 10.0f;
 
-  float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
-
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
+  double STOP_STATE_MAX_VELOCITY = 1.0;
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 
