@@ -21,6 +21,16 @@ public:
   : visualizer(std::make_shared<VisualizerMessageBuilder>("local_planner/" + name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
+
+    // 経路計画用の減速度パラメータを読み込み
+    node.declare_parameter("planning_deceleration.high_speed", 2.5);
+    planning_deceleration_high_speed = node.get_parameter("planning_deceleration.high_speed").as_double();
+
+    node.declare_parameter("planning_deceleration.low_speed", 1.8);
+    planning_deceleration_low_speed = node.get_parameter("planning_deceleration.low_speed").as_double();
+
+    node.declare_parameter("planning_deceleration.velocity_threshold", 1.5);
+    planning_deceleration_velocity_threshold = node.get_parameter("planning_deceleration.velocity_threshold").as_double();
   }
   virtual auto calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, double theta_offset)
@@ -29,6 +39,11 @@ public:
   VisualizerMessageBuilder::SharedPtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;
+
+  // 経路計画用の減速度パラメータ
+  double planning_deceleration_high_speed;
+  double planning_deceleration_low_speed;
+  double planning_deceleration_velocity_threshold;
 
   static auto resolveMaxAccelerationFactors(
     crane_msgs::msg::RobotCommand & command, const float default_max_acceleration) -> double

@@ -35,9 +35,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
 
-  node.declare_parameter("max_acc", ACCELERATION);
-  ACCELERATION = node.get_parameter("max_acc").as_double();
-
   node.declare_parameter("stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
   STOP_STATE_MAX_VELOCITY = node.get_parameter("stop_state_max_velocity").as_double();
 
@@ -138,12 +135,20 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           }
         }();
 
-        // 加速度
+        // 減速計算用の減速度を選択（現在速度に応じて高速域・低速域を選択）
+        double deceleration_for_planning;
+        if (pre_vel >= planning_deceleration_velocity_threshold) {
+          deceleration_for_planning = planning_deceleration_high_speed;
+        } else {
+          deceleration_for_planning = planning_deceleration_low_speed;
+        }
+
+        // 加速度（互換性のため）
         command.local_planner_config.max_acceleration_factors.emplace_back(
           crane_msgs::msg::NamedFloat()
             .set__name("RVO2Planner::max_acc from parameter")
-            .set__value(ACCELERATION));
-        double max_acc = resolveMaxAccelerationFactors(command, ACCELERATION);
+            .set__value(deceleration_for_planning));
+        double max_acc = resolveMaxAccelerationFactors(command, deceleration_for_planning);
 
         // 速度
         // v^2 - v0^2 = 2ax
