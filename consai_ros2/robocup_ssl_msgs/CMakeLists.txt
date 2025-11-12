@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(robocup_ssl_msgs)
 
 # Default to C99
@@ -15,140 +15,106 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g -Wno-deprecated-declarations)
 endif()
 
-# find dependencies
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-#find_package(rosidl_default_generators REQUIRED)
-#find_package(std_msgs REQUIRED)
+# Find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(proto2ros REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(Protobuf REQUIRED)
 
-# Build protobuf C++ lib
-set(protobuf_files
-  proto/grSim_Commands.proto
-  proto/grSim_Packet.proto
-  proto/grSim_Replacement.proto
-  proto/grSim_Robotstatus.proto
-  proto/ssl_gc_common.proto
-  proto/ssl_gc_game_event.proto
-  proto/ssl_gc_geometry.proto
-  proto/ssl_gc_referee_message.proto
-  proto/ssl_vision_geometry.proto
-  proto/ssl_vision_detection.proto
-  proto/ssl_vision_detection_tracked.proto
-  proto/ssl_vision_wrapper.proto
-  proto/ssl_vision_wrapper_tracked.proto
-  proto/ssl_simulation_config.proto
-  proto/ssl_simulation_control.proto
-  proto/ssl_simulation_error.proto
-  proto/ssl_simulation_robot_control.proto
-  proto/ssl_simulation_robot_feedback.proto
-  proto/ssl_simulation_synchronous.proto
-)
-# Enable parallel protobuf generation
-set_property(GLOBAL PROPERTY JOB_POOLS parallel_proto=4)
-set_property(GLOBAL PROPERTY CMAKE_JOB_POOL_COMPILE parallel_proto)
+# List all proto files
+file(GLOB PROTO_FILES "proto/*.proto")
 
-protobuf_generate_cpp(PROTO_CPP PROTO_H
-  ${protobuf_files}
-)
-add_library(proto_cpp
-  SHARED ${PROTO_CPP} ${PROTO_H}
-)
-target_link_libraries(proto_cpp ${PROTOBUF_LIBRARIES})
+# Build protobuf C++ and Python libraries
+add_subdirectory(proto)
 
-# Install
+# Generate ROS messages and conversion code from proto files using proto2ros
+# Convert absolute paths to relative paths for PROTOS parameter
+set(PROTO_FILES_RELATIVE)
+foreach(proto_file ${PROTO_FILES})
+  file(RELATIVE_PATH proto_relative "${CMAKE_CURRENT_SOURCE_DIR}" "${proto_file}")
+  list(APPEND PROTO_FILES_RELATIVE ${proto_relative})
+endforeach()
+
+proto2ros_generate(
+  ${PROJECT_NAME}_messages_gen
+  PROTOS ${PROTO_FILES_RELATIVE}
+  IMPORT_DIRS proto
+  INTERFACES_OUT_VAR ros_messages
+  PYTHON_OUT_VAR py_sources
+  CPP_OUT_VAR cpp_sources
+  INCLUDE_OUT_VAR cpp_include_dir
+  APPEND_PYTHONPATH "${CMAKE_CURRENT_BINARY_DIR}/proto"
+  DEPENDS ${PROJECT_NAME}_proto_gen
+)
+
+# Generate ROS interface definitions
+rosidl_generate_interfaces(
+  ${PROJECT_NAME} ${ros_messages}
+  DEPENDENCIES builtin_interfaces std_msgs proto2ros
+)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_messages_gen)
+
+# Build conversion library
+add_library(${PROJECT_NAME}_conversions SHARED ${cpp_sources})
+set_target_properties(${PROJECT_NAME}_conversions PROPERTIES
+  CXX_STANDARD 20
+  CXX_STANDARD_REQUIRED ON
+)
+
+target_include_directories(${PROJECT_NAME}_conversions PUBLIC
+  "$<BUILD_INTERFACE:${cpp_include_dir}>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+)
+
+# Get ROS message typesupport target
+rosidl_get_typesupport_target(
+  ${PROJECT_NAME}_cpp_msgs
+  ${PROJECT_NAME}
+  "rosidl_typesupport_cpp"
+)
+
+target_link_libraries(${PROJECT_NAME}_conversions
+  ${${PROJECT_NAME}_cpp_msgs}
+  ${PROJECT_NAME}_proto
+  protobuf::libprotobuf
+)
+
+ament_target_dependencies(${PROJECT_NAME}_conversions
+  builtin_interfaces
+  std_msgs
+  proto2ros
+)
+
+# Install conversion library
 install(
-        FILES ${PROTO_H}
-        DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
-
-install(
-  TARGETS proto_cpp
+  TARGETS ${PROJECT_NAME}_conversions
+  EXPORT ${PROJECT_NAME}_conversions
   ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
-
-# Export
-ament_export_libraries(proto_cpp)
-ament_export_dependencies(Protobuf)
-
-# Build ROS msgs
-set(msg_files
-  "msg/detection/DetectionBall.msg"
-  "msg/detection/DetectionFrame.msg"
-  "msg/detection/DetectionRobot.msg"
-  "msg/geometry/BallModelChipFixedLoss.msg"
-  "msg/geometry/BallModelStraightTwoPhase.msg"
-  "msg/geometry/FieldCircularArc.msg"
-  "msg/geometry/FieldLineSegment.msg"
-  "msg/geometry/GeometryCameraCalibration.msg"
-  "msg/geometry/GeometryData.msg"
-  "msg/geometry/GeometryFieldSize.msg"
-  "msg/geometry/GeometryModels.msg"
-  "msg/geometry/Vector2f.msg"
-  "msg/referee/Point.msg"
-  "msg/referee/Referee.msg"
-  "msg/referee/TeamInfo.msg"
-  "msg/grsim/BallReplacement.msg"
-  "msg/grsim/Commands.msg"
-  "msg/grsim/Replacement.msg"
-  "msg/grsim/RobotCommand.msg"
-  "msg/grsim/RobotReplacement.msg"
-  "msg/grsim/RobotStatus.msg"
-  "msg/grsim/RobotsStatus.msg"
-  "msg/detection_tracked/KickedBall.msg"
-  "msg/detection_tracked/RobotId.msg"
-  "msg/detection_tracked/TrackedBall.msg"
-  "msg/detection_tracked/TrackedFrame.msg"
-  "msg/detection_tracked/TrackedRobot.msg"
-  "msg/detection_tracked/Vector2.msg"
-  "msg/detection_tracked/Vector3.msg"
-#  "msg/game_events/BallLeftField.msg"
-#  "msg/game_events/AimlessKick.msg"
-#  "msg/game_events/Goal.msg"
-#  "msg/game_events/IndirectGoal.msg"
-#  "msg/game_events/ChippedGoal.msg"
-#  "msg/game_events/BotTooFastInStop.msg"
-#  "msg/game_events/DefenderTooCloseToKickPoint.msg"
-#  "msg/game_events/BotCrashDrawn.msg"
-#  "msg/game_events/BotCrashUnique.msg"
-#  "msg/game_events/BotPushedBot.msg"
-#  "msg/game_events/BotTippedOver.msg"
-#  "msg/game_events/DefenderInDefenseArea.msg"
-#  "msg/game_events/DefenderInDefenseAreaPartially.msg"
-#  "msg/game_events/AttackerTouchedBallInDefenseArea.msg"
-#  "msg/game_events/BotKickedBallTooFast.msg"
-#  "msg/game_events/BotDribbledBallTooFar.msg"
-#  "msg/game_events/AttackerTouchedOpponentInDefenseArea.msg"
-#  "msg/game_events/AttackerDoubleTouchedBall.msg"
-#  "msg/game_events/AttackerTooCloseToDefenseArea.msg"
-#  "msg/game_events/BotHeldBallDeliberately.msg"
-#  "msg/game_events/BotInterferedPlacement.msg"
-#  "msg/game_events/MultipleCards.msg"
-#  "msg/game_events/MultipleFouls.msg"
-#  "msg/game_events/MultiplePlacementFailures.msg"
-#  "msg/game_events/KickTimeout.msg"
-#  "msg/game_events/NoProgressInGame.msg"
-#  "msg/game_events/PlacementFailed.msg"
-#  "msg/game_events/UnsportingBehaviorMinor.msg"
-#  "msg/game_events/UnsportingBehaviorMajor.msg"
-#  "msg/game_events/KeeperHeldBall.msg"
-#  "msg/game_events/PlacementSucceeded.msg"
-#  "msg/game_events/Prepared.msg"
-#  "msg/game_events/BotSubstitution.msg"
-#  "msg/game_events/ChallengeFlag.msg"
-#  "msg/game_events/EmergencyStop.msg"
-#  "msg/game_events/TooManyRobots.msg"
-#  "msg/game_events/BoundaryCrossing.msg"
-#  "msg/game_events/PenaltyKickFailed.msg"
-#  "msg/game_events/GameEvent.msg"
-#  "msg/game_events/Type.msg"
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-# Enable parallel ROS message generation
-set_property(GLOBAL PROPERTY CMAKE_JOB_POOL_LINK parallel_proto)
+# Install generated conversion headers
+install(
+  DIRECTORY ${cpp_include_dir}/
+  DESTINATION include/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.hpp"
+)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
-  DEPENDENCIES std_msgs
+# Export include directories
+ament_export_include_directories(include)
+
+# Export dependencies
+ament_export_targets(${PROJECT_NAME}_proto HAS_LIBRARY_TARGET)
+ament_export_targets(${PROJECT_NAME}_conversions HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  rosidl_default_runtime
+  builtin_interfaces
+  std_msgs
+  proto2ros
+  Protobuf
 )
 
 if(BUILD_TESTING)
@@ -156,6 +122,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-#ament_export_dependencies(rosidl_default_runtime)
-
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+ament_package()

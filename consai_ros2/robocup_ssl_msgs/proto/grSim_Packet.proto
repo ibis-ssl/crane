@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+package robocup_ssl;
 import "grSim_Commands.proto";
 import "grSim_Replacement.proto";
 message grSim_Packet {

@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+package robocup_ssl;
 message Robots_Status{
   repeated Robot_Status robots_status = 1;
 }
