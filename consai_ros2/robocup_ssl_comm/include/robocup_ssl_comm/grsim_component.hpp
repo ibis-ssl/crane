@@ -22,17 +22,18 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_comm/udp_sender.hpp>
-#include <robocup_ssl_msgs/msg/commands.hpp>
-#include <robocup_ssl_msgs/msg/replacement.hpp>
-#include <robocup_ssl_msgs/msg/robot_command.hpp>
-#include <robocup_ssl_msgs/msg/robot_replacement.hpp>
+#include <robocup_ssl_msgs/msg/gr_sim_commands.hpp>
+#include <robocup_ssl_msgs/msg/gr_sim_replacement.hpp>
+#include <robocup_ssl_msgs/msg/gr_sim_robot_command.hpp>
+#include <robocup_ssl_msgs/msg/gr_sim_robot_replacement.hpp>
+#include <robocup_ssl_msgs/robocup_ssl_msgs/conversions.hpp>
 
 namespace robocup_ssl_comm
 {
-using Commands = robocup_ssl_msgs::msg::Commands;
-using RobotCommand = robocup_ssl_msgs::msg::RobotCommand;
-using Replacement = robocup_ssl_msgs::msg::Replacement;
-using RobotReplacement = robocup_ssl_msgs::msg::RobotReplacement;
+using Commands = robocup_ssl_msgs::msg::GrSimCommands;
+using RobotCommand = robocup_ssl_msgs::msg::GrSimRobotCommand;
+using Replacement = robocup_ssl_msgs::msg::GrSimReplacement;
+using RobotReplacement = robocup_ssl_msgs::msg::GrSimRobotReplacement;
 
 class GrSim : public rclcpp::Node
 {
@@ -50,10 +51,12 @@ private:
 
   void callback_replacement(const Replacement::SharedPtr msg);
 
-  void set_command(grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command);
+  void set_command(
+    robocup_ssl::grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command);
 
   void set_robot_replacement(
-    grSim_RobotReplacement * robot_replacement, const RobotReplacement & msg_robot_replacement);
+    robocup_ssl::grSim_RobotReplacement * robot_replacement,
+    const RobotReplacement & msg_robot_replacement);
 
   std::unique_ptr<udp_sender::UDPSender> sender;
 

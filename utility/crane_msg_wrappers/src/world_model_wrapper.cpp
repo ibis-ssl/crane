@@ -218,9 +218,10 @@ auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
     latest_msg.play_situation.command.value == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
     latest_msg.play_situation.command.value ==
       crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
-    const auto designated_position = latest_msg.play_situation.referee_raw.designated_position;
-    if (not designated_position.empty()) {
-      return Point(designated_position.front().x / 1000., designated_position.front().y / 1000.);
+    const auto & referee = latest_msg.play_situation.referee_raw;
+    if (referee.has_field & referee.DESIGNATED_POSITION_FIELD_SET) {
+      const auto & designated_position = referee.designated_position;
+      return Point(designated_position.x / 1000., designated_position.y / 1000.);
     }
   }
   return std::nullopt;

@@ -58,8 +58,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
   if (
-    world_model->getMsg().play_situation.command_raw.value ==
-    robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+    world_model->getMsg().play_situation.referee_raw.command.value ==
+    robocup_ssl_msgs::msg::RefereeCommand::STOP) {
     // 1.5m/sだとたまに超えるので1.0m/sにしておく
     for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, 1.0f);
@@ -168,8 +168,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             .set__name("RVO2Planner::max_vel from parameter")
             .set__value(MAX_VEL));
         if (
-          world_model->getMsg().play_situation.command_raw.value ==
-          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+          world_model->getMsg().play_situation.referee_raw.command.value ==
+          robocup_ssl_msgs::msg::RefereeCommand::STOP) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           command.local_planner_config.max_velocity_factors.emplace_back(
             crane_msgs::msg::NamedFloat().set__name("RVO2Planner STOP制限").set__value(1.0));
@@ -303,8 +303,8 @@ auto RVO2Planner::calculateRobotCommand(
 {
   crane_msgs::msg::RobotCommands commands = msg;
   if (
-    world_model->getMsg().play_situation.command_raw.value !=
-    robocup_ssl_msgs::msg::Referee::COMMAND_HALT) {
+    world_model->getMsg().play_situation.referee_raw.command.value !=
+    robocup_ssl_msgs::msg::RefereeCommand::HALT) {
     overrideTargetPosition(commands);
   }
   reflectWorldToRVOSim(commands);
@@ -363,10 +363,10 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
 
         // 離れないといけないのは敵ペナルティエリアのみ
         if (not is_near_our_penalty_area) {
-          switch (world_model->getMsg().play_situation.command_raw.value) {
-            case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
-            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+          switch (world_model->getMsg().play_situation.referee_raw.command.value) {
+            case robocup_ssl_msgs::msg::RefereeCommand::STOP:
+            case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_BLUE:
+            case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_YELLOW:
               PENALTY_AREA_OFFSET = 0.5;
               SURROUNDING_OFFSET = 0.6;
               break;

@@ -16,6 +16,9 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
+
+include_directories(${robocup_ssl_msgs_INCLUDE_DIRS})
+
 option(CRANE_WMP_BUILD_CALIBRATION "Build optional calibration utilities" OFF)
 
 set(WORLD_MODEL_PUBLISHER_SRCS
@@ -40,7 +43,10 @@ set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
 set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 4)
 
 target_link_libraries(${PROJECT_NAME}_component
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES} yaml-cpp
+        ${robocup_ssl_msgs_LIBRARIES}
+        robocup_ssl_msgs::robocup_ssl_msgs_proto
+        ${Boost_LIBRARIES}
+        yaml-cpp
 )
 
 target_precompile_headers(${PROJECT_NAME}_component

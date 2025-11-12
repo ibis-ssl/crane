@@ -29,7 +29,14 @@ include_directories(
 ament_auto_add_library(game_controller_component SHARED
   src/game_controller_component.cpp
 )
-target_link_libraries(game_controller_component ${robocup_ssl_msgs_LIBRARIES})
+ament_target_dependencies(game_controller_component
+  robocup_ssl_msgs
+)
+target_link_libraries(game_controller_component
+  ${robocup_ssl_msgs_LIBRARIES}
+  robocup_ssl_msgs::robocup_ssl_msgs_conversions
+  robocup_ssl_msgs::robocup_ssl_msgs_proto
+)
 
 ament_auto_add_executable(game_controller_node
   src/game_controller_node.cpp

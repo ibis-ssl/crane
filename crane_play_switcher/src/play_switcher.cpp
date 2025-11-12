@@ -50,17 +50,21 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   start_command_map[PlaySituation::THEIR_##PRE_CMD] = PlaySituation::THEIR_##CMD; \
   start_command_map[PlaySituation::OUR_##PRE_CMD] = PlaySituation::OUR_##CMD
 
-#define REDIRECT_MAPPING(RAW_CMD, CMD)                                   \
-  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::CMD; \
-  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::CMD;
+#define REDIRECT_MAPPING(RAW_CMD, CMD)                                                       \
+  command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_YELLOW] = PlaySituation::CMD; \
+  command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_BLUE] = PlaySituation::CMD;
 
-#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                         \
-  if (is_yellow) {                                                                   \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::OUR_##CMD};   \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::THEIR_##CMD};   \
-  } else {                                                                           \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::THEIR_##CMD}; \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::OUR_##CMD};     \
+#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                 \
+  if (is_yellow) {                                                           \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_YELLOW] = { \
+      PlaySituation::OUR_##CMD};                                             \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_BLUE] = {   \
+      PlaySituation::THEIR_##CMD};                                           \
+  } else {                                                                   \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_YELLOW] = { \
+      PlaySituation::THEIR_##CMD};                                           \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::RAW_CMD##_BLUE] = {   \
+      PlaySituation::OUR_##CMD};                                             \
   }
 
 auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void
@@ -78,17 +82,17 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     std::string reason;
   } inplay_command_info;
 
-  inplay_command_info.raw_command = msg.command;
+  inplay_command_info.raw_command = msg.command.value;
 
   std::optional<int> next_play_situation = std::nullopt;
 
   // TODO(HansRobo): robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
-  play_situation_msg.stage = getStageNamedInt(msg.stage);
-  play_situation_msg.command_raw = getRefereeCommandNamedInt(msg.command);
+  play_situation_msg.stage = getStageNamedInt(msg.stage.value);
+  play_situation_msg.command_raw = getRefereeCommandNamedInt(msg.command.value);
   play_situation_msg.next_command_raw.clear();
-  if (not msg.next_command.empty()) {
+  if (msg.has_field & msg.NEXT_COMMAND_FIELD_SET) {
     play_situation_msg.next_command_raw.push_back(
-      getRefereeCommandNamedInt(msg.next_command.front()));
+      getRefereeCommandNamedInt(msg.next_command.value));
   }
   if (bool is_yellow = msg.yellow.name == team_name; is_yellow) {
     play_situation_msg.our_team_info = msg.yellow;
@@ -100,14 +104,14 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   play_situation_msg.referee_raw = msg;
 
   if (
-    msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_NORMAL_HALF_TIME or
-    msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_EXTRA_HALF_TIME) {
+    msg.stage.value == robocup_ssl_msgs::msg::RefereeStage::NORMAL_HALF_TIME or
+    msg.stage.value == robocup_ssl_msgs::msg::RefereeStage::EXTRA_HALF_TIME) {
     next_play_situation = PlaySituation::HALF_TIME;
-  } else if (msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_POST_GAME) {
+  } else if (msg.stage.value == robocup_ssl_msgs::msg::RefereeStage::POST_GAME) {
     next_play_situation = PlaySituation::POST_GAME;
   } else {
     // 更新があれば判定
-    if (latest_raw_referee.command != msg.command) {
+    if (latest_raw_referee.command.value != msg.command.value) {
       //-----------------------------------//
       // NORMAL_START
       //-----------------------------------//
@@ -117,30 +121,34 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
       NORMAL_START_MAPPING(PENALTY_PREPARATION, PENALTY_START);
       //  start_command_map[PlaySituation::THEIR_KICKOFF_START] = {}
 
-      if (msg.command == Referee::COMMAND_NORMAL_START) {
+      if (msg.command.value == robocup_ssl_msgs::msg::RefereeCommand::NORMAL_START) {
         next_play_situation = start_command_map[play_situation_msg.command.value];
         inplay_command_info.reason =
           "RAWコマンド変化＆NORMAL_START：KICKOFF/"
           "PENALTYはPREPARATIONからSTARTに移行";
-      } else if (msg.command == Referee::COMMAND_FORCE_START) {
+      } else if (msg.command.value == robocup_ssl_msgs::msg::RefereeCommand::FORCE_START) {
         //-----------------------------------//
         // FORCE_START
         //-----------------------------------//
         // FORCE_STARTはインプレイをONにするだけ
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
-      } else if (msg.command == Referee::COMMAND_STOP) {
+      } else if (msg.command.value == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
         //-----------------------------------//
         // STOP
         //-----------------------------------//
         static std::map<int, int> stop_command_map = [&]() {
-#define NEXT_CMD_MAPPING(is_yellow, NEXT_RAW_CMD, CMD)                                             \
-  if (is_yellow) {                                                                                 \
-    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_OUR_##CMD};   \
-    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_BLUE] = {PlaySituation::STOP_PRE_THEIR_##CMD};   \
-  } else {                                                                                         \
-    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_THEIR_##CMD}; \
-    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_BLUE] = {PlaySituation::STOP_PRE_OUR_##CMD};     \
+#define NEXT_CMD_MAPPING(is_yellow, NEXT_RAW_CMD, CMD)                            \
+  if (is_yellow) {                                                                \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::NEXT_RAW_CMD##_YELLOW] = { \
+      PlaySituation::STOP_PRE_OUR_##CMD};                                         \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::NEXT_RAW_CMD##_BLUE] = {   \
+      PlaySituation::STOP_PRE_THEIR_##CMD};                                       \
+  } else {                                                                        \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::NEXT_RAW_CMD##_YELLOW] = { \
+      PlaySituation::STOP_PRE_THEIR_##CMD};                                       \
+    command_map[robocup_ssl_msgs::msg::RefereeCommand::NEXT_RAW_CMD##_BLUE] = {   \
+      PlaySituation::STOP_PRE_OUR_##CMD};                                         \
   }
           std::map<int, int> command_map;
           bool is_yellow = msg.yellow.name == team_name;
@@ -150,15 +158,16 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
 
 #undef NEXT_CMD_MAPPING
 
-          command_map[Referee::COMMAND_FORCE_START] = {PlaySituation::STOP_PRE_FORCE_START};
+          command_map[robocup_ssl_msgs::msg::RefereeCommand::FORCE_START] = {
+            PlaySituation::STOP_PRE_FORCE_START};
 
           return command_map;
         }();
 
         if (
-          not msg.next_command.empty() &&
-          stop_command_map.find(msg.next_command.front()) != stop_command_map.end()) {
-          next_play_situation = stop_command_map.find(msg.next_command.front())->second;
+          (msg.has_field & msg.NEXT_COMMAND_FIELD_SET) &&
+          stop_command_map.find(msg.next_command.value) != stop_command_map.end()) {
+          next_play_situation = stop_command_map.find(msg.next_command.value)->second;
           inplay_command_info.reason = "RAWコマンド変化 & STOP：STOPの場合分け";
         } else {
           next_play_situation = PlaySituation::STOP;
@@ -171,8 +180,8 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
         std::map<int, int> command_map;
         bool is_yellow = msg.yellow.name == team_name;
 
-        command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
-        command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
+        command_map[robocup_ssl_msgs::msg::RefereeCommand::HALT] = PlaySituation::HALT;
+        command_map[robocup_ssl_msgs::msg::RefereeCommand::STOP] = PlaySituation::STOP;
 
         //      REDIRECT_MAPPING(TIMEOUT, HALT)
         REDIRECT_MAPPING(GOAL, HALT)
@@ -183,7 +192,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
         CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
         CMD_MAPPING(is_yellow, TIMEOUT, TIMEOUT)
 
-        next_play_situation = command_map[msg.command];
+        next_play_situation = command_map[msg.command.value];
         inplay_command_info.reason = "RAWコマンド変化：コマンド転送";
       }
     } else {
@@ -250,8 +259,8 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
 
     RCLCPP_DEBUG_STREAM(
       get_logger(), "---\n"
-                      << "RAW_CMD      : " << msg.command << " ("
-                      << getRefereeCommandText(msg.command) << ")\n"
+                      << "RAW_CMD      : " << msg.command.value << " ("
+                      << getRefereeCommandText(msg.command.value) << ")\n"
                       << "INPLAY_CMD   : " << play_situation_msg.command.value << " ("
                       << play_situation_msg.command.name << ")\n"
                       << "REASON       : " << inplay_command_info.reason << "\n"
@@ -260,9 +269,9 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     last_command_changed_state.stamp = now();
     last_command_changed_state.ball_position = world_model->ball().pos;
 
-    if (msg.designated_position.size() > 0) {
-      play_situation_msg.placement_position.x = msg.designated_position[0].x;
-      play_situation_msg.placement_position.y = msg.designated_position[0].y;
+    if (msg.has_field & msg.DESIGNATED_POSITION_FIELD_SET) {
+      play_situation_msg.placement_position.x = msg.designated_position.x;
+      play_situation_msg.placement_position.y = msg.designated_position.y;
     }
 
     // パブリッシュはコマンド更新時のみ

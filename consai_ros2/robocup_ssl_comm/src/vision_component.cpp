@@ -41,7 +41,7 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   receiver = std::make_unique<multicast::MulticastReceiver>(multicast_address, multicast_port);
 
   pub_detection_frame =
-    create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame", 10);
+    create_publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>("detection_frame", 10);
 
   timer = rclcpp::create_timer(
     this, get_clock(), publish_interval_ms_, std::bind(&Vision::on_timer, this));
@@ -59,7 +59,7 @@ void Vision::on_timer()
     const size_t size = receiver->receive(buf);
 
     if (size > 0) {
-      SSL_WrapperPacket wrapper_packet;
+      robocup_ssl::SSL_WrapperPacket wrapper_packet;
       wrapper_packet.ParseFromString(std::string(buf.begin(), buf.end()));
 
       if (wrapper_packet.has_detection()) {
@@ -84,16 +84,16 @@ void Vision::on_timer()
   if (
     merged_frame.camera_id != 0 || !merged_frame.balls.empty() ||
     !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {
-    auto merged_frame_msg = std::make_unique<robocup_ssl_msgs::msg::DetectionFrame>();
+    auto merged_frame_msg = std::make_unique<robocup_ssl_msgs::msg::SSLDetectionFrame>();
     *merged_frame_msg = std::move(merged_frame);
     pub_detection_frame->publish(std::move(merged_frame_msg));
   }
 }
 
-robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
-  const SSL_WrapperPacket & wrapper_packet)
+robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
+  const robocup_ssl::SSL_WrapperPacket & wrapper_packet)
 {
-  robocup_ssl_msgs::msg::DetectionFrame detection_frame_msg;
+  robocup_ssl_msgs::msg::SSLDetectionFrame detection_frame_msg;
   const auto & detection_frame = wrapper_packet.detection();
 
   detection_frame_msg.frame_number = detection_frame.frame_number();
@@ -103,7 +103,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
 
   // Parse balls
   for (const auto & ball : detection_frame.balls()) {
-    robocup_ssl_msgs::msg::DetectionBall ball_msg;
+    robocup_ssl_msgs::msg::SSLDetectionBall ball_msg;
     ball_msg.confidence = ball.confidence();
     if (ball.has_area()) {
       ball_msg.area = ball.area();
@@ -125,7 +125,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
 
   // Parse yellow robots
   for (const auto & robot : detection_frame.robots_yellow()) {
-    robocup_ssl_msgs::msg::DetectionRobot robot_msg;
+    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
     robot_msg.confidence = robot.confidence();
     if (robot.has_robot_id()) {
       robot_msg.robot_id = robot.robot_id();
@@ -152,7 +152,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
 
   // Parse blue robots
   for (const auto & robot : detection_frame.robots_blue()) {
-    robocup_ssl_msgs::msg::DetectionRobot robot_msg;
+    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
     robot_msg.confidence = robot.confidence();
     if (robot.has_robot_id()) {
       robot_msg.robot_id = robot.robot_id();
@@ -180,9 +180,9 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
   return detection_frame_msg;
 }
 
-robocup_ssl_msgs::msg::DetectionFrame Vision::merge_camera_frames()
+robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
 {
-  robocup_ssl_msgs::msg::DetectionFrame merged_frame;
+  robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
 
   // 統合フレームのメタデータを設定（最新のカメラデータから取得）
   uint32_t latest_camera_id = 0;
@@ -246,7 +246,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::merge_camera_frames()
 }
 
 void Vision::update_camera_frame(
-  uint32_t camera_id, const robocup_ssl_msgs::msg::DetectionFrame & frame)
+  uint32_t camera_id, const robocup_ssl_msgs::msg::SSLDetectionFrame & frame)
 {
   camera_frames_[camera_id] = frame;
   camera_timestamps_[camera_id] = std::chrono::steady_clock::now();

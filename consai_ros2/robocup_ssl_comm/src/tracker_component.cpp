@@ -43,7 +43,7 @@ void Tracker::on_timer()
     const size_t size = receiver->receive(buf);
 
     if (size > 0) {
-      TrackerWrapperPacket wrapper_packet;
+      robocup_ssl::TrackerWrapperPacket wrapper_packet;
       wrapper_packet.ParseFromString(std::string(buf.begin(), buf.end()));
 
       if (wrapper_packet.has_tracked_frame()) {
@@ -56,7 +56,7 @@ void Tracker::on_timer()
 }
 
 robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
-  const TrackerWrapperPacket & wrapper_packet)
+  const robocup_ssl::TrackerWrapperPacket & wrapper_packet)
 {
   robocup_ssl_msgs::msg::TrackedFrame tracked_frame_msg;
   const auto & tracked_frame = wrapper_packet.tracked_frame();
@@ -72,19 +72,20 @@ robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
     ball_msg.pos.x = ball.pos().x();
     ball_msg.pos.y = ball.pos().y();
     ball_msg.pos.z = ball.pos().z();
+    ball_msg.has_field |= ball_msg.POS_FIELD_SET;
 
     // Velocity (optional)
     if (ball.has_vel()) {
-      robocup_ssl_msgs::msg::Vector3 velocity;
-      velocity.x = ball.vel().x();
-      velocity.y = ball.vel().y();
-      velocity.z = ball.vel().z();
-      ball_msg.vel.push_back(velocity);
+      ball_msg.vel.x = ball.vel().x();
+      ball_msg.vel.y = ball.vel().y();
+      ball_msg.vel.z = ball.vel().z();
+      ball_msg.has_field |= ball_msg.VEL_FIELD_SET;
     }
 
     // Visibility (optional)
     if (ball.has_visibility()) {
-      ball_msg.visibility.push_back(ball.visibility());
+      ball_msg.visibility = ball.visibility();
+      ball_msg.has_field |= ball_msg.VISIBILITY_FIELD_SET;
     }
 
     tracked_frame_msg.balls.push_back(ball_msg);
@@ -96,29 +97,34 @@ robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
 
     // Robot ID (required)
     robot_msg.robot_id.id = robot.robot_id().id();
-    robot_msg.robot_id.team = robot.robot_id().team();
+    robot_msg.robot_id.team.value = static_cast<int32_t>(robot.robot_id().team());
+    robot_msg.robot_id.has_field |=
+      robot_msg.robot_id.ID_FIELD_SET | robot_msg.robot_id.TEAM_FIELD_SET;
+    robot_msg.has_field |= robot_msg.ROBOT_ID_FIELD_SET;
 
     // Position and orientation (required)
     robot_msg.pos.x = robot.pos().x();
     robot_msg.pos.y = robot.pos().y();
     robot_msg.orientation = robot.orientation();
+    robot_msg.has_field |= robot_msg.POS_FIELD_SET | robot_msg.ORIENTATION_FIELD_SET;
 
     // Velocity (optional)
     if (robot.has_vel()) {
-      robocup_ssl_msgs::msg::Vector2 velocity;
-      velocity.x = robot.vel().x();
-      velocity.y = robot.vel().y();
-      robot_msg.vel.push_back(velocity);
+      robot_msg.vel.x = robot.vel().x();
+      robot_msg.vel.y = robot.vel().y();
+      robot_msg.has_field |= robot_msg.VEL_FIELD_SET;
     }
 
     // Angular velocity (optional)
     if (robot.has_vel_angular()) {
-      robot_msg.vel_angular.push_back(robot.vel_angular());
+      robot_msg.vel_angular = robot.vel_angular();
+      robot_msg.has_field |= robot_msg.VEL_ANGULAR_FIELD_SET;
     }
 
     // Visibility (optional)
     if (robot.has_visibility()) {
-      robot_msg.visibility.push_back(robot.visibility());
+      robot_msg.visibility = robot.visibility();
+      robot_msg.has_field |= robot_msg.VISIBILITY_FIELD_SET;
     }
 
     tracked_frame_msg.robots.push_back(robot_msg);
@@ -132,43 +138,54 @@ robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
     // Position (required)
     kicked_ball_msg.pos.x = kicked_ball.pos().x();
     kicked_ball_msg.pos.y = kicked_ball.pos().y();
+    kicked_ball_msg.has_field |= kicked_ball_msg.POS_FIELD_SET;
 
     // Initial velocity (required)
     kicked_ball_msg.vel.x = kicked_ball.vel().x();
     kicked_ball_msg.vel.y = kicked_ball.vel().y();
     kicked_ball_msg.vel.z = kicked_ball.vel().z();
+    kicked_ball_msg.has_field |= kicked_ball_msg.VEL_FIELD_SET;
 
     // Start timestamp (required)
     kicked_ball_msg.start_timestamp = kicked_ball.start_timestamp();
+    kicked_ball_msg.has_field |= kicked_ball_msg.START_TIMESTAMP_FIELD_SET;
 
     // Stop timestamp (optional)
     if (kicked_ball.has_stop_timestamp()) {
-      kicked_ball_msg.stop_timestamp.push_back(kicked_ball.stop_timestamp());
+      kicked_ball_msg.stop_timestamp = kicked_ball.stop_timestamp();
+      kicked_ball_msg.has_field |= kicked_ball_msg.STOP_TIMESTAMP_FIELD_SET;
     }
 
     // Stop position (optional)
     if (kicked_ball.has_stop_pos()) {
-      robocup_ssl_msgs::msg::Vector2 stop_pos;
-      stop_pos.x = kicked_ball.stop_pos().x();
-      stop_pos.y = kicked_ball.stop_pos().y();
-      kicked_ball_msg.stop_pos.push_back(stop_pos);
+      kicked_ball_msg.stop_pos.x = kicked_ball.stop_pos().x();
+      kicked_ball_msg.stop_pos.y = kicked_ball.stop_pos().y();
+      kicked_ball_msg.has_field |= kicked_ball_msg.STOP_POS_FIELD_SET;
     }
 
     // Robot ID that kicked the ball (optional)
     if (kicked_ball.has_robot_id()) {
-      robocup_ssl_msgs::msg::RobotId robot_id;
-      robot_id.id = kicked_ball.robot_id().id();
-      robot_id.team = kicked_ball.robot_id().team();
-      kicked_ball_msg.robot_id.push_back(robot_id);
+      kicked_ball_msg.robot_id.id = kicked_ball.robot_id().id();
+      kicked_ball_msg.robot_id.team.value = static_cast<int32_t>(kicked_ball.robot_id().team());
+      kicked_ball_msg.robot_id.has_field |=
+        kicked_ball_msg.robot_id.ID_FIELD_SET | kicked_ball_msg.robot_id.TEAM_FIELD_SET;
+      kicked_ball_msg.has_field |= kicked_ball_msg.ROBOT_ID_FIELD_SET;
     }
 
-    tracked_frame_msg.kicked_ball.push_back(kicked_ball_msg);
+    tracked_frame_msg.kicked_ball = kicked_ball_msg;
+    tracked_frame_msg.has_field |= tracked_frame_msg.KICKED_BALL_FIELD_SET;
   }
 
   // Parse capabilities
   for (const auto & capability : tracked_frame.capabilities()) {
-    tracked_frame_msg.capabilities.push_back(static_cast<uint32_t>(capability));
+    robocup_ssl_msgs::msg::Capability capability_msg;
+    capability_msg.value = static_cast<int32_t>(capability);
+    tracked_frame_msg.capabilities.push_back(capability_msg);
   }
+
+  // Set frame metadata
+  tracked_frame_msg.has_field |=
+    tracked_frame_msg.FRAME_NUMBER_FIELD_SET | tracked_frame_msg.TIMESTAMP_FIELD_SET;
 
   return tracked_frame_msg;
 }

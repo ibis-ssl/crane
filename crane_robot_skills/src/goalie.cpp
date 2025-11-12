@@ -39,8 +39,8 @@ Status Goalie::update()
       break;
     default: {
       if (
-        world_model()->getMsg().play_situation.command_raw.value ==
-        robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+        world_model()->getMsg().play_situation.referee_raw.command.value ==
+        robocup_ssl_msgs::msg::RefereeCommand::STOP) {
         // STOPのときにはボールを排出しない
         inplay(false);
       } else {

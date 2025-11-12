@@ -54,11 +54,11 @@ public:
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // レフェリーコマンドに基づいて速度制限を更新
-    switch (command) {
-      case robocup_ssl_msgs::msg::Referee::COMMAND_HALT:
+    switch (command.value) {
+      case robocup_ssl_msgs::msg::RefereeCommand::HALT:
         max_speed_limit_ = 0.0;
         break;
-      case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+      case robocup_ssl_msgs::msg::RefereeCommand::STOP:
         max_speed_limit_ = 1.0;  // STOP中は1.0 m/s
         break;
       default:

@@ -27,9 +27,9 @@
 #include <memory>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
 #include <vector>
@@ -94,7 +94,7 @@ public:
   auto setAreaMask(const Box & area) -> void { area_mask = area; }
 
   auto setVisualizationCallbacks(
-    std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
+    std::function<void(const robocup_ssl::SSL_GeometryData &, bool)> geometry_callback,
     std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
     -> void;
 
@@ -120,7 +120,7 @@ public:
 private:
   rclcpp::Node & node;
 
-  std::function<void(const SSL_GeometryData &, bool)> geometry_visualization_callback_;
+  std::function<void(const robocup_ssl::SSL_GeometryData &, bool)> geometry_visualization_callback_;
   std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)>
     referee_visualization_callback_;
 
@@ -148,7 +148,7 @@ private:
   std::vector<ErrorTracker> error_tracker_[2];  // [our_team, their_team]
 
   // 最新のSSL_DetectionFrame（detection_frame生成用）
-  mutable SSL_DetectionFrame latest_ssl_detection_frame_;
+  mutable robocup_ssl::SSL_DetectionFrame latest_ssl_detection_frame_;
   mutable bool has_latest_detection_frame_;
 
   // タイムスタンプ
@@ -243,7 +243,7 @@ private:
   bool use_udp_detection_ = false;
 
   // Helper: convert Tracker protobuf to ROS msg
-  auto parseTrackedFrameFromWrapper(const TrackerWrapperPacket & wrapper_packet)
+  auto parseTrackedFrameFromWrapper(const robocup_ssl::TrackerWrapperPacket & wrapper_packet)
     -> robocup_ssl_msgs::msg::TrackedFrame;
 
   std::vector<uint8_t> robot_ids_mask;
@@ -252,10 +252,10 @@ private:
 
   bool geometry_initialized = false;
 
-  auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
-  auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
-  auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
-  auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
+  auto processDetectionFrame(const robocup_ssl::SSL_DetectionFrame & detection) -> bool;
+  auto processGeometryData(const robocup_ssl::SSL_GeometryData & geometry) -> bool;
+  auto convertBallDetection(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
+  auto convertFieldGeometry(const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
 
   auto mergeRobotInfo(

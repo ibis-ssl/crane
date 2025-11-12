@@ -127,7 +127,8 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
-  const SSL_GeometryData & geometry_data, [[maybe_unused]] bool half_court_mode) -> void
+  const robocup_ssl::SSL_GeometryData & geometry_data, [[maybe_unused]] bool half_court_mode)
+  -> void
 {
   if (!geometry_data.has_field()) {
     return;
@@ -275,7 +276,7 @@ auto VisualizationManager::drawFieldGeometry(
 }
 
 auto VisualizationManager::drawVisionDetections(
-  const SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
+  const robocup_ssl::SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
 {
   // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {
@@ -459,7 +460,7 @@ auto VisualizationManager::drawRefereeInfo(
 {
   // レフェリー状態の表示: 文字列は PlaySituation の string 化を使用（フォールバックは行わない）
   std::string command_name =
-    command_text.empty() ? ("COMMAND_" + std::to_string(msg.command)) : command_text;
+    command_text.empty() ? ("COMMAND_" + std::to_string(msg.command.value)) : command_text;
 
   // レフェリー情報をフィールド上部に表示
   referee_builder->text()

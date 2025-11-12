@@ -95,8 +95,8 @@ string reason_text
 
 geometry_msgs/Point placement_position
 
-robocup_ssl_msgs/TeamInfo our_team_info
+robocup_ssl_msgs/RefereeTeamInfo our_team_info
 
-robocup_ssl_msgs/TeamInfo their_team_info
+robocup_ssl_msgs/RefereeTeamInfo their_team_info
 
 robocup_ssl_msgs/Referee referee_raw
