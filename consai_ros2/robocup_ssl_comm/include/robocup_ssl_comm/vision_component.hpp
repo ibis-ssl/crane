@@ -22,7 +22,7 @@
 #include <map>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
+#include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 
 #include "visibility_control.h"
 
@@ -38,12 +38,13 @@ protected:
   void on_timer();
 
 private:
-  robocup_ssl_msgs::msg::DetectionFrame parse_detection_frame(
-    const SSL_WrapperPacket & wrapper_packet);
+  robocup_ssl_msgs::msg::SSLDetectionFrame parse_detection_frame(
+    const robocup_ssl::SSL_WrapperPacket & wrapper_packet);
 
-  robocup_ssl_msgs::msg::DetectionFrame merge_camera_frames();
+  robocup_ssl_msgs::msg::SSLDetectionFrame merge_camera_frames();
 
-  void update_camera_frame(uint32_t camera_id, const robocup_ssl_msgs::msg::DetectionFrame & frame);
+  void update_camera_frame(
+    uint32_t camera_id, const robocup_ssl_msgs::msg::SSLDetectionFrame & frame);
 
   bool is_camera_frame_valid(
     uint32_t camera_id, std::chrono::milliseconds max_age_ms = std::chrono::milliseconds(100));
@@ -52,10 +53,10 @@ private:
 
   std::unique_ptr<multicast::MulticastReceiver> receiver;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection_frame;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>::SharedPtr pub_detection_frame;
 
   // カメラ別の最新フレームデータを保存
-  std::map<uint32_t, robocup_ssl_msgs::msg::DetectionFrame> camera_frames_;
+  std::map<uint32_t, robocup_ssl_msgs::msg::SSLDetectionFrame> camera_frames_;
 
   // カメラ別のタイムスタンプを保存（フレームの有効性確認用）
   std::map<uint32_t, std::chrono::steady_clock::time_point> camera_timestamps_;

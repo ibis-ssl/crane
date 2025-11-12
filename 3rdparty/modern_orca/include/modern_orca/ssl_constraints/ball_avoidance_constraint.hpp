@@ -63,12 +63,12 @@ public:
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // レフェリーコマンドに基づいてボールの最小距離を更新
-    switch (command) {
-      case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
-      case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+    switch (command.value) {
+      case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_BLUE:
+      case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_YELLOW:
         min_ball_distance_ = 0.7;
         break;
-      case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+      case robocup_ssl_msgs::msg::RefereeCommand::STOP:
         min_ball_distance_ = 0.5;
         break;
       default:

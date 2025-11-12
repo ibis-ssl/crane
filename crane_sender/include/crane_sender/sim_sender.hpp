@@ -12,7 +12,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/commands.hpp>
+#include <robocup_ssl_msgs/msg/gr_sim_commands.hpp>
 #include <string>
 
 #include "sender_base.hpp"
@@ -126,7 +126,7 @@ public:
   //    return is_nan;
   //  }
 
-  DiagnosedPublisher<robocup_ssl_msgs::msg::Commands> pub_commands;
+  DiagnosedPublisher<robocup_ssl_msgs::msg::GrSimCommands> pub_commands;
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;

@@ -31,12 +31,12 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
   //         .update(getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
 
   const double MAX_KICK_SPEED = 8.0;  // m/s
-  robocup_ssl_msgs::msg::Commands commands;
+  robocup_ssl_msgs::msg::GrSimCommands commands;
   commands.isteamyellow = msg.is_yellow;
   commands.timestamp = msg.header.stamp.sec;
 
   for (const auto & command : msg.robot_commands) {
-    robocup_ssl_msgs::msg::RobotCommand cmd;
+    robocup_ssl_msgs::msg::GrSimRobotCommand cmd;
     cmd.set__id(command.robot_id);
     float omega = theta_controllers[command.robot_id].update(
       -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);

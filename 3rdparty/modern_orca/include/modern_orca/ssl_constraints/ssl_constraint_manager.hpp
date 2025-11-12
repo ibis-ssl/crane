@@ -143,8 +143,8 @@ public:
     if (!world_model_) return;
 
     // ゲーム状況に基づく自動調整
-    switch (current_referee_command_) {
-      case robocup_ssl_msgs::msg::Referee::COMMAND_HALT:
+    switch (current_referee_command_.value) {
+      case robocup_ssl_msgs::msg::RefereeCommand::HALT:
         // HALT中はレフェリーコマンド制約のみがアクティブ
         setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, false);
         setConstraintEnabled(SSLConstraintType::PENALTY_AREA_AVOIDANCE, false);
@@ -152,7 +152,7 @@ public:
         setConstraintEnabled(SSLConstraintType::REFEREE_COMMAND, true);
         break;
 
-      case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+      case robocup_ssl_msgs::msg::RefereeCommand::STOP:
         // STOP中は、より厳しいパラメータですべての制約を有効化
         setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, true);
         setConstraintEnabled(SSLConstraintType::PENALTY_AREA_AVOIDANCE, true);
@@ -193,8 +193,7 @@ private:
   std::unordered_map<SSLConstraintType, ConstraintPtr> constraints_;
   ConstraintLineup lineup_;
   crane::WorldModelWrapper::SharedPtr world_model_;
-  robocup_ssl_msgs::msg::Referee::_command_type current_referee_command_ =
-    robocup_ssl_msgs::msg::Referee::COMMAND_NORMAL_START;
+  robocup_ssl_msgs::msg::Referee::_command_type current_referee_command_{};  // デフォルト初期化
 };
 
 // Convenience alias for CircularAgent

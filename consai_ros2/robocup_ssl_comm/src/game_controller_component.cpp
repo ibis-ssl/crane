@@ -21,8 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "robocup_ssl_msgs/msg/point.hpp"
-
 using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
@@ -47,39 +45,12 @@ void GameController::on_timer()
     const size_t size = receiver->receive(buf);
 
     if (size > 0) {
-      Referee packet;
+      robocup_ssl::Referee packet;
       packet.ParseFromString(std::string(buf.begin(), buf.end()));
 
+      // Use proto2ros Convert API to convert protobuf message to ROS message
       auto referee_msg = std::make_unique<robocup_ssl_msgs::msg::Referee>();
-
-      referee_msg->packet_timestamp = packet.packet_timestamp();
-      referee_msg->stage = packet.stage();
-      if (packet.has_stage_time_left()) {
-        referee_msg->stage_time_left.push_back(packet.stage_time_left());
-      }
-      referee_msg->command = packet.command();
-      referee_msg->command_counter = packet.command_counter();
-      referee_msg->command_timestamp = packet.command_timestamp();
-
-      referee_msg->yellow = parse_team_info(packet.yellow());
-      referee_msg->blue = parse_team_info(packet.blue());
-      if (packet.has_designated_position()) {
-        robocup_ssl_msgs::msg::Point point;
-        point.x = packet.designated_position().x();
-        point.y = packet.designated_position().y();
-        referee_msg->designated_position.push_back(point);
-      }
-      if (packet.has_blue_team_on_positive_half()) {
-        referee_msg->blue_team_on_positive_half.push_back(
-          static_cast<uint8_t>(packet.blue_team_on_positive_half()));
-      }
-      if (packet.has_next_command()) {
-        referee_msg->next_command.push_back(packet.next_command());
-      }
-      if (packet.has_current_action_time_remaining()) {
-        referee_msg->current_action_time_remaining.push_back(
-          packet.current_action_time_remaining());
-      }
+      robocup_ssl_msgs::conversions::Convert(packet, referee_msg.get());
 
       pub_referee->publish(std::move(referee_msg));
 
@@ -93,150 +64,113 @@ void GameController::on_timer()
   }
 }
 
-robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(const Referee_TeamInfo & team_info)
-{
-  robocup_ssl_msgs::msg::TeamInfo parsed_team_info;
-
-  parsed_team_info.name = team_info.name();
-  parsed_team_info.score = team_info.score();
-  parsed_team_info.red_cards = team_info.red_cards();
-  for (auto time : team_info.yellow_card_times()) {
-    parsed_team_info.yellow_card_times.push_back(time);
-  }
-  parsed_team_info.yellow_cards = team_info.yellow_cards();
-  parsed_team_info.timeouts = team_info.timeouts();
-  parsed_team_info.timeout_time = team_info.timeout_time();
-  parsed_team_info.goalkeeper = team_info.goalkeeper();
-  if (team_info.has_foul_counter()) {
-    parsed_team_info.foul_counter.push_back(team_info.foul_counter());
-  }
-  if (team_info.has_ball_placement_failures()) {
-    parsed_team_info.ball_placement_failures.push_back(team_info.ball_placement_failures());
-  }
-  if (team_info.has_can_place_ball()) {
-    parsed_team_info.can_place_ball.push_back(static_cast<uint8_t>(team_info.can_place_ball()));
-  }
-  if (team_info.has_max_allowed_bots()) {
-    parsed_team_info.max_allowed_bots.push_back(team_info.max_allowed_bots());
-  }
-  if (team_info.has_bot_substitution_intent()) {
-    parsed_team_info.bot_substitution_intent.push_back(
-      static_cast<uint8_t>(team_info.bot_substitution_intent()));
-  }
-  if (team_info.has_ball_placement_failures_reached()) {
-    parsed_team_info.ball_placement_failures_reached.push_back(
-      static_cast<uint8_t>(team_info.ball_placement_failures_reached()));
-  }
-
-  return parsed_team_info;
-}
-
-crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & proto_event)
+crane_msgs::msg::GameEvent GameController::parse_game_event(
+  const robocup_ssl::GameEvent & proto_event)
 {
   crane_msgs::msg::GameEvent event_msg;
 
   // Set event type based on proto type enum
   switch (proto_event.type()) {
-    case GameEvent::BALL_LEFT_FIELD_TOUCH_LINE:
+    case robocup_ssl::GameEvent::BALL_LEFT_FIELD_TOUCH_LINE:
       event_msg.event_type = "BALL_LEFT_FIELD_TOUCH_LINE";
       break;
-    case GameEvent::BALL_LEFT_FIELD_GOAL_LINE:
+    case robocup_ssl::GameEvent::BALL_LEFT_FIELD_GOAL_LINE:
       event_msg.event_type = "BALL_LEFT_FIELD_GOAL_LINE";
       break;
-    case GameEvent::AIMLESS_KICK:
+    case robocup_ssl::GameEvent::AIMLESS_KICK:
       event_msg.event_type = "AIMLESS_KICK";
       break;
-    case GameEvent::GOAL:
+    case robocup_ssl::GameEvent::GOAL:
       event_msg.event_type = "GOAL";
       break;
-    case GameEvent::POSSIBLE_GOAL:
+    case robocup_ssl::GameEvent::POSSIBLE_GOAL:
       event_msg.event_type = "POSSIBLE_GOAL";
       break;
-    case GameEvent::INVALID_GOAL:
+    case robocup_ssl::GameEvent::INVALID_GOAL:
       event_msg.event_type = "INVALID_GOAL";
       break;
-    case GameEvent::BOT_KICKED_BALL_TOO_FAST:
+    case robocup_ssl::GameEvent::BOT_KICKED_BALL_TOO_FAST:
       event_msg.event_type = "BOT_KICKED_BALL_TOO_FAST";
       break;
-    case GameEvent::BOT_DRIBBLED_BALL_TOO_FAR:
+    case robocup_ssl::GameEvent::BOT_DRIBBLED_BALL_TOO_FAR:
       event_msg.event_type = "BOT_DRIBBLED_BALL_TOO_FAR";
       break;
-    case GameEvent::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
+    case robocup_ssl::GameEvent::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
       event_msg.event_type = "ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA";
       break;
-    case GameEvent::DEFENDER_IN_DEFENSE_AREA:
+    case robocup_ssl::GameEvent::DEFENDER_IN_DEFENSE_AREA:
       event_msg.event_type = "DEFENDER_IN_DEFENSE_AREA";
       break;
-    case GameEvent::BOUNDARY_CROSSING:
+    case robocup_ssl::GameEvent::BOUNDARY_CROSSING:
       event_msg.event_type = "BOUNDARY_CROSSING";
       break;
-    case GameEvent::KEEPER_HELD_BALL:
+    case robocup_ssl::GameEvent::KEEPER_HELD_BALL:
       event_msg.event_type = "KEEPER_HELD_BALL";
       break;
-    case GameEvent::BOT_PUSHED_BOT:
+    case robocup_ssl::GameEvent::BOT_PUSHED_BOT:
       event_msg.event_type = "BOT_PUSHED_BOT";
       break;
-    case GameEvent::BOT_HELD_BALL_DELIBERATELY:
+    case robocup_ssl::GameEvent::BOT_HELD_BALL_DELIBERATELY:
       event_msg.event_type = "BOT_HELD_BALL_DELIBERATELY";
       break;
-    case GameEvent::BOT_TIPPED_OVER:
+    case robocup_ssl::GameEvent::BOT_TIPPED_OVER:
       event_msg.event_type = "BOT_TIPPED_OVER";
       break;
-    case GameEvent::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
+    case robocup_ssl::GameEvent::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
       event_msg.event_type = "ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA";
       break;
-    case GameEvent::BOT_CRASH_UNIQUE:
+    case robocup_ssl::GameEvent::BOT_CRASH_UNIQUE:
       event_msg.event_type = "BOT_CRASH_UNIQUE";
       break;
-    case GameEvent::BOT_CRASH_DRAWN:
+    case robocup_ssl::GameEvent::BOT_CRASH_DRAWN:
       event_msg.event_type = "BOT_CRASH_DRAWN";
       break;
-    case GameEvent::DEFENDER_TOO_CLOSE_TO_KICK_POINT:
+    case robocup_ssl::GameEvent::DEFENDER_TOO_CLOSE_TO_KICK_POINT:
       event_msg.event_type = "DEFENDER_TOO_CLOSE_TO_KICK_POINT";
       break;
-    case GameEvent::BOT_TOO_FAST_IN_STOP:
+    case robocup_ssl::GameEvent::BOT_TOO_FAST_IN_STOP:
       event_msg.event_type = "BOT_TOO_FAST_IN_STOP";
       break;
-    case GameEvent::BOT_INTERFERED_PLACEMENT:
+    case robocup_ssl::GameEvent::BOT_INTERFERED_PLACEMENT:
       event_msg.event_type = "BOT_INTERFERED_PLACEMENT";
       break;
-    case GameEvent::ATTACKER_DOUBLE_TOUCHED_BALL:
+    case robocup_ssl::GameEvent::ATTACKER_DOUBLE_TOUCHED_BALL:
       event_msg.event_type = "ATTACKER_DOUBLE_TOUCHED_BALL";
       break;
-    case GameEvent::PLACEMENT_SUCCEEDED:
+    case robocup_ssl::GameEvent::PLACEMENT_SUCCEEDED:
       event_msg.event_type = "PLACEMENT_SUCCEEDED";
       break;
-    case GameEvent::PENALTY_KICK_FAILED:
+    case robocup_ssl::GameEvent::PENALTY_KICK_FAILED:
       event_msg.event_type = "PENALTY_KICK_FAILED";
       break;
-    case GameEvent::NO_PROGRESS_IN_GAME:
+    case robocup_ssl::GameEvent::NO_PROGRESS_IN_GAME:
       event_msg.event_type = "NO_PROGRESS_IN_GAME";
       break;
-    case GameEvent::PLACEMENT_FAILED:
+    case robocup_ssl::GameEvent::PLACEMENT_FAILED:
       event_msg.event_type = "PLACEMENT_FAILED";
       break;
-    case GameEvent::MULTIPLE_CARDS:
+    case robocup_ssl::GameEvent::MULTIPLE_CARDS:
       event_msg.event_type = "MULTIPLE_CARDS";
       break;
-    case GameEvent::MULTIPLE_FOULS:
+    case robocup_ssl::GameEvent::MULTIPLE_FOULS:
       event_msg.event_type = "MULTIPLE_FOULS";
       break;
-    case GameEvent::BOT_SUBSTITUTION:
+    case robocup_ssl::GameEvent::BOT_SUBSTITUTION:
       event_msg.event_type = "BOT_SUBSTITUTION";
       break;
-    case GameEvent::TOO_MANY_ROBOTS:
+    case robocup_ssl::GameEvent::TOO_MANY_ROBOTS:
       event_msg.event_type = "TOO_MANY_ROBOTS";
       break;
-    case GameEvent::CHALLENGE_FLAG:
+    case robocup_ssl::GameEvent::CHALLENGE_FLAG:
       event_msg.event_type = "CHALLENGE_FLAG";
       break;
-    case GameEvent::EMERGENCY_STOP:
+    case robocup_ssl::GameEvent::EMERGENCY_STOP:
       event_msg.event_type = "EMERGENCY_STOP";
       break;
-    case GameEvent::UNSPORTING_BEHAVIOR_MINOR:
+    case robocup_ssl::GameEvent::UNSPORTING_BEHAVIOR_MINOR:
       event_msg.event_type = "UNSPORTING_BEHAVIOR_MINOR";
       break;
-    case GameEvent::UNSPORTING_BEHAVIOR_MAJOR:
+    case robocup_ssl::GameEvent::UNSPORTING_BEHAVIOR_MAJOR:
       event_msg.event_type = "UNSPORTING_BEHAVIOR_MAJOR";
       break;
     default:
@@ -253,7 +187,7 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
 
   if (proto_event.has_ball_left_field_touch_line()) {
     const auto & event = proto_event.ball_left_field_touch_line();
-    event_msg.team = (event.by_team() == Team::YELLOW) ? "YELLOW" : "BLUE";
+    event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";
     if (event.has_by_bot()) {
       event_msg.robot_id = event.by_bot();
     }
@@ -266,7 +200,7 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
     }
   } else if (proto_event.has_ball_left_field_goal_line()) {
     const auto & event = proto_event.ball_left_field_goal_line();
-    event_msg.team = (event.by_team() == Team::YELLOW) ? "YELLOW" : "BLUE";
+    event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";
     if (event.has_by_bot()) {
       event_msg.robot_id = event.by_bot();
     }
@@ -279,7 +213,7 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
     }
   } else if (proto_event.has_aimless_kick()) {
     const auto & event = proto_event.aimless_kick();
-    event_msg.team = (event.by_team() == Team::YELLOW) ? "YELLOW" : "BLUE";
+    event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";
     if (event.has_by_bot()) {
       event_msg.robot_id = event.by_bot();
     }
@@ -299,7 +233,7 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
     }
   } else if (proto_event.has_goal()) {
     const auto & event = proto_event.goal();
-    event_msg.team = (event.by_team() == Team::YELLOW) ? "YELLOW" : "BLUE";
+    event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";
     if (event.has_kicking_bot()) {
       event_msg.robot_id = event.kicking_bot();
     }
@@ -331,7 +265,7 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
     }
   } else if (proto_event.has_bot_kicked_ball_too_fast()) {
     const auto & event = proto_event.bot_kicked_ball_too_fast();
-    event_msg.team = (event.by_team() == Team::YELLOW) ? "YELLOW" : "BLUE";
+    event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";
     if (event.has_by_bot()) {
       event_msg.robot_id = event.by_bot();
     }

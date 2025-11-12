@@ -17,8 +17,8 @@
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <filesystem>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
+#include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 
 namespace crane
 {
@@ -50,7 +50,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider_->setVisualizationCallbacks(
-    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+    [this](const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode) {
       visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
     },
     [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {

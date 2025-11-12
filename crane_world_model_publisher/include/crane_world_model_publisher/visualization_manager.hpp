@@ -36,10 +36,10 @@ public:
   ~VisualizationManager() = default;
 
   // 可視化（直接実装）
-  auto drawFieldGeometry(const SSL_GeometryData & geometry_data, bool half_court_mode = false)
-    -> void;
-  auto drawVisionDetections(const SSL_DetectionFrame & detection, bool half_court_mode = false)
-    -> void;
+  auto drawFieldGeometry(
+    const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode = false) -> void;
+  auto drawVisionDetections(
+    const robocup_ssl::SSL_DetectionFrame & detection, bool half_court_mode = false) -> void;
   auto drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto drawRefereeInfo(
     const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,

@@ -1,4 +1,6 @@
 syntax = "proto2";
+
+package robocup_ssl;
 option go_package = "github.com/RoboCup-SSL/ssl-simulation-protocol/pkg/sim";
 
 // Full command for a single robot

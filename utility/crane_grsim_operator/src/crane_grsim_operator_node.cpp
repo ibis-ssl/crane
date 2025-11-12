@@ -6,20 +6,21 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "robocup_ssl_msgs/msg/ball_replacement.hpp"
-#include "robocup_ssl_msgs/msg/replacement.hpp"
-#include "robocup_ssl_msgs/msg/robot_replacement.hpp"
+#include "robocup_ssl_msgs/msg/gr_sim_ball_replacement.hpp"
+#include "robocup_ssl_msgs/msg/gr_sim_replacement.hpp"
+#include "robocup_ssl_msgs/msg/gr_sim_robot_replacement.hpp"
 
 #define LOAD_ROBOT_POSE(ROBOT_NAME, ROBOT_ARRAY)                   \
   {                                                                \
     declare_parameter(#ROBOT_NAME, std::vector<double>(3, -20.0)); \
     auto pose = get_parameter(#ROBOT_NAME).as_double_array();      \
     uint32_t id = std::stoi(std::string(#ROBOT_NAME).substr(5));   \
-    robocup_ssl_msgs::msg::RobotReplacement robot;                 \
+    robocup_ssl_msgs::msg::GrSimRobotReplacement robot;            \
     robot.x = pose[0];                                             \
     robot.y = pose[1];                                             \
     robot.dir = pose[2];                                           \
     robot.id = id;                                                 \
+    robot.has_field = 0;                                           \
     if (pose[0] != -20.0) ROBOT_ARRAY.push_back(robot);            \
   }
 
@@ -32,11 +33,12 @@ public:
     //      "crane_commands", 10,
     //      std::bind(&GrsimOperator::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ =
-    //      this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
+    //      this->create_subscription<robocup_ssl_msgs::msg::GrSimReplacement>(
     //        "sim_sender/", 10,
     //        std::bind(
     //          &GrsimOperator::send_replacement, this, std::placeholders::_1));
-    pub_replacement = this->create_publisher<robocup_ssl_msgs::msg::Replacement>("replacement", 10);
+    pub_replacement =
+      this->create_publisher<robocup_ssl_msgs::msg::GrSimReplacement>("replacement", 10);
 
     LOAD_ROBOT_POSE("yellow.robot1", yellow_robots)
     LOAD_ROBOT_POSE("yellow.robot2", yellow_robots)
@@ -63,12 +65,15 @@ public:
     auto ball_vel = get_parameter("ball.vel").as_double_array();
 
     if (ball_pos[0] != -20.0) {
-      robocup_ssl_msgs::msg::BallReplacement ball_replacement;
-      ball_replacement.x.push_back(ball_pos[0]);
-      ball_replacement.y.push_back(ball_pos[1]);
-      ball_replacement.vx.push_back(ball_vel[0]);
-      ball_replacement.vy.push_back(ball_vel[1]);
-      ball.push_back(ball_replacement);
+      robocup_ssl_msgs::msg::GrSimBallReplacement ball_replacement;
+      ball_replacement.x = ball_pos[0];
+      ball_replacement.y = ball_pos[1];
+      ball_replacement.vx = ball_vel[0];
+      ball_replacement.vy = ball_vel[1];
+      ball_replacement.has_field = ball_replacement.X_FIELD_SET | ball_replacement.Y_FIELD_SET |
+                                   ball_replacement.VX_FIELD_SET | ball_replacement.VY_FIELD_SET;
+      ball = ball_replacement;
+      has_ball = true;
     }
 
     publishReplacement();
@@ -77,28 +82,35 @@ public:
 private:
   void publishReplacement()
   {
-    robocup_ssl_msgs::msg::Replacement msg;
-    for (auto ball : ball) {
-      msg.ball.push_back(ball);
+    robocup_ssl_msgs::msg::GrSimReplacement msg;
+    msg.has_field = 0;
+    if (has_ball) {
+      msg.ball = ball;
+      msg.has_field |= msg.BALL_FIELD_SET;
     }
     for (auto & robot : yellow_robots) {
       robot.yellowteam = true;
+      robot.has_field |= robot.X_FIELD_SET | robot.Y_FIELD_SET | robot.DIR_FIELD_SET |
+                         robot.ID_FIELD_SET | robot.YELLOWTEAM_FIELD_SET;
       msg.robots.push_back(robot);
     }
     for (auto & robot : blue_robots) {
       robot.yellowteam = false;
+      robot.has_field |= robot.X_FIELD_SET | robot.Y_FIELD_SET | robot.DIR_FIELD_SET |
+                         robot.ID_FIELD_SET | robot.YELLOWTEAM_FIELD_SET;
       msg.robots.push_back(robot);
     }
     pub_replacement->publish(msg);
   }
 
-  std::vector<robocup_ssl_msgs::msg::RobotReplacement> yellow_robots;
+  std::vector<robocup_ssl_msgs::msg::GrSimRobotReplacement> yellow_robots;
 
-  std::vector<robocup_ssl_msgs::msg::RobotReplacement> blue_robots;
+  std::vector<robocup_ssl_msgs::msg::GrSimRobotReplacement> blue_robots;
 
-  std::vector<robocup_ssl_msgs::msg::BallReplacement> ball;
+  robocup_ssl_msgs::msg::GrSimBallReplacement ball;
+  bool has_ball = false;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::Replacement>::SharedPtr pub_replacement;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::GrSimReplacement>::SharedPtr pub_replacement;
 };
 
 int main(int argc, char * argv[])

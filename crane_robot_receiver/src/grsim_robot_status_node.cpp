@@ -62,7 +62,7 @@ protected:
         const size_t size = receiver->receive(buf);
 
         if (size > 0) {
-          Robots_Status packet;
+          robocup_ssl::Robots_Status packet;
           packet.ParseFromString(std::string(buf.begin(), buf.end()));
           auto received_msg = get_status_msg(packet);
           for (const auto & received_status : received_msg.robots_status) {
@@ -80,7 +80,8 @@ protected:
   }
 
 private:
-  auto get_status_msg(const Robots_Status & robots_status) -> robocup_ssl_msgs::msg::RobotsStatus
+  auto get_status_msg(const robocup_ssl::Robots_Status & robots_status)
+    -> robocup_ssl_msgs::msg::RobotsStatus
   {
     auto statuses_msg = robocup_ssl_msgs::msg::RobotsStatus();
 

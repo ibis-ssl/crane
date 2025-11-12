@@ -256,7 +256,7 @@ void ModernORCAPlanner::updateConstraintsFromWorldModel()
     ssl_constraint_manager_->updateFromWorldModel(world_model);
 
     // Update referee command
-    const auto referee_command = world_model->getMsg().play_situation.command_raw.value;
+    const auto & referee_command = world_model->getMsg().play_situation.referee_raw.command;
     ssl_constraint_manager_->updateFromRefereeCommand(referee_command);
 
     // Apply automatic constraint adjustments
@@ -408,8 +408,8 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
 
   // Apply referee command velocity limits
   if (
-    world_model && world_model->getMsg().play_situation.command_raw.value ==
-                     robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+    world_model && world_model->getMsg().play_situation.referee_raw.command.value ==
+                     robocup_ssl_msgs::msg::RefereeCommand::STOP) {
     max_vel = std::min(max_vel, STOP_STATE_MAX_VELOCITY);
   }
 

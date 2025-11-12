@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+package robocup_ssl;
 message grSim_RobotReplacement {
 required double x=1;
 required double y=2;

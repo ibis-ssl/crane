@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+package robocup_ssl;
 option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/vision";
 
 // A 2D float vector.

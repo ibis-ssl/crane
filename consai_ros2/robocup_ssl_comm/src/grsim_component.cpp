@@ -14,12 +14,12 @@
 
 #include "robocup_ssl_comm/grsim_component.hpp"
 
+#include <robocup_ssl_msgs/grSim_Packet.pb.h>
+
 #include <chrono>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
-
-#include "robocup_ssl_msgs/grSim_Packet.pb.h"
 
 using namespace std::chrono_literals;
 
@@ -39,7 +39,7 @@ GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
 
 void GrSim::callback_commands(const Commands::SharedPtr msg)
 {
-  grSim_Commands * commands = new grSim_Commands();
+  robocup_ssl::grSim_Commands * commands = new robocup_ssl::grSim_Commands();
 
   commands->set_timestamp(msg->timestamp);
   commands->set_isteamyellow(msg->isteamyellow);
@@ -47,7 +47,7 @@ void GrSim::callback_commands(const Commands::SharedPtr msg)
     set_command(commands->add_robot_commands(), msg_robot_command);
   }
 
-  grSim_Packet packet;
+  robocup_ssl::grSim_Packet packet;
   packet.set_allocated_commands(commands);
 
   std::string output;
@@ -57,22 +57,22 @@ void GrSim::callback_commands(const Commands::SharedPtr msg)
 
 void GrSim::callback_replacement(const Replacement::SharedPtr msg)
 {
-  grSim_Replacement * replacement = new grSim_Replacement();
+  robocup_ssl::grSim_Replacement * replacement = new robocup_ssl::grSim_Replacement();
 
-  if (msg->ball.size() > 0) {
-    grSim_BallReplacement * ball = new grSim_BallReplacement();
-    auto msg_ball = msg->ball[0];
-    if (msg_ball.x.size() > 0) {
-      ball->set_x(msg_ball.x[0]);
+  if (msg->has_field & msg->BALL_FIELD_SET) {
+    robocup_ssl::grSim_BallReplacement * ball = new robocup_ssl::grSim_BallReplacement();
+    const auto & msg_ball = msg->ball;
+    if (msg_ball.has_field & msg_ball.X_FIELD_SET) {
+      ball->set_x(msg_ball.x);
     }
-    if (msg_ball.y.size() > 0) {
-      ball->set_y(msg_ball.y[0]);
+    if (msg_ball.has_field & msg_ball.Y_FIELD_SET) {
+      ball->set_y(msg_ball.y);
     }
-    if (msg_ball.vx.size() > 0) {
-      ball->set_vx(msg_ball.vx[0]);
+    if (msg_ball.has_field & msg_ball.VX_FIELD_SET) {
+      ball->set_vx(msg_ball.vx);
     }
-    if (msg_ball.vy.size() > 0) {
-      ball->set_vy(msg_ball.vy[0]);
+    if (msg_ball.has_field & msg_ball.VY_FIELD_SET) {
+      ball->set_vy(msg_ball.vy);
     }
     replacement->set_allocated_ball(ball);
   }
@@ -81,7 +81,7 @@ void GrSim::callback_replacement(const Replacement::SharedPtr msg)
     set_robot_replacement(replacement->add_robots(), msg_robot);
   }
 
-  grSim_Packet packet;
+  robocup_ssl::grSim_Packet packet;
   packet.set_allocated_replacement(replacement);
 
   std::string output;
@@ -89,41 +89,19 @@ void GrSim::callback_replacement(const Replacement::SharedPtr msg)
   sender->send(output);
 }
 
-void GrSim::set_command(grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command)
+void GrSim::set_command(
+  robocup_ssl::grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command)
 {
-  robot_command->set_id(msg_robot_command.id);
-  robot_command->set_kickspeedx(msg_robot_command.kickspeedx);
-  robot_command->set_kickspeedz(msg_robot_command.kickspeedz);
-  robot_command->set_veltangent(msg_robot_command.veltangent);
-  robot_command->set_velnormal(msg_robot_command.velnormal);
-  robot_command->set_velangular(msg_robot_command.velangular);
-  robot_command->set_spinner(msg_robot_command.spinner);
-  robot_command->set_wheelsspeed(msg_robot_command.wheelsspeed);
-  if (msg_robot_command.wheel1.size() > 0) {
-    robot_command->set_wheel1(msg_robot_command.wheel1[0]);
-  }
-  if (msg_robot_command.wheel2.size() > 0) {
-    robot_command->set_wheel2(msg_robot_command.wheel2[0]);
-  }
-  if (msg_robot_command.wheel3.size() > 0) {
-    robot_command->set_wheel3(msg_robot_command.wheel3[0]);
-  }
-  if (msg_robot_command.wheel4.size() > 0) {
-    robot_command->set_wheel4(msg_robot_command.wheel4[0]);
-  }
+  // Use proto2ros Convert API
+  robocup_ssl_msgs::conversions::Convert(msg_robot_command, robot_command);
 }
 
 void GrSim::set_robot_replacement(
-  grSim_RobotReplacement * robot_replacement, const RobotReplacement & msg_robot_replacement)
+  robocup_ssl::grSim_RobotReplacement * robot_replacement,
+  const RobotReplacement & msg_robot_replacement)
 {
-  robot_replacement->set_x(msg_robot_replacement.x);
-  robot_replacement->set_y(msg_robot_replacement.y);
-  robot_replacement->set_dir(msg_robot_replacement.dir);
-  robot_replacement->set_id(msg_robot_replacement.id);
-  robot_replacement->set_yellowteam(msg_robot_replacement.yellowteam);
-  if (msg_robot_replacement.turnon.size() > 0) {
-    robot_replacement->set_turnon(msg_robot_replacement.turnon[0] != 0);
-  }
+  // Use proto2ros Convert API
+  robocup_ssl_msgs::conversions::Convert(msg_robot_replacement, robot_replacement);
 }
 
 }  // namespace robocup_ssl_comm

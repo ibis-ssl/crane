@@ -22,7 +22,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-#include <robocup_ssl_msgs/msg/team_info.hpp>
+#include <robocup_ssl_msgs/robocup_ssl_msgs/conversions.hpp>
 
 #include "visibility_control.h"
 
@@ -38,8 +38,7 @@ protected:
   void on_timer();
 
 private:
-  robocup_ssl_msgs::msg::TeamInfo parse_team_info(const Referee_TeamInfo & team_info);
-  crane_msgs::msg::GameEvent parse_game_event(const GameEvent & proto_event);
+  crane_msgs::msg::GameEvent parse_game_event(const robocup_ssl::GameEvent & proto_event);
 
   rclcpp::TimerBase::SharedPtr timer;
 

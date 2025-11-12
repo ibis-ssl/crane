@@ -16,14 +16,14 @@ void SimulationProtocolSenderComponent::sendCommands(const crane_msgs::msg::Robo
 {
   auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
 
-  RobotControl packet;
+  robocup_ssl::RobotControl packet;
 
   for (const auto & command : msg.robot_commands) {
     auto cmd = packet.add_robot_commands();
     cmd->set_id(command.robot_id);
 
-    auto move_command = new RobotMoveCommand();
-    auto move_local_velocity = new MoveLocalVelocity();
+    auto move_command = new robocup_ssl::RobotMoveCommand();
+    auto move_local_velocity = new robocup_ssl::MoveLocalVelocity();
 
     float omega = theta_controllers[command.robot_id].update(
       -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);

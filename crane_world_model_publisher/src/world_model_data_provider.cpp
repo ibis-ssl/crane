@@ -166,14 +166,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         our_team_color_ = TeamColor::YELLOW;
         game_data.our_goalie_id = msg.yellow.goalkeeper;
         game_data.their_goalie_id = msg.blue.goalkeeper;
-        if (not msg.yellow.max_allowed_bots.empty()) {
-          game_data.our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        if (msg.yellow.has_field & msg.yellow.MAX_ALLOWED_BOTS_FIELD_SET) {
+          game_data.our_max_allowed_bots = msg.yellow.max_allowed_bots;
         }
-        if (not msg.blue.max_allowed_bots.empty()) {
-          game_data.their_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        if (msg.blue.has_field & msg.blue.MAX_ALLOWED_BOTS_FIELD_SET) {
+          game_data.their_max_allowed_bots = msg.blue.max_allowed_bots;
         }
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = (msg.blue_team_on_positive_half[0] == 0);
+        if (msg.has_field & msg.BLUE_TEAM_ON_POSITIVE_HALF_FIELD_SET) {
+          on_positive_half = (msg.blue_team_on_positive_half == false);
         }
       } else if (msg.blue.name == game_data.team_name) {
         // BLUE
@@ -182,14 +182,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         our_team_color_ = TeamColor::BLUE;
         game_data.our_goalie_id = msg.blue.goalkeeper;
         game_data.their_goalie_id = msg.yellow.goalkeeper;
-        if (not msg.blue.max_allowed_bots.empty()) {
-          game_data.our_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        if (msg.blue.has_field & msg.blue.MAX_ALLOWED_BOTS_FIELD_SET) {
+          game_data.our_max_allowed_bots = msg.blue.max_allowed_bots;
         }
-        if (not msg.yellow.max_allowed_bots.empty()) {
-          game_data.their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        if (msg.yellow.has_field & msg.yellow.MAX_ALLOWED_BOTS_FIELD_SET) {
+          game_data.their_max_allowed_bots = msg.yellow.max_allowed_bots;
         }
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = (msg.blue_team_on_positive_half[0] != 0);
+        if (msg.has_field & msg.BLUE_TEAM_ON_POSITIVE_HALF_FIELD_SET) {
+          on_positive_half = (msg.blue_team_on_positive_half == true);
         }
       } else {
         std::stringstream what;
@@ -226,7 +226,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
         packets_processed++;
 
         try {
-          SSL_WrapperPacket packet;
+          robocup_ssl::SSL_WrapperPacket packet;
           if (packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
             // Tracker利用時はUDP detectionの処理を省略可能
             if (use_udp_detection_ && packet.has_detection()) {
@@ -257,7 +257,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
       try {
         size_t received = tracker_receiver_->receive(raw_packet_data);
         if (received > 0) {
-          TrackerWrapperPacket wrapper_packet;
+          robocup_ssl::TrackerWrapperPacket wrapper_packet;
           if (wrapper_packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
             if (wrapper_packet.has_tracked_frame()) {
               auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
@@ -468,7 +468,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 }
 
 auto WorldModelDataProvider::setVisualizationCallbacks(
-  std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
+  std::function<void(const robocup_ssl::SSL_GeometryData &, bool)> geometry_callback,
   std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
   -> void
 {
@@ -503,7 +503,8 @@ auto WorldModelDataProvider::mergeRobotInfo(
   return merged;
 }
 
-auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & detection) -> bool
+auto WorldModelDataProvider::processDetectionFrame(
+  const robocup_ssl::SSL_DetectionFrame & detection) -> bool
 {
   // 最新のSSL_DetectionFrameを保存（detection_frame生成用）
   latest_ssl_detection_frame_ = detection;
@@ -535,7 +536,8 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
   return true;
 }
 
-auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geometry) -> bool
+auto WorldModelDataProvider::processGeometryData(const robocup_ssl::SSL_GeometryData & geometry)
+  -> bool
 {
   convertFieldGeometry(geometry);
 
@@ -546,7 +548,8 @@ auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geomet
   return true;
 }
 
-auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void
+auto WorldModelDataProvider::convertBallDetection(const robocup_ssl::SSL_DetectionBall & ssl_ball)
+  -> void
 {
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
@@ -600,7 +603,8 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
   ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
 }
 
-auto WorldModelDataProvider::convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void
+auto WorldModelDataProvider::convertFieldGeometry(
+  const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void
 {
   if (!ssl_geometry.has_field()) {
     return;
@@ -669,10 +673,9 @@ auto WorldModelDataProvider::processTrackedFrame(
   for (const auto & tracked_robot : tracked_frame.robots) {
     uint8_t robot_id = static_cast<uint8_t>(tracked_robot.robot_id.id);
     if (robot_id >= MAX_ROBOT_COUNT) continue;
-    int team_index =
-      (tracked_robot.robot_id.team == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-        ? static_cast<int>(Color::YELLOW)
-        : static_cast<int>(Color::BLUE);
+    int team_index = (tracked_robot.robot_id.team.value == robocup_ssl_msgs::msg::Team::YELLOW)
+                       ? static_cast<int>(Color::YELLOW)
+                       : static_cast<int>(Color::BLUE);
 
     auto & robot = robot_info_[team_index][robot_id];
     robot = convertTrackedRobot(tracked_robot, team_index);
@@ -694,8 +697,8 @@ auto WorldModelDataProvider::convertTrackedBall(
   ball_info.position.z = tracked_ball.pos.z;
 
   // 速度情報（オプション）
-  if (!tracked_ball.vel.empty()) {
-    const auto & vel = tracked_ball.vel[0];
+  if (tracked_ball.has_field & tracked_ball.VEL_FIELD_SET) {
+    const auto & vel = tracked_ball.vel;
     ball_info.velocity.x = vel.x;
     ball_info.velocity.y = vel.y;
     ball_info.velocity.z = vel.z;
@@ -739,8 +742,8 @@ auto WorldModelDataProvider::convertTrackedRobot(
   robot_info.pose.theta = crane::normalizeAngle(tracked_robot.orientation);
 
   // 速度情報（オプション）
-  if (!tracked_robot.vel.empty()) {
-    const auto & vel = tracked_robot.vel[0];
+  if (tracked_robot.has_field & tracked_robot.VEL_FIELD_SET) {
+    const auto & vel = tracked_robot.vel;
     robot_info.velocity.x = vel.x;
     robot_info.velocity.y = vel.y;
     robot_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y);
@@ -766,7 +769,7 @@ auto WorldModelDataProvider::convertTrackedRobot(
 }
 
 auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
-  const TrackerWrapperPacket & wrapper_packet) -> robocup_ssl_msgs::msg::TrackedFrame
+  const robocup_ssl::TrackerWrapperPacket & wrapper_packet) -> robocup_ssl_msgs::msg::TrackedFrame
 {
   robocup_ssl_msgs::msg::TrackedFrame tracked_frame_msg;
   const auto & tracked_frame = wrapper_packet.tracked_frame();
@@ -782,19 +785,20 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
     ball_msg.pos.x = ball.pos().x();
     ball_msg.pos.y = ball.pos().y();
     ball_msg.pos.z = ball.pos().z();
+    ball_msg.has_field |= ball_msg.POS_FIELD_SET;
 
     // Velocity (optional)
     if (ball.has_vel()) {
-      robocup_ssl_msgs::msg::Vector3 velocity;
-      velocity.x = ball.vel().x();
-      velocity.y = ball.vel().y();
-      velocity.z = ball.vel().z();
-      ball_msg.vel.push_back(velocity);
+      ball_msg.vel.x = ball.vel().x();
+      ball_msg.vel.y = ball.vel().y();
+      ball_msg.vel.z = ball.vel().z();
+      ball_msg.has_field |= ball_msg.VEL_FIELD_SET;
     }
 
     // Visibility (optional)
     if (ball.has_visibility()) {
-      ball_msg.visibility.push_back(ball.visibility());
+      ball_msg.visibility = ball.visibility();
+      ball_msg.has_field |= ball_msg.VISIBILITY_FIELD_SET;
     }
 
     tracked_frame_msg.balls.push_back(ball_msg);
@@ -806,29 +810,34 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
 
     // Robot ID (required)
     robot_msg.robot_id.id = robot.robot_id().id();
-    robot_msg.robot_id.team = robot.robot_id().team();
+    robot_msg.robot_id.team.value = static_cast<int32_t>(robot.robot_id().team());
+    robot_msg.robot_id.has_field |=
+      robot_msg.robot_id.ID_FIELD_SET | robot_msg.robot_id.TEAM_FIELD_SET;
 
     // Position and orientation (required)
     robot_msg.pos.x = robot.pos().x();
     robot_msg.pos.y = robot.pos().y();
+    robot_msg.has_field |= robot_msg.POS_FIELD_SET;
     robot_msg.orientation = robot.orientation();
+    robot_msg.has_field |= robot_msg.ORIENTATION_FIELD_SET;
 
     // Velocity (optional)
     if (robot.has_vel()) {
-      robocup_ssl_msgs::msg::Vector2 velocity;
-      velocity.x = robot.vel().x();
-      velocity.y = robot.vel().y();
-      robot_msg.vel.push_back(velocity);
+      robot_msg.vel.x = robot.vel().x();
+      robot_msg.vel.y = robot.vel().y();
+      robot_msg.has_field |= robot_msg.VEL_FIELD_SET;
     }
 
     // Angular velocity (optional)
     if (robot.has_vel_angular()) {
-      robot_msg.vel_angular.push_back(robot.vel_angular());
+      robot_msg.vel_angular = robot.vel_angular();
+      robot_msg.has_field |= robot_msg.VEL_ANGULAR_FIELD_SET;
     }
 
     // Visibility (optional)
     if (robot.has_visibility()) {
-      robot_msg.visibility.push_back(robot.visibility());
+      robot_msg.visibility = robot.visibility();
+      robot_msg.has_field |= robot_msg.VISIBILITY_FIELD_SET;
     }
 
     tracked_frame_msg.robots.push_back(robot_msg);
@@ -836,48 +845,57 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
 
   // Parse kicked ball (optional)
   if (tracked_frame.has_kicked_ball()) {
-    robocup_ssl_msgs::msg::KickedBall kicked_ball_msg;
     const auto & kicked_ball = tracked_frame.kicked_ball();
 
     // Position (required)
-    kicked_ball_msg.pos.x = kicked_ball.pos().x();
-    kicked_ball_msg.pos.y = kicked_ball.pos().y();
+    tracked_frame_msg.kicked_ball.pos.x = kicked_ball.pos().x();
+    tracked_frame_msg.kicked_ball.pos.y = kicked_ball.pos().y();
+    tracked_frame_msg.kicked_ball.has_field |= tracked_frame_msg.kicked_ball.POS_FIELD_SET;
 
     // Initial velocity (required)
-    kicked_ball_msg.vel.x = kicked_ball.vel().x();
-    kicked_ball_msg.vel.y = kicked_ball.vel().y();
-    kicked_ball_msg.vel.z = kicked_ball.vel().z();
+    tracked_frame_msg.kicked_ball.vel.x = kicked_ball.vel().x();
+    tracked_frame_msg.kicked_ball.vel.y = kicked_ball.vel().y();
+    tracked_frame_msg.kicked_ball.vel.z = kicked_ball.vel().z();
+    tracked_frame_msg.kicked_ball.has_field |= tracked_frame_msg.kicked_ball.VEL_FIELD_SET;
 
     // Start timestamp (required)
-    kicked_ball_msg.start_timestamp = kicked_ball.start_timestamp();
+    tracked_frame_msg.kicked_ball.start_timestamp = kicked_ball.start_timestamp();
+    tracked_frame_msg.kicked_ball.has_field |=
+      tracked_frame_msg.kicked_ball.START_TIMESTAMP_FIELD_SET;
 
     // Stop timestamp (optional)
     if (kicked_ball.has_stop_timestamp()) {
-      kicked_ball_msg.stop_timestamp.push_back(kicked_ball.stop_timestamp());
+      tracked_frame_msg.kicked_ball.stop_timestamp = kicked_ball.stop_timestamp();
+      tracked_frame_msg.kicked_ball.has_field |=
+        tracked_frame_msg.kicked_ball.STOP_TIMESTAMP_FIELD_SET;
     }
 
     // Stop position (optional)
     if (kicked_ball.has_stop_pos()) {
-      robocup_ssl_msgs::msg::Vector2 stop_pos;
-      stop_pos.x = kicked_ball.stop_pos().x();
-      stop_pos.y = kicked_ball.stop_pos().y();
-      kicked_ball_msg.stop_pos.push_back(stop_pos);
+      tracked_frame_msg.kicked_ball.stop_pos.x = kicked_ball.stop_pos().x();
+      tracked_frame_msg.kicked_ball.stop_pos.y = kicked_ball.stop_pos().y();
+      tracked_frame_msg.kicked_ball.has_field |= tracked_frame_msg.kicked_ball.STOP_POS_FIELD_SET;
     }
 
     // Robot ID that kicked the ball (optional)
     if (kicked_ball.has_robot_id()) {
-      robocup_ssl_msgs::msg::RobotId robot_id;
-      robot_id.id = kicked_ball.robot_id().id();
-      robot_id.team = kicked_ball.robot_id().team();
-      kicked_ball_msg.robot_id.push_back(robot_id);
+      tracked_frame_msg.kicked_ball.robot_id.id = kicked_ball.robot_id().id();
+      tracked_frame_msg.kicked_ball.robot_id.team.value =
+        static_cast<int32_t>(kicked_ball.robot_id().team());
+      tracked_frame_msg.kicked_ball.robot_id.has_field |=
+        tracked_frame_msg.kicked_ball.robot_id.ID_FIELD_SET |
+        tracked_frame_msg.kicked_ball.robot_id.TEAM_FIELD_SET;
+      tracked_frame_msg.kicked_ball.has_field |= tracked_frame_msg.kicked_ball.ROBOT_ID_FIELD_SET;
     }
 
-    tracked_frame_msg.kicked_ball.push_back(kicked_ball_msg);
+    tracked_frame_msg.has_field |= tracked_frame_msg.KICKED_BALL_FIELD_SET;
   }
 
   // Parse capabilities
   for (const auto & capability : tracked_frame.capabilities()) {
-    tracked_frame_msg.capabilities.push_back(static_cast<uint32_t>(capability));
+    robocup_ssl_msgs::msg::Capability cap_msg;
+    cap_msg.value = static_cast<int32_t>(capability);
+    tracked_frame_msg.capabilities.push_back(cap_msg);
   }
 
   return tracked_frame_msg;

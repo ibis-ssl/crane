@@ -37,7 +37,7 @@ protected:
 
 private:
   robocup_ssl_msgs::msg::TrackedFrame parse_tracked_frame(
-    const TrackerWrapperPacket & wrapper_packet);
+    const robocup_ssl::TrackerWrapperPacket & wrapper_packet);
 
   rclcpp::TimerBase::SharedPtr timer;
 

@@ -52,10 +52,10 @@ public:
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // レフェリーコマンドに基づいてペナルティエリアオフセットを調整
-    switch (command) {
-      case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-      case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
-      case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+    switch (command.value) {
+      case robocup_ssl_msgs::msg::RefereeCommand::STOP:
+      case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_BLUE:
+      case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_YELLOW:
         penalty_area_offset_ = 0.5;
         surrounding_offset_ = 0.6;
         break;
