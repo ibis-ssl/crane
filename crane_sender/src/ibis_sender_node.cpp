@@ -53,7 +53,11 @@ private:
 
   bool use_simple_velocity;
 
-  double acc_limit_offset;
+  // ロボット送信用の加速度パラメータ
+  double robot_acceleration_acceleration;
+  double robot_acceleration_deceleration_high;
+  double robot_acceleration_deceleration_low;
+  double robot_acceleration_velocity_threshold;
 
 public:
   CLASS_LOADER_PUBLIC
@@ -65,8 +69,18 @@ public:
     declare_parameter("use_simple_velocity", false);
     get_parameter("use_simple_velocity", use_simple_velocity);
 
-    declare_parameter("acc_limit_offset", 1.0);
-    get_parameter("acc_limit_offset", acc_limit_offset);
+    // ロボット送信用の加速度パラメータを読み込み
+    declare_parameter("robot_acceleration.acceleration", 2.5);
+    get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration);
+
+    declare_parameter("robot_acceleration.deceleration_high", 3.0);
+    get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high);
+
+    declare_parameter("robot_acceleration.deceleration_low", 2.0);
+    get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low);
+
+    declare_parameter("robot_acceleration.velocity_threshold", 1.5);
+    get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold);
 
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
@@ -102,8 +116,27 @@ private:
     packet.enable_chip = command.chip_enable;
     packet.lift_dribbler = command.lift_up_dribbler_flag;
     packet.stop_emergency = command.stop_flag;
-    packet.acceleration_limit =
-      command.local_planner_config.final_planned_max_acceleration.value + acc_limit_offset;
+
+    // 現在の速度から加速度を選択
+    double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
+    double target_speed = command.local_planner_config.final_planned_max_velocity.value;
+
+    double selected_acceleration;
+    if (current_speed < target_speed) {
+      // 加速時
+      selected_acceleration = robot_acceleration_acceleration;
+    } else {
+      // 減速時：速度に応じて選択
+      if (current_speed >= robot_acceleration_velocity_threshold) {
+        // 高速域
+        selected_acceleration = robot_acceleration_deceleration_high;
+      } else {
+        // 低速域
+        selected_acceleration = robot_acceleration_deceleration_low;
+      }
+    }
+
+    packet.acceleration_limit = selected_acceleration;
     packet.linear_velocity_limit = command.local_planner_config.final_planned_max_velocity.value;
     packet.angular_velocity_limit = command.omega_limit;
     packet.prioritize_move = true;
