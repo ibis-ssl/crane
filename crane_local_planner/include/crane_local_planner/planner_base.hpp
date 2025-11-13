@@ -24,13 +24,16 @@ public:
 
     // 経路計画用の減速度パラメータを読み込み
     node.declare_parameter("planning_deceleration.high_speed", 2.5);
-    planning_deceleration_high_speed = node.get_parameter("planning_deceleration.high_speed").as_double();
+    planning_deceleration_high_speed =
+      node.get_parameter("planning_deceleration.high_speed").as_double();
 
     node.declare_parameter("planning_deceleration.low_speed", 1.8);
-    planning_deceleration_low_speed = node.get_parameter("planning_deceleration.low_speed").as_double();
+    planning_deceleration_low_speed =
+      node.get_parameter("planning_deceleration.low_speed").as_double();
 
     node.declare_parameter("planning_deceleration.velocity_threshold", 1.5);
-    planning_deceleration_velocity_threshold = node.get_parameter("planning_deceleration.velocity_threshold").as_double();
+    planning_deceleration_velocity_threshold =
+      node.get_parameter("planning_deceleration.velocity_threshold").as_double();
   }
   virtual auto calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, double theta_offset)
