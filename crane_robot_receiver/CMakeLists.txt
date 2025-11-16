@@ -34,6 +34,7 @@ ament_auto_add_executable(diagnostic_publisher_node
         src/diagnostic_publisher.cpp
         src/diagnostic_publisher_node.cpp
 )
+target_link_libraries(diagnostic_publisher_node fmt)
 add_backward(diagnostic_publisher_node)
 
 ament_auto_add_executable(grsim_robot_status_node

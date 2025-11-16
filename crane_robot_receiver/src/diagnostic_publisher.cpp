@@ -12,6 +12,7 @@
 #include <crane_robot_receiver/diagnostic_publisher.hpp>
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
+#include <fmt/format.h>
 #include <map>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -54,13 +55,13 @@ auto RobotData::initializeDiagnostics(
   rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode) -> void
 {
   updater = std::make_unique<diagnostic_updater::Updater>(node);
-  updater->setHardwareID("robot_" + std::to_string(robot_id));
+  updater->setHardwareID(fmt::format("robot_{:02d}", robot_id));
 
   auto ping_msg_ptr = std::make_shared<crane_msgs::msg::PingStatusArray>();
   auto feedback_msg_ptr = std::make_shared<crane_msgs::msg::RobotFeedbackArray>();
 
   // 診断名のプレフィックス（aggregatorでのグループ化用）
-  std::string diagnostic_prefix = "robot_" + std::to_string(robot_id) + "/";
+  std::string diagnostic_prefix = fmt::format("robot_{:02d}/", robot_id);
 
   // 通信状態の診断
   updater->add(
@@ -133,7 +134,7 @@ auto RobotData::initializeDiagnostics(
 
   // 診断情報の直接パブリッシャーを作成（後方互換性のため維持）
   direct_publisher = node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
-    "/diagnostics/robot_" + std::to_string(robot_id), 10);
+    fmt::format("/diagnostics/robot_{:02d}", robot_id), 10);
 }
 
 auto RobotData::communicationDiagnosticCallback(
