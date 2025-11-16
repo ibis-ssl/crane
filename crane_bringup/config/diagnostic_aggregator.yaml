@@ -1,0 +1,115 @@
+# RoboCup SSL Diagnostics Aggregator Configuration
+# このファイルは、システム全体の診断情報を階層化して集約します
+
+analyzers:
+  ros__parameters:
+    path: 'SSL_System'  # ルートパス
+    # 以下、各アナライザーを定義
+    # ========================================
+    # ベースステーション（計算PC）の診断
+    # ========================================
+    base_station:
+      type: diagnostic_aggregator/AnalyzerGroup
+      path: Base_Station
+      analyzers:
+        vision:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Vision
+          contains: ['vision/']
+          timeout: 5.0
+
+        ai_planner:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: AI_Planner
+          contains: ['ai_planner/']
+          timeout: 5.0
+
+        local_planner:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Local_Planner
+          contains: ['local_planner/']
+          timeout: 5.0
+
+    # ========================================
+    # チーム（ロボット0-12）の診断
+    # ========================================
+    team:
+      type: diagnostic_aggregator/AnalyzerGroup
+      path: Team
+      analyzers:
+        robot_00:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_00
+          contains: ['robot_00/']
+          timeout: 5.0
+        robot_01:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_01
+          contains: ['robot_01/']
+          timeout: 5.0
+
+        robot_02:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_02
+          contains: ['robot_02/']
+          timeout: 5.0
+
+        robot_03:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_03
+          contains: ['robot_03/']
+          timeout: 5.0
+
+        robot_04:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_04
+          contains: ['robot_04/']
+          timeout: 5.0
+
+        robot_05:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_05
+          contains: ['robot_05/']
+          timeout: 5.0
+
+        robot_06:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_06
+          contains: ['robot_06/']
+          timeout: 5.0
+
+        robot_07:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_07
+          contains: ['robot_07/']
+          timeout: 5.0
+
+        robot_08:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_08
+          contains: ['robot_08/']
+          timeout: 5.0
+
+        robot_09:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_09
+          contains: ['robot_09/']
+          timeout: 5.0
+
+        robot_10:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_10
+          contains: ['robot_10/']
+          timeout: 5.0
+
+        robot_11:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_11
+          contains: ['robot_11/']
+          timeout: 5.0
+
+        robot_12:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Robot_12
+          contains: ['robot_12/']
+          timeout: 5.0
