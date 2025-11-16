@@ -50,7 +50,8 @@ auto RobotData::removeError(const std::string & error_type) -> bool
   return false;
 }
 
-auto RobotData::initializeDiagnostics(rclcpp::Node * node) -> void
+auto RobotData::initializeDiagnostics(
+  rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode) -> void
 {
   updater = std::make_unique<diagnostic_updater::Updater>(node);
   updater->setHardwareID("robot_" + std::to_string(robot_id));
@@ -58,49 +59,87 @@ auto RobotData::initializeDiagnostics(rclcpp::Node * node) -> void
   auto ping_msg_ptr = std::make_shared<crane_msgs::msg::PingStatusArray>();
   auto feedback_msg_ptr = std::make_shared<crane_msgs::msg::RobotFeedbackArray>();
 
+  // 診断名のプレフィックス（aggregatorでのグループ化用）
+  std::string diagnostic_prefix = "robot_" + std::to_string(robot_id) + "/";
+
   // 通信状態の診断
   updater->add(
-    "communication",
-    [this, ping_msg_ptr, node](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (state != RobotState::ACTIVE) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+    diagnostic_prefix + "communication", [this, ping_msg_ptr, node, world_model, sim_mode](
+                                           diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      // WorldModelから直接detected状態をチェック
+      const auto & msg = world_model->getMsg();
+      bool detected = false;
+      for (const auto & robot_info : msg.robot_info_ours) {
+        if (robot_info.id == robot_id) {
+          detected = robot_info.detected;
+          break;
+        }
+      }
+
+      if (!detected) {
+        // 検出されていない場合はOKとして扱う
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("communication");
         return;
       }
-      communicationDiagnosticCallback(stat, *ping_msg_ptr, node->now());
+      communicationDiagnosticCallback(stat, *ping_msg_ptr, node->now(), sim_mode);
     });
 
   // バッテリー状態の診断
   updater->add(
-    "battery", [this, feedback_msg_ptr, node](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (state != RobotState::ACTIVE) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+    diagnostic_prefix + "battery", [this, feedback_msg_ptr, node, world_model,
+                                    sim_mode](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      // WorldModelから直接detected状態をチェック
+      const auto & msg = world_model->getMsg();
+      bool detected = false;
+      for (const auto & robot_info : msg.robot_info_ours) {
+        if (robot_info.id == robot_id) {
+          detected = robot_info.detected;
+          break;
+        }
+      }
+
+      if (!detected) {
+        // 検出されていない場合はOKとして扱う
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("battery");
         return;
       }
-      batteryDiagnosticCallback(stat, *feedback_msg_ptr, node->now());
+      batteryDiagnosticCallback(stat, *feedback_msg_ptr, node->now(), sim_mode);
     });
 
   // ロボットエラーの診断
   updater->add(
-    "robot_error",
-    [this, feedback_msg_ptr, node](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (state != RobotState::ACTIVE) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+    diagnostic_prefix + "robot_error", [this, feedback_msg_ptr, node, world_model, sim_mode](
+                                         diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      // WorldModelから直接detected状態をチェック
+      const auto & msg = world_model->getMsg();
+      bool detected = false;
+      for (const auto & robot_info : msg.robot_info_ours) {
+        if (robot_info.id == robot_id) {
+          detected = robot_info.detected;
+          break;
+        }
+      }
+
+      if (!detected) {
+        // 検出されていない場合はOKとして扱う
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("robot_error");
         return;
       }
-      robotErrorDiagnosticCallback(stat, *feedback_msg_ptr, node->now());
+      robotErrorDiagnosticCallback(stat, *feedback_msg_ptr, node->now(), sim_mode);
     });
 
-  // 診断情報の直接パブリッシャーを作成
+  // 診断情報の直接パブリッシャーを作成（後方互換性のため維持）
   direct_publisher = node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
     "/diagnostics/robot_" + std::to_string(robot_id), 10);
 }
 
 auto RobotData::communicationDiagnosticCallback(
   diagnostic_updater::DiagnosticStatusWrapper & stat,
-  const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time) -> void
+  const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time, bool sim_mode)
+  -> void
 {
   auto ping = ranges::find_if(ping_msg.ping, [this](const crane_msgs::msg::PingStatus & msg) {
     return msg.robot_id == robot_id;
@@ -131,17 +170,26 @@ auto RobotData::communicationDiagnosticCallback(
       removeError("communication");
     }
   } else {
-    std::string message = "No ping data received";
-    int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-
-    stat.summary(level, message);
-    updateErrorMap("communication", message, level, now_time);
+    // シミュレータ環境ではpingデータなしは正常
+    if (sim_mode) {
+      std::string message = "Simulation mode (no ping data)";
+      int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+      stat.summary(level, message);
+      removeError("communication");
+    } else {
+      // 実機環境ではERROR
+      std::string message = "No ping data received";
+      int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+      stat.summary(level, message);
+      updateErrorMap("communication", message, level, now_time);
+    }
   }
 }
 
 auto RobotData::batteryDiagnosticCallback(
   diagnostic_updater::DiagnosticStatusWrapper & stat,
-  const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time) -> void
+  const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+  bool sim_mode) -> void
 {
   auto feedback = ranges::find_if(
     feedback_msg.feedback,
@@ -172,17 +220,26 @@ auto RobotData::batteryDiagnosticCallback(
       removeError("battery");
     }
   } else {
-    std::string message = "No robot feedback received";
-    int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-
-    stat.summary(level, message);
-    updateErrorMap("battery", message, level, now_time);
+    // シミュレータ環境ではfeedbackデータなしは正常
+    if (sim_mode) {
+      std::string message = "Simulation mode (no battery data)";
+      int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+      stat.summary(level, message);
+      removeError("battery");
+    } else {
+      // 実機環境ではERROR
+      std::string message = "No robot feedback received";
+      int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+      stat.summary(level, message);
+      updateErrorMap("battery", message, level, now_time);
+    }
   }
 }
 
 auto RobotData::robotErrorDiagnosticCallback(
   diagnostic_updater::DiagnosticStatusWrapper & stat,
-  const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time) -> void
+  const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+  bool sim_mode) -> void
 {
   auto feedback = ranges::find_if(
     feedback_msg.feedback,
@@ -208,20 +265,36 @@ auto RobotData::robotErrorDiagnosticCallback(
       removeError("robot_error");
     }
   } else {
-    std::string message = "No robot feedback received";
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, message);
-    updateErrorMap("robot_error", message, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
+    // シミュレータ環境ではfeedbackデータなしは正常
+    if (sim_mode) {
+      std::string message = "Simulation mode (no robot error data)";
+      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, message);
+      removeError("robot_error");
+    } else {
+      // 実機環境ではERROR
+      std::string message = "No robot feedback received";
+      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, message);
+      updateErrorMap(
+        "robot_error", message, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
+    }
   }
 }
 
 DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_node")
 {
+  declare_parameter("sim_mode", true);
+  sim_mode_ = get_parameter("sim_mode").as_bool();
+
   declare_parameter("max_robot_id", 12);  // サポートする最大ロボットID
   int max_robot_id = get_parameter("max_robot_id").as_int();
 
   // 可視化用のCraneVisualizerBufferを初期化
   CraneVisualizerBuffer::activate(*this);
   visualizer_error = std::make_shared<VisualizerMessageBuilder>("diagnostic_errors");
+
+  // WorldModelの設定（ロボットデータ初期化より先に必要）
+  world_model = std::make_unique<WorldModelWrapper>(*this);
+  world_model->addCallback([this]() { worldModelCallback(); });
 
   // ロボットデータの初期化
   initializeRobots(max_robot_id);
@@ -234,10 +307,6 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
   feedback_subscription = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
     "/robot_feedback", 10,
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { feedbackMessageCallback(msg); });
-
-  // WorldModelの設定
-  world_model = std::make_unique<WorldModelWrapper>(*this);
-  world_model->addCallback([this]() { worldModelCallback(); });
 
   // 診断情報更新タイマー
   timer = this->create_wall_timer(std::chrono::seconds(1), [this]() {
@@ -261,7 +330,7 @@ auto DiagnosticPublisherNode::initializeRobots(int max_robot_id) -> void
   for (int i = 0; i <= max_robot_id; ++i) {
     // 初期状態では空のRobotDataを作成
     robots_data.emplace_back(std::make_shared<RobotData>(i));
-    robots_data.back()->initializeDiagnostics(this);
+    robots_data.back()->initializeDiagnostics(this, world_model.get(), sim_mode_);
 
     // ロボット位置の初期化
     robot_positions[i] = {0.0, 0.0, 0.0, false};
