@@ -4,6 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <fmt/format.h>
+
 #include <cmath>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -12,7 +14,6 @@
 #include <crane_robot_receiver/diagnostic_publisher.hpp>
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
-#include <fmt/format.h>
 #include <map>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
