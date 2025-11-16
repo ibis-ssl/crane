@@ -12,6 +12,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <functional>
 // #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
@@ -92,7 +93,9 @@ class LocalPlannerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("local_planner", options), commands_pub(this, "/robot_commands", 10, 50., 70.)
+  : rclcpp::Node("local_planner", options),
+    commands_pub(this, "/robot_commands", 10, 50., 70.),
+    diagnostic_updater_(this)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
@@ -131,9 +134,16 @@ public:
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
+
+    // 診断Updater設定
+    diagnostic_updater_.setHardwareID("local_planner");
+    diagnostic_updater_.add(
+      "local_planner/path_planning", this, &LocalPlannerComponent::updateDiagnostics);
   }
 
   auto callbackRobotCommands(const crane_msgs::msg::RobotCommands &) -> void;
+
+  auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
 protected:
   static auto resolveMaxAccelerationFactors(
@@ -154,6 +164,8 @@ private:
   double theta_offset = 0.;
 
   KickPowerCalculator kick_power_calculator;
+
+  diagnostic_updater::Updater diagnostic_updater_;
 };
 
 }  // namespace crane
