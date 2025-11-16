@@ -52,6 +52,7 @@ extern "C" {
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -90,9 +91,13 @@ private:
 
   auto updateBallContact() -> void;
 
+  auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
+
   std::unique_ptr<WorldModelDataProvider> data_provider_;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
+
+  diagnostic_updater::Updater diagnostic_updater_;
 
   DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
