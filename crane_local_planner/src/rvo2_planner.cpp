@@ -231,7 +231,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {
-    if (enemy_robot->available) {
+    if (enemy_robot->available()) {
       const auto & pos = enemy_robot->pose.pos;
       const auto & vel = enemy_robot->vel.linear;
       rvo_sim->setAgentPosition(enemy_robot->id + 20, toRVO(pos));
