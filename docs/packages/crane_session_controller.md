@@ -175,6 +175,24 @@ robots:
     planner: "DefensePlanner"
 ```
 
+## 診断機能
+
+このパッケージはAI計画サイクルの健全性を監視する診断情報を提供します：
+
+### 提供する診断項目
+
+- **AI計画サイクル状態** (`ai_planner/planning_cycle`)
+  - WorldModelの準備状態
+  - 計画サイクルの更新頻度
+
+### 診断レベル
+
+- **ERROR**: 1秒以上計画サイクル未実行
+- **WARN**: WorldModel未準備、または500ms以上更新遅延
+- **OK**: 正常動作中（更新時間も報告）
+
+詳細は[診断システムドキュメント](../diagnostics.md#crane_session_controller)を参照してください。
+
 ## 最近の開発状況
 
 ### 2025年の主要変更
