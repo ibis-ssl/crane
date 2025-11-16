@@ -27,7 +27,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(this, "/control_targets", 1, 50., 70.),
   robot_select_results_pub(
-    create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10))
+    create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10)),
+  diagnostic_updater_(this),
+  last_planning_time_(this->now())
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -219,11 +221,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     robot_commands_pub.publish(msg);
     visualizer->flush();
     CraneVisualizerBuffer::publish();
+
+    // 診断情報を更新
+    planning_count_++;
+    last_planning_time_ = now();
+    diagnostic_updater_.force_update();
   });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1,
     [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
+
+  // 診断Updater設定
+  diagnostic_updater_.setHardwareID("session_controller");
+  diagnostic_updater_.add(
+    "ai_planner/planning_cycle", this, &SessionControllerComponent::updateDiagnostics);
 }
 
 auto SessionControllerComponent::assign(const std::string & session_name) -> void
@@ -341,6 +353,36 @@ auto SessionControllerComponent::request(
 
   robot_select_results_pub->publish(results);
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
+}
+
+auto SessionControllerComponent::updateDiagnostics(
+  diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
+{
+  // WorldModelが準備できているかチェック
+  if (!world_model_ready) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::WARN, "Waiting for world model to be ready");
+    return;
+  }
+
+  // プランニングが実行されているかチェック
+  auto time_since_last_planning = (now() - last_planning_time_).seconds();
+
+  if (time_since_last_planning > 1.0) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planning not running (no update for >1s)");
+  } else if (time_since_last_planning > 0.5) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::WARN,
+      "Planning update slow (>0.5s since last update)");
+  } else {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Planning is running normally");
+  }
+
+  stat.add("time_since_last_planning", time_since_last_planning);
+  stat.add("planning_count", planning_count_);
+  stat.add("active_planners", static_cast<int>(available_planners.size()));
+  stat.add("available_robots", static_cast<int>(world_model->ours().getAvailableRobotIds().size()));
 }
 }  // namespace crane
 

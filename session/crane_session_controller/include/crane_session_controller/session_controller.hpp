@@ -18,6 +18,7 @@
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <deque>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -51,6 +52,8 @@ public:
   auto assign(const std::string & session_name) -> void;
 
 private:
+  auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
@@ -86,6 +89,12 @@ private:
 
   VisualizerMessageBuilder::SharedPtr visualizer =
     std::make_shared<VisualizerMessageBuilder>("session_controller");
+
+  diagnostic_updater::Updater diagnostic_updater_;
+
+  rclcpp::Time last_planning_time_;
+
+  int planning_count_ = 0;
 };
 
 }  // namespace crane
