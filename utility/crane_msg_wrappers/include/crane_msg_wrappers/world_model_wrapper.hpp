@@ -17,8 +17,10 @@
 #include <crane_physics/robot_info.hpp>
 #include <crane_physics/slack_time_config.hpp>
 #include <crane_physics/travel_time.hpp>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -671,6 +673,12 @@ private:
 
   // slack時間計算設定
   SlackTimeConfig slack_config_;
+
+  // 診断情報の統合
+  rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_agg_sub_;
+  std::map<uint8_t, bool> robot_diagnostic_errors_;  // robot_id -> has_error
+
+  auto diagnosticsCallback(const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void;
 };
 }  // namespace crane
 

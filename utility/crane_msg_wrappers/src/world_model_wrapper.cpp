@@ -38,6 +38,13 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
       "/world_model", 10,
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void { this->update(*msg); });
   }
+
+  // 診断情報の購読（集約された診断情報）
+  diagnostics_agg_sub_ = node.create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
+    "/diagnostics_agg", 10,
+    [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void {
+      this->diagnosticsCallback(msg);
+    });
 }
 
 auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) -> void
@@ -61,8 +68,13 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
+    // 診断情報とロボット情報のエラーを統合
+    bool has_error = robot.has_error;
+    if (robot_diagnostic_errors_.count(robot.id) > 0) {
+      has_error = has_error || robot_diagnostic_errors_[robot.id];
+    }
     // エラーがないかつ検出状態なら利用可能
-    info->available = robot.detected && !robot.has_error;
+    info->available = robot.detected && !has_error;
     if (info->available) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
@@ -571,5 +583,40 @@ auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const
 
   // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。
   return distance_ball_to_field_area / distance_sum;
+}
+
+auto WorldModelWrapper::diagnosticsCallback(
+  const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void
+{
+  // 診断メッセージを解析してロボットのエラー状態を更新
+  for (const auto & status : msg->status) {
+    // 診断名の形式: "SSL_System/Team/Robot_X/..."
+    // ロボットIDを抽出
+    std::string name = status.name;
+    size_t robot_pos = name.find("Robot_");
+    if (robot_pos != std::string::npos) {
+      // "Robot_"の後の数字を抽出
+      size_t id_start = robot_pos + 6;  // "Robot_"の長さ
+      size_t id_end = name.find("/", id_start);
+      if (id_end == std::string::npos) {
+        id_end = name.length();
+      }
+      std::string id_str = name.substr(id_start, id_end - id_start);
+      try {
+        uint8_t robot_id = static_cast<uint8_t>(std::stoi(id_str));
+
+        // ERRORレベルの診断がある場合のみhas_errorをtrueに設定
+        if (status.level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
+          robot_diagnostic_errors_[robot_id] = true;
+        } else if (status.level == diagnostic_msgs::msg::DiagnosticStatus::OK) {
+          // OKの場合はエラーをクリア
+          robot_diagnostic_errors_[robot_id] = false;
+        }
+        // WARNの場合は現状を維持（エラーとして扱わない）
+      } catch (const std::exception &) {
+        // IDのパースに失敗した場合は無視
+      }
+    }
+  }
 }
 }  // namespace crane
