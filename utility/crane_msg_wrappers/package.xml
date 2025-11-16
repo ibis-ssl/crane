@@ -14,6 +14,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_physics</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>diagnostic_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>range-v3</depend>
   <depend>rclcpp</depend>

@@ -193,6 +193,32 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
 
   planner->visualizer->flush();
   crane::CraneVisualizerBuffer::publish();
+
+  // 診断情報を更新
+  diagnostic_updater_.force_update();
+}
+
+auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)
+  -> void
+{
+  // プランナーの状態をチェック
+  if (!planner) {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planner not initialized");
+    return;
+  }
+
+  auto & world_model = planner->world_model;
+  if (not world_model) {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "World model not available");
+    return;
+  }
+
+  if (not world_model->hasUpdated()) {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "World model not updated yet");
+    return;
+  }
+
+  stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Path planning is running normally");
 }
 }  // namespace crane
 

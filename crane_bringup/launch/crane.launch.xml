@@ -242,7 +242,14 @@ limitations under the License.
   </node>
 
   <!-- 診断情報の配信 -->
-  <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node"/>
+  <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node">
+    <param name="sim_mode" value="$(var sim)"/>
+  </node>
+
+  <!-- 診断情報の集約 -->
+  <node pkg="diagnostic_aggregator" exec="aggregator_node">
+    <param from="$(find-pkg-share crane_bringup)/config/diagnostic_aggregator.yaml"/>
+  </node>
 
   <!-- ROSバッグ記録（条件付き起動） -->
   <group if="$(var record)">

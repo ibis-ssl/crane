@@ -39,7 +39,8 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider_(std::make_unique<WorldModelDataProvider>(*this)),
-  pub_world_model(this, "/world_model", 1, 50., 70.)
+  pub_world_model(this, "/world_model", 1, 50., 70.),
+  diagnostic_updater_(this)
 {
   using std::chrono_literals::operator""ms;
 
@@ -131,6 +132,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   RCLCPP_INFO(get_logger(), "  time_step: %.2f s", slack_config.time_step);
   RCLCPP_INFO(get_logger(), "  slack_time_offset: %.2f s", slack_config.slack_time_offset);
 
+  // 診断Updater設定
+  diagnostic_updater_.setHardwareID("world_model_publisher");
+  diagnostic_updater_.add(
+    "vision/processing", this, &WorldModelPublisherComponent::updateDiagnostics);
+
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     bool available = data_provider_->available();
@@ -146,6 +152,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         get_logger(), *get_clock(), 10000,
         "No vision or tracker data available - world_model not published");
     }
+
+    // 診断情報を更新
+    diagnostic_updater_.force_update();
   });
 }
 
@@ -160,7 +169,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   ball_info_history.emplace_back(msg.ball_info);
 
   for (const auto & robot : msg.robot_info_ours) {
-    if (robot.detected) {
+    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
       friend_history[robot.id].push_back(robot);
     }
     if (friend_history[robot.id].size() > static_cast<size_t>(history_size)) {
@@ -169,7 +178,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   }
 
   for (const auto & robot : msg.robot_info_theirs) {
-    if (robot.detected) {
+    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
       enemy_history[robot.id].push_back(robot);
     }
     if (enemy_history[robot.id].size() > static_cast<size_t>(history_size)) {
@@ -342,6 +351,33 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
       // ロボットの座標にボールがあることにする
       wrapper_->overwriteBallPos(robot->kicker_center());
     }
+  }
+}
+
+auto WorldModelPublisherComponent::updateDiagnostics(
+  diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
+{
+  // データが利用可能かチェック
+  bool available = data_provider_->available();
+
+  if (available) {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Vision processing is running");
+
+    // ボール検出状態
+    if (wrapper_->ball().detected) {
+      stat.add("ball_detected", "true");
+    } else {
+      stat.add("ball_detected", "false");
+    }
+
+    // 検出されたロボット数
+    auto our_robots = wrapper_->ours().getAvailableRobots();
+    auto their_robots = wrapper_->theirs().getAvailableRobots();
+    stat.add("our_robots_count", static_cast<int>(our_robots.size()));
+    stat.add("their_robots_count", static_cast<int>(their_robots.size()));
+  } else {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No vision or tracker data available");
   }
 }
 }  // namespace crane

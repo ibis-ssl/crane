@@ -15,7 +15,7 @@ auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::Sh
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
   double max_cos = 0.0;
   for (auto enemy : world_model->theirs().robots) {
-    if (enemy->available) {
+    if (enemy->available()) {
       auto norm = (enemy->pose.pos - p).normalized();
       double cos = ball_line_norm.dot(norm);
       max_cos = std::max(max_cos, cos);
@@ -49,7 +49,7 @@ auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, do
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;
   for (auto enemy : world_model->theirs().robots) {
-    if (enemy->available) {
+    if (enemy->available()) {
       double sq_dist = (enemy->pose.pos - p).squaredNorm();
       min_sq_dist = std::min(min_sq_dist, sq_dist);
     }

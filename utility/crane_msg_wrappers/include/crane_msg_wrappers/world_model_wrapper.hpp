@@ -17,8 +17,10 @@
 #include <crane_physics/robot_info.hpp>
 #include <crane_physics/slack_time_config.hpp>
 #include <crane_physics/travel_time.hpp>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -49,9 +51,9 @@ struct TeamInfo
     const uint8_t goalie = goalie_id;
     return robots | ranges::views::filter([excluded_id, except_goalie, goalie](const auto & robot) {
              if (except_goalie) {
-               return robot->available && robot->id != excluded_id && robot->id != goalie;
+               return robot->available() && robot->id != excluded_id && robot->id != goalie;
              }
-             return robot->available && robot->id != excluded_id;
+             return robot->available() && robot->id != excluded_id;
            });
   }
 
@@ -66,9 +68,9 @@ struct TeamInfo
   {
     return robots | ranges::views::filter([&](const auto & robot) {
              if (except_goalie) {
-               return robot->available && robot->id != my_id && robot->id != goalie_id;
+               return robot->available() && robot->id != my_id && robot->id != goalie_id;
              } else {
-               return robot->available && robot->id != my_id;
+               return robot->available() && robot->id != my_id;
              }
            }) |
            ranges::views::transform([](const auto & robot) { return robot->id; }) |
@@ -671,6 +673,12 @@ private:
 
   // slack時間計算設定
   SlackTimeConfig slack_config_;
+
+  // 診断情報の統合
+  rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_agg_sub_;
+  std::map<uint8_t, bool> robot_diagnostic_errors_;  // robot_id -> has_error
+
+  auto diagnosticsCallback(const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void;
 };
 }  // namespace crane
 

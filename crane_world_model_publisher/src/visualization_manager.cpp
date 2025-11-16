@@ -510,7 +510,10 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
 
   auto draw_team_history = [&](const auto & histories, const std::string & color) {
     for (const auto & [robot_id, history] : histories | ranges::views::enumerate) {
-      if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
+      if (
+        history.size() > SAMPLING_NUM + 1 &&
+        (history.front().available_vision || history.front().available_feedback ||
+         history.front().available_tracker)) {
         for (int i = 0; i < 10; i++) {
           int start = static_cast<int>((history.size() / 10.) * i);
           int end = static_cast<int>((history.size() / 10.) * (i + 1));

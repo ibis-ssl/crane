@@ -182,6 +182,36 @@ max_speed.setCallback([this]() {
 - **診断更新頻度**: 1-10Hz（設定可能）
 - **パラメータ更新遅延**: <10ms
 
+## 診断機能
+
+このパッケージは`DiagnosedPublisher`テンプレートクラスを提供し、トピック配信頻度の自動監視を実現します。
+
+### DiagnosedPublisher
+
+トピックの配信頻度を自動的に診断するテンプレートクラスです。通常のROS 2 Publisherをラップし、診断機能を追加します。
+
+**主要な特徴**:
+
+- 配信頻度の自動計測
+- 設定された頻度範囲（min/max Hz）外の場合に自動的にWARN/ERRORを報告
+- `diagnostic_updater::TopicDiagnostic`による内部実装
+
+### 動作原理
+
+```cpp
+template <typename MessageT>
+class DiagnosedPublisher {
+  void publish(const MessageT & message) {
+    topic_diagnostic.tick(clock->now());  // 配信頻度を記録
+    publisher->publish(message);          // メッセージを配信
+  }
+};
+```
+
+配信のたびに`tick()`が呼ばれ、`diagnostic_updater`が自動的に頻度を計算し、診断情報を生成します。
+
+詳細は[診断システムドキュメント](../diagnostics.md#diagnosedpublishercrane_comm)を参照してください。
+
 ## 最近の開発状況
 
 🟡 **中活動**: crane_basicsからの分離後、診断機能の強化、マルチキャスト通信の最適化が進められています。特にネットワーク状態の監視機能が充実し、通信品質の可視化が改善されました。

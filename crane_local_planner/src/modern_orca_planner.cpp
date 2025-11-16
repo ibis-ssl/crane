@@ -189,7 +189,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     for (const auto & enemy_robot : world_model->theirs().robots) {
       const auto enemy_id = enemy_robot->id + 20;  // Enemy robots: 20-39
 
-      if (enemy_robot->available) {
+      if (enemy_robot->available()) {
         // Convert enemy robot position and velocity to modern_orca types
         Vector2 enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
         Vector2 enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());

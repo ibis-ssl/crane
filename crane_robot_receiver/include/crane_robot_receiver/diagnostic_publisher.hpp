@@ -36,7 +36,8 @@ public:
   explicit RobotData(const uint8_t & id) : robot_id(id) {}
 
   // ロボットの診断情報の初期化
-  auto initializeDiagnostics(rclcpp::Node * node) -> void;
+  auto initializeDiagnostics(rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode)
+    -> void;
 
   // エラーマップの更新関数
   auto updateErrorMap(
@@ -66,17 +67,18 @@ private:
   // 診断情報更新コールバック関数
   auto communicationDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,
-    const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time) -> void;
+    const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time, bool sim_mode)
+    -> void;
 
   auto batteryDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,
-    const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time)
-    -> void;
+    const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+    bool sim_mode) -> void;
 
   auto robotErrorDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,
-    const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time)
-    -> void;
+    const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+    bool sim_mode) -> void;
 };
 
 class DiagnosticPublisherNode : public rclcpp::Node
@@ -113,6 +115,9 @@ private:
 
   // エラーが発生したロボットの位置情報を保持
   std::map<uint8_t, RobotPosition> robot_positions;
+
+  // シミュレータモードフラグ
+  bool sim_mode_;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_RECEIVER__DIAGNOSTIC_PUBLISHER_HPP_

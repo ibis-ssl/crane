@@ -75,8 +75,9 @@
 - **[攻撃戦術](./attacker.md)** - Attackerスキルの状態遷移と実装
 - **[守備システム](./defense.md)** - ゴールキーパーとディフェンダーの戦術
 
-### システム技術  
+### システム技術
 
+- **[診断システム](./diagnostics.md)** - システム全体の健全性監視と診断
 - **[ボールトラッキング](./ball_tracking_system.md)** - EKFベース状態推定の技術仕様
 - **[ボールモデルキャリブレーション](./ball_model_calibration_guide.md)** - 物理パラメータ自動最適化
 - **[可視化システム](./visualizer.md)** - SVGベース可視化APIの使用ガイド

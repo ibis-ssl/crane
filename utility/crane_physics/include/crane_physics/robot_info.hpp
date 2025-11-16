@@ -56,7 +56,20 @@ struct RobotInfo
 
   Velocity2D vel;
 
-  bool available = false;
+  // 利用可能性判定の基礎データ（入力ソース別）
+  bool available_vision = false;    // ビジョンで検出されているか (robot.detected)
+  bool available_hardware = false;  // ハードウェア診断が正常か (!robot_diagnostic_errors_)
+  bool available_feedback = false;  // フィードバックにエラーがないか (!robot.has_error)
+
+  // 利用可能性判定関数（用途に応じて使い分け）
+  [[nodiscard]] auto available() const -> bool { return available_vision && available_hardware; }
+
+  [[nodiscard]] auto availableStrict() const -> bool
+  {
+    return available_vision && available_hardware && available_feedback;
+  }
+
+  [[nodiscard]] auto availableLoose() const -> bool { return available_vision; }
 
   rclcpp::Time vision_detection_stamp;
 
