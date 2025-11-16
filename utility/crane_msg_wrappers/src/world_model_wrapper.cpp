@@ -76,8 +76,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available_vision = robot.available_vision;
     info->available_feedback = robot.available_feedback && !robot.has_error;
     // ハードウェア診断結果を反映（診断エラーがない場合のみtrue）
-    info->available_hardware = !(robot_diagnostic_errors_.count(robot.id) > 0 &&
-                                  robot_diagnostic_errors_[robot.id]);
+    info->available_hardware =
+      !(robot_diagnostic_errors_.count(robot.id) > 0 && robot_diagnostic_errors_[robot.id]);
 
     if (info->available()) {
       info->id = robot.id;
@@ -103,8 +103,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
     // 敵ロボットはビジョン検出のみで判定（診断情報なし）
     info->available_vision = robot.available_vision;
-    info->available_hardware = true;   // 敵ロボットの診断情報はないため常にtrue
-    info->available_feedback = true;   // 敵ロボットのフィードバックはないため常にtrue
+    info->available_hardware = true;  // 敵ロボットの診断情報はないため常にtrue
+    info->available_feedback = true;  // 敵ロボットのフィードバックはないため常にtrue
 
     if (info->available()) {
       info->id = robot.id;

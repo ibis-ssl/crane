@@ -193,6 +193,7 @@ robot_{:02d}/robot_error      # ロボット00-12のロボットエラー
 | Pingデータなし | WARN | "No ping data available" |
 
 **KeyValue情報**:
+
 - `ping_time`: Ping応答時間（ミリ秒）
 
 **シミュレータモード対応**:
@@ -217,6 +218,7 @@ robot_{:02d}/robot_error      # ロボット00-12のロボットエラー
 | バッテリーデータなし | WARN | "No battery data available" |
 
 **KeyValue情報**:
+
 - `voltage`: バッテリー電圧（ボルト）
 
 **実装ファイル**: `crane_robot_receiver/src/diagnostic_publisher.cpp:batteryDiagnosticCallback`
@@ -226,6 +228,7 @@ robot_{:02d}/robot_error      # ロボット00-12のロボットエラー
 RobotFeedbackメッセージから報告されるハードウェアエラーを監視します。
 
 **監視対象**:
+
 - **POWERエラー**: 電源系統のエラー（14種類）
 - **BLDCモーターエラー**: 4つの駆動モーター（RF, RB, LB, LF）のエラー（各7種類）
 
@@ -238,10 +241,12 @@ RobotFeedbackメッセージから報告されるハードウェアエラーを�
 | フィードバックなし | WARN | "No feedback data available" |
 
 **エラー種別の判定**:
+
 - `error_id == 100`: POWERエラー
 - `error_id == 0-3`: BLDCモーターエラー（0=RF, 1=RB, 2=LB, 3=LF）
 
 **KeyValue情報**:
+
 - `error_id`: エラー発生箇所ID
 - `error_info`: エラー種別コード
 - `error_value`: エラー値
@@ -493,6 +498,7 @@ uint16 error_info
 ### エラーコード詳細
 
 詳細なエラーコード一覧とビットフラグ定義は以下を参照：
+
 - **定義**: `crane_robot_receiver/include/crane_robot_receiver/robot_errors.hpp`
 - **変換関数**: `getPowerErrorString()`, `getBLDCErrorString()`
 
@@ -597,6 +603,7 @@ analyzers:
 ```
 
 **パラメータ**:
+
 - `sim_mode`: シミュレータモードフラグ（デフォルト: `false`）
 
 #### diagnostic_aggregator起動
@@ -622,6 +629,7 @@ ROS 2 diagnosticsが提供する標準トピックです。
 **説明**: すべてのコンポーネントから配信される生の診断情報
 
 **配信者**:
+
 - DiagnosticPublisher（各ロボット×3診断）
 - WorldModelPublisher
 - SessionController
@@ -629,6 +637,7 @@ ROS 2 diagnosticsが提供する標準トピックです。
 - DiagnosedPublisher（各トピック）
 
 **サンプル確認**:
+
 ```bash
 ros2 topic echo /diagnostics
 ```
@@ -642,6 +651,7 @@ ros2 topic echo /diagnostics
 **配信者**: diagnostic_aggregator
 
 **サンプル確認**:
+
 ```bash
 ros2 topic echo /diagnostics_agg
 ```
@@ -655,6 +665,7 @@ ros2 topic echo /diagnostics_agg
 **配信者**: diagnostic_aggregator
 
 **サンプル確認**:
+
 ```bash
 ros2 topic echo /diagnostics_toplevel_state
 ```
@@ -672,6 +683,7 @@ ros2 topic echo /diagnostics_toplevel_state
 **配信者**: DiagnosticPublisher
 
 **例**:
+
 ```bash
 ros2 topic echo /diagnostics/robot_00
 ros2 topic echo /diagnostics/robot_05
@@ -756,12 +768,14 @@ void MyNode::timerCallback() {
 - **コンポーネント名を明確に**: 他と重複しない固有の名前
 
 **良い例**:
+
 - `vision/processing`
 - `ai_planner/planning_cycle`
 - `robot_00/communication`
 - `my_component/initialization`
 
 **悪い例**:
+
 - `status`（曖昧すぎる）
 - `robot_0/error`（1桁表記）
 - `MyComponent`（階層なし）
@@ -876,9 +890,9 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 
 ### ROS 2公式ドキュメント
 
-- **diagnostic_updater**: https://github.com/ros/diagnostics/tree/ros2/diagnostic_updater
-- **diagnostic_aggregator**: https://github.com/ros/diagnostics/tree/ros2/diagnostic_aggregator
-- **diagnostic_msgs**: https://github.com/ros2/common_interfaces/tree/rolling/diagnostic_msgs
+- **diagnostic_updater**: <https://github.com/ros/diagnostics/tree/ros2/diagnostic_updater>
+- **diagnostic_aggregator**: <https://github.com/ros/diagnostics/tree/ros2/diagnostic_aggregator>
+- **diagnostic_msgs**: <https://github.com/ros2/common_interfaces/tree/rolling/diagnostic_msgs>
 
 ### 関連パッケージドキュメント
 
@@ -916,7 +930,7 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 
 ### 可視化ツール
 
-- **Foxglove Studio**: https://foxglove.dev/
+- **Foxglove Studio**: <https://foxglove.dev/>
 - **rqt_robot_monitor**: ROS 2パッケージ（`ros-${ROS_DISTRO}-rqt-robot-monitor`）
 
 ---
@@ -926,6 +940,7 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 Crane診断システムは、ROS 2の標準diagnostics機能を活用し、システム全体の健全性を包括的に監視します。
 
 **主要な設計原則**:
+
 1. **3層アーキテクチャ**: データ収集→統合→活用により、各コンポーネントの状態を階層的に管理
 2. **循環参照回避**: 入力ソース別にavailableを分離し、診断の入力（`available_vision`等）と出力（`available_hardware`）を明確に分離
 3. **多層判定**: 用途に応じて`available()`, `availableStrict()`, `availableLoose()`を使い分け

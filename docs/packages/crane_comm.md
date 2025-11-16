@@ -191,6 +191,7 @@ max_speed.setCallback([this]() {
 トピックの配信頻度を自動的に診断するテンプレートクラスです。通常のROS 2 Publisherをラップし、診断機能を追加します。
 
 **主要な特徴**:
+
 - 配信頻度の自動計測
 - 設定された頻度範囲（min/max Hz）外の場合に自動的にWARN/ERRORを報告
 - `diagnostic_updater::TopicDiagnostic`による内部実装
