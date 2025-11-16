@@ -51,9 +51,9 @@ struct TeamInfo
     const uint8_t goalie = goalie_id;
     return robots | ranges::views::filter([excluded_id, except_goalie, goalie](const auto & robot) {
              if (except_goalie) {
-               return robot->available && robot->id != excluded_id && robot->id != goalie;
+               return robot->available() && robot->id != excluded_id && robot->id != goalie;
              }
-             return robot->available && robot->id != excluded_id;
+             return robot->available() && robot->id != excluded_id;
            });
   }
 
@@ -68,9 +68,9 @@ struct TeamInfo
   {
     return robots | ranges::views::filter([&](const auto & robot) {
              if (except_goalie) {
-               return robot->available && robot->id != my_id && robot->id != goalie_id;
+               return robot->available() && robot->id != my_id && robot->id != goalie_id;
              } else {
-               return robot->available && robot->id != my_id;
+               return robot->available() && robot->id != my_id;
              }
            }) |
            ranges::views::transform([](const auto & robot) { return robot->id; }) |

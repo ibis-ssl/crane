@@ -83,10 +83,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     for (size_t i = 0; i < MAX_ROBOT_COUNT; ++i) {
       auto & robot = robot_info_[team][i];
       robot.id = static_cast<uint8_t>(i);
-      robot.vision_detected = false;
-      robot.feedback_detected = false;
-      robot.internal_tracker_detected = false;
-      robot.detected = false;
+      robot.available_vision = false;
+      robot.available_feedback = false;
+      robot.available_tracker = false;
       // error tracker defaults are already zeroed by the struct's default members
     }
   }
@@ -363,7 +362,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
           // feedbackデータを含むRobotInfoを作成
           crane_msgs::msg::RobotInfo feedback_robot;
           feedback_robot.id = feedback.robot_id;
-          feedback_robot.feedback_detected = true;
+          feedback_robot.available_feedback = true;
           feedback_robot.ball_sensor = feedback.ball_sensor;
           feedback_robot.last_ball_sensor_stamp = feedback.received_stamp;
           feedback_robot.last_feedback_detection_stamp = feedback.received_stamp;
@@ -484,7 +483,7 @@ auto WorldModelDataProvider::mergeRobotInfo(
 
   // Primary data source is vision (with EKF filtering)
   // Merge feedback information
-  merged.feedback_detected = feedback_robot.feedback_detected;
+  merged.available_feedback = feedback_robot.available_feedback;
   merged.ball_sensor = feedback_robot.ball_sensor;
   merged.last_ball_sensor_stamp = feedback_robot.last_ball_sensor_stamp;
   merged.last_feedback_detection_stamp = feedback_robot.last_feedback_detection_stamp;
@@ -496,9 +495,6 @@ auto WorldModelDataProvider::mergeRobotInfo(
   merged.error_value = feedback_robot.error_value;
   merged.last_error_stamp = feedback_robot.last_error_stamp;
   merged.error_duration_sec = feedback_robot.error_duration_sec;
-
-  // Combine detection flags
-  merged.detected = merged.vision_detected || merged.feedback_detected;
 
   return merged;
 }
@@ -664,8 +660,7 @@ auto WorldModelDataProvider::processTrackedFrame(
   // 全チーム・全ロボットIDをリセット
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     for (auto & robot : robot_info_[team_idx]) {
-      robot.vision_detected = false;
-      robot.detected = false;
+      robot.available_vision = false;
     }
   }
 
@@ -679,8 +674,7 @@ auto WorldModelDataProvider::processTrackedFrame(
 
     auto & robot = robot_info_[team_index][robot_id];
     robot = convertTrackedRobot(tracked_robot, team_index);
-    robot.vision_detected = true;
-    robot.detected = true;
+    robot.available_vision = true;
     robot.vision.stamp = now;
   }
 }
@@ -760,10 +754,9 @@ auto WorldModelDataProvider::convertTrackedRobot(
   robot_info.vision.pose.theta = tracked_robot.orientation;
 
   // 検出フラグ
-  robot_info.vision_detected = true;
-  robot_info.detected = true;
-  robot_info.feedback_detected = false;
-  robot_info.internal_tracker_detected = false;
+  robot_info.available_vision = true;
+  robot_info.available_feedback = false;
+  robot_info.available_tracker = false;
 
   return robot_info;
 }

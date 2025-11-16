@@ -12,10 +12,10 @@ float32 acceleration_norm
 
 Pose2DStamped vision
 
-bool vision_detected
-bool feedback_detected
-bool internal_tracker_detected
-bool detected
+# 入力ソース別の検出状態
+bool available_vision                # ビジョンで検出されているか
+bool available_feedback              # フィードバックで検出されているか
+bool available_tracker               # トラッカーで検出されているか
 
 # Latest detection time
 builtin_interfaces/Time last_tracker_detection_stamp

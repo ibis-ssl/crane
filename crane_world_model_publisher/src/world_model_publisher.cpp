@@ -169,7 +169,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   ball_info_history.emplace_back(msg.ball_info);
 
   for (const auto & robot : msg.robot_info_ours) {
-    if (robot.detected) {
+    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
       friend_history[robot.id].push_back(robot);
     }
     if (friend_history[robot.id].size() > static_cast<size_t>(history_size)) {
@@ -178,7 +178,7 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   }
 
   for (const auto & robot : msg.robot_info_theirs) {
-    if (robot.detected) {
+    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
       enemy_history[robot.id].push_back(robot);
     }
     if (enemy_history[robot.id].size() > static_cast<size_t>(history_size)) {

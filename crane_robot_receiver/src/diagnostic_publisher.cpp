@@ -68,18 +68,17 @@ auto RobotData::initializeDiagnostics(
   updater->add(
     diagnostic_prefix + "communication", [this, ping_msg_ptr, node, world_model, sim_mode](
                                            diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      // WorldModelから直接detected状態をチェック
       const auto & msg = world_model->getMsg();
       bool detected = false;
       for (const auto & robot_info : msg.robot_info_ours) {
         if (robot_info.id == robot_id) {
-          detected = robot_info.detected;
+          detected = robot_info.available_vision || robot_info.available_tracker;
           break;
         }
       }
 
       if (!detected) {
-        // 検出されていない場合はOKとして扱う
+        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("communication");
         return;
@@ -91,18 +90,20 @@ auto RobotData::initializeDiagnostics(
   updater->add(
     diagnostic_prefix + "battery", [this, feedback_msg_ptr, node, world_model,
                                     sim_mode](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      // WorldModelから直接detected状態をチェック
+      // 【循環参照回避】WorldModelからビジョン検出状態のみをチェック
+      // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
       const auto & msg = world_model->getMsg();
       bool detected = false;
       for (const auto & robot_info : msg.robot_info_ours) {
         if (robot_info.id == robot_id) {
-          detected = robot_info.detected;
+          detected = robot_info.available_vision || robot_info.available_feedback ||
+                     robot_info.available_tracker;
           break;
         }
       }
 
       if (!detected) {
-        // 検出されていない場合はOKとして扱う
+        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("battery");
         return;
@@ -114,18 +115,20 @@ auto RobotData::initializeDiagnostics(
   updater->add(
     diagnostic_prefix + "robot_error", [this, feedback_msg_ptr, node, world_model, sim_mode](
                                          diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      // WorldModelから直接detected状態をチェック
+      // WorldModelからビジョン検出状態のみをチェック
+      // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
       const auto & msg = world_model->getMsg();
       bool detected = false;
       for (const auto & robot_info : msg.robot_info_ours) {
         if (robot_info.id == robot_id) {
-          detected = robot_info.detected;
+          detected = robot_info.available_vision || robot_info.available_feedback ||
+                     robot_info.available_tracker;
           break;
         }
       }
 
       if (!detected) {
-        // 検出されていない場合はOKとして扱う
+        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("robot_error");
         return;

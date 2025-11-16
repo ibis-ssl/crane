@@ -52,11 +52,15 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   has_updated = true;
   latest_msg = world_model;
   for (auto & our_robot : ours_.robots) {
-    our_robot->available = false;
+    our_robot->available_vision = false;
+    our_robot->available_hardware = false;
+    our_robot->available_feedback = false;
   }
 
   for (auto & their_robot : theirs_.robots) {
-    their_robot->available = false;
+    their_robot->available_vision = false;
+    their_robot->available_hardware = false;
+    their_robot->available_feedback = false;
   }
 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
@@ -68,14 +72,14 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
-    // 診断情報とロボット情報のエラーを統合
-    bool has_error = robot.has_error;
-    if (robot_diagnostic_errors_.count(robot.id) > 0) {
-      has_error = has_error || robot_diagnostic_errors_[robot.id];
-    }
-    // エラーがないかつ検出状態なら利用可能
-    info->available = robot.detected && !has_error;
-    if (info->available) {
+
+    info->available_vision = robot.available_vision;
+    info->available_feedback = robot.available_feedback && !robot.has_error;
+    // ハードウェア診断結果を反映（診断エラーがない場合のみtrue）
+    info->available_hardware = !(robot_diagnostic_errors_.count(robot.id) > 0 &&
+                                  robot_diagnostic_errors_[robot.id]);
+
+    if (info->available()) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
@@ -96,8 +100,13 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
   for (auto robot : world_model.robot_info_theirs) {
     auto & info = theirs_.robots.at(robot.id);
-    info->available = robot.detected;
-    if (info->available) {
+
+    // 敵ロボットはビジョン検出のみで判定（診断情報なし）
+    info->available_vision = robot.available_vision;
+    info->available_hardware = true;   // 敵ロボットの診断情報はないため常にtrue
+    info->available_feedback = true;   // 敵ロボットのフィードバックはないため常にtrue
+
+    if (info->available()) {
       info->id = robot.id;
       info->ball_contact.update(
         robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
