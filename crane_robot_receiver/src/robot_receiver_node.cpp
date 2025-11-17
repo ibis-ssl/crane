@@ -6,6 +6,7 @@
 
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <sys/socket.h>
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -15,8 +16,12 @@
 #include <format>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_set>
 
 using boost::asio::ip::udp;
+
+// SO_REUSEPORTソケットオプションの定義
+typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
 struct RobotInterfaceConfig
 {
@@ -103,7 +108,24 @@ public:
       throw std::runtime_error("expected multicast address");
     }
 
-    // 全てのネットワークデバイスでマルチキャストに参加
+    // ソケットオプションを先に設定
+    boost::system::error_code ec;
+
+    socket.set_option(boost::asio::socket_base::reuse_address(true), ec);
+
+    socket.set_option(reuse_port(true), ec);
+
+    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port), ec);
+    if (ec) {
+      std::cerr << "[ERROR] bind失敗: " << ec.message() << std::endl;
+      throw std::runtime_error("bind failed: " + ec.message());
+    } else {
+      std::cout << "[DEBUG] bind成功: port=" << port << std::endl;
+    }
+
+    socket.non_blocking(true);
+
+    // その後、全てのネットワークデバイスでマルチキャストに参加
     try {
       struct ifaddrs * interfaces = nullptr;
       struct ifaddrs * ifa = nullptr;
@@ -112,6 +134,11 @@ public:
       if (getifaddrs(&interfaces) == -1) {
         throw std::runtime_error("Error: getifaddrs failed.");
       }
+
+      int interface_count = 0;
+      int success_count = 0;
+      int skip_count = 0;
+      std::unordered_set<std::string> joined_interfaces;  // 参加済みインターフェース名を記録
 
       // ネットワークインターフェースのリストを巡回
       for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
@@ -125,21 +152,37 @@ public:
           inet_ntop(
             AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
             INET_ADDRSTRLEN);
+
+          interface_count++;
+          std::cout << "[DEBUG] インターフェース検出: " << ifa->ifa_name << ": " << ip << std::endl;
+
+          // 同じインターフェースで既に参加済みの場合はスキップ
+          std::string if_name(ifa->ifa_name);
+          if (joined_interfaces.count(if_name) > 0) {
+            skip_count++;
+            continue;
+          }
+
           boost::asio::ip::detail::socket_option::multicast_request<
             IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
             join_device(addr.to_v4(), boost::asio::ip::address::from_string(ip).to_v4());
-          socket.set_option(join_device);
+
+          boost::system::error_code join_ec;
+          socket.set_option(join_device, join_ec);
+
+          if (join_ec) {
+            skip_count++;
+          } else {
+            joined_interfaces.insert(if_name);  // 参加成功したインターフェースを記録
+            success_count++;
+          }
         }
       }
 
       freeifaddrs(interfaces);  // メモリの解放
     } catch (std::exception & e) {
-      std::cerr << e.what() << std::endl;
+      std::cerr << "[ERROR] マルチキャスト設定中に例外: " << e.what() << std::endl;
     }
-
-    socket.set_option(boost::asio::socket_base::reuse_address(true));
-    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
-    socket.non_blocking(true);
   }
 
   auto receive() -> bool

@@ -17,17 +17,22 @@
 
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <sys/socket.h>
 
 #include <boost/asio.hpp>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace multicast
 {
 namespace asio = boost::asio;
+
+// SO_REUSEPORTソケットオプションの定義
+typedef asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
 class MulticastReceiver
 {
@@ -40,6 +45,22 @@ public:
       throw std::runtime_error("expected multicast address");
     }
 
+    // ソケットオプションを先に設定
+    boost::system::error_code ec;
+
+    socket.set_option(asio::socket_base::reuse_address(true), ec);
+
+    socket.set_option(reuse_port(true), ec);
+
+    socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port), ec);
+    if (ec) {
+      std::cerr << "[ERROR] bind失敗: " << ec.message() << std::endl;
+      throw std::runtime_error("bind failed: " + ec.message());
+    }
+
+    socket.non_blocking(true);
+
+    // その後マルチキャストグループに参加
     try {
       struct ifaddrs * interfaces = nullptr;
       struct ifaddrs * ifa = nullptr;
@@ -48,6 +69,11 @@ public:
       if (getifaddrs(&interfaces) == -1) {
         throw std::runtime_error("Error: getifaddrs failed.");
       }
+
+      int interface_count = 0;
+      int success_count = 0;
+      int skip_count = 0;
+      std::unordered_set<std::string> joined_interfaces;  // 参加済みインターフェース名を記録
 
       // ネットワークインターフェースのリストを巡回
       for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
@@ -61,11 +87,28 @@ public:
             (struct sockaddr_in *)ifa->ifa_addr;  // キャスト後に変数に格納
           inet_ntop(AF_INET, &(addr_in->sin_addr), ip, INET_ADDRSTRLEN);
 
+          interface_count++;
+          // 同じインターフェースで既に参加済みの場合はスキップ
+          std::string if_name(ifa->ifa_name);
           std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
+          if (joined_interfaces.count(if_name) > 0) {
+            skip_count++;
+            continue;
+          }
+
           boost::asio::ip::detail::socket_option::multicast_request<
             IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
             join_device(addr.to_v4(), asio::ip::address::from_string(ip).to_v4());
-          socket.set_option(join_device);
+
+          boost::system::error_code join_ec;
+          socket.set_option(join_device, join_ec);
+
+          if (join_ec) {
+            skip_count++;
+          } else {
+            joined_interfaces.insert(if_name);  // 参加成功したインターフェースを記録
+            success_count++;
+          }
         }
       }
 
@@ -73,10 +116,6 @@ public:
     } catch (std::exception & e) {
       std::cerr << e.what() << std::endl;
     }
-
-    socket.set_option(asio::socket_base::reuse_address(true));
-    socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
-    socket.non_blocking(true);
   }
 
   auto receive(std::vector<char> & msg) -> size_t
