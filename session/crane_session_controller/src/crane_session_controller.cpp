@@ -266,60 +266,11 @@ auto SessionControllerComponent::request(
   crane_msgs::msg::RobotSelectResults results;
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
-  for (auto p : map->second) {
-    crane_msgs::msg::RobotSelectResult result;
-    result.name = p.session_name;
-    auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-    req->selectable_robots_num = p.selectable_robot_num;
-    result.selectable_robots_num = p.selectable_robot_num;
-    if (p.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
-      continue;
-    }
-    // 使用可能なロボットを詰め込む
-    std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
-    std::ranges::copy(selectable_robot_ids, std::back_inserter(result.selectable_robots));
-    try {
-      const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
-      auto [response, new_planner] = [&]() {
-        auto planner =
-          generatePlanner(p.session_name, world_model, static_cast<rclcpp::Node &>(*this));
-        auto response = planner->doRobotSelect(req, prev_roles, planner_context);
-        return std::make_pair(response, planner);
-      }();
-      std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
-      results.results.push_back(result);
-
-      // 前回結果との比較
-      if (auto matched_planner = std::ranges::find_if(
-            prev_available_planners,
-            [&new_planner](const auto & prev_planner) {
-              return prev_planner->isSameConfiguration(new_planner.get());
-            });
-          matched_planner != prev_available_planners.end()) {
-        available_planners.push_back(*matched_planner);
-      } else {
-        if (not selectable_robot_ids.empty()) {
-          RCLCPP_DEBUG_STREAM(
-            get_logger(), "\tセッション「" << p.session_name << "」のロボット選択："
-                                           << selectable_robot_ids << " -> "
-                                           << response.selected_robots);
-          available_planners.push_back(new_planner);
-        }
-      }
-
-      // 割当依頼結果の反映
-      for (auto selected_robot_id : response.selected_robots) {
-        // 割当されたロボットを利用可能ロボットリストから削除
-        selectable_robot_ids.erase(
-          remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
-          selectable_robot_ids.end());
-        // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-        robot_roles->insert_or_assign(selected_robot_id, RobotRole{p.session_name, ""});
-      }
-    } catch (std::exception & e) {
-      RCLCPP_ERROR(
-        get_logger(), "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
-        p.session_name.c_str(), e.what());
+  for (const auto & session_capacity : map->second) {
+    if (!tryAssignRobotToPlanner(
+          session_capacity, selectable_robot_ids, prev_available_planners, planner_context,
+          results)) {
+      // エラーが発生した場合はループを抜ける
       break;
     }
   }

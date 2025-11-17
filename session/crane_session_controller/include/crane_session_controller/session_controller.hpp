@@ -63,6 +63,12 @@ private:
   // 前回と変わっていればログ出力
   auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
 
+  // プランナーへのロボット割り当てを試行（エラーハンドリング含む）
+  auto tryAssignRobotToPlanner(
+    const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
+    const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
+    PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
