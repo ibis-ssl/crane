@@ -32,11 +32,9 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     for (size_t i = 1; i < commands.size(); i++) {
       if (commands[i - 1].robot_id == commands[i].robot_id) {
         std::stringstream what;
-        what << "ロボット " << static_cast<int>(commands[i].robot_id) << " が重複しています(";
-        what << commands[i].planner_name << ", " << aggregate_states(commands[i].state_factors)
-             << "と" << commands[i - 1].planner_name << ", "
-             << aggregate_states(commands[i - 1].state_factors) << ")";
+        what << "ロボット " << static_cast<int>(commands[i].robot_id) << " が重複しています("
              << commands[i].planner_name << ", " << aggregateStates(commands[i].state_factors)
+             << " と " << commands[i - 1].planner_name << ", "
              << aggregateStates(commands[i - 1].state_factors) << ")";
         RCLCPP_ERROR(get_logger(), what.str().c_str());
       }
@@ -51,23 +49,17 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
       case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
         if (raw_command.local_camera_mode.empty()) {
           is_valid = false;
-          std::stringstream what;
-          what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as LOCAL_CAMERA_MODE by \""
-               << aggregate_states(raw_command.state_factors)
-               << "\" skill , but no local_camera_mode is set.";
-          RCLCPP_ERROR(get_logger(), what.str().c_str());
+          logValidationError(
+            raw_command.robot_id, "LOCAL_CAMERA_MODE", raw_command.state_factors,
+            "local_camera_mode が設定されていません。");
         }
         break;
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
         if (raw_command.position_target_mode.empty()) {
           is_valid = false;
-          std::stringstream what;
-          what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as POSITION_TARGET_MODE by \""
-               << aggregate_states(raw_command.state_factors)
-               << "\" skill , but no position_target_mode is set.";
-          RCLCPP_ERROR(get_logger(), what.str().c_str());
+          logValidationError(
+            raw_command.robot_id, "POSITION_TARGET_MODE", raw_command.state_factors,
+            "position_target_mode が設定されていません。");
         } else {
           planner->visualizer->line()
             .start(raw_command.current_pose.x, raw_command.current_pose.y)
@@ -82,33 +74,23 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
         if (raw_command.simple_velocity_target_mode.empty()) {
           is_valid = false;
-          std::stringstream what;
-          what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as SIMPLE_VELOCITY_TARGET_MODE by \""
-               << aggregate_states(raw_command.state_factors)
-               << "\" skill , but simple_velocity_target_mode "
-                  "is set.";
-          RCLCPP_ERROR(get_logger(), what.str().c_str());
+          logValidationError(
+            raw_command.robot_id, "SIMPLE_VELOCITY_TARGET_MODE", raw_command.state_factors,
+            "simple_velocity_target_mode が設定されていません。");
         }
         break;
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
         if (raw_command.polar_velocity_target_mode.empty()) {
           is_valid = false;
-          std::stringstream what;
-          what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as POLAR_VELOCITY_TARGET_MODE by \""
-               << aggregate_states(raw_command.state_factors)
-               << "\" skill , but no polar_velocity_target_mode is set.";
-          RCLCPP_ERROR(get_logger(), what.str().c_str());
+          logValidationError(
+            raw_command.robot_id, "POLAR_VELOCITY_TARGET_MODE", raw_command.state_factors,
+            "polar_velocity_target_mode が設定されていません。");
         }
         break;
       default:
         is_valid = false;
-        std::stringstream what;
-        what << "The robot " << static_cast<int>(raw_command.robot_id)
-             << " is specified as an unknown control mode by \""
-             << aggregate_states(raw_command.state_factors) << "\" skill.";
-        RCLCPP_ERROR(get_logger(), what.str().c_str());
+        logValidationError(
+          raw_command.robot_id, "不明な制御モード", raw_command.state_factors, "未知の制御モードです。");
         break;
     }
     // 一致しなかったらエラーメッセージ＆ロボットを待機状態にする
@@ -194,22 +176,22 @@ auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStat
 {
   // プランナーの状態をチェック
   if (!planner) {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planner not initialized");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "プランナーが初期化されていません");
     return;
   }
 
   auto & world_model = planner->world_model;
   if (not world_model) {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "World model not available");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "ワールドモデルが利用できません");
     return;
   }
 
   if (not world_model->hasUpdated()) {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "World model not updated yet");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "ワールドモデルがまだ更新されていません");
     return;
   }
 
-  stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Path planning is running normally");
+  stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "経路計画は正常に動作しています");
 }
 
 auto LocalPlannerComponent::aggregateStates(
