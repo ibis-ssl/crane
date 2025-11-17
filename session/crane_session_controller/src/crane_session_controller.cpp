@@ -110,27 +110,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
-    PlannerContext planner_context;
-    auto it = event_map.find(play_situation.command.name);
-    if (it != event_map.end()) {
-      try {
-        request(it->second, world_model->ours().getAvailableRobotIds(), planner_context);
-      } catch (const std::exception & e) {
-        std::stringstream what;
-        what << "例外が発生しました: " << e.what() << std::endl;
-        what << "スタックトレース: " << std::endl;
-        what << boost::stacktrace::stacktrace() << std::endl;
-        static int count = 0;
-
-        if (std::ofstream ofs(
-              std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
-            ofs) {
-          ofs << what.str() << std::endl;
-          ofs.close();
-        }
-        RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
-      }
-    }
+    assign(play_situation.command.name);
   });
 
   declare_parameter("initial_session", "HALT");
