@@ -25,17 +25,6 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   DelayMonitorWrapper::addDelayCheckpoint(
     delay_checkpoints, "local_planner_start", "commands_received");
 
-  auto aggregate_states =
-    [](const std::vector<crane_msgs::msg::NamedString> state_factors) -> std::string {
-    std::stringstream ss;
-    ss << "[";
-    for (const auto & state_factor : state_factors) {
-      ss << state_factor.name << ":" << state_factor.value << ", ";
-    }
-    ss << "]";
-    return ss.str();
-  };
-
   // msg.robot_commands内のrobot_idダブリチェック
   {
     auto commands = msg.robot_commands;
@@ -47,6 +36,8 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
         what << commands[i].planner_name << ", " << aggregate_states(commands[i].state_factors)
              << "と" << commands[i - 1].planner_name << ", "
              << aggregate_states(commands[i - 1].state_factors) << ")";
+             << commands[i].planner_name << ", " << aggregateStates(commands[i].state_factors)
+             << aggregateStates(commands[i - 1].state_factors) << ")";
         RCLCPP_ERROR(get_logger(), what.str().c_str());
       }
     }
@@ -219,6 +210,29 @@ auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStat
   }
 
   stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Path planning is running normally");
+}
+
+auto LocalPlannerComponent::aggregateStates(
+  const std::vector<crane_msgs::msg::NamedString> & state_factors) const -> std::string
+{
+  std::stringstream ss;
+  ss << "[";
+  for (const auto & state_factor : state_factors) {
+    ss << state_factor.name << ":" << state_factor.value << ", ";
+  }
+  ss << "]";
+  return ss.str();
+}
+
+auto LocalPlannerComponent::logValidationError(
+  uint8_t robot_id, const std::string & mode_name,
+  const std::vector<crane_msgs::msg::NamedString> & state_factors,
+  const std::string & error_detail) const -> void
+{
+  std::stringstream what;
+  what << "ロボット " << static_cast<int>(robot_id) << " は \"" << aggregateStates(state_factors)
+       << "\" スキルにより " << mode_name << " に指定されていますが、" << error_detail;
+  RCLCPP_ERROR(get_logger(), what.str().c_str());
 }
 }  // namespace crane
 
