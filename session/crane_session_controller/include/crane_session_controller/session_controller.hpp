@@ -49,7 +49,7 @@ public:
     const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &)
     -> void;
 
-  auto assign(const std::string & session_name) -> void;
+  auto assign(const std::string & event_name) -> void;
 
 private:
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
@@ -95,6 +95,8 @@ private:
   rclcpp::Time last_planning_time_;
 
   int planning_count_ = 0;
+
+  std::string prev_session_name_;
 };
 
 }  // namespace crane

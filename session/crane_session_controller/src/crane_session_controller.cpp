@@ -216,14 +216,18 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     "ai_planner/planning_cycle", this, &SessionControllerComponent::updateDiagnostics);
 }
 
-auto SessionControllerComponent::assign(const std::string & session_name) -> void
+auto SessionControllerComponent::assign(const std::string & event_name) -> void
 {
-  auto session = event_map.find(session_name);
+  auto session = event_map.find(event_name);
   PlannerContext planner_context;
   if (session != event_map.end()) {
-    RCLCPP_INFO(
+    if (session->second != prev_session_name_) {
+      RCLCPP_INFO(
       get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
       session->first.c_str(), session->second.c_str());
+    }
+    prev_session_name_ = session->second;
+
     try {
       request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
     } catch (const std::exception & e) {
@@ -241,7 +245,7 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
   } else {
     RCLCPP_ERROR(
       get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
-      session_name.c_str());
+      event_name.c_str());
   }
 }
 
