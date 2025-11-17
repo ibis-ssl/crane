@@ -134,38 +134,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
     // WorldModelのdelay_checkpointsをRobotCommandsにコピー
     msg.delay_checkpoints = world_model->getDelayCheckpoints();
+
     // ロボットが過不足なく割り当てられているか確認
-    bool robot_changed = [&]() {
-      std::vector<uint8_t> assigned_robot_ids;
-      for (const auto & planner : available_planners) {
-        for (const auto & robot : planner->getRobots()) {
-          assigned_robot_ids.push_back(robot.id);
-        }
-      }
-      std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+    auto assigned_robot_ids = getAssignedRobotIds();
+    auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
+    std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
-      std::vector<uint8_t> observed_robot_ids = world_model->ours().getAvailableRobotIds();
-      std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
-
-      if (assigned_robot_ids.size() != observed_robot_ids.size()) {
-        RCLCPP_DEBUG_STREAM(
-          get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
-                                                                 << ", 観測数："
-                                                                 << observed_robot_ids.size());
-        return true;
-      } else {
-        for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
-          if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            RCLCPP_DEBUG_STREAM(
-              get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
-                              << "\tbefore: " << assigned_robot_ids
-                              << "\tafter : " << observed_robot_ids;);
-            return true;
-          }
-        }
-        return false;
-      }
-    }();
+    bool robot_changed = false;
+    if (assigned_robot_ids.size() != observed_robot_ids.size()) {
+      RCLCPP_DEBUG_STREAM(
+        get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
+                                                               << ", 観測数：" << observed_robot_ids.size());
+      robot_changed = true;
+    } else if (assigned_robot_ids != observed_robot_ids) {
+      RCLCPP_DEBUG_STREAM(
+        get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
+                        << "\tbefore: " << assigned_robot_ids
+                        << "\tafter : " << observed_robot_ids);
+      robot_changed = true;
+    }
 
     if (robot_changed) {
       assign(play_situation.command.name);
@@ -365,6 +352,117 @@ auto SessionControllerComponent::request(
 
   robot_select_results_pub->publish(results);
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
+}
+
+auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
+{
+  std::vector<uint8_t> assigned_robot_ids;
+  for (const auto & planner : available_planners) {
+    for (const auto & robot : planner->getRobots()) {
+      assigned_robot_ids.push_back(robot.id);
+    }
+  }
+  std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+  return assigned_robot_ids;
+}
+
+auto SessionControllerComponent::buildAssignmentLog() const -> std::string
+{
+  std::stringstream assignment_log;
+  bool first = true;
+  for (const auto & planner : available_planners) {
+    if (!first) {
+      assignment_log << ", ";
+    }
+    first = false;
+    assignment_log << planner->name << ":[";
+    const auto & robots = planner->getRobots();
+    for (size_t i = 0; i < robots.size(); ++i) {
+      if (i > 0) {
+        assignment_log << ",";
+      }
+      assignment_log << static_cast<int>(robots[i].id);
+    }
+    assignment_log << "]";
+  }
+  return assignment_log.str();
+}
+
+auto SessionControllerComponent::logAssignmentIfChanged(const std::string & current_assignment)
+  -> void
+{
+  if (current_assignment != prev_assignment_log_) {
+    if (current_assignment.empty()) {
+      RCLCPP_INFO(get_logger(), "ロボット割当: なし");
+    } else {
+      RCLCPP_INFO(get_logger(), "ロボット割当: %s", current_assignment.c_str());
+    }
+    prev_assignment_log_ = current_assignment;
+  }
+}
+
+auto SessionControllerComponent::tryAssignRobotToPlanner(
+  const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
+  const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
+  PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool
+{
+  // 割り当て可能なロボットがない場合はスキップ
+  if (session_capacity.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
+    return true;
+  }
+
+  crane_msgs::msg::RobotSelectResult result;
+  result.name = session_capacity.session_name;
+  result.selectable_robots_num = session_capacity.selectable_robot_num;
+  std::ranges::copy(selectable_robot_ids, std::back_inserter(result.selectable_robots));
+
+  try {
+    // プランナー生成とロボット選択
+    auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
+    req->selectable_robots_num = session_capacity.selectable_robot_num;
+    std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
+
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
+    auto planner = generatePlanner(
+      session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this));
+    auto response = planner->doRobotSelect(req, prev_roles, planner_context);
+
+    std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
+    results.results.push_back(result);
+
+    // 前回結果との比較
+    if (auto matched_planner = std::ranges::find_if(
+          prev_available_planners, [&planner](const auto & prev_planner) {
+            return prev_planner->isSameConfiguration(planner.get());
+          });
+        matched_planner != prev_available_planners.end()) {
+      available_planners.push_back(*matched_planner);
+    } else {
+      if (not selectable_robot_ids.empty()) {
+        RCLCPP_DEBUG_STREAM(
+          get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
+                                         << selectable_robot_ids << " -> " << response.selected_robots);
+        available_planners.push_back(planner);
+      }
+    }
+
+    // 割当依頼結果の反映
+    for (auto selected_robot_id : response.selected_robots) {
+      // 割当されたロボットを利用可能ロボットリストから削除
+      selectable_robot_ids.erase(
+        remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
+        selectable_robot_ids.end());
+      // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
+      robot_roles->insert_or_assign(selected_robot_id, RobotRole{session_capacity.session_name, ""});
+    }
+
+    return true;
+  } catch (std::exception & e) {
+    RCLCPP_ERROR(
+      get_logger(), "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
+      session_capacity.session_name.c_str(), e.what());
+    return false;
+  }
 }
 
 auto SessionControllerComponent::updateDiagnostics(

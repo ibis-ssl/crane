@@ -54,6 +54,9 @@ public:
 private:
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
+  // 現在割り当て済みのロボットIDをソート済みで取得
+  auto getAssignedRobotIds() const -> std::vector<uint8_t>;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
