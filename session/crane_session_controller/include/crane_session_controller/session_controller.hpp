@@ -97,6 +97,8 @@ private:
   int planning_count_ = 0;
 
   std::string prev_session_name_;
+
+  std::string prev_assignment_log_;
 };
 
 }  // namespace crane

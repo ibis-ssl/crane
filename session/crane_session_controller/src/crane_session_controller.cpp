@@ -219,7 +219,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 auto SessionControllerComponent::assign(const std::string & event_name) -> void
 {
   auto session = event_map.find(event_name);
-  PlannerContext planner_context;
   if (session != event_map.end()) {
     if (session->second != prev_session_name_) {
       RCLCPP_INFO(
@@ -229,7 +228,37 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
     prev_session_name_ = session->second;
 
     try {
+      PlannerContext planner_context;
       request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
+
+      // 全セッションの割当状況をログ出力
+      std::stringstream assignment_log;
+      bool first = true;
+      for (const auto & planner : available_planners) {
+        if (!first) {
+          assignment_log << ", ";
+        }
+        first = false;
+        assignment_log << planner->name << ":[";
+        const auto & robots = planner->getRobots();
+        for (size_t i = 0; i < robots.size(); ++i) {
+          if (i > 0) {
+            assignment_log << ",";
+          }
+          assignment_log << static_cast<int>(robots[i].id);
+        }
+        assignment_log << "]";
+      }
+
+      std::string current_assignment = assignment_log.str();
+      if (current_assignment != prev_assignment_log_) {
+        if (current_assignment.empty()) {
+          RCLCPP_INFO(get_logger(), "ロボット割当: なし");
+        } else {
+          RCLCPP_INFO(get_logger(), "ロボット割当: %s", current_assignment.c_str());
+        }
+        prev_assignment_log_ = current_assignment;
+      }
     } catch (const std::exception & e) {
       std::stringstream what;
       what << "例外が発生しました: \n"
