@@ -36,8 +36,10 @@ public:
   explicit RobotData(const uint8_t & id) : robot_id(id) {}
 
   // ロボットの診断情報の初期化
-  auto initializeDiagnostics(rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode)
-    -> void;
+  auto initializeDiagnostics(
+    rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode,
+    crane_msgs::msg::PingStatusArray * latest_ping_msg,
+    crane_msgs::msg::RobotFeedbackArray * latest_feedback_msg) -> void;
 
   // エラーマップの更新関数
   auto updateErrorMap(

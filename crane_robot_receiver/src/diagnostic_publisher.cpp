@@ -53,20 +53,19 @@ auto RobotData::removeError(const std::string & error_type) -> bool
 }
 
 auto RobotData::initializeDiagnostics(
-  rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode) -> void
+  rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode,
+  crane_msgs::msg::PingStatusArray * latest_ping_msg,
+  crane_msgs::msg::RobotFeedbackArray * latest_feedback_msg) -> void
 {
   updater = std::make_unique<diagnostic_updater::Updater>(node);
   updater->setHardwareID(fmt::format("robot_{:02d}", robot_id));
-
-  auto ping_msg_ptr = std::make_shared<crane_msgs::msg::PingStatusArray>();
-  auto feedback_msg_ptr = std::make_shared<crane_msgs::msg::RobotFeedbackArray>();
 
   // 診断名のプレフィックス（aggregatorでのグループ化用）
   std::string diagnostic_prefix = fmt::format("robot_{:02d}/", robot_id);
 
   // 通信状態の診断
   updater->add(
-    diagnostic_prefix + "communication", [this, ping_msg_ptr, node, world_model, sim_mode](
+    diagnostic_prefix + "communication", [this, node, world_model, sim_mode, latest_ping_msg](
                                            diagnostic_updater::DiagnosticStatusWrapper & stat) {
       const auto & msg = world_model->getMsg();
       bool detected = false;
@@ -83,13 +82,13 @@ auto RobotData::initializeDiagnostics(
         removeError("communication");
         return;
       }
-      communicationDiagnosticCallback(stat, *ping_msg_ptr, node->now(), sim_mode);
+      communicationDiagnosticCallback(stat, *latest_ping_msg, node->now(), sim_mode);
     });
 
   // バッテリー状態の診断
   updater->add(
-    diagnostic_prefix + "battery", [this, feedback_msg_ptr, node, world_model,
-                                    sim_mode](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+    diagnostic_prefix + "battery", [this, node, world_model, sim_mode, latest_feedback_msg](
+                                     diagnostic_updater::DiagnosticStatusWrapper & stat) {
       // 【循環参照回避】WorldModelからビジョン検出状態のみをチェック
       // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
       const auto & msg = world_model->getMsg();
@@ -108,12 +107,12 @@ auto RobotData::initializeDiagnostics(
         removeError("battery");
         return;
       }
-      batteryDiagnosticCallback(stat, *feedback_msg_ptr, node->now(), sim_mode);
+      batteryDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
 
   // ロボットエラーの診断
   updater->add(
-    diagnostic_prefix + "robot_error", [this, feedback_msg_ptr, node, world_model, sim_mode](
+    diagnostic_prefix + "robot_error", [this, node, world_model, sim_mode, latest_feedback_msg](
                                          diagnostic_updater::DiagnosticStatusWrapper & stat) {
       // WorldModelからビジョン検出状態のみをチェック
       // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
@@ -133,7 +132,7 @@ auto RobotData::initializeDiagnostics(
         removeError("robot_error");
         return;
       }
-      robotErrorDiagnosticCallback(stat, *feedback_msg_ptr, node->now(), sim_mode);
+      robotErrorDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
 
   // 診断情報の直接パブリッシャーを作成（後方互換性のため維持）
@@ -335,7 +334,8 @@ auto DiagnosticPublisherNode::initializeRobots(int max_robot_id) -> void
   for (int i = 0; i <= max_robot_id; ++i) {
     // 初期状態では空のRobotDataを作成
     robots_data.emplace_back(std::make_shared<RobotData>(i));
-    robots_data.back()->initializeDiagnostics(this, world_model.get(), sim_mode_);
+    robots_data.back()->initializeDiagnostics(
+      this, world_model.get(), sim_mode_, &latest_ping_msg, &latest_feedback_msg);
 
     // ロボット位置の初期化
     robot_positions[i] = {0.0, 0.0, 0.0, false};

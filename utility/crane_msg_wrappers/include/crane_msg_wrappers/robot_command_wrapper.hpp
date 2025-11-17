@@ -67,6 +67,8 @@ public:
     latest_msg.simple_velocity_target_mode.clear();
     latest_msg.polar_velocity_target_mode.clear();
     latest_msg.position_target_mode.emplace_back();
+    latest_msg.local_planner_config.max_velocity_factors.clear();
+    latest_msg.local_planner_config.max_acceleration_factors.clear();
     current_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     return *this;
   }
@@ -79,6 +81,8 @@ public:
     latest_msg.simple_velocity_target_mode.clear();
     latest_msg.polar_velocity_target_mode.clear();
     latest_msg.polar_velocity_target_mode.emplace_back();
+    latest_msg.local_planner_config.max_velocity_factors.clear();
+    latest_msg.local_planner_config.max_acceleration_factors.clear();
     current_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
     return *this;
   }
@@ -325,6 +329,7 @@ public:
   auto clearMaxAccelerationFactors() -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.max_acceleration_factors.clear();
+    return *this;
   }
 
   auto setOmegaLimit(double omega_limit) -> RobotCommandWrapper &

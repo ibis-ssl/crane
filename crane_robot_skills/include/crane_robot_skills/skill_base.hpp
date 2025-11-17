@@ -311,6 +311,10 @@ public:
       parameters = parameters_opt.value();
     }
 
+    // 毎フレーム自動クリア
+    command->clearMaxVelocityFactors();
+    command->clearMaxAccelerationFactors();
+
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
     command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
@@ -362,6 +366,10 @@ public:
     }
     state_machine.update();
     state_string = magic_enum::enum_name(state_machine.getCurrentState());
+
+    // 毎フレーム自動クリア
+    command->clearMaxVelocityFactors();
+    command->clearMaxAccelerationFactors();
 
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();

@@ -110,41 +110,19 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
-    PlannerContext planner_context;
-    auto it = event_map.find(play_situation.command.name);
-    if (it != event_map.end()) {
-      try {
-        request(it->second, world_model->ours().getAvailableRobotIds(), planner_context);
-      } catch (const std::exception & e) {
-        std::stringstream what;
-        what << "例外が発生しました: " << e.what() << std::endl;
-        what << "スタックトレース: " << std::endl;
-        what << boost::stacktrace::stacktrace() << std::endl;
-        static int count = 0;
-
-        if (std::ofstream ofs(
-              std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
-            ofs) {
-          ofs << what.str() << std::endl;
-          ofs.close();
-        }
-        RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
-      }
-    }
+    assign(play_situation.command.name);
   });
 
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
-
-  world_model->addCallback([this, initial_session]() {
-    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
-      world_model_ready = true;
-      assign(initial_session);
-    }
-  });
+  assign(initial_session);
 
   world_model->addCallback([this]() {
     ScopedTimer timer(callback_process_time_pub);
+
+    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
+      world_model_ready = true;
+    }
 
     // 遅延監視: WorldModel受信完了とSessionController処理開始
     world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
@@ -238,16 +216,50 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     "ai_planner/planning_cycle", this, &SessionControllerComponent::updateDiagnostics);
 }
 
-auto SessionControllerComponent::assign(const std::string & session_name) -> void
+auto SessionControllerComponent::assign(const std::string & event_name) -> void
 {
-  auto session = event_map.find(session_name);
-  PlannerContext planner_context;
+  auto session = event_map.find(event_name);
   if (session != event_map.end()) {
-    RCLCPP_INFO(
-      get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
-      session->first.c_str(), session->second.c_str());
+    if (session->second != prev_session_name_) {
+      RCLCPP_INFO(
+        get_logger(),
+        "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+        session->first.c_str(), session->second.c_str());
+    }
+    prev_session_name_ = session->second;
+
     try {
+      PlannerContext planner_context;
       request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
+
+      // 全セッションの割当状況をログ出力
+      std::stringstream assignment_log;
+      bool first = true;
+      for (const auto & planner : available_planners) {
+        if (!first) {
+          assignment_log << ", ";
+        }
+        first = false;
+        assignment_log << planner->name << ":[";
+        const auto & robots = planner->getRobots();
+        for (size_t i = 0; i < robots.size(); ++i) {
+          if (i > 0) {
+            assignment_log << ",";
+          }
+          assignment_log << static_cast<int>(robots[i].id);
+        }
+        assignment_log << "]";
+      }
+
+      std::string current_assignment = assignment_log.str();
+      if (current_assignment != prev_assignment_log_) {
+        if (current_assignment.empty()) {
+          RCLCPP_INFO(get_logger(), "ロボット割当: なし");
+        } else {
+          RCLCPP_INFO(get_logger(), "ロボット割当: %s", current_assignment.c_str());
+        }
+        prev_assignment_log_ = current_assignment;
+      }
     } catch (const std::exception & e) {
       std::stringstream what;
       what << "例外が発生しました: \n"
@@ -263,7 +275,7 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
   } else {
     RCLCPP_ERROR(
       get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
-      session_name.c_str());
+      event_name.c_str());
   }
 }
 
