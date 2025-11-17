@@ -52,6 +52,8 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, 
   }
 
   auto & wp = waypoints.at(current_index);
+  // 毎フレームfactorsをクリア
+  command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
   applyLegLimits(*command, wp);
   command->setTargetPosition(wp.pos);
 
