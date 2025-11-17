@@ -57,6 +57,12 @@ private:
   // 現在割り当て済みのロボットIDをソート済みで取得
   auto getAssignedRobotIds() const -> std::vector<uint8_t>;
 
+  // 割当状況のログ文字列を生成
+  auto buildAssignmentLog() const -> std::string;
+
+  // 前回と変わっていればログ出力
+  auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
