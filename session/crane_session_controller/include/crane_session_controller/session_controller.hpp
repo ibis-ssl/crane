@@ -28,16 +28,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "configuration_manager.hpp"
 #include "visibility_control.h"
 
 namespace crane
 {
-struct SessionCapacity
-{
-  std::string session_name;
-
-  int selectable_robot_num;
-};
 
 class SessionControllerComponent : public rclcpp::Node
 {
@@ -73,12 +68,7 @@ private:
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  //  identifier: situation name,
-  //    content: [ list of  [ pair of session name & selectable robot num]]
-  std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
-
-  //  identifier :  event name, content : situation name
-  std::unordered_map<std::string, std::string> event_map;
+  std::shared_ptr<ConfigurationManager> config_manager_;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 

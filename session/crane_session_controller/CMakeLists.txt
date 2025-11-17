@@ -17,7 +17,10 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-  src/crane_session_controller.cpp include/crane_session_controller/session_controller.hpp)
+  src/crane_session_controller.cpp
+  src/configuration_manager.cpp
+  include/crane_session_controller/session_controller.hpp
+  include/crane_session_controller/configuration_manager.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 target_precompile_headers(${PROJECT_NAME}_component

@@ -16,6 +16,7 @@
 #include <fstream>
 #include <std_msgs/msg/string.hpp>
 
+#include "crane_session_controller/configuration_manager.hpp"
 #include "crane_session_controller/session_controller.hpp"
 
 namespace crane
@@ -36,62 +37,13 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
-  /*
-   * 各セッションの設定の読み込み
-   */
-  using std::filesystem::path;
-  auto session_config_dir =
-    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
-    "play_situation";
 
-  auto load_session_config = [this](const path & config_file) {
-    if (config_file.extension() != ".yaml") {
-      return;
-    } else {
-      auto config = YAML::LoadFile(config_file.c_str());
-      std::stringstream ss;
-      ss << "NAME : " << config["name"] << std::endl;
-      ss << "DESCRIPTION : " << config["description"] << std::endl;
-      ss << "SESSIONS : " << std::endl;
-
-      std::vector<SessionCapacity> session_capacity_list;
-      for (auto session_node : config["sessions"]) {
-        ss << "\tNAME     : " << session_node["name"] << std::endl;
-        ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
-        session_capacity_list.emplace_back(SessionCapacity(
-          {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
-      }
-      robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
-
-      ss << "----------------------------------------" << std::endl;
-      RCLCPP_DEBUG(get_logger(), "%s", ss.str().c_str());
-    }
-  };
-
-  using std::filesystem::directory_iterator;
-  for (auto & path : directory_iterator(session_config_dir)) {
-    if (path.is_directory()) {
-      for (auto & sub_path : directory_iterator(path.path())) {
-        load_session_config(sub_path);
-      }
-    } else {
-      load_session_config(path);
-    }
-  }
-
-  /*
-   * レフェリーイベントとセッションの設定の紐付け
-   */
-  declare_parameter<std::string>("event_config_file_name", "event_config.yaml");
-  auto event_config_file_name = get_parameter("event_config_file_name").as_string();
-
-  auto event_config_path =
-    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
-    event_config_file_name;
-  auto event_config = YAML::LoadFile(event_config_path.c_str());
-  for (auto event_node : event_config["events"]) {
-    event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
-  }
+  // 設定管理の初期化
+  declare_parameter<std::string>("session_config_file_name", "unified_session_config.yaml");
+  auto session_config_file_name = get_parameter("session_config_file_name").as_string();
+  config_manager_ = std::make_shared<ConfigurationManager>(
+    ament_index_cpp::get_package_share_directory("crane_session_controller"),
+    session_config_file_name, get_logger());
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
@@ -143,8 +95,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     bool robot_changed = false;
     if (assigned_robot_ids.size() != observed_robot_ids.size()) {
       RCLCPP_DEBUG_STREAM(
-        get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
-                                                               << ", 観測数：" << observed_robot_ids.size());
+        get_logger(), "ロボットの数が変動しています｜割当数："
+                        << assigned_robot_ids.size() << ", 観測数：" << observed_robot_ids.size());
       robot_changed = true;
     } else if (assigned_robot_ids != observed_robot_ids) {
       RCLCPP_DEBUG_STREAM(
@@ -194,8 +146,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
-    "/session_injection", 1,
-    [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
+    "/session_injection", 1, [this](const std_msgs::msg::String & msg) {
+      config_manager_->updateEventMapping("INJECTION", msg.data);
+    });
 
   // 診断Updater設定
   diagnostic_updater_.setHardwareID("session_controller");
@@ -205,19 +158,20 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
 auto SessionControllerComponent::assign(const std::string & event_name) -> void
 {
-  auto session = event_map.find(event_name);
-  if (session != event_map.end()) {
-    if (session->second != prev_session_name_) {
+  auto session_name_opt = config_manager_->getSessionNameForEvent(event_name);
+  if (session_name_opt.has_value()) {
+    const std::string & session_name = session_name_opt.value();
+    if (session_name != prev_session_name_) {
       RCLCPP_INFO(
         get_logger(),
         "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
-        session->first.c_str(), session->second.c_str());
+        event_name.c_str(), session_name.c_str());
     }
-    prev_session_name_ = session->second;
+    prev_session_name_ = session_name;
 
     try {
       PlannerContext planner_context;
-      request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
+      request(session_name, world_model->ours().getAvailableRobotIds(), planner_context);
 
       // 全セッションの割当状況をログ出力
       logAssignmentIfChanged(buildAssignmentLog());
@@ -244,16 +198,17 @@ auto SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
   PlannerContext & planner_context) -> void
 {
-  auto map = robot_selection_priority_map.find(situation);
-  if (map == robot_selection_priority_map.end()) {
+  auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(situation);
+  if (!session_capacities_opt.has_value()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
-      "s」というSituationに対してロボット割当リクエストが発行されましたが，"
-      "見つかりませんでした",
+      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
       situation.c_str());
     return;
   }
+
+  const auto & session_capacities = session_capacities_opt.value();
 
   // Pass receiver is only provided when GameAnalysis selects one
   const int pass_receiver = world_model->getMsg().game_analysis.pass_target_id;
@@ -266,7 +221,7 @@ auto SessionControllerComponent::request(
   crane_msgs::msg::RobotSelectResults results;
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
-  for (const auto & session_capacity : map->second) {
+  for (const auto & session_capacity : session_capacities) {
     if (!tryAssignRobotToPlanner(
           session_capacity, selectable_robot_ids, prev_available_planners, planner_context,
           results)) {
@@ -357,7 +312,8 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
 
     // 前回結果との比較
     if (auto matched_planner = std::ranges::find_if(
-          prev_available_planners, [&planner](const auto & prev_planner) {
+          prev_available_planners,
+          [&planner](const auto & prev_planner) {
             return prev_planner->isSameConfiguration(planner.get());
           });
         matched_planner != prev_available_planners.end()) {
@@ -366,7 +322,8 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
       if (not selectable_robot_ids.empty()) {
         RCLCPP_DEBUG_STREAM(
           get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
-                                         << selectable_robot_ids << " -> " << response.selected_robots);
+                                         << selectable_robot_ids << " -> "
+                                         << response.selected_robots);
         available_planners.push_back(planner);
       }
     }
@@ -378,7 +335,8 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
         remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
         selectable_robot_ids.end());
       // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-      robot_roles->insert_or_assign(selected_robot_id, RobotRole{session_capacity.session_name, ""});
+      robot_roles->insert_or_assign(
+        selected_robot_id, RobotRole{session_capacity.session_name, ""});
     }
 
     return true;
