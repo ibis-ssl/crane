@@ -1,9 +1,0 @@
-name: OUR_KICKOFF_START
-description: OUR_KICKOFF_START
-sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: simple_kickoff
-    capacity: 1
-  - name: waiter
-    capacity: 20

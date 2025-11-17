@@ -1,9 +1,0 @@
-name: pass_placement
-description: pass_placement
-sessions:
-  - name: passable_ball_placement
-    capacity: 1
-  - name: placement_target_placer
-    capacity: 1
-  - name: ball_placement_avoidance
-    capacity: 20
