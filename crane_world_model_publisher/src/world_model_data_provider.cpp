@@ -674,7 +674,6 @@ auto WorldModelDataProvider::processTrackedFrame(
 
     auto & robot = robot_info_[team_index][robot_id];
     robot = convertTrackedRobot(tracked_robot, team_index);
-    robot.available_vision = true;
     robot.vision.stamp = now;
   }
 }
@@ -754,9 +753,9 @@ auto WorldModelDataProvider::convertTrackedRobot(
   robot_info.vision.pose.theta = tracked_robot.orientation;
 
   // 検出フラグ
-  robot_info.available_vision = true;
+  robot_info.available_vision = false;
   robot_info.available_feedback = false;
-  robot_info.available_tracker = false;
+  robot_info.available_tracker = true;
 
   return robot_info;
 }
