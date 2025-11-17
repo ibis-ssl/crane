@@ -166,6 +166,14 @@ private:
   KickPowerCalculator kick_power_calculator;
 
   diagnostic_updater::Updater diagnostic_updater_;
+
+  auto aggregateStates(const std::vector<crane_msgs::msg::NamedString> & state_factors) const
+    -> std::string;
+
+  auto logValidationError(
+    uint8_t robot_id, const std::string & mode_name,
+    const std::vector<crane_msgs::msg::NamedString> & state_factors,
+    const std::string & error_detail) const -> void;
 };
 
 }  // namespace crane
