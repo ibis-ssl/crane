@@ -19,22 +19,18 @@ TestPlanner::TestPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
     (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_planner_plugins")) /
      "config" / "test_planner.yaml")
       .string();
+  if (not loadConfigFromFile(config_file_path)) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("TestPlanner"), "設定の読込に失敗: %s", config_file_path.c_str());
+  }
+  reload_sub = rclcpp::create_subscription<std_msgs::msg::Empty>(
+    topics_interface, "/test_planner/reload", rclcpp::QoS(1),
+    [this](std_msgs::msg::Empty::ConstSharedPtr) { reload_requested = true; });
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
-  // リロードトリガ購読（std_msgs/Empty）
-  if (not reload_sub && topics_interface) {
-    std::cout << "初回セットアップ" << std::endl;
-    if (not loadConfigFromFile(config_file_path)) {
-      RCLCPP_WARN(
-        rclcpp::get_logger("TestPlanner"), "初期ロードに失敗: %s", config_file_path.c_str());
-    }
-    reload_sub = rclcpp::create_subscription<std_msgs::msg::Empty>(
-      topics_interface, "/test_planner/reload", rclcpp::QoS(1),
-      [this](std_msgs::msg::Empty::ConstSharedPtr) { reload_requested = true; });
-  }
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, robot_commands};
@@ -80,7 +76,7 @@ auto TestPlanner::getSelectedRobots(
   [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
   [[maybe_unused]] PlannerContext & context) -> std::vector<uint8_t>
 {
-  if (ranges::find(selectable_robots, target_robot_id) != selectable_robots.end()) {
+  if (ranges::count(selectable_robots, target_robot_id) > 0) {
     command =
       std::make_shared<crane::RobotCommandWrapper>("test_planner", target_robot_id, world_model);
     return {target_robot_id};
@@ -139,10 +135,6 @@ auto TestPlanner::loadConfigFromFile(const std::string & path) -> bool
       }
     }
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("TestPlanner"),
-      "経由点: %zu 個 読込 (既定 vmax=%.2f amax=%.2f dwell=%.2f)", waypoints.size(),
-      default_max_velocity, default_max_acceleration, default_sleep_sec);
     return true;
   } catch (const YAML::Exception & e) {
     RCLCPP_ERROR(rclcpp::get_logger("TestPlanner"), "YAML エラー: %s", e.what());
