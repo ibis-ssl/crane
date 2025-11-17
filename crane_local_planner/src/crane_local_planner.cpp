@@ -90,7 +90,8 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
       default:
         is_valid = false;
         logValidationError(
-          raw_command.robot_id, "不明な制御モード", raw_command.state_factors, "未知の制御モードです。");
+          raw_command.robot_id, "不明な制御モード", raw_command.state_factors,
+          "未知の制御モードです。");
         break;
     }
     // 一致しなかったらエラーメッセージ＆ロボットを待機状態にする
@@ -187,7 +188,8 @@ auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStat
   }
 
   if (not world_model->hasUpdated()) {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "ワールドモデルがまだ更新されていません");
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::WARN, "ワールドモデルがまだ更新されていません");
     return;
   }
 
