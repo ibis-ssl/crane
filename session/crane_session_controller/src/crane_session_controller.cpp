@@ -222,8 +222,9 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
   if (session != event_map.end()) {
     if (session->second != prev_session_name_) {
       RCLCPP_INFO(
-      get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
-      session->first.c_str(), session->second.c_str());
+        get_logger(),
+        "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+        session->first.c_str(), session->second.c_str());
     }
     prev_session_name_ = session->second;
 
