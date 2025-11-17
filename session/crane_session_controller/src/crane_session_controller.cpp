@@ -135,16 +135,14 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
-
-  world_model->addCallback([this, initial_session]() {
-    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
-      world_model_ready = true;
-      assign(initial_session);
-    }
-  });
+  assign(initial_session);
 
   world_model->addCallback([this]() {
     ScopedTimer timer(callback_process_time_pub);
+
+    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
+      world_model_ready = true;
+    }
 
     // 遅延監視: WorldModel受信完了とSessionController処理開始
     world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
