@@ -37,7 +37,7 @@ def load_kick_data(data_file_path: str) -> dict:
     return data
 
 
-def create_kick_plot(data: dict, output_path: str = None) -> None:
+def create_kick_plot(data: dict, output_path: str | None = None) -> str:
     """キックイベントのプロットを生成"""
     # データ抽出
     event_info = data["event_info"]
