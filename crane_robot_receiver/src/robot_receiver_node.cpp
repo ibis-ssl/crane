@@ -42,39 +42,39 @@ struct RobotFeedback
 {
   rclcpp::Time received_stamp;
 
-  uint8_t counter;
+  uint8_t counter = 0;
 
-  uint8_t kick_state;
+  uint8_t kick_state = 0;
 
-  uint8_t temperature[7];
+  uint8_t temperature[7] = {};
 
-  uint16_t error_id;
+  uint16_t error_id = 0;
 
-  uint16_t error_info;
+  uint16_t error_info = 0;
 
-  float error_value;
+  float error_value = 0.0f;
 
-  float motor_current[4];
+  float motor_current[4] = {};
 
-  uint8_t ball_detection[4];
+  uint8_t ball_detection[4] = {};
 
-  bool ball_sensor;
+  bool ball_sensor = false;
 
-  float_t yaw_angle;
+  float_t yaw_angle = 0.0f;
 
-  float_t diff_angle;
+  float_t diff_angle = 0.0f;
 
-  std::array<float_t, 2> odom;
+  std::array<float_t, 2> odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> odom_speed;
+  std::array<float_t, 2> odom_speed = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_odom;
+  std::array<float_t, 2> mouse_odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_vel;
+  std::array<float_t, 2> mouse_vel = {0.0f, 0.0f};
 
-  std::array<float_t, 2> voltage;
+  std::array<float_t, 2> voltage = {0.0f, 0.0f};
 
-  uint8_t check_ver;
+  uint8_t check_ver = 0;
 
   std::vector<float> values;
 };
