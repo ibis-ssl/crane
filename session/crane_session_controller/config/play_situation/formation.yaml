@@ -1,7 +1,0 @@
-name: formation
-description: formation
-sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: wing_formation
-    capacity: 20

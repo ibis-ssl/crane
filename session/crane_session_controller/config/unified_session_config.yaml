@@ -1,0 +1,274 @@
+situations:
+  HALT:
+    description: HALT
+    sessions:
+      - name: waiter
+        capacity: 20
+  INPLAY:
+    description: INPLAY
+    sessions:
+      - name: emplace_robot
+        capacity: 1
+      - name: total_defense
+        capacity: 3
+      - name: attacker_skill
+        capacity: 1
+      - name: pass_receive
+        capacity: 1
+      - name: sub_attacker_skill
+        capacity: 1
+      - name: marker
+        capacity: 2
+      - name: second_threat_defender
+        capacity: 1
+      - name: forward
+        capacity: 20
+  OUR_BALL_PLACEMENT:
+    description: OUR_BALL_PLACEMENT
+    sessions:
+      - name: ball_placement_skill
+        capacity: 1
+      - name: ball_placement_avoidance
+        capacity: 20
+  OUR_FREE_KICK:
+    description: OUR_FREE_KICK
+    sessions:
+      - name: total_defense
+        capacity: 3
+      - name: attacker_skill
+        capacity: 1
+      - name: pass_receive
+        capacity: 1
+      - name: forward
+        capacity: 20
+  OUR_KICKOFF_PREPARATION:
+    description: OUR_KICKOFF_PREPARATION
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: wing_formation
+        capacity: 20
+  OUR_KICKOFF_START:
+    description: OUR_KICKOFF_START
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: simple_kickoff
+        capacity: 1
+      - name: waiter
+        capacity: 20
+  OUR_PENALTY_KICK:
+    description: OUR_PENALTY_KICK
+    sessions:
+      - name: our_penalty_kick
+        capacity: 20
+  PRE_KICK_OFF:
+    description: PRE_KICK_OFF
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: wing_formation
+        capacity: 20
+  STOP:
+    description: STOP
+    sessions:
+      - name: emplace_robot
+        capacity: 1
+      - name: total_defense
+        capacity: 3
+      - name: ball_nearby_positioner_skill
+        capacity: 1
+      - name: second_threat_defender
+        capacity: 1
+      - name: forward
+        capacity: 20
+      - name: waiter
+        capacity: 20
+  TEST:
+    description: TEST
+    sessions:
+      - name: test
+        capacity: 1
+      - name: waiter
+        capacity: 20
+  THEIR_BALL_PLACEMENT:
+    description: THEIR_BALL_PLACEMENT
+    sessions:
+      - name: defender
+        capacity: 2
+      - name: ball_placement_avoidance
+        capacity: 20
+  THEIR_FREE_KICK:
+    description: THEIR_FREE_KICK
+    sessions:
+      - name: total_defense
+        capacity: 3
+      - name: ball_nearby_positioner_skill
+        capacity: 1
+      - name: marker
+        capacity: 5
+      - name: second_threat_defender
+        capacity: 1
+      - name: forward
+        capacity: 20
+  THEIR_INPLAY:
+    description: THEIR_INPLAY
+    sessions:
+      - name: total_defense
+        capacity: 3
+      - name: attacker_skill
+        capacity: 1
+      - name: pass_receive
+        capacity: 1
+      - name: marker
+        capacity: 3
+      - name: sub_attacker_skill
+        capacity: 1
+      - name: forward
+        capacity: 20
+  THEIR_PENALTY_KICK:
+    description: THEIR_PENALTY_KICK
+    sessions:
+      - name: their_penalty_kick
+        capacity: 20
+  BALL_CALIBRATION_DATA_COLLECTION:
+    description: Ball calibration data collection using single kicker robot
+    sessions:
+      - name: ball_calibration_data_collector
+        capacity: 1
+      - name: emplace_robot
+        capacity: 19
+  catch_ball:
+    description: catch_ball
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: catch_ball
+        capacity: 1
+      - name: waiter
+        capacity: 20
+  CENTER_STOP_KICK:
+    description: Center stop kick testing using CenterStopKickPlanner for stop distance
+      kick verification
+    sessions:
+      - name: center_stop_kick
+        capacity: 1
+      - name: emplace_robot
+        capacity: 19
+  emplace_robot:
+    description: emplace_robot
+    sessions:
+      - name: emplace_robot
+        capacity: 100
+      - name: waiter
+        capacity: 20
+  formation:
+    description: formation
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: wing_formation
+        capacity: 20
+  goalie:
+    description: for goalie
+    sessions:
+      - name: goalie_skill
+        capacity: 1
+      - name: waiter
+        capacity: 10
+  ibis_formation:
+    description: ibisのi/キーパーなし
+    sessions:
+      - name: ibis_formation
+        capacity: 20
+  pass_placement:
+    description: pass_placement
+    sessions:
+      - name: passable_ball_placement
+        capacity: 1
+      - name: placement_target_placer
+        capacity: 1
+      - name: ball_placement_avoidance
+        capacity: 20
+  sandwich:
+    description: sandwich
+    sessions:
+      - name: sandwich_ball_placement
+        capacity: 2
+      - name: ball_placement_avoidance
+        capacity: 20
+  simple_ai:
+    description: Simple AI planner for individual robot skill execution via WebUI
+    sessions:
+      - name: simple_ai
+        capacity: 16
+      - name: waiter
+        capacity: 20
+  wing_formation:
+    description: wing/キーパーなし
+    sessions:
+      - name: wing_formation
+        capacity: 20
+events:
+  - name: HALT
+    situation: HALT
+  - name: STOP
+    situation: STOP
+  - name: STOP_PRE_OUR_KICKOFF_PREPARATION
+    situation: ibis_formation
+  - name: STOP_PRE_THEIR_KICKOFF_PREPARATION
+    situation: ibis_formation
+  - name: STOP_PRE_OUR_PENALTY_PREPARATION
+    situation: OUR_PENALTY_KICK
+  - name: STOP_PRE_THEIR_PENALTY_PREPARATION
+    situation: THEIR_PENALTY_KICK
+  - name: STOP_PRE_OUR_DIRECT_FREE
+    situation: STOP
+  - name: STOP_PRE_THEIR_DIRECT_FREE
+    situation: STOP
+  - name: STOP_PRE_FORCE_START
+    situation: STOP
+  - name: THEIR_KICKOFF_PREPARATION
+    situation: PRE_KICK_OFF
+  - name: THEIR_KICKOFF_START
+    situation: PRE_KICK_OFF
+  - name: OUR_KICKOFF_PREPARATION
+    situation: PRE_KICK_OFF
+  - name: OUR_KICKOFF_START
+    situation: OUR_KICKOFF_START
+  - name: INPLAY
+    situation: INPLAY
+  - name: AMBIGUOUS_INPLAY
+    situation: THEIR_INPLAY
+  - name: OUR_BALL_PLACEMENT
+    situation: OUR_BALL_PLACEMENT
+  - name: THEIR_BALL_PLACEMENT
+    situation: THEIR_BALL_PLACEMENT
+  - name: OUR_PENALTY_PREPARATION
+    situation: OUR_PENALTY_KICK
+  - name: OUR_PENALTY_START
+    situation: OUR_PENALTY_KICK
+  - name: THEIR_PENALTY_PREPARATION
+    situation: THEIR_PENALTY_KICK
+  - name: THEIR_PENALTY_START
+    situation: THEIR_PENALTY_KICK
+  - name: OUR_DIRECT_FREE
+    situation: OUR_FREE_KICK
+  - name: THEIR_DIRECT_FREE
+    situation: THEIR_FREE_KICK
+  - name: THEIR_FREE_KICK
+    situation: THEIR_FREE_KICK
+  - name: formation
+    situation: formation
+  - name: simple_ai
+    situation: simple_ai
+  - name: INJECTION
+    situation: HALT
+  - name: OUR_TIMEOUT
+    situation: ibis_formation
+  - name: THEIR_TIMEOUT
+    situation: ibis_formation
+  - name: HALF_TIME
+    situation: ibis_formation
+  - name: POST_GAME
+    situation: ibis_formation

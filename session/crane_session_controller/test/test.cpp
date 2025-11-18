@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ibis-ssl
+// Copyright (c) 2025 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -8,4 +8,9 @@
 
 #include "crane_session_controller/session_controller.hpp"
 
-TEST(SessionController, test) { ASSERT_NEAR(1, 1, 1e-5); }
+TEST(SessionController, dummy_test)
+{
+  // 現在はダミーテスト
+  // 依存性注入パターン導入後に本格的なテストを追加予定
+  ASSERT_NEAR(1, 1, 1e-5);
+}

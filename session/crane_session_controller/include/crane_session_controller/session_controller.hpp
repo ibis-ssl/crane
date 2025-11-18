@@ -28,16 +28,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "configuration_manager.hpp"
+#include "planner_registry.hpp"
 #include "visibility_control.h"
 
 namespace crane
 {
-struct SessionCapacity
-{
-  std::string session_name;
-
-  int selectable_robot_num;
-};
 
 class SessionControllerComponent : public rclcpp::Node
 {
@@ -54,16 +50,28 @@ public:
 private:
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
+  // 現在割り当て済みのロボットIDをソート済みで取得
+  auto getAssignedRobotIds() const -> std::vector<uint8_t>;
+
+  // 割当状況のログ文字列を生成
+  auto buildAssignmentLog() const -> std::string;
+
+  // 前回と変わっていればログ出力
+  auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
+
+  // プランナーへのロボット割り当てを試行（エラーハンドリング含む）
+  auto tryAssignRobotToPlanner(
+    const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
+    const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
+    PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  //  identifier: situation name,
-  //    content: [ list of  [ pair of session name & selectable robot num]]
-  std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
+  std::shared_ptr<ConfigurationManager> config_manager_;
 
-  //  identifier :  event name, content : situation name
-  std::unordered_map<std::string, std::string> event_map;
+  std::shared_ptr<PlannerRegistry> planner_registry_;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
@@ -76,8 +84,6 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr callback_process_time_pub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotSelectResults>::SharedPtr robot_select_results_pub;
-
-  std::vector<PlannerBase::SharedPtr> available_planners;
 
   crane_msgs::msg::PlaySituation play_situation;
 

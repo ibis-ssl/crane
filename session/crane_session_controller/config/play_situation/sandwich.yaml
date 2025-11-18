@@ -1,7 +1,0 @@
-name: sandwich
-description: sandwich
-sessions:
-  - name: sandwich_ball_placement
-    capacity: 2
-  - name: ball_placement_avoidance
-    capacity: 20
