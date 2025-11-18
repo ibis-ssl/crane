@@ -42,39 +42,39 @@ struct RobotFeedback
 {
   rclcpp::Time received_stamp;
 
-  uint8_t counter;
+  uint8_t counter = 0;
 
-  uint8_t kick_state;
+  uint8_t kick_state = 0;
 
-  uint8_t temperature[7];
+  uint8_t temperature[7] = {};
 
-  uint16_t error_id;
+  uint16_t error_id = 0;
 
-  uint16_t error_info;
+  uint16_t error_info = 0;
 
-  float error_value;
+  float error_value = 0.0f;
 
-  float motor_current[4];
+  float motor_current[4] = {};
 
-  uint8_t ball_detection[4];
+  uint8_t ball_detection[4] = {};
 
-  bool ball_sensor;
+  bool ball_sensor = false;
 
-  float_t yaw_angle;
+  float_t yaw_angle = 0.0f;
 
-  float_t diff_angle;
+  float_t diff_angle = 0.0f;
 
-  std::array<float_t, 2> odom;
+  std::array<float_t, 2> odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> odom_speed;
+  std::array<float_t, 2> odom_speed = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_odom;
+  std::array<float_t, 2> mouse_odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_vel;
+  std::array<float_t, 2> mouse_vel = {0.0f, 0.0f};
 
-  std::array<float_t, 2> voltage;
+  std::array<float_t, 2> voltage = {0.0f, 0.0f};
 
-  uint8_t check_ver;
+  uint8_t check_ver = 0;
 
   std::vector<float> values;
 };
@@ -91,13 +91,100 @@ union Uint16Union {
   std::array<char, 2> b;
 };
 
+// ロボットフィードバックプロトコル定数
+namespace protocol
+{
+// バッファサイズ
+constexpr size_t BUFFER_SIZE = 2048;
+constexpr size_t DEBUG_VALUES_END = 128;
+
+// バイトオフセット定義
+namespace offset
+{
+constexpr int COUNTER = 3;
+
+constexpr int YAW_ANGLE = 4;
+constexpr int VOLTAGE_0 = 8;
+
+constexpr int BALL_DETECTION_0 = 12;
+constexpr int BALL_DETECTION_1 = 13;
+constexpr int BALL_DETECTION_2 = 14;
+constexpr int KICK_STATE = 15;
+
+constexpr int ERROR_ID = 16;
+constexpr int ERROR_INFO = 18;
+constexpr int ERROR_VALUE = 20;
+
+constexpr int MOTOR_CURRENT_0 = 24;
+constexpr int MOTOR_CURRENT_1 = 25;
+constexpr int MOTOR_CURRENT_2 = 26;
+constexpr int MOTOR_CURRENT_3 = 27;
+
+constexpr int BALL_DETECTION_3 = 28;
+
+constexpr int TEMPERATURE_0 = 29;
+constexpr int TEMPERATURE_1 = 30;
+constexpr int TEMPERATURE_2 = 31;
+constexpr int TEMPERATURE_3 = 32;
+constexpr int TEMPERATURE_4 = 33;
+constexpr int TEMPERATURE_5 = 34;
+constexpr int TEMPERATURE_6 = 35;
+
+constexpr int DIFF_ANGLE = 36;
+constexpr int VOLTAGE_1 = 40;
+
+constexpr int ODOM_X = 44;
+constexpr int ODOM_Y = 48;
+constexpr int ODOM_SPEED_X = 52;
+constexpr int ODOM_SPEED_Y = 56;
+
+constexpr int CHECK_VER = 60;
+
+constexpr int MOUSE_ODOM_X = 64;
+constexpr int MOUSE_ODOM_Y = 68;
+constexpr int MOUSE_VEL_X = 72;
+constexpr int MOUSE_VEL_Y = 76;
+
+constexpr int DEBUG_VALUES_START = 64;
+}  // namespace offset
+
+// 定数値
+constexpr float MOTOR_CURRENT_SCALE = 10.0f;
+constexpr int KICK_STATE_SCALE = 10;
+constexpr int FLOAT_SIZE = 4;
+
+// バッファ読み取りヘルパー関数
+inline auto readFloat(const std::vector<uint8_t> & buffer, int offset) -> float
+{
+  FloatUnion float_union;
+  float_union.b[0] = buffer[offset];
+  float_union.b[1] = buffer[offset + 1];
+  float_union.b[2] = buffer[offset + 2];
+  float_union.b[3] = buffer[offset + 3];
+  return float_union.f;
+}
+
+inline auto readUint16(const std::vector<uint8_t> & buffer, int offset) -> uint16_t
+{
+  Uint16Union uint16_union;
+  uint16_union.b[0] = buffer[offset];
+  uint16_union.b[1] = buffer[offset + 1];
+  return uint16_union.u16;
+}
+
+inline auto readByte(const std::vector<uint8_t> & buffer, int offset) -> uint8_t
+{
+  return buffer[offset];
+}
+}  // namespace protocol
+
 class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
   : robot_id(port - 50100),
     socket(io_service, boost::asio::ip::udp::v4()),
-    buffer(2048),
+    buffer(protocol::BUFFER_SIZE),
     received_size(0),
     clock(RCL_ROS_TIME)
   {
@@ -201,152 +288,73 @@ public:
 
   auto updateFeedback() -> void
   {
-    FloatUnion float_union;
-    Uint16Union uint16_union;
     RobotFeedback feedback;
     // 最新のデータでリセット
     feedback = robot_feedback;
 
-    // 0,1byte目は識別子みたいな感じ
-    // auto header = buffer[2];
-
+    // 受信タイムスタンプを更新
     feedback.received_stamp = clock.now();
-    feedback.counter = buffer[3];
-    {
-      float_union.b[0] = buffer[4];
-      float_union.b[1] = buffer[5];
-      float_union.b[2] = buffer[6];
-      float_union.b[3] = buffer[7];
-      feedback.yaw_angle = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[8];
-      float_union.b[1] = buffer[9];
-      float_union.b[2] = buffer[10];
-      float_union.b[3] = buffer[11];
-      feedback.voltage[0] = float_union.f;
-    }
 
-    feedback.ball_detection[0] = buffer[12];
-    feedback.ball_detection[1] = buffer[13];
-    feedback.ball_detection[2] = buffer[14];
-    feedback.kick_state = buffer[15] * 10;
+    // 基本情報
+    feedback.counter = protocol::readByte(buffer, protocol::offset::COUNTER);
+    feedback.yaw_angle = protocol::readFloat(buffer, protocol::offset::YAW_ANGLE);
+    feedback.voltage[0] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_0);
 
-    {
-      uint16_union.b[0] = buffer[16];
-      uint16_union.b[1] = buffer[17];
-      feedback.error_id = uint16_union.u16;
-    }
-    {
-      uint16_union.b[0] = buffer[18];
-      uint16_union.b[1] = buffer[19];
-      feedback.error_info = uint16_union.u16;
-    }
-    {
-      float_union.b[0] = buffer[20];
-      float_union.b[1] = buffer[21];
-      float_union.b[2] = buffer[22];
-      float_union.b[3] = buffer[23];
-      feedback.error_value = float_union.f;
-    }
+    // ボール検出
+    feedback.ball_detection[0] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_0);
+    feedback.ball_detection[1] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_1);
+    feedback.ball_detection[2] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_2);
+    feedback.ball_detection[3] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_3);
+    feedback.kick_state =
+      protocol::readByte(buffer, protocol::offset::KICK_STATE) * protocol::KICK_STATE_SCALE;
 
-    feedback.motor_current[0] = buffer[24] / 10.;
-    feedback.motor_current[1] = buffer[25] / 10.;
-    feedback.motor_current[2] = buffer[26] / 10.;
-    feedback.motor_current[3] = buffer[27] / 10.;
+    // エラー情報
+    feedback.error_id = protocol::readUint16(buffer, protocol::offset::ERROR_ID);
+    feedback.error_info = protocol::readUint16(buffer, protocol::offset::ERROR_INFO);
+    feedback.error_value = protocol::readFloat(buffer, protocol::offset::ERROR_VALUE);
 
-    feedback.ball_detection[3] = buffer[28];
+    // モーター電流
+    feedback.motor_current[0] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_0) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[1] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_1) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[2] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_2) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[3] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_3) / protocol::MOTOR_CURRENT_SCALE;
 
-    feedback.temperature[0] = buffer[29];
-    feedback.temperature[1] = buffer[30];
-    feedback.temperature[2] = buffer[31];
-    feedback.temperature[3] = buffer[32];
-    feedback.temperature[4] = buffer[33];
-    feedback.temperature[5] = buffer[34];
-    feedback.temperature[6] = buffer[35];
+    // 温度
+    feedback.temperature[0] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_0);
+    feedback.temperature[1] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_1);
+    feedback.temperature[2] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_2);
+    feedback.temperature[3] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_3);
+    feedback.temperature[4] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_4);
+    feedback.temperature[5] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_5);
+    feedback.temperature[6] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_6);
 
-    {
-      float_union.b[0] = buffer[36];
-      float_union.b[1] = buffer[37];
-      float_union.b[2] = buffer[38];
-      float_union.b[3] = buffer[39];
-      feedback.diff_angle = float_union.f;
-    }
+    // 角度と電圧
+    feedback.diff_angle = protocol::readFloat(buffer, protocol::offset::DIFF_ANGLE);
+    feedback.voltage[1] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_1);
 
-    {
-      float_union.b[0] = buffer[40];
-      float_union.b[1] = buffer[41];
-      float_union.b[2] = buffer[42];
-      float_union.b[3] = buffer[43];
-      feedback.voltage[1] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[44];
-      float_union.b[1] = buffer[45];
-      float_union.b[2] = buffer[46];
-      float_union.b[3] = buffer[47];
-      feedback.odom[0] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[48];
-      float_union.b[1] = buffer[49];
-      float_union.b[2] = buffer[50];
-      float_union.b[3] = buffer[51];
-      feedback.odom[1] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[52];
-      float_union.b[1] = buffer[53];
-      float_union.b[2] = buffer[54];
-      float_union.b[3] = buffer[55];
-      feedback.odom_speed[0] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[56];
-      float_union.b[1] = buffer[57];
-      float_union.b[2] = buffer[58];
-      float_union.b[3] = buffer[59];
-      feedback.odom_speed[1] = float_union.f;
-    }
+    // オドメトリ
+    feedback.odom[0] = protocol::readFloat(buffer, protocol::offset::ODOM_X);
+    feedback.odom[1] = protocol::readFloat(buffer, protocol::offset::ODOM_Y);
+    feedback.odom_speed[0] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_X);
+    feedback.odom_speed[1] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_Y);
 
-    feedback.check_ver = buffer[60];
+    feedback.check_ver = protocol::readByte(buffer, protocol::offset::CHECK_VER);
 
-    {
-      float_union.b[0] = buffer[64];
-      float_union.b[1] = buffer[65];
-      float_union.b[2] = buffer[66];
-      float_union.b[3] = buffer[67];
-      feedback.mouse_odom[0] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[68];
-      float_union.b[1] = buffer[69];
-      float_union.b[2] = buffer[70];
-      float_union.b[3] = buffer[71];
-      feedback.mouse_odom[1] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[72];
-      float_union.b[1] = buffer[73];
-      float_union.b[2] = buffer[74];
-      float_union.b[3] = buffer[75];
-      feedback.mouse_vel[0] = float_union.f;
-    }
-    {
-      float_union.b[0] = buffer[76];
-      float_union.b[1] = buffer[77];
-      float_union.b[2] = buffer[78];
-      float_union.b[3] = buffer[79];
-      feedback.mouse_vel[1] = float_union.f;
-    }
+    // マウスセンサー
+    feedback.mouse_odom[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_X);
+    feedback.mouse_odom[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_Y);
+    feedback.mouse_vel[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_X);
+    feedback.mouse_vel[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_Y);
 
+    // デバッグ値
     feedback.values.clear();
-    for (int i = 64; i < 128 - 4; i += 4) {
-      float_union.b[0] = buffer[i];
-      float_union.b[1] = buffer[i + 1];
-      float_union.b[2] = buffer[i + 2];
-      float_union.b[3] = buffer[i + 3];
-      feedback.values.push_back(float_union.f);
+    for (size_t i = protocol::offset::DEBUG_VALUES_START;
+         i < protocol::DEBUG_VALUES_END - protocol::FLOAT_SIZE; i += protocol::FLOAT_SIZE) {
+      feedback.values.push_back(protocol::readFloat(buffer, static_cast<int>(i)));
     }
 
     robot_feedback = feedback;
