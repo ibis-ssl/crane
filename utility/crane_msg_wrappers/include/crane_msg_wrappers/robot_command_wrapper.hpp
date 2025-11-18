@@ -276,6 +276,18 @@ public:
     return *this;
   }
 
+  auto enableRotationStopOnAccel() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.enable_rotation_stop_on_accel = true;
+    return *this;
+  }
+
+  auto disableRotationStopOnAccel() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.enable_rotation_stop_on_accel = false;
+    return *this;
+  }
+
   auto disableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
     return disableGoalAreaAvoidance().disableBallAvoidance().disablePlacementAvoidance();
