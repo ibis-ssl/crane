@@ -349,7 +349,8 @@ public:
 
     // デバッグ値
     feedback.values.clear();
-    for (size_t i = offset::DEBUG_VALUES_START; i < DEBUG_VALUES_END - FLOAT_SIZE; i += FLOAT_SIZE) {
+    for (size_t i = offset::DEBUG_VALUES_START; i < DEBUG_VALUES_END - FLOAT_SIZE;
+         i += FLOAT_SIZE) {
       feedback.values.push_back(readFloat(buffer, static_cast<int>(i)));
     }
 
