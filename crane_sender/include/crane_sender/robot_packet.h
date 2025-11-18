@@ -149,7 +149,7 @@ enum Address {
 enum FlagAddress {
   IS_VISION_AVAILABLE = 0,
   ENABLE_CHIP = 1,
-  STOP_EMERGENCY = 2,
+  STOP_EMERGENCY = 3,
 };
 
 inline void RobotCommandSerializedV2_serialize(
