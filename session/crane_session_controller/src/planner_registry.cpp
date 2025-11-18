@@ -6,24 +6,22 @@
 
 #include "crane_session_controller/planner_registry.hpp"
 
-#include <crane_planner_plugins/planners.hpp>
 #include <algorithm>
+#include <crane_planner_plugins/planners.hpp>
 #include <ranges>
 
 namespace crane
 {
 auto PlannerRegistry::getOrCreatePlanner(
-  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model,
-  rclcpp::Node & node, const std::vector<PlannerBase::SharedPtr> & prev_planners)
-  -> PlannerBase::SharedPtr
+  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
+  const std::vector<PlannerBase::SharedPtr> & prev_planners) -> PlannerBase::SharedPtr
 {
   // 新しいプランナーを生成
   auto new_planner = generatePlanner(planner_name, world_model, node);
 
   // 前回のプランナーリストから同じ設定のプランナーを探す
-  auto matched_planner = std::ranges::find_if(
-    prev_planners,
-    [&new_planner](const auto & prev_planner) {
+  auto matched_planner =
+    std::ranges::find_if(prev_planners, [&new_planner](const auto & prev_planner) {
       return prev_planner->isSameConfiguration(new_planner.get());
     });
 
