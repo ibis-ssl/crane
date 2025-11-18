@@ -288,8 +288,6 @@ public:
 
   auto updateFeedback() -> void
   {
-    using namespace protocol;
-
     RobotFeedback feedback;
     // 最新のデータでリセット
     feedback = robot_feedback;
@@ -298,60 +296,65 @@ public:
     feedback.received_stamp = clock.now();
 
     // 基本情報
-    feedback.counter = readByte(buffer, offset::COUNTER);
-    feedback.yaw_angle = readFloat(buffer, offset::YAW_ANGLE);
-    feedback.voltage[0] = readFloat(buffer, offset::VOLTAGE_0);
+    feedback.counter = protocol::readByte(buffer, protocol::offset::COUNTER);
+    feedback.yaw_angle = protocol::readFloat(buffer, protocol::offset::YAW_ANGLE);
+    feedback.voltage[0] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_0);
 
     // ボール検出
-    feedback.ball_detection[0] = readByte(buffer, offset::BALL_DETECTION_0);
-    feedback.ball_detection[1] = readByte(buffer, offset::BALL_DETECTION_1);
-    feedback.ball_detection[2] = readByte(buffer, offset::BALL_DETECTION_2);
-    feedback.ball_detection[3] = readByte(buffer, offset::BALL_DETECTION_3);
-    feedback.kick_state = readByte(buffer, offset::KICK_STATE) * KICK_STATE_SCALE;
+    feedback.ball_detection[0] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_0);
+    feedback.ball_detection[1] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_1);
+    feedback.ball_detection[2] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_2);
+    feedback.ball_detection[3] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_3);
+    feedback.kick_state =
+      protocol::readByte(buffer, protocol::offset::KICK_STATE) * protocol::KICK_STATE_SCALE;
 
     // エラー情報
-    feedback.error_id = readUint16(buffer, offset::ERROR_ID);
-    feedback.error_info = readUint16(buffer, offset::ERROR_INFO);
-    feedback.error_value = readFloat(buffer, offset::ERROR_VALUE);
+    feedback.error_id = protocol::readUint16(buffer, protocol::offset::ERROR_ID);
+    feedback.error_info = protocol::readUint16(buffer, protocol::offset::ERROR_INFO);
+    feedback.error_value = protocol::readFloat(buffer, protocol::offset::ERROR_VALUE);
 
     // モーター電流
-    feedback.motor_current[0] = readByte(buffer, offset::MOTOR_CURRENT_0) / MOTOR_CURRENT_SCALE;
-    feedback.motor_current[1] = readByte(buffer, offset::MOTOR_CURRENT_1) / MOTOR_CURRENT_SCALE;
-    feedback.motor_current[2] = readByte(buffer, offset::MOTOR_CURRENT_2) / MOTOR_CURRENT_SCALE;
-    feedback.motor_current[3] = readByte(buffer, offset::MOTOR_CURRENT_3) / MOTOR_CURRENT_SCALE;
+    feedback.motor_current[0] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_0) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[1] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_1) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[2] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_2) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[3] =
+      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_3) / protocol::MOTOR_CURRENT_SCALE;
 
     // 温度
-    feedback.temperature[0] = readByte(buffer, offset::TEMPERATURE_0);
-    feedback.temperature[1] = readByte(buffer, offset::TEMPERATURE_1);
-    feedback.temperature[2] = readByte(buffer, offset::TEMPERATURE_2);
-    feedback.temperature[3] = readByte(buffer, offset::TEMPERATURE_3);
-    feedback.temperature[4] = readByte(buffer, offset::TEMPERATURE_4);
-    feedback.temperature[5] = readByte(buffer, offset::TEMPERATURE_5);
-    feedback.temperature[6] = readByte(buffer, offset::TEMPERATURE_6);
+    feedback.temperature[0] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_0);
+    feedback.temperature[1] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_1);
+    feedback.temperature[2] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_2);
+    feedback.temperature[3] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_3);
+    feedback.temperature[4] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_4);
+    feedback.temperature[5] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_5);
+    feedback.temperature[6] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_6);
 
     // 角度と電圧
-    feedback.diff_angle = readFloat(buffer, offset::DIFF_ANGLE);
-    feedback.voltage[1] = readFloat(buffer, offset::VOLTAGE_1);
+    feedback.diff_angle = protocol::readFloat(buffer, protocol::offset::DIFF_ANGLE);
+    feedback.voltage[1] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_1);
 
     // オドメトリ
-    feedback.odom[0] = readFloat(buffer, offset::ODOM_X);
-    feedback.odom[1] = readFloat(buffer, offset::ODOM_Y);
-    feedback.odom_speed[0] = readFloat(buffer, offset::ODOM_SPEED_X);
-    feedback.odom_speed[1] = readFloat(buffer, offset::ODOM_SPEED_Y);
+    feedback.odom[0] = protocol::readFloat(buffer, protocol::offset::ODOM_X);
+    feedback.odom[1] = protocol::readFloat(buffer, protocol::offset::ODOM_Y);
+    feedback.odom_speed[0] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_X);
+    feedback.odom_speed[1] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_Y);
 
-    feedback.check_ver = readByte(buffer, offset::CHECK_VER);
+    feedback.check_ver = protocol::readByte(buffer, protocol::offset::CHECK_VER);
 
     // マウスセンサー
-    feedback.mouse_odom[0] = readFloat(buffer, offset::MOUSE_ODOM_X);
-    feedback.mouse_odom[1] = readFloat(buffer, offset::MOUSE_ODOM_Y);
-    feedback.mouse_vel[0] = readFloat(buffer, offset::MOUSE_VEL_X);
-    feedback.mouse_vel[1] = readFloat(buffer, offset::MOUSE_VEL_Y);
+    feedback.mouse_odom[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_X);
+    feedback.mouse_odom[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_Y);
+    feedback.mouse_vel[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_X);
+    feedback.mouse_vel[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_Y);
 
     // デバッグ値
     feedback.values.clear();
-    for (size_t i = offset::DEBUG_VALUES_START; i < DEBUG_VALUES_END - FLOAT_SIZE;
-         i += FLOAT_SIZE) {
-      feedback.values.push_back(readFloat(buffer, static_cast<int>(i)));
+    for (size_t i = protocol::offset::DEBUG_VALUES_START;
+         i < protocol::DEBUG_VALUES_END - protocol::FLOAT_SIZE; i += protocol::FLOAT_SIZE) {
+      feedback.values.push_back(protocol::readFloat(buffer, static_cast<int>(i)));
     }
 
     robot_feedback = feedback;
