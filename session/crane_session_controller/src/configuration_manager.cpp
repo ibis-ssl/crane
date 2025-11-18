@@ -36,8 +36,8 @@ auto ConfigurationManager::getSessionNameForEvent(const std::string & event_name
   return std::nullopt;
 }
 
-auto ConfigurationManager::getSessionCapacitiesForSituation(const std::string & situation_name) const
-  -> std::optional<std::vector<SessionCapacity>>
+auto ConfigurationManager::getSessionCapacitiesForSituation(
+  const std::string & situation_name) const -> std::optional<std::vector<SessionCapacity>>
 {
   auto it = robot_selection_priority_map_.find(situation_name);
   if (it != robot_selection_priority_map_.end()) {

@@ -49,8 +49,7 @@ public:
    * @param event_name イベント名
    * @return セッション名（存在しない場合はstd::nullopt）
    */
-  auto getSessionNameForEvent(const std::string & event_name) const
-    -> std::optional<std::string>;
+  auto getSessionNameForEvent(const std::string & event_name) const -> std::optional<std::string>;
 
   /**
    * @brief セッション名に対応するSessionCapacityリストを取得
