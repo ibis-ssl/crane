@@ -17,6 +17,7 @@
 #include <std_msgs/msg/string.hpp>
 
 #include "crane_session_controller/configuration_manager.hpp"
+#include "crane_session_controller/planner_registry.hpp"
 #include "crane_session_controller/session_controller.hpp"
 
 namespace crane
@@ -44,6 +45,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   config_manager_ = std::make_shared<ConfigurationManager>(
     ament_index_cpp::get_package_share_directory("crane_session_controller"),
     session_config_file_name, get_logger());
+
+  // プランナー管理の初期化
+  planner_registry_ = std::make_shared<PlannerRegistry>();
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
@@ -111,7 +115,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
 
     PlannerContext planner_context;
-    for (const auto & planner : available_planners) {
+    for (const auto & planner : planner_registry_->getAllPlanners()) {
       auto commands_msg = planner->getRobotCommands(planner_context);
       ranges::for_each(
         commands_msg.robot_commands, [&](crane_msgs::msg::RobotCommand & robot_command) {
@@ -215,8 +219,9 @@ auto SessionControllerComponent::request(
   planner_context["AttackerSkill"]["pass_receiver"] =
     (pass_receiver >= 0) ? static_cast<double>(pass_receiver) : -1.0;
 
-  auto prev_available_planners =
-    std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());
+  // 前回のプランナーリストを保存し、新しいリストをクリア
+  auto prev_available_planners = planner_registry_->getAllPlanners();
+  planner_registry_->clear();
 
   crane_msgs::msg::RobotSelectResults results;
 
@@ -237,7 +242,7 @@ auto SessionControllerComponent::request(
 auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
 {
   std::vector<uint8_t> assigned_robot_ids;
-  for (const auto & planner : available_planners) {
+  for (const auto & planner : planner_registry_->getAllPlanners()) {
     for (const auto & robot : planner->getRobots()) {
       assigned_robot_ids.push_back(robot.id);
     }
@@ -250,7 +255,7 @@ auto SessionControllerComponent::buildAssignmentLog() const -> std::string
 {
   std::stringstream assignment_log;
   bool first = true;
-  for (const auto & planner : available_planners) {
+  for (const auto & planner : planner_registry_->getAllPlanners()) {
     if (!first) {
       assignment_log << ", ";
     }
@@ -303,29 +308,25 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
     std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
 
     const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
-    auto planner = generatePlanner(
-      session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this));
+
+    // PlannerRegistryを使ってプランナーを取得または生成
+    auto planner = planner_registry_->getOrCreatePlanner(
+      session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
+      prev_available_planners);
+
     auto response = planner->doRobotSelect(req, prev_roles, planner_context);
 
     std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
     results.results.push_back(result);
 
-    // 前回結果との比較
-    if (auto matched_planner = std::ranges::find_if(
-          prev_available_planners,
-          [&planner](const auto & prev_planner) {
-            return prev_planner->isSameConfiguration(planner.get());
-          });
-        matched_planner != prev_available_planners.end()) {
-      available_planners.push_back(*matched_planner);
-    } else {
-      if (not selectable_robot_ids.empty()) {
-        RCLCPP_DEBUG_STREAM(
-          get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
-                                         << selectable_robot_ids << " -> "
-                                         << response.selected_robots);
-        available_planners.push_back(planner);
-      }
+    // プランナーをレジストリに登録
+    planner_registry_->addPlanner(planner);
+
+    if (not selectable_robot_ids.empty()) {
+      RCLCPP_DEBUG_STREAM(
+        get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
+                                       << selectable_robot_ids << " -> "
+                                       << response.selected_robots);
     }
 
     // 割当依頼結果の反映
@@ -374,7 +375,7 @@ auto SessionControllerComponent::updateDiagnostics(
 
   stat.add("time_since_last_planning", time_since_last_planning);
   stat.add("planning_count", planning_count_);
-  stat.add("active_planners", static_cast<int>(available_planners.size()));
+  stat.add("active_planners", static_cast<int>(planner_registry_->getAllPlanners().size()));
   stat.add("available_robots", static_cast<int>(world_model->ours().getAvailableRobotIds().size()));
 }
 }  // namespace crane

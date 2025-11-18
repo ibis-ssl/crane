@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "configuration_manager.hpp"
+#include "planner_registry.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -70,6 +71,8 @@ private:
 
   std::shared_ptr<ConfigurationManager> config_manager_;
 
+  std::shared_ptr<PlannerRegistry> planner_registry_;
+
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
@@ -81,8 +84,6 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr callback_process_time_pub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotSelectResults>::SharedPtr robot_select_results_pub;
-
-  std::vector<PlannerBase::SharedPtr> available_planners;
 
   crane_msgs::msg::PlaySituation play_situation;
 
