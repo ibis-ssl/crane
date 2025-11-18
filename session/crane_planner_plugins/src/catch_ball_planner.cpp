@@ -93,7 +93,6 @@ CatchBallPlanner::calculateRobotCommand(
         } else {
           std::cout << "ボール突撃" << std::endl;
           command->setTargetPosition(world_model->ball().pos);
-          command->liftUpDribbler();
           command->kickStraight(0.1).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
           command->disableBallAvoidance();

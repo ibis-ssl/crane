@@ -240,19 +240,6 @@ Status CmdDisableStopFlag::update()
 
 void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
 
-void CmdLiftUpDribbler::initialize() { setParameter("enable", true); }
-
-Status CmdLiftUpDribbler::update()
-{
-  command->liftUpDribbler(getParameter<bool>("enable"));
-  return Status::SUCCESS;
-}
-
-void CmdLiftUpDribbler::print(std::ostream & os) const
-{
-  os << "[CmdLiftUpDribbler] enable: " << getParameter<bool>("enable");
-}
-
 void CmdLookAt::initialize()
 {
   setParameter("x", 0.0);
