@@ -25,7 +25,7 @@ TEST(RobotPacket, ENcodeDecode)
   const float MAX_ERROR_PI = M_PI * 2.0 / 32767.0;
   const float MAX_ERROR_0_1 = 1.0 / 20.0;
 
-  RobotCommandV3 packet;
+  RobotCommandV2 packet;
   packet.header = 4;
   packet.check_counter = 179;
   packet.vision_global_pos[0] = dist_32(gen);
@@ -48,10 +48,10 @@ TEST(RobotPacket, ENcodeDecode)
     packet.mode_args.polar_velocity.target_global_velocity_r = dist_32(gen);
     packet.mode_args.polar_velocity.target_global_velocity_theta = dist_32(gen);
 
-    RobotCommandSerializedV3 serialized_packet;
-    RobotCommandSerializedV3_serialize(&serialized_packet, &packet);
+    RobotCommandSerializedV2 serialized_packet;
+    RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
-    RobotCommandV3 deserialized_packet = RobotCommandSerializedV3_deserialize(&serialized_packet);
+    RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
     EXPECT_EQ(packet.header, deserialized_packet.header);
     EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
     EXPECT_NEAR(

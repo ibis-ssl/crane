@@ -21,8 +21,8 @@ namespace CommConfig
 {
 constexpr int DEFAULT_PORT = 12345;
 constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
-constexpr int AI_CMD_V3_SIZE = 64;
-constexpr int AI_CMD_V3_ROBOT_NUM = 11;
+constexpr int AI_CMD_V2_SIZE = 64;
+constexpr int AI_CMD_V2_ROBOT_NUM = 11;
 }  // namespace CommConfig
 
 class BroadcastCommandSender
@@ -31,7 +31,7 @@ public:
   explicit BroadcastCommandSender();
 
   void sendBroadcastPackets(
-    const std::vector<std::pair<uint8_t, RobotCommandSerializedV3>> & robot_packets,
+    const std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> & robot_packets,
     int check_counter);
 
 private:

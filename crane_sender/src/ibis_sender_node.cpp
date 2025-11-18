@@ -93,9 +93,9 @@ public:
   }
 
 private:
-  RobotCommandV3 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
+  RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
   {
-    RobotCommandV3 packet;
+    RobotCommandV2 packet;
     packet.header = 0x00;
     packet.check_counter = counter;
     packet.vision_global_pos[0] = command.current_pose.x;
@@ -192,18 +192,18 @@ public:
     std::cout << "  受信したロボットコマンド数: " << msg.robot_commands.size() << std::endl;
 
     // ブロードキャストモード：全ロボットのパケットを作成して一括送信
-    std::vector<std::pair<uint8_t, RobotCommandSerializedV3>> robot_packets;
+    std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> robot_packets;
 
     // 全11スロット分の配列を初期化（ロボットIDでインデックス指定）
-    std::array<std::optional<RobotCommandSerializedV3>, CommConfig::AI_CMD_V3_ROBOT_NUM>
+    std::array<std::optional<RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM>
       packet_slots;
 
     int processed_commands = 0;
     for (auto command : msg.robot_commands) {
-      if (command.robot_id < CommConfig::AI_CMD_V3_ROBOT_NUM) {
-        RobotCommandV3 packet = createRobotPacket(command, counter);
-        RobotCommandSerializedV3 serialized_packet;
-        RobotCommandSerializedV3_serialize(&serialized_packet, &packet);
+      if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
+        RobotCommandV2 packet = createRobotPacket(command, counter);
+        RobotCommandSerializedV2 serialized_packet;
+        RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
         packet_slots[command.robot_id] = serialized_packet;
         processed_commands++;
       }
@@ -214,19 +214,19 @@ public:
 
     // 全スロットを順番にパケットリストに追加（空のスロットは空パケット）
     int filled_slots = 0;
-    for (int i = 0; i < CommConfig::AI_CMD_V3_ROBOT_NUM; i++) {
+    for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
       if (packet_slots[i]) {
         robot_packets.push_back(std::make_pair(i, packet_slots[i].value()));
         filled_slots++;
       } else {
         // 空パケットを作成
-        RobotCommandSerializedV3 empty_packet = {};
+        RobotCommandSerializedV2 empty_packet = {};
         robot_packets.push_back(std::make_pair(i, empty_packet));
       }
     }
 
     std::cout << "  パケットスロット使用状況: " << filled_slots << "/"
-              << CommConfig::AI_CMD_V3_ROBOT_NUM << " スロット使用中" << std::endl;
+              << CommConfig::AI_CMD_V2_ROBOT_NUM << " スロット使用中" << std::endl;
     std::cout << "  ブロードキャスト送信準備完了 → パケット送信開始" << std::endl;
 
     broadcast_sender->sendBroadcastPackets(robot_packets, counter);

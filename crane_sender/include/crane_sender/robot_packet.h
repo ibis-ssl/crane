@@ -85,7 +85,7 @@ inline void PolarVelocityModeArgs_serialize(const PolarVelocityModeArgs * args, 
 }
 
 typedef enum {
-  POLAR_VELOCITY_TARGET_MODE = 0,
+  POLAR_VELOCITY_TARGET_MODE = 3,
 } ControlMode;
 
 typedef struct
@@ -111,12 +111,12 @@ typedef struct
   union {
     PolarVelocityModeArgs polar_velocity;
   } mode_args;
-} RobotCommandV3;
+} RobotCommandV2;
 
 typedef struct
 {
   uint8_t data[64];
-} RobotCommandSerializedV3;
+} RobotCommandSerializedV2;
 
 enum Address {
   HEADER,
@@ -152,8 +152,8 @@ enum FlagAddress {
   STOP_EMERGENCY = 2,
 };
 
-inline void RobotCommandSerializedV3_serialize(
-  RobotCommandSerializedV3 * serialized, const RobotCommandV3 * command)
+inline void RobotCommandSerializedV2_serialize(
+  RobotCommandSerializedV2 * serialized, const RobotCommandV2 * command)
 {
   serialized->data[HEADER] = command->header;
   serialized->data[CHECK_COUNTER] = command->check_counter;
@@ -200,10 +200,10 @@ inline void RobotCommandSerializedV3_serialize(
   }
 }
 
-inline RobotCommandV3 RobotCommandSerializedV3_deserialize(
-  const RobotCommandSerializedV3 * serialized)
+inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
+  const RobotCommandSerializedV2 * serialized)
 {
-  RobotCommandV3 command;
+  RobotCommandV2 command;
   command.header = serialized->data[HEADER];
   command.check_counter = serialized->data[CHECK_COUNTER];
   command.vision_global_pos[0] = convertTwoByteToFloat(
