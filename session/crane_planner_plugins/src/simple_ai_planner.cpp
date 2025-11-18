@@ -39,7 +39,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
     setUpSkillDictionary<skills::CmdEnableStopFlag>();
     setUpSkillDictionary<skills::CmdDisableStopFlag>();
-    setUpSkillDictionary<skills::CmdLiftUpDribbler>();
     setUpSkillDictionary<skills::CmdLookAt>();
     setUpSkillDictionary<skills::CmdLookAtBall>();
     setUpSkillDictionary<skills::CmdLookAtBallFrom>();

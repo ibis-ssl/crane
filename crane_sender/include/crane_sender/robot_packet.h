@@ -68,72 +68,6 @@ inline void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
 
 typedef struct
 {
-  float ball_pos[2];
-  float ball_vel[2];
-  float target_global_vel[2];
-} LocalCameraModeArgs;
-
-inline void LocalCameraModeArgs_init(LocalCameraModeArgs * args, const uint8_t * data)
-{
-  args->ball_pos[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->ball_pos[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->ball_vel[0] = convertTwoByteToFloat(data[4], data[5], 32.767);
-  args->ball_vel[1] = convertTwoByteToFloat(data[6], data[7], 32.767);
-  args->target_global_vel[0] = convertTwoByteToFloat(data[8], data[9], 32.767);
-  args->target_global_vel[1] = convertTwoByteToFloat(data[10], data[11], 32.767);
-}
-
-inline void LocalCameraModeArgs_serialize(const LocalCameraModeArgs * args, uint8_t * data)
-{
-  forward(&data[0], &data[1], args->ball_pos[0], 32.767);
-  forward(&data[2], &data[3], args->ball_pos[1], 32.767);
-  forward(&data[4], &data[5], args->ball_vel[0], 32.767);
-  forward(&data[6], &data[7], args->ball_vel[1], 32.767);
-  forward(&data[8], &data[9], args->target_global_vel[0], 32.767);
-  forward(&data[10], &data[11], args->target_global_vel[1], 32.767);
-}
-
-typedef struct
-{
-  float target_global_pos[2];
-  float terminal_velocity;
-} PositionTargetModeArgs;
-
-inline void PositionTargetModeArgs_init(PositionTargetModeArgs * args, const uint8_t * data)
-{
-  args->target_global_pos[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_pos[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->terminal_velocity = convertTwoByteToFloat(data[4], data[5], 32.767);
-}
-
-inline void PositionTargetModeArgs_serialize(const PositionTargetModeArgs * args, uint8_t * data)
-{
-  forward(&data[0], &data[1], args->target_global_pos[0], 32.767);
-  forward(&data[2], &data[3], args->target_global_pos[1], 32.767);
-  forward(&data[4], &data[5], args->terminal_velocity, 32.767);
-}
-
-typedef struct
-{
-  float target_global_vel[2];
-} SimpleVelocityTargetModeArgs;
-
-inline void SimpleVelocityTargetModeArgs_init(
-  SimpleVelocityTargetModeArgs * args, const uint8_t * data)
-{
-  args->target_global_vel[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_vel[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
-}
-
-inline void SimpleVelocityTargetModeArgs_serialize(
-  const SimpleVelocityTargetModeArgs * args, uint8_t * data)
-{
-  forward(&data[0], &data[1], args->target_global_vel[0], 32.767);
-  forward(&data[2], &data[3], args->target_global_vel[1], 32.767);
-}
-
-typedef struct
-{
   float target_global_velocity_r;
   float target_global_velocity_theta;
 } PolarVelocityModeArgs;
@@ -151,9 +85,6 @@ inline void PolarVelocityModeArgs_serialize(const PolarVelocityModeArgs * args, 
 }
 
 typedef enum {
-  LOCAL_CAMERA_MODE = 0,
-  POSITION_TARGET_MODE = 1,
-  SIMPLE_VELOCITY_TARGET_MODE = 2,
   POLAR_VELOCITY_TARGET_MODE = 3,
 } ControlMode;
 
@@ -169,21 +100,15 @@ typedef struct
   float kick_power;
   float dribble_power;
   bool enable_chip;
-  bool lift_dribbler;
   bool stop_emergency;
   float acceleration_limit;
   float linear_velocity_limit;
   float angular_velocity_limit;
   uint16_t latency_time_ms;
-  bool prioritize_move;
-  bool prioritize_accurate_acceleration;
   uint16_t elapsed_time_ms_since_last_vision;
   ControlMode control_mode;
 
   union {
-    LocalCameraModeArgs local_camera;
-    PositionTargetModeArgs position;
-    SimpleVelocityTargetModeArgs simple_velocity;
     PolarVelocityModeArgs polar_velocity;
   } mode_args;
 } RobotCommandV2;
@@ -224,10 +149,7 @@ enum Address {
 enum FlagAddress {
   IS_VISION_AVAILABLE = 0,
   ENABLE_CHIP = 1,
-  LIFT_DRIBBLER = 2,
   STOP_EMERGENCY = 3,
-  PRIORITIZE_MOVE = 4,
-  PRIORITIZE_ACCURATE_ACCELERATION = 5,
 };
 
 inline void RobotCommandSerializedV2_serialize(
@@ -267,25 +189,10 @@ inline void RobotCommandSerializedV2_serialize(
   uint8_t flags = 0x00;
   flags |= (command->is_vision_available << IS_VISION_AVAILABLE);
   flags |= (command->enable_chip << ENABLE_CHIP);
-  flags |= (command->lift_dribbler << LIFT_DRIBBLER);
   flags |= (command->stop_emergency << STOP_EMERGENCY);
-  flags |= (command->prioritize_move << PRIORITIZE_MOVE);
-  flags |= (command->prioritize_accurate_acceleration << PRIORITIZE_ACCURATE_ACCELERATION);
   serialized->data[FLAGS] = flags;
   serialized->data[CONTROL_MODE] = (uint8_t)command->control_mode;
   switch (command->control_mode) {
-    case LOCAL_CAMERA_MODE:
-      LocalCameraModeArgs_serialize(
-        &command->mode_args.local_camera, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
-    case POSITION_TARGET_MODE:
-      PositionTargetModeArgs_serialize(
-        &command->mode_args.position, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
-    case SIMPLE_VELOCITY_TARGET_MODE:
-      SimpleVelocityTargetModeArgs_serialize(
-        &command->mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
     case POLAR_VELOCITY_TARGET_MODE:
       PolarVelocityModeArgs_serialize(
         &command->mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
@@ -325,24 +232,9 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
   uint8_t flags = serialized->data[FLAGS];
   command.is_vision_available = (flags >> IS_VISION_AVAILABLE) & 0x01;
   command.enable_chip = (flags >> ENABLE_CHIP) & 0x01;
-  command.lift_dribbler = (flags >> LIFT_DRIBBLER) & 0x01;
   command.stop_emergency = (flags >> STOP_EMERGENCY) & 0x01;
-  command.prioritize_move = (flags >> PRIORITIZE_MOVE) & 0x01;
-  command.prioritize_accurate_acceleration = (flags >> PRIORITIZE_ACCURATE_ACCELERATION) & 0x01;
   command.control_mode = (ControlMode)serialized->data[CONTROL_MODE];
   switch (command.control_mode) {
-    case LOCAL_CAMERA_MODE:
-      LocalCameraModeArgs_init(
-        &command.mode_args.local_camera, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
-    case POSITION_TARGET_MODE:
-      PositionTargetModeArgs_init(
-        &command.mode_args.position, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
-    case SIMPLE_VELOCITY_TARGET_MODE:
-      SimpleVelocityTargetModeArgs_init(
-        &command.mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
-      break;
     case POLAR_VELOCITY_TARGET_MODE:
       PolarVelocityModeArgs_init(
         &command.mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);

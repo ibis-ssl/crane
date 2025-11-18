@@ -350,12 +350,6 @@ public:
     return *this;
   }
 
-  auto liftUpDribbler(bool flag = true) -> RobotCommandWrapper &
-  {
-    latest_msg.lift_up_dribbler_flag = flag;
-    return *this;
-  }
-
   // auto setLatencyMs(double latency_ms) -> RobotCommandWrapper &
   // {
   //   latest_msg.latency_ms = latency_ms;
