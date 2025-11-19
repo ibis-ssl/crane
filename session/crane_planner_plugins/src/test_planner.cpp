@@ -52,6 +52,10 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, 
   command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
   applyLegLimits(*command, wp);
   command->setTargetPosition(wp.pos);
+  // 角度が設定されている場合は角度も設定
+  if (wp.theta.has_value()) {
+    command->setTargetTheta(wp.theta.value());
+  }
 
   auto now = rclcpp::Clock().now();
   if (command->getTargetDistance() < 0.05) {
@@ -124,6 +128,11 @@ auto TestPlanner::loadConfigFromFile(const std::string & path) -> bool
         if (w["position"].IsSequence() && w["position"].size() >= 2) {
           wp.pos.x() = w["position"][0].as<double>();
           wp.pos.y() = w["position"][1].as<double>();
+          // 3要素目がある場合は角度（度）として読み込み、ラジアンに変換
+          if (w["position"].size() >= 3) {
+            double theta_deg = w["position"][2].as<double>();
+            wp.theta = theta_deg * M_PI / 180.0;
+          }
         } else {
           RCLCPP_WARN(rclcpp::get_logger("TestPlanner"), "position が無い経由点をスキップしました");
           continue;

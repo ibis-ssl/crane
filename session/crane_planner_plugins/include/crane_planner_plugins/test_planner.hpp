@@ -42,6 +42,7 @@ private:
   struct Waypoint
   {
     Point pos;
+    std::optional<double> theta;  // 目標角度（ラジアン）
     std::optional<double> max_velocity;
     std::optional<double> max_acceleration;
     double dwell_sec{0.0};
