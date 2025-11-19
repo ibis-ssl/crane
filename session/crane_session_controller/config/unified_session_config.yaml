@@ -1,9 +1,7 @@
 situations:
   HALT:
     description: HALT
-    sessions:
-      - name: waiter
-        capacity: 20
+    sessions: []
   INPLAY:
     description: INPLAY
     sessions:
@@ -55,8 +53,6 @@ situations:
         capacity: 1
       - name: simple_kickoff
         capacity: 1
-      - name: waiter
-        capacity: 20
   OUR_PENALTY_KICK:
     description: OUR_PENALTY_KICK
     sessions:
@@ -82,15 +78,11 @@ situations:
         capacity: 1
       - name: forward
         capacity: 20
-      - name: waiter
-        capacity: 20
   TEST:
     description: TEST
     sessions:
       - name: test
         capacity: 1
-      - name: waiter
-        capacity: 20
   THEIR_BALL_PLACEMENT:
     description: THEIR_BALL_PLACEMENT
     sessions:
@@ -145,8 +137,6 @@ situations:
         capacity: 1
       - name: catch_ball
         capacity: 1
-      - name: waiter
-        capacity: 20
   CENTER_STOP_KICK:
     description: Center stop kick testing using CenterStopKickPlanner for stop distance
       kick verification
@@ -160,8 +150,6 @@ situations:
     sessions:
       - name: emplace_robot
         capacity: 100
-      - name: waiter
-        capacity: 20
   formation:
     description: formation
     sessions:
@@ -174,8 +162,6 @@ situations:
     sessions:
       - name: goalie_skill
         capacity: 1
-      - name: waiter
-        capacity: 10
   ibis_formation:
     description: ibisのi/キーパーなし
     sessions:
@@ -202,8 +188,6 @@ situations:
     sessions:
       - name: simple_ai
         capacity: 16
-      - name: waiter
-        capacity: 20
   wing_formation:
     description: wing/キーパーなし
     sessions:
