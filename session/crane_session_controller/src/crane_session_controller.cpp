@@ -236,7 +236,13 @@ auto SessionControllerComponent::request(
   }
 
   robot_select_results_pub->publish(results);
-  // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
+
+  // 割り当てられなかったロボットを待機状態にする
+  if (not selectable_robot_ids.empty()) {
+    SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size())};
+    tryAssignRobotToPlanner(
+      waiter_session, selectable_robot_ids, prev_available_planners, planner_context, results);
+  }
 }
 
 auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
