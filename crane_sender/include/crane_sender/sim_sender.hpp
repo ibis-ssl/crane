@@ -9,6 +9,7 @@
 
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -94,6 +95,24 @@ public:
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
+
+    // ロボット送信用の加速度パラメータを読み込み
+    declare_parameter("robot_acceleration.acceleration", 2.5);
+    get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
+
+    declare_parameter("robot_acceleration.deceleration_high", 3.0);
+    get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+
+    declare_parameter("robot_acceleration.deceleration_low", 2.0);
+    get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+
+    declare_parameter("robot_acceleration.velocity_threshold", 1.5);
+    get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+
+    // previous_velocities_を初期化（全要素をゼロベクトルに）
+    for (auto & velocity : previous_velocities_) {
+      velocity = Velocity::Zero();
+    }
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
@@ -141,6 +160,22 @@ public:
   ParameterWithEvent<double> theta_d_gain;
 
   double I_SATURATION = 0.0;
+
+private:
+  // 前回の速度を記録（加速度制限計算用）
+  std::array<Velocity, 20> previous_velocities_;
+
+  // ロボット送信用の加速度パラメータ
+  double robot_acceleration_acceleration_;
+  double robot_acceleration_deceleration_high_;
+  double robot_acceleration_deceleration_low_;
+  double robot_acceleration_velocity_threshold_;
+
+  // 加速度制限を計算
+  double calculateAccelerationLimit(
+    double current_velocity, double target_velocity, double robot_acceleration_acceleration,
+    double robot_acceleration_deceleration_high, double robot_acceleration_deceleration_low,
+    double robot_acceleration_velocity_threshold);
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_
