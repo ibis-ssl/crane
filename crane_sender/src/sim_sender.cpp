@@ -38,7 +38,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
   for (const auto & command : msg.robot_commands) {
     robocup_ssl_msgs::msg::GrSimRobotCommand cmd;
     cmd.set__id(command.robot_id);
-    float omega = theta_controllers[command.robot_id].update(
+    float omega = robot_states_[command.robot_id].theta_controller.update(
       -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
     omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
     cmd.set__velangular(omega);
@@ -54,9 +54,9 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
       } break;
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         Velocity vel;
-        vel << vx_controllers[command.robot_id].update(
+        vel << robot_states_[command.robot_id].vx_controller.update(
           command.position_target_mode.front().target_x - command.current_pose.x, 1.f / 30.f),
-          vy_controllers[command.robot_id].update(
+          robot_states_[command.robot_id].vy_controller.update(
             command.position_target_mode.front().target_y - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
@@ -81,7 +81,8 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
           command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
 
         // 加速度制限の適用
-        double current_velocity = std::hypot(command.current_velocity.x, command.current_velocity.y);
+        double current_velocity =
+          std::hypot(command.current_velocity.x, command.current_velocity.y);
         double target_velocity = v_r;
 
         // 加速度制限を計算
@@ -108,7 +109,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
         cmd.set__velnormal(vy);
 
         // 前回速度を記録（グローバル座標系）
-        previous_velocities_[command.robot_id] = Velocity(vx, vy);
+        robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
       } break;
       default:
         std::cout << "Invalid control mode" << std::endl;
