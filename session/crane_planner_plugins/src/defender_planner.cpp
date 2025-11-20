@@ -46,38 +46,20 @@ DefenderPlanner::calculateRobotCommand(
   }();
 
   if (not defense_points.empty()) {
-    std::vector<Point> robot_points;
-    for (auto robot_id : robots) {
-      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
-    }
-
-    auto solution = getOptimalAssignments(robot_points, defense_points);
-
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
-      Point target_point = defense_points[solution[index]];
-
-      auto command =
-        std::make_shared<crane::RobotCommandWrapper>("defender_planner", robot_id->id, world_model);
-      auto robot = world_model->getRobot(*robot_id);
-
-      command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
-      command->disableCollisionAvoidance();
-      command->disableBallAvoidance();
-      if (
-        world_model->getMsg().play_situation.command.value ==
-        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
-        command->disableAnyAreaAvoidance();
-        command->enablePlacementAvoidance();
-      } else {
-        command->disableAnyAreaAvoidance();
-        command->enableGoalAreaAvoidance();
-      }
-
-      robot_commands.emplace_back(command->getMsg());
-    }
+    auto robot_commands = assignRobotsToPoints(
+      robots, defense_points, "defender_planner", world_model->ball().pos,
+      [&](std::shared_ptr<RobotCommandWrapper> & command) {
+        command->disableBasicAvoidances();
+        if (
+          world_model->getMsg().play_situation.command.value ==
+          crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+          command->disableAnyAreaAvoidance();
+          command->enablePlacementAvoidance();
+        } else {
+          command->disableAnyAreaAvoidance();
+          command->enableGoalAreaAvoidance();
+        }
+      });
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;

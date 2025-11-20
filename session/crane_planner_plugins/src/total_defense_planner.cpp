@@ -71,27 +71,13 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   if (not defense_points.empty()) {
-    std::vector<Point> robot_points;
-    for (auto robot_id : defender_robots) {
-      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
-    }
-
-    auto solution = getOptimalAssignments(robot_points, defense_points);
-
-    for (auto robot_id = defender_robots.begin(); robot_id != defender_robots.end(); ++robot_id) {
-      int index = std::distance(defender_robots.begin(), robot_id);
-      Point target_point = defense_points[solution[index]];
-
-      auto command =
-        std::make_shared<RobotCommandWrapper>("total_defense_planner", robot_id->id, world_model);
-      auto robot = world_model->getRobot(*robot_id);
-
-      command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
-      command->disableCollisionAvoidance();
-      command->disableBallAvoidance();
-
-      robot_commands.emplace_back(command->getMsg());
+    auto defender_commands = assignRobotsToPoints(
+      defender_robots, defense_points, "total_defense_planner", world_model->ball().pos,
+      [&](std::shared_ptr<RobotCommandWrapper> & command) {
+        command->disableBasicAvoidances();
+      });
+    for (const auto & cmd : defender_commands) {
+      robot_commands.emplace_back(cmd);
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
