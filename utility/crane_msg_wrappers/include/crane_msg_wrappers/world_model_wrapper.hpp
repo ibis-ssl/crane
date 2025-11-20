@@ -412,17 +412,11 @@ struct WorldModelWrapper
   // === 便利関数: フィールドサイズ計算 ===
   /// @brief フィールドの半分の長さ（X方向）を取得
   /// @return フィールド長の半分[m]
-  [[nodiscard]] inline auto getFieldHalfLength() const -> double
-  {
-    return field_size_.x() * 0.5;
-  }
+  [[nodiscard]] inline auto getFieldHalfLength() const -> double { return field_size_.x() * 0.5; }
 
   /// @brief フィールドの半分の幅（Y方向）を取得
   /// @return フィールド幅の半分[m]
-  [[nodiscard]] inline auto getFieldHalfWidth() const -> double
-  {
-    return field_size_.y() * 0.5;
-  }
+  [[nodiscard]] inline auto getFieldHalfWidth() const -> double { return field_size_.y() * 0.5; }
 
   /// @brief ペナルティエリアの半分の幅を取得
   /// @return ペナルティエリア幅の半分[m]
@@ -433,10 +427,7 @@ struct WorldModelWrapper
 
   /// @brief ペナルティエリアの奥行き（ゴールからの距離）を取得
   /// @return ペナルティエリアの奥行き[m]
-  [[nodiscard]] inline auto getPenaltyAreaDepth() const -> double
-  {
-    return penalty_area_size_.x();
-  }
+  [[nodiscard]] inline auto getPenaltyAreaDepth() const -> double { return penalty_area_size_.x(); }
 
   /// @brief 自陣ペナルティエリア前面のX座標を取得
   /// @return 自陣ペナルティエリアのフィールド側境界X座標

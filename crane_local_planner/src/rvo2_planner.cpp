@@ -380,28 +380,6 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
           return world_model->getTheirGoalCenter();
         }
       }();
-      if (not command.local_planner_config.disable_goal_area_avoidance) {
-        double SURROUNDING_OFFSET = 0.3;
-        double PENALTY_AREA_OFFSET = 0.05;
-
-        // 離れないといけないのは敵ペナルティエリアのみ
-        if (not is_near_our_penalty_area) {
-          switch (world_model->getMsg().play_situation.referee_raw.command.value) {
-            case robocup_ssl_msgs::msg::RefereeCommand::STOP:
-            case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_BLUE:
-            case robocup_ssl_msgs::msg::RefereeCommand::DIRECT_FREE_YELLOW:
-              PENALTY_AREA_OFFSET = 0.5;
-              SURROUNDING_OFFSET = 0.6;
-              break;
-            default:
-              PENALTY_AREA_OFFSET = 0.1;
-              SURROUNDING_OFFSET = 0.3;
-          }
-        }
-      }
-
-      // 現在位置を定義
-      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
 
       // 3つの独立した回避ロジックを適用
       adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
@@ -415,13 +393,13 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
 }
 
 auto RVO2Planner::adjustForPenaltyAreaAvoidance(
-  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
-  const -> void
+  Point & target_pos, const Point & current_pos,
+  const crane_msgs::msg::RobotCommand & command) const -> void
 {
   if (not command.local_planner_config.disable_goal_area_avoidance) {
     constexpr double SURROUNDING_OFFSET = 0.2;
     constexpr double PENALTY_AREA_OFFSET = 0.1;
-    Box penalty_area = world_model->getPenaltyArea(world_model->getOurGoalCenter());
+    Box penalty_area = world_model->getOurPenaltyArea();
     const Point goal_pos = world_model->getOurGoalCenter();
 
     if (isInBox(penalty_area, current_pos, PENALTY_AREA_OFFSET)) {
@@ -429,8 +407,7 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
         target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
       }
       // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
-      while (
-        isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and target_pos != current_pos) {
+      while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and target_pos != current_pos) {
         target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
       }
     } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
@@ -447,30 +424,27 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
     Segment move_line(current_pos, target_pos);
     if (bg::intersects(move_line, penalty_area)) {
       const auto penalty_area_size = world_model->penaltyAreaSize();
-      Point corner_1 = goal_pos +
-                       Point(
-                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                         world_model->penaltyAreaSize().y() * 0.5);
-      Point around_corner_1 = goal_pos +
-                              Point(
-                                std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                                world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
+      Point corner_1 = goal_pos + Point(
+                                    std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                                    world_model->penaltyAreaSize().y() * 0.5);
+      Point around_corner_1 =
+        goal_pos + Point(
+                     std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+                     world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
 
-      Point corner_2 = goal_pos +
-                       Point(
-                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                         -world_model->penaltyAreaSize().y() * 0.5);
+      Point corner_2 = goal_pos + Point(
+                                    std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                                    -world_model->penaltyAreaSize().y() * 0.5);
       Point around_corner_2 =
-        goal_pos +
-        Point(
-          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-          -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
+        goal_pos + Point(
+                     std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+                     -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
 
       auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
       auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
 
-      const double penalty_area_min_x =
-        world_model->fieldSize().x() * 0.5 - world_model->penaltyAreaSize().x() - PENALTY_AREA_OFFSET;
+      const double penalty_area_min_x = world_model->fieldSize().x() * 0.5 -
+                                        world_model->penaltyAreaSize().x() - PENALTY_AREA_OFFSET;
       if (
         std::abs(closest_point_1.x()) > penalty_area_min_x &&
         std::abs(closest_point_2.x()) > penalty_area_min_x) {
@@ -498,8 +472,8 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
 }
 
 auto RVO2Planner::adjustForBallAvoidance(
-  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
-  const -> void
+  Point & target_pos, const Point & current_pos,
+  const crane_msgs::msg::RobotCommand & command) const -> void
 {
   if (not command.local_planner_config.disable_ball_avoidance) {
     const auto & ball_pos = world_model->ball().pos;
@@ -532,8 +506,8 @@ auto RVO2Planner::adjustForBallAvoidance(
 }
 
 auto RVO2Planner::adjustForPlacementAvoidance(
-  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
-  const -> void
+  Point & target_pos, const Point & current_pos,
+  const crane_msgs::msg::RobotCommand & command) const -> void
 {
   if (
     not command.local_planner_config.disable_placement_avoidance &&
@@ -548,8 +522,8 @@ auto RVO2Planner::adjustForPlacementAvoidance(
     };
 
     if (isInPlacementArea(current_pos, 0.2)) {
-      auto [distance, closest_point] =
-        getClosestPointAndDistance(world_model->getBallPlacementArea().value().segment, current_pos);
+      auto [distance, closest_point] = getClosestPointAndDistance(
+        world_model->getBallPlacementArea().value().segment, current_pos);
       // 0.6m離れる
       Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
       if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {

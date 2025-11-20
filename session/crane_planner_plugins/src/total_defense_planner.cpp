@@ -73,9 +73,7 @@ TotalDefensePlanner::calculateRobotCommand(
   if (not defense_points.empty()) {
     auto defender_commands = assignRobotsToPoints(
       defender_robots, defense_points, "total_defense_planner", world_model->ball().pos,
-      [&](std::shared_ptr<RobotCommandWrapper> & command) {
-        command->disableBasicAvoidances();
-      });
+      [&](std::shared_ptr<RobotCommandWrapper> & command) { command->disableBasicAvoidances(); });
     for (const auto & cmd : defender_commands) {
       robot_commands.emplace_back(cmd);
     }

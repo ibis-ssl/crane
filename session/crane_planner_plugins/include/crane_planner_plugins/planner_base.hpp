@@ -14,6 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
+#include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
 #include <memory>
