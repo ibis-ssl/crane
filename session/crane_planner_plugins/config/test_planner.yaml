@@ -7,12 +7,15 @@ defaults:
   sleep_sec: 5.0           # 各経由点での休憩秒数（省略時）
 
 waypoints:
-  # - position: [3.5, 2.0]
+  # position: [x, y] または [x, y, theta(度)]
+  # theta は省略可能。省略した場合は角度制御なし
+  # - position: [3.5, 2.0, 90]
   #   max_velocity: 0.5       # この区間の最高速度上書き
   #   max_acceleration: 3.0   # この区間の最大加速度上書き
-  # - position: [3.5, -2.0]
-  # - position: [-3.5, -2.0]
-  # - position: [-3.5, 2.0]
+  # - position: [3.5, -2.0, 180]
+  # - position: [-3.5, -2.0, -90]
+  # - position: [-3.5, 2.0, 0]
+  # - position: [0.0, 0.0]    # 角度なし（位置のみ）
   - position: [4.5, 2.5]
   - position: [-4.5, 2.5]
 # このプランナで動かす自チームロボットID
