@@ -122,6 +122,7 @@ void Goalie::emitBallFromPenaltyArea()
 void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
+  const auto goal_center = world_model()->getOurGoalCenter();
   const auto & ball = world_model()->ball();
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
@@ -160,7 +161,7 @@ void Goalie::inplay(bool enable_emit)
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
-      command->setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
+      command->setTargetPosition(goal_center * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s = ball.getTrajectorySegmentByTime(4.0);
@@ -182,81 +183,16 @@ void Goalie::inplay(bool enable_emit)
           return std::make_pair(nearest_enemy, min_distance);
         }();
 
-        Point goal_center = world_model()->getOurGoalCenter();
-        goal_center << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
+        Point goal_center_adjusted = goal_center;
+        goal_center_adjusted << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
 
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
           // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
           phase += "(範囲外なので正面に構える)";
-          command->setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
+          command->setTargetPosition(goal_center_adjusted, 0.1).lookAt(Point(0, 0));
         } else {
           Point threat_point = world_model()->ball().pos;
-          // bool penalty_area_pass_to_side = [&]() {
-          //   Point penalty_base_1 = world_model()->getOurGoalCenter();
-          //   Point penalty_base_2 = world_model()->getOurGoalCenter();
-          //   penalty_base_1.y() = world_model()->penaltyAreaSize().y() * 0.5;
-          //   penalty_base_2.y() = -world_model()->penaltyAreaSize().y() * 0.5;
-          //   auto offset =
-          //     Point(-world_model()->penaltyAreaSize().x() * world_model()->getOurSideSign(), 0.);
-          //   Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
-          //   Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
-          //
-          //   auto result1 = getIntersections(ball_prediction_4s, goal_side1);
-          //   auto result2 = getIntersections(ball_prediction_4s, goal_side2);
-          //   if (result1.empty() && result2.empty()) {
-          //     return false;
-          //   } else if (not result1.empty() && not result2.empty()) {
-          //     // 遠い方をthreat_pointにする
-          //     double dist1 = bg::distance(ball.pos, result1.front());
-          //     double dist2 = bg::distance(ball.pos, result2.front());
-          //     if (dist1 < dist2) {
-          //       threat_point = result2.front();
-          //     } else {
-          //       threat_point = result1.front();
-          //     }
-          //     return true;
-          //   } else {
-          //     if (not result1.empty()) {
-          //       threat_point = result1.front();
-          //     } else {
-          //       threat_point = result2.front();
-          //     }
-          //     return true;
-          //   }
-          // }();
 
-          // bool penalty_area_pass_to_front = [&]() {
-          //   Point penalty_front_1;
-          //   Point penalty_front_2;
-          //   penalty_front_1.x() = penalty_front_2.x() =
-          //     world_model()->getOurGoalCenter().x() - world_model()->penaltyAreaSize().x();
-          //   penalty_front_1.y() = world_model()->penaltyAreaSize().y() * 0.5;
-          //   penalty_front_2.y() = -world_model()->penaltyAreaSize().y() * 0.5;
-          //   Segment goal_front_line(penalty_front_1, penalty_front_2);
-          //
-          //   if (auto result = getIntersections(ball_prediction_4s, goal_front_line);
-          //       result.empty()) {
-          //     return false;
-          //   } else {
-          //     threat_point = result.front();
-          //     return true;
-          //   }
-          // }();
-
-          // if (distance < 2.0 && (penalty_area_pass_to_front || penalty_area_pass_to_side)) {
-          //   if (penalty_area_pass_to_front) {
-          //     // TODO(HansRobo): 将来的には、パス経路を止めるのではなく適宜前進守備を行う
-          //     // ペナルティーエリアの少し内側で待ち受ける
-          //     Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-          //     command->setTargetPosition(wait_point).lookAtBall();
-          //     phase += "(パスカットモードFRONT)";
-          //   } else if (penalty_area_pass_to_side) {
-          //     // ペナルティーエリアの少し内側で待ち受ける
-          //     Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-          //     command->setTargetPosition(wait_point).lookAtBall();
-          //     phase += "(パスカットモードSIDE)";
-          //   }
-          // } else {
           if (distance < 2.0) {
             phase += "(敵のパス先警戒モード)";
             auto result =
