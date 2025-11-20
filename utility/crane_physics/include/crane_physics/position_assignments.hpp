@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <limits>
+#include <range/v3/all.hpp>
 #include <utility>
 #include <vector>
 
@@ -223,14 +224,13 @@ inline auto getOptimalAssignments(
   }
 
   // make cost
-  std::vector<std::vector<double>> cost;
-  for (const auto & robot_pos : robot_positions) {
-    std::vector<double> distances;
-    for (const auto & target : targets) {
-      distances.emplace_back(bg::distance(robot_pos, target));
-    }
-    cost.emplace_back(distances);
-  }
+  auto cost = robot_positions | ranges::views::transform([&](const auto & robot_pos) {
+                return targets | ranges::views::transform([&](const auto & target) {
+                         return bg::distance(robot_pos, target);
+                       }) |
+                       ranges::to<std::vector>();
+              }) |
+              ranges::to<std::vector>();
 
   math::Hungarian<double> hungarian_solver(cost);
   const auto [solution_cost, solution_index] = hungarian_solver.solve();
