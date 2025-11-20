@@ -186,4 +186,161 @@ auto VisualizerMessageBuilder::drawText(
     .textAnchor(anchor)
     .build();
 }
+
+// フィールド描画専用の便利関数の実装
+auto VisualizerMessageBuilder::drawFieldLine(
+  Point p1, Point p2, const std::string & color, double stroke_width) -> void
+{
+  line().start(p1).end(p2).stroke(color).strokeWidth(stroke_width).build();
+}
+
+auto VisualizerMessageBuilder::drawFieldRect(
+  Point corner1, Point corner2, const std::string & color, double stroke_width) -> void
+{
+  Point top_left(std::min(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
+  Point top_right(std::max(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
+  Point bottom_right(std::max(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
+  Point bottom_left(std::min(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
+
+  line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
+  line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
+  line().start(bottom_right).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
+  line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
+}
+
+auto VisualizerMessageBuilder::drawGoal(
+  Point back_center, double width, double depth, const std::string & color, double stroke_width)
+  -> void
+{
+  // U字型のゴールを描画（奥の壁と左右の壁）
+  double half_width = width / 2.0;
+  Point top_left = back_center + Vector2(-half_width, depth);
+  Point top_right = back_center + Vector2(half_width, depth);
+  Point bottom_left = back_center + Vector2(-half_width, 0.0);
+  Point bottom_right = back_center + Vector2(half_width, 0.0);
+
+  // 3本の線で描画（奥、左、右）
+  line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
+  line().start(top_left).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
+  line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
+}
+
+// テキスト表示のプリセット関数の実装
+auto VisualizerMessageBuilder::drawDebugLabel(
+  Point robot_pos, const std::string & label, const std::string & color, double offset_x,
+  double offset_y) -> void
+{
+  text()
+    .position(robot_pos.x() + offset_x, robot_pos.y() + offset_y)
+    .text(label)
+    .fill(color)
+    .fontSize(100)
+    .build();
+}
+
+auto VisualizerMessageBuilder::drawCenteredLabel(
+  Point pos, const std::string & label, const std::string & color, double font_size) -> void
+{
+  text()
+    .position(pos)
+    .text(label)
+    .fill(color)
+    .fontSize(font_size)
+    .textAnchor("middle")
+    .build();
+}
+
+// ロボット描画の便利関数の実装
+auto VisualizerMessageBuilder::drawRobot(
+  Point pos, double theta, const std::string & fill_color, double fill_opacity,
+  const std::string & stroke_color, double stroke_opacity, double stroke_width, double radius,
+  double center_to_dribbler) -> void
+{
+  // ロボット形状の計算（SvgRobotBuilderと同じロジック）
+  double corner_angle = std::acos(center_to_dribbler / radius);
+  auto botRightX = [&](double orientation) { return radius * std::cos(orientation + corner_angle); };
+  auto botRightY = [&](double orientation) { return radius * std::sin(orientation + corner_angle); };
+  auto botLeftX = [&](double orientation) { return radius * std::cos(orientation - corner_angle); };
+  auto botLeftY = [&](double orientation) { return radius * std::sin(orientation - corner_angle); };
+
+  using SvgCoord::SCALE;
+  double right_x = (pos.x() + botRightX(theta)) * SCALE;
+  double right_y = (pos.y() + botRightY(theta)) * -SCALE;
+  double left_x = (pos.x() + botLeftX(theta)) * SCALE;
+  double left_y = (pos.y() + botLeftY(theta)) * -SCALE;
+
+  std::string svg_path = std::format(
+    "<path d=\"M {:.3f} {:.3f} A {:.3f} {:.3f} 0 1 0 {:.3f} {:.3f} Z\" "
+    "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" stroke-opacity=\"{:.2f}\" "
+    "stroke-width=\"{:.2f}\"/>",
+    right_x, right_y, radius * SCALE, radius * SCALE, left_x, left_y, fill_color, fill_opacity,
+    stroke_color, stroke_opacity, stroke_width);
+
+  add(svg_path);
+}
+
+auto VisualizerMessageBuilder::drawRobotWithID(
+  Point pos, double theta, int id, const std::string & fill_color, double fill_opacity,
+  const std::string & stroke_color, double stroke_opacity, double stroke_width, double id_font_size,
+  const std::string & id_color, double id_offset_x, double id_offset_y) -> void
+{
+  // ロボット本体を描画
+  drawRobot(
+    pos, theta, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
+
+  // IDを描画
+  text()
+    .text(std::to_string(id))
+    .position(pos.x() + id_offset_x, pos.y() + id_offset_y)
+    .fontSize(id_font_size)
+    .fill(id_color)
+    .build();
+}
+
+// 軌跡描画の便利関数の実装
+auto VisualizerMessageBuilder::drawTrajectory(
+  const std::vector<Point> & points, const std::string & color, double base_opacity,
+  int sampling_interval, double stroke_width) -> void
+{
+  if (points.empty()) return;
+
+  auto polyline_builder = polyline().stroke(color, base_opacity).strokeWidth(stroke_width);
+  for (size_t i = 0; i < points.size(); i += sampling_interval) {
+    polyline_builder = polyline_builder.addPoint(points[i]);
+  }
+  // 最後のポイントが含まれていない場合は追加
+  if ((points.size() - 1) % sampling_interval != 0) {
+    polyline_builder = polyline_builder.addPoint(points.back());
+  }
+  polyline_builder.build();
+}
+
+auto VisualizerMessageBuilder::drawFadingTrajectory(
+  const std::vector<Point> & points, const std::string & color, int segments, double stroke_width,
+  int sampling_interval) -> void
+{
+  if (points.empty() || segments <= 0) return;
+
+  // セグメント数を調整（ポイント数より多い場合はポイント数に合わせる）
+  int actual_segments = std::min(segments, static_cast<int>(points.size()));
+
+  for (int i = 0; i < actual_segments; ++i) {
+    int start = static_cast<int>((points.size() / static_cast<double>(actual_segments)) * i);
+    int end = static_cast<int>((points.size() / static_cast<double>(actual_segments)) * (i + 1));
+
+    // セグメント内のポイントを描画
+    auto polyline_builder = polyline();
+    for (int index = start; index < end; index += sampling_interval) {
+      polyline_builder = polyline_builder.addPoint(points[index]);
+    }
+    // 最後のセグメントでない場合、終点を追加
+    if (i != actual_segments - 1 && end < static_cast<int>(points.size())) {
+      polyline_builder = polyline_builder.addPoint(points[end]);
+    }
+
+    // グラデーション透明度（古い軌跡ほど薄く）
+    double opacity = 0.5 * start / static_cast<double>(points.size());
+    polyline_builder.stroke(color, opacity).strokeWidth(stroke_width).build();
+  }
+}
 }  // namespace crane

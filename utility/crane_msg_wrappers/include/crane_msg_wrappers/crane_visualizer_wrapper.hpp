@@ -151,6 +151,49 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto drawText(
     Point position, const std::string & text_str, const std::string & color = "white",
     double font_size = 100.0, const std::string & anchor = "start") -> void;
+
+  // フィールド描画専用の便利関数
+  auto drawFieldLine(
+    Point p1, Point p2, const std::string & color = "white", double stroke_width = 10.0) -> void;
+
+  auto drawFieldRect(
+    Point corner1, Point corner2, const std::string & color = "white", double stroke_width = 10.0)
+    -> void;
+
+  auto drawGoal(
+    Point back_center, double width, double depth, const std::string & color = "white",
+    double stroke_width = 10.0) -> void;
+
+  // テキスト表示のプリセット関数
+  auto drawDebugLabel(
+    Point robot_pos, const std::string & label, const std::string & color = "white",
+    double offset_x = -0.5, double offset_y = 0.5) -> void;
+
+  auto drawCenteredLabel(
+    Point pos, const std::string & label, const std::string & color = "white",
+    double font_size = 110.0) -> void;
+
+  // ロボット描画の便利関数
+  auto drawRobot(
+    Point pos, double theta, const std::string & fill_color = "white", double fill_opacity = 1.0,
+    const std::string & stroke_color = "black", double stroke_opacity = 1.0,
+    double stroke_width = 10.0, double radius = 0.085, double center_to_dribbler = 0.055) -> void;
+
+  auto drawRobotWithID(
+    Point pos, double theta, int id, const std::string & fill_color = "white",
+    double fill_opacity = 1.0, const std::string & stroke_color = "black",
+    double stroke_opacity = 1.0, double stroke_width = 10.0, double id_font_size = 150.0,
+    const std::string & id_color = "white", double id_offset_x = -0.05,
+    double id_offset_y = -0.05) -> void;
+
+  // 軌跡描画の便利関数
+  auto drawTrajectory(
+    const std::vector<Point> & points, const std::string & color = "white",
+    double base_opacity = 1.0, int sampling_interval = 1, double stroke_width = 15.0) -> void;
+
+  auto drawFadingTrajectory(
+    const std::vector<Point> & points, const std::string & color = "white", int segments = 10,
+    double stroke_width = 15.0, int sampling_interval = 1) -> void;
 };
 
 // スタイル属性の共通基底クラス（CRTP パターン）
