@@ -38,7 +38,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
   for (const auto & command : msg.robot_commands) {
     robocup_ssl_msgs::msg::GrSimRobotCommand cmd;
     cmd.set__id(command.robot_id);
-    float omega = theta_controllers[command.robot_id].update(
+    float omega = robot_states_[command.robot_id].theta_controller.update(
       -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
     omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
     cmd.set__velangular(omega);
@@ -54,9 +54,9 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
       } break;
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         Velocity vel;
-        vel << vx_controllers[command.robot_id].update(
+        vel << robot_states_[command.robot_id].vx_controller.update(
           command.position_target_mode.front().target_x - command.current_pose.x, 1.f / 30.f),
-          vy_controllers[command.robot_id].update(
+          robot_states_[command.robot_id].vy_controller.update(
             command.position_target_mode.front().target_y - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
@@ -79,10 +79,37 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
         double current_theta = command.current_pose.theta + omega * delay_s;
         double velocity_theta =
           command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
-        double vx = v_r * cos(velocity_theta);
-        double vy = v_r * sin(velocity_theta);
+
+        // 加速度制限の適用
+        double current_velocity =
+          std::hypot(command.current_velocity.x, command.current_velocity.y);
+        double target_velocity = v_r;
+
+        // 加速度制限を計算
+        double acceleration_limit = calculateAccelerationLimit(
+          current_velocity, target_velocity, robot_acceleration_acceleration_,
+          robot_acceleration_deceleration_high_, robot_acceleration_deceleration_low_,
+          robot_acceleration_velocity_threshold_);
+
+        // 制御周期は30Hz
+        const double dt = 1.0 / 60.0;
+
+        // 加速度制限に基づく最大速度
+        double max_velocity_by_acceleration = current_velocity + acceleration_limit * dt;
+
+        // 制限された速度
+        double limited_velocity = std::min(target_velocity, max_velocity_by_acceleration);
+
+        // グローバル座標系での速度ベクトル（制限後）
+        double vx = limited_velocity * cos(velocity_theta);
+        double vy = limited_velocity * sin(velocity_theta);
+
+        // ローカル座標系に変換
         cmd.set__veltangent(vx);
         cmd.set__velnormal(vy);
+
+        // 前回速度を記録（グローバル座標系）
+        robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
       } break;
       default:
         std::cout << "Invalid control mode" << std::endl;
@@ -121,6 +148,29 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
   }
 
   pub_commands.publish(commands);
+}
+
+double SimSenderComponent::calculateAccelerationLimit(
+  double current_velocity, double target_velocity, double robot_acceleration_acceleration,
+  double robot_acceleration_deceleration_high, double robot_acceleration_deceleration_low,
+  double robot_acceleration_velocity_threshold)
+{
+  // ibis_sender_node.cppの行114-133と同じロジック
+  double selected_acceleration;
+  if (current_velocity < target_velocity) {
+    // 加速時
+    selected_acceleration = robot_acceleration_acceleration;
+  } else {
+    // 減速時：速度に応じて選択
+    if (current_velocity >= robot_acceleration_velocity_threshold) {
+      // 高速域
+      selected_acceleration = robot_acceleration_deceleration_high;
+    } else {
+      // 低速域
+      selected_acceleration = robot_acceleration_deceleration_low;
+    }
+  }
+  return selected_acceleration;
 }
 }  // namespace crane
 #include <rclcpp_components/register_node_macro.hpp>

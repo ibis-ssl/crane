@@ -9,6 +9,7 @@
 
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -33,67 +34,74 @@ public:
     theta_d_gain("theta_d_gain", *this, 0.1)
   {
     p_gain.callback = [&](double value) {
-      for (auto & controller : vx_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-      }
-      for (auto & controller : vy_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+      for (auto & state : robot_states_) {
+        state.vx_controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+        state.vy_controller.setGain(value, i_gain.getValue(), d_gain.getValue());
       }
     };
 
     i_gain.callback = [&](double value) {
-      for (auto & controller : vx_controllers) {
-        controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-      }
-      for (auto & controller : vy_controllers) {
-        controller.setGain(p_gain.getValue(), value, d_gain.getValue());
+      for (auto & state : robot_states_) {
+        state.vx_controller.setGain(p_gain.getValue(), value, d_gain.getValue());
+        state.vy_controller.setGain(p_gain.getValue(), value, d_gain.getValue());
       }
     };
 
     d_gain.callback = [&](double value) {
-      for (auto & controller : vx_controllers) {
-        controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-      }
-      for (auto & controller : vy_controllers) {
-        controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
+      for (auto & state : robot_states_) {
+        state.vx_controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
+        state.vy_controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
       }
     };
 
     declare_parameter("i_saturation", I_SATURATION);
     I_SATURATION = get_parameter("i_saturation").as_double();
 
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
+    // 全ロボットの状態を初期化
+    for (auto & state : robot_states_) {
+      state.vx_controller.setGain(
+        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
+      state.vy_controller.setGain(
+        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
+      state.theta_controller.setGain(
+        theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      state.previous_velocity = Velocity::Zero();
     }
 
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-    }
-
-    for (auto & controller : theta_controllers) {
-      controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
-    }
     // the parameters of the PID controller
     theta_p_gain.callback = [this](double) {
-      for (auto & controller : theta_controllers) {
-        controller.setGain(
+      for (auto & state : robot_states_) {
+        state.theta_controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
     theta_i_gain.callback = [this](double) {
-      for (auto & controller : theta_controllers) {
-        controller.setGain(
+      for (auto & state : robot_states_) {
+        state.theta_controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
     theta_d_gain.callback = [this](double) {
-      for (auto & controller : theta_controllers) {
-        controller.setGain(
+      for (auto & state : robot_states_) {
+        state.theta_controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
+
+    // ロボット送信用の加速度パラメータを読み込み
+    declare_parameter("robot_acceleration.acceleration", 2.5);
+    get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
+
+    declare_parameter("robot_acceleration.deceleration_high", 3.0);
+    get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+
+    declare_parameter("robot_acceleration.deceleration_low", 2.0);
+    get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+
+    declare_parameter("robot_acceleration.velocity_threshold", 1.5);
+    get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
@@ -128,10 +136,6 @@ public:
 
   DiagnosedPublisher<robocup_ssl_msgs::msg::GrSimCommands> pub_commands;
 
-  std::array<PIDController, 20> vx_controllers;
-  std::array<PIDController, 20> vy_controllers;
-  std::array<PIDController, 20> theta_controllers;
-
   ParameterWithEvent<double> p_gain;
   ParameterWithEvent<double> i_gain;
   ParameterWithEvent<double> d_gain;
@@ -141,6 +145,31 @@ public:
   ParameterWithEvent<double> theta_d_gain;
 
   double I_SATURATION = 0.0;
+
+private:
+  // 各ロボットの状態を管理する構造体
+  struct PerRobotState
+  {
+    PIDController vx_controller;
+    PIDController vy_controller;
+    PIDController theta_controller;
+    Velocity previous_velocity;
+  };
+
+  // 全ロボットの状態
+  std::array<PerRobotState, 20> robot_states_;
+
+  // ロボット送信用の加速度パラメータ
+  double robot_acceleration_acceleration_;
+  double robot_acceleration_deceleration_high_;
+  double robot_acceleration_deceleration_low_;
+  double robot_acceleration_velocity_threshold_;
+
+  // 加速度制限を計算
+  double calculateAccelerationLimit(
+    double current_velocity, double target_velocity, double robot_acceleration_acceleration,
+    double robot_acceleration_deceleration_high, double robot_acceleration_deceleration_low,
+    double robot_acceleration_velocity_threshold);
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_
