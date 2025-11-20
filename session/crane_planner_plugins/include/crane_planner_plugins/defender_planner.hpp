@@ -38,11 +38,6 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
-  std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const;
-
-  // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
-  std::vector<Point> getDefenseLinePoints(const int robot_num, const Segment & ball_line) const;
-
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
