@@ -42,8 +42,7 @@ void StealBall::initialize()
   });
 
   addStateFunction(StealBallState::STEAL, [this]() -> Status {
-    command->disableBallAvoidance();
-    command->disableCollisionAvoidance();
+    command->disableBasicAvoidances();
     const auto method = getParameter<std::string>("steal_method");
 
     if (method == "front") {

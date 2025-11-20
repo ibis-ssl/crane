@@ -298,6 +298,16 @@ public:
     return enableGoalAreaAvoidance().enableBallAvoidance().enablePlacementAvoidance();
   }
 
+  auto disableBasicAvoidances() -> RobotCommandWrapper &
+  {
+    return disableCollisionAvoidance().disableBallAvoidance();
+  }
+
+  auto enableBasicAvoidances() -> RobotCommandWrapper &
+  {
+    return enableCollisionAvoidance().enableBallAvoidance();
+  }
+
   auto setGoalieDefault() -> RobotCommandWrapper &
   {
     disableCollisionAvoidance();

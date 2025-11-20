@@ -32,8 +32,6 @@ TotalDefensePlanner::calculateRobotCommand(
                          ranges::to<std::vector>();
 
   auto ball = world_model->ball().pos;
-  [[maybe_unused]] const double OFFSET_X = 0.2;
-  [[maybe_unused]] const double OFFSET_Y = 0.2;
 
   //
   // calc ball line
@@ -63,7 +61,8 @@ TotalDefensePlanner::calculateRobotCommand(
   std::vector<Point> defense_points;
   if (defense_parameter) {
     defense_points = getDefenseLinePoints(
-      defender_robots.size(), ball_line, m_is_goalie_total_defense_mode, *defense_parameter);
+      defender_robots.size(), ball_line, world_model, m_is_goalie_total_defense_mode,
+      *defense_parameter);
   }
 
   if (goalie) {
@@ -72,27 +71,11 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   if (not defense_points.empty()) {
-    std::vector<Point> robot_points;
-    for (auto robot_id : defender_robots) {
-      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
-    }
-
-    auto solution = getOptimalAssignments(robot_points, defense_points);
-
-    for (auto robot_id = defender_robots.begin(); robot_id != defender_robots.end(); ++robot_id) {
-      int index = std::distance(defender_robots.begin(), robot_id);
-      Point target_point = defense_points[solution[index]];
-
-      auto command =
-        std::make_shared<RobotCommandWrapper>("total_defense_planner", robot_id->id, world_model);
-      auto robot = world_model->getRobot(*robot_id);
-
-      command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
-      command->disableCollisionAvoidance();
-      command->disableBallAvoidance();
-
-      robot_commands.emplace_back(command->getMsg());
+    auto defender_commands = assignRobotsToPoints(
+      defender_robots, defense_points, "total_defense_planner", world_model->ball().pos,
+      [&](std::shared_ptr<RobotCommandWrapper> & command) { command->disableBasicAvoidances(); });
+    for (const auto & cmd : defender_commands) {
+      robot_commands.emplace_back(cmd);
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
@@ -118,145 +101,6 @@ TotalDefensePlanner::calculateRobotCommand(
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
-}
-
-std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
-  const int robot_num, const Segment & ball_line) const
-{
-  const double DEFENSE_INTERVAL = 0.5;
-  const double RADIUS_OFFSET = 0.5;
-  std::vector<Point> defense_points;
-  // ペナルティエリアの一番遠い点を通る円の半径
-  const double RADIUS =
-    std::hypot(world_model->penaltyAreaSize().x(), world_model->penaltyAreaSize().y() * 0.5) +
-    RADIUS_OFFSET;
-  // r * theta = interval
-  // theta = interval / e
-  const double ANGLE_INTERVAL = DEFENSE_INTERVAL / RADIUS;
-
-  auto defense_point = [&]() -> Point {
-    Circle circle;
-    circle.center = world_model->getOurGoalCenter();
-    circle.radius = RADIUS;
-    auto intersections = getIntersections(circle, ball_line);
-    switch (static_cast<int>(intersections.size())) {
-      case 0: {
-        // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
-        return world_model->getOurGoalCenter() +
-               (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
-      }
-      case 1: {
-        return intersections[0];
-      }
-      default: {
-        // ボールに一番近い交点を返す
-        double min_distance = std::numeric_limits<double>::max();
-        Point best_intersection =
-          world_model->getOurGoalCenter() +
-          (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
-        for (auto & intersection : intersections) {
-          double distance = (world_model->ball().pos - intersection).norm();
-          if (distance < min_distance) {
-            min_distance = distance;
-            best_intersection = intersection;
-          }
-        }
-        return best_intersection;
-      }
-    }
-  }();
-
-  double defense_angle = getAngle(defense_point - world_model->getOurGoalCenter());
-  for (int i = 0; i < robot_num; i++) {
-    double normalized_angle_offset = (robot_num - i - 1) / 2.;
-    defense_points.emplace_back(
-      world_model->getOurGoalCenter() +
-      getNormVec(defense_angle + ANGLE_INTERVAL * normalized_angle_offset) * RADIUS);
-  }
-  return defense_points;
-}
-
-/// @brief ディフェンダーの壁の位置を返す
-/// @param defense_robot_num キーパーを除く壁の枚数
-/// @param is_open_center ゴーリーを中央に置くかどうか
-/// @param defense_parameter ディフェンスラインのパラメータ
-/// @return センターから順に並べたディフェンスラインのポイント
-///         is_open_centerがtrueの場合はゴーリーを中央に置く
-std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
-  const int defense_robot_num, const Segment & ball_line, const bool is_open_center,
-  const double defense_parameter) const
-{
-  const double DEFENSE_INTERVAL = 0.2;
-  std::vector<Point> defense_points;
-
-  if (defense_parameter) {
-    double upper_parameter = defense_parameter;
-    double lower_parameter = upper_parameter;
-
-    auto add_parameter = [&](double parameter) -> bool {
-      const double OFFSET_X = 0.2;
-      const double OFFSET_Y = 0.2;
-      auto [threshold1, threshold2, threshold3] =
-        getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y, world_model);
-      if (parameter < 0. || parameter > threshold3) {
-        return false;
-      } else {
-        if (upper_parameter < parameter) {
-          upper_parameter = parameter;
-        }
-        if (lower_parameter > parameter) {
-          lower_parameter = parameter;
-        }
-        defense_points.push_back(getDefenseLinePoint(parameter, world_model));
-        return true;
-      }
-    };
-    // 1台目
-    if (not is_open_center) {
-      upper_parameter = defense_parameter;
-      lower_parameter = defense_parameter;
-      add_parameter(defense_parameter);
-    }
-    // is_open_centerがtrueのときは両脇から配置開始する
-    const int remaining_robot_num = is_open_center ? defense_robot_num : defense_robot_num - 1;
-    // 中央の開け具合を計算する。前進守備するとき(ゴールにボールが近いとき)は開けない
-    auto open_center_ratio_opt = world_model->getForwardDefenseRatio(ball_line);
-    double open_center_interval = 0.0;
-    if (not open_center_ratio_opt) {
-      open_center_interval = DEFENSE_INTERVAL;
-    } else {
-      open_center_interval = (1.0 - (*open_center_ratio_opt)) * DEFENSE_INTERVAL;
-    }
-    // 2台目以降
-    for (int i = 0; i < remaining_robot_num; i++) {
-      if (is_open_center && i < 2) {
-        // 中央を開けるとき
-        if (i == 0) {
-          if (not add_parameter(upper_parameter + open_center_interval)) {
-            add_parameter(lower_parameter - open_center_interval);
-          }
-        } else if (i == 1) {
-          if (not add_parameter(lower_parameter - open_center_interval)) {
-            add_parameter(upper_parameter + open_center_interval);
-          }
-        }
-      } else if (i % 2 == 0) {
-        // upper側に追加
-        if (not add_parameter(upper_parameter + DEFENSE_INTERVAL)) {
-          // だめならlower側
-          add_parameter(lower_parameter - DEFENSE_INTERVAL);
-        }
-      } else {
-        // lower側に追加
-        if (not add_parameter(lower_parameter - DEFENSE_INTERVAL)) {
-          // だめならupper側
-          add_parameter(upper_parameter + DEFENSE_INTERVAL);
-        }
-      }
-    }
-  }
-
-  return defense_points;
 }
 
 auto TotalDefensePlanner::getSelectedRobots(

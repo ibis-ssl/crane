@@ -14,6 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
+#include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
 #include <memory>
@@ -167,6 +168,46 @@ protected:
       selected_robots.emplace_back(robot_with_score.at(i).first);
     }
     return selected_robots;
+  }
+
+  // ロボットを最適な位置に割り当て、ロボットコマンドを生成する共通メソッド
+  auto assignRobotsToPoints(
+    const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,
+    const std::string & command_name, const Point & look_at_point,
+    const std::function<void(std::shared_ptr<RobotCommandWrapper> &)> & customize_command =
+      [](std::shared_ptr<RobotCommandWrapper> &) {}) -> std::vector<crane_msgs::msg::RobotCommand>
+  {
+    if (robots.empty() || target_points.empty()) {
+      return {};
+    }
+
+    // ロボットの現在位置を収集
+    std::vector<Point> robot_points;
+    for (const auto & robot_id : robots) {
+      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
+    }
+
+    // 最適割り当てを計算
+    auto solution = getOptimalAssignments(robot_points, target_points);
+
+    // 各ロボットにコマンドを生成
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
+      int index = std::distance(robots.begin(), robot_id);
+      Point target_point = target_points[solution[index]];
+
+      auto command = std::make_shared<RobotCommandWrapper>(command_name, robot_id->id, world_model);
+
+      command->setTargetPosition(target_point);
+      command->setTargetTheta(getAngle(look_at_point - target_point));
+
+      // カスタム設定を適用
+      customize_command(command);
+
+      robot_commands.emplace_back(command->getMsg());
+    }
+
+    return robot_commands;
   }
 
   std::vector<RobotIdentifier> robots;

@@ -79,11 +79,6 @@ std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FormationPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
-  std::vector<Point> robot_points;
-  for (auto robot_id : robots) {
-    robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
-  }
-
   auto formation_points = [&]() {
     switch (formation_type) {
       case FormationType::WING:
@@ -95,22 +90,14 @@ FormationPlanner::calculateRobotCommand(
     }
   }();
 
-  auto solution = getOptimalAssignments(robot_points, formation_points);
-
   double target_theta = (world_model->getOurGoalCenter().x() > 0.0) ? M_PI : 0.0;
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-  for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-    int index = std::distance(robots.begin(), robot_id);
-    Point target_point = formation_points[solution[index]];
 
-    auto command =
-      std::make_shared<crane::RobotCommandWrapper>("formation_planner", robot_id->id, world_model);
-
-    command->setTargetPosition(target_point);
-    command->setTargetTheta(target_theta);
-
-    robot_commands.emplace_back(command->getMsg());
-  }
+  auto robot_commands = assignRobotsToPoints(
+    robots, formation_points, "formation_planner", world_model->getOurGoalCenter(),
+    [target_theta](std::shared_ptr<RobotCommandWrapper> & command) {
+      // フォーメーション特有の固定角度を設定
+      command->setTargetTheta(target_theta);
+    });
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 

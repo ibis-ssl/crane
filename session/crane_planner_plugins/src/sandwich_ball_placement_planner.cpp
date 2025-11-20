@@ -61,16 +61,14 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         .lookAt(last_ball)
         .dribble(0.2)
         .setMaxVelocity("SandwichBallPlacementPlanner APPROACH", 0.2)
-        .disableBallAvoidance()
-        .disableCollisionAvoidance()
+        .disableBasicAvoidances()
         .disableGoalAreaAvoidance()
         .disablePlacementAvoidance();
       placers.second->lookAt(last_ball)
         .setDribblerTargetPosition(last_ball - sandwich_direction * 0.05)
         .dribble(0.2)
         .setMaxVelocity("SandwichBallPlacementPlanner APPROACH", 0.2)
-        .disableBallAvoidance()
-        .disableCollisionAvoidance()
+        .disableBasicAvoidances()
         .disableGoalAreaAvoidance()
         .disablePlacementAvoidance();
 

@@ -38,6 +38,18 @@ public:
   auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
 
 private:
+  auto adjustForPenaltyAreaAvoidance(
+    Point & target_pos, const Point & current_pos,
+    const crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto adjustForBallAvoidance(
+    Point & target_pos, const Point & current_pos,
+    const crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto adjustForPlacementAvoidance(
+    Point & target_pos, const Point & current_pos,
+    const crane_msgs::msg::RobotCommand & command) const -> void;
+
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   crane_msgs::msg::RobotCommands pre_commands;
