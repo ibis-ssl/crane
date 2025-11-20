@@ -14,13 +14,14 @@ auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::Sh
 {
   auto ball_line_norm = (next_target - p).normalized();
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
-  auto max_cos = world_model->theirs().robots |
-                 ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
-                 ranges::views::transform([&](const auto & enemy) {
-                   auto norm = (enemy->pose.pos - p).normalized();
-                   return ball_line_norm.dot(norm);
-                 }) |
-                 ranges::max(0.0);
+  auto cos_values = world_model->theirs().robots |
+                    ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
+                    ranges::views::transform([&](const auto & enemy) {
+                      auto norm = (enemy->pose.pos - p).normalized();
+                      return ball_line_norm.dot(norm);
+                    }) |
+                    ranges::to<std::vector>();
+  auto max_cos = cos_values.empty() ? 0.0 : ranges::max(cos_values);
   // 角度が大きい(cosが小さい)ほど安全
   return 1 - max_cos;
 }
@@ -47,11 +48,12 @@ auto getAngleScore(
 auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double) -> double
 {
   // 一番近い敵ロボットからの距離を求める
-  auto min_sq_dist = world_model->theirs().robots |
-                     ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
-                     ranges::views::transform(
-                       [&](const auto & enemy) { return (enemy->pose.pos - p).squaredNorm(); }) |
-                     ranges::min(100.0);
+  auto sq_distances = world_model->theirs().robots |
+                      ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
+                      ranges::views::transform(
+                        [&](const auto & enemy) { return (enemy->pose.pos - p).squaredNorm(); }) |
+                      ranges::to<std::vector>();
+  auto min_sq_dist = sq_distances.empty() ? 100.0 : ranges::min(sq_distances);
   // 最大距離設定(それ以上は評価値を1(安全)とする)
   min_sq_dist = std::min(min_sq_dist, 3.0 * 3.0);
   return std::sqrt(min_sq_dist) / 3.0;

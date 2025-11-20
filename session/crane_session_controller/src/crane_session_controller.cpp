@@ -248,12 +248,11 @@ auto SessionControllerComponent::request(
 
 auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
 {
-  auto assigned_robot_ids = planner_registry_->getAllPlanners() |
-                            ranges::views::transform(
-                              [](const auto & planner) { return planner->getRobots(); }) |
-                            ranges::views::join |
-                            ranges::views::transform([](const auto & robot) { return robot.id; }) |
-                            ranges::to<std::vector>() | ranges::actions::sort;
+  auto assigned_robot_ids =
+    planner_registry_->getAllPlanners() |
+    ranges::views::transform([](const auto & planner) { return planner->getRobots(); }) |
+    ranges::views::join | ranges::views::transform([](const auto & robot) { return robot.id; }) |
+    ranges::to<std::vector>() | ranges::actions::sort;
   return assigned_robot_ids;
 }
 
