@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_game_analyzer/evaluations/evaluations.hpp>
+#include <range/v3/all.hpp>
 
 namespace crane::evaluation
 {
@@ -13,14 +14,13 @@ auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::Sh
 {
   auto ball_line_norm = (next_target - p).normalized();
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
-  double max_cos = 0.0;
-  for (auto enemy : world_model->theirs().robots) {
-    if (enemy->available()) {
-      auto norm = (enemy->pose.pos - p).normalized();
-      double cos = ball_line_norm.dot(norm);
-      max_cos = std::max(max_cos, cos);
-    }
-  }
+  auto max_cos = world_model->theirs().robots |
+                 ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
+                 ranges::views::transform([&](const auto & enemy) {
+                   auto norm = (enemy->pose.pos - p).normalized();
+                   return ball_line_norm.dot(norm);
+                 }) |
+                 ranges::max(0.0);
   // 角度が大きい(cosが小さい)ほど安全
   return 1 - max_cos;
 }
@@ -47,15 +47,13 @@ auto getAngleScore(
 auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double) -> double
 {
   // 一番近い敵ロボットからの距離を求める
-  double min_sq_dist = 100.0f;
-  for (auto enemy : world_model->theirs().robots) {
-    if (enemy->available()) {
-      double sq_dist = (enemy->pose.pos - p).squaredNorm();
-      min_sq_dist = std::min(min_sq_dist, sq_dist);
-    }
-  }
+  auto min_sq_dist = world_model->theirs().robots |
+                     ranges::views::filter([](const auto & enemy) { return enemy->available(); }) |
+                     ranges::views::transform(
+                       [&](const auto & enemy) { return (enemy->pose.pos - p).squaredNorm(); }) |
+                     ranges::min(100.0);
   // 最大距離設定(それ以上は評価値を1(安全)とする)
   min_sq_dist = std::min(min_sq_dist, 3.0 * 3.0);
-  return sqrt(min_sq_dist) / 3.0;
+  return std::sqrt(min_sq_dist) / 3.0;
 }
 }  // namespace crane::evaluation
