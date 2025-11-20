@@ -398,171 +398,193 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
               SURROUNDING_OFFSET = 0.3;
           }
         }
-        if (isInBox(
-              penalty_area, Point(command.current_pose.x, command.current_pose.y),
-              PENALTY_AREA_OFFSET)) {
-          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
-          target_pos = Point(command.current_pose.x, command.current_pose.y);
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
-                 target_pos != goal_pos) {
-            target_pos +=
-              (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
-          }
-          command.position_target_mode.front().position_tolerance = 0.0;
-        } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
-          // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
-          // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
-          if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
-            target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
-          }
-          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
-                 target_pos != goal_pos) {
-            target_pos +=
-              (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
-          }
-          // toleranceがゆるく設定されていると、ペナルティエリアの外に出られないことがあるので、toleranceを0にする
-          command.position_target_mode.front().position_tolerance = 0.0;
-        }
-        // ペナルティエリアを通り抜ける場合は、一旦角に
-        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
-        Segment move_line(current_pos, target_pos);
-        if (bg::intersects(move_line, penalty_area)) {
-          command.position_target_mode.front().position_tolerance = 0.0;
-          const auto penalty_area_size = world_model->penaltyAreaSize();
-          Point corner_1 = goal_pos + Point(
-                                        std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        world_model->penaltyAreaSize().y() * 0.5);
-          Point around_corner_1 =
-            goal_pos + Point(
-                         std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
-
-          Point corner_2 = goal_pos + Point(
-                                        std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        -world_model->penaltyAreaSize().y() * 0.5);
-          Point around_corner_2 =
-            goal_pos + Point(
-                         std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
-
-          auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
-          auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
-
-          const double penalty_area_min_x = world_model->fieldSize().x() * 0.5 -
-                                            world_model->penaltyAreaSize().x() -
-                                            PENALTY_AREA_OFFSET;
-          if (
-            std::abs(closest_point_1.x()) > penalty_area_min_x &&
-            std::abs(closest_point_2.x()) > penalty_area_min_x) {
-            // 横切る場合は、近い方の角に向かう
-            if (bg::distance(corner_1, current_pos) < bg::distance(corner_2, current_pos)) {
-              target_pos = around_corner_1;
-            } else {
-              target_pos = around_corner_2;
-            }
-          } else if (isInBox(penalty_area, closest_point_1, PENALTY_AREA_OFFSET)) {
-            target_pos = around_corner_1;
-          } else if (isInBox(penalty_area, closest_point_2, PENALTY_AREA_OFFSET)) {
-            target_pos = around_corner_2;
-          } else {
-            std::stringstream what;
-            what << "Failed to find a target position outside the penalty area.";
-            what << " current_pos: " << current_pos.x() << ", " << current_pos.y();
-            what << " target_pos: " << target_pos.x() << ", " << target_pos.y();
-            what << " closest_point_1: " << closest_point_1.x() << ", " << closest_point_1.y();
-            what << " closest_point_2: " << closest_point_2.x() << ", " << closest_point_2.y();
-            throw std::runtime_error(what.str());
-          }
-        }
       }
 
-      if (not command.local_planner_config.disable_ball_avoidance) {
-        const auto & ball_pos = world_model->ball().pos;
-        const double MIN_BALL_DISTANCE = [&]() {
-          switch (world_model->getMsg().play_situation.command.value) {
-            case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
-              return 0.7;
-            case crane_msgs::msg::PlaySituation::STOP:
-              return 0.5;
-            default:
-              return 0.2;
-          }
-        }();
-        if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
-          target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
-        }
-        if ((current_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
-          // 現在位置が近い場合は、最優先で離れる
-          target_pos =
-            ball_pos + (current_pos - ball_pos).normalized() * (MIN_BALL_DISTANCE + 0.05);
-        } else {
-          Segment move_line(current_pos, target_pos);
-          auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, move_line);
-          if (
-            closest_point != ball_pos && closest_point != target_pos &&
-            distance < MIN_BALL_DISTANCE) {
-            // 少しずらす
-            target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
-          }
-        }
-      }
+      // 現在位置を定義
+      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
 
-      if (
-        not command.local_planner_config.disable_placement_avoidance &&
-        world_model->getBallPlacementTarget().has_value()) {
-        auto isInPlacementArea = [this](const Point & point, double offset) {
-          if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
-            return bg::distance(point, placement_area.value()) <=
-                   placement_area.value().radius + offset;
-          } else {
-            return false;
-          }
-        };
-
-        if (isInPlacementArea(current_pos, 0.2)) {
-          auto [distance, closest_point] = getClosestPointAndDistance(
-            world_model->getBallPlacementArea().value().segment, current_pos);
-          // 0.6m離れる
-          Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
-          if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
-            // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
-            target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
-
-            if (auto segment = world_model->getBallPlacementArea().value().segment;
-                (closest_point == segment.first || closest_point == segment.second)) {
-              // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
-              // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
-              std::vector<Point> target_candidates;
-              Vector2 vertical_vec =
-                getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
-              target_candidates.push_back(closest_point + vertical_vec);
-              target_candidates.push_back(closest_point - vertical_vec);
-
-              if (auto target = std::ranges::find_if(
-                    target_candidates,
-                    [&](const auto & target_candidate) {
-                      return (
-                        not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                        not isInPlacementArea(target_candidate, 0.1));
-                    });
-                  target != target_candidates.end()) {
-                target_pos = *target;
-              } else {
-                // どの候補もだめな場合は移動しない
-                target_pos = current_pos;
-              }
-            } else {
-              target_pos = target_position;
-            }
-          } else {
-            target_pos = target_position;
-          }
-        }
-      }
+      // 3つの独立した回避ロジックを適用
+      adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
+      adjustForBallAvoidance(target_pos, current_pos, command);
+      adjustForPlacementAvoidance(target_pos, current_pos, command);
 
       command.position_target_mode.front().target_x = target_pos.x();
       command.position_target_mode.front().target_y = target_pos.y();
+    }
+  }
+}
+
+auto RVO2Planner::adjustForPenaltyAreaAvoidance(
+  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
+  const -> void
+{
+  if (not command.local_planner_config.disable_goal_area_avoidance) {
+    constexpr double SURROUNDING_OFFSET = 0.2;
+    constexpr double PENALTY_AREA_OFFSET = 0.1;
+    Box penalty_area = world_model->getPenaltyArea(world_model->getOurGoalCenter());
+    const Point goal_pos = world_model->getOurGoalCenter();
+
+    if (isInBox(penalty_area, current_pos, PENALTY_AREA_OFFSET)) {
+      if (std::abs(current_pos.x()) > world_model->fieldSize().x() / 2.0) {
+        target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
+      }
+      // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
+      while (
+        isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and target_pos != current_pos) {
+        target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
+      }
+    } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+      // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
+      if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
+        target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
+      }
+      // 目標点をペナルティエリアの外に出るようにする
+      while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and target_pos != goal_pos) {
+        target_pos += (target_pos - goal_pos).normalized() * 0.05;
+      }
+    }
+    // ペナルティエリアを通り抜ける場合は、一旦角に
+    Segment move_line(current_pos, target_pos);
+    if (bg::intersects(move_line, penalty_area)) {
+      const auto penalty_area_size = world_model->penaltyAreaSize();
+      Point corner_1 = goal_pos +
+                       Point(
+                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                         world_model->penaltyAreaSize().y() * 0.5);
+      Point around_corner_1 = goal_pos +
+                              Point(
+                                std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+                                world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
+
+      Point corner_2 = goal_pos +
+                       Point(
+                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                         -world_model->penaltyAreaSize().y() * 0.5);
+      Point around_corner_2 =
+        goal_pos +
+        Point(
+          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+          -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
+
+      auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
+      auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
+
+      const double penalty_area_min_x =
+        world_model->fieldSize().x() * 0.5 - world_model->penaltyAreaSize().x() - PENALTY_AREA_OFFSET;
+      if (
+        std::abs(closest_point_1.x()) > penalty_area_min_x &&
+        std::abs(closest_point_2.x()) > penalty_area_min_x) {
+        // 横切る場合は、近い方の角に向かう
+        if (bg::distance(corner_1, current_pos) < bg::distance(corner_2, current_pos)) {
+          target_pos = around_corner_1;
+        } else {
+          target_pos = around_corner_2;
+        }
+      } else if (isInBox(penalty_area, closest_point_1, PENALTY_AREA_OFFSET)) {
+        target_pos = around_corner_1;
+      } else if (isInBox(penalty_area, closest_point_2, PENALTY_AREA_OFFSET)) {
+        target_pos = around_corner_2;
+      } else {
+        std::stringstream what;
+        what << "Failed to find a target position outside the penalty area.";
+        what << " current_pos: " << current_pos.x() << ", " << current_pos.y();
+        what << " target_pos: " << target_pos.x() << ", " << target_pos.y();
+        what << " closest_point_1: " << closest_point_1.x() << ", " << closest_point_1.y();
+        what << " closest_point_2: " << closest_point_2.x() << ", " << closest_point_2.y();
+        throw std::runtime_error(what.str());
+      }
+    }
+  }
+}
+
+auto RVO2Planner::adjustForBallAvoidance(
+  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
+  const -> void
+{
+  if (not command.local_planner_config.disable_ball_avoidance) {
+    const auto & ball_pos = world_model->ball().pos;
+    const double MIN_BALL_DISTANCE = [&]() {
+      switch (world_model->getMsg().play_situation.command.value) {
+        case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+          return 0.7;
+        case crane_msgs::msg::PlaySituation::STOP:
+          return 0.5;
+        default:
+          return 0.2;
+      }
+    }();
+    if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+      target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
+    }
+    if ((current_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+      // 現在位置が近い場合は、最優先で離れる
+      target_pos = ball_pos + (current_pos - ball_pos).normalized() * (MIN_BALL_DISTANCE + 0.05);
+    } else {
+      Segment move_line(current_pos, target_pos);
+      auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, move_line);
+      if (
+        closest_point != ball_pos && closest_point != target_pos && distance < MIN_BALL_DISTANCE) {
+        // 少しずらす
+        target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
+      }
+    }
+  }
+}
+
+auto RVO2Planner::adjustForPlacementAvoidance(
+  Point & target_pos, const Point & current_pos, const crane_msgs::msg::RobotCommand & command)
+  const -> void
+{
+  if (
+    not command.local_planner_config.disable_placement_avoidance &&
+    world_model->getBallPlacementTarget().has_value()) {
+    auto isInPlacementArea = [this](const Point & point, double offset) {
+      if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
+        return bg::distance(point, placement_area.value()) <=
+               placement_area.value().radius + offset;
+      } else {
+        return false;
+      }
+    };
+
+    if (isInPlacementArea(current_pos, 0.2)) {
+      auto [distance, closest_point] =
+        getClosestPointAndDistance(world_model->getBallPlacementArea().value().segment, current_pos);
+      // 0.6m離れる
+      Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
+      if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
+        // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
+        target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
+
+        if (auto segment = world_model->getBallPlacementArea().value().segment;
+            (closest_point == segment.first || closest_point == segment.second)) {
+          // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
+          // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
+          std::vector<Point> target_candidates;
+          Vector2 vertical_vec =
+            getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
+          target_candidates.push_back(closest_point + vertical_vec);
+          target_candidates.push_back(closest_point - vertical_vec);
+
+          if (auto target = std::ranges::find_if(
+                target_candidates,
+                [&](const auto & target_candidate) {
+                  return (
+                    not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                    not isInPlacementArea(target_candidate, 0.1));
+                });
+              target != target_candidates.end()) {
+            target_pos = *target;
+          } else {
+            // どの候補もだめな場合は移動しない
+            target_pos = current_pos;
+          }
+        } else {
+          target_pos = target_position;
+        }
+      } else {
+        target_pos = target_position;
+      }
     }
   }
 }
