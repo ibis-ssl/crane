@@ -628,4 +628,18 @@ auto WorldModelWrapper::diagnosticsCallback(
     }
   }
 }
+
+auto WorldModelWrapper::isShootingTowardsOurGoal() const -> bool
+{
+  auto ball_line = ball_.getTrajectorySegmentByDistance(10.0);
+  auto goal_line = getOurGoalLine();
+  return !getIntersections(ball_line, goal_line).empty();
+}
+
+auto WorldModelWrapper::isShootingTowardsTheirGoal() const -> bool
+{
+  auto ball_line = ball_.getTrajectorySegmentByDistance(10.0);
+  auto goal_line = getTheirGoalLine();
+  return !getIntersections(ball_line, goal_line).empty();
+}
 }  // namespace crane

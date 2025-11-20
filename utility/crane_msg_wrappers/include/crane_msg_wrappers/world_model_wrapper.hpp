@@ -204,6 +204,49 @@ struct WorldModelWrapper
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
     const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
+  // === 便利関数: ロボット取得 ===
+  /// @brief ゴーリーを除く利用可能な味方フィールドプレイヤーを取得
+  /// @return ゴーリー以外の利用可能な味方ロボットリスト
+  [[nodiscard]] auto getAvailableOurFieldPlayers() const -> RobotList
+  {
+    return ours_.getAvailableRobots(255, true);  // except goalie
+  }
+
+  /// @brief 利用可能な敵フィールドプレイヤーを取得（敵ゴーリー除外）
+  /// @return 敵ゴーリー以外の利用可能な敵ロボットリスト
+  [[nodiscard]] auto getAvailableTheirFieldPlayers() const -> RobotList
+  {
+    return theirs_.getAvailableRobots(255, true);  // except goalie
+  }
+
+  /// @brief 指定点から最も近い敵ロボットを取得
+  /// @param point 基準点
+  /// @return 最も近い敵ロボットとその距離
+  [[nodiscard]] auto getNearestTheirRobotFromPoint(const Point & point) const
+    -> std::optional<RobotWithDistance>
+  {
+    return getNearestRobotWithDistanceFromPoint(point, theirs_.getAvailableRobots());
+  }
+
+  /// @brief 指定線分から最も近い敵ロボットを取得
+  /// @param segment 基準線分
+  /// @return 最も近い敵ロボットとその距離
+  [[nodiscard]] auto getNearestTheirRobotFromSegment(const Segment & segment) const
+    -> std::optional<RobotWithDistance>
+  {
+    return getNearestRobotWithDistanceFromSegment(segment, theirs_.getAvailableRobots());
+  }
+
+  /// @brief 指定点から最も近い味方ロボットを取得
+  /// @param point 基準点
+  /// @param exclude_id 除外するロボットID（デフォルト255=除外なし）
+  /// @return 最も近い味方ロボットとその距離
+  [[nodiscard]] auto getNearestOurRobotFromPoint(
+    const Point & point, uint8_t exclude_id = 255) const -> std::optional<RobotWithDistance>
+  {
+    return getNearestRobotWithDistanceFromPoint(point, ours_.getAvailableRobots(exclude_id));
+  }
+
   [[nodiscard]] auto getFieldMargin() const { return 0.3; }
 
   [[nodiscard]] auto getDefenseWidth() const
@@ -235,6 +278,69 @@ struct WorldModelWrapper
   [[nodiscard]] auto getOurGoalCenter() const -> Point { return goal_; }
 
   [[nodiscard]] auto getTheirGoalCenter() const -> Point { return Point(-goal_.x(), goal_.y()); }
+
+  // === 便利関数: ゴール-ボール方向計算 ===
+  /// @brief 自ゴールからボールへの正規化された方向ベクトルを取得
+  /// @return 正規化された方向ベクトル
+  [[nodiscard]] auto getDirectionFromOurGoalToBall() const -> Vector2
+  {
+    return (ball_.pos - getOurGoalCenter()).normalized();
+  }
+
+  /// @brief 敵ゴールからボールへの正規化された方向ベクトルを取得
+  /// @return 正規化された方向ベクトル
+  [[nodiscard]] auto getDirectionFromTheirGoalToBall() const -> Vector2
+  {
+    return (ball_.pos - getTheirGoalCenter()).normalized();
+  }
+
+  /// @brief ボールの速度方向に延長した線分を取得
+  /// @param length 延長する長さ[m]
+  /// @return ボール位置から速度方向に延長した線分
+  [[nodiscard]] auto getBallExtensionLine(double length) const -> Segment
+  {
+    return {ball_.pos, ball_.pos + ball_.vel.normalized() * length};
+  }
+
+  /// @brief 自ゴールからボールへの方向に沿った点を取得
+  /// @param distance 自ゴールからの距離[m]
+  /// @return 自ゴール-ボール方向上の点
+  [[nodiscard]] auto getPointAlongOurGoalToBallDirection(double distance) const -> Point
+  {
+    return getOurGoalCenter() + getDirectionFromOurGoalToBall() * distance;
+  }
+
+  // === 便利関数: ゴールライン関連 ===
+  /// @brief 自ゴールライン（ポスト間の線分）を取得
+  /// @return 自ゴールの左右ポスト間の線分
+  [[nodiscard]] auto getOurGoalLine() const -> Segment
+  {
+    auto [post1, post2] = getOurGoalPosts();
+    return {post1, post2};
+  }
+
+  /// @brief 敵ゴールライン（ポスト間の線分）を取得
+  /// @return 敵ゴールの左右ポスト間の線分
+  [[nodiscard]] auto getTheirGoalLine() const -> Segment
+  {
+    auto [post1, post2] = getTheirGoalPosts();
+    return {post1, post2};
+  }
+
+  /// @brief ボール位置から自ゴール中心への線分を取得
+  /// @return ボール-自ゴール中心の線分
+  [[nodiscard]] auto getBallToOurGoalLine() const -> Segment
+  {
+    return {ball_.pos, getOurGoalCenter()};
+  }
+
+  /// @brief ボールが自ゴールに向かっているかを判定
+  /// @return ボール軌道が自ゴールラインと交差する場合true
+  [[nodiscard]] auto isShootingTowardsOurGoal() const -> bool;
+
+  /// @brief ボールが敵ゴールに向かっているかを判定
+  /// @return ボール軌道が敵ゴールラインと交差する場合true
+  [[nodiscard]] auto isShootingTowardsTheirGoal() const -> bool;
 
   [[nodiscard]] auto getBallPlacementTarget() const -> std::optional<Point>;
 
@@ -302,6 +408,49 @@ struct WorldModelWrapper
   [[nodiscard]] auto fieldSize() const -> const Point & { return field_size_; }
   [[nodiscard]] auto penaltyAreaSize() const -> const Point & { return penalty_area_size_; }
   [[nodiscard]] auto goalSize() const -> const Point & { return goal_size_; }
+
+  // === 便利関数: フィールドサイズ計算 ===
+  /// @brief フィールドの半分の長さ（X方向）を取得
+  /// @return フィールド長の半分[m]
+  [[nodiscard]] inline auto getFieldHalfLength() const -> double
+  {
+    return field_size_.x() * 0.5;
+  }
+
+  /// @brief フィールドの半分の幅（Y方向）を取得
+  /// @return フィールド幅の半分[m]
+  [[nodiscard]] inline auto getFieldHalfWidth() const -> double
+  {
+    return field_size_.y() * 0.5;
+  }
+
+  /// @brief ペナルティエリアの半分の幅を取得
+  /// @return ペナルティエリア幅の半分[m]
+  [[nodiscard]] inline auto getPenaltyAreaHalfWidth() const -> double
+  {
+    return penalty_area_size_.y() * 0.5;
+  }
+
+  /// @brief ペナルティエリアの奥行き（ゴールからの距離）を取得
+  /// @return ペナルティエリアの奥行き[m]
+  [[nodiscard]] inline auto getPenaltyAreaDepth() const -> double
+  {
+    return penalty_area_size_.x();
+  }
+
+  /// @brief 自陣ペナルティエリア前面のX座標を取得
+  /// @return 自陣ペナルティエリアのフィールド側境界X座標
+  [[nodiscard]] inline auto getOurPenaltyAreaFrontX() const -> double
+  {
+    return getOurGoalCenter().x() - getOurSideSign() * getPenaltyAreaDepth();
+  }
+
+  /// @brief 敵陣ペナルティエリア前面のX座標を取得
+  /// @return 敵陣ペナルティエリアのフィールド側境界X座標
+  [[nodiscard]] inline auto getTheirPenaltyAreaFrontX() const -> double
+  {
+    return getTheirGoalCenter().x() + getOurSideSign() * getPenaltyAreaDepth();
+  }
   [[nodiscard]] auto goal() const -> const Point & { return goal_; }
 
 private:
@@ -462,6 +611,18 @@ public:
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
+    }
+
+    // === 便利関数: 複合判定 ===
+    /// @brief フィールド内かつペナルティエリア外の判定
+    /// @param p 判定する点
+    /// @param field_offset フィールド境界のオフセット[m]
+    /// @param penalty_offset ペナルティエリア境界のオフセット[m]
+    /// @return フィールド内かつペナルティエリア外の場合true
+    [[nodiscard]] auto isFieldInsideAndOutsidePenaltyArea(
+      const Point & p, double field_offset = 0., double penalty_offset = 0.) const -> bool
+    {
+      return isFieldInside(p, field_offset) && !isPenaltyArea(p, penalty_offset);
     }
 
     [[nodiscard]] auto isInOurHalf(const Point & p, double offset = 0.) const -> bool
