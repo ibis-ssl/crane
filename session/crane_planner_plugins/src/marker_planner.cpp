@@ -103,17 +103,10 @@ auto MarkerPlanner::assignMarkingTarget(
 
   for (const auto & [enemy_robot, score] : dander_enemies) {
     // マークする敵ロボットに一番近い味方ロボットを選択
-    auto robot_with_distance =
-      remaining_selectable_robots | ranges::views::transform([&](const auto & robot) {
-        return std::make_pair(robot, (robot->pose.pos - enemy_robot->pose.pos).norm());
-      }) |
-      ranges::to<std::vector>();
-
-    if (not robot_with_distance.empty()) {
-      auto best_marking_robot =
-        ranges::min_element(robot_with_distance, [](const auto & a, const auto & b) {
-          return a.second < b.second;
-        })->first;
+    if (not remaining_selectable_robots.empty()) {
+      auto best_marking_robot = ranges::min(
+        remaining_selectable_robots, ranges::less{},
+        [&](const auto & robot) { return (robot->pose.pos - enemy_robot->pose.pos).norm(); });
 
       // marking_target_map[best_marking_robot->id] = enemy_robot->id;
       selected_robots.push_back(best_marking_robot->id);
