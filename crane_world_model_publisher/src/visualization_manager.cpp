@@ -155,7 +155,7 @@ auto VisualizationManager::drawFieldGeometry(
 
     // ゴール描画（U字型構造）
     geometry_builder->drawGoal(Point(-field_height / 2, 0), goal_width, -goal_depth);  // 左ゴール
-    geometry_builder->drawGoal(Point(field_height / 2, 0), goal_width, goal_depth);   // 右ゴール
+    geometry_builder->drawGoal(Point(field_height / 2, 0), goal_width, goal_depth);    // 右ゴール
   }
 
   // ペナルティエリアの描画

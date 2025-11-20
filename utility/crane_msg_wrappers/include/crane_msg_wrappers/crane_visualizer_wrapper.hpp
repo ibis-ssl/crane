@@ -183,8 +183,8 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     Point pos, double theta, int id, const std::string & fill_color = "white",
     double fill_opacity = 1.0, const std::string & stroke_color = "black",
     double stroke_opacity = 1.0, double stroke_width = 10.0, double id_font_size = 150.0,
-    const std::string & id_color = "white", double id_offset_x = -0.05,
-    double id_offset_y = -0.05) -> void;
+    const std::string & id_color = "white", double id_offset_x = -0.05, double id_offset_y = -0.05)
+    -> void;
 
   // 軌跡描画の便利関数
   auto drawTrajectory(

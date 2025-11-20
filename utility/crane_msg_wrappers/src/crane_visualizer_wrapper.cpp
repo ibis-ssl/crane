@@ -241,13 +241,7 @@ auto VisualizerMessageBuilder::drawDebugLabel(
 auto VisualizerMessageBuilder::drawCenteredLabel(
   Point pos, const std::string & label, const std::string & color, double font_size) -> void
 {
-  text()
-    .position(pos)
-    .text(label)
-    .fill(color)
-    .fontSize(font_size)
-    .textAnchor("middle")
-    .build();
+  text().position(pos).text(label).fill(color).fontSize(font_size).textAnchor("middle").build();
 }
 
 // ロボット描画の便利関数の実装
@@ -258,8 +252,12 @@ auto VisualizerMessageBuilder::drawRobot(
 {
   // ロボット形状の計算（SvgRobotBuilderと同じロジック）
   double corner_angle = std::acos(center_to_dribbler / radius);
-  auto botRightX = [&](double orientation) { return radius * std::cos(orientation + corner_angle); };
-  auto botRightY = [&](double orientation) { return radius * std::sin(orientation + corner_angle); };
+  auto botRightX = [&](double orientation) {
+    return radius * std::cos(orientation + corner_angle);
+  };
+  auto botRightY = [&](double orientation) {
+    return radius * std::sin(orientation + corner_angle);
+  };
   auto botLeftX = [&](double orientation) { return radius * std::cos(orientation - corner_angle); };
   auto botLeftY = [&](double orientation) { return radius * std::sin(orientation - corner_angle); };
 
@@ -285,8 +283,7 @@ auto VisualizerMessageBuilder::drawRobotWithID(
   const std::string & id_color, double id_offset_x, double id_offset_y) -> void
 {
   // ロボット本体を描画
-  drawRobot(
-    pos, theta, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
+  drawRobot(pos, theta, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
 
   // IDを描画
   text()
