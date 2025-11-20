@@ -14,6 +14,7 @@
 #include <crane_utils/time.hpp>
 #include <filesystem>
 #include <fstream>
+#include <range/v3/all.hpp>
 #include <std_msgs/msg/string.hpp>
 
 #include "crane_session_controller/configuration_manager.hpp"
@@ -247,13 +248,12 @@ auto SessionControllerComponent::request(
 
 auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
 {
-  std::vector<uint8_t> assigned_robot_ids;
-  for (const auto & planner : planner_registry_->getAllPlanners()) {
-    for (const auto & robot : planner->getRobots()) {
-      assigned_robot_ids.push_back(robot.id);
-    }
-  }
-  std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+  auto assigned_robot_ids = planner_registry_->getAllPlanners() |
+                            ranges::views::transform(
+                              [](const auto & planner) { return planner->getRobots(); }) |
+                            ranges::views::join |
+                            ranges::views::transform([](const auto & robot) { return robot.id; }) |
+                            ranges::to<std::vector>() | ranges::actions::sort;
   return assigned_robot_ids;
 }
 
