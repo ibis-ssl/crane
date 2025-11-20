@@ -18,14 +18,12 @@ auto Forward::update() -> Status
   auto & ball = world_model()->ball();
   // front_point -> back_pointの0.1mごとのポイントを生成
   int num_points = static_cast<int>(std::ceil((back_point - front_point).norm() / 0.1));
-  std::vector<Point> points = ranges::views::iota(0, num_points) |
-                              ranges::views::transform([&](double t) -> Point {
-                                return front_point + (back_point - front_point) * t / num_points;
-                              }) |
-                              ranges::to<std::vector>();
 
   std::vector<std::pair<Point, double>> points_with_score =
-    points | ranges::views::transform([&](const Point & p) {
+    ranges::views::iota(0, num_points) | ranges::views::transform([&](int i) -> Point {
+      return front_point + (back_point - front_point) * static_cast<double>(i) / num_points;
+    }) |
+    ranges::views::transform([&](const Point & p) {
       double score = 1.0;
       // ボールの受取やすさ
       Segment segment{
