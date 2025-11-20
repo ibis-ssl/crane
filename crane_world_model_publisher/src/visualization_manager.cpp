@@ -138,39 +138,12 @@ auto VisualizationManager::drawFieldGeometry(
   double field_width = field.field_width() / 1000.0;    // mm to m
   double field_height = field.field_length() / 1000.0;  // mm to m
 
-  // フィールドラインの描画
-  geometry_builder->line()
-    .start(-field_height / 2, -field_width / 2)
-    .end(field_height / 2, -field_width / 2)
-    .stroke("white")
-    .strokeWidth(10)
-    .build();
-  geometry_builder->line()
-    .start(-field_height / 2, field_width / 2)
-    .end(field_height / 2, field_width / 2)
-    .stroke("white")
-    .strokeWidth(10)
-    .build();
-  geometry_builder->line()
-    .start(-field_height / 2, -field_width / 2)
-    .end(-field_height / 2, field_width / 2)
-    .stroke("white")
-    .strokeWidth(10)
-    .build();
-  geometry_builder->line()
-    .start(field_height / 2, -field_width / 2)
-    .end(field_height / 2, field_width / 2)
-    .stroke("white")
-    .strokeWidth(10)
-    .build();
+  // フィールドラインの描画（外周）
+  geometry_builder->drawFieldRect(
+    Point(-field_height / 2, -field_width / 2), Point(field_height / 2, field_width / 2));
 
   // センターライン
-  geometry_builder->line()
-    .start(0, -field_width / 2)
-    .end(0, field_width / 2)
-    .stroke("white")
-    .strokeWidth(10)
-    .build();
+  geometry_builder->drawFieldLine(Point(0, -field_width / 2), Point(0, field_width / 2));
 
   // センターサークル
   geometry_builder->circle().center(0, 0).radius(0.5).stroke("white").strokeWidth(10).build();
@@ -181,81 +154,21 @@ auto VisualizationManager::drawFieldGeometry(
     double goal_depth = field.goal_depth() / 1000.0;
 
     // ゴール描画（U字型構造）
-    // 左ゴール（後方の壁）
-    geometry_builder->line()
-      .start(-field_height / 2 - goal_depth, -goal_width / 2)
-      .end(-field_height / 2 - goal_depth, goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
-    // 左ゴール（左側の壁）
-    geometry_builder->line()
-      .start(-field_height / 2, -goal_width / 2)
-      .end(-field_height / 2 - goal_depth, -goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
-    // 左ゴール（右側の壁）
-    geometry_builder->line()
-      .start(-field_height / 2, goal_width / 2)
-      .end(-field_height / 2 - goal_depth, goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
-
-    // 右ゴール（後方の壁）
-    geometry_builder->line()
-      .start(field_height / 2 + goal_depth, -goal_width / 2)
-      .end(field_height / 2 + goal_depth, goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
-    // 右ゴール（左側の壁）
-    geometry_builder->line()
-      .start(field_height / 2, -goal_width / 2)
-      .end(field_height / 2 + goal_depth, -goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
-    // 右ゴール（右側の壁）
-    geometry_builder->line()
-      .start(field_height / 2, goal_width / 2)
-      .end(field_height / 2 + goal_depth, goal_width / 2)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
+    geometry_builder->drawGoal(Point(-field_height / 2, 0), goal_width, -goal_depth);  // 左ゴール
+    geometry_builder->drawGoal(Point(field_height / 2, 0), goal_width, goal_depth);   // 右ゴール
   }
 
   // ペナルティエリアの描画
   for (const auto & line : field.field_lines()) {
-    if (line.name() == "LeftPenaltyStretch" || line.name() == "RightPenaltyStretch") {
-      // ペナルティエリア横線（ゴールライン平行）
-      double p1_x = line.p1().x() / 1000.0;
-      double p1_y = line.p1().y() / 1000.0;
-      double p2_x = line.p2().x() / 1000.0;
-      double p2_y = line.p2().y() / 1000.0;
-      geometry_builder->line()
-        .start(p1_x, p1_y)
-        .end(p2_x, p2_y)
-        .stroke("white")
-        .strokeWidth(10)
-        .build();
-    } else if (
+    if (
+      line.name() == "LeftPenaltyStretch" || line.name() == "RightPenaltyStretch" ||
       line.name() == "LeftFieldLeftPenaltyStretch" ||
       line.name() == "LeftFieldRightPenaltyStretch" ||
       line.name() == "RightFieldLeftPenaltyStretch" ||
       line.name() == "RightFieldRightPenaltyStretch") {
-      // ペナルティエリア縦線（サイドライン平行）
-      double p1_x = line.p1().x() / 1000.0;
-      double p1_y = line.p1().y() / 1000.0;
-      double p2_x = line.p2().x() / 1000.0;
-      double p2_y = line.p2().y() / 1000.0;
-      geometry_builder->line()
-        .start(p1_x, p1_y)
-        .end(p2_x, p2_y)
-        .stroke("white")
-        .strokeWidth(10)
-        .build();
+      geometry_builder->drawFieldLine(
+        Point(line.p1().x() / 1000.0, line.p1().y() / 1000.0),
+        Point(line.p2().x() / 1000.0, line.p2().y() / 1000.0));
     }
   }
 
@@ -280,45 +193,29 @@ auto VisualizationManager::drawVisionDetections(
 {
   // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {
-    double x = robot.x() / 1000.0;
-    double y = robot.y() / 1000.0;
+    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
 
-    // ロボット本体（SvgRobotBuilderを使用）
-    SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("white", 0.0).stroke("white", 1.0).strokeWidth(20);
-    vision_builder->add(robot_shape.getSvgString());
-
-    // ロボットID
+    // ロボット本体とID
     if (robot.has_robot_id()) {
-      vision_builder->text()
-        .text(std::to_string(robot.robot_id()))
-        .position(x, y + 0.15)
-        .fontSize(50)
-        .fill("white")
-        .build();
+      vision_builder->drawRobotWithID(
+        pos, theta, robot.robot_id(), "white", 0.0, "white", 1.0, 20, 50, "white", 0.0, 0.15);
+    } else {
+      vision_builder->drawRobot(pos, theta, "white", 0.0, "white", 1.0, 20);
     }
   }
 
   // ロボット検出の描画（黄チーム）
   for (const auto & robot : detection.robots_yellow()) {
-    double x = robot.x() / 1000.0;
-    double y = robot.y() / 1000.0;
+    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
 
-    // ロボット本体
-    SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("white", 0.0).stroke("white", 1.0).strokeWidth(20);
-    vision_builder->add(robot_shape.getSvgString());
-
-    // ロボットID
+    // ロボット本体とID
     if (robot.has_robot_id()) {
-      vision_builder->text()
-        .text(std::to_string(robot.robot_id()))
-        .position(x, y + 0.15)
-        .fontSize(50)
-        .fill("white")
-        .build();
+      vision_builder->drawRobotWithID(
+        pos, theta, robot.robot_id(), "white", 0.0, "white", 1.0, 20, 50, "white", 0.0, 0.15);
+    } else {
+      vision_builder->drawRobot(pos, theta, "white", 0.0, "white", 1.0, 20);
     }
   }
 
@@ -422,21 +319,9 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     const Point & pos = robot->pose.pos;
     const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
 
-    // ロボット本体
-    SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), theta)
-      .fill(is_friend ? "green" : "red", 1.0)
-      .stroke("black", 1.0)
-      .strokeWidth(10);
-    tracked_builder->add(robot_shape.getSvgString());
-
-    // ID
-    tracked_builder->text()
-      .text(std::to_string(robot->id))
-      .position(pos.x() - 0.05, pos.y() - 0.05)
-      .fontSize(150)
-      .fill("white")
-      .build();
+    // ロボット本体とID
+    tracked_builder->drawRobotWithID(
+      pos, theta, robot->id, is_friend ? "green" : "red", 1.0, "black", 1.0, 10);
   };
 
   // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
