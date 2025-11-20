@@ -7,6 +7,7 @@
 #include "crane_world_model_publisher/pass_target_selector.hpp"
 
 #include <algorithm>
+#include <range/v3/all.hpp>
 
 namespace crane
 {
@@ -140,25 +141,18 @@ auto PassTargetSelector::update(
 
   // 候補のスコア算出
   auto our_robots = world_model->ours().getAvailableRobots(true);
-  std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> score_with_bots;
-  score_with_bots.reserve(our_robots.size());
-  for (const auto & robot : our_robots) {
-    if (robot->id == world_model->getOurGoalieId()) {
-      continue;  // GK除外
-    }
-    if (robot->pose.pos.x() * world_model->getOurSideSign() > 0.0) {
-      continue;  // 自陣除外
-    }
-    if (world_model->point_checker.isPenaltyArea(robot->pose.pos)) {
-      continue;  // PA内除外
-    }
-    double score = calcScore(world_model, pass_origin, robot->pose.pos);
-    score_with_bots.emplace_back(robot, score);
-  }
+  auto score_with_bots =
+    our_robots | ranges::views::filter([&](const auto & robot) {
+      return robot->id != world_model->getOurGoalieId() &&
+             robot->pose.pos.x() * world_model->getOurSideSign() <= 0.0 &&
+             !world_model->point_checker.isPenaltyArea(robot->pose.pos);
+    }) |
+    ranges::views::transform([&](const auto & robot) {
+      return std::make_pair(robot, calcScore(world_model, pass_origin, robot->pose.pos));
+    }) |
+    ranges::to<std::vector>();
 
-  std::sort(score_with_bots.begin(), score_with_bots.end(), [](const auto & a, const auto & b) {
-    return a.second > b.second;
-  });
+  ranges::sort(score_with_bots, ranges::greater{}, [](const auto & p) { return p.second; });
 
   analysis_msg.pass_scores.clear();
   analysis_msg.pass_scores.reserve(score_with_bots.size());
