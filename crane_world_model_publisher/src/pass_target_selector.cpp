@@ -68,21 +68,23 @@ auto PassTargetSelector::calcScore(
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
   // パスカット
-  std::vector<std::pair<double, std::shared_ptr<RobotInfo>>> enemys_with_angle_diff;
-  for (const auto & enemy : world_model->theirs().getAvailableRobots()) {
-    if (enemy->getDistance(pass_origin) < 1.0) {
-      continue;  // チップキックで飛び越せる近くのロボットは対象外
-    }
-    if ((p - pass_origin).dot(enemy->pose.pos - p) > 0.0) {
-      continue;  // パス先より向こうにいるロボットは対象外
-    }
-    double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
-    enemys_with_angle_diff.emplace_back(std::abs(angle_diff), enemy);
-  }
+  auto available_enemies = world_model->theirs().getAvailableRobots();
+  auto enemys_with_angle_diff =
+    available_enemies | ranges::views::filter([&](const auto & enemy) {
+      // チップキックで飛び越せる近くのロボットは対象外
+      // パス先より向こうにいるロボットは対象外
+      return enemy->getDistance(pass_origin) >= 1.0 &&
+             (p - pass_origin).dot(enemy->pose.pos - p) <= 0.0;
+    }) |
+    ranges::views::transform([&](const auto & enemy) {
+      double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
+      return std::make_pair(std::abs(angle_diff), enemy);
+    }) |
+    ranges::to<std::vector>();
+
   if (!enemys_with_angle_diff.empty()) {
-    const auto & best_intercepter = *std::min_element(
-      enemys_with_angle_diff.begin(), enemys_with_angle_diff.end(),
-      [](const auto & a, const auto & b) { return a.first < b.first; });
+    const auto & best_intercepter = *ranges::min_element(
+      enemys_with_angle_diff, ranges::less{}, [](const auto & p) { return p.first; });
     using boost::math::constants::degree;
     // 0~5°で0~1を遷移
     score *= std::clamp(best_intercepter.first * degree<double>() / 5.0, 0.0, 1.0);
