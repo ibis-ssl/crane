@@ -7,13 +7,14 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
-#include <crane_comm/diagnosed_publisher.hpp>
+#include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
+
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_comm/udp_sender.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/gr_sim_commands.hpp>
 #include <string>
 
 #include "sender_base.hpp"
@@ -25,7 +26,6 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(this, "/commands", 10, 50., 70.),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
@@ -33,6 +33,8 @@ public:
     theta_i_gain("theta_i_gain", *this, 0.0),
     theta_d_gain("theta_d_gain", *this, 0.1)
   {
+    blue_sender = std::make_unique<UDPSender>("127.0.0.1", 10301);
+    yellow_sender = std::make_unique<UDPSender>("127.0.0.1", 10302);
     p_gain.callback = [&](double value) {
       for (auto & state : robot_states_) {
         state.vx_controller.setGain(value, i_gain.getValue(), d_gain.getValue());
@@ -102,6 +104,9 @@ public:
 
     declare_parameter("robot_acceleration.velocity_threshold", 1.5);
     get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+
+    declare_parameter("chip_angle_deg", chip_angle_deg);
+    chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
@@ -134,7 +139,8 @@ public:
   //    return is_nan;
   //  }
 
-  DiagnosedPublisher<robocup_ssl_msgs::msg::GrSimCommands> pub_commands;
+  std::unique_ptr<UDPSender> yellow_sender;
+  std::unique_ptr<UDPSender> blue_sender;
 
   ParameterWithEvent<double> p_gain;
   ParameterWithEvent<double> i_gain;
@@ -145,6 +151,8 @@ public:
   ParameterWithEvent<double> theta_d_gain;
 
   double I_SATURATION = 0.0;
+
+  double chip_angle_deg = 30.0;
 
 private:
   // 各ロボットの状態を管理する構造体
