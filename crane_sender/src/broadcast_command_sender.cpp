@@ -72,21 +72,10 @@ void BroadcastCommandSender::sendBroadcastPackets(
     if (!is_empty) active_robots++;
   }
 
-  // パケット送信を詳細にログ出力
+  // パケット送信
   size_t total_size = sizeof(broadcast_buf);
   try {
-    std::cout << "📦 ブロードキャストパケット送信開始:" << std::endl;
-    std::cout << "  送信先: " << endpoint.address().to_string() << ":" << endpoint.port()
-              << std::endl;
-    std::cout << "  パケットサイズ: " << total_size << " bytes" << std::endl;
-    std::cout << "  アクティブロボット数: " << active_robots << "/"
-              << CommConfig::AI_CMD_V2_ROBOT_NUM << std::endl;
-
-    // 実際の送信処理
-    size_t sent_bytes = socket.send_to(boost::asio::buffer(broadcast_buf, total_size), endpoint);
-
-    // 送信成功ログ
-    std::cout << "✅ パケット送信成功: " << sent_bytes << " bytes 送信完了" << std::endl;
+    socket.send_to(boost::asio::buffer(broadcast_buf, total_size), endpoint);
   } catch (const boost::system::system_error & e) {
     std::cerr << "❌ パケット送信エラー (boost): " << e.what() << std::endl;
     std::cerr << "  エラーコード: " << e.code() << std::endl;
