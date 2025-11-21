@@ -174,6 +174,26 @@ auto VisualizerMessageBuilder::drawFilledCircle(
   circle().center(center).radius(radius).fill(fill_color, opacity).stroke("none").build();
 }
 
+auto VisualizerMessageBuilder::drawStyledCircle(
+  Point center, double radius, const std::string & fill_color, double fill_opacity,
+  const std::string & stroke_color, double stroke_opacity, double stroke_width) -> void
+{
+  circle()
+    .center(center)
+    .radius(radius)
+    .fill(fill_color, fill_opacity)
+    .stroke(stroke_color, stroke_opacity)
+    .strokeWidth(stroke_width)
+    .build();
+}
+
+auto VisualizerMessageBuilder::drawPolyline(
+  const std::vector<Point> & points, const std::string & color, double opacity, double stroke_width)
+  -> void
+{
+  polyline().setPoints(points).stroke(color, opacity).strokeWidth(stroke_width).build();
+}
+
 auto VisualizerMessageBuilder::drawText(
   Point position, const std::string & text_str, const std::string & color, double font_size,
   const std::string & anchor) -> void
