@@ -61,14 +61,8 @@ public:
       receive_skill->setParameter("policy", std::string("closest"));
       // Mark reserved receiver clearly
       auto pos = receive_skill->commander()->getRobot()->pose.pos;
-      visualizer->circle().center(pos).radius(0.25).stroke("cyan").strokeWidth(18).build();
-      visualizer->text()
-        .position(pos.x(), pos.y() + 0.32)
-        .text("RECEIVER RESERVED")
-        .fontSize(90)
-        .fill("cyan")
-        .textAnchor("middle")
-        .build();
+      visualizer->drawCircle(pos, 0.25, "cyan", 18);
+      visualizer->drawCenteredLabel(pos + Vector2(0.0, 0.32), "RECEIVER RESERVED", "cyan", 90);
       auto status = receive_skill->run();
       return {static_cast<PlannerBase::Status>(status), {receive_skill->getRobotCommand()}};
     }

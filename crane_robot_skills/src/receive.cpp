@@ -113,12 +113,7 @@ Point Receive::getInterceptionPoint() const
 
   // Optionally draw ball trajectory thin and semi-transparent for both policies
   if (getParameter<bool>("viz_ball_traj")) {
-    visualizer->line()
-      .start(ball_line.first)
-      .end(ball_line.second)
-      .stroke("#00aaff", 0.5)
-      .strokeWidth(6)
-      .build();
+    visualizer->drawLine(ball_line.first, ball_line.second, "#00aaff", 6, 0.5);
   }
 
   // closest_pointのNaN値チェック
@@ -195,13 +190,8 @@ Point Receive::getInterceptionPoint() const
     // Draw candidate points colored by slack
     if (getParameter<bool>("viz_candidates")) {
       for (const auto & s : slack_times) {
-        visualizer->circle()
-          .center(s.intercept_point)
-          .radius(0.06)
-          .fill(slackColor(s.slack_time), 0.6)
-          .stroke("black", 0.3)
-          .strokeWidth(4)
-          .build();
+        visualizer->drawStyledCircle(
+          s.intercept_point, 0.06, slackColor(s.slack_time), 0.6, "black", 0.3, 4);
       }
     }
 
@@ -232,13 +222,7 @@ Point Receive::getInterceptionPoint() const
       if (policy == "max_slack") ss << "max ";
       if (policy == "min_slack") ss << "min ";
       ss << std::fixed << std::setprecision(2) << selected_slack << "s";
-      visualizer->text()
-        .position(selected_point + Vector2(0.0, -0.18))
-        .text(ss.str())
-        .fontSize(60)
-        .fill("white")
-        .textAnchor("middle")
-        .build();
+      visualizer->drawCenteredLabel(selected_point + Vector2(0.0, -0.18), ss.str(), "white", 60);
     }
     return selected_point;
 

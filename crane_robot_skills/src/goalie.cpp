@@ -51,12 +51,7 @@ Status Goalie::update()
     }
   }
 
-  visualizer->text()
-    .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-    .text(phase)
-    .fill("white")
-    .fontSize(100)
-    .build();
+  visualizer->drawDebugLabel(robot()->pose.pos, phase);
   return Status::RUNNING;
 }
 

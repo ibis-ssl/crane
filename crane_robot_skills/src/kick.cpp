@@ -39,24 +39,14 @@ void Kick::initialize()
   receive_skill.setParameter("redirect_kick_power", 0.3);
 
   addStateFunction(KickState::ENTRY_POINT, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text("Kick::ENTRY_POINT")
-      .fill("white")
-      .fontSize(100)
-      .build();
+    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::ENTRY_POINT");
     return Status::RUNNING;
   });
 
   addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL_AND_KICK, [this]() { return true; });
 
   addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text("Kick::POSITIVE_REDIRECT_KICK")
-      .fill("white")
-      .fontSize(100)
-      .build();
+    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::POSITIVE_REDIRECT_KICK");
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
     const auto & ball_pos = world_model()->ball().pos;
     command->lookAtFrom(getParameter<Point>("target"), ball_pos);
@@ -92,12 +82,7 @@ void Kick::initialize()
   });
 
   addStateFunction(KickState::REDIRECT_KICK, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text("Kick::REDIRECT_KICK")
-      .fill("white")
-      .fontSize(100)
-      .build();
+    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::REDIRECT_KICK");
     receive_skill.setParameter("target", getParameter<Point>("target"));
     if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
       receive_skill.setParameter("policy", std::string("closest"));
@@ -140,30 +125,13 @@ void Kick::initialize()
       auto dir_left = Vector2(std::cos(base_theta + half_angle), std::sin(base_theta + half_angle));
       auto dir_right =
         Vector2(std::cos(base_theta - half_angle), std::sin(base_theta - half_angle));
-      visualizer->line()
-        .start(ball_pos)
-        .end(ball_pos + dir_left * arc_radius)
-        .stroke("white", 0.6)
-        .strokeWidth(10)
-        .build();
-      visualizer->line()
-        .start(ball_pos)
-        .end(ball_pos + dir_right * arc_radius)
-        .stroke("white", 0.6)
-        .strokeWidth(10)
-        .build();
+      visualizer->drawLine(ball_pos, ball_pos + dir_left * arc_radius, "white", 10, 0.6);
+      visualizer->drawLine(ball_pos, ball_pos + dir_right * arc_radius, "white", 10, 0.6);
       // アーク（扇の円弧）
       visualizer->arc(
         ball_pos, arc_radius, base_theta - half_angle, base_theta + half_angle, "white", 10, 16);
     }
-    {
-      visualizer->text()
-        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-        .text("Kick::AROUND_BALL")
-        .fill("white")
-        .fontSize(100)
-        .build();
-    }
+    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::AROUND_BALL");
     // 改良回り込み: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
     constexpr double INTERVAL = 0.15;
     constexpr double MAX_INTERVAL = 0.3;  // 大回り上限

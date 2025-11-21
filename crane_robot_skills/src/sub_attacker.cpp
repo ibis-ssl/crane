@@ -51,24 +51,10 @@ Status SubAttacker::update()
       command->setTargetPosition(
         result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
       command->enableBallAvoidance();
-      {
-        visualizer->text()
-          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-          .text("ボールラインから一旦遠ざかる")
-          .fill("white")
-          .fontSize(100)
-          .build();
-      }
+      visualizer->drawDebugLabel(robot()->pose.pos, "ボールラインから一旦遠ざかる");
     } else {
       //  ボールの進路上に移動
-      {
-        visualizer->text()
-          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-          .text("ボールの進路上に移動")
-          .fill("white")
-          .fontSize(100)
-          .build();
-      }
+      visualizer->drawDebugLabel(robot()->pose.pos, "ボールの進路上に移動");
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
 
       // ゴールとボールの中間方向を向く
@@ -86,14 +72,7 @@ Status SubAttacker::update()
         result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
     }
   } else {
-    {
-      visualizer->text()
-        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-        .text("ベストポジションへ移動")
-        .fill("white")
-        .fontSize(100)
-        .build();
-    }
+    visualizer->drawDebugLabel(robot()->pose.pos, "ベストポジションへ移動");
     Point best_position = robot()->pose.pos;
     double best_score = 0.0;
     for (const auto & dpps_point : dpps_points) {

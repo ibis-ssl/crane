@@ -121,12 +121,7 @@ void CenterStopKick::initialize()
 
     // ボール停止確認（1秒待機）
     if ((now - result_check_start_).seconds() < 1.0) {
-      visualizer->text()
-        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
-        .text("結果確認中...")
-        .fill("yellow")
-        .fontSize(80)
-        .build();
+      visualizer->drawDebugLabel(robot()->pose.pos, "結果確認中...");
       return Status::RUNNING;
     }
 
@@ -135,12 +130,7 @@ void CenterStopKick::initialize()
 
     if (distance_to_center <= center_tolerance_) {
       // 成功
-      visualizer->text()
-        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
-        .text("中心停止キック成功")
-        .fill("green")
-        .fontSize(80)
-        .build();
+      visualizer->drawDebugLabel(robot()->pose.pos, "中心停止キック成功");
 
       RCLCPP_INFO(
         rclcpp::get_logger("CenterStopKick"), "成功: 距離=%.3fm (許容=%.3fm), 試行回数=%d",
@@ -156,12 +146,7 @@ void CenterStopKick::initialize()
       return Status::RUNNING;
     } else {
       // リトライ上限到達
-      visualizer->text()
-        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
-        .text("リトライ上限到達")
-        .fill("red")
-        .fontSize(80)
-        .build();
+      visualizer->drawDebugLabel(robot()->pose.pos, "リトライ上限到達");
 
       RCLCPP_WARN(
         rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm",

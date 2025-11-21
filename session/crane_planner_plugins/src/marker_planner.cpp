@@ -81,11 +81,8 @@ auto MarkerPlanner::assignMarkingTarget(
   auto dander_enemies = getDangerEnemies();
 
   for (const auto & [robot, score] : dander_enemies) {
-    visualizer->text()
-      .text("MarkerScore: " + std::to_string(score))
-      .fontSize(100)
-      .position(robot->pose.pos + Point(0., 0.2))
-      .build();
+    visualizer->drawDebugLabel(
+      robot->pose.pos + Point(0., 0.2), "MarkerScore: " + std::to_string(score));
   }
 
   if (dander_enemies.size() > selectable_robots_num) {
@@ -132,20 +129,12 @@ auto MarkerPlanner::assignMarkingTarget(
       //   markers.back()->setParameter("mark_distance", distance);
       // }
 
-      visualizer->circle()
-        .center(enemy_robot->pose.pos)
-        .radius(0.3)
-        .stroke("black")
-        .strokeWidth(10)
-        .build();
-      visualizer->line()
-        .start(best_marking_robot->pose.pos)
-        .end(
-          enemy_robot->pose.pos +
-          (enemy_robot->pose.pos - best_marking_robot->pose.pos).normalized() * 0.3)
-        .stroke("black")
-        .strokeWidth(20)
-        .build();
+      visualizer->drawCircle(enemy_robot->pose.pos, 0.3, "black", 10);
+      visualizer->drawLine(
+        best_marking_robot->pose.pos,
+        enemy_robot->pose.pos +
+          (enemy_robot->pose.pos - best_marking_robot->pose.pos).normalized() * 0.3,
+        "black", 20);
     }
   }
   return selected_robots;

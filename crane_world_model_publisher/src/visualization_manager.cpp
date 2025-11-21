@@ -146,7 +146,7 @@ auto VisualizationManager::drawFieldGeometry(
   geometry_builder->drawFieldLine(Point(0, -field_width / 2), Point(0, field_width / 2));
 
   // センターサークル
-  geometry_builder->circle().center(0, 0).radius(0.5).stroke("white").strokeWidth(10).build();
+  geometry_builder->drawCircle(Point(0, 0), 0.5, "white", 10);
 
   // ゴールエリアとペナルティエリアの描画
   if (field.has_goal_width() && field.has_goal_depth()) {
@@ -177,12 +177,7 @@ auto VisualizationManager::drawFieldGeometry(
     double center_x = arc.center().x() / 1000.0;
     double center_y = arc.center().y() / 1000.0;
     double radius = arc.radius() / 1000.0;
-    geometry_builder->circle()
-      .center(center_x, center_y)
-      .radius(radius)
-      .stroke("white")
-      .strokeWidth(10)
-      .build();
+    geometry_builder->drawCircle(Point(center_x, center_y), radius, "white", 10);
   }
 
   geometry_builder->flush();
@@ -228,21 +223,9 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   // トラッキング済みボール（強調表示 + 回転スコープ）
   const auto & ball = world_model->ball();
   const double ball_radius = 0.043;  // SSL official ball radius
-  tracked_builder->circle()
-    .center(ball.pos.x(), ball.pos.y())
-    .radius(ball_radius)
-    .stroke("orange")
-    .strokeWidth(5)
-    .fill("orange", 1.0)
-    .build();
+  tracked_builder->drawStyledCircle(ball.pos, ball_radius, "orange", 1.0, "orange", 1.0, 5);
   // ベースの円（オレンジ枠 + 薄い塗り）
-  tracked_builder->circle()
-    .center(ball.pos.x(), ball.pos.y())
-    .radius(0.5)
-    .stroke("orange")
-    .strokeWidth(5)
-    .fill("orange", 0.15)
-    .build();
+  tracked_builder->drawStyledCircle(ball.pos, 0.5, "orange", 0.15, "orange", 1.0, 5);
   // 回転するスコープ飾り（クロスヘア）
 
   if (ball.detected) {
@@ -302,7 +285,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     for (int i = 1; i <= trail_points; ++i) {
       const double s = i / (static_cast<double>(trail_points) + 0.5);
       const Point p = pos + s * (base - pos);
-      tracked_builder->circle().center(p).radius(0.02).fill(color, s * 0.5).stroke("none").build();
+      tracked_builder->drawStyledCircle(p, 0.02, color, s * 0.5, "none");
     }
   };
 
@@ -362,12 +345,7 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
 {
   if (auto target = world_model->getBallPlacementTarget(); target) {
     const auto & ball = world_model->ball();
-    placement_builder->circle()
-      .center(target.value())
-      .radius(0.5)
-      .stroke("white")
-      .strokeWidth(5)
-      .build();
+    placement_builder->drawCircle(target.value(), 0.5, "white", 5);
     Vector2 vertical = getVerticalVec((ball.pos - target.value()).normalized()) * 0.5;
     placement_builder->line()
       .start(ball.pos + vertical)
@@ -403,18 +381,15 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
           int start = static_cast<int>((history.size() / 10.) * i);
           int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-          auto polyline_builder = trajectory_builder->polyline();
+          std::vector<Point> points;
           for (int index = start; index < end; index += SAMPLING_NUM) {
-            polyline_builder =
-              polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+            points.emplace_back(history.at(index).pose.x, history.at(index).pose.y);
           }
           if (i != 9) {
-            polyline_builder =
-              polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+            points.emplace_back(history.at(end).pose.x, history.at(end).pose.y);
           }
-          polyline_builder.stroke(color, 0.5 * start / static_cast<double>(history.size()))
-            .strokeWidth(15)
-            .build();
+          trajectory_builder->drawPolyline(
+            points, color, 0.5 * start / static_cast<double>(history.size()), 15);
         }
       }
     }
@@ -430,21 +405,20 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
       int start = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * (i + 1));
 
-      auto polyline_builder = trajectory_builder->polyline();
+      std::vector<Point> points;
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        polyline_builder = polyline_builder.addPoint(
+        points.emplace_back(
           trajectory_data.ball_info_history.at(index).position.x,
           trajectory_data.ball_info_history.at(index).position.y);
       }
       if (i != 9) {
-        polyline_builder = polyline_builder.addPoint(
+        points.emplace_back(
           trajectory_data.ball_info_history.at(end).position.x,
           trajectory_data.ball_info_history.at(end).position.y);
       }
-      polyline_builder
-        .stroke("orange", start / static_cast<double>(trajectory_data.ball_info_history.size()))
-        .strokeWidth(30)
-        .build();
+      trajectory_builder->drawPolyline(
+        points, "orange", start / static_cast<double>(trajectory_data.ball_info_history.size()),
+        30);
     }
   }
 
