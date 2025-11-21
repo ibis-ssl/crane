@@ -146,6 +146,16 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat().set__name("ORCA_MAX_SPEED").set__value(ORCA_MAX_SPEED));
 
+    // Apply referee command velocity limits
+    if (
+      world_model && world_model->getMsg().play_situation.referee_raw.command.value ==
+                       robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+      command.local_planner_config.max_velocity_factors.emplace_back(
+        crane_msgs::msg::NamedFloat()
+          .set__name("ModernORCAPlanner STOP制限")
+          .set__value(STOP_STATE_MAX_VELOCITY));
+    }
+
     double max_speed = resolveMaxVelocityFactors(command, MAX_VEL);
 
     // Create or update agent
@@ -347,6 +357,32 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       target.target_velocity_theta =
         std::atan2(preferred_vel.y(), preferred_vel.x()) + theta_offset;
 
+      // 効率的な加速のための回転制御
+      if (command.local_planner_config.enable_rotation_stop_on_accel) {
+        double move_angle = std::atan2(preferred_vel.y(), preferred_vel.x());
+        auto robot = world_model->getOurRobot(robot_id);
+        if (robot) {
+          double angle_diff = getAngleDiff(robot->pose.theta, move_angle);
+
+          constexpr double ANGLE_THRESHOLD = 15.0 * M_PI / 180.0;  // 15度
+          bool is_forward_or_backward =
+            (std::abs(angle_diff) <= ANGLE_THRESHOLD) ||                 // 前方
+            (std::abs(std::abs(angle_diff) - M_PI) <= ANGLE_THRESHOLD);  // 後方
+
+          double current_speed = robot->vel.linear.norm();
+          double target_speed = preferred_vel.norm();
+          double max_speed = agent.maxSpeed();
+
+          bool is_accelerating = current_speed < target_speed;
+          bool is_low_speed = current_speed <= max_speed * 0.5;
+
+          // 加速初期段階かつ前後方向に向いている場合、回転を停止
+          if (is_forward_or_backward && is_low_speed && is_accelerating && target_speed > 0.01) {
+            command.omega_limit = 0.0;
+          }
+        }
+      }
+
       command.polar_velocity_target_mode.push_back(target);
     }
   }
@@ -376,6 +412,25 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
 
   const auto & target_config = command.position_target_mode.front();
   Point target_pos(target_config.target_x, target_config.target_y);
+
+  // NaN値検証とフォールバック処理
+  if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
+    RCLCPP_ERROR(
+      node_.get_logger(),
+      "[ModernORCAPlanner] NaN detected in target_pos for robot %d: target_pos(%f, %f), using "
+      "current position as fallback",
+      static_cast<int>(raw_command.robot_id), target_pos.x(), target_pos.y());
+    return Vector2(0.0, 0.0);  // 現在位置を維持（速度0）
+  }
+
+  if (std::isnan(current_position.x()) || std::isnan(current_position.y())) {
+    RCLCPP_ERROR(
+      node_.get_logger(),
+      "[ModernORCAPlanner] NaN detected in current_pos for robot %d: current_pos(%f, %f), skipping",
+      static_cast<int>(raw_command.robot_id), current_position.x(), current_position.y());
+    return Vector2(0.0, 0.0);  // 速度0を返す
+  }
+
   Point position_diff = target_pos - current_position;
 
   // Check if within position tolerance first
