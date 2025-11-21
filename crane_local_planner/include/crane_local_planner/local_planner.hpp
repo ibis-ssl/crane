@@ -14,12 +14,10 @@
 #include <crane_physics/kicker_model.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <functional>
-// #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
-// #include "gridmap_planner.hpp"
 #include "modern_orca_planner.hpp"
 #include "rvo2_planner.hpp"
 #include "visibility_control.h"
@@ -105,9 +103,6 @@ public:
     crane::CraneVisualizerBuffer::activate(*this);
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
-    // if (planner_str == "gridmap") {
-    //   planner = std::make_shared<GridMapPlanner>(*this);
-    // }
     if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
     } else if (planner_str == "modern_orca") {
