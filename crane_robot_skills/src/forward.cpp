@@ -41,12 +41,7 @@ auto Forward::update() -> Status
       score *= (std::clamp(1.0 - distance / max_ball_distance, 0.0, 1.0) * 0.5 + 0.5);
 
       if (planner_visualizer) {
-        planner_visualizer->circle()
-          .center(p)
-          .radius(score * 0.25)
-          .stroke("lime", 0.5)
-          .strokeWidth(5)
-          .build();
+        planner_visualizer->drawCircle(p, score * 0.25, "lime", 5, 0.5);
       }
 
       return std::make_pair(p, score);

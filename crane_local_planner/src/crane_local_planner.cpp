@@ -61,14 +61,12 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
             raw_command.robot_id, "POSITION_TARGET_MODE", raw_command.state_factors,
             "position_target_mode が設定されていません。");
         } else {
-          planner->visualizer->line()
-            .start(raw_command.current_pose.x, raw_command.current_pose.y)
-            .end(
+          planner->visualizer->drawLine(
+            Point(raw_command.current_pose.x, raw_command.current_pose.y),
+            Point(
               raw_command.position_target_mode.front().target_x,
-              raw_command.position_target_mode.front().target_y)
-            .stroke("yellow", 0.3)
-            .strokeWidth(20)
-            .build();
+              raw_command.position_target_mode.front().target_y),
+            "yellow", 20, 0.3);
         }
         break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:

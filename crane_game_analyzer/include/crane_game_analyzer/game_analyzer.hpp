@@ -246,26 +246,14 @@ private:
     Point collision_point = (attack_pos + attacked_pos) * 0.5;
 
     // 衝突箇所に赤い円を描画
-    visualizer->circle()
-      .center(collision_point)
-      .radius(0.15)
-      .stroke("red")
-      .strokeWidth(3)
-      .fill("red", 0.3)
-      .build();
+    visualizer->drawStyledCircle(collision_point, 0.15, "red", 0.3, "red", 1.0, 3);
 
     // 衝突ロボット間に線を描画
     visualizer->line().start(attack_pos).end(attacked_pos).stroke("red").strokeWidth(2).build();
 
     // 速度表示
     std::string velocity_text = std::to_string(collision.relative_velocity).substr(0, 4) + " m/s";
-    visualizer->text()
-      .position(collision_point + Vector2(0, 0.2))
-      .text(velocity_text)
-      .fontSize(40)
-      .fill("red")
-      .textAnchor("middle")
-      .build();
+    visualizer->drawCenteredLabel(collision_point + Vector2(0, 0.2), velocity_text, "red", 40);
   }
 
   WorldModelWrapper::UniquePtr world_model;

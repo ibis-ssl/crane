@@ -102,34 +102,13 @@ auto PassTargetSelector::visualize(
 {
   auto receiver = world_model->getOurRobot(target_id);
   if (world_model->point_checker.isFieldInside(pass_origin)) {
-    pass_builder->line()
-      .start(pass_origin)
-      .end(receiver->pose.pos)
-      .stroke("lime", 0.8)
-      .strokeWidth(40)
-      .build();
-    pass_builder->circle()
-      .center(pass_origin)
-      .radius(0.12)
-      .stroke("lime")
-      .strokeWidth(10)
-      .fill("none")
-      .build();
+    pass_builder->drawLine(pass_origin, receiver->pose.pos, "lime", 40, 0.8);
+    pass_builder->drawCircle(pass_origin, 0.12, "lime", 10);
   }
-  pass_builder->circle()
-    .center(receiver->pose.pos)
-    .radius(0.5)
-    .stroke("lime")
-    .strokeWidth(18)
-    .fill("lime", 0.15)
-    .build();
-  pass_builder->text()
-    .position(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35)
-    .text(std::string("PASS TARGET #") + std::to_string(receiver->id))
-    .fontSize(110)
-    .fill("lime")
-    .textAnchor("middle")
-    .build();
+  pass_builder->drawStyledCircle(receiver->pose.pos, 0.5, "lime", 0.15, "lime", 1.0, 18);
+  pass_builder->drawText(
+    Point(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35),
+    std::string("PASS TARGET #") + std::to_string(receiver->id), "lime", 110.0, "middle");
 }
 
 auto PassTargetSelector::update(

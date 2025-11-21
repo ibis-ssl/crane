@@ -148,6 +148,15 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     Point center, double radius, const std::string & fill_color = "white", double opacity = 0.5)
     -> void;
 
+  auto drawStyledCircle(
+    Point center, double radius, const std::string & fill_color = "none", double fill_opacity = 1.0,
+    const std::string & stroke_color = "white", double stroke_opacity = 1.0,
+    double stroke_width = 10.0) -> void;
+
+  auto drawPolyline(
+    const std::vector<Point> & points, const std::string & color = "white", double opacity = 1.0,
+    double stroke_width = 10.0) -> void;
+
   auto drawText(
     Point position, const std::string & text_str, const std::string & color = "white",
     double font_size = 100.0, const std::string & anchor = "start") -> void;

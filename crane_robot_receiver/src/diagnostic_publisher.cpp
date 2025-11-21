@@ -430,15 +430,11 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
         std::string color = utils::getColorForErrorLevel(error_info.level);
         constexpr double opacity = 0.8;
 
-        visualizer_error->text()
-          .position(
+        visualizer_error->drawCenteredLabel(
+          Point(
             robot_positions[robot_id].x,
-            robot_positions[robot_id].y + text_offset + ERROR_TEXT_OFFSET)
-          .text(error_info.message)
-          .fill(color, opacity)
-          .fontSize(50.0)
-          .textAnchor("middle")
-          .build();
+            robot_positions[robot_id].y + text_offset + ERROR_TEXT_OFFSET),
+          error_info.message, color, 50.0);
 
         text_offset += ERROR_TEXT_INCREMENT;
       }

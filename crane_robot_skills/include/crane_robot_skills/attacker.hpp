@@ -48,13 +48,7 @@ public:
 
   void printTextOnRobot(std::string s)
   {
-    visualizer->text()
-      .position(robot()->pose.pos + Vector2(0., 0.5))
-      .text(s)
-      .fontSize(50)
-      .fill("white")
-      .textAnchor("middle")
-      .build();
+    visualizer->drawCenteredLabel(robot()->pose.pos + Vector2(0., 0.5), s, "white", 50);
   }
 
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
