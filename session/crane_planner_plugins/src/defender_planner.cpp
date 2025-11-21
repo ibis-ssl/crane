@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_planner_plugins/defender_planner.hpp>
+#include <range/v3/all.hpp>
 
 namespace crane
 {

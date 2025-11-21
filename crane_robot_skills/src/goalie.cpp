@@ -7,6 +7,7 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/robot_info.hpp>
 #include <crane_robot_skills/goalie.hpp>
+#include <range/v3/all.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 namespace crane::skills
 {
@@ -165,22 +166,26 @@ void Goalie::inplay(bool enable_emit)
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s = ball.getTrajectorySegmentByTime(4.0);
-        auto [next_their_attacker, distance] = [&]() {
-          std::shared_ptr<RobotInfo> nearest_enemy = nullptr;
-          double min_distance = 1000000.0;
-          for (const auto & enemy : world_model()->theirs().getAvailableRobots()) {
-            double dist = bg::distance(enemy->pose.pos, ball_prediction_4s);
-            if (dist < min_distance) {
-              Vector2 ball_to_enemy = (enemy->pose.pos - ball.pos).normalized();
-              Vector2 ball_direction = ball.vel.normalized();
-              //  ボールの進行方向のロボットのみ反映
-              if (ball_to_enemy.dot(ball_direction) > 0.0) {
-                min_distance = dist;
-                nearest_enemy = enemy;
-              }
-            }
+        auto available_enemies = world_model()->theirs().getAvailableRobots();
+        auto candidates =
+          available_enemies | ranges::views::filter([&](const auto & enemy) {
+            Vector2 ball_to_enemy = (enemy->pose.pos - ball.pos).normalized();
+            Vector2 ball_direction = ball.vel.normalized();
+            // ボールの進行方向のロボットのみ反映
+            return ball_to_enemy.dot(ball_direction) > 0.0;
+          }) |
+          ranges::views::transform([&](const auto & enemy) {
+            return std::make_pair(enemy, bg::distance(enemy->pose.pos, ball_prediction_4s));
+          }) |
+          ranges::to<std::vector>();
+
+        auto [next_their_attacker, distance] =
+          [&]() -> std::pair<std::shared_ptr<RobotInfo>, double> {
+          if (candidates.empty()) {
+            return {nullptr, 1000000.0};
           }
-          return std::make_pair(nearest_enemy, min_distance);
+          return *ranges::min_element(
+            candidates, ranges::less{}, [](const auto & p) { return p.second; });
         }();
 
         Point goal_center_adjusted = goal_center;
