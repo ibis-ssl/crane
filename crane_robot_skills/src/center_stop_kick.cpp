@@ -35,10 +35,6 @@ void CenterStopKick::initialize()
     // フィールド中心への停止距離を計算
     target_stop_distance_ = calculateTargetStopDistance();
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("CenterStopKick"), "中心停止キック開始: 目標停止距離=%.3fm",
-      target_stop_distance_);
-
     return Status::RUNNING;
   });
 
@@ -100,10 +96,6 @@ void CenterStopKick::initialize()
     if (!kick_executed_) {
       kick_start_time_ = rclcpp::Clock().now();
       kick_executed_ = true;
-
-      RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"), "キック実行: 停止距離=%.3fm, キック力=%.3f",
-        current_target_distance, calculated_kick_power_);
     }
 
     command->setTargetPosition(world_model()->ball().pos)
@@ -158,9 +150,6 @@ void CenterStopKick::initialize()
     } else if (retry_count_ < max_retry_count_) {
       // リトライ
       retry_count_++;
-      RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"), "リトライ開始 (%d/%d): 現在距離=%.3fm", retry_count_,
-        max_retry_count_, distance_to_center);
 
       // 状態リセット
       resetForRetry();

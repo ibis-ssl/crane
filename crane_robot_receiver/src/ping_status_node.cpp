@@ -46,7 +46,6 @@ private:
       std::array<char, 128> buffer;
       std::string result;
 
-      // Execute the ping command
       auto pipe_deleter = [](FILE * pipe_handle) {
         if (pipe_handle != nullptr) {
           (void)pclose(pipe_handle);
@@ -62,7 +61,6 @@ private:
         result += buffer.data();
       }
 
-      // Parse and publish the result
       if (not result.empty()) {
         crane_msgs::msg::PingStatus ping_status;
         ping_status.robot_id = static_cast<uint8_t>(id);

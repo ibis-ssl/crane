@@ -270,12 +270,9 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
     config_.extract_straight_kicks_only ? "true" : "false", config_.min_kick_speed,
     config_.min_trajectory_points);
 
+  size_t matched_count = 0;
+  size_t quality_ok_count = 0;
   for (const auto & [kick_time, kick_pos] : kick_events) {
-    RCLCPP_INFO(
-      rclcpp::get_logger("BallCalibrationDataExtractor"),
-      "キックイベントマッチング: 時刻=%.3fs, 位置=(%.3f,%.3f)", kick_time.seconds(), kick_pos.x(),
-      kick_pos.y());
-
     // 最も近い時刻のロボットコマンドを検索
     auto cmd_it = std::min_element(
       command_data.begin(), command_data.end(), [&kick_time](const auto & a, const auto & b) {
@@ -289,14 +286,9 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
 
       // 時間差が許容範囲内かチェック
       double time_diff = std::abs((cmd_time - kick_time).seconds());
-      RCLCPP_INFO(
-        rclcpp::get_logger("BallCalibrationDataExtractor"),
-        "最も近いコマンド: ロボット%u, 時刻=%.3fs, 時間差=%.3fs, キック力=%.3f", cmd_msg.robot_id,
-        cmd_time.seconds(), time_diff, cmd_msg.kick_power);
 
       if (time_diff <= 5.0) {  // 5秒以内（キャリブレーション用に緩和）
-        RCLCPP_INFO(
-          rclcpp::get_logger("BallCalibrationDataExtractor"), "時間差OK: %.3fs以内", time_diff);
+        matched_count++;
 
         // ストレートキックのみフィルタ
         if (config_.extract_straight_kicks_only && cmd_msg.chip_enable) {
@@ -405,9 +397,6 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
               // 0.3秒間連続して位置が変わらない場合のみ停止
               // ただし、位置変化が一度も検出されていない場合は継続
               if (has_movement) {
-                RCLCPP_INFO(
-                  rclcpp::get_logger("BallCalibrationDataExtractor"),
-                  "位置停止判定により軌道収集終了: 経過時間=%.3fs", elapsed);
                 break;
               }
             }
@@ -492,40 +481,23 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
         bool trajectory_quality_ok = kick_point.trajectory.size() >= config_.min_trajectory_points;
         bool min_speed_ok = kick_point.max_speed >= config_.min_kick_speed;
 
-        RCLCPP_INFO(
-          rclcpp::get_logger("BallCalibrationDataExtractor"),
-          "品質チェック: 軌道品質=%s, 最高速度=%.3fm/s(閾値%.3f)=%s, 軌道点数=%zu, 境界終了=%s",
-          trajectory_quality_ok ? "OK" : "NG", kick_point.max_speed, config_.min_kick_speed,
-          min_speed_ok ? "OK" : "NG", kick_point.trajectory.size(),
-          trajectory_ended_at_boundary ? "Yes" : "No");
-
         if (trajectory_quality_ok && min_speed_ok) {
           kick_points.push_back(kick_point);
+          quality_ok_count++;
           // フィールド境界で終了した有効な軌道をカウント
           if (trajectory_ended_at_boundary) {
             boundary_ended_count++;
           }
-          RCLCPP_INFO(
-            rclcpp::get_logger("BallCalibrationDataExtractor"),
-            "キックデータポイント追加: ロボット%u, 最高速度=%.3fm/s", kick_point.kicker_id,
-            kick_point.max_speed);
-        } else {
-          RCLCPP_WARN(
-            rclcpp::get_logger("BallCalibrationDataExtractor"),
-            "キックデータポイント除外: 品質=%s, 速度=%s", trajectory_quality_ok ? "OK" : "NG",
-            min_speed_ok ? "OK" : "NG");
         }
-      } else {
-        RCLCPP_WARN(
-          rclcpp::get_logger("BallCalibrationDataExtractor"),
-          "時間差が大きすぎて除外: %.3fs > 5.0s", time_diff);
       }
-    } else {
-      RCLCPP_WARN(
-        rclcpp::get_logger("BallCalibrationDataExtractor"),
-        "対応するロボットコマンドが見つからない");
     }
   }
+
+  // ループ後に集計結果を出力
+  RCLCPP_INFO(
+    rclcpp::get_logger("BallCalibrationDataExtractor"),
+    "マッチング完了: %zu個のキックイベント中、%zu個がコマンドとマッチ、%zu個が品質チェック通過",
+    kick_events.size(), matched_count, quality_ok_count);
 
   // フィールド境界統計の報告とクラスメンバーへの保存
   temp_boundary_ended_count_ = boundary_ended_count;
@@ -590,10 +562,6 @@ auto BallCalibrationDataExtractor::detectKickEvents(
 
     if (min_speed_ok && extended_stationary_ok) {
       kick_events.emplace_back(curr_time, curr_ball.pos);
-      RCLCPP_INFO(
-        rclcpp::get_logger("BallCalibrationDataExtractor"),
-        "キックイベント検出: 時刻=%.3fs, 位置=(%.3f,%.3f), 速度=%.3fm/s", curr_time.seconds(),
-        curr_ball.pos.x(), curr_ball.pos.y(), curr_speed);
     }
   }
 

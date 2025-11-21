@@ -315,16 +315,14 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
     "減速度探索範囲: %.2f - %.2f m/s² (slope値から決定、0.01刻み)", min_slope, max_slope);
 
   // グリッドサーチによる最適化（0.01刻みで探索）
+  size_t total_iterations = static_cast<size_t>((max_slope - min_slope) / grid_step) + 1;
+  size_t current_iteration = 0;
+  size_t last_reported_percent = 0;
+
   for (double decel = min_slope; decel <= max_slope; decel += grid_step) {
     double total_rmse = 0.0;
     size_t valid_trajectories = 0;
-
-    // 最初の減速度候補での実際のslope値を確認
-    if (std::abs(decel - min_slope) < 0.005) {
-      RCLCPP_INFO(
-        rclcpp::get_logger("SimpleBallPhysicsOptimizer"),
-        "減速度候補=%.2f での実際のslope値を確認:", decel);
-    }
+    current_iteration++;
 
     for (const auto & trajectory : all_trajectories) {
       if (trajectory.time_points.size() < config_.min_data_points_per_trajectory) continue;
@@ -351,14 +349,6 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
         rmse += error * error;
       }
       rmse = std::sqrt(rmse / trajectory.time_points.size());
-
-      // 最初の減速度候補での詳細を表示
-      if (std::abs(decel - min_slope) < 0.005 && valid_trajectories < 3) {
-        RCLCPP_INFO(
-          rclcpp::get_logger("SimpleBallPhysicsOptimizer"),
-          "軌道%zu: 推定v0=%.3f, RMSE=%.3f (減速度=%.2f)", trajectory.event_id, estimated_v0, rmse,
-          decel);
-      }
 
       // 品質フィルタリング
       if (estimated_v0 > 0.1 && rmse < 2.0) {  // 合理的な初速度と誤差
@@ -425,7 +415,7 @@ auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
   result.estimated_initial_velocity = intercept;  // 切片 = 初速度
   result.fitting_r_squared = r_squared;
 
-  // 信頼区間の計算（簡易版）
+  // 信頼区間の計算
   double velocity_std = 0.0;
   for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
     double predicted_velocity = intercept + slope * trajectory.time_points[i];
