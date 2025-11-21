@@ -55,21 +55,10 @@ void BroadcastCommandSender::sendBroadcastPackets(
 {
   char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
 
-  int active_robots = 0;
   for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
     int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
     broadcast_buf[offset] = static_cast<char>(i);
     memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
-
-    // 空でないパケットの数をカウント
-    bool is_empty = true;
-    for (int j = 0; j < CommConfig::AI_CMD_V2_SIZE; j++) {
-      if (robot_packets[i].second.data[j] != 0) {
-        is_empty = false;
-        break;
-      }
-    }
-    if (!is_empty) active_robots++;
   }
 
   // パケット送信
