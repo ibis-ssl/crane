@@ -162,8 +162,6 @@ auto GridMapPlanner::findPathAStar(
 auto GridMapPlanner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
-  // update map size
-
   static Vector2 penalty_area_size;
 
   if (

@@ -160,7 +160,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
 WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
 
-// updateHistory
 auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
   if (ball_info_history.size() >= static_cast<size_t>(history_size)) {
