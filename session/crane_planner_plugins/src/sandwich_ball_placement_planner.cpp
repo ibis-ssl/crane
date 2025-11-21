@@ -13,12 +13,12 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> &, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-  auto ball = world_model->ball().pos;
+  const auto & ball = world_model->ball();
 
   switch (state) {
     case State::PREPARE: {
-      double dx = std::abs(world_model->fieldSize().x() * 0.5 - std::abs(ball.x()));
-      double dy = std::abs(world_model->fieldSize().y() * 0.5 - std::abs(ball.y()));
+      double dx = std::abs(world_model->fieldSize().x() * 0.5 - std::abs(ball.pos.x()));
+      double dy = std::abs(world_model->fieldSize().y() * 0.5 - std::abs(ball.pos.y()));
       Point target_1, target_2;
       if (dx > dy) {
         // 長辺に近い
@@ -29,11 +29,11 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
 
       if (auto target = world_model->getBallPlacementTarget(); target) {
         // ターゲットの方向
-        sandwich_direction = (target.value() - ball).normalized();
+        sandwich_direction = (target.value() - ball.pos).normalized();
       }
 
       // 引く側
-      placers.first->setTargetPosition(ball + sandwich_direction * 0.2)
+      placers.first->setTargetPosition(ball.pos + sandwich_direction * 0.2)
         .lookAtBall()
         .setMaxVelocity("SandwichBallPlacementPlanner pull", 1.5)
         .enableBallAvoidance()
@@ -41,7 +41,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         .disableGoalAreaAvoidance()
         .disablePlacementAvoidance();
       // 押す側
-      placers.second->setTargetPosition(ball - sandwich_direction * 0.2)
+      placers.second->setTargetPosition(ball.pos - sandwich_direction * 0.2)
         .lookAtBall()
         .setMaxVelocity("SandwichBallPlacementPlanner push", 1.5)
         .enableBallAvoidance()
@@ -51,7 +51,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
 
       if (placers.first->getTargetDistance() < 0.05 && placers.second->getTargetDistance() < 0.05) {
         state = State::APPROACH;
-        last_ball = world_model->ball().pos;
+        last_ball = ball.pos;
       }
       break;
     }
@@ -72,7 +72,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         .disableGoalAreaAvoidance()
         .disablePlacementAvoidance();
 
-      if ((last_ball - world_model->ball().pos).norm() > 0.3) {
+      if ((last_ball - ball.pos).norm() > 0.3) {
         state = State::PREPARE;
       } else if (
         placers.first->getRobot()->vel.linear.norm() < 0.05 &&
@@ -136,10 +136,11 @@ auto SandwichBallPlacementPlanner::getSelectedRobots(
   if (selectable_robots_num < 2 or selectable_robots.size() < 2) {
     return {};
   } else {
+    const auto & ball = world_model->ball();
     auto selected = this->getSelectedRobotsByScore(
       2, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        return 100. - robot->getDistance(world_model->ball().pos);
+      [this, &ball](const std::shared_ptr<RobotInfo> & robot) {
+        return 100. - robot->getDistance(ball.pos);
       },
       prev_roles, context);
     if (selected.size() == 2) {

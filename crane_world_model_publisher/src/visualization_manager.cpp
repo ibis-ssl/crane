@@ -226,7 +226,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   -> void
 {
   // トラッキング済みボール（強調表示 + 回転スコープ）
-  const auto ball = world_model->ball();
+  const auto & ball = world_model->ball();
   const double ball_radius = 0.043;  // SSL official ball radius
   tracked_builder->circle()
     .center(ball.pos.x(), ball.pos.y())
@@ -245,7 +245,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     .build();
   // 回転するスコープ飾り（クロスヘア）
 
-  if (world_model->ball().detected) {
+  if (ball.detected) {
     const double t = node_.now().seconds();
     const double omega = 2.0;  // rad/s
     const double base_angle = std::fmod(t * omega, 2.0 * M_PI);
@@ -361,22 +361,22 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
   -> void
 {
   if (auto target = world_model->getBallPlacementTarget(); target) {
-    Point ball = world_model->ball().pos;
+    const auto & ball = world_model->ball();
     placement_builder->circle()
       .center(target.value())
       .radius(0.5)
       .stroke("white")
       .strokeWidth(5)
       .build();
-    Vector2 vertical = getVerticalVec((ball - target.value()).normalized()) * 0.5;
+    Vector2 vertical = getVerticalVec((ball.pos - target.value()).normalized()) * 0.5;
     placement_builder->line()
-      .start(ball + vertical)
+      .start(ball.pos + vertical)
       .end(target.value() + vertical)
       .stroke("white")
       .strokeWidth(5)
       .build();
     placement_builder->line()
-      .start(ball - vertical)
+      .start(ball.pos - vertical)
       .end(target.value() - vertical)
       .stroke("white")
       .strokeWidth(5)
