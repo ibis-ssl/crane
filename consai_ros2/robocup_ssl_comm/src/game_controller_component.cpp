@@ -183,8 +183,6 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(
     event_msg.origin.push_back(origin);
   }
 
-  // Parse event-specific data based on event type
-
   if (proto_event.has_ball_left_field_touch_line()) {
     const auto & event = proto_event.ball_left_field_touch_line();
     event_msg.team = (event.by_team() == robocup_ssl::Team::YELLOW) ? "YELLOW" : "BLUE";

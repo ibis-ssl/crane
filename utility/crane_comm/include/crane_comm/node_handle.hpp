@@ -31,7 +31,6 @@ using Waitables = rclcpp::node_interfaces::NodeWaitablesInterface;
 template <typename Interface>
 inline auto get_interface_from_node(rclcpp::Node & node) -> std::shared_ptr<Interface>;
 
-// NodeBaseInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeBaseInterface>(rclcpp::Node & node)
   -> std::shared_ptr<rclcpp::node_interfaces::NodeBaseInterface>
@@ -39,7 +38,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeBaseInterface>(
   return node.get_node_base_interface();
 }
 
-// NodeClockInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeClockInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeClockInterface>
@@ -47,7 +45,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeClockInterface>
   return node.get_node_clock_interface();
 }
 
-// NodeGraphInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeGraphInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeGraphInterface>
@@ -55,7 +52,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeGraphInterface>
   return node.get_node_graph_interface();
 }
 
-// NodeLoggingInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeLoggingInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeLoggingInterface>
@@ -63,7 +59,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeLoggingInterfac
   return node.get_node_logging_interface();
 }
 
-// NodeTimeSourceInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTimeSourceInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeTimeSourceInterface>
@@ -71,7 +66,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTimeSourceInter
   return node.get_node_time_source_interface();
 }
 
-// NodeTimersInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTimersInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeTimersInterface>
@@ -79,7 +73,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTimersInterface
   return node.get_node_timers_interface();
 }
 
-// NodeTopicsInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTopicsInterface>(
   rclcpp::Node & node) -> inline std::shared_ptr<rclcpp::node_interfaces::NodeTopicsInterface>
@@ -87,7 +80,6 @@ inline auto get_interface_from_node<rclcpp::node_interfaces::NodeTopicsInterface
   return node.get_node_topics_interface();
 }
 
-// NodeWaitablesInterface
 template <>
 inline auto get_interface_from_node<rclcpp::node_interfaces::NodeWaitablesInterface>(
   rclcpp::Node & node) -> std::shared_ptr<rclcpp::node_interfaces::NodeWaitablesInterface>

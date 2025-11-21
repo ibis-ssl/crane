@@ -27,7 +27,6 @@ public:
     client_ =
       rclcpp_action::create_client<SkillExecutionAction>(this, "/simple_ai/skill_execution");
 
-    // Available skills list based on current implementation
     available_skills_ = {
       "Sleep",
       "Idle",
@@ -138,7 +137,6 @@ private:
         return;
       }
 
-      // Parse parameters
       std::map<std::string, std::string> params;
       std::string param;
       while (iss >> param) {
@@ -189,18 +187,14 @@ private:
     goal_msg.robot_id = static_cast<uint8_t>(robot_id);
     goal_msg.name = skill_name;
 
-    // Convert parameters to ROS message format
     for (const auto & [key, value] : params) {
-      // Try to determine parameter type and add to appropriate array
       try {
-        // Try to parse as float
         float float_val = std::stof(value);
         crane_msgs::msg::NamedFloat param_msg;
         param_msg.name = key;
         param_msg.value = float_val;
         goal_msg.parameter.float_values.push_back(param_msg);
       } catch (const std::exception &) {
-        // If not a number, treat as string
         crane_msgs::msg::NamedString param_msg;
         param_msg.name = key;
         param_msg.value = value;
@@ -268,10 +262,8 @@ int main(int argc, char ** argv)
 
   auto node = std::make_shared<SkillTesterCLI>();
 
-  // Run the CLI in a separate thread so we can process ROS callbacks
   std::thread cli_thread([&node]() { node->run(); });
 
-  // Process ROS callbacks
   rclcpp::spin(node);
 
   cli_thread.join();

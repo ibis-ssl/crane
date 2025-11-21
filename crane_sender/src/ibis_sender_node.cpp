@@ -186,7 +186,6 @@ public:
       counter = 0;
     }
 
-    // メソッド呼び出し確認ログ
     std::cout << "🚀 sendCommands メソッド呼び出し #" << call_count << " (カウンタ=" << counter
               << ")" << std::endl;
     std::cout << "  受信したロボットコマンド数: " << msg.robot_commands.size() << std::endl;

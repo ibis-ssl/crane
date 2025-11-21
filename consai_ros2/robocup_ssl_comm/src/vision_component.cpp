@@ -101,7 +101,6 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
   detection_frame_msg.t_sent = detection_frame.t_sent();
   detection_frame_msg.camera_id = detection_frame.camera_id();
 
-  // Parse balls
   for (const auto & ball : detection_frame.balls()) {
     robocup_ssl_msgs::msg::SSLDetectionBall ball_msg;
     ball_msg.confidence = ball.confidence();
@@ -123,7 +122,6 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
     detection_frame_msg.balls.push_back(ball_msg);
   }
 
-  // Parse yellow robots
   for (const auto & robot : detection_frame.robots_yellow()) {
     robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
     robot_msg.confidence = robot.confidence();
@@ -150,7 +148,6 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
     detection_frame_msg.robots_yellow.push_back(robot_msg);
   }
 
-  // Parse blue robots
   for (const auto & robot : detection_frame.robots_blue()) {
     robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
     robot_msg.confidence = robot.confidence();

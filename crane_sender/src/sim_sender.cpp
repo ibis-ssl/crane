@@ -14,22 +14,6 @@ namespace crane
 {
 void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg)
 {
-  //    if (checkNan(msg)) {
-  //      return;
-  //    }
-
-  //    // 座標変換（ワールド->各ロボット）
-  //    double vx = msg.target_velocity.x;
-  //    double vy = msg.target_velocity.y;
-  //    double omega = command.target_theta - command.current_pose.theta;
-  //    double theta = command.current_pose.theta + omega * delay_s;
-  //    command.target_velocity.x = vx * cos(-theta) - vy * sin(-theta);
-  //    command.target_velocity.y = vx * sin(-theta) + vy * cos(-theta);
-
-  //    command.target_velocity.theta =
-  //      -theta_controllers.at(command.robot_id)
-  //         .update(getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
-
   const double MAX_KICK_SPEED = 8.0;  // m/s
   robocup_ssl_msgs::msg::GrSimCommands commands;
   commands.isteamyellow = msg.is_yellow;
@@ -80,35 +64,27 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
         double velocity_theta =
           command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
 
-        // 加速度制限の適用
         double current_velocity =
           std::hypot(command.current_velocity.x, command.current_velocity.y);
         double target_velocity = v_r;
 
-        // 加速度制限を計算
         double acceleration_limit = calculateAccelerationLimit(
           current_velocity, target_velocity, robot_acceleration_acceleration_,
           robot_acceleration_deceleration_high_, robot_acceleration_deceleration_low_,
           robot_acceleration_velocity_threshold_);
 
-        // 制御周期は30Hz
         const double dt = 1.0 / 60.0;
 
-        // 加速度制限に基づく最大速度
         double max_velocity_by_acceleration = current_velocity + acceleration_limit * dt;
 
-        // 制限された速度
         double limited_velocity = std::min(target_velocity, max_velocity_by_acceleration);
 
-        // グローバル座標系での速度ベクトル（制限後）
         double vx = limited_velocity * cos(velocity_theta);
         double vy = limited_velocity * sin(velocity_theta);
 
-        // ローカル座標系に変換
         cmd.set__veltangent(vx);
         cmd.set__velnormal(vy);
 
-        // 前回速度を記録（グローバル座標系）
         robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
       } break;
       default:
@@ -116,17 +92,14 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
         break;
     }
 
-    // ストップ
     if (command.stop_flag) {
       cmd.set__veltangent(0);
       cmd.set__velnormal(0);
       cmd.set__velangular(0);
     }
 
-    // キック速度
     double kick_speed = MAX_KICK_SPEED * command.kick_power;
 
-    // チップキック
     if (command.chip_enable) {
       cmd.set__kickspeedx(kick_speed * 0.5);
       cmd.set__kickspeedz(kick_speed * 0.5);
@@ -135,10 +108,8 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
       cmd.set__kickspeedz(0);
     }
 
-    // ドリブル
     cmd.set__spinner(command.dribble_power > 0);
 
-    // タイヤ個別に速度設定しない
     cmd.set__wheelsspeed(false);
 
     if (no_movement) {

@@ -160,7 +160,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
 WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
 
-// updateHistory
 auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
   if (ball_info_history.size() >= static_cast<size_t>(history_size)) {
@@ -243,9 +242,11 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
 
+  const auto & ball = world_model->ball();
+
   // ボールラインの長さを計算
   game_analysis_msg.ball_horizon = [&]() {
-    Segment ball_line = world_model->ball().getTrajectorySegmentByTime(3.0);
+    Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
     auto robots = world_model->theirs().getAvailableRobots();
     auto ball_line_lengths =
       robots |
@@ -255,7 +256,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
       | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
       // ball.posとの距離を計算
       | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-          return (pair.closest_point - world_model->ball().pos).norm();
+          return (pair.closest_point - ball.pos).norm();
         });
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();

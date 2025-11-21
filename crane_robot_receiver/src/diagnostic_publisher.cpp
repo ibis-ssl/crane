@@ -20,7 +20,6 @@
 
 namespace crane
 {
-// RobotDataクラスのメソッド実装
 auto RobotData::updateErrorMap(
   const std::string & error_type, const std::string & message, int level,
   const rclcpp::Time & timestamp) -> bool

@@ -55,38 +55,16 @@ void BroadcastCommandSender::sendBroadcastPackets(
 {
   char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
 
-  int active_robots = 0;
   for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
     int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
     broadcast_buf[offset] = static_cast<char>(i);
     memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
-
-    // 空でないパケットの数をカウント
-    bool is_empty = true;
-    for (int j = 0; j < CommConfig::AI_CMD_V2_SIZE; j++) {
-      if (robot_packets[i].second.data[j] != 0) {
-        is_empty = false;
-        break;
-      }
-    }
-    if (!is_empty) active_robots++;
   }
 
-  // パケット送信を詳細にログ出力
+  // パケット送信
   size_t total_size = sizeof(broadcast_buf);
   try {
-    std::cout << "📦 ブロードキャストパケット送信開始:" << std::endl;
-    std::cout << "  送信先: " << endpoint.address().to_string() << ":" << endpoint.port()
-              << std::endl;
-    std::cout << "  パケットサイズ: " << total_size << " bytes" << std::endl;
-    std::cout << "  アクティブロボット数: " << active_robots << "/"
-              << CommConfig::AI_CMD_V2_ROBOT_NUM << std::endl;
-
-    // 実際の送信処理
-    size_t sent_bytes = socket.send_to(boost::asio::buffer(broadcast_buf, total_size), endpoint);
-
-    // 送信成功ログ
-    std::cout << "✅ パケット送信成功: " << sent_bytes << " bytes 送信完了" << std::endl;
+    socket.send_to(boost::asio::buffer(broadcast_buf, total_size), endpoint);
   } catch (const boost::system::system_error & e) {
     std::cerr << "❌ パケット送信エラー (boost): " << e.what() << std::endl;
     std::cerr << "  エラーコード: " << e.code() << std::endl;

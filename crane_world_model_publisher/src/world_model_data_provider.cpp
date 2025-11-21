@@ -769,7 +769,6 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
   tracked_frame_msg.frame_number = tracked_frame.frame_number();
   tracked_frame_msg.timestamp = tracked_frame.timestamp();
 
-  // Parse tracked balls
   for (const auto & ball : tracked_frame.balls()) {
     robocup_ssl_msgs::msg::TrackedBall ball_msg;
 
@@ -796,7 +795,6 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
     tracked_frame_msg.balls.push_back(ball_msg);
   }
 
-  // Parse tracked robots
   for (const auto & robot : tracked_frame.robots()) {
     robocup_ssl_msgs::msg::TrackedRobot robot_msg;
 
@@ -835,7 +833,6 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
     tracked_frame_msg.robots.push_back(robot_msg);
   }
 
-  // Parse kicked ball (optional)
   if (tracked_frame.has_kicked_ball()) {
     const auto & kicked_ball = tracked_frame.kicked_ball();
 
@@ -883,7 +880,6 @@ auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
     tracked_frame_msg.has_field |= tracked_frame_msg.KICKED_BALL_FIELD_SET;
   }
 
-  // Parse capabilities
   for (const auto & capability : tracked_frame.capabilities()) {
     robocup_ssl_msgs::msg::Capability cap_msg;
     cap_msg.value = static_cast<int32_t>(capability);

@@ -17,12 +17,8 @@ DefenderPlanner::calculateRobotCommand(
     return {PlannerBase::Status::RUNNING, {}};
   }
 
-  auto ball = world_model->ball().pos;
-
-  //
-  // calc ball line
-  //
-  Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
+  const auto & ball = world_model->ball();
+  Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   {
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
@@ -31,7 +27,7 @@ DefenderPlanner::calculateRobotCommand(
     if (intersections.empty()) {
       // シュートがなければ通常の動き
       ball_line.first = world_model->getOurGoalCenter();
-      ball_line.second = ball;
+      ball_line.second = ball.pos;
     }
   }
 
@@ -48,7 +44,7 @@ DefenderPlanner::calculateRobotCommand(
 
   if (not defense_points.empty()) {
     auto robot_commands = assignRobotsToPoints(
-      robots, defense_points, "defender_planner", world_model->ball().pos,
+      robots, defense_points, "defender_planner", ball.pos,
       [&](std::shared_ptr<RobotCommandWrapper> & command) {
         command->disableBasicAvoidances();
         if (
@@ -79,7 +75,6 @@ DefenderPlanner::calculateRobotCommand(
 
       auto robot = world_model->getRobot(*robot_id);
 
-      // Stop at same position
       command->stopHere();
 
       robot_commands.emplace_back(command->getMsg());

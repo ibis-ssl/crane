@@ -31,12 +31,12 @@ TotalDefensePlanner::calculateRobotCommand(
                          }) |
                          ranges::to<std::vector>();
 
-  auto ball = world_model->ball().pos;
+  const auto & ball = world_model->ball();
 
   //
   // calc ball line
   //
-  Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
+  Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   {
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
@@ -44,7 +44,7 @@ TotalDefensePlanner::calculateRobotCommand(
     auto intersections = getIntersections(ball_line, goal_line);
     if (intersections.empty()) {
       // シュートがなければ通常の動き
-      ball_line.first = ball;
+      ball_line.first = ball.pos;
       ball_line.second = world_model->getOurGoalCenter();
     }
   }
@@ -52,9 +52,8 @@ TotalDefensePlanner::calculateRobotCommand(
   auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
   Segment defense_parameter_goal_line = ball_line;
   if (not defense_parameter) {
-    defense_parameter_goal_line = Segment{
-      world_model->goal(),
-      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
+    defense_parameter_goal_line =
+      Segment{world_model->goal(), ball.pos + (ball.pos - world_model->goal()).normalized() * 2.0};
     defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
@@ -72,7 +71,7 @@ TotalDefensePlanner::calculateRobotCommand(
 
   if (not defense_points.empty()) {
     auto defender_commands = assignRobotsToPoints(
-      defender_robots, defense_points, "total_defense_planner", world_model->ball().pos,
+      defender_robots, defense_points, "total_defense_planner", ball.pos,
       [&](std::shared_ptr<RobotCommandWrapper> & command) { command->disableBasicAvoidances(); });
     for (const auto & cmd : defender_commands) {
       robot_commands.emplace_back(cmd);
@@ -119,18 +118,19 @@ auto TotalDefensePlanner::getSelectedRobots(
     goalie = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
   }
 
+  const auto & ball = world_model->ball();
+
   // TODO(HansRobo): Attackerを供出するかどうかの実装
   remaining_robots |= ranges::actions::remove_if(
     [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
-  Segment ball_line{world_model->goal(), world_model->ball().pos};
+  Segment ball_line{world_model->goal(), ball.pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
   if (not parameter) {
     // ペナルティエリア内にボールが侵入したときにディフェンダがいなくならないように対応
     Segment alternative_ball_line{
-      world_model->goal(),
-      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
+      world_model->goal(), ball.pos + (ball.pos - world_model->goal()).normalized() * 2.0};
     parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
   }
 

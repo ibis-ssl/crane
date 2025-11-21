@@ -25,7 +25,6 @@ public:
     updates_sub_ = create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
       "/visualizer_svgs", rclcpp::SensorDataQoS(),
       [&](const crane_visualization_interfaces::msg::SvgUpdates::ConstSharedPtr & msg) {
-        // Apply updates per layer (simple)
         for (const auto & update : msg->updates) {
           auto & current = layers[update.layer];
           if (update.operation == "replace") {
@@ -40,9 +39,7 @@ public:
       });
     publisher =
       create_publisher<crane_visualization_interfaces::msg::SvgSnapshot>("/aggregated_svgs", 10);
-    // Publish full snapshot periodically (fixed interval)
     timer = create_wall_timer(std::chrono::milliseconds(5000), [this]() { publishSnapshot(); });
-    // Emit an initial snapshot immediately so subscribers see traffic
     publishSnapshot();
   }
 
