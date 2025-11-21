@@ -19,9 +19,6 @@ DefenderPlanner::calculateRobotCommand(
 
   auto ball = world_model->ball().pos;
 
-  //
-  // calc ball line
-  //
   Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
   {
     // シュート判定
@@ -79,7 +76,6 @@ DefenderPlanner::calculateRobotCommand(
 
       auto robot = world_model->getRobot(*robot_id);
 
-      // Stop at same position
       command->stopHere();
 
       robot_commands.emplace_back(command->getMsg());
