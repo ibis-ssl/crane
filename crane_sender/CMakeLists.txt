@@ -31,16 +31,8 @@ include_directories(
 ament_auto_add_library(sim_sender_component SHARED
   src/sim_sender.cpp)
 
-ament_auto_add_library(simulation_protocol_sender_component SHARED
-  src/simulation_protocol_sender.cpp)
-
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp src/broadcast_command_sender.cpp)
-ament_auto_add_executable(simulation_protocol_sender_node src/simulation_protocol_sender_node.cpp)
-
-target_link_libraries(simulation_protocol_sender_node
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
-)
 
 add_library(crane_sender_base STATIC src/sender_base.cpp)
 set_target_properties(crane_sender_base PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -53,20 +45,12 @@ ament_target_dependencies(crane_sender_base
 )
 target_include_directories(crane_sender_base PUBLIC include)
 
-target_link_libraries(sim_sender_component crane_sender_base)
-target_link_libraries(simulation_protocol_sender_component crane_sender_base ${robocup_ssl_msgs_LIBRARIES})
+target_link_libraries(sim_sender_component crane_sender_base ${robocup_ssl_msgs_LIBRARIES})
 target_link_libraries(sim_sender_node crane_sender_base)
 target_link_libraries(ibis_sender_node crane_sender_base)
-target_link_libraries(simulation_protocol_sender_node crane_sender_base simulation_protocol_sender_component)
 
 # Precompiled headers for faster compilation
 target_precompile_headers(sim_sender_component PRIVATE
-  <rclcpp/rclcpp.hpp>
-  <crane_geometry/boost_geometry.hpp>
-  <crane_geometry/geometry_operations.hpp>
-)
-
-target_precompile_headers(simulation_protocol_sender_component PRIVATE
   <rclcpp/rclcpp.hpp>
   <crane_geometry/boost_geometry.hpp>
   <crane_geometry/geometry_operations.hpp>
