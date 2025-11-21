@@ -7,6 +7,7 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
+#include <crane_local_planner/visualization_helpers.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
 // cspell: ignore OBST
@@ -76,22 +77,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     rvo_sim->setAgentRadius(command.robot_id, radius);
 
     auto robot = world_model->getOurRobot(command.robot_id);
-
-    visualizer->circle()
-      .radius(radius)
-      .center(robot->pose.pos)
-      .stroke("yellow", 0.2)
-      .strokeWidth(10)
-      .build();
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2) << vel << "m/s";
-    visualizer->text()
-      .text(ss.str())
-      .fontSize(50)
-      .position(robot->pose.pos + Point(0, radius + 0.07))
-      .textAnchor("middle")
-      .fill("yellow", 0.5)
-      .build();
+    drawRobotRadiusWithSpeed(visualizer, robot->pose.pos, radius, vel, "yellow");
 
     // feedback情報があればそちらの現在位置を参照する
     Point current_position = [&]() -> Point {

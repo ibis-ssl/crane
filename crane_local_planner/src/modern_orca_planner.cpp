@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <crane_local_planner/visualization_helpers.hpp>
 #include <iomanip>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <sstream>
@@ -146,6 +147,16 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat().set__name("ORCA_MAX_SPEED").set__value(ORCA_MAX_SPEED));
 
+    // Apply referee command velocity limits
+    if (
+      world_model && world_model->getMsg().play_situation.referee_raw.command.value ==
+                       robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+      command.local_planner_config.max_velocity_factors.emplace_back(
+        crane_msgs::msg::NamedFloat()
+          .set__name("ModernORCAPlanner STOP制限")
+          .set__value(STOP_STATE_MAX_VELOCITY));
+    }
+
     double max_speed = resolveMaxVelocityFactors(command, MAX_VEL);
 
     // Create or update agent
@@ -164,22 +175,8 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     if (visualizer && world_model) {
       auto robot = world_model->getOurRobot(robot_id);
       if (robot) {
-        visualizer->circle()
-          .radius(dynamic_radius)
-          .center(robot->pose.pos)
-          .stroke("yellow", 0.2)
-          .strokeWidth(10)
-          .build();
-
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(2) << velocity_norm << "m/s";
-        visualizer->text()
-          .text(ss.str())
-          .fontSize(50)
-          .position(robot->pose.pos + Point(0, dynamic_radius + 0.07))
-          .textAnchor("middle")
-          .fill("yellow", 0.5)
-          .build();
+        drawRobotRadiusWithSpeed(
+          visualizer, robot->pose.pos, dynamic_radius, velocity_norm, "yellow");
       }
     }
   }
@@ -213,22 +210,8 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
 
         // Visualize enemy robot radius and velocity (same as RVO2)
         if (visualizer) {
-          visualizer->circle()
-            .radius(enemy_radius)
-            .center(enemy_robot->pose.pos)
-            .stroke("red", 0.2)
-            .strokeWidth(10)
-            .build();
-
-          std::stringstream ss;
-          ss << std::fixed << std::setprecision(2) << velocity_norm << "m/s";
-          visualizer->text()
-            .text(ss.str())
-            .fontSize(50)
-            .position(enemy_robot->pose.pos + Point(0, enemy_radius + 0.07))
-            .textAnchor("middle")
-            .fill("red", 0.5)
-            .build();
+          drawRobotRadiusWithSpeed(
+            visualizer, enemy_robot->pose.pos, enemy_radius, velocity_norm, "red");
         }
       } else {
         // Place unavailable enemy robots far away (same as RVO2)
@@ -347,6 +330,32 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       target.target_velocity_theta =
         std::atan2(preferred_vel.y(), preferred_vel.x()) + theta_offset;
 
+      // 効率的な加速のための回転制御
+      if (command.local_planner_config.enable_rotation_stop_on_accel) {
+        double move_angle = std::atan2(preferred_vel.y(), preferred_vel.x());
+        auto robot = world_model->getOurRobot(robot_id);
+        if (robot) {
+          double angle_diff = getAngleDiff(robot->pose.theta, move_angle);
+
+          constexpr double ANGLE_THRESHOLD = 15.0 * M_PI / 180.0;  // 15度
+          bool is_forward_or_backward =
+            (std::abs(angle_diff) <= ANGLE_THRESHOLD) ||                 // 前方
+            (std::abs(std::abs(angle_diff) - M_PI) <= ANGLE_THRESHOLD);  // 後方
+
+          double current_speed = robot->vel.linear.norm();
+          double target_speed = preferred_vel.norm();
+          double max_speed = agent.maxSpeed();
+
+          bool is_accelerating = current_speed < target_speed;
+          bool is_low_speed = current_speed <= max_speed * 0.5;
+
+          // 加速初期段階かつ前後方向に向いている場合、回転を停止
+          if (is_forward_or_backward && is_low_speed && is_accelerating && target_speed > 0.01) {
+            command.omega_limit = 0.0;
+          }
+        }
+      }
+
       command.polar_velocity_target_mode.push_back(target);
     }
   }
@@ -376,6 +385,25 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
 
   const auto & target_config = command.position_target_mode.front();
   Point target_pos(target_config.target_x, target_config.target_y);
+
+  // NaN値検証とフォールバック処理
+  if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
+    RCLCPP_ERROR(
+      node_.get_logger(),
+      "[ModernORCAPlanner] NaN detected in target_pos for robot %d: target_pos(%f, %f), using "
+      "current position as fallback",
+      static_cast<int>(raw_command.robot_id), target_pos.x(), target_pos.y());
+    return Vector2(0.0, 0.0);  // 現在位置を維持（速度0）
+  }
+
+  if (std::isnan(current_position.x()) || std::isnan(current_position.y())) {
+    RCLCPP_ERROR(
+      node_.get_logger(),
+      "[ModernORCAPlanner] NaN detected in current_pos for robot %d: current_pos(%f, %f), skipping",
+      static_cast<int>(raw_command.robot_id), current_position.x(), current_position.y());
+    return Vector2(0.0, 0.0);  // 速度0を返す
+  }
+
   Point position_diff = target_pos - current_position;
 
   // Check if within position tolerance first
@@ -553,13 +581,7 @@ void ModernORCAPlanner::visualizeConstraints(
   // 制約数を表示
   std::stringstream ss;
   ss << "Constraints: " << constraints.size();
-  visualizer->text()
-    .text(ss.str())
-    .fontSize(40)
-    .position(robot->pose.pos + Point(0.2, 0.2))
-    .textAnchor("start")
-    .fill("blue", 0.8)
-    .build();
+  visualizer->drawText(robot->pose.pos + Point(0.2, 0.2), ss.str(), "blue", 40, "start");
 }
 
 void ModernORCAPlanner::visualizeORCALines(
@@ -589,13 +611,7 @@ void ModernORCAPlanner::visualizeORCALines(
   // ORCA制約数を表示
   std::stringstream ss;
   ss << "ORCA: " << orca_constraints.size();
-  visualizer->text()
-    .text(ss.str())
-    .fontSize(35)
-    .position(robot->pose.pos + Point(0.2, -0.1))
-    .textAnchor("start")
-    .fill("orange", 0.8)
-    .build();
+  visualizer->drawText(robot->pose.pos + Point(0.2, -0.1), ss.str(), "orange", 35, "start");
 }
 
 void ModernORCAPlanner::visualizePerformanceMetrics()
@@ -626,13 +642,7 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
   ss << "  Placement: " << (lineup.ball_placement_avoidance_enabled ? "ON" : "OFF") << "\n";
   ss << "  Collision: " << (lineup.robot_collision_enabled ? "ON" : "OFF");
 
-  visualizer->text()
-    .text(ss.str())
-    .fontSize(30)
-    .position(metrics_pos)
-    .textAnchor("start")
-    .fill("white", 0.9)
-    .build();
+  visualizer->drawText(metrics_pos, ss.str(), "white", 30, "start");
 }
 
 Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const
