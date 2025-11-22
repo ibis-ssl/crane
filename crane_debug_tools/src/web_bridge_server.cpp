@@ -372,7 +372,6 @@ private:
         "SingleBallPlacement",
         "GoalKick",
         "SimpleKickOff",
-        "KickOffSupport",
         "Marker",
         "TestMotionPosition",
         "TestMotionVelocity",

@@ -11,7 +11,6 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
 namespace crane::skills

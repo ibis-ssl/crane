@@ -13,35 +13,8 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
 {
   action_node = node.create_sub_node("simple_ai");
   {
-    setUpSkillDictionary<skills::CmdKickWithChip>();
-    setUpSkillDictionary<skills::CmdKickStraight>();
-    setUpSkillDictionary<skills::CmdDribble>();
-    setUpSkillDictionary<skills::CmdSetVelocity>();
-    setUpSkillDictionary<skills::CmdSetTargetPosition>();
-    setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
-    setUpSkillDictionary<skills::CmdSetTargetTheta>();
-    setUpSkillDictionary<skills::CmdStopHere>();
     setUpSkillDictionary<skills::Teleop>();
-    setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
-    setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
-    setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
-    setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
-    setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
-    setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
-    setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
-    setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
-    setUpSkillDictionary<skills::CmdSetGoalieDefault>();
-    setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
-    setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
-    setUpSkillDictionary<skills::CmdSetMaxVelocity>();
     setUpSkillDictionary<skills::Attacker>();
-    setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
-    setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
-    setUpSkillDictionary<skills::CmdEnableStopFlag>();
-    setUpSkillDictionary<skills::CmdDisableStopFlag>();
-    setUpSkillDictionary<skills::CmdLookAt>();
-    setUpSkillDictionary<skills::CmdLookAtBall>();
-    setUpSkillDictionary<skills::CmdLookAtBallFrom>();
     setUpSkillDictionary<skills::Idle>();
     setUpSkillDictionary<skills::Goalie>();
     setUpSkillDictionary<skills::GoalKick>();
@@ -54,7 +27,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::TestMotionPosition>();
     setUpSkillDictionary<skills::Marker>();
     setUpSkillDictionary<skills::SingleBallPlacement>();
-    setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
     setUpSkillDictionary<skills::TestMotionPosition>();
   }
