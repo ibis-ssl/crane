@@ -29,11 +29,22 @@ else()
         set(cmake_configure_args -Wno-dev)
         set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
+        # Check if source already exists to enable offline build
+        set(RVO2_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/rvo2-ext-prefix/src/rvo2-ext)
+        if(EXISTS ${RVO2_SOURCE_DIR}/.git)
+            message(STATUS "既存のRVO2ソースを検出しました。オフラインモードで利用します: ${RVO2_SOURCE_DIR}")
+            set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 1)
+        else()
+            message(STATUS "RVO2ソースが見つかりません。GitHubからダウンロードします")
+            set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 0)
+        endif()
+
         include(ExternalProject)
         externalproject_add(rvo2-ext
             GIT_REPOSITORY https://github.com/snape/RVO2.git
             GIT_TAG af26bedf27a84ffffb59beea996ffe2531ddc789
             GIT_PROGRESS ON
+            ${UPDATE_DISCONNECTED_FLAG}
             TIMEOUT 6000
             ${cmake_commands}
             CMAKE_ARGS

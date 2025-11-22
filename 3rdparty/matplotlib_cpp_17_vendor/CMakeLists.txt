@@ -34,11 +34,22 @@ macro(build_matplotlibcpp17)
     return()
   endif()
 
+  # Check if source already exists to enable offline build
+  set(MATPLOTLIB_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/matplotlib-cpp-ext-prefix/src/matplotlib-cpp-ext)
+  if(EXISTS ${MATPLOTLIB_SOURCE_DIR}/.git)
+    message(STATUS "既存のmatplotlibcpp17ソースを検出しました。オフラインモードで利用します: ${MATPLOTLIB_SOURCE_DIR}")
+    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 1)
+  else()
+    message(STATUS "matplotlibcpp17ソースが見つかりません。GitHubからダウンロードします")
+    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 0)
+  endif()
+
   include(ExternalProject)
   externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
     GIT_TAG 4d025b5975b701598fce8487cd8feaf82eb5923f
     GIT_PROGRESS ON
+    ${UPDATE_DISCONNECTED_FLAG}
     GIT_SUBMODULES_RECURSE OFF
     TIMEOUT 6000
     ${cmake_commands}
