@@ -33,7 +33,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   std::vector<Point> defense_points = [&]() {
     // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
     if (
-      world_model->getDistanceFromBall(world_model->getOurGoalCenter()) <
+      (world_model->ball().pos - world_model->getOurGoalCenter()).norm() <
       world_model->fieldSize().y() * 0.5) {
       return getDefenseLinePoints(robots.size(), ball_line, world_model);
     } else {

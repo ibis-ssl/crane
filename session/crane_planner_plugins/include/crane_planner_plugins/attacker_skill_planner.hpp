@@ -88,7 +88,7 @@ public:
         1, selectable_robots,
         [this](const std::shared_ptr<RobotInfo> & robot) {
           // ボールに近いほどスコアが高い
-          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+          return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
         },
         prev_roles);
       if (not selected_robots.empty()) {

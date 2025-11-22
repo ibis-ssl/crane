@@ -58,7 +58,7 @@ public:
             return -100.;
           } else {
             // ボールに近いほどスコアが高い
-            return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+            return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
           }
         },
         prev_roles);

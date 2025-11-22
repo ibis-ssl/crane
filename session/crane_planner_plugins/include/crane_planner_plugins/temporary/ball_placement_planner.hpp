@@ -48,7 +48,7 @@ public:
     return true;
     if (robots.size() == 1) {
       return true;
-    } else if (world_model->getDistanceFromRobotToBall(robots.front()) <= 1.0) {
+    } else if (world_model->getRobot(robots.front())->getDistance(world_model->ball().pos) <= 1.0) {
       return true;
     }
     return false;
@@ -79,7 +79,7 @@ public:
     command->kickStraight(0.5).setTargetPosition(prepare_point);
     robot_commands.emplace_back(command);
     if (
-      world_model->getDistanceFromRobot(command->getMsg().robot_id, prepare_point) <
+      world_model->getOurRobot(command->getMsg().robot_id)->getDistance(prepare_point) <
       PREPARE_THRESHOLD) {
       state = BallPlacementState::WALL_KICK_GO;
     }
@@ -258,7 +258,7 @@ public:
       selectable_robots_num, selectable_robots,
       [this](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほどスコアが高い
-        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+        return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
       },
       prev_roles);
   }

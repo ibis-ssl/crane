@@ -151,7 +151,7 @@ double SubAttacker::getPointScore(
     score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));
   }
   // 距離 大きいほどよい
-  const double dist = world_model->getDistanceFromBall(p);
+  const double dist = (world_model->ball().pos - p).norm();
   score = score * std::max(1.0 - dist / 10.0, 0.0);
 
   // シュートラインに近すぎる場所は避ける

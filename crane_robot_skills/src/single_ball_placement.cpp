@@ -382,7 +382,7 @@ void SingleBallPlacement::initialize()
     if (not robot()->ball_contact.findPastContact(1.0)) {
       // 1秒以上ボールが離れたら失敗
       return skill_status = Status::FAILURE;
-    } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
+    } else if ((world_model()->ball().pos - placement_target).norm() < 0.10) {
       // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
       return skill_status = Status::SUCCESS;
     } else {
