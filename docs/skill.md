@@ -126,13 +126,15 @@ assigned_robots[robot_id] = skill;
 
 ### 2. セッション統合
 
+統一設定ファイルに追加：
+
 ```yaml
-# config/play_situation/YOUR_SITUATION.yaml
-nodes:
-  - name: your_skill_planner
-    type: SkillPlannerBase  
-    params:
-      skill_name: "YourSkill"
+# config/unified_session_config.yaml
+situations:
+  YOUR_SITUATION:
+    sessions:
+      - name: your_skill_planner
+        capacity: 1
 ```
 
 ### 3. 可視化統合

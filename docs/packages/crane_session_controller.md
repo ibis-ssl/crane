@@ -25,34 +25,45 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 - **実行制御**: 選択されたプランナーの実行管理
 - **エラーハンドリング**: 異常状況での安全な動作
 
-## 状況対応設定（YAML駆動）
+## 統一設定ファイル（unified_session_config.yaml）
 
-### 基本試合状況
+**設定ファイル**: `session/crane_session_controller/config/unified_session_config.yaml`
 
-- **HALT.yaml**: 試合停止時の動作
-- **STOP.yaml**: 一時停止時の動作
-- **INPLAY.yaml**: 通常プレイ時の動作
-- **PRE_KICK_OFF.yaml**: キックオフ準備
+すべての試合状況設定が単一ファイルに統合されています。各状況（situation）は、セッション（session）のリストとして定義され、各セッションにロボットが動的に割り当てられます。
 
-### 特殊状況
+### 設定構造
 
-- **OUR_KICKOFF_START.yaml**: 自チームキックオフ
-- **OUR_FREE_KICK.yaml**: 自チームフリーキック
-- **OUR_PENALTY_KICK.yaml**: 自チームペナルティキック
-- **OUR_BALL_PLACEMENT.yaml**: 自チームボール配置
+```yaml
+situations:
+  HALT:
+    description: 試合停止
+    sessions: []
+  INPLAY:
+    description: 通常プレイ
+    sessions:
+      - name: attacker_skill
+        capacity: 1
+      - name: total_defense
+        capacity: 3
+      # ...
+  OUR_FREE_KICK:
+    description: 自チームフリーキック
+    sessions:
+      - name: attacker_skill
+      - name: total_defense
+      # ...
+```
 
-### 敵チーム状況
+### 主要な試合状況
 
-- **THEIR_FREE_KICK.yaml**: 敵チームフリーキック
-- **THEIR_PENALTY_KICK.yaml**: 敵チームペナルティキック
-- **THEIR_BALL_PLACEMENT.yaml**: 敵チームボール配置
-
-### 戦術フォーメーション
-
-- **formation.yaml**: 基本フォーメーション
-- **ibis_formation.yaml**: ibis特別フォーメーション
-- **wing_formation.yaml**: ウイングフォーメーション
-- **sandwich.yaml**: サンドイッチ戦術
+- **HALT**: 試合停止（ロボット無動作）
+- **STOP**: 一時停止
+- **INPLAY**: 通常プレイ
+- **OUR_KICKOFF_START / OUR_KICKOFF_PREPARATION**: 自チームキックオフ
+- **OUR_FREE_KICK**: 自チームフリーキック
+- **OUR_PENALTY_KICK**: 自チームペナルティキック
+- **OUR_BALL_PLACEMENT**: 自チームボール配置
+- **THEIR_***: 敵チーム対応状況
 
 ## 動作フロー
 
@@ -77,27 +88,22 @@ void SessionController::update() {
 }
 ```
 
-### YAML設定例
+### 統一設定ファイル例
 
 ```yaml
-# OUR_FREE_KICK.yaml
-situation: "OUR_FREE_KICK"
-priority: "high"
-
-robots:
-  - id: 0
-    role: "kicker"
-    planner: "FreekickKickerPlanner"
-  - id: 1
-    role: "receiver"
-    planner: "FreekickReceiverPlanner"
-  - id: 2-5
-    role: "supporter"
-    planner: "FormationPlanner"
-
-constraints:
-  ball_distance: 0.5  # SSL規定距離
-  formation_type: "freekick_support"
+# unified_session_config.yaml（抜粋）
+situations:
+  OUR_FREE_KICK:
+    description: OUR_FREE_KICK
+    sessions:
+      - name: total_defense
+        capacity: 3
+      - name: attacker_skill
+        capacity: 1
+      - name: pass_receive
+        capacity: 1
+      - name: forward
+        capacity: 20
   timeout: 10.0       # タイムアウト時間
 ```
 

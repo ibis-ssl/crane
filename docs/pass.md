@@ -61,10 +61,20 @@
 
 ## セッション設定（例）
 
-- `session/crane_session_controller/config/play_situation/INPLAY.yaml` などで `pass_receive` を追加。
-  - 推奨順序: `attacker_skill` の直後に `pass_receive` を置く。
-- 例（INPLAY 抜粋）:
-  - `- name: attacker_skill` → `- name: pass_receive` → その他
+統一設定ファイル `session/crane_session_controller/config/unified_session_config.yaml` で設定：
+
+```yaml
+situations:
+  INPLAY:
+    sessions:
+      - name: attacker_skill
+        capacity: 1
+      - name: pass_receive
+        capacity: 1
+      # その他のセッション
+```
+
+推奨順序: `attacker_skill` の直後に `pass_receive` を配置。
 
 ## Receive スキル主要パラメータ
 
