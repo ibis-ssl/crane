@@ -74,35 +74,6 @@ void Goalie::emitBallFromPenaltyArea()
     }
   });
 
-  // Point pass_target = [&]() {
-  //   if (not passable_robot_list.empty()) {
-  //     auto robots_with_score = passable_robot_list |
-  //       ranges::views::transform([&](const std::shared_ptr<RobotInfo> robot) {
-  //         double score = 0.0;
-  //         // 3m +-2m
-  //         score += std::clamp(
-  //           2 - std::abs(3.0 - robot->getDistance(world_model()->getOurGoalCenter())), 0.0, 2.0);
-  //         // 真ん中の4mより外はスコアが下がる
-  //         score -= std::clamp(std::abs(robot->pose.pos.y()) - 2.0, 0.0, 2.0);
-  //         return std::make_pair(robot, score);
-  //       }) |
-  //       ranges::to<std::vector>();
-  //
-  //     auto max_score = ranges::max_element(
-  //       robots_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
-  //     if (max_score != robots_with_score.end()) {
-  //       if (max_score->second > 0.5) {
-  //         return max_score->first->pose.pos;
-  //       } else {
-  //         return world_model()->getTheirGoalCenter();
-  //       }
-  //     } else {
-  //       return world_model()->getTheirGoalCenter();
-  //     }
-  //   } else {
-  //     return world_model()->getTheirGoalCenter();
-  //   }
-  // }();
   Point pass_target = world_model()->getTheirGoalCenter();
 
   visualizer->drawLine(ball, pass_target, "blue", 10);
@@ -130,22 +101,15 @@ void Goalie::inplay(bool enable_emit)
     // シュートブロック
     phase = "シュートブロック";
     auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
-    auto target = [&]() {
+    auto target = [&]() -> Point {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
-        // フィールド外（=ゴール内）でのセーブは避ける
-        return intersections.front();
+        return clampXToGoalLine(intersections.front(), 0.15);
       } else {
         return result.closest_point;
       }
     }();
 
     command->setTargetPosition(target).lookAtBallFrom(target);
-    if (command->getRobot()->getDistance(target) > 0.05) {
-      // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
-      // command->setTerminalVelocity(2.0)
-      //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
-      //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
-    }
   } else {
     if (
       world_model()->ball().isStopped(0.2) &&
@@ -199,30 +163,38 @@ void Goalie::inplay(bool enable_emit)
               getClosestPointAndDistance(ball_prediction_4s, next_their_attacker->pose.pos);
 
             // ボールが敵ロボットに届くまでに到達可能な最大限の前進守備を行う。
+            // 前進ラインの始点をペナルティエリア境界に制限
+            Point forward_start_point = result.closest_point;
+            Point goalie_pos = command->getRobot()->pose.pos;
+            Segment tentative_line(result.closest_point, goalie_pos);
+            auto penalty_intersection =
+              world_model()->getIntersectionOurPenaltyArea(tentative_line, 0.0, 0.0);
+            if (
+              penalty_intersection &&
+              not world_model()->point_checker.isFriendPenaltyArea(result.closest_point)) {
+              // ペナルティエリア外から内側へのラインの場合、交点を始点とする
+              forward_start_point = *penalty_intersection;
+            }
+
             // 前進するライン
-            auto forward_line = Segment(
-              result.closest_point, world_model()
-                                      ->ours()
-                                      .getAvailableRobots(world_model()->getOurGoalieId())
-                                      .front()
-                                      ->pose.pos);
+            Segment forward_line(forward_start_point, goalie_pos);
 
             // ボールが敵ロボットに最も近い点に到達するまでの時間
             auto estimated_ball_reach_time =
               ball.getTimeToReachClosestPointFrom(result.closest_point);
             if (not estimated_ball_reach_time) {
-              threat_point = result.closest_point;
+              threat_point = clampXToGoalLine(result.closest_point, 0.1);
             } else {
               threat_point = result.closest_point;
 
-              // 敵の予想されるロボット位置とゴールの間の直線を10点に分割
-              std::vector<Point> forward_pooints = getSeparatedPoints(forward_line, 10);
-              for (int i = forward_pooints.size() - 1; i >= 0; --i) {
+              // 敵の予想されるロボット位置とゴールの間の直線を20点に分割
+              std::vector<Point> forward_points = getSeparatedPoints(forward_line, 20);
+              for (int i = forward_points.size() - 1; i >= 0; --i) {
                 // goalieが前進守備位置に到達する時間
                 double travel_time =
-                  getTravelTimeTrapezoidal(this->robot(), forward_pooints[i], 0.5, 2.0);
+                  getTravelTimeTrapezoidal(this->robot(), forward_points[i], 0.5, 2.0);
                 if (estimated_ball_reach_time > travel_time) {
-                  threat_point = forward_pooints[i];
+                  threat_point = forward_points[i];
                   break;
                 }
               }
@@ -268,6 +240,9 @@ void Goalie::inplay(bool enable_emit)
           }();
           Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
 
+          // ゴール侵入防止: ゴールラインより前方にあることを保証
+          wait_point = clampXToGoalLine(wait_point, 0.1);
+
           command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
           if (command->getRobot()->getDistance(wait_point) > 0.03) {
             // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
@@ -280,5 +255,20 @@ void Goalie::inplay(bool enable_emit)
       }
     }
   }
+}
+
+auto Goalie::clampXToGoalLine(const Point & position, double margin) const -> Point
+{
+  Point clamped_position = position;
+  const Point goal_center = world_model()->getOurGoalCenter();
+
+  if (goal_center.x() > 0) {
+    // 正のx側のゴール: ゴールラインより前方（小さいx）にクランプ
+    clamped_position.x() = std::min(clamped_position.x(), goal_center.x() - margin);
+  } else {
+    // 負のx側のゴール: ゴールラインより前方（大きいx）にクランプ
+    clamped_position.x() = std::max(clamped_position.x(), goal_center.x() + margin);
+  }
+  return clamped_position;
 }
 }  // namespace crane::skills
