@@ -130,16 +130,6 @@ public:
 
   void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
 
-  template <typename T>
-  T & getEditableParameter(const std::string & key)
-  {
-    try {
-      return std::get<T &>(parameters.at(key));
-    } catch (const std::out_of_range & e) {
-      throw std::out_of_range("Parameter " + key + " is not found");
-    }
-  }
-
   virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
   template <class T>
@@ -149,23 +139,6 @@ public:
       return std::get<T>(parameters.at(key));
     } catch (const std::out_of_range & e) {
       throw std::out_of_range("Parameter " + key + " is not found");
-    }
-  }
-
-  const auto & getParameters() const { return parameters; }
-
-  void getParameterSchemaString(std::ostream & os) const
-  {
-    for (const auto & [name, parameter] : parameters) {
-      os << name << ": ";
-      std::visit(
-        overloaded{
-          [&os](double e) { os << "double, " << e << std::endl; },
-          [&os](int e) { os << "int, " << e << std::endl; },
-          [&os](const std::string & e) { os << "string, " << e << std::endl; },
-          [&os](bool e) { os << "bool, " << e << std::endl; },
-          [&os](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
-        parameter);
     }
   }
 
@@ -193,8 +166,6 @@ protected:
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
-  Status status = Status::RUNNING;
-
   std::function<void()> pre_update = nullptr;
 
   std::function<void()> post_update = nullptr;
@@ -219,6 +190,7 @@ public:
     // 毎フレーム自動クリア
     command->clearMaxVelocityFactors();
     command->clearMaxAccelerationFactors();
+    command->clearSkillStates();
 
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
@@ -272,6 +244,7 @@ public:
     // 毎フレーム自動クリア
     command->clearMaxVelocityFactors();
     command->clearMaxAccelerationFactors();
+    command->clearSkillStates();
 
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();

@@ -17,7 +17,6 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
-  setPreUpdateFunction([&]() { command->clearSkillStates(); });
 }
 
 Status Goalie::update()
@@ -245,13 +244,6 @@ void Goalie::inplay(bool enable_emit)
           wait_point = clampXToGoalLine(wait_point, 0.1);
 
           command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-          if (command->getRobot()->getDistance(wait_point) > 0.03) {
-            // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
-            // command->setTerminalVelocity(2.0)
-            //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
-            //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
-          }
-          // }
         }
       }
     }

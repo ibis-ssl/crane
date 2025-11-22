@@ -106,10 +106,6 @@ public:
   {
     auto wm = std::make_shared<crane::WorldModelWrapper>(*action_node);
     auto skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), wm);
-    Task default_task;
-    default_task.name = skill->name;
-    default_task.parameters = skill->getParameters();
-    default_task_dict[skill->name] = default_task;
     skill_generators[skill->name] =
       [](
         [[maybe_unused]] const std::string & name, uint8_t id,
@@ -123,8 +119,6 @@ public:
     std::function<std::shared_ptr<skills::SkillInterface>(
       const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>>
     skill_generators;
-
-  std::unordered_map<std::string, Task> default_task_dict;
 
   rclcpp_action::Server<crane_msgs::action::SkillExecution>::SharedPtr skill_execution_server;
 

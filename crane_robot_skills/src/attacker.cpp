@@ -25,7 +25,6 @@ void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", MOVING_BALL_VELOCITY);
 
-  setPreUpdateFunction([&]() { command->clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
     command->setTargetPosition(world_model()->ball().pos);
@@ -53,7 +52,6 @@ void Attacker::initialize()
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
     pass_receiver_id = std::nullopt;
-    command->clearMaxVelocityFactors();
     receive_skill.clearVisualizer();
     kick_skill.clearVisualizer();
     goal_kick_skill.clearVisualizer();
@@ -173,7 +171,6 @@ void Attacker::initialize()
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
-      // receive_skill.setParameter("policy", std::string("min_slack"));
       receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
@@ -215,7 +212,6 @@ void Attacker::initialize()
       goal_kick_skill.setParameter("use_target_kick_speed", true);
       goal_kick_skill.setParameter("target_kick_speed", 6.0);
       goal_kick_skill.setParameter("dribble_power", 0.2);
-      // kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
