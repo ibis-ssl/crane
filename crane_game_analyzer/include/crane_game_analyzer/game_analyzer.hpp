@@ -25,11 +25,6 @@ struct BallIdleConfig
   double move_distance_threshold_meter = 0.05;
 };
 
-struct BallPossessionConfig
-{
-  double threshold_meter = 0.05;
-};
-
 struct RobotCollisionConfig
 {
   double velocity_threshold = 1.0;  // m/s
@@ -40,7 +35,6 @@ struct RobotCollisionConfig
 struct GameAnalyzerConfig
 {
   BallIdleConfig ball_idle;
-  BallPossessionConfig ball_possession;
   RobotCollisionConfig robot_collision;
 };
 
@@ -79,31 +73,6 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  auto updateBallPossession([[maybe_unused]] crane_msgs::msg::BallAnalysis & analysis) -> void
-  {
-    const auto & ours = world_model->ours().robots;
-    const auto & theirs = world_model->theirs().robots;
-    const auto & ball_pos = world_model->ball().pos;
-    auto get_nearest_ball_robot = [&](const std::vector<RobotInfo::SharedPtr> & robots) {
-      return *std::ranges::min_element(robots, [ball_pos](auto & a, auto & b) {
-        return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
-      });
-    };
-
-    auto nearest_ours = get_nearest_ball_robot(ours);
-    auto nearest_theirs = get_nearest_ball_robot(theirs);
-
-    //    analysis.nearest_to_ball_robot_id_ours = nearest_ours->id;
-    //    analysis.nearest_to_ball_robot_id_theirs = nearest_theirs->id;
-
-    [[maybe_unused]] double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
-    [[maybe_unused]] double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
-
-    [[maybe_unused]] const auto & threshold = config.ball_possession.threshold_meter;
-    //    analysis.ball_possession_ours = (ours_distance < threshold);
-    //    analysis.ball_possession_theirs = (theirs_distance < threshold);
-  }
-
   auto getBallIdle() -> bool
   {
     BallPositionStamped record;
