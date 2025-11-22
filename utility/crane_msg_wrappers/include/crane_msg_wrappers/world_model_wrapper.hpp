@@ -98,12 +98,6 @@ struct WorldModelWrapper
     ball_.toMsg(latest_msg.ball_info);
   }
 
-  auto updateBallToMsg() -> void
-  {
-    // Ball構造体の現在状態をBallInfoメッセージに反映
-    ball_.toMsg(latest_msg.ball_info);
-  }
-
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
   auto & getEditableMsg() { return latest_msg; }
@@ -247,8 +241,6 @@ struct WorldModelWrapper
     return getNearestRobotWithDistanceFromPoint(point, ours_.getAvailableRobots(exclude_id));
   }
 
-  [[nodiscard]] auto getFieldMargin() const { return 0.3; }
-
   [[nodiscard]] auto getDefenseWidth() const
   {
     return ours_.penalty_area.max_corner().y() - ours_.penalty_area.min_corner().y();
@@ -287,29 +279,6 @@ struct WorldModelWrapper
     return (ball_.pos - getOurGoalCenter()).normalized();
   }
 
-  /// @brief 敵ゴールからボールへの正規化された方向ベクトルを取得
-  /// @return 正規化された方向ベクトル
-  [[nodiscard]] auto getDirectionFromTheirGoalToBall() const -> Vector2
-  {
-    return (ball_.pos - getTheirGoalCenter()).normalized();
-  }
-
-  /// @brief ボールの速度方向に延長した線分を取得
-  /// @param length 延長する長さ[m]
-  /// @return ボール位置から速度方向に延長した線分
-  [[nodiscard]] auto getBallExtensionLine(double length) const -> Segment
-  {
-    return {ball_.pos, ball_.pos + ball_.vel.normalized() * length};
-  }
-
-  /// @brief 自ゴールからボールへの方向に沿った点を取得
-  /// @param distance 自ゴールからの距離[m]
-  /// @return 自ゴール-ボール方向上の点
-  [[nodiscard]] auto getPointAlongOurGoalToBallDirection(double distance) const -> Point
-  {
-    return getOurGoalCenter() + getDirectionFromOurGoalToBall() * distance;
-  }
-
   // === 便利関数: ゴールライン関連 ===
   /// @brief 自ゴールライン（ポスト間の線分）を取得
   /// @return 自ゴールの左右ポスト間の線分
@@ -325,13 +294,6 @@ struct WorldModelWrapper
   {
     auto [post1, post2] = getTheirGoalPosts();
     return {post1, post2};
-  }
-
-  /// @brief ボール位置から自ゴール中心への線分を取得
-  /// @return ボール-自ゴール中心の線分
-  [[nodiscard]] auto getBallToOurGoalLine() const -> Segment
-  {
-    return {ball_.pos, getOurGoalCenter()};
   }
 
   /// @brief ボールが自ゴールに向かっているかを判定
@@ -814,7 +776,6 @@ private:
 
   bool has_updated = false;
 
-  // Private member variables with underscore suffix
   TeamInfo ours_;
   TeamInfo theirs_;
   Point field_size_;
