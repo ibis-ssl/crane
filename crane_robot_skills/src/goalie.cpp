@@ -130,10 +130,14 @@ void Goalie::inplay(bool enable_emit)
     // シュートブロック
     phase = "シュートブロック";
     auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
-    auto target = [&]() {
+    auto target = [&]() -> Point {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
-        return intersections.front();
+        // ゴールライン上の交点からフィールド内方向に安全なマージンを取る
+        Point goal_line_intersection = intersections.front();
+        Vector2 goal_to_field_direction = (Point(0, 0) - goal_center).normalized();
+        const double GOAL_MARGIN = 0.15;  // ゴールラインから15cm前方
+        return goal_line_intersection + goal_to_field_direction * GOAL_MARGIN;
       } else {
         return result.closest_point;
       }
@@ -267,6 +271,17 @@ void Goalie::inplay(bool enable_emit)
             }
           }();
           Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
+
+          // ゴール侵入防止: ゴールラインより前方にあることを保証
+          const double GOAL_LINE_MARGIN = 0.1;  // ゴールラインから10cm前方
+          double goal_line_x = goal_center.x();
+          if (goal_center.x() > 0) {
+            // 正のx側のゴール
+            wait_point.x() = std::min(wait_point.x(), goal_line_x - GOAL_LINE_MARGIN);
+          } else {
+            // 負のx側のゴール
+            wait_point.x() = std::max(wait_point.x(), goal_line_x + GOAL_LINE_MARGIN);
+          }
 
           command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
           if (command->getRobot()->getDistance(wait_point) > 0.03) {
