@@ -1,6 +1,6 @@
 # ディフェンス戦術システム
 
-> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **最終更新**: 2024年12月（システム再構築後）
 > **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md), [crane_robot_skills](./packages/crane_robot_skills.md)
 
 Craneシステムのディフェンス戦術は、プラグインベースの戦略プランナーとスキルベースのロボット制御により実現されています。
@@ -9,7 +9,7 @@ Craneシステムのディフェンス戦術は、プラグインベースの戦
 
 ### TotalDefensePlanner
 
-**現在のメインプランナー** - JapanOpen2025で実戦検証済み
+**現在のメインプランナー**
 
 TotalDefensePlannerは、ゴールキーパーとディフェンダーの配置を決定するプランナーです。このプランナーでは、`calculateRobotCommand`関数を用いてディフェンダーの目標位置を計算し、`getSelectedRobots`関数を用いてゴールキーパーとディフェンダーを選択します。ディフェンダーの目標位置は、`getDefenseLinePoints`関数によって計算されます。
 
