@@ -163,13 +163,21 @@ void Goalie::inplay(bool enable_emit)
               getClosestPointAndDistance(ball_prediction_4s, next_their_attacker->pose.pos);
 
             // ボールが敵ロボットに届くまでに到達可能な最大限の前進守備を行う。
+            // 前進ラインの始点をペナルティエリア境界に制限
+            Point forward_start_point = result.closest_point;
+            Point goalie_pos = command->getRobot()->pose.pos;
+            Segment tentative_line(result.closest_point, goalie_pos);
+            auto penalty_intersection =
+              world_model()->getIntersectionOurPenaltyArea(tentative_line, 0.0, 0.0);
+            if (
+              penalty_intersection &&
+              not world_model()->point_checker.isFriendPenaltyArea(result.closest_point)) {
+              // ペナルティエリア外から内側へのラインの場合、交点を始点とする
+              forward_start_point = *penalty_intersection;
+            }
+
             // 前進するライン
-            auto forward_line = Segment(
-              result.closest_point, world_model()
-                                      ->ours()
-                                      .getAvailableRobots(world_model()->getOurGoalieId())
-                                      .front()
-                                      ->pose.pos);
+            Segment forward_line(forward_start_point, goalie_pos);
 
             // ボールが敵ロボットに最も近い点に到達するまでの時間
             auto estimated_ball_reach_time =
