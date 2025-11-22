@@ -25,12 +25,10 @@ set(msg_files
   "msg/world_model/WorldModel.msg"
   "msg/world_model/Vector3Stamped.msg"
 
-  "msg/analysis/BallAnalysis.msg"
   "msg/analysis/GameAnalysis.msg"
   "msg/analysis/PingStatus.msg"
   "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
-  "msg/analysis/FieldAnalysis.msg"
   "msg/analysis/NamedBool.msg"
   "msg/analysis/NamedFloat.msg"
   "msg/analysis/NamedInt.msg"
