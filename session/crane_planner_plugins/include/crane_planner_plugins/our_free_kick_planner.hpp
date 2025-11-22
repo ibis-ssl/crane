@@ -34,6 +34,9 @@ private:
 
   int fake_count = 0;
 
+  // 前回のロボットロール情報を保存（calculateRobotCommand()で使用）
+  std::unordered_map<uint8_t, RobotRole> cached_prev_roles;
+
 public:
   COMPOSITION_PUBLIC
   explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)

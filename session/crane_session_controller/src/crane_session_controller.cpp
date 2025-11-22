@@ -23,8 +23,6 @@
 
 namespace crane
 {
-std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles = nullptr;
-
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
@@ -37,8 +35,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   crane::CraneVisualizerBuffer::activate(*this);
 
   world_model->setBallOwnerCalculatorEnabled(true);
-  robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
-  PlannerBase::robot_roles = robot_roles;
 
   // 設定管理の初期化
   declare_parameter<std::string>("session_config_file_name", "unified_session_config.yaml");
@@ -212,14 +208,10 @@ auto SessionControllerComponent::request(
 
   const auto & session_capacities = session_capacities_opt.value();
 
-  // Pass receiver is only provided when GameAnalysis selects one
-  const int pass_receiver = world_model->getMsg().game_analysis.pass_target_id;
-  planner_context["AttackerSkill"]["pass_receiver"] =
-    (pass_receiver >= 0) ? static_cast<double>(pass_receiver) : -1.0;
-
   // 前回のプランナーリストを保存し、新しいリストをクリア
   auto prev_available_planners = planner_registry_->getAllPlanners();
   planner_registry_->clear();
+  prev_robot_roles_.clear();
 
   crane_msgs::msg::RobotSelectResults results;
 
@@ -307,8 +299,6 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
     req->selectable_robots_num = session_capacity.selectable_robot_num;
     std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
 
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
-
     // PlannerRegistryを使ってプランナーを取得または生成
     auto planner = planner_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
@@ -336,7 +326,7 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
         remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
         selectable_robot_ids.end());
       // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-      robot_roles->insert_or_assign(
+      prev_robot_roles_.insert_or_assign(
         selected_robot_id, RobotRole{session_capacity.session_name, ""});
     }
 

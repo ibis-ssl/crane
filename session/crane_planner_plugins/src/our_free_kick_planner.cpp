@@ -42,8 +42,8 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
       if (goal_angle_width < 0.07) {
         auto available_robots = world_model->ours().getAvailableRobots(kicker->getRobot()->id);
         auto our_robots = available_robots | ranges::views::filter([&](const auto & robot) {
-                            auto role = PlannerBase::robot_roles->find(robot->id);
-                            if (role == PlannerBase::robot_roles->end()) {
+                            auto role = cached_prev_roles.find(robot->id);
+                            if (role == cached_prev_roles.end()) {
                               return true;  // roleが見つからない場合は含める
                             }
                             // defenderとキーパー以外を選択
@@ -113,6 +113,8 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
+  cached_prev_roles = prev_roles;
+
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {

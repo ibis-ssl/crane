@@ -103,6 +103,9 @@ private:
   std::string prev_session_name_;
 
   std::string prev_assignment_log_;
+
+  // 前回のロボットロール情報を保存
+  std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
 };
 
 }  // namespace crane
