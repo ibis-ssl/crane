@@ -1,6 +1,4 @@
-# パス連携システム（2025年版）
-
-> 最終更新: 2025年6月（JapanOpen2025運用後）
+# パス連携システム
 
 - 本ドキュメントは Crane におけるパスの上位決定・受け手予約・受取準備・スイッチ抑制の仕組みを説明します。
 - 目的: キック中に受け手が別スキルへ移行して取りこぼす事象を低減し、安定したパス連携を実現すること。
@@ -18,7 +16,7 @@
   - `PassTargetSelector` が `GameAnalysis.pass_scores` を算出し、`pass_target_id` を選定・配信。
   - 連続切替え抑制（ヒステリシス）と可視化出力を実装。
 - `crane_session_controller`:
-  - `GameAnalysis.pass_target_id` を `PlannerContext["AttackerSkill"]["pass_receiver"]` に反映。
+  - `GameAnalysis.pass_target_id` を参照してパス連携を調整。
   - `pass_receive` セッションで受け手ロボットに Receive スキルを割当（予約）。
 - `crane_robot_skills::Attacker`:
   - `pass_target_id` を優先してパス先・キックターゲットを決定。
@@ -55,7 +53,7 @@
 
 ## 受け手予約と受取準備
 
-- `SessionController` が `GameAnalysis.pass_target_id` を `PlannerContext` に格納。
+- `SessionController` が `GameAnalysis.pass_target_id` を参照。
 - `PassReceiverPlanner` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
   - ボールが十分動いている、または `ongoing_kick.is_kicker_friend` が真のときは能動受け取り（`Receive::update()` 実行）。
   - キック前は整列動作を行わず、その場で停止しボールを注視。
