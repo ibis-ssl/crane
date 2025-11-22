@@ -9,7 +9,7 @@ Craneシステムのディフェンス戦術は、プラグインベースの戦
 
 ### TotalDefensePlanner
 
-**現在のメインプランナー**
+#### 現在のメインプランナー
 
 TotalDefensePlannerは、ゴールキーパーとディフェンダーの配置を決定するプランナーです。このプランナーでは、`calculateRobotCommand`関数を用いてディフェンダーの目標位置を計算し、`getSelectedRobots`関数を用いてゴールキーパーとディフェンダーを選択します。ディフェンダーの目標位置は、`getDefenseLinePoints`関数によって計算されます。
 
@@ -44,7 +44,7 @@ graph LR
 
 ### SecondThreatDefenderPlanner
 
-**専用ディフェンダープランナー**
+#### 専用ディフェンダープランナー
 
 SecondThreatDefenderPlannerは、個別のディフェンダーロボットに対する脅威対応を決定するプランナーです。TotalDefensePlannerと組み合わせて使用され、より詳細な守備戦術を実現します。
 
