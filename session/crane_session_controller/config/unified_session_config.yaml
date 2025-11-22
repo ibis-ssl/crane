@@ -169,13 +169,6 @@ situations:
         capacity: 1
       - name: ball_placement_avoidance
         capacity: 20
-  sandwich:
-    description: sandwich
-    sessions:
-      - name: sandwich_ball_placement
-        capacity: 2
-      - name: ball_placement_avoidance
-        capacity: 20
   simple_ai:
     description: Simple AI planner for individual robot skill execution via WebUI
     sessions:
