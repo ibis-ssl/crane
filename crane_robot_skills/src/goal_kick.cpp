@@ -13,7 +13,6 @@ void GoalKick::initialize()
 {
   setParameter("キック角度の最低要求精度[deg]", 1.0);
   setParameter("dribble_power", 0.0);
-  // kick_skill.setParameter("kick_power", 0.8);
   kick_skill.setParameter("use_target_kick_speed", true);
   kick_skill.setParameter("target_kick_speed", 6.0);
   kick_skill.setParameter("chip_kick", false);
