@@ -10,8 +10,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <boost/geometry.hpp>
-#include <boost/geometry/algorithms/comparable_distance.hpp>
-#include <boost/geometry/algorithms/distance.hpp>
 #include <boost/geometry/extensions/algorithms/closest_point.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/geometries/linestring.hpp>

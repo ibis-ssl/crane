@@ -6,6 +6,11 @@
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 
+#include <algorithm>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/travel_time.hpp>
+#include <iostream>
+
 namespace crane
 {
 auto BallContact::update(bool is_contacted) -> void
