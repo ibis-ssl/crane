@@ -184,14 +184,14 @@ void Goalie::inplay(bool enable_emit)
             } else {
               threat_point = result.closest_point;
 
-              // 敵の予想されるロボット位置とゴールの間の直線を10点に分割
-              std::vector<Point> forward_pooints = getSeparatedPoints(forward_line, 10);
-              for (int i = forward_pooints.size() - 1; i >= 0; --i) {
+              // 敵の予想されるロボット位置とゴールの間の直線を20点に分割
+              std::vector<Point> forward_points = getSeparatedPoints(forward_line, 20);
+              for (int i = forward_points.size() - 1; i >= 0; --i) {
                 // goalieが前進守備位置に到達する時間
                 double travel_time =
-                  getTravelTimeTrapezoidal(this->robot(), forward_pooints[i], 0.5, 2.0);
+                  getTravelTimeTrapezoidal(this->robot(), forward_points[i], 0.5, 2.0);
                 if (estimated_ball_reach_time > travel_time) {
-                  threat_point = forward_pooints[i];
+                  threat_point = forward_points[i];
                   break;
                 }
               }
