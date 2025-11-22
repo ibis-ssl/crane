@@ -17,9 +17,7 @@ class Sleep : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Sleep(Args &&... args)
-  : SkillBase("Sleep", std::forward<Args>(args)...),
-    is_started(getContextReference<bool>("is_started", false))
+  explicit Sleep(Args &&... args) : SkillBase("Sleep", std::forward<Args>(args)...)
   {
     setParameter("duration", 0.0);
   }
@@ -32,7 +30,7 @@ public:
 
   void reset() { is_started = false; }
 
-  bool & is_started;
+  bool is_started = false;
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };
