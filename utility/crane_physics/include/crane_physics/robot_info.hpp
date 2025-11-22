@@ -115,6 +115,16 @@ struct RobotInfo
     return (this->pose.pos - pose2d.pos).norm();
   }
 
+  auto getSquareDistance(const Point & pos) const -> double
+  {
+    return (pos - pose.pos).squaredNorm();
+  }
+
+  auto getSquareDistance(const Pose2D & pose2d) const -> double
+  {
+    return (this->pose.pos - pose2d.pos).squaredNorm();
+  }
+
   /**
    * @brief 動的障害物予測：未来位置を計算（Sumatra参考）
    *

@@ -129,58 +129,7 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs_.max_allowed_bots; }
 
-  [[nodiscard]] auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
-  {
-    return getDistanceFromRobot(id, ball_.pos);
-  }
-
-  [[nodiscard]] auto getDistanceFromRobotToBall(uint8_t our_id) const -> double
-  {
-    return getDistanceFromRobot({true, our_id}, ball_.pos);
-  }
-
-  [[nodiscard]] auto getSquareDistanceFromRobotToBall(RobotIdentifier id) const -> double
-  {
-    return getSquareDistanceFromRobot(id, ball_.pos);
-  }
-
-  [[nodiscard]] auto getSquareDistanceFromRobotToBall(uint8_t our_id) const -> double
-  {
-    return getSquareDistanceFromRobot({true, our_id}, ball_.pos);
-  }
-
   [[nodiscard]] auto generateFieldPoints(float grid_size) const;
-
-  [[nodiscard]] auto getDistanceFromRobot(RobotIdentifier id, const Point & point) const -> double
-  {
-    return (getRobot(id)->pose.pos - point).norm();
-  }
-
-  [[nodiscard]] auto getDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
-  {
-    return (getOurRobot(our_id)->pose.pos - point).norm();
-  }
-
-  [[nodiscard]] auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) const
-    -> double
-  {
-    return (getRobot(id)->pose.pos - point).squaredNorm();
-  }
-
-  [[nodiscard]] auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
-  {
-    return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
-  }
-
-  [[nodiscard]] auto getDistanceFromBall(const Point & point) const -> double
-  {
-    return (ball_.pos - point).norm();
-  }
-
-  [[nodiscard]] auto getSquareDistanceFromBall(const Point & point) const -> double
-  {
-    return (ball_.pos - point).squaredNorm();
-  }
 
   struct RobotWithDistance
   {
@@ -193,30 +142,6 @@ struct WorldModelWrapper
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
     const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
-  // === 便利関数: ロボット取得 ===
-  /// @brief ゴーリーを除く利用可能な味方フィールドプレイヤーを取得
-  /// @return ゴーリー以外の利用可能な味方ロボットリスト
-  [[nodiscard]] auto getAvailableOurFieldPlayers() const -> RobotList
-  {
-    return ours_.getAvailableRobots(255, true);  // except goalie
-  }
-
-  /// @brief 利用可能な敵フィールドプレイヤーを取得（敵ゴーリー除外）
-  /// @return 敵ゴーリー以外の利用可能な敵ロボットリスト
-  [[nodiscard]] auto getAvailableTheirFieldPlayers() const -> RobotList
-  {
-    return theirs_.getAvailableRobots(255, true);  // except goalie
-  }
-
-  /// @brief 指定点から最も近い敵ロボットを取得
-  /// @param point 基準点
-  /// @return 最も近い敵ロボットとその距離
-  [[nodiscard]] auto getNearestTheirRobotFromPoint(const Point & point) const
-    -> std::optional<RobotWithDistance>
-  {
-    return getNearestRobotWithDistanceFromPoint(point, theirs_.getAvailableRobots());
-  }
-
   /// @brief 指定線分から最も近い敵ロボットを取得
   /// @param segment 基準線分
   /// @return 最も近い敵ロボットとその距離
@@ -224,16 +149,6 @@ struct WorldModelWrapper
     -> std::optional<RobotWithDistance>
   {
     return getNearestRobotWithDistanceFromSegment(segment, theirs_.getAvailableRobots());
-  }
-
-  /// @brief 指定点から最も近い味方ロボットを取得
-  /// @param point 基準点
-  /// @param exclude_id 除外するロボットID（デフォルト255=除外なし）
-  /// @return 最も近い味方ロボットとその距離
-  [[nodiscard]] auto getNearestOurRobotFromPoint(
-    const Point & point, uint8_t exclude_id = 255) const -> std::optional<RobotWithDistance>
-  {
-    return getNearestRobotWithDistanceFromPoint(point, ours_.getAvailableRobots(exclude_id));
   }
 
   [[nodiscard]] auto getDefenseWidth() const
@@ -265,14 +180,6 @@ struct WorldModelWrapper
   [[nodiscard]] auto getOurGoalCenter() const -> Point { return goal_; }
 
   [[nodiscard]] auto getTheirGoalCenter() const -> Point { return Point(-goal_.x(), goal_.y()); }
-
-  // === 便利関数: ゴール-ボール方向計算 ===
-  /// @brief 自ゴールからボールへの正規化された方向ベクトルを取得
-  /// @return 正規化された方向ベクトル
-  [[nodiscard]] auto getDirectionFromOurGoalToBall() const -> Vector2
-  {
-    return (ball_.pos - getOurGoalCenter()).normalized();
-  }
 
   // === 便利関数: ゴールライン関連 ===
   /// @brief 自ゴールライン（ポスト間の線分）を取得
@@ -365,40 +272,6 @@ struct WorldModelWrapper
   [[nodiscard]] auto fieldSize() const -> const Point & { return field_size_; }
   [[nodiscard]] auto penaltyAreaSize() const -> const Point & { return penalty_area_size_; }
   [[nodiscard]] auto goalSize() const -> const Point & { return goal_size_; }
-
-  // === 便利関数: フィールドサイズ計算 ===
-  /// @brief フィールドの半分の長さ（X方向）を取得
-  /// @return フィールド長の半分[m]
-  [[nodiscard]] inline auto getFieldHalfLength() const -> double { return field_size_.x() * 0.5; }
-
-  /// @brief フィールドの半分の幅（Y方向）を取得
-  /// @return フィールド幅の半分[m]
-  [[nodiscard]] inline auto getFieldHalfWidth() const -> double { return field_size_.y() * 0.5; }
-
-  /// @brief ペナルティエリアの半分の幅を取得
-  /// @return ペナルティエリア幅の半分[m]
-  [[nodiscard]] inline auto getPenaltyAreaHalfWidth() const -> double
-  {
-    return penalty_area_size_.y() * 0.5;
-  }
-
-  /// @brief ペナルティエリアの奥行き（ゴールからの距離）を取得
-  /// @return ペナルティエリアの奥行き[m]
-  [[nodiscard]] inline auto getPenaltyAreaDepth() const -> double { return penalty_area_size_.x(); }
-
-  /// @brief 自陣ペナルティエリア前面のX座標を取得
-  /// @return 自陣ペナルティエリアのフィールド側境界X座標
-  [[nodiscard]] inline auto getOurPenaltyAreaFrontX() const -> double
-  {
-    return getOurGoalCenter().x() - getOurSideSign() * getPenaltyAreaDepth();
-  }
-
-  /// @brief 敵陣ペナルティエリア前面のX座標を取得
-  /// @return 敵陣ペナルティエリアのフィールド側境界X座標
-  [[nodiscard]] inline auto getTheirPenaltyAreaFrontX() const -> double
-  {
-    return getTheirGoalCenter().x() + getOurSideSign() * getPenaltyAreaDepth();
-  }
   [[nodiscard]] auto goal() const -> const Point & { return goal_; }
 
 private:
