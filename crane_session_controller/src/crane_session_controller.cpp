@@ -295,9 +295,9 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
 
   try {
     // プランナー生成とロボット選択
-    auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-    req->selectable_robots_num = session_capacity.selectable_robot_num;
-    std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
+    RobotSelectRequest req;
+    req.selectable_robots_num = session_capacity.selectable_robot_num;
+    std::ranges::copy(selectable_robot_ids, std::back_inserter(req.selectable_robots));
 
     // PlannerRegistryを使ってプランナーを取得または生成
     auto planner = planner_registry_->getOrCreatePlanner(

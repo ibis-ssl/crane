@@ -13,7 +13,6 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
-#include <crane_msgs/srv/robot_select.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
@@ -31,6 +30,17 @@ struct RobotRole
   std::string planner_name;
   std::string role_name;
   double score = 0.;
+};
+
+struct RobotSelectRequest
+{
+  uint8_t selectable_robots_num;
+  std::vector<uint8_t> selectable_robots;
+};
+
+struct RobotSelectResponse
+{
+  std::vector<uint8_t> selected_robots;
 };
 
 class PlannerBase
@@ -55,13 +65,12 @@ public:
 
   virtual ~PlannerBase() { visualizer->clearBuffer(); }
 
-  crane_msgs::srv::RobotSelect::Response doRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  RobotSelectResponse doRobotSelect(
+    const RobotSelectRequest & request, const std::unordered_map<uint8_t, RobotRole> & prev_roles)
   {
-    crane_msgs::srv::RobotSelect::Response response;
+    RobotSelectResponse response;
     response.selected_robots =
-      getSelectedRobots(request->selectable_robots_num, request->selectable_robots, prev_roles);
+      getSelectedRobots(request.selectable_robots_num, request.selectable_robots, prev_roles);
 
     robots.clear();
     for (auto id : response.selected_robots) {

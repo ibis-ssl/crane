@@ -57,17 +57,12 @@ set(msg_files
   "msg/control/PolarVelocityTargetMode.msg"
 )
 
-set(srv_files
-  "srv/RobotSelect.srv"
-)
-
 set(action_files
   "action/SkillExecution.action"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  ${srv_files}
   ${action_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs robocup_ssl_msgs
 )
