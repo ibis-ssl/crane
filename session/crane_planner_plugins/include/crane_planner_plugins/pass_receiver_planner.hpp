@@ -15,7 +15,6 @@
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/receive.hpp>
-#include <crane_robot_skills/robot_command_as_skill.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>

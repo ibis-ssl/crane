@@ -20,7 +20,6 @@
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/marker.hpp>
 #include <crane_robot_skills/receive.hpp>
-#include <crane_robot_skills/robot_command_as_skill.hpp>
 #include <crane_robot_skills/second_threat_defender.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
