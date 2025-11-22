@@ -7,19 +7,14 @@
 #ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
-#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/geometry_operations.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/ball_info.hpp>
 #include <crane_physics/robot_info.hpp>
 #include <crane_physics/slack_time_config.hpp>
-#include <crane_physics/travel_time.hpp>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <memory>
 #include <range/v3/all.hpp>

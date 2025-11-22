@@ -6,6 +6,7 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/robot_info.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <range/v3/all.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
