@@ -130,16 +130,6 @@ public:
 
   void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
 
-  template <typename T>
-  T & getEditableParameter(const std::string & key)
-  {
-    try {
-      return std::get<T &>(parameters.at(key));
-    } catch (const std::out_of_range & e) {
-      throw std::out_of_range("Parameter " + key + " is not found");
-    }
-  }
-
   virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
   template <class T>
@@ -153,21 +143,6 @@ public:
   }
 
   const auto & getParameters() const { return parameters; }
-
-  void getParameterSchemaString(std::ostream & os) const
-  {
-    for (const auto & [name, parameter] : parameters) {
-      os << name << ": ";
-      std::visit(
-        overloaded{
-          [&os](double e) { os << "double, " << e << std::endl; },
-          [&os](int e) { os << "int, " << e << std::endl; },
-          [&os](const std::string & e) { os << "string, " << e << std::endl; },
-          [&os](bool e) { os << "bool, " << e << std::endl; },
-          [&os](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
-        parameter);
-    }
-  }
 
   virtual void print(std::ostream &) const {}
 
@@ -192,8 +167,6 @@ protected:
   std::unordered_map<std::string, ParameterType> parameters;
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer;
-
-  Status status = Status::RUNNING;
 
   std::function<void()> pre_update = nullptr;
 
