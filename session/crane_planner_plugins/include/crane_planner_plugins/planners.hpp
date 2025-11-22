@@ -35,7 +35,6 @@
 #include "passable_ball_placement_planner.hpp"
 #include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
-#include "tigers_goalie_planner.hpp"
 #include "total_defense_planner.hpp"
 #include "waiter_planner.hpp"
 
@@ -67,8 +66,6 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"their_penalty_kick",                        [](Ts... ts) { return std::make_shared<TheirPenaltyKickPlanner>(ts...); }},
       {"offensive",                                 [](Ts... ts) { return std::make_shared<OffensivePlanner>(ts...); }},
       {"our_direct_free",                           [](Ts... ts) { return std::make_shared<OurDirectFreeKickPlanner>(ts...); }},
-      {"steal_ball",                                [](Ts... ts) { return std::make_shared<StealBallSkillPlanner>(ts...); }},
-      {"free_kick_saver",                           [](Ts... ts) { return std::make_shared<FreeKickSaverSkillPlanner>(ts...); }},
       {"simple_ai",                                 [](Ts... ts) { return std::make_shared<SimpleAIPlanner>(ts...); }},
       {"simple_kickoff",                            [](Ts... ts) { return std::make_shared<SimpleKickOffSkillPlanner>(ts...); }},
       {"simple_placer",                             [](Ts... ts) { return std::make_shared<SimplePlacerPlanner>(ts...); }},
