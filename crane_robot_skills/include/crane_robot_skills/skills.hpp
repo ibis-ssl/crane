@@ -18,7 +18,6 @@
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/idle.hpp>
 #include <crane_robot_skills/kick.hpp>
-#include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>

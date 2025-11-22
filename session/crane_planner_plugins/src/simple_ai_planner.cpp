@@ -54,7 +54,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::TestMotionPosition>();
     setUpSkillDictionary<skills::Marker>();
     setUpSkillDictionary<skills::SingleBallPlacement>();
-    setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
     setUpSkillDictionary<skills::TestMotionPosition>();
   }
