@@ -37,4 +37,4 @@ ros2 run crane_visualization_aggregator visualization_aggregator_node
 
 ---
 
-**関連パッケージ**: [crane_visualization_interfaces](./crane_visualization_interfaces.md) | [consai_visualizer](./consai_visualizer.md)
+**関連パッケージ**: [crane_visualization_interfaces](./crane_visualization_interfaces.md)
