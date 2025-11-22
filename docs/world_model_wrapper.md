@@ -73,18 +73,11 @@ auto their_goalie_id = world_model->getTheirGoalieId();
 // 特定のロボットIDを除外して取得
 auto robots = world_model->ours.getAvailableRobots(excluded_robot_id);
 
-// 特定の位置にいるロボットのみを取得（自コートのみ、相手コートのみなど）
-auto own_half_robots = world_model->ours.getAvailableRobots(
-  [&](const RobotInfo::SharedPtr & robot) {
-    return robot->pose.pos.x() < 0.0;  // 自コートにいるロボットのみ
-  });
+// キーパーを除外して取得
+auto field_robots = world_model->ours.getAvailableRobots(excluded_robot_id, true);
 
-// IDと条件の両方を使用
-auto filtered_robots = world_model->ours.getAvailableRobots(
-  excluded_robot_id,
-  [&](const RobotInfo::SharedPtr & robot) {
-    return robot->pose.pos.norm() < 3.0;  // 原点から3m以内のロボットのみ
-  });
+// すべての利用可能なロボットを取得
+auto all_robots = world_model->ours.getAvailableRobots();
 ```
 
 #### 特定IDのロボット取得
@@ -193,8 +186,9 @@ auto ball_sequence = world_model->getBallSequence(5.0, 0.1); // 5秒先まで、
 
 // スラックタイム計算（ロボットがボールに追いつけるかの判定）
 auto slack_time_results = world_model->getSlackInterceptPointAndSlackTimeArray(
-  world_model->ours.getAvailableRobots(), 5.0, 0.1, 0.0, 4.0, 5.0, 3.0);
-// 引数: 対象ロボットリスト, 予測時間, 予測ステップ, スラック時間オフセット, 最大加速度, 最大速度, 距離ホライズン
+  world_model->ours.getAvailableRobots());
+// 引数: 対象ロボットリスト
+// スラックタイム設定はsetSlackConfig()で別途設定可能
 
 // 最小と最大のスラックタイムを取得
 auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
@@ -388,7 +382,7 @@ void interceptBall()
 {
   // ボールの将来位置とスラックタイムを計算
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    world_model->ours.getAvailableRobots(), 5.0, 0.1, 0.0, 4.0, 5.0, 5.0);
+    world_model->ours.getAvailableRobots());
 
   if (min_slack) {
     // ボールに追いつける場合の処理
