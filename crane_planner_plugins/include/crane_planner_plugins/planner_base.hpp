@@ -32,17 +32,6 @@ struct RobotRole
   double score = 0.;
 };
 
-struct RobotSelectRequest
-{
-  uint8_t selectable_robots_num;
-  std::vector<uint8_t> selectable_robots;
-};
-
-struct RobotSelectResponse
-{
-  std::vector<uint8_t> selected_robots;
-};
-
 class PlannerBase
 {
 public:
@@ -65,20 +54,19 @@ public:
 
   virtual ~PlannerBase() { visualizer->clearBuffer(); }
 
-  RobotSelectResponse doRobotSelect(
-    const RobotSelectRequest & request, const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  auto selectRobots(
+    const std::vector<uint8_t> & available_robots, const uint8_t max_selection_count,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
   {
-    RobotSelectResponse response;
-    response.selected_robots =
-      getSelectedRobots(request.selectable_robots_num, request.selectable_robots, prev_roles);
+    auto result = getSelectedRobots(max_selection_count, available_robots, prev_roles);
 
     robots.clear();
-    for (auto id : response.selected_robots) {
+    for (auto id : selected_robots) {
       RobotIdentifier robot_id{true, id};
       robots.emplace_back(robot_id);
     }
 
-    return response;
+    return result;
   }
 
   auto getRobotCommands() -> crane_msgs::msg::RobotCommands
