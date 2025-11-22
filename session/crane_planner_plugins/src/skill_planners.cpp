@@ -11,7 +11,7 @@
 namespace crane
 {
 auto GoalieSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -23,7 +23,7 @@ auto GoalieSkillPlanner::calculateRobotCommand(
 }
 
 auto BallPlacementSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -40,8 +40,7 @@ auto BallPlacementSkillPlanner::calculateRobotCommand(
 
 auto BallPlacementSkillPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   // ボールに近いロボットを1台選択
   auto selected_robots = this->getSelectedRobotsByScore(
@@ -55,7 +54,7 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       }
     },
-    prev_roles, context);
+    prev_roles);
   if (selected_robots.empty()) {
     return {};
   } else {
@@ -71,7 +70,7 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
 }
 
 auto SubAttackerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -84,8 +83,7 @@ auto SubAttackerSkillPlanner::calculateRobotCommand(
 
 auto SubAttackerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   if (world_model->point_checker.isInOurHalf(world_model->ball().pos)) {
     // ボールが自陣にあるときはサブアタッカーを配置しない
@@ -112,7 +110,7 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
     [this, best_position](const std::shared_ptr<RobotInfo> & robot) {
       return 100. - world_model->getSquareDistanceFromRobot(robot->id, best_position);
     },
-    prev_roles, context);
+    prev_roles);
 
   if (selected.empty()) {
     return {};
@@ -124,7 +122,7 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
 }
 
 auto StealBallSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -137,8 +135,7 @@ auto StealBallSkillPlanner::calculateRobotCommand(
 
 auto StealBallSkillPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected_robots = [&]() {
     if (world_model->ball().vel.norm() < 0.5) {
@@ -149,7 +146,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
           // ボールに近いほどスコアが高い
           return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
         },
-        prev_roles, context);
+        prev_roles);
     } else {
       // ボールが速いときはボールラインに近いロボットを1台選択
       return this->getSelectedRobotsByScore(
@@ -162,7 +159,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
           return 100.0 /
                  std::max(getClosestPointAndDistance(robot->pose.pos, ball_line).distance, 0.01);
         },
-        prev_roles, context);
+        prev_roles);
     }
   }();
   if (selected_robots.empty()) {
@@ -175,7 +172,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
 }
 
 auto FreeKickSaverSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -188,15 +185,14 @@ auto FreeKickSaverSkillPlanner::calculateRobotCommand(
 
 auto FreeKickSaverSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
     },
-    prev_roles, context);
+    prev_roles);
 
   if (selected.empty()) {
     return {};
@@ -208,7 +204,7 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
 }
 
 auto SimpleKickOffSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -221,15 +217,14 @@ auto SimpleKickOffSkillPlanner::calculateRobotCommand(
 
 auto SimpleKickOffSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
     },
-    prev_roles, context);
+    prev_roles);
 
   if (selected.empty()) {
     return {};
@@ -241,7 +236,7 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
 }
 
 auto BallNearByPositionerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   auto robot_commands = skills | ranges::views::transform([this](const auto & skill) {
@@ -254,8 +249,7 @@ auto BallNearByPositionerSkillPlanner::calculateRobotCommand(
 
 auto BallNearByPositionerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -267,7 +261,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
         return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
       }
     },
-    prev_roles, context);
+    prev_roles);
 
   int index = 0;
   for (auto robot : selected) {
@@ -286,7 +280,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
 }
 
 auto PlacementTargetNearByPositionerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   auto target = world_model->getBallPlacementTarget().value_or(world_model->ball().pos);
@@ -302,15 +296,14 @@ auto PlacementTargetNearByPositionerSkillPlanner::calculateRobotCommand(
 
 auto PlacementTargetNearByPositionerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
     },
-    prev_roles, context);
+    prev_roles);
 
   int index = 0;
   for (auto robot : selected) {

@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TheirPenaltyKickPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -44,8 +44,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
 
 auto TheirPenaltyKickPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   goalie = std::make_shared<skills::Goalie>(
     static_cast<uint8_t>(world_model->getOurGoalieId()), world_model);
@@ -55,7 +54,7 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball().pos);
     },
-    prev_roles, context);
+    prev_roles);
   for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
     if (*it != world_model->getOurGoalieId()) {
       other_robots.emplace_back(

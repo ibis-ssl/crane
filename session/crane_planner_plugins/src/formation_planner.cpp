@@ -76,8 +76,7 @@ std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-FormationPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext &)
+FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto formation_points = [&]() {
     switch (formation_type) {
@@ -103,8 +102,7 @@ FormationPlanner::calculateRobotCommand(
 
 auto FormationPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -112,6 +110,6 @@ auto FormationPlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles, context);
+    prev_roles);
 }
 }  // namespace crane

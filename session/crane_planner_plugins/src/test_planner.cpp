@@ -29,7 +29,7 @@ TestPlanner::TestPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (robots.empty()) {
@@ -77,8 +77,8 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, 
 
 auto TestPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  [[maybe_unused]] PlannerContext & context) -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  -> std::vector<uint8_t>
 {
   if (ranges::count(selectable_robots, target_robot_id) > 0) {
     command =

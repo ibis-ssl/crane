@@ -44,7 +44,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
+    const std::vector<RobotIdentifier> & robots) override
   {
     if (!receive_skill) {
       return {PlannerBase::Status::RUNNING, {}};
@@ -74,8 +74,7 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     pass_receiver_id = -1;
     if (auto planner_context = context.find("AttackerSkill"); planner_context != context.end()) {

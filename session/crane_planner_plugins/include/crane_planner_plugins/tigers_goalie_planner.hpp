@@ -46,7 +46,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
+    const std::vector<RobotIdentifier> & robots) override;
 
   Status doCriticalKeeper(
     [[maybe_unused]] const std::shared_ptr<RobotInfo> & robot,
@@ -107,8 +107,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
-    -> std::vector<uint8_t> override;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
   State state = State::DEFEND;
 };

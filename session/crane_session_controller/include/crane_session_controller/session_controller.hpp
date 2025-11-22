@@ -41,9 +41,7 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-  auto request(
-    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &)
-    -> void;
+  auto request(const std::string & situation, std::vector<uint8_t> selectable_robot_ids) -> void;
 
   auto assign(const std::string & event_name) -> void;
 
@@ -63,7 +61,7 @@ private:
   auto tryAssignRobotToPlanner(
     const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
     const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
-    PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool;
+    crane_msgs::msg::RobotSelectResults & results) -> bool;
 
   WorldModelWrapper::SharedPtr world_model;
 

@@ -39,7 +39,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
+    const std::vector<RobotIdentifier> & robots) override
   {
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
@@ -76,8 +76,7 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     if (auto our_frontier = world_model->getOurFrontier();
         our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
@@ -91,7 +90,7 @@ public:
           // ボールに近いほどスコアが高い
           return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
         },
-        prev_roles, context);
+        prev_roles);
       if (not selected_robots.empty()) {
         skill =
           std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);

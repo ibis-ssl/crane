@@ -117,7 +117,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
+    const std::vector<RobotIdentifier> & robots) override
   {
     const auto & our_robots = world_model->ours().getAvailableRobots();
     const auto & their_robots = world_model->theirs().getAvailableRobots();
@@ -294,8 +294,7 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     // 前回からの割り当て情報を維持
     std::vector<uint8_t> selected = this->getSelectedRobotsByScore(
@@ -304,7 +303,7 @@ public:
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
-      prev_roles, context);
+      prev_roles);
 
     // 新しく選択されたロボットだけを初期化
     for (const auto & robot_id : selected) {

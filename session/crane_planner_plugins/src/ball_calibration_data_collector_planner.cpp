@@ -17,7 +17,7 @@ BallCalibrationDataCollectorPlanner::BallCalibrationDataCollectorPlanner(
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 BallCalibrationDataCollectorPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::FAILURE, {}};
@@ -63,8 +63,7 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
 
 auto BallCalibrationDataCollectorPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   // 1台のロボットのみ選択
   auto selected = this->getSelectedRobotsByScore(
@@ -74,7 +73,7 @@ auto BallCalibrationDataCollectorPlanner::getSelectedRobots(
       // 最もボールに近いロボットを選択
       return 15. - robot->id;
     },
-    prev_roles, context);
+    prev_roles);
 
   return selected;
 }

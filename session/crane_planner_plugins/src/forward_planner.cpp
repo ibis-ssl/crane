@@ -49,7 +49,7 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
 }
 
 auto ForwardPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
@@ -62,8 +62,7 @@ auto ForwardPlanner::calculateRobotCommand(
 
 auto ForwardPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto forward_lines = createForwardLines();
   const uint8_t selectable_num =
@@ -74,7 +73,7 @@ auto ForwardPlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(robot->id);
     },
-    prev_roles, context);
+    prev_roles);
   if (forward_lines.size() > selected.size()) {
     forward_lines.resize(selected.size());
   }

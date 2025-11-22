@@ -9,8 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-WaiterPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext &)
+WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {
@@ -27,8 +26,7 @@ WaiterPlanner::calculateRobotCommand(
 
 auto WaiterPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -36,7 +34,7 @@ auto WaiterPlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles, context);
+    prev_roles);
   for (auto robot : selected) {
     stop_poses.try_emplace(robot, world_model->getOurRobot(robot)->pose);
   }

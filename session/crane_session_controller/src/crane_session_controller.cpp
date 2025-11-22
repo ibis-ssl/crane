@@ -115,9 +115,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       assign(play_situation.command.name);
     }
 
-    PlannerContext planner_context;
     for (const auto & planner : planner_registry_->getAllPlanners()) {
-      auto commands_msg = planner->getRobotCommands(planner_context);
+      auto commands_msg = planner->getRobotCommands();
       ranges::for_each(
         commands_msg.robot_commands, [&](crane_msgs::msg::RobotCommand & robot_command) {
           robot_command.planner_name = planner->name;
@@ -175,8 +174,7 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
     prev_session_name_ = session_name;
 
     try {
-      PlannerContext planner_context;
-      request(session_name, world_model->ours().getAvailableRobotIds(), planner_context);
+      request(session_name, world_model->ours().getAvailableRobotIds());
 
       // 全セッションの割当状況をログ出力
       logAssignmentIfChanged(buildAssignmentLog());
@@ -200,8 +198,7 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
 }
 
 auto SessionControllerComponent::request(
-  const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
-  PlannerContext & planner_context) -> void
+  const std::string & situation, std::vector<uint8_t> selectable_robot_ids) -> void
 {
   auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(situation);
   if (!session_capacities_opt.has_value()) {
@@ -229,8 +226,7 @@ auto SessionControllerComponent::request(
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (const auto & session_capacity : session_capacities) {
     if (!tryAssignRobotToPlanner(
-          session_capacity, selectable_robot_ids, prev_available_planners, planner_context,
-          results)) {
+          session_capacity, selectable_robot_ids, prev_available_planners, results)) {
       // エラーが発生した場合はループを抜ける
       break;
     }
@@ -241,8 +237,7 @@ auto SessionControllerComponent::request(
   // 割り当てられなかったロボットを待機状態にする
   if (not selectable_robot_ids.empty()) {
     SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size())};
-    tryAssignRobotToPlanner(
-      waiter_session, selectable_robot_ids, prev_available_planners, planner_context, results);
+    tryAssignRobotToPlanner(waiter_session, selectable_robot_ids, prev_available_planners, results);
   }
 }
 
@@ -294,7 +289,7 @@ auto SessionControllerComponent::logAssignmentIfChanged(const std::string & curr
 auto SessionControllerComponent::tryAssignRobotToPlanner(
   const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
   const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
-  PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool
+  crane_msgs::msg::RobotSelectResults & results) -> bool
 {
   // 割り当て可能なロボットがない場合はスキップ
   if (session_capacity.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
@@ -319,7 +314,7 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
       session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
       prev_available_planners);
 
-    auto response = planner->doRobotSelect(req, prev_roles, planner_context);
+    auto response = planner->doRobotSelect(req, prev_robot_roles_);
 
     std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
     results.results.push_back(result);

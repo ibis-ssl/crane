@@ -30,7 +30,7 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
     if (ball_placement) {
@@ -43,8 +43,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     if (selectable_robots.empty()) {
       return {};
@@ -62,7 +61,7 @@ public:
             return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
           }
         },
-        prev_roles, context);
+        prev_roles);
 
       if (ball_selected_robots.empty()) {
         return {};
@@ -87,7 +86,7 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
     if (placer) {
@@ -101,8 +100,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     if (selectable_robots.empty()) {
       return {};
@@ -120,7 +118,7 @@ public:
               return 100.0 / std::max(robot->getDistance(placement_target.value()), 0.01);
             }
           },
-          prev_roles, context);
+          prev_roles);
         if (selected.empty()) {
           return {};
         } else {

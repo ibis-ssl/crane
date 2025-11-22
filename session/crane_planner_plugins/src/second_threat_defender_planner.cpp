@@ -11,7 +11,7 @@
 namespace crane
 {
 auto SecondThreatDefenderPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
   -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (skill) {
@@ -24,8 +24,7 @@ auto SecondThreatDefenderPlanner::calculateRobotCommand(
 
 auto SecondThreatDefenderPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   if (selectable_robots_num < 1) {
     return {};
@@ -38,7 +37,7 @@ auto SecondThreatDefenderPlanner::getSelectedRobots(
         // ターゲットに一番近いロボット
         return 100. / robot->getDistance(target);
       },
-      prev_roles, context);
+      prev_roles);
     skill = std::make_shared<skills::SecondThreatDefender>(selected.front(), world_model);
     skill->setParameter("offset", offset);
     return selected;

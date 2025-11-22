@@ -169,7 +169,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
+    const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane::RobotCommandWrapper::SharedPtr> robot_commands;
     switch (state) {
@@ -250,8 +250,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
@@ -259,7 +258,7 @@ public:
         // ボールに近いほどスコアが高い
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       },
-      prev_roles, context);
+      prev_roles);
   }
 
 private:

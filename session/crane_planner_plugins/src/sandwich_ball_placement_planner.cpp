@@ -9,8 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SandwichBallPlacementPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> &, PlannerContext &)
+SandwichBallPlacementPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   const auto & ball = world_model->ball();
@@ -130,8 +129,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
 
 auto SandwichBallPlacementPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   if (selectable_robots_num < 2 or selectable_robots.size() < 2) {
     return {};
@@ -142,7 +140,7 @@ auto SandwichBallPlacementPlanner::getSelectedRobots(
       [this, &ball](const std::shared_ptr<RobotInfo> & robot) {
         return 100. - robot->getDistance(ball.pos);
       },
-      prev_roles, context);
+      prev_roles);
     if (selected.size() == 2) {
       placers.first = std::make_shared<crane::RobotCommandWrapper>(
         "sandwich_ball_placement_planner", selected[0], world_model);
