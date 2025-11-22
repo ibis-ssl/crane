@@ -35,6 +35,16 @@ macro(build_closest_point)
     return()
   endif()
 
+  # Check if source already exists to enable offline build
+  set(CLOSEST_POINT_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/src/closest_point-ext)
+  if(EXISTS ${CLOSEST_POINT_SOURCE_DIR}/.git)
+    message(STATUS "既存のclosest_pointソースを検出しました。オフラインモードで利用します: ${CLOSEST_POINT_SOURCE_DIR}")
+    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 1)
+  else()
+    message(STATUS "closest_pointソースが見つかりません。GitHubからダウンロードします")
+    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 0)
+  endif()
+
   externalproject_add(closest_point-ext
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
     INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
@@ -42,6 +52,7 @@ macro(build_closest_point)
     GIT_TAG master
     GIT_SHALLOW ON
     GIT_PROGRESS ON
+    ${UPDATE_DISCONNECTED_FLAG}
     TIMEOUT 6000
     PATCH_COMMAND
       COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}
