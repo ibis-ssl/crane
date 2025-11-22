@@ -41,7 +41,6 @@ public:
   explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("ball_placement", world_model)
   {
-    addRobotSelectCallback([&]() { state = BallPlacementState::START; });
   }
 
   bool isDribbleMode(const std::vector<RobotIdentifier> & robots) const
@@ -252,6 +251,9 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
+    // ロボット選択時にステートをリセット
+    state = BallPlacementState::START;
+
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
       [this](const std::shared_ptr<RobotInfo> & robot) {

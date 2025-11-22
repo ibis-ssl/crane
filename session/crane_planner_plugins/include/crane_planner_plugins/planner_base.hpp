@@ -207,9 +207,6 @@ protected:
   Status status = Status::RUNNING;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
-
-private:
-  std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 
 }  // namespace crane
