@@ -66,6 +66,10 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_kicker_model test/test_kicker_model.cpp src/kicker_model.cpp)
   target_include_directories(test_kicker_model PUBLIC include)
   target_link_libraries(test_kicker_model Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_position_assignments test/test_position_assignments.cpp)
+  target_include_directories(test_position_assignments PUBLIC include)
+  target_link_libraries(test_position_assignments Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
