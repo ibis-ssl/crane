@@ -48,6 +48,10 @@ jobs:
     needs: build_base
     runs-on: ubuntu-latest
     steps:
+      - name: free disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -82,6 +86,10 @@ jobs:
     needs: build_base
     runs-on: ubuntu-latest
     steps:
+      - name: free disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
