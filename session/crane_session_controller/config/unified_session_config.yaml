@@ -130,13 +130,6 @@ situations:
         capacity: 1
       - name: emplace_robot
         capacity: 19
-  catch_ball:
-    description: catch_ball
-    sessions:
-      - name: goalie_skill
-        capacity: 1
-      - name: catch_ball
-        capacity: 1
   CENTER_STOP_KICK:
     description: Center stop kick testing using CenterStopKickPlanner for stop distance
       kick verification

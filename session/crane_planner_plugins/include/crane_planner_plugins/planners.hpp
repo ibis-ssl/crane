@@ -15,7 +15,6 @@
 #include <unordered_map>
 
 #include "attacker_skill_planner.hpp"
-#include "catch_ball_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "forward_planner.hpp"
