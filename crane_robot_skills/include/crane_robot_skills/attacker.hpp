@@ -33,8 +33,6 @@ public:
   template <typename... Args>
   explicit Attacker(Args &&... args)
   : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
-    kick_target(getContextReference<Point>("kick_target")),
-    forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
     kick_skill(command),
     goal_kick_skill(command),
     receive_skill(command)
@@ -53,9 +51,9 @@ public:
 
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
 
-  Point & kick_target;
+  Point kick_target{Point::Zero()};
 
-  int & forced_pass_receiver_id;
+  int forced_pass_receiver_id = -1;
 
   Kick kick_skill;
 

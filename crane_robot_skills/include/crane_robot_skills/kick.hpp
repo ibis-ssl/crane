@@ -29,9 +29,7 @@ private:
 public:
   template <typename... Args>
   explicit Kick(Args &&... args)
-  : SkillBaseWithState<KickState>("Kick", std::forward<Args>(args)...),
-    receive_skill(command),
-    phase(getContextReference<std::string>("phase"))
+  : SkillBaseWithState<KickState>("Kick", std::forward<Args>(args)...), receive_skill(command)
   {
     initialize();
   }
@@ -44,8 +42,6 @@ public:
   auto getBallExitPointFromField(const double offset = 0.3) -> Point;
 
   void print(std::ostream & os) const override { os << "[Kick]"; }
-
-  std::string & phase;
 
 private:
   void initialize();

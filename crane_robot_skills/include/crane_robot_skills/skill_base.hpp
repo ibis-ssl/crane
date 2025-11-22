@@ -85,56 +85,6 @@ enum class Status {
 
 using ParameterType = std::variant<double, bool, int, std::string, Point>;
 
-using ContextType = std::variant<double, bool, int, std::string, Point, std::optional<Point>>;
-
-template <typename T>
-constexpr auto defaultContextValue() -> T
-{
-  if constexpr (std::is_same_v<T, Point>) {
-    return Point::Zero();
-  } else {
-    return T{};
-  }
-}
-
-inline std::string getTypeString(const ContextType & type)
-{
-  std::string type_string;
-  std::visit(
-    overloaded{
-      [&type_string](const double) { type_string = "double"; },
-      [&type_string](const bool) { type_string = "bool"; },
-      [&type_string](const int) { type_string = "int"; },
-      [&type_string](const std::string &) { type_string = "string"; },
-      [&type_string](const Point &) { type_string = "Point"; },
-      [&type_string](const std::optional<Point> &) { type_string = "op<Point>"; }},
-    type);
-  return type_string;
-}
-
-inline std::string getValueString(const ContextType & type)
-{
-  std::string value_string;
-  std::visit(
-    overloaded{
-      [&value_string](const double e) { value_string = std::to_string(e); },
-      [&value_string](const bool e) { value_string = std::to_string(e); },
-      [&value_string](const int e) { value_string = std::to_string(e); },
-      [&value_string](const std::string & e) { value_string = e; },
-      [&value_string](const Point & e) {
-        value_string = std::format("({}, {})", std::to_string(e.x()), std::to_string(e.y()));
-      },
-      [&value_string](const std::optional<Point> & e) {
-        if (e) {
-          value_string = std::format("({}, {})", std::to_string(e->x()), std::to_string(e->y()));
-        } else {
-          value_string = "nullopt";
-        }
-      }},
-    type);
-  return value_string;
-}
-
 class SkillInterface
 {
 public:
@@ -152,23 +102,13 @@ public:
 
   SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : command(std::make_shared<RobotCommandWrapper>(name, id, wm)),
-    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
-    target_theta_context(getContextReference<double>("target_theta")),
-    dribble_power_context(getContextReference<double>("dribble_power")),
-    kick_power_context(getContextReference<double>("kick_power")),
-    chip_enable_context(getContextReference<bool>("chip_enable")),
-    stop_flag_context(getContextReference<bool>("stop_flag"))
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name))
   {
   }
 
   explicit SkillInterface(std::shared_ptr<RobotCommandWrapper> & command)
   : command(command),
-    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name)),
-    target_theta_context(getContextReference<double>("target_theta")),
-    dribble_power_context(getContextReference<double>("dribble_power")),
-    kick_power_context(getContextReference<double>("kick_power")),
-    chip_enable_context(getContextReference<bool>("chip_enable")),
-    stop_flag_context(getContextReference<bool>("stop_flag"))
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name))
   {
   }
 
@@ -199,19 +139,6 @@ public:
       throw std::out_of_range("Parameter " + key + " is not found");
     }
   }
-
-  template <typename T>
-  T & getContextReference(const std::string & key, const T initial_value = defaultContextValue<T>())
-  {
-    // メモ：std::unordered_mapの要素への参照はリハッシュや要素の挿入などでは変化しない
-    // 　　　（該当要素の削除は当然アウト）
-    if (not contexts.contains(key)) {
-      contexts.emplace(key, initial_value);
-    }
-    return get<T>(contexts.at(key));
-  }
-
-  auto getContexts() -> const std::unordered_map<std::string, ContextType> & { return contexts; }
 
   virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
@@ -264,35 +191,13 @@ protected:
 
   std::unordered_map<std::string, ParameterType> parameters;
 
-  std::unordered_map<std::string, ContextType> contexts;
-
   crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 
-  void updateDefaultContexts()
-  {
-    target_theta_context = command->getMsg().target_theta;
-    kick_power_context = command->getMsg().kick_power;
-    dribble_power_context = command->getMsg().dribble_power;
-    chip_enable_context = command->getMsg().chip_enable;
-    stop_flag_context = command->getMsg().stop_flag;
-  }
-
   std::function<void()> pre_update = nullptr;
 
   std::function<void()> post_update = nullptr;
-
-private:
-  double & target_theta_context;
-
-  double & dribble_power_context;
-
-  double & kick_power_context;
-
-  bool & chip_enable_context;
-
-  bool & stop_flag_context;
 };
 
 class SkillBase : public SkillInterface
@@ -326,7 +231,6 @@ public:
     if (post_update) {
       post_update();
     }
-    updateDefaultContexts();
     command->addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
@@ -351,9 +255,7 @@ public:
 
   template <typename... Args>
   explicit SkillBaseWithState(Args &&... args)
-  : SkillInterface(std::forward<Args>(args)...),
-    state_machine(static_cast<StatesType>(0)),
-    state_string(getContextReference<std::string>("state"))
+  : SkillInterface(std::forward<Args>(args)...), state_machine(static_cast<StatesType>(0))
   {
   }
 
@@ -382,7 +284,6 @@ public:
     if (post_update) {
       post_update();
     }
-    updateDefaultContexts();
     command->addStateFactor(name, state_string);
 
     visualizer->text()
@@ -432,7 +333,7 @@ protected:
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 
-  std::string & state_string;
+  std::string state_string;
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   template <typename T>

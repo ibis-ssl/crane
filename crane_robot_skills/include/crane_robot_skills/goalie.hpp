@@ -21,9 +21,7 @@ class Goalie : public SkillBase
 public:
   template <typename... Args>
   explicit Goalie(Args &&... args)
-  : SkillBase("Goalie", std::forward<Args>(args)...),
-    phase(getContextReference<std::string>("phase")),
-    kick_skill(command)
+  : SkillBase("Goalie", std::forward<Args>(args)...), kick_skill(command)
   {
     initialize();
   }
@@ -36,7 +34,7 @@ public:
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 
-  std::string & phase;
+  std::string phase;
 
   Kick kick_skill;
 

@@ -34,17 +34,7 @@ public:
   template <typename... Args>
   explicit BallCalibrationDataCollector(Args &&... args)
   : SkillBaseWithState<BallCalibrationState>(
-      "BallCalibrationDataCollector", std::forward<Args>(args)...),
-    kick_target_(getContextReference<Point>("kick_target", Point(0.0, 0.0))),
-    current_power_index_(getContextReference<int>("current_power_index", 0)),
-    ball_stop_threshold_(getContextReference<double>("ball_stop_threshold", 0.2)),
-    approach_distance_(getContextReference<double>("approach_distance", 0.2)),
-    position_tolerance_(getContextReference<double>("position_tolerance", 0.05)),
-    stop_time_threshold_(getContextReference<double>("stop_time_threshold", 1.0)),
-    ball_motion_velocity_threshold_(
-      getContextReference<double>("ball_motion_velocity_threshold", 0.5)),
-    ball_avoidance_margin_(getContextReference<double>("ball_avoidance_margin", 0.3)),
-    kick_power_sequence_({0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0})
+      "BallCalibrationDataCollector", std::forward<Args>(args)...)
   {
     initialize();
   }
@@ -71,18 +61,17 @@ private:
    */
   void advanceKickPowerIndex();
 
-  // コンテキスト変数（永続化されるパラメータ）
-  Point & kick_target_;                      ///< キックターゲット位置
-  int & current_power_index_;                ///< 現在のパワーインデックス
-  double & ball_stop_threshold_;             ///< ボール停止判定閾値 (m/s)
-  double & approach_distance_;               ///< キック位置までの距離 (m)
-  double & position_tolerance_;              ///< 位置許容誤差 (m)
-  double & stop_time_threshold_;             ///< 停止時間閾値 (s)
-  double & ball_motion_velocity_threshold_;  ///< ボール移動検出閾値 (m/s)
-  double & ball_avoidance_margin_;           ///< ボール回避時のマージン距離 (m)
-
-  // 固定配列（contextに保存できない複雑な型）
-  std::vector<double> kick_power_sequence_;  ///< キックパワーシーケンス
+  // パラメータ
+  Point kick_target_{Point(0.0, 0.0)};           ///< キックターゲット位置
+  int current_power_index_ = 0;                  ///< 現在のパワーインデックス
+  double ball_stop_threshold_ = 0.2;             ///< ボール停止判定閾値 (m/s)
+  double approach_distance_ = 0.2;               ///< キック位置までの距離 (m)
+  double position_tolerance_ = 0.05;             ///< 位置許容誤差 (m)
+  double stop_time_threshold_ = 1.0;             ///< 停止時間閾値 (s)
+  double ball_motion_velocity_threshold_ = 0.5;  ///< ボール移動検出閾値 (m/s)
+  double ball_avoidance_margin_ = 0.3;           ///< ボール回避時のマージン距離 (m)
+  std::vector<double> kick_power_sequence_{0.2, 0.3, 0.4, 0.5, 0.6,
+                                           0.7, 0.8, 0.9, 1.0};  ///< キックパワーシーケンス
 
   // 内部状態追跡
   rclcpp::Time last_ball_motion_time_;  ///< 最後にボールが動いた時刻

@@ -24,14 +24,10 @@ enum class PenaltyKickState {
 
 class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
 {
-private:
-  std::optional<Point> & start_ball_point;
-
 public:
   template <typename... Args>
   explicit PenaltyKick(Args &&... args)
   : SkillBaseWithState<PenaltyKickState>("PenaltyKick", std::forward<Args>(args)...),
-    start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
     kick_skill(command)
   {
     initialize();
@@ -46,6 +42,8 @@ public:
   }
 
   Kick kick_skill;
+
+  std::optional<Point> start_ball_point = std::nullopt;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__PENALTY_KICK_HPP_
