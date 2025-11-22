@@ -66,7 +66,7 @@ void Goalie::emitBallFromPenaltyArea()
       world_model()->getDefenseHeight()) {
       // ゴールラインに近いロボットは除外
       return true;
-    } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
+    } else if (r->getDistance(world_model()->ball().pos) < 0.5) {
       // ボールに近いロボットは除外
       return true;
     } else {

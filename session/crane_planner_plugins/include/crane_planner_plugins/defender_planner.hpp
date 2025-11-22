@@ -56,7 +56,7 @@ public:
           return -100.;
         } else {
           // defense pointに近いほどスコアが高い
-          return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+          return 100. - robot->getSquareDistance(defense_point);
         }
       },
       prev_roles);

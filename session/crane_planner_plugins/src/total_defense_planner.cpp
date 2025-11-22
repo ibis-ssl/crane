@@ -140,7 +140,7 @@ auto TotalDefensePlanner::getSelectedRobots(
       selectable_robots_num - selected.size(), remaining_robots,
       [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
         // defense pointに近いほどスコアが高い
-        return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+        return 100. - robot->getSquareDistance(defense_point);
       },
       prev_roles);
 

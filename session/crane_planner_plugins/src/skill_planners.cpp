@@ -51,7 +51,7 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
         return -100.;
       } else {
         // ボールに近いほどスコアが高い
-        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+        return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
       }
     },
     prev_roles);
@@ -108,7 +108,7 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this, best_position](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. - world_model->getSquareDistanceFromRobot(robot->id, best_position);
+      return 100. - robot->getSquareDistance(best_position);
     },
     prev_roles);
 
@@ -144,7 +144,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
         1, selectable_robots,
         [this](const std::shared_ptr<RobotInfo> & robot) {
           // ボールに近いほどスコアが高い
-          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+          return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
         },
         prev_roles);
     } else {
@@ -190,7 +190,7 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      return 100. / robot->getSquareDistance(world_model->ball().pos);
     },
     prev_roles);
 
@@ -222,7 +222,7 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      return 100. / robot->getSquareDistance(world_model->ball().pos);
     },
     prev_roles);
 
@@ -258,7 +258,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
         // ゴールキーパーは選出しない
         return -100.;
       } else {
-        return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+        return 100. / robot->getSquareDistance(world_model->ball().pos);
       }
     },
     prev_roles);
@@ -301,7 +301,7 @@ auto PlacementTargetNearByPositionerSkillPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      return 100. / robot->getSquareDistance(world_model->ball().pos);
     },
     prev_roles);
 

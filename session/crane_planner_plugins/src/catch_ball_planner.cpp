@@ -124,7 +124,7 @@ auto crane::CatchBallPlanner::getSelectedRobots(
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobot(robot->id, default_point);
+      return 100. / robot->getSquareDistance(default_point);
     },
     prev_roles);
 }
