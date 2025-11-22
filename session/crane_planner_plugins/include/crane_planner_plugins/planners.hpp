@@ -15,7 +15,6 @@
 #include <unordered_map>
 
 #include "attacker_skill_planner.hpp"
-#include "catch_ball_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "forward_planner.hpp"
@@ -34,10 +33,8 @@
 #include "center_stop_kick_planner.hpp"
 #include "emplace_robot_planner.hpp"
 #include "passable_ball_placement_planner.hpp"
-#include "sandwich_ball_placement_planner.hpp"
 #include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
-#include "tigers_goalie_planner.hpp"
 #include "total_defense_planner.hpp"
 #include "waiter_planner.hpp"
 
@@ -63,17 +60,12 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"goalie_skill",                              [](Ts... ts) { return std::make_shared<GoalieSkillPlanner>(ts...); }},
       {"marker",                                    [](Ts... ts) { return std::make_shared<MarkerPlanner>(ts...); }},
       {"sub_attacker_skill",                        [](Ts... ts) { return std::make_shared<SubAttackerSkillPlanner>(ts...); }},
-      {"catch_ball",                                [](Ts... ts) { return std::make_shared<CatchBallPlanner>(ts...); }},
-      {"tigers_goalie",                             [](Ts... ts) { return std::make_shared<TigersGoaliePlanner>(ts...); }},
       {"waiter",                                    [](Ts... ts) { return std::make_shared<WaiterPlanner>(ts...); }},
       {"our_penalty_kick",                          [](Ts... ts) { return std::make_shared<OurPenaltyKickPlanner>(ts...); }},
       {"pass_receive",                              [](Ts... ts) { return std::make_shared<PassReceiverPlanner>(ts...); }},
       {"their_penalty_kick",                        [](Ts... ts) { return std::make_shared<TheirPenaltyKickPlanner>(ts...); }},
       {"offensive",                                 [](Ts... ts) { return std::make_shared<OffensivePlanner>(ts...); }},
       {"our_direct_free",                           [](Ts... ts) { return std::make_shared<OurDirectFreeKickPlanner>(ts...); }},
-      {"steal_ball",                                [](Ts... ts) { return std::make_shared<StealBallSkillPlanner>(ts...); }},
-      {"free_kick_saver",                           [](Ts... ts) { return std::make_shared<FreeKickSaverSkillPlanner>(ts...); }},
-      {"sandwich_ball_placement",                   [](Ts... ts) { return std::make_shared<SandwichBallPlacementPlanner>(ts...); }},
       {"simple_ai",                                 [](Ts... ts) { return std::make_shared<SimpleAIPlanner>(ts...); }},
       {"simple_kickoff",                            [](Ts... ts) { return std::make_shared<SimpleKickOffSkillPlanner>(ts...); }},
       {"simple_placer",                             [](Ts... ts) { return std::make_shared<SimplePlacerPlanner>(ts...); }},

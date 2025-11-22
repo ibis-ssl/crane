@@ -123,44 +123,6 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
-class StealBallSkillPlanner : public PlannerBase
-{
-public:
-  std::shared_ptr<skills::StealBall> skill = nullptr;
-
-  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : PlannerBase("StealBall", world_model)
-  {
-  }
-
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
-};
-
-class FreeKickSaverSkillPlanner : public PlannerBase
-{
-public:
-  std::shared_ptr<skills::FreeKickSaver> skill = nullptr;
-
-  COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : PlannerBase("FreeKickSaver", world_model)
-  {
-  }
-
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
-};
-
 class SimpleKickOffSkillPlanner : public PlannerBase
 {
 public:
