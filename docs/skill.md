@@ -60,9 +60,9 @@ public:
 | メソッド | 戻り値 | 説明 |
 |---------|-------|------|
 | `getCommand()` | `RobotCommandWrapper&` | ロボットコマンド取得 |
-| `getWorld()` | `WorldModelWrapper::SharedPtr` | ワールド状態取得 |
+| `world_model()` | `WorldModelWrapper::SharedPtr` | ワールド状態取得 |
 | `getID()` | `uint8_t` | ロボットID取得 |
-| `emplace<T>(args...)` | `void` | パラメータ設定 |
+| `setParameter(key, value)` | `void` | パラメータ設定 |
 
 ### Status列挙型
 
@@ -76,22 +76,18 @@ public:
 
 ```cpp
 // パラメータ設定
-skill.emplace<Point>("target", Point(1.0, 2.0));
-skill.emplace<double>("max_velocity", 3.0);
-skill.emplace<bool>("enable_collision_avoidance", true);
+skill.setParameter("target", Point(1.0, 2.0));
+skill.setParameter("max_velocity", 3.0);
+skill.setParameter("enable_collision_avoidance", true);
 
 // パラメータ取得
 auto target = getParameter<Point>("target");
 auto velocity = getParameter<double>("max_velocity");
 ```
 
-### コンテキスト管理
+### 可視化
 
 ```cpp
-// コンテキスト設定
-context.goal_pose = Pose2D(3.0, 0.0, 0.0);
-context.keep_control = true;
-
 // 可視化
 addCircle(center, radius, color);
 addText(position, "Status: Running");
@@ -124,19 +120,21 @@ addText(position, "Status: Running");
 ```cpp
 // SimpleAIプランナーでの使用
 auto skill = std::make_shared<YourSkill>(robot_id);
-skill->emplace<Point>("target", target_position);
+skill->setParameter("target", target_position);
 assigned_robots[robot_id] = skill;
 ```
 
 ### 2. セッション統合
 
+統一設定ファイルに追加：
+
 ```yaml
-# config/play_situation/YOUR_SITUATION.yaml
-nodes:
-  - name: your_skill_planner
-    type: SkillPlannerBase  
-    params:
-      skill_name: "YourSkill"
+# config/unified_session_config.yaml
+situations:
+  YOUR_SITUATION:
+    sessions:
+      - name: your_skill_planner
+        capacity: 1
 ```
 
 ### 3. 可視化統合

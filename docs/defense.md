@@ -1,6 +1,6 @@
 # ディフェンス戦術システム
 
-> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **最終更新**: 2024年12月（システム再構築後）
 > **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md), [crane_robot_skills](./packages/crane_robot_skills.md)
 
 Craneシステムのディフェンス戦術は、プラグインベースの戦略プランナーとスキルベースのロボット制御により実現されています。
@@ -9,7 +9,7 @@ Craneシステムのディフェンス戦術は、プラグインベースの戦
 
 ### TotalDefensePlanner
 
-**現在のメインプランナー** - JapanOpen2025で実戦検証済み
+#### 現在のメインプランナー
 
 TotalDefensePlannerは、ゴールキーパーとディフェンダーの配置を決定するプランナーです。このプランナーでは、`calculateRobotCommand`関数を用いてディフェンダーの目標位置を計算し、`getSelectedRobots`関数を用いてゴールキーパーとディフェンダーを選択します。ディフェンダーの目標位置は、`getDefenseLinePoints`関数によって計算されます。
 
@@ -42,57 +42,11 @@ graph LR
 
 この図では、p1, p2, p3, p4はペナルティエリアのコーナーを表し、parameterはp1からp2、p2からp3、p3からp4への距離を示します。
 
-### DefenderPlanner
+### SecondThreatDefenderPlanner
 
-現在非推奨
+#### 専用ディフェンダープランナー
 
-DefenderPlannerは、ディフェンダーの配置を決定するプランナーです。このプランナーは、`calculateRobotCommand`関数を使用して、ディフェンダーの目標位置を計算します。ディフェンダーの目標位置は、`getDefenseLinePoints`関数または`getDefenseArcPoints`関数を使用して計算されます。
-
-### TigersGoaliePlanner
-
-TigersGoaliePlannerは、Tigersのゴールキーパーの行動を決定するプランナーです。このプランナーは、`calculateRobotCommand`関数を使用して、ゴールキーパーの状態に基づいて、ゴールキーパーの行動を決定します。ゴールキーパーの状態は、以下の状態遷移図に基づいて更新されます。
-
-```mermaid
-stateDiagram
-    [*] --> STOP
-    STOP --> DEFEND : not isStopped()
-    PREPARE_PENALTY --> DEFEND : not isPreparePenalty()
-    MOVE_TO_PENALTY_AREA --> DEFEND : status == SUCCESS
-    MOVE_TO_PENALTY_AREA --> DEFEND : isKeeperWellInsidePenaltyArea()
-    MOVE_TO_PENALTY_AREA --> STOP : isStopped()
-    MOVE_TO_PENALTY_AREA --> PREPARE_PENALTY : isPreparePenalty()
-    DEFEND --> PASS : ballCanBePassedOutOfPenaltyArea()
-    DEFEND --> RAMBO : canGoOut()
-    DEFEND --> GET_BALL_CONTACT : isBallBetweenGoalieAndGoal()
-    DEFEND --> MOVE_TO_PENALTY_AREA : isOutsidePenaltyArea()
-    DEFEND --> STOP : isStopped()
-    DEFEND --> PREPARE_PENALTY : isPreparePenalty()
-    DEFEND --> INTERCEPT : canInterceptSafely()
-    PASS --> DEFEND : isBallMoving()
-    PASS --> MOVE_IN_FRONT_OF_BALL : isBallPlacementRequired()
-    PASS --> STOP : isStopped()
-    PASS --> PREPARE_PENALTY : isPreparePenalty()
-    INTERCEPT --> DEFEND : hasInterceptionFailed()
-    INTERCEPT --> PASS : ballCanBePassedOutOfPenaltyArea()
-    INTERCEPT --> STOP : isStopped()
-    INTERCEPT --> PREPARE_PENALTY : isPreparePenalty()
-    RAMBO --> DEFEND : world_model->point_checker.isPenaltyArea(world_model.ball.pos) or isGoalKick()
-    RAMBO --> STOP : isStopped()
-    RAMBO --> PREPARE_PENALTY : isPreparePenalty()
-    MOVE_IN_FRONT_OF_BALL --> DEFEND : isBallMoving()
-    MOVE_IN_FRONT_OF_BALL --> DEFEND : isBallPlaced()
-    MOVE_IN_FRONT_OF_BALL --> GET_BALL_CONTACT : status == SUCCESS
-    MOVE_IN_FRONT_OF_BALL --> STOP : isStopped()
-    MOVE_IN_FRONT_OF_BALL --> PREPARE_PENALTY : isPreparePenalty()
-    GET_BALL_CONTACT --> MOVE_WITH_BALL : status == SUCCESS
-    GET_BALL_CONTACT --> MOVE_IN_FRONT_OF_BALL : status == FAILURE
-    GET_BALL_CONTACT --> STOP : isStopped()
-    GET_BALL_CONTACT --> PREPARE_PENALTY : isPreparePenalty()
-    MOVE_WITH_BALL --> DEFEND : status == SUCCESS
-    MOVE_WITH_BALL --> MOVE_IN_FRONT_OF_BALL : status == FAILURE
-    MOVE_WITH_BALL --> STOP : isStopped()
-    MOVE_WITH_BALL --> PREPARE_PENALTY : isPreparePenalty()
-```
+SecondThreatDefenderPlannerは、個別のディフェンダーロボットに対する脅威対応を決定するプランナーです。TotalDefensePlannerと組み合わせて使用され、より詳細な守備戦術を実現します。
 
 ## Skill
 

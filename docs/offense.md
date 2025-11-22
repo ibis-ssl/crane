@@ -1,6 +1,6 @@
 # オフェンス戦術システム
 
-> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **最終更新**: 2024年12月（システム再構築後）
 > **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_planner_plugins](./packages/crane_planner_plugins.md)
 
 Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_planner_plugins`の戦略プランナーにより実現されています。
@@ -104,26 +104,10 @@ stateDiagram-v2
 - ボール保持者のサポート
 - 攻撃継続のためのポジショニング
 
-## JapanOpen2025での実績
+## 実装の詳細
 
-### 有効だった戦術
+各スキルの実装詳細は以下のドキュメントを参照してください：
 
-- **状態遷移ベース制御**: 複雑な状況でも安定した攻撃行動
-- **自動パス先選択**: 敵ディフェンスの隙を突く効果的なパス
-- **チップキック活用**: 密集状況での突破力向上
-
-### 改善された点
-
-- **キック精度**: 目標方向への精度が大幅向上
-- **ボール制御**: ドリブル・パスの安定性向上
-- **連携攻撃**: 複数ロボットでの連携プレー実現
-
-### 今後の発展方向
-
-- より高度な連携プレーパターンの開発
-- 機械学習による戦術最適化
-- 相手戦術への適応的対応システム
-
----
-
-**詳細な実装**: [crane_robot_skills](./packages/crane_robot_skills.md)の攻撃スキル群を参照
+- **[crane_robot_skills](./packages/crane_robot_skills.md)** - 個別スキルの実装仕様
+- **[crane_planner_plugins](./packages/crane_planner_plugins.md)** - 戦略プランナーの統合実装
+- **[attacker.md](./attacker.md)** - Attackerスキルの詳細な状態遷移

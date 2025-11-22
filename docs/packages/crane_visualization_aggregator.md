@@ -9,6 +9,8 @@ Craneシステムの**可視化データ統合**を担うパッケージです�
 - **データ統合**: 複数ノードからの可視化データの集約
 - **統一インターフェース**: 一元化された可視化データ配信
 - **リアルタイム処理**: 低遅延での可視化データ更新
+- **スナップショット配信**: 5秒周期で`/aggregated_svgs`（SvgSnapshot）を配信
+- **差分更新対応**: `/visualizer_svgs`（SvgUpdates）の増分更新を集約
 - **外部ツール連携**: RViz、Foxglove等との統合
 
 ## アーキテクチャ上の役割
@@ -35,4 +37,4 @@ ros2 run crane_visualization_aggregator visualization_aggregator_node
 
 ---
 
-**関連パッケージ**: [crane_visualization_interfaces](./crane_visualization_interfaces.md) | [consai_visualizer](./consai_visualizer.md)
+**関連パッケージ**: [crane_visualization_interfaces](./crane_visualization_interfaces.md)

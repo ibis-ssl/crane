@@ -96,6 +96,8 @@ visualizer->circle().raii()
 - `drawLine(start, end, color = "white", stroke_width = 10.0, opacity = 1.0)`
 - `drawCircle(center, radius, color, stroke_width, opacity)`
 - `drawFilledCircle(center, radius, fill_color = "white", opacity = 0.5)`
+- `drawStyledCircle(center, radius, fill_color = "none", fill_opacity = 1.0, stroke_color = "white", stroke_opacity = 1.0, stroke_width = 10.0)`
+- `drawPolyline(points, color = "white", opacity = 1.0, stroke_width = 10.0)`
 - `drawText(position, "label", color = "white", font_size = 100.0, anchor = "start")`
 - `arrow(start, direction, length, color = "white", stroke_width = 10.0, arrowhead_length = 0.35, arrowhead_width = 0.20)`
 - `velocityArrow(position, velocity_vector, color = "lime", scale = 1.0, stroke_width = 20.0)`
@@ -103,6 +105,27 @@ visualizer->circle().raii()
 - `doubleCircle(center, inner_radius, outer_radius, ...)`
 - `rectangle(top_left, bottom_right, color = "white", stroke_width = 10.0)`
 - `arc(center, radius, start_angle, end_angle, color = "white", stroke_width = 10.0, steps = 16)`
+
+### フィールド描画専用の便利関数（2025年11月追加）
+
+- `drawFieldLine(p1, p2, color = "white", stroke_width = 10.0)`
+- `drawFieldRect(corner1, corner2, color = "white", stroke_width = 10.0)`
+- `drawGoal(back_center, width, depth, color = "white", stroke_width = 10.0)`
+
+### テキスト表示のプリセット関数
+
+- `drawDebugLabel(robot_pos, "label", color = "white", offset_x = -0.5, offset_y = 0.5)`
+- `drawCenteredLabel(pos, "label", color = "white", font_size = 110.0)`
+
+### ロボット描画の便利関数
+
+- `drawRobot(pos, theta, fill_color = "white", fill_opacity = 1.0, stroke_color = "black", stroke_opacity = 1.0, stroke_width = 10.0, radius = 0.085, center_to_dribbler = 0.055)`
+- `drawRobotWithID(pos, theta, id, fill_color = "white", fill_opacity = 1.0, stroke_color = "black", stroke_opacity = 1.0, stroke_width = 10.0, id_font_size = 150.0, id_color = "white", id_offset_x = -0.05, id_offset_y = -0.05)`
+
+### 軌跡描画の便利関数
+
+- `drawTrajectory(points, color = "white", base_opacity = 1.0, sampling_interval = 1, stroke_width = 15.0)`
+- `drawFadingTrajectory(points, color = "white", segments = 10, stroke_width = 15.0, sampling_interval = 1)`
 
 これらは内部で `add()` 済みなので `build()` は不要です。素早いデバッグに最適です。
 

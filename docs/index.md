@@ -7,7 +7,6 @@
 ### クイックスタート
 
 - **[環境構築](./setup.md)** - ROS 2 Jazzy環境のセットアップガイド
-- **[開発進捗](./progress.md)** - 2025年JapanOpen後の開発状況と機能概要
 - **[Docker環境](./docker.md)** - シミュレーション環境の構築
 
 ### 開発者向け
@@ -93,32 +92,10 @@
 
 **32パッケージの詳細仕様** - [📦 パッケージ一覧](./packages/index.md)
 
-現在の完成状況:
-
-- ✅ **全パッケージ完了**: 32/32 パッケージ (100%)
-- ✅ **基盤パッケージ**: 6/6 完了 (crane_msgs, crane_world_model_publisher, crane_robot_skills, crane_session_controller, crane_geometry, crane_physics)
-
 ## 🔗 外部リソース
 
 - **[ibis-ssl ドキュメント](https://ibis-ssl.github.io/ibis_documentation/)** - チーム公式ドキュメント
 - **[GitHub リポジトリ](https://github.com/ibis-ssl/crane)** - 最新ソースコード
 - **[RoboCup SSL公式](https://ssl.robocup.org/)** - 競技規則と技術仕様
-
-## 🛠️ 最新の開発状況
-
-### 最新の開発成果
-
-- **2025年6月**: JapanOpen2025での実戦投入・競技実績を達成
-- **2025年前半**: 全32パッケージのドキュメント完成・システム統合完了
-- **2024年末**: ボールフィルタ実装・3Dボールモデル拡充・Vector3d導入完了
-
-### 技術的特徴
-
-- **リアルタイム制御**: 60Hz制御ループでの高精度ロボット協調
-- **3D物理モデル**: 重力・空気抵抗を考慮した予測システム
-- **プラグインアーキテクチャ**: 戦略・スキルの動的拡張
-- **YAML設定駆動**: コード変更なしでの戦術調整
-
----
 
 **📧 質問・フィードバック**: [GitHub Issues](https://github.com/ibis-ssl/crane/issues)で承ります。

@@ -24,7 +24,7 @@
 
 ## 📦 パッケージ一覧・作業状況
 
-### 🔥 Core系パッケージ群 (14/14) - 高優先度
+### 🔥 Core系パッケージ群 (13/13) - 高優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
@@ -40,7 +40,6 @@
 | [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_gui](./crane_gui.md) | GUI（開発中止） | ⚫ 無効 | ✅ 作成済み | 完了 |
-| [crane_simple_ai](./crane_simple_ai.md) | 簡易AI制御 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_speaker](./crane_speaker.md) | 音声出力システム | 🟢 安定 | ✅ 作成済み | 完了 |
 
 ### 🎯 Session系パッケージ群 (2/2) - 高優先度
@@ -62,23 +61,30 @@
 | [crane_lint_common](./crane_lint_common.md) | 共通リント設定 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ✅ 作成済み | 完了 |
+| [crane_utils](./crane_utils.md) | 共通ユーティリティ関数 | 🟢 安定 | ✅ 作成済み | 完了 |
 | ~~[crane_basics](./crane_basics.md)~~ | ~~基礎ユーティリティライブラリ~~ | ⚫ 解体済 | ⚠️ 非推奨 | - |
 
-### 📡 SSL通信系パッケージ群 (3/3) - 中優先度
+### 📡 SSL通信系パッケージ群 (2/2) - 中優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
 | [robocup_ssl_comm](./robocup_ssl_comm.md) | SSL通信プロトコル処理 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [robocup_ssl_msgs](./robocup_ssl_msgs.md) | SSL公式メッセージ定義 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [consai_visualizer](./consai_visualizer.md) | SSL可視化GUI | 🟢 安定 | ✅ 作成済み | 完了 |
 
-### 📚 3rdparty系パッケージ群 (3/3) - 低優先度
+### 📚 3rdparty系パッケージ群 (4/4) - 低優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
 | [rvo2_vendor](./rvo2_vendor.md) | RVO2衝突回避アルゴリズム | 🟢 安定 | ✅ 作成済み | 完了 |
+| [modern_orca](./modern_orca.md) | Modern ORCA衝突回避ライブラリ | 🟡 中活動 | ✅ 作成済み | 完了 |
 | [matplotlib_cpp_17_vendor](./matplotlib_cpp_17_vendor.md) | C++17対応matplotlib | 🟢 安定 | ✅ 作成済み | 完了 |
 | [closest_point_vendor](./closest_point_vendor.md) | 最近点計算ライブラリ | 🟢 安定 | ✅ 作成済み | 完了 |
+
+### 🛠️ 開発ツール系パッケージ群 (1/1) - 開発支援
+
+| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
+|-------------|------|-----------|----------------|---------------|
+| [crane_debug_tools](./crane_debug_tools.md) | デバッグ・テストツール | 🟡 中活動 | ✅ 作成済み | 完了 |
 
 ---
 
@@ -129,13 +135,14 @@
 ## 📊 進捗サマリー
 
 - **全体進捗**: 31/31 パッケージ (100%) ✅ **完了**
-- **Core系**: 14/14 完了 (100%) ✅
+- **Core系**: 13/13 完了 (100%) ✅
 - **Session系**: 2/2 完了 (100%) ✅
-- **Utility系**: 9/9 完了 (100%) ✅
-- **SSL通信系**: 3/3 完了 (100%) ✅
-- **3rdparty系**: 3/3 完了 (100%) ✅
+- **Utility系**: 10/10 完了 (100%) ✅
+- **SSL通信系**: 2/2 完了 (100%) ✅
+- **3rdparty系**: 4/4 完了 (100%) ✅
+- **開発ツール系**: 1/1 完了 (100%) ✅
 
-**最終更新**: 2025-06-22
+**最終更新**: 2025-11-22
 
 ---
 
