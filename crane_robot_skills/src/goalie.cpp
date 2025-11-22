@@ -17,7 +17,6 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
-  setPreUpdateFunction([&]() { command->clearSkillStates(); });
 }
 
 Status Goalie::update()

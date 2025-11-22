@@ -25,7 +25,6 @@ void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", MOVING_BALL_VELOCITY);
 
-  setPreUpdateFunction([&]() { command->clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
     command->setTargetPosition(world_model()->ball().pos);
