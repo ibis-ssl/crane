@@ -450,11 +450,6 @@ void SingleBallPlacement::initialize()
     command->stopHere();
     command->disableAnyAreaAvoidance();
     command->setOmegaLimit(0.0);
-    // if (robot()->vel.linear.norm() < 0.05 && world_model()->ball().isStopped(0.05)) {
-    //   command->dribble(0.0);
-    // } else {
-    //   command->dribble(0.3);
-    // }
     command->dribble(0.0);
     return Status::RUNNING;
   });
