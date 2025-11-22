@@ -190,6 +190,7 @@ public:
     // 毎フレーム自動クリア
     command->clearMaxVelocityFactors();
     command->clearMaxAccelerationFactors();
+    command->clearSkillStates();
 
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
@@ -243,6 +244,7 @@ public:
     // 毎フレーム自動クリア
     command->clearMaxVelocityFactors();
     command->clearMaxAccelerationFactors();
+    command->clearSkillStates();
 
     command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
     command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
