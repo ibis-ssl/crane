@@ -53,7 +53,6 @@ void Attacker::initialize()
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
     pass_receiver_id = std::nullopt;
-    command->clearMaxVelocityFactors();
     receive_skill.clearVisualizer();
     kick_skill.clearVisualizer();
     goal_kick_skill.clearVisualizer();
