@@ -204,15 +204,6 @@ if (min_slack) {
 ### 4. 距離計算
 
 ```cpp
-// ロボットからボールまでの距離を計算
-double distance = world_model->getDistanceFromRobotToBall(robot_id);
-
-// IDを指定してロボットから特定の点までの距離を計算
-double distance = world_model->getDistanceFromRobot(robot_id, point);
-
-// ボールから特定の点までの距離を計算
-double distance = world_model->getDistanceFromBall(point);
-
 // 特定の線分と最も近い相手ロボットとその距離を取得
 auto nearest = world_model->getNearestRobotWithDistanceFromSegment(
   segment, world_model->theirs.getAvailableRobots());
@@ -220,6 +211,13 @@ if (nearest) {
   auto [nearest_robot, distance] = *nearest;
   // nearest_robot を使用...
 }
+
+// ロボット・ボール間の距離計算（直接計算する例）
+auto robot = world_model->getOurRobot(robot_id);
+double distance_to_ball = (robot->pose.pos - world_model->ball().pos).norm();
+
+// ロボットから特定の点までの距離計算
+double distance_to_point = (robot->pose.pos - target_point).norm();
 ```
 
 ## ボール所有者の計算
