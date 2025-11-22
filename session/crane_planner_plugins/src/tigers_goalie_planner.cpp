@@ -9,8 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TigersGoaliePlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext &)
+TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto robot = world_model->getRobot(robots.front());
   crane::RobotCommandWrapper command("tigers_goalie_planner", robot->id, world_model);
@@ -147,8 +146,7 @@ TigersGoaliePlanner::calculateRobotCommand(
 
 auto TigersGoaliePlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -156,6 +154,6 @@ auto TigersGoaliePlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles, context);
+    prev_roles);
 }
 }  // namespace crane

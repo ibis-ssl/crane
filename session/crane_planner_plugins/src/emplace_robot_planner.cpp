@@ -9,7 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-EmplaceRobotPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, PlannerContext &)
+EmplaceRobotPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -28,7 +28,7 @@ EmplaceRobotPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &,
 /// @return                        このプランナーで選択されたロボット
 auto EmplaceRobotPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> &) -> std::vector<uint8_t>
 {
   m_skill_map.clear();
 

@@ -16,8 +16,7 @@ CenterStopKickPlanner::CenterStopKickPlanner(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-CenterStopKickPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, [[maybe_unused]] PlannerContext & context)
+CenterStopKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::FAILURE, {}};
@@ -67,14 +66,12 @@ CenterStopKickPlanner::calculateRobotCommand(
 
 auto CenterStopKickPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     1,  // 1台のロボットのみ必要
     selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) { return 10.0 - robot->id; }, prev_roles,
-    context);
+    [this](const std::shared_ptr<RobotInfo> & robot) { return 10.0 - robot->id; }, prev_roles);
 
   if (!selected.empty()) {
     RCLCPP_DEBUG(

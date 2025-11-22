@@ -42,7 +42,7 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
@@ -115,8 +115,7 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
-    -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     commands.clear();
     for (size_t index = 0; const auto & robot_id : selectable_robots) {

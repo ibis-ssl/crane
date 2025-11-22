@@ -152,7 +152,7 @@ SimpleAIPlanner::~SimpleAIPlanner()
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, PlannerContext &)
+SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
@@ -164,7 +164,7 @@ SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, Pla
 
 auto SimpleAIPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> &) -> std::vector<uint8_t>
 {
   // For SimpleAI planner, if we have a running skill, always return the robot_id
   // even if it's not in selectable_robots. This ensures WebUI skill execution works.

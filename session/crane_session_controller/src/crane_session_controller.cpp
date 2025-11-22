@@ -23,8 +23,6 @@
 
 namespace crane
 {
-std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles = nullptr;
-
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
@@ -37,8 +35,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   crane::CraneVisualizerBuffer::activate(*this);
 
   world_model->setBallOwnerCalculatorEnabled(true);
-  robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
-  PlannerBase::robot_roles = robot_roles;
 
   // 設定管理の初期化
   declare_parameter<std::string>("session_config_file_name", "unified_session_config.yaml");
@@ -115,9 +111,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       assign(play_situation.command.name);
     }
 
-    PlannerContext planner_context;
     for (const auto & planner : planner_registry_->getAllPlanners()) {
-      auto commands_msg = planner->getRobotCommands(planner_context);
+      auto commands_msg = planner->getRobotCommands();
       ranges::for_each(
         commands_msg.robot_commands, [&](crane_msgs::msg::RobotCommand & robot_command) {
           robot_command.planner_name = planner->name;
@@ -175,8 +170,7 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
     prev_session_name_ = session_name;
 
     try {
-      PlannerContext planner_context;
-      request(session_name, world_model->ours().getAvailableRobotIds(), planner_context);
+      request(session_name, world_model->ours().getAvailableRobotIds());
 
       // 全セッションの割当状況をログ出力
       logAssignmentIfChanged(buildAssignmentLog());
@@ -200,8 +194,7 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
 }
 
 auto SessionControllerComponent::request(
-  const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
-  PlannerContext & planner_context) -> void
+  const std::string & situation, std::vector<uint8_t> selectable_robot_ids) -> void
 {
   auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(situation);
   if (!session_capacities_opt.has_value()) {
@@ -215,22 +208,17 @@ auto SessionControllerComponent::request(
 
   const auto & session_capacities = session_capacities_opt.value();
 
-  // Pass receiver is only provided when GameAnalysis selects one
-  const int pass_receiver = world_model->getMsg().game_analysis.pass_target_id;
-  planner_context["AttackerSkill"]["pass_receiver"] =
-    (pass_receiver >= 0) ? static_cast<double>(pass_receiver) : -1.0;
-
   // 前回のプランナーリストを保存し、新しいリストをクリア
   auto prev_available_planners = planner_registry_->getAllPlanners();
   planner_registry_->clear();
+  prev_robot_roles_.clear();
 
   crane_msgs::msg::RobotSelectResults results;
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (const auto & session_capacity : session_capacities) {
     if (!tryAssignRobotToPlanner(
-          session_capacity, selectable_robot_ids, prev_available_planners, planner_context,
-          results)) {
+          session_capacity, selectable_robot_ids, prev_available_planners, results)) {
       // エラーが発生した場合はループを抜ける
       break;
     }
@@ -241,8 +229,7 @@ auto SessionControllerComponent::request(
   // 割り当てられなかったロボットを待機状態にする
   if (not selectable_robot_ids.empty()) {
     SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size())};
-    tryAssignRobotToPlanner(
-      waiter_session, selectable_robot_ids, prev_available_planners, planner_context, results);
+    tryAssignRobotToPlanner(waiter_session, selectable_robot_ids, prev_available_planners, results);
   }
 }
 
@@ -294,7 +281,7 @@ auto SessionControllerComponent::logAssignmentIfChanged(const std::string & curr
 auto SessionControllerComponent::tryAssignRobotToPlanner(
   const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
   const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
-  PlannerContext & planner_context, crane_msgs::msg::RobotSelectResults & results) -> bool
+  crane_msgs::msg::RobotSelectResults & results) -> bool
 {
   // 割り当て可能なロボットがない場合はスキップ
   if (session_capacity.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
@@ -312,14 +299,12 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
     req->selectable_robots_num = session_capacity.selectable_robot_num;
     std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
 
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
-
     // PlannerRegistryを使ってプランナーを取得または生成
     auto planner = planner_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
       prev_available_planners);
 
-    auto response = planner->doRobotSelect(req, prev_roles, planner_context);
+    auto response = planner->doRobotSelect(req, prev_robot_roles_);
 
     std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
     results.results.push_back(result);
@@ -341,7 +326,7 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
         remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
         selectable_robot_ids.end());
       // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-      robot_roles->insert_or_assign(
+      prev_robot_roles_.insert_or_assign(
         selected_robot_id, RobotRole{session_capacity.session_name, ""});
     }
 

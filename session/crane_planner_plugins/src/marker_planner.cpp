@@ -11,7 +11,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<uint8_t> robot_ids =
     robots | ranges::views::transform([&](const auto & robot) { return robot.id; }) |
@@ -28,7 +28,7 @@ MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
 
 auto MarkerPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> &) -> std::vector<uint8_t>
 {
   auto lock = std::lock_guard(markers_mutex);
   return assignMarkingTarget(selectable_robots_num, selectable_robots);

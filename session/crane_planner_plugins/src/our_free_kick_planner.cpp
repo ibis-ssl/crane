@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 OurDirectFreeKickPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -42,8 +42,8 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
       if (goal_angle_width < 0.07) {
         auto available_robots = world_model->ours().getAvailableRobots(kicker->getRobot()->id);
         auto our_robots = available_robots | ranges::views::filter([&](const auto & robot) {
-                            auto role = PlannerBase::robot_roles->find(robot->id);
-                            if (role == PlannerBase::robot_roles->end()) {
+                            auto role = cached_prev_roles.find(robot->id);
+                            if (role == cached_prev_roles.end()) {
                               return true;  // roleが見つからない場合は含める
                             }
                             // defenderとキーパー以外を選択
@@ -111,16 +111,17 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
 }
 auto OurDirectFreeKickPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
+  cached_prev_roles = prev_roles;
+
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball().pos);
     },
-    prev_roles, context);
+    prev_roles);
   // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
   if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
     robots_sorted.erase(robots_sorted.begin());

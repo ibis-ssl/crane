@@ -32,13 +32,12 @@ public:
 
   auto createForwardLines() const -> std::vector<Segment>;
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
   std::vector<std::shared_ptr<skills::Forward>> forward_skills;
 };

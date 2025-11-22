@@ -33,8 +33,6 @@ struct RobotRole
   double score = 0.;
 };
 
-using PlannerContext = std::unordered_map<std::string, std::unordered_map<std::string, double>>;
-
 class PlannerBase
 {
 public:
@@ -59,11 +57,11 @@ public:
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles)
   {
     crane_msgs::srv::RobotSelect::Response response;
-    response.selected_robots = getSelectedRobots(
-      request->selectable_robots_num, request->selectable_robots, prev_roles, context);
+    response.selected_robots =
+      getSelectedRobots(request->selectable_robots_num, request->selectable_robots, prev_roles);
 
     robots.clear();
     for (auto id : response.selected_robots) {
@@ -71,15 +69,12 @@ public:
       robots.emplace_back(robot_id);
     }
 
-    for (auto && callback : robot_select_callbacks) {
-      callback();
-    }
     return response;
   }
 
-  auto getRobotCommands(PlannerContext & context) -> crane_msgs::msg::RobotCommands
+  auto getRobotCommands() -> crane_msgs::msg::RobotCommands
   {
-    auto [latest_status, robot_commands] = calculateRobotCommand(robots, context);
+    auto [latest_status, robot_commands] = calculateRobotCommand(robots);
     auto wrong_ids =
       robot_commands |
       // remove robot_command.robot_id is included in robots
@@ -107,11 +102,6 @@ public:
     return msg;
   }
 
-  void addRobotSelectCallback(std::function<void(void)> f)
-  {
-    robot_select_callbacks.emplace_back(f);
-  }
-
   bool isSameConfiguration(PlannerBase * other_planner)
   {
     return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
@@ -127,20 +117,17 @@ public:
 
   const std::vector<RobotIdentifier> & getRobots() const { return robots; }
 
-  static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
-
   const std::string name;
 
 protected:
   virtual auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> = 0;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> = 0;
 
   auto getSelectedRobotsByScore(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::function<double(const std::shared_ptr<RobotInfo> &)> & score_func,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles,
     std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
       [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
   {
@@ -215,14 +202,11 @@ protected:
   WorldModelWrapper::SharedPtr world_model;
 
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) = 0;
+    const std::vector<RobotIdentifier> & robots) = 0;
 
   Status status = Status::RUNNING;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
-
-private:
-  std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 
 }  // namespace crane

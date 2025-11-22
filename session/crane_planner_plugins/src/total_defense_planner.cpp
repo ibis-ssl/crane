@@ -17,8 +17,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TotalDefensePlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext &)
+TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -104,8 +103,7 @@ TotalDefensePlanner::calculateRobotCommand(
 
 auto TotalDefensePlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   std::vector<uint8_t> selected;
   std::vector<uint8_t> remaining_robots = selectable_robots;
@@ -144,7 +142,7 @@ auto TotalDefensePlanner::getSelectedRobots(
         // defense pointに近いほどスコアが高い
         return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
       },
-      prev_roles, context);
+      prev_roles);
 
     ranges::copy(selected_first_defenders, ranges::back_inserter(selected));
     ranges::remove_if(remaining_robots, [selected_first_defenders](const uint8_t id) {
