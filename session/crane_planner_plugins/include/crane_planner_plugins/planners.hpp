@@ -61,7 +61,6 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"goalie_skill",                              [](Ts... ts) { return std::make_shared<GoalieSkillPlanner>(ts...); }},
       {"marker",                                    [](Ts... ts) { return std::make_shared<MarkerPlanner>(ts...); }},
       {"sub_attacker_skill",                        [](Ts... ts) { return std::make_shared<SubAttackerSkillPlanner>(ts...); }},
-      {"tigers_goalie",                             [](Ts... ts) { return std::make_shared<TigersGoaliePlanner>(ts...); }},
       {"waiter",                                    [](Ts... ts) { return std::make_shared<WaiterPlanner>(ts...); }},
       {"our_penalty_kick",                          [](Ts... ts) { return std::make_shared<OurPenaltyKickPlanner>(ts...); }},
       {"pass_receive",                              [](Ts... ts) { return std::make_shared<PassReceiverPlanner>(ts...); }},
