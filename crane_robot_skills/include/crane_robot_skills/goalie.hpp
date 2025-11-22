@@ -42,6 +42,8 @@ public:
 
 private:
   void initialize();
+
+  auto clampXToGoalLine(const Point & position, double margin) const -> Point;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_
