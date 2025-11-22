@@ -7,11 +7,13 @@
 ## 主要機能
 
 ### ストリーム操作 (`stream.hpp`)
+
 - `std::vector`のストリーム出力演算子オーバーロード
 - `uint8_t`の数値表示サポート（文字表示の回避）
 - デバッグ出力の簡素化
 
 ### 時間計測 (`time.hpp`)
+
 - `getDiffSec()`: 2つの時刻間の差分計算（秒単位）
 - `getElapsedSec()`: 開始時刻からの経過時間計算
 - `ScopedTimer`: スコープベースの自動時間計測とROS 2トピック発行
@@ -36,6 +38,7 @@ namespace crane {
 ```
 
 **使用例**:
+
 ```cpp
 #include <crane_utils/stream.hpp>
 std::vector<int> data = {1, 2, 3};
@@ -61,6 +64,7 @@ namespace crane {
 ```
 
 **使用例**:
+
 ```cpp
 #include <crane_utils/time.hpp>
 
@@ -80,11 +84,13 @@ double elapsed = crane::getDiffSec(start, end);
 ## 依存関係
 
 ### ビルド依存
+
 - `ament_cmake_auto`
 - `rclcpp`
 - `std_msgs`
 
 ### 実行時依存
+
 なし（ヘッダーオンリーライブラリ）
 
 ## 使用方法
@@ -92,11 +98,13 @@ double elapsed = crane::getDiffSec(start, end);
 ### パッケージへの統合
 
 `package.xml`への依存追加:
+
 ```xml
 <build_export_depend>crane_utils</build_export_depend>
 ```
 
 `CMakeLists.txt`:
+
 ```cmake
 find_package(crane_utils REQUIRED)
 ament_target_dependencies(your_target crane_utils)

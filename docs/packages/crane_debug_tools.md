@@ -7,17 +7,20 @@
 ## 主要機能
 
 ### CLIスキルテスター (`cli_skill_tester.cpp`)
+
 - コマンドラインからのスキル実行と制御
 - インタラクティブモードでのスキルテスト
 - 複数ロボットへの同時スキル適用
 - シナリオファイルベースの自動テスト実行
 
 ### Webインターフェース
+
 - **WebSocketサーバー** (`websocket_server.cpp`): リアルタイム双方向通信
 - **Webブリッジサーバー** (`web_bridge_server.cpp`): ROS 2とWebの橋渡し
 - **Webサーバー** (`simple_web_server.cpp`): HTTPサーバーとUI配信
 
 ### シナリオテスト
+
 - JSON形式のシナリオ定義
 - タイミング制御とパラメータ指定
 - 繰り返しテストの自動化
@@ -35,12 +38,15 @@
 ### ノード
 
 #### skill_tester_cli
+
 インタラクティブなスキルテストCLIノード。
 
 **トピック**:
+
 - `/simple_ai/skill_execution` (Action Client) - スキル実行要求
 
 **利用可能なスキル**:
+
 - 基本動作: `Idle`, `Sleep`, `EmplaceRobot`
 - ボール操作: `Kick`, `Receive`, `StealBall`
 - ゲームロール: `Goalie`, `Attacker`, `SubAttacker`, `Marker`
@@ -49,9 +55,11 @@
 - その他: `Forward`, `BallNearbyPositioner`, `SecondThreatDefender`, `FreekickSaver`
 
 #### debug_web_server
+
 Web UIとROS 2を接続するブリッジノード。
 
 **機能**:
+
 - WebSocket経由のリアルタイムデータ配信
 - ブラウザからのスキル実行制御
 - 可視化データのストリーミング
@@ -59,6 +67,7 @@ Web UIとROS 2を接続するブリッジノード。
 ## 依存関係
 
 ### ビルド依存
+
 - `ament_cmake_auto`
 - `crane_msg_wrappers`
 - `crane_msgs`
@@ -69,6 +78,7 @@ Web UIとROS 2を接続するブリッジノード。
 - `libboost-system-dev`, `libssl-dev`, `libgoogle-glog-dev`
 
 ### 実行時依存
+
 - `crane_session_controller` または `crane_simple_ai`（スキル実行サーバー）
 
 ## 使用方法
@@ -90,6 +100,7 @@ ros2 run crane_debug_tools crane_skill_cli
 ### シナリオファイルの使用
 
 **シナリオファイル例** (`test_sequence.json`):
+
 ```json
 {
   "skills": [
@@ -113,6 +124,7 @@ ros2 run crane_debug_tools crane_skill_cli
 ```
 
 **実行**:
+
 ```bash
 crane_skill scenario test_sequence.json
 ```
@@ -146,6 +158,7 @@ http://localhost:8080/standalone.html
 **原因**: Craneシステムが起動していない
 
 **解決策**:
+
 ```bash
 ros2 launch crane_bringup crane.launch.xml sim:=true
 ```
@@ -155,6 +168,7 @@ ros2 launch crane_bringup crane.launch.xml sim:=true
 **原因**: 環境変数が読み込まれていない
 
 **解決策**:
+
 ```bash
 source install/local_setup.bash
 ```
