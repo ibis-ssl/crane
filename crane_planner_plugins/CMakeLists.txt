@@ -47,7 +47,6 @@ target_precompile_headers(${PROJECT_NAME}
     "<crane_robot_skills/skill_base.hpp>"
     "<rclcpp/rclcpp.hpp>"
     "<Eigen/Geometry>"
-    "<crane_msgs/srv/robot_select.hpp>"
     "<crane_robot_skills/kick.hpp>"
     "<yaml-cpp/yaml.h>"
 )
