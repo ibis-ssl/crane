@@ -295,18 +295,13 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
 
   try {
     // プランナー生成とロボット選択
-    auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-    req->selectable_robots_num = session_capacity.selectable_robot_num;
-    std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
-
     // PlannerRegistryを使ってプランナーを取得または生成
     auto planner = planner_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
       prev_available_planners);
 
-    auto response = planner->doRobotSelect(req, prev_robot_roles_);
-
-    std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
+    auto selected_robots = planner->selectRobots(
+      selectable_robot_ids, session_capacity.selectable_robot_num, prev_robot_roles_);
     results.results.push_back(result);
 
     // プランナーをレジストリに登録
@@ -315,12 +310,11 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
     if (not selectable_robot_ids.empty()) {
       RCLCPP_DEBUG_STREAM(
         get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
-                                       << selectable_robot_ids << " -> "
-                                       << response.selected_robots);
+                                       << selectable_robot_ids << " -> " << selected_robots);
     }
 
     // 割当依頼結果の反映
-    for (auto selected_robot_id : response.selected_robots) {
+    for (auto selected_robot_id : selected_robots) {
       // 割当されたロボットを利用可能ロボットリストから削除
       selectable_robot_ids.erase(
         remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),

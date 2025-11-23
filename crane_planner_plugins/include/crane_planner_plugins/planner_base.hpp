@@ -13,7 +13,6 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
-#include <crane_msgs/srv/robot_select.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
@@ -55,21 +54,19 @@ public:
 
   virtual ~PlannerBase() { visualizer->clearBuffer(); }
 
-  crane_msgs::srv::RobotSelect::Response doRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  auto selectRobots(
+    const std::vector<uint8_t> & available_robots, const uint8_t max_selection_count,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
   {
-    crane_msgs::srv::RobotSelect::Response response;
-    response.selected_robots =
-      getSelectedRobots(request->selectable_robots_num, request->selectable_robots, prev_roles);
+    auto selected_robots = getSelectedRobots(max_selection_count, available_robots, prev_roles);
 
     robots.clear();
-    for (auto id : response.selected_robots) {
+    for (auto id : selected_robots) {
       RobotIdentifier robot_id{true, id};
       robots.emplace_back(robot_id);
     }
 
-    return response;
+    return selected_robots;
   }
 
   auto getRobotCommands() -> crane_msgs::msg::RobotCommands

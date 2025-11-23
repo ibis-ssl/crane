@@ -22,7 +22,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // パラメータの設定
   declare_parameter("ball_idle.threshold_duration", 5.0);
   declare_parameter("ball_idle.move_distance_threshold_meter", 0.05);
-  declare_parameter("ball_possession.threshold_meter", 0.05);
   declare_parameter("robot_collision.velocity_threshold", 1.0);
   declare_parameter("robot_collision.distance_threshold", 0.2);
   declare_parameter("robot_collision.time_window", 0.5);
@@ -32,8 +31,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     rclcpp::Duration::from_seconds(get_parameter("ball_idle.threshold_duration").as_double());
   config.ball_idle.move_distance_threshold_meter =
     get_parameter("ball_idle.move_distance_threshold_meter").as_double();
-  config.ball_possession.threshold_meter =
-    get_parameter("ball_possession.threshold_meter").as_double();
   config.robot_collision.velocity_threshold =
     get_parameter("robot_collision.velocity_threshold").as_double();
   config.robot_collision.distance_threshold =

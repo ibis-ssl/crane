@@ -25,12 +25,10 @@ set(msg_files
   "msg/world_model/WorldModel.msg"
   "msg/world_model/Vector3Stamped.msg"
 
-  "msg/analysis/BallAnalysis.msg"
   "msg/analysis/GameAnalysis.msg"
   "msg/analysis/PingStatus.msg"
   "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
-  "msg/analysis/FieldAnalysis.msg"
   "msg/analysis/NamedBool.msg"
   "msg/analysis/NamedFloat.msg"
   "msg/analysis/NamedInt.msg"
@@ -59,17 +57,12 @@ set(msg_files
   "msg/control/PolarVelocityTargetMode.msg"
 )
 
-set(srv_files
-  "srv/RobotSelect.srv"
-)
-
 set(action_files
   "action/SkillExecution.action"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  ${srv_files}
   ${action_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs robocup_ssl_msgs
 )

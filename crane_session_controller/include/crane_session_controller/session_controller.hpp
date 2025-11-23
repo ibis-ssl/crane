@@ -15,7 +15,6 @@
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
-#include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
@@ -64,8 +63,6 @@ private:
     crane_msgs::msg::RobotSelectResults & results) -> bool;
 
   WorldModelWrapper::SharedPtr world_model;
-
-  std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
 
