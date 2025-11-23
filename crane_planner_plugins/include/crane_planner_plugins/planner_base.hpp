@@ -58,7 +58,7 @@ public:
     const std::vector<uint8_t> & available_robots, const uint8_t max_selection_count,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
   {
-    auto result = getSelectedRobots(max_selection_count, available_robots, prev_roles);
+    auto selected_robots = getSelectedRobots(max_selection_count, available_robots, prev_roles);
 
     robots.clear();
     for (auto id : selected_robots) {
@@ -66,7 +66,7 @@ public:
       robots.emplace_back(robot_id);
     }
 
-    return result;
+    return selected_robots;
   }
 
   auto getRobotCommands() -> crane_msgs::msg::RobotCommands
