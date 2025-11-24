@@ -42,10 +42,9 @@ auto PassTargetSelector::computePassOrigin(
 }
 
 auto PassTargetSelector::calcScore(
-  const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin, const Point & p)
-  -> double
+  const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin,
+  const Point & p) const -> double
 {
-  Segment ball_to_target{pass_origin, p};
   double score = 1.0;
   // 距離（0〜4mで上昇）
   score += std::clamp((p - pass_origin).norm() * 0.5, 0.0, 2.0);

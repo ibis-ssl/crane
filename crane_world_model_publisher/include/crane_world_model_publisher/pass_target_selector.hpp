@@ -57,9 +57,9 @@ private:
     const crane_msgs::msg::GameAnalysis & analysis_msg) const -> Point;
 
   // スコア関数
-  [[nodiscard]] static auto calcScore(
-    const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin, const Point & p)
-    -> double;
+  [[nodiscard]] auto calcScore(
+    const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin,
+    const Point & p) const -> double;
 
   // 可視化（選定されたパスの描画）
   auto visualize(
