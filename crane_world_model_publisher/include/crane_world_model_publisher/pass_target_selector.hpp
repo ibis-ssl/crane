@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_physics/slack_time_config.hpp>
 #include <deque>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -34,6 +35,12 @@ public:
   {
     min_hold_duration_sec_ = min_hold_sec;
     min_improvement_margin_ = min_improvement;
+  }
+
+  auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 0.5) -> void
+  {
+    enemy_slack_config_ = config;
+    slack_scale_ = slack_scale;
   }
 
   /**
@@ -73,6 +80,13 @@ private:
   // パラメータ（ヒステリシス）
   double min_hold_duration_sec_ = 0.5;
   double min_improvement_margin_ = 0.2;
+
+  // 敵インターセプト評価用パラメータ
+  SlackTimeConfig enemy_slack_config_{
+    .robot_max_acceleration = 3.0,  // 敵は自チームより高め（安全マージン）
+    .robot_max_velocity = 5.5       // 敵は自チームより高め（安全マージン）
+  };
+  double slack_scale_ = 0.5;  // スコア正規化用
 
   // 時刻取得用クロック
   rclcpp::Clock ros_clock_{RCL_ROS_TIME};
