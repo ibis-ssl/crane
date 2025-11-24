@@ -47,7 +47,9 @@ auto PassTargetSelector::calcScore(
 {
   double score = 1.0;
   // 距離（0〜4mで上昇）
-  score += std::clamp((p - pass_origin).norm() * 0.5, 0.0, 2.0);
+  const double pass_distance = (p - pass_origin).norm();
+  score += std::clamp(pass_distance * 0.5, 0.0, 2.0);
+
   // ゴール角度（敵ゴールに対する見通し）
   {
     auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
@@ -66,29 +68,40 @@ auto PassTargetSelector::calcScore(
       (world_model->fieldSize().x() * 0.5);
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
-  // パスカット
-  auto available_enemies = world_model->theirs().getAvailableRobots();
-  auto enemys_with_angle_diff =
-    available_enemies | ranges::views::filter([&](const auto & enemy) {
-      // チップキックで飛び越せる近くのロボットは対象外
-      // パス先より向こうにいるロボットは対象外
-      return enemy->getDistance(pass_origin) >= 1.0 &&
-             (p - pass_origin).dot(enemy->pose.pos - p) <= 0.0;
-    }) |
-    ranges::views::transform([&](const auto & enemy) {
-      double angle_diff = getAngleDiff(getAngle(p - pass_origin), getAngle(enemy->pose.pos));
-      return std::make_pair(std::abs(angle_diff), enemy);
-    }) |
-    ranges::to<std::vector>();
 
-  if (!enemys_with_angle_diff.empty()) {
-    const auto & best_intercepter = *ranges::min_element(
-      enemys_with_angle_diff, ranges::less{}, [](const auto & p) { return p.first; });
-    using boost::math::constants::degree;
-    // 0~5°で0~1を遷移
-    score *= std::clamp(best_intercepter.first * degree<double>() / 5.0, 0.0, 1.0);
-  }
+  constexpr double KICK_SPEED = 3.0;
+  const Segment pass_line{pass_origin, p};
+  const Vector2 pass_dir = p - pass_origin;
+  const Vector2 ball_velocity =
+    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * KICK_SPEED) : Vector2::Zero();
 
+  auto calc_slack_time = [&](const auto & enemy) -> double {
+    const auto closest = getClosestPointAndDistance(enemy->pose.pos, pass_line);
+    const double ball_time = (closest.closest_point - pass_origin).norm() / KICK_SPEED;
+
+    auto slack_result = world_model->getBallSlackTime(
+      pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
+
+    return slack_result.has_value() ? slack_result->slack_time : 1.0;
+  };
+
+  auto enemies = world_model->theirs().getAvailableRobots();
+  auto slack_times = enemies | ranges::views::filter([&](const auto & enemy) {
+                       // パス起点から近すぎる敵はチップで飛び越せるので除外
+                       return enemy->getDistance(pass_origin) >= 1.0;
+                     }) |
+                     ranges::views::filter([&](const auto & enemy) {
+                       // パス先より向こうにいる敵は除外
+                       return pass_dir.dot(enemy->pose.pos - p) <= 0.0;
+                     }) |
+                     ranges::views::transform(calc_slack_time) | ranges::to<std::vector>();
+
+  const double worst_slack = slack_times.empty() ? 1.0 : *ranges::min_element(slack_times);
+  const double intercept_score = std::clamp(worst_slack / slack_scale_, 0.0, 1.0);
+
+  score *= intercept_score;
+
+  // ペナルティエリア内は無効
   if (world_model->point_checker.isPenaltyArea(p)) {
     score = 0.0;
   }
