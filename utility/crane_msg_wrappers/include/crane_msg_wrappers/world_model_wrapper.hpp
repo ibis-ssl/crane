@@ -252,14 +252,34 @@ struct WorldModelWrapper
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step)
     -> std::vector<std::pair<Point, double>>;
 
-  [[nodiscard]] auto getBallSlackTime(double time, const RobotList & robots)
+  [[nodiscard]] auto getBallSlackTime(
+    double time, const RobotList & robots, const SlackTimeConfig & config)
     -> std::optional<SlackTimeResult>;
 
+  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
+    const RobotList & robots, const SlackTimeConfig & config) -> std::vector<SlackTimeResult>;
+
+  [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
+    const RobotList & robots, const SlackTimeConfig & config)
+    -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
+
+  [[nodiscard]] auto getBallSlackTime(double time, const RobotList & robots)
+    -> std::optional<SlackTimeResult>
+  {
+    return getBallSlackTime(time, robots, slack_config_);
+  }
+
   [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(const RobotList & robots)
-    -> std::vector<SlackTimeResult>;
+    -> std::vector<SlackTimeResult>
+  {
+    return getSlackInterceptPointAndSlackTimeArray(robots, slack_config_);
+  }
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(const RobotList & robots)
-    -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
+    -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>
+  {
+    return getMinMaxSlackInterceptPointAndSlackTime(robots, slack_config_);
+  }
 
   // slack時間計算設定の取得・設定
   [[nodiscard]] auto getSlackConfig() const -> const SlackTimeConfig & { return slack_config_; }
