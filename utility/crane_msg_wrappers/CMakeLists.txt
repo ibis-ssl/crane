@@ -18,6 +18,24 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME} SHARED DIRECTORY src)
 
+# プリコンパイル済みヘッダでビルド時間を短縮
+target_precompile_headers(${PROJECT_NAME}
+  PUBLIC
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/geometry_operations.hpp>"
+    "<crane_msgs/msg/world_model.hpp>"
+    "<crane_msgs/msg/robot_command.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+    "<range/v3/all.hpp>"
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<memory>"
+    "<vector>"
+    "<string>"
+    "<map>"
+    "<functional>"
+)
+
 ament_target_dependencies(${PROJECT_NAME} ${requirement_dependencies})
 
 if(BUILD_TESTING)

@@ -29,6 +29,19 @@ target_link_libraries(${PROJECT_NAME}
   yaml-cpp
 )
 
+# プリコンパイル済みヘッダでビルド時間を短縮
+target_precompile_headers(${PROJECT_NAME}
+  PUBLIC
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/geometry_operations.hpp>"
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<memory>"
+    "<optional>"
+    "<vector>"
+    "<cmath>"
+)
+
 ament_export_include_directories(
   include
 )
