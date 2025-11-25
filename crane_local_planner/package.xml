@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_local_planner</name>
-  <version>1.0.47</version>
+  <version>1.0.48</version>
   <description>Facilitate pass between robots</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
