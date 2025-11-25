@@ -14,8 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
-#include <crane_robot_skills/attacker.hpp>
-#include <crane_robot_skills/skills.hpp>
+#include <crane_robot_skills/skill_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>

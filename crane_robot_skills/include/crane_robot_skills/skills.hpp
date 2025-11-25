@@ -7,6 +7,9 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILLS_HPP_
 #define CRANE_ROBOT_SKILLS__SKILLS_HPP_
 
+#pragma message( \
+  "skills.hpp is deprecated. Include only the specific skills you need instead.")
+
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/ball_calibration_data_collector.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>

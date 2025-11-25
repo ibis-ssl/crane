@@ -11,7 +11,11 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
-#include <crane_robot_skills/skills.hpp>
+#include <crane_robot_skills/ball_nearby_positioner.hpp>
+#include <crane_robot_skills/goalie.hpp>
+#include <crane_robot_skills/simple_kickoff.hpp>
+#include <crane_robot_skills/single_ball_placement.hpp>
+#include <crane_robot_skills/sub_attacker.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
