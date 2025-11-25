@@ -50,7 +50,7 @@ struct RobotInfo
 {
   uint8_t id;
 
-  [[nodiscard]] auto getID() const -> RobotIdentifier { return {true, id}; }
+  [[nodiscard]] auto getID() const -> RobotIdentifier { return {.is_ours = true, .id = id}; }
 
   Pose2D pose;
 
@@ -106,7 +106,7 @@ struct RobotInfo
 
   BallContact ball_contact;
 
-  auto geometry() const { return Circle{pose.pos, 0.060}; }
+  auto geometry() const { return Circle{.center = pose.pos, .radius = 0.060}; }
 
   auto getDistance(const Point & pos) const -> double { return (pos - pose.pos).norm(); }
 

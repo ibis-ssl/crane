@@ -256,11 +256,7 @@ auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::optional<Capsule>
 {
   if (auto target = getBallPlacementTarget()) {
-    Capsule area;
-    area.segment.first = ball_.pos;
-    area.segment.second = target.value();
-    area.radius = 0.5 + offset;
-    return area;
+    return Capsule{.segment = Segment(ball_.pos, target.value()), .radius = 0.5 + offset};
   } else {
     return std::nullopt;
   }

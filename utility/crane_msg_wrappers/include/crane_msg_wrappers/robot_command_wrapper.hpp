@@ -330,7 +330,7 @@ public:
   auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.max_velocity_factors.emplace_back(
-      crane_msgs::msg::NamedFloat{.name = factor_name, .value = max_velocity});
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_velocity));
     return *this;
   }
 
@@ -344,7 +344,7 @@ public:
     -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.max_acceleration_factors.emplace_back(
-      crane_msgs::msg::NamedFloat{.name = factor_name, .value = max_acceleration});
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_acceleration));
     return *this;
   }
 
