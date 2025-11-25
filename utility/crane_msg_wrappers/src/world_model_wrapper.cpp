@@ -317,27 +317,20 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(
   return {target_angle, getAngleDiff(largest_interval.second, largest_interval.first)};
 }
 
-auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
-  -> std::optional<SlackTimeResult>
+auto WorldModelWrapper::getBallSlackTime(
+  const Point & ball_origin, const Vector2 & ball_velocity, double time, const RobotList & robots,
+  const SlackTimeConfig & config) -> std::optional<SlackTimeResult>
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = ball_.getPredictedPosition(time);
   if (robots.empty()) {
     return std::nullopt;
   }
 
+  // ボール位置を計算: ball_origin + ball_velocity * time
+  Point intercept_point = ball_origin + ball_velocity * time;
+
   // NaN値チェック
-  if (!std::isfinite(p_ball.x()) || !std::isfinite(p_ball.y())) {
-    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: p_ballがNaN値のため処理をスキップ"
-              << std::endl;
-    return std::nullopt;
-  }
-
-  // ロボットが向かうべき位置は、time秒後のボール予測位置
-  Point intercept_point = p_ball;
-
-  // intercept_pointのNaN値チェック
   if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
     std::cout
       << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ"
@@ -350,8 +343,7 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
     robots | ranges::views::transform([&](const auto & robot) {
       return std::make_pair(
         robot, getTravelTimeTrapezoidal(
-                 robot, intercept_point, slack_config_.robot_max_acceleration,
-                 slack_config_.robot_max_velocity));
+                 robot, intercept_point, config.robot_max_acceleration, config.robot_max_velocity));
     }),
     ranges::less{}, [](const auto & pair) {
       return pair.second;  // 移動時間が小さい順にソート
@@ -368,27 +360,42 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
   return std::make_optional<SlackTimeResult>({slack_time, intercept_point, best_robot.first});
 }
 
+auto WorldModelWrapper::getBallSlackTime(
+  double time, const RobotList & robots, const SlackTimeConfig & config)
+  -> std::optional<SlackTimeResult>
+{
+  return getBallSlackTime(ball_.pos, ball_.vel, time, robots, config);
+}
+
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   -> std::vector<std::pair<Point, double>>
 {
   return ball_.getBallSequence(t_horizon, t_step);
 }
 
-auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(const RobotList & robots)
-  -> std::vector<SlackTimeResult>
+auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
+  const Point & ball_origin, const Vector2 & ball_velocity, const RobotList & robots,
+  const SlackTimeConfig & config) -> std::vector<SlackTimeResult>
 {
+  const double ball_speed = ball_velocity.norm();
+
   std::vector<std::pair<Point, double>> ball_sequence;
-  if (ball_.vel.norm() > slack_config_.velocity_epsilon) {
-    ball_sequence = getBallSequence(slack_config_.time_horizon, slack_config_.time_step);
+  if (ball_speed > config.velocity_epsilon) {
+    for (double t = 0.0; t <= config.time_horizon; t += config.time_step) {
+      Point p = ball_origin + ball_velocity * t;
+      ball_sequence.emplace_back(p, t);
+    }
   } else {
-    ball_sequence.emplace_back(ball_.pos, 0.0);
+    ball_sequence.emplace_back(ball_origin, 0.0);
   }
+
   auto their_robots = theirs_.getAvailableRobots();
+
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
          // distance_horizon以内のボールのみを抽出
          | ranges::views::filter([&](const auto & ball_state) {
-             return (ball_state.first - ball_.pos).norm() < slack_config_.distance_horizon;
+             return (ball_state.first - ball_origin).norm() < config.distance_horizon;
            })
          // フィールド外/ペナルティエリア内のボールを除外
          | ranges::views::filter([&](const auto & ball_state) {
@@ -408,9 +415,9 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(const RobotList 
          // ボール位置 -> スラックタイムを計算
          | ranges::views::transform([&](const auto & ball_state) -> std::optional<SlackTimeResult> {
              auto [p_ball, t_ball] = ball_state;
-             auto slack = getBallSlackTime(t_ball, robots);
+             auto slack = getBallSlackTime(ball_origin, ball_velocity, t_ball, robots, config);
              if (slack) {
-               slack->slack_time += slack_config_.slack_time_offset;
+               slack->slack_time += config.slack_time_offset;
              }
              return slack;
            })
@@ -424,10 +431,17 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(const RobotList 
          ranges::to<std::vector>();
 }
 
-auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(const RobotList & robots)
+auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
+  const RobotList & robots, const SlackTimeConfig & config) -> std::vector<SlackTimeResult>
+{
+  return getSlackInterceptPointAndSlackTimeArray(ball_.pos, ball_.vel, robots, config);
+}
+
+auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
+  const RobotList & robots, const SlackTimeConfig & config)
   -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>
 {
-  auto slack_times = getSlackInterceptPointAndSlackTimeArray(robots);
+  auto slack_times = getSlackInterceptPointAndSlackTimeArray(robots, config);
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
   }
