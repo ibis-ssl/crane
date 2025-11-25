@@ -14,9 +14,7 @@ namespace crane
 // Circleのテスト
 TEST(CircleTest, CreateAndMeasure)
 {
-  crane::Circle circle;
-  circle.center << 0.0, 0.0;  // Comma operator style
-  circle.radius = 5.0;
+  crane::Circle circle{.center = Point(0.0, 0.0), .radius = 5.0};
 
   Point point;
   point << 10.0, 0.0;  // Comma operator style
