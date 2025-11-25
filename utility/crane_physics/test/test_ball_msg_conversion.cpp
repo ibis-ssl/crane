@@ -23,9 +23,9 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   auto physics_model = std::make_shared<BallPhysicsModel>(config);
 
   Ball ball(physics_model);
-  ball.pos << 1.5, 2.5;
+  ball.pos = Point(1.5, 2.5);
   ball.pos_z = 0.3;
-  ball.vel << 0.5, -0.8;
+  ball.vel = Point(0.5, -0.8);
   ball.vel_z = 1.2;
   ball.detected = true;
   ball.state = Ball::State::FLYING;
@@ -103,9 +103,9 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   auto physics_model = std::make_shared<BallPhysicsModel>(config);
 
   Ball original_ball(physics_model);
-  original_ball.pos << 2.0, -1.5;
+  original_ball.pos = Point(2.0, -1.5);
   original_ball.pos_z = 0.05;
-  original_ball.vel << 0.3, 0.7;
+  original_ball.vel = Point(0.3, 0.7);
   original_ball.vel_z = 0.8;
   original_ball.detected = true;
   original_ball.state = Ball::State::STOPPED;
@@ -139,12 +139,12 @@ TEST(BallMsgConversionTest, AllStateConversions)
 {
   // 全ての状態の変換をテスト
   Ball ball;
-  crane_msgs::msg::BallInfo msg;
-
-  // Initialize ball parameters to avoid uninitialized variable warnings
+  ball.pos = Point(0.0, 0.0);
   ball.pos_z = 0.0;
+  ball.vel = Point(0.0, 0.0);
   ball.vel_z = 0.0;
   ball.detected = false;
+  crane_msgs::msg::BallInfo msg;
 
   // STOPPED
   ball.state = Ball::State::STOPPED;

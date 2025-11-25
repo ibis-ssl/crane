@@ -25,10 +25,7 @@ TEST(CircleTest, CreateAndMeasure)
 // Capsuleのテスト
 TEST(CapsuleTest, CreateAndMeasure)
 {
-  Capsule capsule{
-    .segment = Segment(Point(0.0, 0.0), Point(10.0, 0.0)),
-    .radius = 2.0
-  };
+  Capsule capsule{.segment = Segment(Point(0.0, 0.0), Point(10.0, 0.0)), .radius = 2.0};
 
   Point point(5.0, 5.0);
   double distance = bg::distance(capsule, point);

@@ -15,12 +15,10 @@ namespace crane
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
-  stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0.0, 0.0;
+  stopped_robot->pose = Pose2D{.pos = Point(0.0, 0.0), .theta = 0.0};
+  stopped_robot->vel = Velocity2D{.linear = Point(0.0, 0.0), .omega = 0.0};
 
-  Point target;
-  target << 4.0, 0.0;
+  Point target(4.0, 0.0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 2秒加速(0~2m/s, 2m)
@@ -34,12 +32,10 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
-  stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0.0, 0.0;
+  stopped_robot->pose = Pose2D{.pos = Point(0.0, 0.0), .theta = 0.0};
+  stopped_robot->vel = Velocity2D{.linear = Point(0.0, 0.0), .omega = 0.0};
 
-  Point target;
-  target << 8.0, 0.0;
+  Point target(8.0, 0.0);
   // 加速度1m/s^2, 最高速度2m/s
   // 2秒加速(0~2m/s, 2m)
   // 2秒等速(2m/s, 4m)
@@ -53,12 +49,10 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
-  stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1.0, 0.0;
+  stopped_robot->pose = Pose2D{.pos = Point(0.0, 0.0), .theta = 0.0};
+  stopped_robot->vel = Velocity2D{.linear = Point(1.0, 0.0), .omega = 0.0};
 
-  Point target;
-  target << 3.5, 0.0;
+  Point target(3.5, 0.0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 1秒加速(1~2m/s, 1.5m): 2^2 - 1^2 = 2 * 1 * x, 3 = 2x, x = 1.5
@@ -71,12 +65,10 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
-  stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1.0, 0.0;
+  stopped_robot->pose = Pose2D{.pos = Point(0.0, 0.0), .theta = 0.0};
+  stopped_robot->vel = Velocity2D{.linear = Point(1.0, 0.0), .omega = 0.0};
 
-  Point target;
-  target << 7.5, 0.0;
+  Point target(7.5, 0.0);
 
   // 加速度1m/s^2, 最高速度2m/s
   // 1秒加速(1~2m/s, 1.5m)
@@ -90,12 +82,9 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
 // getPredictedPositionTrapezoidal のテスト
 TEST(PredictedPositionTrapezoidalTest, TimeZero_ReturnsCurrentPosition)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 1.0, 0.0;
-  Point target_pos;
-  target_pos << 5.0, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(1.0, 0.0);
+  Point target_pos(5.0, 0.0);
 
   Point predicted =
     crane::getPredictedPositionTrapezoidal(current_pos, current_vel, target_pos, 0.0, 1.0, 2.0);
@@ -106,12 +95,9 @@ TEST(PredictedPositionTrapezoidalTest, TimeZero_ReturnsCurrentPosition)
 
 TEST(PredictedPositionTrapezoidalTest, TimeExceedsTravelTime_ReturnsTargetPosition)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 0.0, 0.0;
-  Point target_pos;
-  target_pos << 4.0, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(0.0, 0.0);
+  Point target_pos(4.0, 0.0);
 
   // 移動時間は4秒（加速2秒+減速2秒、定速なし）
   // 10秒後を予測すると目標位置に到達
@@ -124,12 +110,9 @@ TEST(PredictedPositionTrapezoidalTest, TimeExceedsTravelTime_ReturnsTargetPositi
 
 TEST(PredictedPositionTrapezoidalTest, AccelerationPhase_Stop_NoCruise)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 0.0, 0.0;
-  Point target_pos;
-  target_pos << 4.0, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(0.0, 0.0);
+  Point target_pos(4.0, 0.0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 2秒加速(0~2m/s, 2m) + 2秒減速(2~0m/s, 2m)
@@ -143,12 +126,9 @@ TEST(PredictedPositionTrapezoidalTest, AccelerationPhase_Stop_NoCruise)
 
 TEST(PredictedPositionTrapezoidalTest, DecelerationPhase_Stop_NoCruise)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 0.0, 0.0;
-  Point target_pos;
-  target_pos << 4.0, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(0.0, 0.0);
+  Point target_pos(4.0, 0.0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 2秒加速(0~2m/s, 2m) + 2秒減速(2~0m/s, 2m)
@@ -164,12 +144,9 @@ TEST(PredictedPositionTrapezoidalTest, DecelerationPhase_Stop_NoCruise)
 
 TEST(PredictedPositionTrapezoidalTest, CruisePhase_Stop_WithCruise)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 0.0, 0.0;
-  Point target_pos;
-  target_pos << 8.0, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(0.0, 0.0);
+  Point target_pos(8.0, 0.0);
 
   // 加速度1m/s^2, 最高速度2m/s
   // 2秒加速(0~2m/s, 2m) + 2秒等速(2m/s, 4m) + 2秒減速(2~0m/s, 2m)
@@ -185,12 +162,9 @@ TEST(PredictedPositionTrapezoidalTest, CruisePhase_Stop_WithCruise)
 
 TEST(PredictedPositionTrapezoidalTest, Moving_NoCruise)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 1.0, 0.0;
-  Point target_pos;
-  target_pos << 3.5, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(1.0, 0.0);
+  Point target_pos(3.5, 0.0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 1秒加速(1~2m/s, 1.5m) + 2秒減速(2~0m/s, 2m)
@@ -204,12 +178,9 @@ TEST(PredictedPositionTrapezoidalTest, Moving_NoCruise)
 
 TEST(PredictedPositionTrapezoidalTest, Moving_WithCruise)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 1.0, 0.0;
-  Point target_pos;
-  target_pos << 7.5, 0.0;
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(1.0, 0.0);
+  Point target_pos(7.5, 0.0);
 
   // 加速度1m/s^2, 最高速度2m/s
   // 1秒加速(1~2m/s, 1.5m) + 2秒等速(2m/s, 4m) + 2秒減速(2~0m/s, 2m)
@@ -225,12 +196,9 @@ TEST(PredictedPositionTrapezoidalTest, Moving_WithCruise)
 
 TEST(PredictedPositionTrapezoidalTest, DiagonalMovement)
 {
-  Point current_pos;
-  current_pos << 0.0, 0.0;
-  Vector2 current_vel;
-  current_vel << 0.0, 0.0;
-  Point target_pos;
-  target_pos << 3.0, 4.0;  // 距離5m
+  Point current_pos(0.0, 0.0);
+  Vector2 current_vel(0.0, 0.0);
+  Point target_pos(3.0, 4.0);  // 距離5m
 
   // 加速度1m/s^2, 最高速度10m/s（定速区間なし）
   // sqrt(2*1*5) = sqrt(10) ≈ 3.162秒
@@ -246,12 +214,9 @@ TEST(PredictedPositionTrapezoidalTest, DiagonalMovement)
 
 TEST(PredictedPositionTrapezoidalTest, NegativeTime_ReturnsCurrentPosition)
 {
-  Point current_pos;
-  current_pos << 2.0, 3.0;
-  Vector2 current_vel;
-  current_vel << 1.0, 0.0;
-  Point target_pos;
-  target_pos << 5.0, 3.0;
+  Point current_pos(2.0, 3.0);
+  Vector2 current_vel(1.0, 0.0);
+  Point target_pos(5.0, 3.0);
 
   Point predicted =
     crane::getPredictedPositionTrapezoidal(current_pos, current_vel, target_pos, -1.0, 1.0, 2.0);

@@ -17,8 +17,7 @@ TEST(RobotInfoTest, BasicOperations)
   RobotInfo robot{
     .id = 1,
     .pose = Pose2D{.pos = Point(2.0, 3.0), .theta = M_PI / 4.0},  // 45度
-    .vel = Velocity2D{.linear = Point(1.0, 0.0), .omega = 0.1}
-  };
+    .vel = Velocity2D{.linear = Point(1.0, 0.0), .omega = 0.1}};
 
   // getIDのテスト
   auto id = robot.getID();
