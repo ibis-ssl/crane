@@ -86,9 +86,7 @@ auto getDefenseArcPoints(
   const double ANGLE_INTERVAL = DEFENSE_ARC_INTERVAL / RADIUS;
 
   auto defense_point = [&]() -> Point {
-    Circle circle;
-    circle.center = world_model->getOurGoalCenter();
-    circle.radius = RADIUS;
+    Circle circle{.center = world_model->getOurGoalCenter(), .radius = RADIUS};
     auto intersections = getIntersections(circle, ball_line);
     switch (static_cast<int>(intersections.size())) {
       case 0: {

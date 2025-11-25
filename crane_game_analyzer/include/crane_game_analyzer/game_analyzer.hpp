@@ -176,11 +176,11 @@ private:
 
               // 速度が大きい方を「攻撃側」と判定
               if (our_robot->vel.linear.norm() > their_robot->vel.linear.norm()) {
-                info.attack_robot = RobotIdentifier{true, our_robot->id};
-                info.attacked_robot = RobotIdentifier{false, their_robot->id};
+                info.attack_robot = RobotIdentifier{.is_ours = true, .id = our_robot->id};
+                info.attacked_robot = RobotIdentifier{.is_ours = false, .id = their_robot->id};
               } else {
-                info.attack_robot = RobotIdentifier{false, their_robot->id};
-                info.attacked_robot = RobotIdentifier{true, our_robot->id};
+                info.attack_robot = RobotIdentifier{.is_ours = false, .id = their_robot->id};
+                info.attacked_robot = RobotIdentifier{.is_ours = true, .id = our_robot->id};
               }
 
               info.relative_velocity = rel_vel_norm;

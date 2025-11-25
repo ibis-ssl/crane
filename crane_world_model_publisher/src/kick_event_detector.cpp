@@ -49,7 +49,8 @@ auto KickEventDetector::update(
         .strokeWidth(20)
         .build();
     }
-    kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{true, id});
+    kick_event_origin.emplace(
+      ros_clock.now(), world_model.ball().pos, RobotIdentifier{.is_ours = true, .id = id});
   }
 
   for (const auto & id : detected_bots.enemies) {
@@ -62,7 +63,8 @@ auto KickEventDetector::update(
         .strokeWidth(20)
         .build();
     }
-    kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
+    kick_event_origin.emplace(
+      ros_clock.now(), world_model.ball().pos, RobotIdentifier{.is_ours = false, .id = id});
   }
 
   // 進行中キックの更新

@@ -37,10 +37,10 @@ TEST(BallTest, DirectionTests)
 {
   Ball ball;
   ball.pos = Point(0.0, 0.0);
+  ball.vel = Point(1.0, 0.0);
   ball.detected = true;
 
   // X方向に動いている場合
-  ball.vel = Point(1.0, 0.0);
 
   // X正方向のポイントに向かっている
   Point target_point1;
