@@ -16,8 +16,7 @@ TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle{.center = Point(0.0, 0.0), .radius = 5.0};
 
-  Point point;
-  point << 10.0, 0.0;  // Comma operator style
+  Point point(10.0, 0.0);
   double distance = bg::distance(circle, point);
 
   EXPECT_DOUBLE_EQ(distance, 5.0);
@@ -26,13 +25,12 @@ TEST(CircleTest, CreateAndMeasure)
 // Capsuleのテスト
 TEST(CapsuleTest, CreateAndMeasure)
 {
-  Capsule capsule;
-  capsule.segment.first << 0.0, 0.0;
-  capsule.segment.second << 10.0, 0.0;
-  capsule.radius = 2.0;
+  Capsule capsule{
+    .segment = Segment(Point(0.0, 0.0), Point(10.0, 0.0)),
+    .radius = 2.0
+  };
 
-  Point point;
-  point << 5.0, 5.0;
+  Point point(5.0, 5.0);
   double distance = bg::distance(capsule, point);
 
   EXPECT_DOUBLE_EQ(distance, 3.0);
@@ -61,9 +59,8 @@ TEST(GeometryOperationsTest, GetAngleDiff)
   EXPECT_NEAR(getAngleDiff(M_PI - 0.1, -M_PI + 0.1), -0.2, 1e-10);
 
   // Pose2D間の角度差
-  Pose2D pose1, pose2;
-  pose1.theta = 0.5;
-  pose2.theta = -0.5;
+  Pose2D pose1{.pos = Point(0.0, 0.0), .theta = 0.5};
+  Pose2D pose2{.pos = Point(0.0, 0.0), .theta = -0.5};
   EXPECT_DOUBLE_EQ(getAngleDiff(pose1, pose2), 1.0);
 
   // Pose2DとDouble間の角度差
@@ -84,12 +81,9 @@ TEST(GeometryOperationsTest, GetCircle)
 {
   // 3点から円を作成
   // (1,0)を中心とする半径1の円
-  Point p1;
-  p1 << 0.0, 0.0;
-  Point p2;
-  p2 << 2.0, 0.0;
-  Point p3;
-  p3 << 1.0, 1.0;
+  Point p1(0.0, 0.0);
+  Point p2(2.0, 0.0);
+  Point p3(1.0, 1.0);
   auto circle = getCircle(p1, p2, p3);
 
   ASSERT_TRUE(circle.has_value());
@@ -98,8 +92,7 @@ TEST(GeometryOperationsTest, GetCircle)
   EXPECT_NEAR(circle->radius, 1.0, 1e-10);
 
   // 一直線上の3点からは円を作成できない
-  Point p4;
-  p4 << 3.0, 0.0;
+  Point p4(3.0, 0.0);
   auto invalid_circle = getCircle(p1, p2, p4);
   EXPECT_FALSE(invalid_circle.has_value());
 }
