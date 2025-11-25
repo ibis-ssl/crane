@@ -7,7 +7,7 @@
 #include "crane_session_controller/planner_registry.hpp"
 
 #include <algorithm>
-#include <crane_planner_plugins/planners.hpp>
+#include <crane_planner_plugins/planner_factory.hpp>
 #include <ranges>
 
 namespace crane

@@ -99,18 +99,14 @@ public:
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
-  template <class SkillType>
-  void setUpSkillDictionary()
-  {
-    auto wm = std::make_shared<crane::WorldModelWrapper>(*action_node);
-    auto skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), wm);
-    skill_generators[skill->name] =
-      [](
-        [[maybe_unused]] const std::string & name, uint8_t id,
-        const std::shared_ptr<WorldModelWrapper> & wm) -> std::shared_ptr<skills::SkillInterface> {
-      return std::make_shared<SkillType>(id, wm);
-    };
-  }
+  /// @brief スキル生成関数を登録
+  /// @param name スキル名
+  /// @param generator スキル生成関数
+  void registerSkill(
+    const std::string & name,
+    std::function<std::shared_ptr<skills::SkillInterface>(
+      uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
+      generator);
 
   std::unordered_map<
     std::string,
