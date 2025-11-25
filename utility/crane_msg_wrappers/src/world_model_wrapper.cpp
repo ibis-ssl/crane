@@ -179,7 +179,7 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
     return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
   });
   double min_distance = bg::distance(segment, nearest_robot->pose.pos);
-  return std::make_optional<RobotWithDistance>(nearest_robot, min_distance);
+  return std::make_optional<RobotWithDistance>({.robot = nearest_robot, .distance = min_distance});
 }
 
 auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
@@ -192,7 +192,7 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
     return (robot1->pose.pos - point).norm() < (robot2->pose.pos - point).norm();
   });
   double min_distance = (nearest_robot->pose.pos - point).norm();
-  return std::make_optional<RobotWithDistance>(nearest_robot, min_distance);
+  return std::make_optional<RobotWithDistance>({.robot = nearest_robot, .distance = min_distance});
 }
 
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
@@ -256,11 +256,7 @@ auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::optional<Capsule>
 {
   if (auto target = getBallPlacementTarget()) {
-    Capsule area;
-    area.segment.first = ball_.pos;
-    area.segment.second = target.value();
-    area.radius = 0.5 + offset;
-    return area;
+    return Capsule{.segment = Segment(ball_.pos, target.value()), .radius = 0.5 + offset};
   } else {
     return std::nullopt;
   }
@@ -357,7 +353,8 @@ auto WorldModelWrapper::getBallSlackTime(
     return std::nullopt;
   }
 
-  return std::make_optional<SlackTimeResult>({slack_time, intercept_point, best_robot.first});
+  return std::make_optional<SlackTimeResult>(
+    {.slack_time = slack_time, .intercept_point = intercept_point, .robot = best_robot.first});
 }
 
 auto WorldModelWrapper::getBallSlackTime(
