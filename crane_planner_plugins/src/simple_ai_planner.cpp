@@ -26,14 +26,14 @@
 namespace crane
 {
 // スキル登録用ヘルパーマクロ
-#define REGISTER_SKILL(SkillType)                                                            \
-  do {                                                                                       \
-    auto dummy_wm = std::make_shared<crane::WorldModelWrapper>(*action_node);                \
-    auto dummy_skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), dummy_wm);       \
-    registerSkill(                                                                           \
-      dummy_skill->name, [](uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) {     \
-        return std::make_shared<SkillType>(id, wm);                                          \
-      });                                                                                    \
+#define REGISTER_SKILL(SkillType)                                                        \
+  do {                                                                                   \
+    auto dummy_wm = std::make_shared<crane::WorldModelWrapper>(*action_node);            \
+    auto dummy_skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), dummy_wm);   \
+    registerSkill(                                                                       \
+      dummy_skill->name, [](uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) { \
+        return std::make_shared<SkillType>(id, wm);                                      \
+      });                                                                                \
   } while (0)
 
 SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
@@ -185,10 +185,9 @@ auto SimpleAIPlanner::getSelectedRobots(
 }
 
 void SimpleAIPlanner::registerSkill(
-  const std::string & name,
-  std::function<std::shared_ptr<skills::SkillInterface>(
-    uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
-    generator)
+  const std::string & name, std::function<std::shared_ptr<skills::SkillInterface>(
+                              uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
+                              generator)
 {
   skill_generators[name] =
     [generator](

@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_planner_plugins/planner_factory.hpp>
-
 #include <functional>
 #include <stdexcept>
 #include <unordered_map>
@@ -82,8 +81,8 @@ auto getPlannerFactoryMap() -> const std::unordered_map<std::string, PlannerFact
 }  // namespace
 
 auto generatePlanner(
-  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model,
-  rclcpp::Node & node) -> PlannerBase::SharedPtr
+  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  -> PlannerBase::SharedPtr
 {
   const auto & factory_map = getPlannerFactoryMap();
   auto it = factory_map.find(planner_name);

@@ -28,8 +28,8 @@ struct WorldModelWrapper;
 /// @return 生成されたプランナーの共有ポインタ
 /// @throw std::runtime_error 不明なプランナー名が指定された場合
 auto generatePlanner(
-  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model,
-  rclcpp::Node & node) -> PlannerBase::SharedPtr;
+  const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  -> PlannerBase::SharedPtr;
 
 /// @brief 利用可能なプランナー名の一覧を取得
 /// @return プランナー名のベクター

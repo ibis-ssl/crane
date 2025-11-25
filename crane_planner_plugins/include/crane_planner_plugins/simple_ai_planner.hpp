@@ -103,10 +103,9 @@ public:
   /// @param name スキル名
   /// @param generator スキル生成関数
   void registerSkill(
-    const std::string & name,
-    std::function<std::shared_ptr<skills::SkillInterface>(
-      uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
-      generator);
+    const std::string & name, std::function<std::shared_ptr<skills::SkillInterface>(
+                                uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
+                                generator);
 
   std::unordered_map<
     std::string,
