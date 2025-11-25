@@ -13,6 +13,44 @@
 
 namespace crane
 {
+
+// BallOwnerCalculator - PImpl実装
+class BallOwnerCalculator
+{
+public:
+  explicit BallOwnerCalculator(WorldModelWrapper * world_model) : world_model_(world_model) {}
+
+  auto update() -> void;
+  auto updateScore(bool our_team) -> void;
+  [[nodiscard]] auto calculateScore(const std::shared_ptr<RobotInfo> & robot) const
+    -> BallOwnerScore;
+
+  [[nodiscard]] auto getOurFrontier() const -> std::optional<BallOwnerScore>
+  {
+    if (sorted_our_robots_.empty()) {
+      return std::nullopt;
+    } else {
+      return sorted_our_robots_.front();
+    }
+  }
+
+  [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerScore>
+  {
+    if (sorted_their_robots_.empty()) {
+      return std::nullopt;
+    } else {
+      return sorted_their_robots_.front();
+    }
+  }
+
+private:
+  std::vector<BallOwnerScore> sorted_our_robots_;
+  std::vector<BallOwnerScore> sorted_their_robots_;
+  WorldModelWrapper * world_model_;
+  std::uint8_t our_frontier_ = 255;
+  std::uint8_t previous_our_frontier_ = 255;
+  static constexpr double HYSTERESIS_SCORE_BONUS = 1.2;
+};
 auto BallContact::update(bool is_contacted) -> void
 {
   auto now = std::chrono::system_clock::now();
@@ -28,7 +66,7 @@ auto BallContact::update(bool is_contacted) -> void
 }
 
 WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
-: ball_owner_calculator(this), point_checker(this)
+: ball_owner_calculator_(std::make_unique<BallOwnerCalculator>(this)), point_checker(this)
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
@@ -51,6 +89,8 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
       this->diagnosticsCallback(msg);
     });
 }
+
+WorldModelWrapper::~WorldModelWrapper() = default;
 
 auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) -> void
 {
@@ -149,8 +189,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     << std::min(-ours_.penalty_area.max_corner().x(), -ours_.penalty_area.min_corner().x()),
     ours_.penalty_area.min_corner().y();
 
-  if (ball_owner_calculator_enabled) {
-    ball_owner_calculator.update();
+  if (ball_owner_calculator_enabled_) {
+    ball_owner_calculator_->update();
   }
 
   for (auto & callback : callbacks) {
@@ -461,24 +501,24 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   return {min_slack, max_slack};
 }
 
-auto WorldModelWrapper::BallOwnerCalculator::update() -> void
+auto BallOwnerCalculator::update() -> void
 {
-  previous_our_frontier_ = our_frontier;
+  previous_our_frontier_ = our_frontier_;
 
   updateScore(true);
   updateScore(false);
 
   if (auto new_frontier = getOurFrontier()) {
-    our_frontier = new_frontier->robot->id;
+    our_frontier_ = new_frontier->robot->id;
   } else {
-    our_frontier = 255;  // 利用可能ロボットなし
+    our_frontier_ = 255;  // 利用可能ロボットなし
   }
 }
 
-auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
+auto BallOwnerCalculator::updateScore(bool our_team) -> void
 {
-  auto robots = our_team ? world_model->ours_.getAvailableRobots(world_model->getOurGoalieId())
-                         : world_model->theirs_.getAvailableRobots();
+  auto robots = our_team ? world_model_->ours().getAvailableRobots(world_model_->getOurGoalieId())
+                         : world_model_->theirs().getAvailableRobots();
 
   // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
@@ -498,25 +538,24 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
 
   // スコアの高い順にソート
   ranges::sort(
-    scores, [](const RobotWithScore & a, const RobotWithScore & b) { return a.score > b.score; });
+    scores, [](const BallOwnerScore & a, const BallOwnerScore & b) { return a.score > b.score; });
 
   if (our_team) {
-    sorted_our_robots = std::move(scores);
+    sorted_our_robots_ = std::move(scores);
   } else {
-    sorted_their_robots = std::move(scores);
+    sorted_their_robots_ = std::move(scores);
   }
 }
 
-auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
-  const std::shared_ptr<RobotInfo> & robot) const
-  -> WorldModelWrapper::BallOwnerCalculator::RobotWithScore
+auto BallOwnerCalculator::calculateScore(const std::shared_ptr<RobotInfo> & robot) const
+  -> BallOwnerScore
 {
-  RobotWithScore score;
+  BallOwnerScore score;
   score.robot = robot;
-  auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime({robot});
+  auto [min_slack, max_slack] = world_model_->getMinMaxSlackInterceptPointAndSlackTime({robot});
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
-    score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball().pos).norm();
+    score.min_slack_pos_distance = (min_slack->intercept_point - world_model_->ball().pos).norm();
     // min_slackが正（間に合う）ならボールに近いほうがスコアが高い
     score.score = 100 - score.min_slack_pos_distance;
   } else {
@@ -527,11 +566,27 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
       score.score = max_slack.value().slack_time;
     } else {
       // どちらも間に合わない場合はスコアが低い
-      score.score = -100. - robot->getDistance(world_model->ball().pos);
+      score.score = -100. - robot->getDistance(world_model_->ball().pos);
     }
   }
 
   return score;
+}
+
+// WorldModelWrapperの公開メソッド実装
+auto WorldModelWrapper::setBallOwnerCalculatorEnabled(bool enabled) -> void
+{
+  ball_owner_calculator_enabled_ = enabled;
+}
+
+auto WorldModelWrapper::getOurFrontier() const -> std::optional<BallOwnerScore>
+{
+  return ball_owner_calculator_->getOurFrontier();
+}
+
+auto WorldModelWrapper::getTheirFrontier() const -> std::optional<BallOwnerScore>
+{
+  return ball_owner_calculator_->getTheirFrontier();
 }
 auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) const
   -> std::tuple<Point, Point, Point, Point>

@@ -29,6 +29,19 @@ namespace crane
 {
 using RobotList = std::vector<std::shared_ptr<RobotInfo>>;
 
+// Forward declaration for PImpl
+class BallOwnerCalculator;
+
+// ボール所有者計算の結果を表す構造体
+struct BallOwnerScore
+{
+  std::shared_ptr<RobotInfo> robot = nullptr;
+  double min_slack = 100.;
+  double min_slack_pos_distance = 100.;
+  double max_slack = -100.;
+  double score;
+};
+
 struct TeamInfo
 {
   Box penalty_area;
@@ -80,6 +93,8 @@ struct WorldModelWrapper
   using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
   explicit WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber = true);
+
+  ~WorldModelWrapper();
 
   auto update(const crane_msgs::msg::WorldModel & world_model) -> void;
 
@@ -303,77 +318,15 @@ struct WorldModelWrapper
   [[nodiscard]] auto goal() const -> const Point & { return goal_; }
 
 private:
-  class BallOwnerCalculator
-  {
-  public:
-    explicit BallOwnerCalculator(WorldModelWrapper * world_model) : world_model(world_model) {}
-
-    struct RobotWithScore
-    {
-      std::shared_ptr<RobotInfo> robot = nullptr;
-      double min_slack = 100.;
-      double min_slack_pos_distance = 100.;
-      double max_slack = -100.;
-      double score;
-    };
-
-    auto update() -> void;
-
-    auto updateScore(bool our_team) -> void;
-
-    [[nodiscard]] auto calculateScore(const std::shared_ptr<RobotInfo> & robot) const
-      -> RobotWithScore;
-
-    [[nodiscard]] auto getOurFrontier() const -> std::optional<RobotWithScore>
-    {
-      if (sorted_our_robots.empty()) {
-        return std::nullopt;
-      } else {
-        return sorted_our_robots.front();
-      }
-    }
-
-    [[nodiscard]] auto getTheirFrontier() const -> std::optional<RobotWithScore>
-    {
-      if (sorted_their_robots.empty()) {
-        return std::nullopt;
-      } else {
-        return sorted_their_robots.front();
-      }
-    }
-
-  private:
-    std::vector<RobotWithScore> sorted_our_robots;
-
-    std::vector<RobotWithScore> sorted_their_robots;
-
-    WorldModelWrapper * world_model;
-
-    std::uint8_t our_frontier = 255;
-
-    std::uint8_t previous_our_frontier_ = 255;
-
-    // ヒステリシススコアボーナス（0.4秒相当）
-    static constexpr double HYSTERESIS_SCORE_BONUS = 1.2;
-  } ball_owner_calculator;
-
-  bool ball_owner_calculator_enabled = false;
+  std::unique_ptr<BallOwnerCalculator> ball_owner_calculator_;
+  bool ball_owner_calculator_enabled_ = false;
 
 public:
-  auto setBallOwnerCalculatorEnabled(bool enabled = true) -> void
-  {
-    ball_owner_calculator_enabled = enabled;
-  }
+  auto setBallOwnerCalculatorEnabled(bool enabled = true) -> void;
 
-  [[nodiscard]] auto getOurFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
-  {
-    return ball_owner_calculator.getOurFrontier();
-  }
+  [[nodiscard]] auto getOurFrontier() const -> std::optional<BallOwnerScore>;
 
-  [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
-  {
-    return ball_owner_calculator.getTheirFrontier();
-  }
+  [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerScore>;
 
   auto getPenaltyAreaCorners(double offset_x, double offset_y) const
     -> std::tuple<Point, Point, Point, Point>;
@@ -525,7 +478,7 @@ public:
     [[nodiscard]] auto checkDistanceFromBall(
       const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistance(p, world_model->ball_.pos, threshold, rule);
+      return checkDistance(p, world_model->ball().pos, threshold, rule);
     }
 
     auto addDistanceFromBallChecker(double threshold, const Rule rule) -> void
@@ -577,7 +530,7 @@ public:
     [[nodiscard]] auto checkDistanceFromOurRobots(
       const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistanceFromRobots(p, world_model->ours_.getAvailableRobots(), threshold, rule);
+      return checkDistanceFromRobots(p, world_model->ours().getAvailableRobots(), threshold, rule);
     }
 
     auto addDistanceFromOurRobotsChecker(double threshold, const Rule rule) -> void
@@ -590,7 +543,8 @@ public:
     [[nodiscard]] auto checkDistanceFromTheirRobots(
       const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistanceFromRobots(p, world_model->theirs_.getAvailableRobots(), threshold, rule);
+      return checkDistanceFromRobots(
+        p, world_model->theirs().getAvailableRobots(), threshold, rule);
     }
 
     auto addDistanceFromTheirRobotsChecker(double threshold, const Rule rule) -> void
