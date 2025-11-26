@@ -17,12 +17,12 @@ jobs:
     timeout-minutes: 30
     env:
       DEBIAN_FRONTEND: noninteractive
-      # ccache configuration
-      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      CC: /usr/lib/ccache/gcc
-      CXX: /usr/lib/ccache/g++
-      CCACHE_MAXSIZE: 10G
-      USE_CCACHE: 1
+#      # ccache configuration
+#      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#      CC: /usr/lib/ccache/gcc
+#      CXX: /usr/lib/ccache/g++
+#      CCACHE_MAXSIZE: 10G
+#      USE_CCACHE: 1
     strategy:
       fail-fast: false
       matrix:
