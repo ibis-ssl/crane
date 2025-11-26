@@ -18,7 +18,6 @@
 #include <crane_planner_plugins/formation_planner.hpp>
 #include <crane_planner_plugins/forward_planner.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
-#include <crane_planner_plugins/offensive_planner.hpp>
 #include <crane_planner_plugins/our_free_kick_planner.hpp>
 #include <crane_planner_plugins/our_penalty_kick_planner.hpp>
 #include <crane_planner_plugins/pass_receiver_planner.hpp>
@@ -66,7 +65,6 @@ auto getPlannerFactoryMap() -> const std::unordered_map<std::string, PlannerFact
     PLANNER_ENTRY("our_penalty_kick", OurPenaltyKickPlanner),
     PLANNER_ENTRY("pass_receive", PassReceiverPlanner),
     PLANNER_ENTRY("their_penalty_kick", TheirPenaltyKickPlanner),
-    PLANNER_ENTRY("offensive", OffensivePlanner),
     PLANNER_ENTRY("our_direct_free", OurDirectFreeKickPlanner),
     PLANNER_ENTRY("simple_ai", SimpleAIPlanner),
     PLANNER_ENTRY("simple_kickoff", SimpleKickOffSkillPlanner),
