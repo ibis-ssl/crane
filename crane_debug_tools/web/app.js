@@ -127,7 +127,7 @@ class CraneDebugger {
             this.addLog('Falling back to demo mode', 'warning');
             this.availableSkills = [
                 "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-                "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff",
+                "SingleBallPlacement", "GoalKick", "SimpleKickOff",
                 "KickOffSupport", "Marker", "TestMotionPosition",
                 "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
                 "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
@@ -374,10 +374,6 @@ class CraneDebugger {
             ],
             'Sleep': [
                 { name: 'duration', type: 'number', label: 'Duration (seconds)', min: '0', step: '0.1', value: '1.0' }
-            ],
-            'StealBall': [
-                { name: 'steal_method', type: 'text', label: 'Steal Method', value: 'side' },
-                { name: 'kicker_power', type: 'number', label: 'Kicker Power', min: '0', max: '1', step: '0.1', value: '0.4' }
             ],
             'SubAttacker': [
                 { name: 'ball_vel_threshold', type: 'number', label: 'Ball Velocity Threshold', min: '0', max: '5', step: '0.1', value: '0.2' },

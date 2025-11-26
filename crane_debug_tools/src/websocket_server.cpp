@@ -520,7 +520,6 @@ private:
         "Goalie",
         "Attacker",
         "SubAttacker",
-        "StealBall",
         "SingleBallPlacement",
         "GoalKick",
         "SimpleKickOff",

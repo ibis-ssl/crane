@@ -48,7 +48,7 @@
 **利用可能なスキル**:
 
 - 基本動作: `Idle`, `Sleep`, `EmplaceRobot`
-- ボール操作: `Kick`, `Receive`, `StealBall`
+- ボール操作: `Kick`, `Receive`
 - ゲームロール: `Goalie`, `Attacker`, `SubAttacker`, `Marker`
 - セットプレー: `GoalKick`, `SimpleKickOff`, `SingleBallPlacement`, `PenaltyKick`
 - テスト用: `TestMotionPosition`, `TestMotionVelocity`, `Teleop`

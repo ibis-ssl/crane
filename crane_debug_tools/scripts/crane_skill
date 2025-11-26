@@ -29,7 +29,6 @@ class SkillCLI(Node):
         "Goalie",
         "Attacker",
         "SubAttacker",
-        "StealBall",
         "SingleBallPlacement",
         "GoalKick",
         "SimpleKickOff",

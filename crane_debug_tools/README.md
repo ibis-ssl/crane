@@ -66,7 +66,7 @@ http://localhost:8080/standalone.html
 ## 主要スキル一覧
 
 - `Idle`, `Sleep`, `EmplaceRobot` - 基本動作
-- `Kick`, `Receive`, `StealBall` - ボール操作
+- `Kick`, `Receive` - ボール操作
 - `Goalie`, `Attacker`, `SubAttacker` - ゲームロール
 - `GoalKick`, `SimpleKickOff`, `SingleBallPlacement` - セットプレー
 - `TestMotionPosition`, `TestMotionVelocity`, `Teleop` - テスト用

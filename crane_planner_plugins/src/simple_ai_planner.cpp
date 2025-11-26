@@ -18,7 +18,6 @@
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>
-#include <crane_robot_skills/steal_ball.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/teleop.hpp>
 #include <crane_robot_skills/test_motion.hpp>
@@ -51,7 +50,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     REGISTER_SKILL(skills::Sleep);
     REGISTER_SKILL(skills::Receive);
     REGISTER_SKILL(skills::SimpleKickOff);
-    REGISTER_SKILL(skills::StealBall);
     REGISTER_SKILL(skills::SubAttacker);
     REGISTER_SKILL(skills::TestMotionPosition);
     REGISTER_SKILL(skills::Marker);
