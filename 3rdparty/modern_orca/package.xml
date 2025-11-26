@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>modern_orca</name>
-  <version>1.0.49</version>
+  <version>1.0.50</version>
   <description>Modern C++ ORCA Library with Extensible Constraints</description>
 
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
