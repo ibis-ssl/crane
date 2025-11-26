@@ -6,30 +6,56 @@
 
 #include <crane_planner_plugins/simple_ai_planner.hpp>
 
+// スキルのインクルード（.cppでのみ必要）
+#include <crane_robot_skills/attacker.hpp>
+#include <crane_robot_skills/emplace_robot.hpp>
+#include <crane_robot_skills/goal_kick.hpp>
+#include <crane_robot_skills/goalie.hpp>
+#include <crane_robot_skills/idle.hpp>
+#include <crane_robot_skills/kick.hpp>
+#include <crane_robot_skills/marker.hpp>
+#include <crane_robot_skills/receive.hpp>
+#include <crane_robot_skills/simple_kickoff.hpp>
+#include <crane_robot_skills/single_ball_placement.hpp>
+#include <crane_robot_skills/sleep.hpp>
+#include <crane_robot_skills/sub_attacker.hpp>
+#include <crane_robot_skills/teleop.hpp>
+
 namespace crane
 {
+// スキル登録用ヘルパーマクロ
+#define REGISTER_SKILL(SkillType)                                                        \
+  do {                                                                                   \
+    auto dummy_wm = std::make_shared<crane::WorldModelWrapper>(*action_node);            \
+    auto dummy_skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), dummy_wm);   \
+    registerSkill(                                                                       \
+      dummy_skill->name, [](uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) { \
+        return std::make_shared<SkillType>(id, wm);                                      \
+      });                                                                                \
+  } while (0)
+
 SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
 : PlannerBase("SimpleAI", world_model), world_model(world_model)
 {
   action_node = node.create_sub_node("simple_ai");
   {
-    setUpSkillDictionary<skills::Teleop>();
-    setUpSkillDictionary<skills::Attacker>();
-    setUpSkillDictionary<skills::Idle>();
-    setUpSkillDictionary<skills::Goalie>();
-    setUpSkillDictionary<skills::GoalKick>();
-    setUpSkillDictionary<skills::Kick>();
-    setUpSkillDictionary<skills::Sleep>();
-    setUpSkillDictionary<skills::Receive>();
-    setUpSkillDictionary<skills::SimpleKickOff>();
-    setUpSkillDictionary<skills::StealBall>();
-    setUpSkillDictionary<skills::SubAttacker>();
-    setUpSkillDictionary<skills::TestMotionPosition>();
-    setUpSkillDictionary<skills::Marker>();
-    setUpSkillDictionary<skills::SingleBallPlacement>();
-    setUpSkillDictionary<skills::EmplaceRobot>();
-    setUpSkillDictionary<skills::TestMotionPosition>();
+    // スキルを登録
+    REGISTER_SKILL(skills::Teleop);
+    REGISTER_SKILL(skills::Attacker);
+    REGISTER_SKILL(skills::Idle);
+    REGISTER_SKILL(skills::Goalie);
+    REGISTER_SKILL(skills::GoalKick);
+    REGISTER_SKILL(skills::Kick);
+    REGISTER_SKILL(skills::Sleep);
+    REGISTER_SKILL(skills::Receive);
+    REGISTER_SKILL(skills::SimpleKickOff);
+    REGISTER_SKILL(skills::SubAttacker);
+    REGISTER_SKILL(skills::Marker);
+    REGISTER_SKILL(skills::SingleBallPlacement);
+    REGISTER_SKILL(skills::EmplaceRobot);
   }
+
+#undef REGISTER_SKILL
 
   using crane_msgs::action::SkillExecution;
   skill_execution_server = rclcpp_action::create_server<SkillExecution>(
@@ -153,4 +179,18 @@ auto SimpleAIPlanner::getSelectedRobots(
     return {};
   }
 }
+
+void SimpleAIPlanner::registerSkill(
+  const std::string & name, std::function<std::shared_ptr<skills::SkillInterface>(
+                              uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>
+                              generator)
+{
+  skill_generators[name] =
+    [generator](
+      [[maybe_unused]] const std::string & skill_name, uint8_t id,
+      const std::shared_ptr<WorldModelWrapper> & wm) -> std::shared_ptr<skills::SkillInterface> {
+    return generator(id, wm);
+  };
+}
+
 }  // namespace crane

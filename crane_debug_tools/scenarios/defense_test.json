@@ -68,13 +68,6 @@
       "description": "Activate threat defender"
     },
     {
-      "name": "StealBall",
-      "robot_id": 3,
-      "parameters": {},
-      "delay": 5,
-      "description": "Activate ball stealing behavior"
-    },
-    {
       "name": "Sleep",
       "robot_id": 3,
       "parameters": {

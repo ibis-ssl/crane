@@ -11,10 +11,7 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_physics/kicker_model.hpp>
-#include <crane_physics/pid_controller.hpp>
-#include <iostream>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
 #include <vector>
 
 #include "delay_monitor_wrapper.hpp"

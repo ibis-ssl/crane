@@ -23,7 +23,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 - **SubAttackerSkill**: サブアタッカーの支援攻撃行動
 - **KickSkill**: 精密キック実行
 - **ReceiveSkill**: パス受け取り
-- **StealBallSkill**: ボール奪取
 
 ### 守備系スキル
 
@@ -50,7 +49,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 - **IdleSkill**: 待機状態
 - **SleepSkill**: 休止状態
 - **TeleopSkill**: 手動操縦
-- **TestMotionSkill**: テスト動作
 - **RobotCommandAsSkill**: 直接コマンド実行
 
 ## スキルベースアーキテクチャ

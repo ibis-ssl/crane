@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(crane_physics)
 
 # Default to C++20
@@ -27,6 +27,19 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 target_link_libraries(${PROJECT_NAME}
   Eigen3::Eigen
   yaml-cpp
+)
+
+# プリコンパイル済みヘッダでビルド時間を短縮
+target_precompile_headers(${PROJECT_NAME}
+  PUBLIC
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/geometry_operations.hpp>"
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<memory>"
+    "<optional>"
+    "<vector>"
+    "<cmath>"
 )
 
 ament_export_include_directories(

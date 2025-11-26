@@ -127,9 +127,9 @@ class CraneDebugger {
             this.addLog('Falling back to demo mode', 'warning');
             this.availableSkills = [
                 "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-                "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff",
-                "KickOffSupport", "Marker", "TestMotionPosition",
-                "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+                "SingleBallPlacement", "GoalKick", "SimpleKickOff",
+                "KickOffSupport", "Marker",
+                "EmplaceRobot", "Forward", "BallNearbyPositioner",
                 "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
             ];
             this.populateSkillsList(this.availableSkills);
@@ -375,10 +375,6 @@ class CraneDebugger {
             'Sleep': [
                 { name: 'duration', type: 'number', label: 'Duration (seconds)', min: '0', step: '0.1', value: '1.0' }
             ],
-            'StealBall': [
-                { name: 'steal_method', type: 'text', label: 'Steal Method', value: 'side' },
-                { name: 'kicker_power', type: 'number', label: 'Kicker Power', min: '0', max: '1', step: '0.1', value: '0.4' }
-            ],
             'SubAttacker': [
                 { name: 'ball_vel_threshold', type: 'number', label: 'Ball Velocity Threshold', min: '0', max: '5', step: '0.1', value: '0.2' },
                 { name: 'kicker_power', type: 'number', label: 'Kicker Power', min: '0', max: '1', step: '0.1', value: '0.8' }
@@ -409,14 +405,6 @@ class CraneDebugger {
             'Teleop': [
                 { name: 'rotation_deg', type: 'number', label: 'Rotation (degrees)', min: '-180', max: '180', step: '1', value: '0' },
                 { name: 'use_local_coordinate', type: 'checkbox', label: 'Use Local Coordinate', value: 'false' }
-            ],
-            'TestMotionPosition': [
-                { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
-                { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
-            ],
-            'TestMotionVelocity': [
-                { name: 'velocity_x', type: 'number', label: 'Velocity X', step: '0.1' },
-                { name: 'velocity_y', type: 'number', label: 'Velocity Y', step: '0.1' }
             ],
             'Receive': [
                 { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },

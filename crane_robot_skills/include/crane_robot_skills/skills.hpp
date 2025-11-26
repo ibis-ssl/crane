@@ -7,13 +7,14 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILLS_HPP_
 #define CRANE_ROBOT_SKILLS__SKILLS_HPP_
 
+#pragma message("skills.hpp is deprecated. Include only the specific skills you need instead.")
+
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/ball_calibration_data_collector.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
 #include <crane_robot_skills/emplace_robot.hpp>
 #include <crane_robot_skills/forward.hpp>
-#include <crane_robot_skills/freekick_saver.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/idle.hpp>
@@ -24,9 +25,7 @@
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>
-#include <crane_robot_skills/steal_ball.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/teleop.hpp>
-#include <crane_robot_skills/test_motion.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_

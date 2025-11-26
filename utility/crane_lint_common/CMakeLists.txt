@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(crane_lint_common)
 
 find_package(ament_cmake_core REQUIRED)
