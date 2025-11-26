@@ -13,7 +13,6 @@
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <format>
 #include <memory>
-#include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
