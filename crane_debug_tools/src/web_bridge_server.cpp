@@ -361,24 +361,9 @@ private:
     json skills_list = {
       {"type", "available_skills"},
       {"skills",
-       {"Sleep",
-        "Idle",
-        "Kick",
-        "Receive",
-        "Goalie",
-        "Attacker",
-        "SubAttacker",
-        "SingleBallPlacement",
-        "GoalKick",
-        "SimpleKickOff",
-        "Marker",
-        "EmplaceRobot",
-        "Forward",
-        "BallNearbyPositioner",
-        "SecondThreatDefender",
-        "FreekickSaver",
-        "PenaltyKick",
-        "Teleop"}}};
+       {"Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
+        "SingleBallPlacement", "GoalKick", "SimpleKickOff", "Marker", "EmplaceRobot", "Forward",
+        "BallNearbyPositioner", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"}}};
     sendToConnection(hdl, skills_list);
   }
 
