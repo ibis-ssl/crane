@@ -41,43 +41,47 @@ using PlannerFactory =
 namespace
 {
 // プランナーファクトリマップの初期化
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define PLANNER_ENTRY(name, PlannerClass) \
+  {name, [](auto & wm, auto & node) { return std::make_shared<PlannerClass>(wm, node); }}
+
 auto getPlannerFactoryMap() -> const std::unordered_map<std::string, PlannerFactory> &
 {
-  // clang-format off
   static const std::unordered_map<std::string, PlannerFactory> factory_map{
-    {"attacker_skill",                            [](auto & wm, auto & node) { return std::make_shared<AttackerSkillPlanner>(wm, node); }},
-    {"ball_nearby_positioner_skill",              [](auto & wm, auto & node) { return std::make_shared<BallNearByPositionerSkillPlanner>(wm, node); }},
-    {"placement_target_nearby_positioner_skill",  [](auto & wm, auto & node) { return std::make_shared<PlacementTargetNearByPositionerSkillPlanner>(wm, node); }},
-    {"ball_placement_avoidance",                  [](auto & wm, auto & node) { return std::make_shared<BallPlacementAvoidancePlanner>(wm, node); }},
-    {"ball_placement_skill",                      [](auto & wm, auto & node) { return std::make_shared<BallPlacementSkillPlanner>(wm, node); }},
-    {"passable_ball_placement",                   [](auto & wm, auto & node) { return std::make_shared<PassableBallPlacementPlanner>(wm, node); }},
-    {"placement_target_placer",                   [](auto & wm, auto & node) { return std::make_shared<PlacementTargetPlacerPlanner>(wm, node); }},
-    {"defender",                                  [](auto & wm, auto & node) { return std::make_shared<DefenderPlanner>(wm, node); }},
-    {"wing_formation",                            [](auto & wm, auto & node) { return std::make_shared<WingFormationPlanner>(wm, node); }},
-    {"ibis_formation",                            [](auto & wm, auto & node) { return std::make_shared<IbisFormationPlanner>(wm, node); }},
-    {"goalie_skill",                              [](auto & wm, auto & node) { return std::make_shared<GoalieSkillPlanner>(wm, node); }},
-    {"marker",                                    [](auto & wm, auto & node) { return std::make_shared<MarkerPlanner>(wm, node); }},
-    {"sub_attacker_skill",                        [](auto & wm, auto & node) { return std::make_shared<SubAttackerSkillPlanner>(wm, node); }},
-    {"waiter",                                    [](auto & wm, auto & node) { return std::make_shared<WaiterPlanner>(wm, node); }},
-    {"our_penalty_kick",                          [](auto & wm, auto & node) { return std::make_shared<OurPenaltyKickPlanner>(wm, node); }},
-    {"pass_receive",                              [](auto & wm, auto & node) { return std::make_shared<PassReceiverPlanner>(wm, node); }},
-    {"their_penalty_kick",                        [](auto & wm, auto & node) { return std::make_shared<TheirPenaltyKickPlanner>(wm, node); }},
-    {"offensive",                                 [](auto & wm, auto & node) { return std::make_shared<OffensivePlanner>(wm, node); }},
-    {"our_direct_free",                           [](auto & wm, auto & node) { return std::make_shared<OurDirectFreeKickPlanner>(wm, node); }},
-    {"simple_ai",                                 [](auto & wm, auto & node) { return std::make_shared<SimpleAIPlanner>(wm, node); }},
-    {"simple_kickoff",                            [](auto & wm, auto & node) { return std::make_shared<SimpleKickOffSkillPlanner>(wm, node); }},
-    {"simple_placer",                             [](auto & wm, auto & node) { return std::make_shared<SimplePlacerPlanner>(wm, node); }},
-    {"test",                                      [](auto & wm, auto & node) { return std::make_shared<TestPlanner>(wm, node); }},
-    {"total_defense",                             [](auto & wm, auto & node) { return std::make_shared<TotalDefensePlanner>(wm, node); }},
-    {"emplace_robot",                             [](auto & wm, auto & node) { return std::make_shared<EmplaceRobotPlanner>(wm, node); }},
-    {"forward",                                   [](auto & wm, auto & node) { return std::make_shared<ForwardPlanner>(wm, node); }},
-    {"second_threat_defender",                    [](auto & wm, auto & node) { return std::make_shared<SecondThreatDefenderPlanner>(wm, node); }},
-    {"ball_calibration_data_collector",           [](auto & wm, auto & node) { return std::make_shared<BallCalibrationDataCollectorPlanner>(wm, node); }},
-    {"center_stop_kick",                          [](auto & wm, auto & node) { return std::make_shared<CenterStopKickPlanner>(wm, node); }}
+    PLANNER_ENTRY("attacker_skill", AttackerSkillPlanner),
+    PLANNER_ENTRY("ball_nearby_positioner_skill", BallNearByPositionerSkillPlanner),
+    PLANNER_ENTRY(
+      "placement_target_nearby_positioner_skill", PlacementTargetNearByPositionerSkillPlanner),
+    PLANNER_ENTRY("ball_placement_avoidance", BallPlacementAvoidancePlanner),
+    PLANNER_ENTRY("ball_placement_skill", BallPlacementSkillPlanner),
+    PLANNER_ENTRY("passable_ball_placement", PassableBallPlacementPlanner),
+    PLANNER_ENTRY("placement_target_placer", PlacementTargetPlacerPlanner),
+    PLANNER_ENTRY("defender", DefenderPlanner),
+    PLANNER_ENTRY("wing_formation", WingFormationPlanner),
+    PLANNER_ENTRY("ibis_formation", IbisFormationPlanner),
+    PLANNER_ENTRY("goalie_skill", GoalieSkillPlanner),
+    PLANNER_ENTRY("marker", MarkerPlanner),
+    PLANNER_ENTRY("sub_attacker_skill", SubAttackerSkillPlanner),
+    PLANNER_ENTRY("waiter", WaiterPlanner),
+    PLANNER_ENTRY("our_penalty_kick", OurPenaltyKickPlanner),
+    PLANNER_ENTRY("pass_receive", PassReceiverPlanner),
+    PLANNER_ENTRY("their_penalty_kick", TheirPenaltyKickPlanner),
+    PLANNER_ENTRY("offensive", OffensivePlanner),
+    PLANNER_ENTRY("our_direct_free", OurDirectFreeKickPlanner),
+    PLANNER_ENTRY("simple_ai", SimpleAIPlanner),
+    PLANNER_ENTRY("simple_kickoff", SimpleKickOffSkillPlanner),
+    PLANNER_ENTRY("simple_placer", SimplePlacerPlanner),
+    PLANNER_ENTRY("test", TestPlanner),
+    PLANNER_ENTRY("total_defense", TotalDefensePlanner),
+    PLANNER_ENTRY("emplace_robot", EmplaceRobotPlanner),
+    PLANNER_ENTRY("forward", ForwardPlanner),
+    PLANNER_ENTRY("second_threat_defender", SecondThreatDefenderPlanner),
+    PLANNER_ENTRY("ball_calibration_data_collector", BallCalibrationDataCollectorPlanner),
+    PLANNER_ENTRY("center_stop_kick", CenterStopKickPlanner),
   };
-  // clang-format on
   return factory_map;
 }
+#undef PLANNER_ENTRY
 }  // namespace
 
 auto generatePlanner(
