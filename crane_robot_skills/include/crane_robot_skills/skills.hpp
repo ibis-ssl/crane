@@ -27,6 +27,5 @@
 #include <crane_robot_skills/sleep.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/teleop.hpp>
-#include <crane_robot_skills/test_motion.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_
