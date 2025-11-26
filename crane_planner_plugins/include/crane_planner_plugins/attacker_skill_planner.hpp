@@ -16,6 +16,7 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <functional>
 #include <memory>
+#include <range/v3/algorithm/contains.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>

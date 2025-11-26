@@ -10,7 +10,8 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <limits>
-#include <range/v3/all.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/transform.hpp>
 #include <utility>
 #include <vector>
 

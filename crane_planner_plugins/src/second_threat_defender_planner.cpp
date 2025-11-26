@@ -6,7 +6,6 @@
 
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/second_threat_defender_planner.hpp>
-#include <range/v3/all.hpp>
 
 namespace crane
 {

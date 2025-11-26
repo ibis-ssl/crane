@@ -16,6 +16,7 @@
 #include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
+#include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>

@@ -6,7 +6,9 @@
 
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/forward_planner.hpp>
-#include <range/v3/all.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane
 {

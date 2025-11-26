@@ -5,6 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/forward.hpp>
+#include <range/v3/algorithm/max_element.hpp>
+#include <range/v3/view/iota.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane::skills
 {

@@ -6,7 +6,12 @@
 
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
-#include <range/v3/all.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/functional/comparisons.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane
 {

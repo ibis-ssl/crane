@@ -7,7 +7,6 @@
 #include <chrono>
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/named_value_array.hpp>
-#include <crane_robot_skills/skills.hpp>
 #include <iostream>
 #include <map>
 #include <rclcpp/rclcpp.hpp>

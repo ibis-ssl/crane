@@ -5,7 +5,11 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_game_analyzer/evaluations/evaluations.hpp>
-#include <range/v3/all.hpp>
+#include <range/v3/algorithm/max.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane::evaluation
 {

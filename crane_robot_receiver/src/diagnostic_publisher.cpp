@@ -15,6 +15,8 @@
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <map>
+#include <range/v3/algorithm/contains.hpp>
+#include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 

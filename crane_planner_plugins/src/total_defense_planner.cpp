@@ -12,6 +12,14 @@
 #include <crane_planner_plugins/total_defense_planner.hpp>
 #include <limits>
 #include <numeric>
+#include <range/v3/action/remove_if.hpp>
+#include <range/v3/algorithm/any_of.hpp>
+#include <range/v3/algorithm/copy.hpp>
+#include <range/v3/algorithm/count.hpp>
+#include <range/v3/iterator/insert_iterators.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <ranges>
 
 namespace crane
