@@ -49,7 +49,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 - **IdleSkill**: 待機状態
 - **SleepSkill**: 休止状態
 - **TeleopSkill**: 手動操縦
-- **TestMotionSkill**: テスト動作
 - **RobotCommandAsSkill**: 直接コマンド実行
 
 ## スキルベースアーキテクチャ

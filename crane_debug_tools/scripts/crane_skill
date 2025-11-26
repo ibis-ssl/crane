@@ -34,8 +34,6 @@ class SkillCLI(Node):
         "SimpleKickOff",
         "KickOffSupport",
         "Marker",
-        "TestMotionPosition",
-        "TestMotionVelocity",
         "EmplaceRobot",
         "Forward",
         "BallNearbyPositioner",

@@ -51,7 +51,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     REGISTER_SKILL(skills::Receive);
     REGISTER_SKILL(skills::SimpleKickOff);
     REGISTER_SKILL(skills::SubAttacker);
-    REGISTER_SKILL(skills::TestMotionPosition);
     REGISTER_SKILL(skills::Marker);
     REGISTER_SKILL(skills::SingleBallPlacement);
     REGISTER_SKILL(skills::EmplaceRobot);

@@ -524,8 +524,6 @@ private:
         "GoalKick",
         "SimpleKickOff",
         "Marker",
-        "TestMotionPosition",
-        "TestMotionVelocity",
         "EmplaceRobot",
         "Forward",
         "BallNearbyPositioner",

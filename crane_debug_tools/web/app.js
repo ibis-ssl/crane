@@ -128,8 +128,8 @@ class CraneDebugger {
             this.availableSkills = [
                 "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
                 "SingleBallPlacement", "GoalKick", "SimpleKickOff",
-                "KickOffSupport", "Marker", "TestMotionPosition",
-                "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+                "KickOffSupport", "Marker",
+                "EmplaceRobot", "Forward", "BallNearbyPositioner",
                 "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
             ];
             this.populateSkillsList(this.availableSkills);
@@ -405,14 +405,6 @@ class CraneDebugger {
             'Teleop': [
                 { name: 'rotation_deg', type: 'number', label: 'Rotation (degrees)', min: '-180', max: '180', step: '1', value: '0' },
                 { name: 'use_local_coordinate', type: 'checkbox', label: 'Use Local Coordinate', value: 'false' }
-            ],
-            'TestMotionPosition': [
-                { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
-                { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
-            ],
-            'TestMotionVelocity': [
-                { name: 'velocity_x', type: 'number', label: 'Velocity X', step: '0.1' },
-                { name: 'velocity_y', type: 'number', label: 'Velocity Y', step: '0.1' }
             ],
             'Receive': [
                 { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },

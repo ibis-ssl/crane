@@ -39,8 +39,6 @@ public:
       "GoalKick",
       "SimpleKickOff",
       "Marker",
-      "TestMotionPosition",
-      "TestMotionVelocity",
       "EmplaceRobot",
       "Forward",
       "BallNearbyPositioner",

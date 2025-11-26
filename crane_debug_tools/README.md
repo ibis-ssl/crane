@@ -69,7 +69,7 @@ http://localhost:8080/standalone.html
 - `Kick`, `Receive` - ボール操作
 - `Goalie`, `Attacker`, `SubAttacker` - ゲームロール
 - `GoalKick`, `SimpleKickOff`, `SingleBallPlacement` - セットプレー
-- `TestMotionPosition`, `TestMotionVelocity`, `Teleop` - テスト用
+- `Teleop` - テスト用
 
 ## トラブルシューティング
 
