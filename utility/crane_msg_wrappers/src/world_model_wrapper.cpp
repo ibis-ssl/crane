@@ -235,48 +235,6 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   return std::make_optional<RobotWithDistance>({.robot = nearest_robot, .distance = min_distance});
 }
 
-auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
-{
-  Box field_box;
-  field_box.min_corner() << -world_model->fieldSize().x() / 2.f - offset,
-    -world_model->fieldSize().y() / 2.f - offset;
-  field_box.max_corner() << world_model->fieldSize().x() / 2.f + offset,
-    world_model->fieldSize().y() / 2.f + offset;
-  return isInBox(field_box, p);
-}
-
-auto WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, double offset) const
-  -> bool
-{
-  // During ball placement, all robots of the non-placing team have to keep
-  // at least 0.5 meters distance to the line between the ball and the placement position
-  // (the forbidden area forms a stadium shape).
-  // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
-  //    Segment ball_placement_line;
-  //    {Point(ball_placement_target), Point(ball.pos)};
-  if (auto area = world_model->getBallPlacementArea(offset)) {
-    return bg::distance(area.value(), p) < 0.001;
-  } else {
-    return false;
-  }
-}
-
-auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p, double offset) const
-  -> bool
-{
-  return isInBox(world_model->theirs_.penalty_area, p, offset);
-}
-
-auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p, double offset) const
-  -> bool
-{
-  return isInBox(world_model->ours_.penalty_area, p, offset);
-}
-
-auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p, double offset) const -> bool
-{
-  return isFriendPenaltyArea(p, offset) || isEnemyPenaltyArea(p, offset);
-}
 
 auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 {
