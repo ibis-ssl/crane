@@ -235,7 +235,6 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   return std::make_optional<RobotWithDistance>({.robot = nearest_robot, .distance = min_distance});
 }
 
-
 auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 {
   if (

@@ -98,8 +98,8 @@ public:
     -> bool;
   auto addDistanceFromOurRobotsChecker(double threshold, Rule rule) -> void;
 
-  [[nodiscard]] auto checkDistanceFromTheirRobots(const Point & p, double threshold, Rule rule)
-    const -> bool;
+  [[nodiscard]] auto checkDistanceFromTheirRobots(
+    const Point & p, double threshold, Rule rule) const -> bool;
   auto addDistanceFromTheirRobotsChecker(double threshold, Rule rule) -> void;
 
   // カスタムチェッカー

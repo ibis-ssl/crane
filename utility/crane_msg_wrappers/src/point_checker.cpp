@@ -76,8 +76,7 @@ auto PointChecker::isPenaltyArea(const Point & p, double offset) const -> bool
 
 auto PointChecker::addEnemyPenaltyAreaInsideChecker(double offset) -> void
 {
-  checkers_.emplace_back(
-    [this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
+  checkers_.emplace_back([this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
 }
 
 auto PointChecker::addEnemyPenaltyAreaOutsideChecker(double offset) -> void
@@ -160,9 +159,8 @@ auto PointChecker::checkDistanceFromBall(const Point & p, double threshold, Rule
 
 auto PointChecker::addDistanceFromBallChecker(double threshold, Rule rule) -> void
 {
-  checkers_.emplace_back([this, threshold, rule](const Point & p) {
-    return checkDistanceFromBall(p, threshold, rule);
-  });
+  checkers_.emplace_back(
+    [this, threshold, rule](const Point & p) { return checkDistanceFromBall(p, threshold, rule); });
 }
 
 auto PointChecker::checkDistanceFromRobot(
