@@ -9,6 +9,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_planner_plugins/test_planner.hpp>
 #include <filesystem>
+#include <range/v3/algorithm/count.hpp>
 
 namespace crane
 {

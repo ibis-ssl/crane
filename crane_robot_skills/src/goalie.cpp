@@ -8,7 +8,11 @@
 #include <crane_physics/robot_info.hpp>
 #include <crane_physics/travel_time.hpp>
 #include <crane_robot_skills/goalie.hpp>
-#include <range/v3/all.hpp>
+#include <range/v3/algorithm/min_element.hpp>
+#include <range/v3/functional/comparisons.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 namespace crane::skills
 {

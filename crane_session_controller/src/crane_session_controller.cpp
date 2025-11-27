@@ -14,7 +14,11 @@
 #include <crane_utils/time.hpp>
 #include <filesystem>
 #include <fstream>
-#include <range/v3/all.hpp>
+#include <range/v3/action/sort.hpp>
+#include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/join.hpp>
+#include <range/v3/view/transform.hpp>
 #include <std_msgs/msg/string.hpp>
 
 #include "crane_session_controller/configuration_manager.hpp"

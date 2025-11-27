@@ -8,6 +8,7 @@
 
 #include <boost/stacktrace.hpp>
 #include <crane_local_planner/visualization_helpers.hpp>
+#include <range/v3/algorithm/find_if.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
 // cspell: ignore OBST

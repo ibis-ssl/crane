@@ -16,7 +16,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <range/v3/all.hpp>
+#include <range/v3/algorithm/sort.hpp>
 #include <stdexcept>
 #include <utility>
 #include <vector>

@@ -7,7 +7,12 @@
 #include "crane_world_model_publisher/pass_target_selector.hpp"
 
 #include <algorithm>
-#include <range/v3/all.hpp>
+#include <range/v3/algorithm/min_element.hpp>
+#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/functional/comparisons.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane
 {
