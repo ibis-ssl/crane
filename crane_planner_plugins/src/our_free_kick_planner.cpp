@@ -138,11 +138,9 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
   } else {
     return {};
   }
-  if (robots_sorted.size() > 1) {
-    for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(
-        std::make_shared<RobotCommandWrapper>("our_free_kick_planner/other", *it, world_model));
-    }
+  for (const auto & robot_id : robots_sorted | ranges::views::drop(1)) {
+    other_robots.emplace_back(
+      std::make_shared<RobotCommandWrapper>("our_free_kick_planner/other", robot_id, world_model));
   }
   return robots_sorted;
 }
