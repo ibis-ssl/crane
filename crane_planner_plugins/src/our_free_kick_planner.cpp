@@ -5,6 +5,10 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_planner_plugins/our_free_kick_planner.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/range/operations.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace crane
 {
@@ -85,12 +89,12 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
 
         double pass_line_to_enemy = [&]() {
           Segment line{world_model->ball().pos, best_pass_target};
-          double closest_distance = std::numeric_limits<double>::max();
-          for (const auto & robot : world_model->theirs().getAvailableRobots()) {
-            double dist = bg::distance(robot->pose.pos, line);
-            closest_distance = std::min(dist, closest_distance);
-          }
-          return closest_distance;
+          auto enemies = world_model->theirs().getAvailableRobots();
+          auto distances_view = enemies | ranges::views::transform([&](const auto & robot) {
+                                  return bg::distance(robot->pose.pos, line);
+                                });
+          return ranges::empty(distances_view) ? std::numeric_limits<double>::max()
+                                               : ranges::min(distances_view);
         }();
 
         // 敵が遮っている場合はチップキック
