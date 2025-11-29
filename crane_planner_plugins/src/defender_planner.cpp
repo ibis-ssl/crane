@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_planner_plugins/defender_planner.hpp>
+#include <range/v3/view/enumerate.hpp>
 
 namespace crane
 {
@@ -58,8 +59,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
+    for (const auto & [index, robot_id] : ranges::views::enumerate(robots)) {
       [[maybe_unused]] Point target_point = [&]() {
         if (not defense_points.empty()) {
           return defense_points.at(index);
@@ -69,9 +69,9 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       }();
 
       auto command = std::make_shared<crane::RobotCommandWrapper>(
-        "defender_planner/stop", robot_id->id, world_model);
+        "defender_planner/stop", robot_id.id, world_model);
 
-      auto robot = world_model->getRobot(*robot_id);
+      auto robot = world_model->getRobot(robot_id);
 
       command->stopHere();
 

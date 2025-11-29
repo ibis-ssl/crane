@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_planner_plugins/defense_functions.hpp>
+#include <range/v3/algorithm/min_element.hpp>
 
 namespace crane
 {
@@ -99,18 +100,13 @@ auto getDefenseArcPoints(
       }
       default: {
         // ボールに一番近い交点を返す
-        double min_distance = std::numeric_limits<double>::max();
-        Point best_intersection =
+        Point default_point =
           world_model->getOurGoalCenter() +
           (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
-        for (auto & intersection : intersections) {
-          double distance = (world_model->ball().pos - intersection).norm();
-          if (distance < min_distance) {
-            min_distance = distance;
-            best_intersection = intersection;
-          }
-        }
-        return best_intersection;
+        auto it = ranges::min_element(intersections, {}, [&](const auto & intersection) {
+          return (world_model->ball().pos - intersection).norm();
+        });
+        return (it != intersections.end()) ? *it : default_point;
       }
     }
   }();

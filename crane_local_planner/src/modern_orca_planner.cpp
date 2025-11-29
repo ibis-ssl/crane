@@ -6,10 +6,10 @@
 
 #include "crane_local_planner/modern_orca_planner.hpp"
 
-#include <algorithm>
 #include <chrono>
 #include <crane_local_planner/visualization_helpers.hpp>
 #include <iomanip>
+#include <range/v3/algorithm/find_if.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <sstream>
 
@@ -458,11 +458,10 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
 
 double ModernORCAPlanner::getPreviousVelocity(uint32_t robot_id) const
 {
-  auto it = std::find_if(
-    pre_commands.robot_commands.begin(), pre_commands.robot_commands.end(),
-    [robot_id](const auto & c) { return c.robot_id == robot_id; });
+  auto it = ranges::find_if(
+    pre_commands.robot_commands, [robot_id](const auto & c) { return c.robot_id == robot_id; });
 
-  if (it != pre_commands.robot_commands.end()) {
+  if (it != ranges::end(pre_commands.robot_commands)) {
     if (!it->simple_velocity_target_mode.empty()) {
       const auto & vel = it->simple_velocity_target_mode.front();
       return std::hypot(vel.target_vx, vel.target_vy);
@@ -648,10 +647,9 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
 Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const
 {
   // ロボットフィードバック位置が利用可能な場合は使用、そうでなければコマンド位置にフォールバック
-  if (auto feedback = std::find_if(
-        latest_feedback.feedback.begin(), latest_feedback.feedback.end(),
-        [&](const auto & f) { return f.robot_id == command.robot_id; });
-      feedback != latest_feedback.feedback.end()) {
+  if (auto feedback = ranges::find_if(
+        latest_feedback.feedback, [&](const auto & f) { return f.robot_id == command.robot_id; });
+      feedback != ranges::end(latest_feedback.feedback)) {
     return Point(feedback->odom[0], feedback->odom[1]);
   } else {
     return Point(command.current_pose.x, command.current_pose.y);

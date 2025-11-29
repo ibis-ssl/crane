@@ -6,11 +6,12 @@
 
 #include "crane_world_model_publisher/pass_target_selector.hpp"
 
-#include <algorithm>
-#include <range/v3/algorithm/min_element.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/functional/comparisons.hpp>
 #include <range/v3/range/conversion.hpp>
+#include <range/v3/range/operations.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -91,17 +92,17 @@ auto PassTargetSelector::calcScore(
   };
 
   auto enemies = world_model->theirs().getAvailableRobots();
-  auto slack_times = enemies | ranges::views::filter([&](const auto & enemy) {
-                       // パス起点から近すぎる敵はチップで飛び越せるので除外
-                       return enemy->getDistance(pass_origin) >= 1.0;
-                     }) |
-                     ranges::views::filter([&](const auto & enemy) {
-                       // パス先より向こうにいる敵は除外
-                       return pass_dir.dot(enemy->pose.pos - p) <= 0.0;
-                     }) |
-                     ranges::views::transform(calc_slack_time) | ranges::to<std::vector>();
+  auto slack_times_view = enemies | ranges::views::filter([&](const auto & enemy) {
+                            // パス起点から近すぎる敵はチップで飛び越せるので除外
+                            return enemy->getDistance(pass_origin) >= 1.0;
+                          }) |
+                          ranges::views::filter([&](const auto & enemy) {
+                            // パス先より向こうにいる敵は除外
+                            return pass_dir.dot(enemy->pose.pos - p) <= 0.0;
+                          }) |
+                          ranges::views::transform(calc_slack_time);
 
-  const double worst_slack = slack_times.empty() ? 1.0 : *ranges::min_element(slack_times);
+  const double worst_slack = ranges::empty(slack_times_view) ? 1.0 : ranges::min(slack_times_view);
   const double intercept_score = std::clamp(worst_slack / slack_scale_, 0.0, 1.0);
 
   score *= intercept_score;
@@ -172,12 +173,11 @@ auto PassTargetSelector::update(
 
     double prev_score = -1.0;
     if (last_pass_target_id_.has_value()) {
-      auto it = std::find_if(
-        analysis_msg.pass_scores.begin(), analysis_msg.pass_scores.end(),
-        [&](const crane_msgs::msg::FloatWithID & s) {
+      auto it =
+        ranges::find_if(analysis_msg.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
           return s.id == last_pass_target_id_.value();
         });
-      if (it != analysis_msg.pass_scores.end()) prev_score = it->value;
+      if (it != ranges::end(analysis_msg.pass_scores)) prev_score = it->value;
     }
 
     bool should_switch = true;

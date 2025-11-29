@@ -103,10 +103,10 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         }
 
         double pre_vel = [&]() {
-          if (auto it = std::find_if(
-                pre_commands.robot_commands.begin(), pre_commands.robot_commands.end(),
+          if (auto it = ranges::find_if(
+                pre_commands.robot_commands,
                 [&](const auto & c) { return c.robot_id == command.robot_id; });
-              it != pre_commands.robot_commands.end()) {
+              it != ranges::end(pre_commands.robot_commands)) {
             if (it->simple_velocity_target_mode.size() > 0) {
               return static_cast<double>(std::hypot(
                 it->simple_velocity_target_mode.front().target_vx,
