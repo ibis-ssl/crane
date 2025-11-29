@@ -6,8 +6,8 @@
 
 #include "crane_world_model_publisher/pass_target_selector.hpp"
 
-#include <algorithm>
-#include <range/v3/algorithm/min_element.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/functional/comparisons.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -173,12 +173,11 @@ auto PassTargetSelector::update(
 
     double prev_score = -1.0;
     if (last_pass_target_id_.has_value()) {
-      auto it = std::find_if(
-        analysis_msg.pass_scores.begin(), analysis_msg.pass_scores.end(),
-        [&](const crane_msgs::msg::FloatWithID & s) {
+      auto it =
+        ranges::find_if(analysis_msg.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
           return s.id == last_pass_target_id_.value();
         });
-      if (it != analysis_msg.pass_scores.end()) prev_score = it->value;
+      if (it != ranges::end(analysis_msg.pass_scores)) prev_score = it->value;
     }
 
     bool should_switch = true;
