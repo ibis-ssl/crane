@@ -33,8 +33,11 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
 target_link_libraries(${PROJECT_NAME} ${YAML_CPP_LIBRARIES})
 
 # Enable Unity Build for faster compilation
-set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
-set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
+  set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
+endif()
 
 target_precompile_headers(${PROJECT_NAME}
   PUBLIC
