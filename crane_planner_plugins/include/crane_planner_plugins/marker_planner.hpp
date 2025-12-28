@@ -41,8 +41,6 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
 private:
-  auto getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<RobotInfo>, double>>;
-
   auto assignMarkingTarget(
     uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
     -> std::vector<uint8_t>;
