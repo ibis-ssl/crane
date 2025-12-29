@@ -28,8 +28,8 @@ struct ThreatEvaluatorConfig
   // 重み付け（4因子）
   double weight_redirect_angle = 0.9;
   double weight_pen_area_border = 1.0;
-  double weight_facing_goal = 0.8;    ///< ゴール方向を向いているか
-  double weight_ball_access = 1.2;    ///< ボールアクセス（高優先度）
+  double weight_facing_goal = 0.8;  ///< ゴール方向を向いているか
+  double weight_ball_access = 1.2;  ///< ボールアクセス（高優先度）
 
   // 距離減衰
   double danger_dropoff_x = 1.0;  // 脅威減衰開始X座標（相対）
@@ -51,8 +51,8 @@ struct ThreatRatingDetail
   double total_score = 0.0;
   double score_redirect_angle = 0.0;
   double score_pen_area_border = 0.0;
-  double score_facing_goal = 0.0;     ///< ゴール方向を向いている度合い
-  double score_ball_access = 0.0;     ///< ボールへのアクセスしやすさ
+  double score_facing_goal = 0.0;  ///< ゴール方向を向いている度合い
+  double score_ball_access = 0.0;  ///< ボールへのアクセスしやすさ
   double distance_factor = 1.0;
 };
 
@@ -110,8 +110,7 @@ public:
   /**
    * @brief ロボット脅威の計算（優先度順）
    */
-  auto calculateRobotThreats(
-    const WorldModelWrapper & world_model, const BallThreat & ball_threat)
+  auto calculateRobotThreats(const WorldModelWrapper & world_model, const BallThreat & ball_threat)
     -> std::vector<RobotThreat>;
 
   /**
@@ -173,8 +172,8 @@ private:
    *
    * 台形速度プロファイルによる到達時間を評価
    */
-  auto calcBallAccessScore(
-    const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot) const -> double;
+  auto calcBallAccessScore(const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot) const
+    -> double;
 
   /**
    * @brief ゴールまでの距離に基づく係数計算

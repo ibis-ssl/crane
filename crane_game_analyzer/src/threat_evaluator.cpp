@@ -6,10 +6,10 @@
 
 #include "crane_game_analyzer/threat_evaluator.hpp"
 
-#include <crane_geometry/geometry_operations.hpp>
-#include <crane_physics/travel_time.hpp>
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -40,8 +40,7 @@ auto ThreatEvaluator::calculateBallThreat(const WorldModelWrapper & world_model)
 }
 
 auto ThreatEvaluator::calculateRobotThreats(
-  const WorldModelWrapper & world_model, const BallThreat & ball_threat)
-  -> std::vector<RobotThreat>
+  const WorldModelWrapper & world_model, const BallThreat & ball_threat) -> std::vector<RobotThreat>
 {
   std::vector<RobotThreat> threats;
 
@@ -72,9 +71,8 @@ auto ThreatEvaluator::calculateRobotThreats(
   }
 
   // 脅威度でソート（降順）
-  ranges::sort(threats, [](const auto & a, const auto & b) {
-    return a.threat_rating > b.threat_rating;
-  });
+  ranges::sort(
+    threats, [](const auto & a, const auto & b) { return a.threat_rating > b.threat_rating; });
 
   return threats;
 }
@@ -112,8 +110,8 @@ auto ThreatEvaluator::rateRobotThreat(
 }
 
 auto ThreatEvaluator::calculateRecommendedDefenders(
-  [[maybe_unused]] const BallThreat & ball_threat,
-  const std::vector<RobotThreat> & robot_threats, int available_robots) -> int
+  [[maybe_unused]] const BallThreat & ball_threat, const std::vector<RobotThreat> & robot_threats,
+  int available_robots) -> int
 {
   // 基本: 脅威数に応じて守備者を割り当て
   // 最低1人、最大で利用可能ロボット数の半分
@@ -134,7 +132,8 @@ auto ThreatEvaluator::calculateRecommendedDefenders(
   return std::clamp(recommended, 1, max_defenders);
 }
 
-auto ThreatEvaluator::toThreatInfoMsg(const BallThreat & threat) const -> crane_msgs::msg::ThreatInfo
+auto ThreatEvaluator::toThreatInfoMsg(const BallThreat & threat) const
+  -> crane_msgs::msg::ThreatInfo
 {
   crane_msgs::msg::ThreatInfo msg;
 
@@ -262,8 +261,8 @@ auto ThreatEvaluator::calcBallAccessScore(
   const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot) const -> double
 {
   // 台形速度プロファイルで到達時間を計算
-  double travel_time = getTravelTimeTrapezoidal(
-    robot->pose.pos, robot->vel.linear, ball_pos, 3.0, 2.0);
+  double travel_time =
+    getTravelTimeTrapezoidal(robot->pose.pos, robot->vel.linear, ball_pos, 3.0, 2.0);
 
   // 2秒以内でアクセス可能なら高スコア（1秒以内で最大）
   return std::clamp(1.0 - travel_time / 2.0, 0.0, 1.0);
@@ -293,8 +292,7 @@ auto ThreatEvaluator::calcPenAreaBorderScore(
 }
 
 auto ThreatEvaluator::calcDistanceToGoalFactor(
-  const Point & threat_pos, double dropoff_percentage, const WorldModelWrapper & wm) const
-  -> double
+  const Point & threat_pos, double dropoff_percentage, const WorldModelWrapper & wm) const -> double
 {
   Point goal_center = wm.getOurGoalCenter();
   double field_length = wm.fieldSize().x();
@@ -330,9 +328,10 @@ auto ThreatEvaluator::determineBallThreatSource(const WorldModelWrapper & wm)
   // ボールに最も近い敵ロボット
   auto enemies = wm.theirs().getAvailableRobots();
   if (!enemies.empty()) {
-    auto closest = std::min_element(enemies.begin(), enemies.end(), [&](const auto & a, const auto & b) {
-      return a->getDistance(ball.pos) < b->getDistance(ball.pos);
-    });
+    auto closest =
+      std::min_element(enemies.begin(), enemies.end(), [&](const auto & a, const auto & b) {
+        return a->getDistance(ball.pos) < b->getDistance(ball.pos);
+      });
 
     if ((*closest)->getDistance(ball.pos) < 0.5) {
       return {BallThreat::SourceType::BOT_CLOSE_TO_BALL, (*closest)->pose.pos};
