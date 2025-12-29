@@ -137,10 +137,7 @@ public:
     return default_value;
   }
 
-  bool hasSessionParameter(const std::string & key) const
-  {
-    return session_params_.contains(key);
-  }
+  bool hasSessionParameter(const std::string & key) const { return session_params_.contains(key); }
 
 protected:
   virtual auto getSelectedRobots(

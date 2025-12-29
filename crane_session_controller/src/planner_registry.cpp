@@ -39,8 +39,7 @@ auto PlannerRegistry::getOrCreatePlanner(
     // SessionParameterType から PlannerParameterType への変換
     std::unordered_map<std::string, PlannerParameterType> planner_params;
     for (const auto & [key, value] : params) {
-      std::visit(
-        [&planner_params, &key](const auto & v) { planner_params[key] = v; }, value);
+      std::visit([&planner_params, &key](const auto & v) { planner_params[key] = v; }, value);
     }
     result_planner->setSessionParameters(planner_params);
   }
