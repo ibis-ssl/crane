@@ -11,11 +11,15 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/defense_functions.hpp>
+#include <crane_planner_plugins/marker_functions.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/goalie.hpp>
+#include <crane_robot_skills/marker.hpp>
+#include <crane_robot_skills/second_threat_defender.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -29,12 +33,17 @@ class TotalDefensePlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Goalie> goalie;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> first_threat_defenders;
+  std::shared_ptr<skills::SecondThreatDefender> second_threat_defender;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> second_threat_defenders;
+  std::vector<std::shared_ptr<skills::Marker>> markers;
 
 private:
   bool m_is_goalie_total_defense_mode = true;
+
+  std::mutex markers_mutex;
+
+  /// マーキングターゲットを割り当て
+  auto assignMarkingTargets(const std::vector<uint8_t> & available_robots) -> std::vector<uint8_t>;
 
 public:
   COMPOSITION_PUBLIC

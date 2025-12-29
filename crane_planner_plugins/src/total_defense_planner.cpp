@@ -16,6 +16,9 @@
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/algorithm/count.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/functional/comparisons.hpp>
 #include <range/v3/iterator/insert_iterators.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -64,10 +67,14 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
+  // ディフェンダー数を決定（最大3台、残りはMarkerへ）
+  constexpr size_t MAX_DEFENSE_LINE_ROBOTS = 3;
+  size_t num_defense_line_robots = std::min(defender_robots.size(), MAX_DEFENSE_LINE_ROBOTS);
+
   std::vector<Point> defense_points;
   if (defense_parameter) {
     defense_points = getDefenseLinePoints(
-      defender_robots.size(), ball_line, world_model, m_is_goalie_total_defense_mode,
+      num_defense_line_robots, ball_line, world_model, m_is_goalie_total_defense_mode,
       *defense_parameter);
   }
 
@@ -76,13 +83,86 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     robot_commands.emplace_back(goalie->getRobotCommand());
   }
 
+  // ディフェンダーとマーカーのロボットを分割
+  std::vector<RobotIdentifier> defense_line_robots;
+  std::vector<uint8_t> marker_robot_ids;
+
   if (not defense_points.empty()) {
+    // defense_pointsの数だけディフェンダーを選択、残りはMarkerへ
+    for (size_t i = 0; i < defender_robots.size(); ++i) {
+      if (i < defense_points.size()) {
+        defense_line_robots.push_back(defender_robots[i]);
+      } else {
+        marker_robot_ids.push_back(defender_robots[i].id);
+      }
+    }
+  } else {
+    // defense_pointsがない場合は全員Markerへ
+    for (const auto & robot : defender_robots) {
+      marker_robot_ids.push_back(robot.id);
+    }
+  }
+
+  // ディフェンダーをdefense_pointsに割り当て
+  if (not defense_line_robots.empty() && not defense_points.empty()) {
     auto defender_commands = assignRobotsToPoints(
-      defender_robots, defense_points, "total_defense_planner", ball.pos,
+      defense_line_robots, defense_points, "total_defense_planner", ball.pos,
       [&](std::shared_ptr<RobotCommandWrapper> & command) { command->disableBasicAvoidances(); });
     for (const auto & cmd : defender_commands) {
       robot_commands.emplace_back(cmd);
     }
+  }
+
+  // SecondThreatDefender用に1台確保
+  constexpr double SECOND_THREAT_DEFENDER_OFFSET = 0.3;
+  if (not marker_robot_ids.empty()) {
+    auto target =
+      skills::SecondThreatDefender::getDefaultPoint(world_model, SECOND_THREAT_DEFENDER_OFFSET);
+
+    // targetに最も近いロボットを選出
+    auto remaining_robots =
+      marker_robot_ids |
+      ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
+      ranges::to<std::vector>();
+
+    auto best_robot = ranges::min(remaining_robots, ranges::less{}, [&](const auto & robot) {
+      return (robot->pose.pos - target).norm();
+    });
+
+    // SecondThreatDefenderスキル作成
+    second_threat_defender =
+      std::make_shared<skills::SecondThreatDefender>(best_robot->id, world_model);
+    second_threat_defender->setParameter("offset", SECOND_THREAT_DEFENDER_OFFSET);
+
+    // marker_robot_idsから除外
+    marker_robot_ids.erase(
+      std::remove(marker_robot_ids.begin(), marker_robot_ids.end(), best_robot->id),
+      marker_robot_ids.end());
+  } else {
+    second_threat_defender.reset();
+  }
+
+  // SecondThreatDefenderの実行
+  if (second_threat_defender) {
+    second_threat_defender->run();
+    robot_commands.emplace_back(second_threat_defender->getRobotCommand());
+  }
+
+  // 残りのロボットをMarkerに割り当て
+  if (not marker_robot_ids.empty()) {
+    assignMarkingTargets(marker_robot_ids);
+  }
+
+  // Markerの実行
+  {
+    auto lock = std::lock_guard(markers_mutex);
+    for (const auto & marker : markers) {
+      marker->run();
+      robot_commands.emplace_back(marker->getRobotCommand());
+    }
+  }
+
+  if (not defense_line_robots.empty() || not markers.empty()) {
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
     for (auto robot_id = defender_robots.begin(); robot_id != defender_robots.end(); ++robot_id) {
@@ -126,7 +206,6 @@ auto TotalDefensePlanner::getSelectedRobots(
 
   const auto & ball = world_model->ball();
 
-  // TODO(HansRobo): Attackerを供出するかどうかの実装
   remaining_robots |= ranges::actions::remove_if(
     [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
@@ -142,25 +221,138 @@ auto TotalDefensePlanner::getSelectedRobots(
 
   if (not parameter) {
     return selected;
-  } else {
-    const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
-    auto selected_first_defenders = this->getSelectedRobotsByScore(
-      selectable_robots_num - selected.size(), remaining_robots,
+  }
+
+  // 役割ごとに優先順位を付けて選出
+  // 優先順位: 1.ディフェンスライン → 2.SecondThreatDefender → 3.Marker
+
+  // 1. ディフェンスライン用ロボット選出（最大3台、defense pointに近い順）
+  constexpr size_t MAX_DEFENSE_LINE_ROBOTS = 3;
+  const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
+  size_t defense_line_needed = std::min(
+    {MAX_DEFENSE_LINE_ROBOTS, static_cast<size_t>(selectable_robots_num - selected.size()),
+     remaining_robots.size()});
+
+  if (defense_line_needed > 0) {
+    auto defense_line_selected = this->getSelectedRobotsByScore(
+      defense_line_needed, remaining_robots,
       [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
-        // defense pointに近いほどスコアが高い
         return 100. - robot->getSquareDistance(defense_point);
       },
       prev_roles);
 
-    ranges::copy(selected_first_defenders, ranges::back_inserter(selected));
-    ranges::remove_if(remaining_robots, [selected_first_defenders](const uint8_t id) {
-      return ranges::any_of(
-        selected_first_defenders, [id](const uint8_t selected_id) { return selected_id == id; });
+    ranges::copy(defense_line_selected, ranges::back_inserter(selected));
+    remaining_robots |= ranges::actions::remove_if([&defense_line_selected](uint8_t id) {
+      return ranges::any_of(defense_line_selected, [id](uint8_t sel_id) { return sel_id == id; });
     });
-
-    // TODO(HansRobo): 間接脅威へのディフェンダー
-
-    return selected;
   }
+
+  // 2. SecondThreatDefender用ロボット選出（1台、その位置に近い順）
+  constexpr double SECOND_THREAT_DEFENDER_OFFSET = 0.3;
+  if (selected.size() < selectable_robots_num && !remaining_robots.empty()) {
+    auto second_threat_target =
+      skills::SecondThreatDefender::getDefaultPoint(world_model, SECOND_THREAT_DEFENDER_OFFSET);
+
+    auto second_threat_selected = this->getSelectedRobotsByScore(
+      1, remaining_robots,
+      [this, second_threat_target](const std::shared_ptr<RobotInfo> & robot) {
+        return 100. - robot->getSquareDistance(second_threat_target);
+      },
+      prev_roles);
+
+    ranges::copy(second_threat_selected, ranges::back_inserter(selected));
+    remaining_robots |= ranges::actions::remove_if([&second_threat_selected](uint8_t id) {
+      return ranges::any_of(second_threat_selected, [id](uint8_t sel_id) { return sel_id == id; });
+    });
+  }
+
+  // 3. Marker用ロボット選出（危険な敵に近いロボットを選出）
+  size_t marker_needed = selectable_robots_num - selected.size();
+  if (marker_needed > 0 && !remaining_robots.empty()) {
+    auto danger_enemies = getDangerEnemies(world_model);
+
+    // 危険な敵の数だけマーカーを割り当て
+    RobotList remaining_marker_robots =
+      remaining_robots |
+      ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
+      ranges::to<std::vector>();
+
+    for (const auto & [enemy_robot, score] : danger_enemies) {
+      if (selected.size() >= selectable_robots_num || remaining_marker_robots.empty()) {
+        break;
+      }
+
+      // マークする敵ロボットに一番近い味方ロボットを選択
+      auto best_marking_robot = ranges::min(
+        remaining_marker_robots, ranges::less{},
+        [&](const auto & robot) { return (robot->pose.pos - enemy_robot->pose.pos).norm(); });
+
+      selected.push_back(best_marking_robot->id);
+      remaining_marker_robots.erase(
+        ranges::find_if(remaining_marker_robots, [best_marking_robot](const auto & robot) {
+          return robot->id == best_marking_robot->id;
+        }));
+    }
+  }
+
+  return selected;
+}
+
+auto TotalDefensePlanner::assignMarkingTargets(const std::vector<uint8_t> & available_robots)
+  -> std::vector<uint8_t>
+{
+  auto lock = std::lock_guard(markers_mutex);
+  auto danger_enemies = getDangerEnemies(world_model);
+
+  for (const auto & [robot, score] : danger_enemies) {
+    visualizer->drawDebugLabel(
+      robot->pose.pos + Point(0., 0.2), "MarkerScore: " + std::to_string(score));
+  }
+
+  if (danger_enemies.size() > available_robots.size()) {
+    danger_enemies.resize(available_robots.size());
+  }
+
+  RobotList remaining_selectable_robots =
+    available_robots |
+    ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
+    ranges::to<std::vector>();
+
+  std::vector<uint8_t> selected_robots;
+
+  markers.clear();
+
+  for (const auto & [enemy_robot, score] : danger_enemies) {
+    // マークする敵ロボットに一番近い味方ロボットを選択
+    if (not remaining_selectable_robots.empty()) {
+      auto best_marking_robot = ranges::min(
+        remaining_selectable_robots, ranges::less{},
+        [&](const auto & robot) { return (robot->pose.pos - enemy_robot->pose.pos).norm(); });
+
+      selected_robots.push_back(best_marking_robot->id);
+      remaining_selectable_robots.erase(
+        ranges::find_if(remaining_selectable_robots, [best_marking_robot](const auto & robot) {
+          return robot->id == best_marking_robot->id;
+        }));
+
+      // skillを作って設定
+      markers.emplace_back(
+        std::make_shared<skills::Marker>(
+          "total_defense_planner/marker", static_cast<uint8_t>(best_marking_robot->id),
+          world_model));
+
+      markers.back()->setParameter("marking_robot_id", enemy_robot->id);
+      markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
+      markers.back()->setParameter("mark_distance", 0.5);
+
+      visualizer->drawCircle(enemy_robot->pose.pos, 0.3, "black", 10);
+      visualizer->drawLine(
+        best_marking_robot->pose.pos,
+        enemy_robot->pose.pos +
+          (enemy_robot->pose.pos - best_marking_robot->pose.pos).normalized() * 0.3,
+        "black", 20);
+    }
+  }
+  return selected_robots;
 }
 }  // namespace crane

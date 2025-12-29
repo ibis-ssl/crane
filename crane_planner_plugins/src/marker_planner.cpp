@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_physics/position_assignments.hpp>
+#include <crane_planner_plugins/marker_functions.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
@@ -39,51 +40,12 @@ auto MarkerPlanner::getSelectedRobots(
   return assignMarkingTarget(selectable_robots_num, selectable_robots);
 }
 
-auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<RobotInfo>, double>>
-{
-  RobotList defense_robots;
-  defense_robots.emplace_back(world_model->getOurRobot((world_model->getOurGoalieId())));
-
-  const auto their_robots = world_model->theirs().getAvailableRobots();
-  auto robots_and_scores =
-    their_robots | ranges::views::filter([&](const auto & robot) {
-      if (not world_model->point_checker.isInOurHalf(robot->pose.pos)) {
-        // 相手コートにいる敵ロボットはマークしない
-        return false;
-      } else if (robot->getDistance(world_model->ball().pos) < 1.0) {
-        // ボールに近い敵ロボットはマークしない
-        return false;
-      } else {
-        return true;
-      }
-    }) |
-    ranges::views::transform([&](const auto & robot) {
-      auto [_, angle_width] = world_model->getLargestGoalAngleRangeFromPoint(
-        robot->pose.pos, world_model->getOurGoalPosts(), defense_robots);
-      double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
-      double score = [&]() {
-        double angle_deg_width = angle_width * boost::math::constants::radian<double>();
-        if (angle_deg_width > 15.0) {
-          return angle_deg_width;
-        } else {
-          return angle_deg_width + 10.0 - std::clamp(x_diff * 2.0, 1.0, 10.0);
-        }
-      }();
-      return std::make_pair(robot, score);
-    }) |
-    ranges::to<std::vector>();
-
-  // 高スコアが前
-  std::ranges::sort(robots_and_scores, [&](auto & a, auto & b) { return a.second > b.second; });
-  return robots_and_scores;
-}
-
 auto MarkerPlanner::assignMarkingTarget(
   uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
   -> std::vector<uint8_t>
 {
   visualizer->clearBuffer();
-  auto dander_enemies = getDangerEnemies();
+  auto dander_enemies = getDangerEnemies(world_model);
 
   for (const auto & [robot, score] : dander_enemies) {
     visualizer->drawDebugLabel(
