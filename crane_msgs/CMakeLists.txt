@@ -25,6 +25,8 @@ set(msg_files
   "msg/world_model/WorldModel.msg"
   "msg/world_model/Vector3Stamped.msg"
 
+  "msg/analysis/ThreatInfo.msg"
+  "msg/analysis/ThreatAssignment.msg"
   "msg/analysis/GameAnalysis.msg"
   "msg/analysis/PingStatus.msg"
   "msg/analysis/PingStatusArray.msg"

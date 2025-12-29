@@ -10,11 +10,13 @@
 #include <algorithm>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "crane_game_analyzer/threat_evaluator.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -233,6 +235,12 @@ private:
 
   // ロボット位置の履歴
   std::deque<RobotPositionStamped> robot_records_;
+
+  // 脅威評価システム
+  ThreatEvaluator threat_evaluator_;
+  rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
+
+  auto evaluateThreats() -> crane_msgs::msg::GameAnalysis;
 };
 }  // namespace crane
 
