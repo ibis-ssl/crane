@@ -232,7 +232,7 @@ auto SessionControllerComponent::request(
 
   // 割り当てられなかったロボットを待機状態にする
   if (not selectable_robot_ids.empty()) {
-    SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size())};
+    SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size()), {}};
     tryAssignRobotToPlanner(waiter_session, selectable_robot_ids, prev_available_planners, results);
   }
 }
@@ -302,7 +302,7 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
     // PlannerRegistryを使ってプランナーを取得または生成
     auto planner = planner_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
-      prev_available_planners);
+      prev_available_planners, session_capacity.params);
 
     auto selected_robots = planner->selectRobots(
       selectable_robot_ids, session_capacity.selectable_robot_num, prev_robot_roles_);
