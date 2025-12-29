@@ -34,7 +34,9 @@ RUN ccache -sv
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     cd .. && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release' && \
+    colcon test --event-handlers console_cohesion+ && \
+    colcon test-result --verbose
 
 RUN ccache -sv
 
