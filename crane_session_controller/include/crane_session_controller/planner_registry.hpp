@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "crane_session_controller/configuration_manager.hpp"
+
 namespace crane
 {
 /**
@@ -41,7 +43,8 @@ public:
    */
   auto getOrCreatePlanner(
     const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model,
-    rclcpp::Node & node, const std::vector<PlannerBase::SharedPtr> & prev_planners)
+    rclcpp::Node & node, const std::vector<PlannerBase::SharedPtr> & prev_planners,
+    const std::unordered_map<std::string, SessionParameterType> & params = {})
     -> PlannerBase::SharedPtr;
 
   /**

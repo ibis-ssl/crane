@@ -9,6 +9,9 @@ situations:
         capacity: 1
       - name: total_defense
         capacity: 6
+        params:
+          max_defense_line_robots: 2
+          enable_second_threat_defender: true
       - name: attacker_skill
         capacity: 1
       - name: pass_receive
@@ -29,6 +32,9 @@ situations:
     sessions:
       - name: total_defense
         capacity: 3
+        params:
+          max_defense_line_robots: 2
+          enable_second_threat_defender: false
       - name: attacker_skill
         capacity: 1
       - name: pass_receive
@@ -67,10 +73,11 @@ situations:
       - name: emplace_robot
         capacity: 1
       - name: total_defense
-        capacity: 3
+        capacity: 4
+        params:
+          max_defense_line_robots: 2
+          enable_second_threat_defender: true
       - name: ball_nearby_positioner_skill
-        capacity: 1
-      - name: second_threat_defender
         capacity: 1
       - name: forward
         capacity: 20
@@ -90,13 +97,14 @@ situations:
     description: THEIR_FREE_KICK
     sessions:
       - name: total_defense
-        capacity: 3
+        capacity: 4
+        params:
+          max_defense_line_robots: 2
+          enable_second_threat_defender: true
       - name: ball_nearby_positioner_skill
         capacity: 1
       - name: marker
         capacity: 5
-      - name: second_threat_defender
-        capacity: 1
       - name: forward
         capacity: 20
   THEIR_INPLAY:
@@ -104,6 +112,9 @@ situations:
     sessions:
       - name: total_defense
         capacity: 3
+        params:
+          max_defense_line_robots: 2
+          enable_second_threat_defender: false
       - name: attacker_skill
         capacity: 1
       - name: pass_receive

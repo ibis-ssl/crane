@@ -14,7 +14,8 @@ namespace crane
 {
 auto PlannerRegistry::getOrCreatePlanner(
   const std::string & planner_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
-  const std::vector<PlannerBase::SharedPtr> & prev_planners) -> PlannerBase::SharedPtr
+  const std::vector<PlannerBase::SharedPtr> & prev_planners,
+  const std::unordered_map<std::string, SessionParameterType> & params) -> PlannerBase::SharedPtr
 {
   // 新しいプランナーを生成
   auto new_planner = generatePlanner(planner_name, world_model, node);
@@ -26,11 +27,24 @@ auto PlannerRegistry::getOrCreatePlanner(
     });
 
   // 見つかれば再利用、見つからなければ新規プランナーを返す
+  PlannerBase::SharedPtr result_planner;
   if (matched_planner != prev_planners.end()) {
-    return *matched_planner;
+    result_planner = *matched_planner;
   } else {
-    return new_planner;
+    result_planner = new_planner;
   }
+
+  // パラメータを設定（新規・再利用どちらでも）
+  if (!params.empty()) {
+    // SessionParameterType から PlannerParameterType への変換
+    std::unordered_map<std::string, PlannerParameterType> planner_params;
+    for (const auto & [key, value] : params) {
+      std::visit([&planner_params, &key](const auto & v) { planner_params[key] = v; }, value);
+    }
+    result_planner->setSessionParameters(planner_params);
+  }
+
+  return result_planner;
 }
 
 auto PlannerRegistry::getAllPlanners() const -> const std::vector<PlannerBase::SharedPtr> &

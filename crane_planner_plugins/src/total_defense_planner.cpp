@@ -67,9 +67,10 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
-  // ディフェンダー数を決定（最大3台、残りはMarkerへ）
-  constexpr size_t MAX_DEFENSE_LINE_ROBOTS = 3;
-  size_t num_defense_line_robots = std::min(defender_robots.size(), MAX_DEFENSE_LINE_ROBOTS);
+  // ディフェンダー数を決定（パラメータで制御可能、残りはMarkerへ）
+  const size_t max_defense_line_robots =
+    static_cast<size_t>(getSessionParameter<int>("max_defense_line_robots", 3));
+  size_t num_defense_line_robots = std::min(defender_robots.size(), max_defense_line_robots);
 
   std::vector<Point> defense_points;
   if (defense_parameter) {
@@ -114,8 +115,11 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
   }
 
   // SecondThreatDefender用に1台確保
+  const bool enable_second_threat_defender =
+    getSessionParameter<bool>("enable_second_threat_defender", true);
   constexpr double SECOND_THREAT_DEFENDER_OFFSET = 0.3;
-  if (not marker_robot_ids.empty()) {
+
+  if (enable_second_threat_defender && not marker_robot_ids.empty()) {
     auto target =
       skills::SecondThreatDefender::getDefaultPoint(world_model, SECOND_THREAT_DEFENDER_OFFSET);
 
@@ -226,11 +230,12 @@ auto TotalDefensePlanner::getSelectedRobots(
   // 役割ごとに優先順位を付けて選出
   // 優先順位: 1.ディフェンスライン → 2.SecondThreatDefender → 3.Marker
 
-  // 1. ディフェンスライン用ロボット選出（最大3台、defense pointに近い順）
-  constexpr size_t MAX_DEFENSE_LINE_ROBOTS = 3;
+  // 1. ディフェンスライン用ロボット選出（パラメータで最大台数を制御、defense pointに近い順）
+  const size_t max_defense_line_robots =
+    static_cast<size_t>(getSessionParameter<int>("max_defense_line_robots", 3));
   const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
   size_t defense_line_needed = std::min(
-    {MAX_DEFENSE_LINE_ROBOTS, static_cast<size_t>(selectable_robots_num - selected.size()),
+    {max_defense_line_robots, static_cast<size_t>(selectable_robots_num - selected.size()),
      remaining_robots.size()});
 
   if (defense_line_needed > 0) {
@@ -247,9 +252,14 @@ auto TotalDefensePlanner::getSelectedRobots(
     });
   }
 
-  // 2. SecondThreatDefender用ロボット選出（1台、その位置に近い順）
+  // 2. SecondThreatDefender用ロボット選出（パラメータで有効/無効を制御、その位置に近い順）
+  const bool enable_second_threat_defender =
+    getSessionParameter<bool>("enable_second_threat_defender", true);
   constexpr double SECOND_THREAT_DEFENDER_OFFSET = 0.3;
-  if (selected.size() < selectable_robots_num && !remaining_robots.empty()) {
+
+  if (
+    enable_second_threat_defender && selected.size() < selectable_robots_num &&
+    !remaining_robots.empty()) {
     auto second_threat_target =
       skills::SecondThreatDefender::getDefaultPoint(world_model, SECOND_THREAT_DEFENDER_OFFSET);
 

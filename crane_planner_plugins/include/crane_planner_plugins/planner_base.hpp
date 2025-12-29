@@ -21,10 +21,13 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace crane
 {
+using PlannerParameterType = std::variant<double, bool, int, std::string>;
+
 struct RobotRole
 {
   std::string planner_name;
@@ -116,6 +119,26 @@ public:
 
   const std::string name;
 
+  // セッションパラメータ管理
+  void setSessionParameters(const std::unordered_map<std::string, PlannerParameterType> & params)
+  {
+    session_params_ = params;
+  }
+
+  template <typename T>
+  T getSessionParameter(const std::string & key, const T & default_value) const
+  {
+    auto it = session_params_.find(key);
+    if (it != session_params_.end()) {
+      if (auto * val = std::get_if<T>(&it->second)) {
+        return *val;
+      }
+    }
+    return default_value;
+  }
+
+  bool hasSessionParameter(const std::string & key) const { return session_params_.contains(key); }
+
 protected:
   virtual auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -197,6 +220,8 @@ protected:
   std::vector<RobotIdentifier> robots;
 
   WorldModelWrapper::SharedPtr world_model;
+
+  std::unordered_map<std::string, PlannerParameterType> session_params_;
 
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
