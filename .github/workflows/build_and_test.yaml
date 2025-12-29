@@ -11,12 +11,7 @@ env:
 jobs:
   create_scenario_test_image:
     name: build and test
-    runs-on: >-
-      ${{
-        (contains(github.event.pull_request.labels.*.name, 'LargerRunner'))
-          && 'ubuntu-latest-m'
-          || 'ubuntu-latest'
-      }}
+    runs-on: 'ubuntu-latest'
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
