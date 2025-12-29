@@ -77,8 +77,43 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       for (const auto & session_node : situation_data["sessions"]) {
         ss << "\tNAME     : " << session_node["name"] << std::endl;
         ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
-        session_capacity_list.emplace_back(SessionCapacity(
-          {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
+
+        SessionCapacity session_capacity;
+        session_capacity.session_name = session_node["name"].as<std::string>();
+        session_capacity.selectable_robot_num = session_node["capacity"].as<int>();
+
+        // params の読み込み（存在する場合のみ）
+        if (session_node["params"]) {
+          for (const auto & param : session_node["params"]) {
+            std::string key = param.first.as<std::string>();
+            const auto & value = param.second;
+            if (value.IsScalar()) {
+              std::string str_val = value.as<std::string>();
+              // bool判定
+              if (str_val == "true") {
+                session_capacity.params[key] = true;
+              } else if (str_val == "false") {
+                session_capacity.params[key] = false;
+              } else {
+                // 数値判定
+                try {
+                  size_t pos;
+                  int int_val = std::stoi(str_val, &pos);
+                  if (pos == str_val.size()) {
+                    session_capacity.params[key] = int_val;
+                  } else {
+                    session_capacity.params[key] = std::stod(str_val);
+                  }
+                } catch (...) {
+                  session_capacity.params[key] = str_val;
+                }
+              }
+            }
+          }
+          ss << "\tPARAMS   : " << session_capacity.params.size() << " entries" << std::endl;
+        }
+
+        session_capacity_list.emplace_back(session_capacity);
       }
       robot_selection_priority_map_[situation_name] = session_capacity_list;
 

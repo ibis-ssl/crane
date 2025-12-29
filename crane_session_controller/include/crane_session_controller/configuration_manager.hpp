@@ -12,14 +12,18 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 namespace crane
 {
+using SessionParameterType = std::variant<double, bool, int, std::string>;
+
 struct SessionCapacity
 {
   std::string session_name;
   int selectable_robot_num;
+  std::unordered_map<std::string, SessionParameterType> params;
 };
 
 /**
