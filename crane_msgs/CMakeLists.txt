@@ -57,6 +57,11 @@ set(msg_files
   "msg/control/PositionTargetMode.msg"
   "msg/control/SimpleVelocityTargetMode.msg"
   "msg/control/PolarVelocityTargetMode.msg"
+
+  "msg/control/PositionCommand.msg"
+  "msg/control/VelocityCommand.msg"
+  "msg/control/PositionCommands.msg"
+  "msg/control/VelocityCommands.msg"
 )
 
 set(action_files
