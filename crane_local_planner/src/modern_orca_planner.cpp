@@ -86,7 +86,8 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
 }
 
 auto ModernORCAPlanner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
+  const crane_msgs::msg::PositionCommands & msg, double theta_offset)
+  -> crane_msgs::msg::VelocityCommands
 {
   // Update agents from commands
   updateAgentsFromCommands(msg);
@@ -98,10 +99,10 @@ auto ModernORCAPlanner::calculateRobotCommand(
   return generateCommandsFromORCA(msg, theta_offset);
 }
 
-void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCommands & commands)
+void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::PositionCommands & commands)
 {
   for (const auto & raw_command : commands.robot_commands) {
-    crane_msgs::msg::RobotCommand command = raw_command;
+    crane_msgs::msg::PositionCommand command = raw_command;
     const auto robot_id = command.robot_id;
 
     // Get current position (with robot feedback integration)
@@ -110,34 +111,9 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     // Convert current position and velocity to modern_orca types
     Vector2 position(current_position.x(), current_position.y());
     Vector2 velocity(command.current_velocity.x, command.current_velocity.y);
-    Vector2 preferred_velocity(0.0, 0.0);  // Will be set based on command type
 
-    // Calculate preferred velocity based on command type
-    switch (command.control_mode) {
-      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-        if (!command.position_target_mode.empty()) {
-          // Use advanced trapezoidal velocity profile for position control
-          preferred_velocity = calculateTrapezoidalVelocityProfile(command, current_position);
-        }
-        break;
-      }
-      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        if (!command.simple_velocity_target_mode.empty()) {
-          const auto & vel_target = command.simple_velocity_target_mode.front();
-          preferred_velocity = Vector2(vel_target.target_vx, vel_target.target_vy);
-        }
-        break;
-      }
-      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        if (!command.polar_velocity_target_mode.empty()) {
-          const auto & polar_target = command.polar_velocity_target_mode.front();
-          const double v_r = polar_target.target_velocity_r;
-          const double v_theta = polar_target.target_velocity_theta;
-          preferred_velocity = Vector2(v_r * cos(v_theta), v_r * sin(v_theta));
-        }
-        break;
-      }
-    }
+    // Calculate preferred velocity using trapezoidal velocity profile for position control
+    Vector2 preferred_velocity = calculateTrapezoidalVelocityProfile(command, current_position);
 
     // 速度に基づいて動的半径を計算（RVO2と同じ）
     double velocity_norm = velocity.norm();
@@ -247,22 +223,42 @@ void ModernORCAPlanner::updateConstraintsFromWorldModel()
   }
 }
 
-crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
-  const crane_msgs::msg::RobotCommands & original_commands, double theta_offset)
+crane_msgs::msg::VelocityCommands ModernORCAPlanner::generateCommandsFromORCA(
+  const crane_msgs::msg::PositionCommands & original_commands, double theta_offset)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
   total_constraints_ = 0.0;
 
-  crane_msgs::msg::RobotCommands result = original_commands;
+  crane_msgs::msg::VelocityCommands result;
+  result.header = original_commands.header;
+  result.on_positive_half = original_commands.on_positive_half;
+  result.is_yellow = original_commands.is_yellow;
+  result.delay_checkpoints = original_commands.delay_checkpoints;
 
-  for (auto & command : result.robot_commands) {
-    const auto robot_id = command.robot_id;
+  for (const auto & pos_command : original_commands.robot_commands) {
+    const auto robot_id = pos_command.robot_id;
+
+    // VelocityCommandを作成
+    crane_msgs::msg::VelocityCommand vel_command;
+    vel_command.robot_id = robot_id;
+    vel_command.target_theta = pos_command.target_theta;
+    vel_command.omega_limit = pos_command.omega_limit;
+    vel_command.chip_enable = pos_command.chip_enable;
+    vel_command.kick_power = pos_command.kick_power;
+    vel_command.dribble_power = pos_command.dribble_power;
+    vel_command.stop_flag = pos_command.stop_flag;
+    vel_command.current_pose = pos_command.current_pose;
+    vel_command.current_velocity = pos_command.current_velocity;
+    vel_command.state_factors = pos_command.state_factors;
+    vel_command.planner_name = pos_command.planner_name;
+    vel_command.delay_checkpoints = pos_command.delay_checkpoints;
+    vel_command.local_planner_config = pos_command.local_planner_config;
 
     if (agents_.find(robot_id) != agents_.end()) {
       auto & agent = *agents_[robot_id];
 
       // Apply constraint disable flags from local_planner_config for this robot
-      applyConstraintFlags(command.local_planner_config);
+      applyConstraintFlags(pos_command.local_planner_config);
 
       // Generate SSL constraints for this agent
       auto constraints = ssl_constraint_manager_->generateAllHalfPlanes(agent, ORCA_TIME_STEP);
@@ -275,7 +271,7 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 
       // Generate ORCA constraints with other agents (both friendly and enemy)
       // Only if collision avoidance is not disabled
-      if (!command.local_planner_config.disable_collision_avoidance) {
+      if (!pos_command.local_planner_config.disable_collision_avoidance) {
         std::vector<modern_orca::CircularAgent *> other_agents;
         for (const auto & [other_id, other_agent] : agents_) {
           if (other_id != robot_id) {
@@ -310,28 +306,21 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       // Use the solver result
       preferred_vel = optimal_vel;
 
-      // Set final planned values if this was a position target
-      if (
-        original_commands.robot_commands[&command - &result.robot_commands[0]].control_mode ==
-        crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-        command.local_planner_config.final_planned_max_acceleration.set__name("modern_orca")
-          .set__value(final_planned_acceleration_);
-        command.local_planner_config.final_planned_max_velocity.set__name("modern_orca")
-          .set__value(final_planned_max_velocity_);
-      }
+      // Set final planned values
+      vel_command.local_planner_config.final_planned_max_acceleration.set__name("modern_orca")
+        .set__value(final_planned_acceleration_);
+      vel_command.local_planner_config.final_planned_max_velocity.set__name("modern_orca")
+        .set__value(final_planned_max_velocity_);
+      vel_command.max_velocity = final_planned_max_velocity_;
+      vel_command.max_acceleration = final_planned_acceleration_;
 
-      // Convert back to ROS message format
-      command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-      command.polar_velocity_target_mode.clear();
-      command.polar_velocity_target_mode.reserve(1);
-
-      crane_msgs::msg::PolarVelocityTargetMode target;
-      target.target_velocity_r = preferred_vel.norm();
-      target.target_velocity_theta =
+      // Set velocity command (polar coordinates)
+      vel_command.target_velocity_r = preferred_vel.norm();
+      vel_command.target_velocity_theta =
         std::atan2(preferred_vel.y(), preferred_vel.x()) + theta_offset;
 
       // 効率的な加速のための回転制御
-      if (command.local_planner_config.enable_rotation_stop_on_accel) {
+      if (pos_command.local_planner_config.enable_rotation_stop_on_accel) {
         double move_angle = std::atan2(preferred_vel.y(), preferred_vel.x());
         auto robot = world_model->getOurRobot(robot_id);
         if (robot) {
@@ -351,17 +340,17 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 
           // 加速初期段階かつ前後方向に向いている場合、回転を停止
           if (is_forward_or_backward && is_low_speed && is_accelerating && target_speed > 0.01) {
-            command.omega_limit = 0.0;
+            vel_command.omega_limit = 0.0;
           }
         }
       }
-
-      command.polar_velocity_target_mode.push_back(target);
     }
+
+    result.robot_commands.push_back(vel_command);
   }
 
   // Store commands for next iteration
-  pre_commands = result;
+  pre_commands = original_commands;
 
   // Calculate solve time
   auto end_time = std::chrono::high_resolution_clock::now();
@@ -376,15 +365,10 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 }
 
 Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
-  const crane_msgs::msg::RobotCommand & raw_command, const Point & current_position)
+  const crane_msgs::msg::PositionCommand & raw_command, const Point & current_position)
 {
-  crane_msgs::msg::RobotCommand command = raw_command;
-  if (command.position_target_mode.empty()) {
-    return Vector2(0.0, 0.0);
-  }
-
-  const auto & target_config = command.position_target_mode.front();
-  Point target_pos(target_config.target_x, target_config.target_y);
+  crane_msgs::msg::PositionCommand command = raw_command;
+  Point target_pos(command.target_x, command.target_y);
 
   // NaN値検証とフォールバック処理
   if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
@@ -458,42 +442,32 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
 
 double ModernORCAPlanner::getPreviousVelocity(uint32_t robot_id) const
 {
+  // PositionCommandsから現在の速度を取得（WorldModelから設定されている）
   auto it = ranges::find_if(
     pre_commands.robot_commands, [robot_id](const auto & c) { return c.robot_id == robot_id; });
 
   if (it != ranges::end(pre_commands.robot_commands)) {
-    if (!it->simple_velocity_target_mode.empty()) {
-      const auto & vel = it->simple_velocity_target_mode.front();
-      return std::hypot(vel.target_vx, vel.target_vy);
-    } else if (!it->polar_velocity_target_mode.empty()) {
-      return it->polar_velocity_target_mode.front().target_velocity_r;
-    }
+    // current_velocityフィールドから速度を取得
+    return std::hypot(it->current_velocity.x, it->current_velocity.y);
   }
   return 0.0;
 }
 
 bool ModernORCAPlanner::isWithinPositionTolerance(
-  const crane_msgs::msg::RobotCommand & command, const Point & current_position) const
+  const crane_msgs::msg::PositionCommand & command, const Point & current_position) const
 {
-  if (
-    command.control_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE ||
-    command.position_target_mode.empty()) {
-    return false;
-  }
-
-  const auto & target_config = command.position_target_mode.front();
-  double distance = std::hypot(
-    target_config.target_x - current_position.x(), target_config.target_y - current_position.y());
+  double distance =
+    std::hypot(command.target_x - current_position.x(), command.target_y - current_position.y());
 
   // 明示的な位置許容範囲をチェック
-  if (distance < target_config.position_tolerance) {
+  if (distance < command.position_tolerance) {
     return true;
   }
 
   // 終端速度が0の場合のデフォルト許容範囲
   if (
-    command.local_planner_config.terminal_velocity == 0.0 &&
-    target_config.position_tolerance == 0.0 && distance < 0.03) {
+    command.local_planner_config.terminal_velocity == 0.0 && command.position_tolerance == 0.0 &&
+    distance < 0.03) {
     return true;
   }
 
@@ -644,7 +618,7 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
   visualizer->drawText(metrics_pos, ss.str(), "white", 30, "start");
 }
 
-Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const
+Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::PositionCommand & command) const
 {
   // ロボットフィードバック位置が利用可能な場合は使用、そうでなければコマンド位置にフォールバック
   if (auto feedback = ranges::find_if(

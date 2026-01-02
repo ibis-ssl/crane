@@ -55,7 +55,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
-auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
+auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) -> void
 {
   if (
     world_model->getMsg().play_situation.referee_raw.command.value ==
@@ -92,129 +92,88 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       }
     }();
 
-    switch (command.control_mode) {
-      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-        Vector2 position_diff;
-        position_diff << command.position_target_mode.front().target_x - current_position.x(),
-          command.position_target_mode.front().target_y - current_position.y();
+    // 位置指令の処理
+    Vector2 position_diff;
+    position_diff << command.target_x - current_position.x(),
+      command.target_y - current_position.y();
 
-        if (command.position_target_mode.empty()) {
-          throw std::runtime_error("POSITION_TARGET_MODEだがcommand.position_target_mode.empty()");
-        }
-
-        double pre_vel = [&]() {
-          if (auto it = ranges::find_if(
-                pre_commands.robot_commands,
-                [&](const auto & c) { return c.robot_id == command.robot_id; });
-              it != ranges::end(pre_commands.robot_commands)) {
-            if (it->simple_velocity_target_mode.size() > 0) {
-              return static_cast<double>(std::hypot(
-                it->simple_velocity_target_mode.front().target_vx,
-                it->simple_velocity_target_mode.front().target_vy));
-            } else if (it->polar_velocity_target_mode.size() > 0) {
-              return static_cast<double>(it->polar_velocity_target_mode.front().target_velocity_r);
-            } else {
-              return 0.0;
-            }
-          } else {
-            // 履歴が見つからなければ0
-            return 0.0;
-          }
-        }();
-
-        // 減速計算用の減速度を選択（現在速度に応じて高速域・低速域を選択）
-        double deceleration_for_planning;
-        if (pre_vel >= planning_deceleration_velocity_threshold) {
-          deceleration_for_planning = planning_deceleration_high_speed;
-        } else {
-          deceleration_for_planning = planning_deceleration_low_speed;
-        }
-
-        // 加速度（互換性のため）
-        command.local_planner_config.max_acceleration_factors.emplace_back(
-          crane_msgs::msg::NamedFloat()
-            .set__name("RVO2Planner::max_acc from parameter")
-            .set__value(deceleration_for_planning));
-        double max_acc = resolveMaxAccelerationFactors(command, deceleration_for_planning);
-
-        // 速度
-        // v^2 - v0^2 = 2ax
-        // v = sqrt(v0^2 + 2ax)
-        // v0 = 0, x = diff(=target_vel)
-        // v = sqrt(2ax)
-        double max_vel_by_decel = std::sqrt(2.0 * max_acc * position_diff.norm());
-        command.local_planner_config.max_velocity_factors.emplace_back(
-          crane_msgs::msg::NamedFloat()
-            .set__name("RVO2Planner::max_vel_by_decel")
-            .set__value(max_vel_by_decel));
-
-        command.local_planner_config.max_velocity_factors.emplace_back(
-          crane_msgs::msg::NamedFloat()
-            .set__name("RVO2Planner::max_vel from parameter")
-            .set__value(MAX_VEL));
-        if (
-          world_model->getMsg().play_situation.referee_raw.command.value ==
-          robocup_ssl_msgs::msg::RefereeCommand::STOP) {
-          command.local_planner_config.max_velocity_factors.emplace_back(
-            crane_msgs::msg::NamedFloat()
-              .set__name("RVO2Planner STOP制限")
-              .set__value(STOP_STATE_MAX_VELOCITY));
-        }
-
-        double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
-
-        Velocity target_vel;
-        target_vel << (command.position_target_mode.front().target_x - current_position.x()),
-          command.position_target_mode.front().target_y - current_position.y();
-
-        target_vel.x() =
-          std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
-        target_vel.y() =
-          std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
-
-        // Avoid NaN when already on target
-        if (target_vel.norm() > 1e-6) {
-          target_vel = target_vel.normalized() * max_vel;
-
-          if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
-            target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
-          }
-        } else {
-          target_vel.setZero();
-        }
-        rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
-        rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
-        break;
+    double pre_vel = [&]() {
+      if (auto it = ranges::find_if(
+            pre_commands.robot_commands,
+            [&](const auto & c) { return c.robot_id == command.robot_id; });
+          it != ranges::end(pre_commands.robot_commands)) {
+        return std::hypot(
+                 it->target_x - current_position.x(), it->target_y - current_position.y()) > 0.01
+                 ? static_cast<double>(
+                     std::hypot(command.current_velocity.x, command.current_velocity.y))
+                 : 0.0;
+      } else {
+        return 0.0;
       }
-      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        Velocity target_vel;
-        target_vel << command.simple_velocity_target_mode.front().target_vx,
-          command.simple_velocity_target_mode.front().target_vy;
-        rvo_sim->setAgentPrefVelocity(
-          command.robot_id, RVO::Vector2(target_vel.x(), target_vel.y()));
-        rvo_sim->setAgentMaxSpeed(command.robot_id, target_vel.norm());
-        break;
-      }
-      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        if (command.polar_velocity_target_mode.empty()) {
-          throw std::runtime_error(
-            "POLAR_VELOCITY_TARGET_MODEだがcommand.polar_velocity_target_mode.empty()");
-        }
-        double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
-        double v_theta = command.polar_velocity_target_mode.front().target_velocity_theta;
-        rvo_sim->setAgentPrefVelocity(
-          command.robot_id, RVO::Vector2(v_r * cos(v_theta), v_r * sin(v_theta)));
-        rvo_sim->setAgentMaxSpeed(command.robot_id, v_r);
-        break;
-      }
-      default: {
-        std::stringstream what;
-        what << "Unsupported control mode: " << command.control_mode;
-        what << ", expected: POSITION_TARGET_MODE, SIMPLE_VELOCITY_TARGET_MODE, "
-                "POLAR_VELOCITY_TARGET_MODE";
-        throw std::runtime_error(what.str());
-      }
+    }();
+
+    // 減速計算用の減速度を選択（現在速度に応じて高速域・低速域を選択）
+    double deceleration_for_planning;
+    if (pre_vel >= planning_deceleration_velocity_threshold) {
+      deceleration_for_planning = planning_deceleration_high_speed;
+    } else {
+      deceleration_for_planning = planning_deceleration_low_speed;
     }
+
+    // 加速度（互換性のため）
+    command.local_planner_config.max_acceleration_factors.emplace_back(
+      crane_msgs::msg::NamedFloat()
+        .set__name("RVO2Planner::max_acc from parameter")
+        .set__value(deceleration_for_planning));
+    double max_acc = resolveMaxAccelerationFactors(command, deceleration_for_planning);
+
+    // 速度
+    // v^2 - v0^2 = 2ax
+    // v = sqrt(v0^2 + 2ax)
+    // v0 = 0, x = diff(=target_vel)
+    // v = sqrt(2ax)
+    double max_vel_by_decel = std::sqrt(2.0 * max_acc * position_diff.norm());
+    command.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat()
+        .set__name("RVO2Planner::max_vel_by_decel")
+        .set__value(max_vel_by_decel));
+
+    command.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat()
+        .set__name("RVO2Planner::max_vel from parameter")
+        .set__value(MAX_VEL));
+    if (
+      world_model->getMsg().play_situation.referee_raw.command.value ==
+      robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+      command.local_planner_config.max_velocity_factors.emplace_back(
+        crane_msgs::msg::NamedFloat()
+          .set__name("RVO2Planner STOP制限")
+          .set__value(STOP_STATE_MAX_VELOCITY));
+    }
+
+    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
+
+    Velocity target_vel;
+    target_vel << (command.target_x - current_position.x()),
+      command.target_y - current_position.y();
+
+    target_vel.x() =
+      std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
+    target_vel.y() =
+      std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
+
+    // Avoid NaN when already on target
+    if (target_vel.norm() > 1e-6) {
+      target_vel = target_vel.normalized() * max_vel;
+
+      if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
+        target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
+      }
+    } else {
+      target_vel.setZero();
+    }
+    rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
+    rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {
@@ -230,21 +189,30 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   }
 }
 
-auto RVO2Planner::extractRobotCommandsFromRVOSim(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
+auto RVO2Planner::extractVelocityCommandsFromRVOSim(
+  const crane_msgs::msg::PositionCommands & msg, double theta_offset)
+  -> crane_msgs::msg::VelocityCommands
 {
-  crane_msgs::msg::RobotCommands commands;
+  crane_msgs::msg::VelocityCommands commands;
   for (const auto & original_command : msg.robot_commands) {
     const auto & robot = world_model->getOurRobot(original_command.robot_id);
-    crane_msgs::msg::RobotCommand command = original_command;
-    // RVOシミュレータの出力をコピーする
-    // NOTE: RVOシミュレータは角度を扱わないので角度はそのまま
 
-    command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-    command.polar_velocity_target_mode.clear();
-    command.polar_velocity_target_mode.reserve(1);
+    // VelocityCommandを構築
+    crane_msgs::msg::VelocityCommand command;
+    command.robot_id = original_command.robot_id;
+    command.target_theta = original_command.target_theta;
+    command.omega_limit = original_command.omega_limit;
+    command.chip_enable = original_command.chip_enable;
+    command.kick_power = original_command.kick_power;
+    command.dribble_power = original_command.dribble_power;
+    command.stop_flag = original_command.stop_flag;
+    command.current_pose = original_command.current_pose;
+    command.current_velocity = original_command.current_velocity;
+    command.state_factors = original_command.state_factors;
+    command.planner_name = original_command.planner_name;
+    command.delay_checkpoints = original_command.delay_checkpoints;
+    command.local_planner_config = original_command.local_planner_config;
 
-    crane_msgs::msg::PolarVelocityTargetMode target;
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
 
     // 障害物回避を無効にする場合、目標速度をそのまま使う
@@ -253,24 +221,25 @@ auto RVO2Planner::extractRobotCommandsFromRVOSim(
     }
 
     // 位置目標が許容誤差以下の場合、速度目標を0にする
-    if (original_command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-      double distance = std::hypot(
-        original_command.position_target_mode.front().target_x - robot->pose.pos.x(),
-        original_command.position_target_mode.front().target_y - robot->pose.pos.y());
-      if (distance < original_command.position_target_mode.front().position_tolerance) {
-        vel = Velocity::Zero();
-      } else if (
-        original_command.local_planner_config.terminal_velocity == 0. &&
-        original_command.position_target_mode.front().position_tolerance == 0. && distance < 0.03) {
-        // terminal_velocityが0のときはデフォルトで3cmのトレランス
-        vel = Velocity::Zero();
-      }
+    double distance = std::hypot(
+      original_command.target_x - robot->pose.pos.x(),
+      original_command.target_y - robot->pose.pos.y());
+    if (distance < original_command.position_tolerance) {
+      vel = Velocity::Zero();
+    } else if (
+      original_command.local_planner_config.terminal_velocity == 0. &&
+      original_command.position_tolerance == 0. && distance < 0.03) {
+      // terminal_velocityが0のときはデフォルトで3cmのトレランス
+      vel = Velocity::Zero();
     }
 
-    target.target_velocity_r = vel.norm();
-    target.target_velocity_theta = std::atan2(vel.y(), vel.x()) + theta_offset;
+    command.target_velocity_r = vel.norm();
+    command.target_velocity_theta = std::atan2(vel.y(), vel.x()) + theta_offset;
 
-    command.polar_velocity_target_mode.push_back(target);
+    // 解決済みの速度・加速度制限を設定
+    command.max_velocity = original_command.local_planner_config.final_planned_max_velocity.value;
+    command.max_acceleration =
+      original_command.local_planner_config.final_planned_max_acceleration.value;
 
     // 効率的な加速のための回転制御
     if (command.local_planner_config.enable_rotation_stop_on_accel) {
@@ -293,25 +262,20 @@ auto RVO2Planner::extractRobotCommandsFromRVOSim(
       if (is_forward_or_backward && is_low_speed && is_accelerating && target_speed > 0.01) {
         command.omega_limit = 0.0;
       }
-      // 条件を満たさない場合は素通り（既存のomega_limitを保持）
     }
-
-    // if (std::hypot(command.current_velocity.x, command.current_velocity.y) < vel.norm()) {
-    //  // 減速中は減速度制限をmax_accelerationに代入
-    //  command.local_planner_config.max_acceleration *= acceleration_factor.getValue();
-    //}
 
     commands.robot_commands.emplace_back(command);
   }
 
-  pre_commands = commands;
+  pre_commands = msg;
   return commands;
 }
 
 auto RVO2Planner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
+  const crane_msgs::msg::PositionCommands & msg, double theta_offset)
+  -> crane_msgs::msg::VelocityCommands
 {
-  crane_msgs::msg::RobotCommands commands = msg;
+  crane_msgs::msg::PositionCommands commands = msg;
   if (
     world_model->getMsg().play_situation.referee_raw.command.value !=
     robocup_ssl_msgs::msg::RefereeCommand::HALT) {
@@ -320,68 +284,48 @@ auto RVO2Planner::calculateRobotCommand(
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
-  return extractRobotCommandsFromRVOSim(commands, theta_offset);
+  return extractVelocityCommandsFromRVOSim(commands, theta_offset);
 }
 
-auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
+auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::PositionCommands & msg) -> void
 {
   for (auto & command : msg.robot_commands) {
-    if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-      Point target_pos;
-      target_pos << command.position_target_mode.front().target_x,
-        command.position_target_mode.front().target_y;
+    Point target_pos;
+    target_pos << command.target_x, command.target_y;
 
-      // NaN値検証とフォールバック処理
-      const Point current_pos(command.current_pose.x, command.current_pose.y);
-      if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
-        std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
-                  << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
-                  << target_pos.y() << "), using current position as fallback" << std::endl;
-        to_block_style_yaml(command, std::cout);
-        target_pos = current_pos;  // フォールバック: 現在位置に設定
-        command.position_target_mode.front().target_x = target_pos.x();
-        command.position_target_mode.front().target_y = target_pos.y();
-        continue;  // この時点で早期リターン、ペナルティエリア処理をスキップ
-      }
-
-      if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
-        std::cout << "[RVO2Planner] NaN detected in current_pos for robot "
-                  << static_cast<int>(command.robot_id) << ": current_pos(" << current_pos.x()
-                  << ", " << current_pos.y() << "), skipping robot" << std::endl;
-        continue;  // この場合は処理をスキップ
-      }
-
-      bool is_near_our_penalty_area =
-        (std::signbit(world_model->getOurGoalCenter().x()) == std::signbit(command.current_pose.x));
-      Box penalty_area = [&]() {
-        if (is_near_our_penalty_area) {
-          return world_model->getOurPenaltyArea();
-        } else {
-          return world_model->getTheirPenaltyArea();
-        }
-      }();
-      const Point goal_pos = [&]() {
-        if (is_near_our_penalty_area) {
-          return world_model->getOurGoalCenter();
-        } else {
-          return world_model->getTheirGoalCenter();
-        }
-      }();
-
-      // 3つの独立した回避ロジックを適用
-      adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
-      adjustForBallAvoidance(target_pos, current_pos, command);
-      adjustForPlacementAvoidance(target_pos, current_pos, command);
-
-      command.position_target_mode.front().target_x = target_pos.x();
-      command.position_target_mode.front().target_y = target_pos.y();
+    // NaN値検証とフォールバック処理
+    const Point current_pos(command.current_pose.x, command.current_pose.y);
+    if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
+      std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
+                << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
+                << target_pos.y() << "), using current position as fallback" << std::endl;
+      to_block_style_yaml(command, std::cout);
+      target_pos = current_pos;  // フォールバック: 現在位置に設定
+      command.target_x = target_pos.x();
+      command.target_y = target_pos.y();
+      continue;  // この時点で早期リターン、ペナルティエリア処理をスキップ
     }
+
+    if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
+      std::cout << "[RVO2Planner] NaN detected in current_pos for robot "
+                << static_cast<int>(command.robot_id) << ": current_pos(" << current_pos.x() << ", "
+                << current_pos.y() << "), skipping robot" << std::endl;
+      continue;  // この場合は処理をスキップ
+    }
+
+    // 3つの独立した回避ロジックを適用
+    adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
+    adjustForBallAvoidance(target_pos, current_pos, command);
+    adjustForPlacementAvoidance(target_pos, current_pos, command);
+
+    command.target_x = target_pos.x();
+    command.target_y = target_pos.y();
   }
 }
 
 auto RVO2Planner::adjustForPenaltyAreaAvoidance(
   Point & target_pos, const Point & current_pos,
-  const crane_msgs::msg::RobotCommand & command) const -> void
+  const crane_msgs::msg::PositionCommand & command) const -> void
 {
   if (not command.local_planner_config.disable_goal_area_avoidance) {
     constexpr double SURROUNDING_OFFSET = 0.2;
@@ -460,7 +404,7 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
 
 auto RVO2Planner::adjustForBallAvoidance(
   Point & target_pos, const Point & current_pos,
-  const crane_msgs::msg::RobotCommand & command) const -> void
+  const crane_msgs::msg::PositionCommand & command) const -> void
 {
   if (not command.local_planner_config.disable_ball_avoidance) {
     const auto & ball_pos = world_model->ball().pos;
@@ -494,7 +438,7 @@ auto RVO2Planner::adjustForBallAvoidance(
 
 auto RVO2Planner::adjustForPlacementAvoidance(
   Point & target_pos, const Point & current_pos,
-  const crane_msgs::msg::RobotCommand & command) const -> void
+  const crane_msgs::msg::PositionCommand & command) const -> void
 {
   if (
     not command.local_planner_config.disable_placement_avoidance &&
