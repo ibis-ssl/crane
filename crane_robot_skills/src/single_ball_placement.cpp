@@ -196,7 +196,6 @@ void SingleBallPlacement::initialize()
       sleep->setParameter("duration", 2.0);
     }
     skill_status = sleep->run();
-    command->usePositionMode();
     command->stopHere();
     command->disableAnyAreaAvoidance();
     command->setOmegaLimit(0.0);
@@ -248,7 +247,6 @@ void SingleBallPlacement::initialize()
   //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
-    command->usePositionMode();
     command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
@@ -284,7 +282,6 @@ void SingleBallPlacement::initialize()
     });
 
   addStateFunction(SingleBallPlacementStates::PASS_TO_TARGET, [this]() {
-    command->usePositionMode();
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::PASS_TO_TARGET", 0.2);
@@ -306,7 +303,6 @@ void SingleBallPlacement::initialize()
     [this]() { return skill_status == Status::SUCCESS; });
 
   addStateFunction(SingleBallPlacementStates::CONTACT_BALL, [this]() {
-    command->usePositionMode();
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::CONTACT_BALL", 0.2);
@@ -360,22 +356,16 @@ void SingleBallPlacement::initialize()
       }
     }();
 
-    double vel_norm = [&]() {
+    // 目標までの距離に応じた速度制限を計算（元の速度モードロジックを再利用）
+    double max_vel = [&]() {
       double dist = (placement_target - robot()->pose.pos).norm();
       double acc = 0.5;
       return std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
     }();
-    Velocity vel = (placement_target - robot()->pose.pos).normalized() * vel_norm +
-                   0.5 *
-                     getVerticalVec(placement_target - ball_pos)
-                       .normalized()
-                       .dot((ball_pos - robot()->pose.pos).normalized()) *
-                     getVerticalVec(placement_target - ball_pos).normalized();
-    command->usePolarVelocityMode();
-    command->setVelocity(vel);
+    command->setTargetPosition(placement_target);
     command->lookAt(placement_target);
     command->disableAnyAreaAvoidance();
-    command->setMaxVelocity("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::MOVE_TO_TARGET", max_vel);
     command->setMaxAcceleration("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
     command->setOmegaLimit(0.3);
     // 開始時にボールに接していることが前提にある
@@ -445,7 +435,6 @@ void SingleBallPlacement::initialize()
       sleep->setParameter("duration", 2.0);
     }
     skill_status = sleep->run();
-    command->usePositionMode();
     command->stopHere();
     command->disableAnyAreaAvoidance();
     command->setOmegaLimit(0.0);

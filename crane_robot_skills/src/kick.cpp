@@ -14,7 +14,6 @@ namespace crane::skills
 
 void Kick::initialize()
 {
-  command->usePositionMode();
   setParameter("target", Point(0, 0));
   setParameter("kick_power", 0.7f);
   setParameter("use_target_kick_speed", false);
