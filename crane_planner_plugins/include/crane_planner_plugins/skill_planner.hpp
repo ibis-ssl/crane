@@ -37,13 +37,13 @@ namespace crane
     : PlannerBase(#CLASS_NAME, world_model)                                                       \
     {                                                                                             \
     }                                                                                             \
-    std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(          \
+    std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(    \
       const std::vector<RobotIdentifier> & robots) override                                       \
     {                                                                                             \
       if (not skill) {                                                                            \
         return {PlannerBase::Status::RUNNING, {}};                                                \
       } else {                                                                                    \
-        std::vector<crane_msgs::msg::RobotCommand> robot_commands;                                \
+        std::vector<crane_msgs::msg::PositionCommand> robot_commands;                             \
         auto status = skill->run();                                                               \
         return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};            \
       }                                                                                           \
@@ -74,8 +74,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num,
@@ -99,8 +99,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -118,8 +118,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -137,8 +137,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -156,8 +156,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -175,8 +175,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,

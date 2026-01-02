@@ -15,8 +15,8 @@ CenterStopKickPlanner::CenterStopKickPlanner(
 {
 }
 
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-CenterStopKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+CenterStopKickPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::FAILURE, {}};
@@ -41,7 +41,7 @@ CenterStopKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
   // スキルを実行
   auto skill_status = skill_->run();
 
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   robot_commands.emplace_back(skill_->getRobotCommand());
 
   // スキルステータスをプランナーステータスに変換

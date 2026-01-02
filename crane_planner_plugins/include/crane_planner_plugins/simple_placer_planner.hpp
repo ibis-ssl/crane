@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
@@ -116,7 +116,7 @@ public:
     }
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     const auto & our_robots = world_model->ours().getAvailableRobots();
@@ -228,7 +228,7 @@ public:
           target_positions[robot_id.id] = target_pos;
         }
 
-        auto command = std::make_shared<crane::RobotCommandWrapper>(
+        auto command = std::make_shared<crane::PositionCommandWrapper>(
           "simple_placer_planner", robot_id.id, world_model);
 
         // 目標位置と角度の設定
@@ -253,7 +253,7 @@ public:
     for (const auto & cmd : robot_commands) {
       visualizer->line()
         .start(cmd.current_pose.x, cmd.current_pose.y)
-        .end(cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y)
+        .end(cmd.target_x, cmd.target_y)
         .stroke("blue")
         .strokeWidth(10)
         .build();
@@ -261,15 +261,11 @@ public:
       // 目標到達状態を可視化
       uint8_t robot_id = cmd.robot_id;
       double distance =
-        (Point(cmd.current_pose.x, cmd.current_pose.y) -
-         Point(
-           cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y))
-          .norm();
+        (Point(cmd.current_pose.x, cmd.current_pose.y) - Point(cmd.target_x, cmd.target_y)).norm();
 
       std::string circle_color = (distance < position_threshold) ? "green" : "red";
       visualizer->circle()
-        .center(
-          cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y)
+        .center(cmd.target_x, cmd.target_y)
         .radius(0.1)
         .fill(circle_color, 0.5)
         .build();

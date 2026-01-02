@@ -28,7 +28,7 @@ class TheirPenaltyKickPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::Goalie> goalie = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
+  std::vector<std::shared_ptr<PositionCommandWrapper>> other_robots;
 
 public:
   COMPOSITION_PUBLIC
@@ -37,7 +37,7 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(

@@ -25,15 +25,15 @@ namespace crane
 class OurDirectFreeKickPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<RobotCommandWrapper> kicker = nullptr;
+  std::shared_ptr<PositionCommandWrapper> kicker = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
+  std::vector<std::shared_ptr<PositionCommandWrapper>> other_robots;
 
   bool fake_over = false;
 
   int fake_count = 0;
 
-  // 前回のロボットロール情報を保存（calculateRobotCommand()で使用）
+  // 前回のロボットロール情報を保存（calculatePositionCommand()で使用）
   std::unordered_map<uint8_t, RobotRole> cached_prev_roles;
 
 public:
@@ -43,7 +43,7 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(

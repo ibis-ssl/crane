@@ -8,10 +8,10 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-EmplaceRobotPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+EmplaceRobotPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> &)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
   for (auto & [id, skill] : m_skill_map) {
     skill->run();

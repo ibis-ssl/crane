@@ -8,7 +8,7 @@
 #define CRANE_PLANNER_PLUGINS__TEST_PLANNER_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <memory>
@@ -30,7 +30,7 @@ public:
   COMPOSITION_PUBLIC explicit TestPlanner(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
@@ -52,7 +52,7 @@ private:
   double default_sleep_sec = 0.0;
   std::vector<Waypoint> waypoints;
   uint8_t target_robot_id = 0;
-  std::shared_ptr<crane::RobotCommandWrapper> command = nullptr;
+  std::shared_ptr<crane::PositionCommandWrapper> command = nullptr;
 
   size_t current_index = 0;
   std::optional<rclcpp::Time> sleep_until = std::nullopt;
@@ -63,7 +63,7 @@ private:
   bool reload_requested = false;
 
   auto loadConfigFromFile(const std::string & path) -> bool;
-  auto applyLegLimits(crane::RobotCommandWrapper & cmd, const Waypoint & wp) -> void;
+  auto applyLegLimits(crane::PositionCommandWrapper & cmd, const Waypoint & wp) -> void;
 };
 
 }  // namespace crane

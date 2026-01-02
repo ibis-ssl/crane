@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
@@ -26,7 +26,7 @@ namespace crane
 {
 struct CommandWithOriginalPosition
 {
-  std::shared_ptr<RobotCommandWrapper> command;
+  std::shared_ptr<PositionCommandWrapper> command;
   Point original_position;
 };
 class BallPlacementAvoidancePlanner : public PlannerBase
@@ -41,10 +41,10 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
   {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+    std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
     auto isInPlacementArea = [this](const Point & point, double offset) {
       if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
@@ -124,7 +124,7 @@ public:
 
       commands.emplace_back(
         CommandWithOriginalPosition{
-          std::make_shared<RobotCommandWrapper>(
+          std::make_shared<PositionCommandWrapper>(
             "ball_placement_avoidance_planner", robot_id, world_model),
           world_model->getOurRobot(robot_id)->pose.pos});
       ++index;

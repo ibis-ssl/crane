@@ -8,7 +8,7 @@
 #define CRANE_PLANNER_PLUGINS__SECOND_THREAT_DEFENDER_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/second_threat_defender.hpp>
@@ -32,8 +32,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,

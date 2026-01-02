@@ -183,7 +183,8 @@ protected:
     const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,
     const std::string & command_name, const Point & look_at_point,
     const std::function<void(std::shared_ptr<PositionCommandWrapper> &)> & customize_command =
-      [](std::shared_ptr<PositionCommandWrapper> &) {}) -> std::vector<crane_msgs::msg::PositionCommand>
+      [](std::shared_ptr<PositionCommandWrapper> &) {})
+    -> std::vector<crane_msgs::msg::PositionCommand>
   {
     if (robots.empty() || target_points.empty()) {
       return {};

@@ -75,8 +75,8 @@ std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
   return formation_points;
 }
 
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+FormationPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto formation_points = [&]() {
     switch (formation_type) {
@@ -93,7 +93,7 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 
   auto robot_commands = assignRobotsToPoints(
     robots, formation_points, "formation_planner", world_model->getOurGoalCenter(),
-    [target_theta](std::shared_ptr<RobotCommandWrapper> & command) {
+    [target_theta](std::shared_ptr<PositionCommandWrapper> & command) {
       // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
     });

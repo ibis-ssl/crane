@@ -50,11 +50,11 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   return forward_lines;
 }
 
-auto ForwardPlanner::calculateRobotCommand(
+auto ForwardPlanner::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+  -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   for (auto forward_skill : forward_skills) {
     forward_skill->run();
     robot_commands.emplace_back(forward_skill->getRobotCommand());

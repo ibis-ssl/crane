@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__WAITER_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__WAITER_PLANNER_HPP_
 
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
@@ -31,7 +31,7 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
