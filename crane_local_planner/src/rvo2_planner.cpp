@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include "crane_physics/bang_bang_trajectory.hpp"
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
@@ -127,17 +128,6 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
         .set__value(deceleration_for_planning));
     double max_acc = resolveMaxAccelerationFactors(command, deceleration_for_planning);
 
-    // 速度
-    // v^2 - v0^2 = 2ax
-    // v = sqrt(v0^2 + 2ax)
-    // v0 = 0, x = diff(=target_vel)
-    // v = sqrt(2ax)
-    double max_vel_by_decel = std::sqrt(2.0 * max_acc * position_diff.norm());
-    command.local_planner_config.max_velocity_factors.emplace_back(
-      crane_msgs::msg::NamedFloat()
-        .set__name("RVO2Planner::max_vel_by_decel")
-        .set__value(max_vel_by_decel));
-
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
         .set__name("RVO2Planner::max_vel from parameter")
@@ -157,15 +147,20 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
     target_vel << (command.target_x - current_position.x()),
       command.target_y - current_position.y();
 
-    target_vel.x() =
-      std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
-    target_vel.y() =
-      std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
+    BangBangTrajectory2D trajectory;
+    trajectory.generate(
+      Eigen::Vector2d(current_position.x(), current_position.y()),
+      Eigen::Vector2d(command.target_x, command.target_y),
+      Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
+    // 0.5秒先の速度を目標速度として使用することで、加速時は「より速く」、減速時は「適切に」振る舞う
+    Eigen::Vector2d next_vel = trajectory.getVelocity(0.5);
+    target_vel << next_vel.x(), next_vel.y();
 
-    // Avoid NaN when already on target
+    // すでに目標に到達している場合のNaN回避
     if (target_vel.norm() > 1e-6) {
-      target_vel = target_vel.normalized() * max_vel;
-
+      // target_velはすでにBangBangTrajectoryによってスケーリングされています（方向と大きさを含む）
+      // BangBangの同期プロファイルを尊重するため、再度正規化してmax_velを掛ける必要はありません
+      // ただし、終端速度（terminal_velocity）はチェックします
       if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
         target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
       }
