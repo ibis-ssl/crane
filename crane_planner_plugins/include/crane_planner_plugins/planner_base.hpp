@@ -205,7 +205,8 @@ protected:
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = target_points[solution[index]];
 
-      auto command = std::make_shared<PositionCommandWrapper>(command_name, robot_id->id, world_model);
+      auto command =
+        std::make_shared<PositionCommandWrapper>(command_name, robot_id->id, world_model);
 
       command->setTargetPosition(target_point);
       command->setTargetTheta(getAngle(look_at_point - target_point));
