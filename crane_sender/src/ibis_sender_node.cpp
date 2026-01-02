@@ -23,7 +23,7 @@
 #include <class_loader/visibility_control.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <format>
 #include <iomanip>
 #include <iostream>
@@ -93,7 +93,7 @@ public:
   }
 
 private:
-  RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
+  RobotCommandV2 createRobotPacket(const crane_msgs::msg::VelocityCommand & command, int counter)
   {
     RobotCommandV2 packet;
     packet.header = 0x00;
@@ -113,7 +113,7 @@ private:
 
     // 現在の速度から加速度を選択
     double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
-    double target_speed = command.local_planner_config.final_planned_max_velocity.value;
+    double target_speed = command.max_velocity;
 
     double selected_acceleration;
     if (current_speed < target_speed) {
@@ -131,52 +131,21 @@ private:
     }
 
     packet.acceleration_limit = selected_acceleration;
-    packet.linear_velocity_limit = command.local_planner_config.final_planned_max_velocity.value;
+    packet.linear_velocity_limit = command.max_velocity;
     packet.angular_velocity_limit = command.omega_limit;
     packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
-    switch (command.control_mode) {
-      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
-        break;
-      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        if (not command.simple_velocity_target_mode.empty()) {
-          const auto & simple_velocity = command.simple_velocity_target_mode.front();
-          // simple -> polar
-          packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
-          packet.mode_args.polar_velocity.target_global_velocity_r =
-            std::hypot(simple_velocity.target_vx, simple_velocity.target_vy);
-          packet.mode_args.polar_velocity.target_global_velocity_theta =
-            std::atan2(simple_velocity.target_vy, simple_velocity.target_vx);
-        } else {
-          std::cout << "警告: simple_velocity_target_modeが空です" << std::endl;
-        }
-      } break;
-      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
-        if (not command.polar_velocity_target_mode.empty()) {
-          const auto & polar_velocity = command.polar_velocity_target_mode.front();
-          // polar -> polar
-          packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
-          packet.mode_args.polar_velocity.target_global_velocity_r =
-            polar_velocity.target_velocity_r;
-          packet.mode_args.polar_velocity.target_global_velocity_theta =
-            polar_velocity.target_velocity_theta;
-        } else {
-          std::cout << "警告: polar_velocity_target_modeが空です" << std::endl;
-        }
-      } break;
-      case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
-        break;
-      default:
-        std::cout << "エラー: 無効な制御モードです" << std::endl;
-        break;
-    }
+    // VelocityCommand は常に極座標速度モード
+    packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+    packet.mode_args.polar_velocity.target_global_velocity_r = command.target_velocity_r;
+    packet.mode_args.polar_velocity.target_global_velocity_theta = command.target_velocity_theta;
+
     return packet;
   }
 
 public:
-  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
+  void sendCommands(const crane_msgs::msg::VelocityCommands & msg) override
   {
     static int counter = 0;
     static int call_count = 0;
