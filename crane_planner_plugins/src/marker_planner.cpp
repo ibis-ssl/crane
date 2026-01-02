@@ -16,15 +16,15 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+MarkerPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<uint8_t> robot_ids =
     robots | ranges::views::transform([&](const auto & robot) { return robot.id; }) |
     ranges::to<std::vector>();
   auto lock = std::lock_guard(markers_mutex);
   assignMarkingTarget(robot_ids.size(), robot_ids);
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   for (const auto & skill : markers) {
     skill->run();
     robot_commands.emplace_back(skill->getRobotCommand());

@@ -9,9 +9,9 @@
 
 namespace crane
 {
-auto SecondThreatDefenderPlanner::calculateRobotCommand(
+auto SecondThreatDefenderPlanner::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+  -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   if (skill) {
     skill->run();

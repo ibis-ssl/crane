@@ -9,7 +9,7 @@
 
 #include <array>
 #include <crane_comm/parameter_with_event.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_physics/pid_controller.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -26,13 +26,13 @@ public:
   ~SenderBase() override = default;
 
 protected:
-  using RobotCommandsMsg = crane_msgs::msg::RobotCommands;
+  using VelocityCommandsMsg = crane_msgs::msg::VelocityCommands;
 
-  const rclcpp::Subscription<RobotCommandsMsg>::SharedPtr sub_commands;
+  const rclcpp::Subscription<VelocityCommandsMsg>::SharedPtr sub_commands;
 
   std::array<PIDController, 20> theta_controllers;
 
-  virtual void sendCommands(const RobotCommandsMsg & msg) = 0;
+  virtual void sendCommands(const VelocityCommandsMsg & msg) = 0;
 
   double delay_s{};
 
@@ -43,7 +43,7 @@ protected:
   bool no_movement{false};
 
 private:
-  void callback(const RobotCommandsMsg & msg);
+  void callback(const VelocityCommandsMsg & msg);
 
   double current_latency_ms{0.0};
 
@@ -51,7 +51,7 @@ private:
 
   double kick_power_limit_chip{1.0};
 
-  RobotCommandsMsg previous_commands;
+  VelocityCommandsMsg previous_commands;
 };
 }  // namespace crane
 

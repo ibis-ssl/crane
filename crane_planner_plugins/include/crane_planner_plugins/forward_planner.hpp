@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__FORWARD_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__FORWARD_PLANNER_HPP_
 
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/forward.hpp>
@@ -32,8 +32,8 @@ public:
 
   auto createForwardLines() const -> std::vector<Segment>;
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,

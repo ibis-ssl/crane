@@ -29,10 +29,10 @@ TestPlanner::TestPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
     [this](std_msgs::msg::Empty::ConstSharedPtr) { reload_requested = true; });
 }
 
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+TestPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
@@ -83,14 +83,14 @@ auto TestPlanner::getSelectedRobots(
 {
   if (ranges::count(selectable_robots, target_robot_id) > 0) {
     command =
-      std::make_shared<crane::RobotCommandWrapper>("test_planner", target_robot_id, world_model);
+      std::make_shared<crane::PositionCommandWrapper>("test_planner", target_robot_id, world_model);
     return {target_robot_id};
   } else {
     return {};
   }
 }
 
-auto TestPlanner::applyLegLimits(crane::RobotCommandWrapper & cmd, const Waypoint & wp) -> void
+auto TestPlanner::applyLegLimits(crane::PositionCommandWrapper & cmd, const Waypoint & wp) -> void
 {
   double vmax = wp.max_velocity.has_value() ? *wp.max_velocity : default_max_velocity;
   double amax = wp.max_acceleration.has_value() ? *wp.max_acceleration : default_max_acceleration;

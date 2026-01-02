@@ -12,11 +12,11 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-OurDirectFreeKickPlanner::calculateRobotCommand(
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+OurDirectFreeKickPlanner::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
   for (auto & command : other_robots) {
     command->stopHere();
@@ -133,14 +133,15 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
 
   if (not robots_sorted.empty()) {
     // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<RobotCommandWrapper>(
+    kicker = std::make_shared<PositionCommandWrapper>(
       "our_free_kick_planner/kicker", robots_sorted.front(), world_model);
   } else {
     return {};
   }
   for (const auto & robot_id : robots_sorted | ranges::views::drop(1)) {
     other_robots.emplace_back(
-      std::make_shared<RobotCommandWrapper>("our_free_kick_planner/other", robot_id, world_model));
+      std::make_shared<PositionCommandWrapper>(
+        "our_free_kick_planner/other", robot_id, world_model));
   }
   return robots_sorted;
 }

@@ -8,10 +8,11 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-OurPenaltyKickPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIdentifier> &)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+OurPenaltyKickPlanner::calculatePositionCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> &)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
   for (auto & command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
@@ -54,7 +55,8 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
       other_robots.emplace_back(
-        std::make_shared<RobotCommandWrapper>("our_penalty_kick_planner/other", *it, world_model));
+        std::make_shared<PositionCommandWrapper>(
+          "our_penalty_kick_planner/other", *it, world_model));
     }
   }
   return robots_sorted;

@@ -27,14 +27,14 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+TotalDefensePlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
   auto defender_robots = robots | ranges::views::filter([&](const auto & robot) {
                            return robot.id != world_model->getOurGoalieId();
@@ -108,7 +108,9 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
   if (not defense_line_robots.empty() && not defense_points.empty()) {
     auto defender_commands = assignRobotsToPoints(
       defense_line_robots, defense_points, "total_defense_planner", ball.pos,
-      [&](std::shared_ptr<RobotCommandWrapper> & command) { command->disableBasicAvoidances(); });
+      [&](std::shared_ptr<PositionCommandWrapper> & command) {
+        command->disableBasicAvoidances();
+      });
     for (const auto & cmd : defender_commands) {
       robot_commands.emplace_back(cmd);
     }
@@ -179,7 +181,7 @@ TotalDefensePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
         }
       }();
 
-      auto command = std::make_shared<RobotCommandWrapper>(
+      auto command = std::make_shared<PositionCommandWrapper>(
         "total_defense_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);

@@ -149,10 +149,10 @@ SimpleAIPlanner::~SimpleAIPlanner()
   }
 }
 
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+SimpleAIPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> &)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   if (running_skill) {
     skill_status = running_skill->run(parameters);
     robot_commands.push_back(running_skill->getRobotCommand());

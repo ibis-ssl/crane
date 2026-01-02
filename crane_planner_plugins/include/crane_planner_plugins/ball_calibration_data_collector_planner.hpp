@@ -31,7 +31,7 @@ public:
   COMPOSITION_PUBLIC explicit BallCalibrationDataCollectorPlanner(
     WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &);
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(

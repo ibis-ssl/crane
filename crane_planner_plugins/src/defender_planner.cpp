@@ -9,8 +9,8 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+DefenderPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -44,7 +44,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   if (not defense_points.empty()) {
     auto robot_commands = assignRobotsToPoints(
       robots, defense_points, "defender_planner", ball.pos,
-      [&](std::shared_ptr<RobotCommandWrapper> & command) {
+      [&](std::shared_ptr<PositionCommandWrapper> & command) {
         command->disableBasicAvoidances();
         if (
           world_model->getMsg().play_situation.command.value ==
@@ -58,7 +58,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       });
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+    std::vector<crane_msgs::msg::PositionCommand> robot_commands;
     for (const auto & [index, robot_id] : ranges::views::enumerate(robots)) {
       [[maybe_unused]] Point target_point = [&]() {
         if (not defense_points.empty()) {
@@ -68,7 +68,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         }
       }();
 
-      auto command = std::make_shared<crane::RobotCommandWrapper>(
+      auto command = std::make_shared<crane::PositionCommandWrapper>(
         "defender_planner/stop", robot_id.id, world_model);
 
       auto robot = world_model->getRobot(robot_id);

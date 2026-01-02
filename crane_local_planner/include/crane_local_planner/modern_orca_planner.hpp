@@ -10,8 +10,9 @@
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/position_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <memory>
 #include <modern_orca/agents/agent_base.hpp>
 #include <modern_orca/constraints/orca_constraint.hpp>
@@ -28,8 +29,8 @@ class ModernORCAPlanner : public LocalPlannerBase
 public:
   explicit ModernORCAPlanner(rclcpp::Node & node);
 
-  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
-    -> crane_msgs::msg::RobotCommands override;
+  auto calculateRobotCommand(const crane_msgs::msg::PositionCommands & msg, double theta_offset)
+    -> crane_msgs::msg::VelocityCommands override;
 
 private:
   std::unique_ptr<modern_orca::SSLConstraintManagerForCircularAgent> ssl_constraint_manager_;
@@ -59,7 +60,7 @@ private:
   ParameterWithEvent<double> acceleration_factor;
 
   // 速度計画用の前回コマンドを保存
-  crane_msgs::msg::RobotCommands pre_commands;
+  crane_msgs::msg::PositionCommands pre_commands;
 
   // 最終計画値の一時的な保存
   mutable double final_planned_acceleration_ = 0.0;
@@ -70,10 +71,10 @@ private:
   mutable double total_constraints_ = 0.0;
 
   // ヘルパーメソッド
-  void updateAgentsFromCommands(const crane_msgs::msg::RobotCommands & commands);
+  void updateAgentsFromCommands(const crane_msgs::msg::PositionCommands & commands);
   void updateConstraintsFromWorldModel();
-  crane_msgs::msg::RobotCommands generateCommandsFromORCA(
-    const crane_msgs::msg::RobotCommands & original_commands, double theta_offset);
+  crane_msgs::msg::VelocityCommands generateCommandsFromORCA(
+    const crane_msgs::msg::PositionCommands & original_commands, double theta_offset);
 
   // 制約設定メソッド
   void applyConstraintFlags(const crane_msgs::msg::LocalPlannerConfig & config);
@@ -92,13 +93,13 @@ private:
 
   // 高度な位置制御メソッド
   Vector2 calculateTrapezoidalVelocityProfile(
-    const crane_msgs::msg::RobotCommand & raw_command, const Point & current_position);
+    const crane_msgs::msg::PositionCommand & raw_command, const Point & current_position);
   double getPreviousVelocity(uint32_t robot_id) const;
   bool isWithinPositionTolerance(
-    const crane_msgs::msg::RobotCommand & command, const Point & current_position) const;
+    const crane_msgs::msg::PositionCommand & command, const Point & current_position) const;
 
   // ロボットフィードバック統合
-  Point getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const;
+  Point getCurrentPosition(const crane_msgs::msg::PositionCommand & command) const;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_

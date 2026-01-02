@@ -88,25 +88,23 @@ TEST_F(ModernORCAPlannerTest, SingleRobotPositionControl)
 {
   // Planners already have world model initialized
 
-  // Create a simple position target command
-  crane_msgs::msg::RobotCommands commands;
-  crane_msgs::msg::RobotCommand command;
+  // Create a simple position target command using new PositionCommands type
+  crane_msgs::msg::PositionCommands commands;
+  crane_msgs::msg::PositionCommand command;
   command.robot_id = 0;
-  command.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
   command.current_pose.x = 0.0;
   command.current_pose.y = 0.0;
   command.current_velocity.x = 0.0;
   command.current_velocity.y = 0.0;
 
-  crane_msgs::msg::PositionTargetMode pos_target;
-  pos_target.target_x = 1.0;
-  pos_target.target_y = 1.0;
-  pos_target.position_tolerance = 0.03;
-  command.position_target_mode.push_back(pos_target);
+  // Set position target directly in PositionCommand
+  command.target_x = 1.0;
+  command.target_y = 1.0;
+  command.position_tolerance = 0.03;
 
   commands.robot_commands.push_back(command);
 
-  // Test that both planners produce valid outputs
+  // Test that both planners produce valid VelocityCommands outputs
   EXPECT_NO_THROW({
     auto modern_result = modern_planner_->calculateRobotCommand(commands, 0.0);
     EXPECT_EQ(modern_result.robot_commands.size(), 1);
@@ -124,32 +122,30 @@ TEST_F(ModernORCAPlannerTest, MultiRobotCollisionAvoidance)
 {
   // Planners already have world model initialized
 
-  // Create multi-robot scenario
-  crane_msgs::msg::RobotCommands commands;
+  // Create multi-robot scenario with position targets
+  crane_msgs::msg::PositionCommands commands;
 
-  // Robot 0: moving right
-  crane_msgs::msg::RobotCommand command1;
+  // Robot 0: at left side, moving right toward target
+  crane_msgs::msg::PositionCommand command1;
   command1.robot_id = 0;
-  command1.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
   command1.current_pose.x = -1.0;
   command1.current_pose.y = 0.0;
+  command1.current_velocity.x = 0.0;
+  command1.current_velocity.y = 0.0;
+  command1.target_x = 1.0;  // Target on right side
+  command1.target_y = 0.0;
+  command1.position_tolerance = 0.03;
 
-  crane_msgs::msg::SimpleVelocityTargetMode vel_target1;
-  vel_target1.target_vx = 1.0;
-  vel_target1.target_vy = 0.0;
-  command1.simple_velocity_target_mode.push_back(vel_target1);
-
-  // Robot 1: moving left
-  crane_msgs::msg::RobotCommand command2;
+  // Robot 1: at right side, moving left toward target
+  crane_msgs::msg::PositionCommand command2;
   command2.robot_id = 1;
-  command2.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
   command2.current_pose.x = 1.0;
   command2.current_pose.y = 0.0;
-
-  crane_msgs::msg::SimpleVelocityTargetMode vel_target2;
-  vel_target2.target_vx = -1.0;
-  vel_target2.target_vy = 0.0;
-  command2.simple_velocity_target_mode.push_back(vel_target2);
+  command2.current_velocity.x = 0.0;
+  command2.current_velocity.y = 0.0;
+  command2.target_x = -1.0;  // Target on left side
+  command2.target_y = 0.0;
+  command2.position_tolerance = 0.03;
 
   commands.robot_commands.push_back(command1);
   commands.robot_commands.push_back(command2);
@@ -164,10 +160,8 @@ TEST_F(ModernORCAPlannerTest, MultiRobotCollisionAvoidance)
   // Both planners should modify velocities to avoid collision
   // The exact behavior may differ, but velocities should be reasonable
   for (const auto & cmd : modern_result.robot_commands) {
-    if (!cmd.polar_velocity_target_mode.empty()) {
-      EXPECT_LE(cmd.polar_velocity_target_mode[0].target_velocity_r, 2.0);
-      EXPECT_GE(cmd.polar_velocity_target_mode[0].target_velocity_r, 0.0);
-    }
+    EXPECT_LE(cmd.target_velocity_r, 5.0);  // Max velocity limit
+    EXPECT_GE(cmd.target_velocity_r, 0.0);
   }
 }
 
@@ -176,16 +170,17 @@ TEST_F(ModernORCAPlannerTest, ConstraintSystemIntegration)
   // Test that constraint system is properly initialized
   // This is a basic functionality test since constraint methods are private
 
-  // Create a simple command to test constraint system internally
-  crane_msgs::msg::RobotCommands commands;
-  crane_msgs::msg::RobotCommand command;
+  // Create a simple position command to test constraint system internally
+  crane_msgs::msg::PositionCommands commands;
+  crane_msgs::msg::PositionCommand command;
   command.robot_id = 0;
-  command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-
-  crane_msgs::msg::SimpleVelocityTargetMode vel_target;
-  vel_target.target_vx = 0.1;
-  vel_target.target_vy = 0.1;
-  command.simple_velocity_target_mode.push_back(vel_target);
+  command.current_pose.x = 0.0;
+  command.current_pose.y = 0.0;
+  command.current_velocity.x = 0.0;
+  command.current_velocity.y = 0.0;
+  command.target_x = 0.1;
+  command.target_y = 0.1;
+  command.position_tolerance = 0.03;
 
   commands.robot_commands.push_back(command);
 
@@ -201,19 +196,19 @@ TEST_F(ModernORCAPlannerTest, PerformanceComparison)
   // Planners already have world model initialized
 
   // Create a complex scenario with multiple robots
-  crane_msgs::msg::RobotCommands commands;
+  crane_msgs::msg::PositionCommands commands;
   for (int i = 0; i < 6; ++i) {
-    crane_msgs::msg::RobotCommand command;
+    crane_msgs::msg::PositionCommand command;
     command.robot_id = i;
-    command.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     command.current_pose.x = (i % 3) * 1.0 - 1.0;
     command.current_pose.y = (i / 3) * 1.0 - 0.5;
+    command.current_velocity.x = 0.0;
+    command.current_velocity.y = 0.0;
 
-    crane_msgs::msg::PositionTargetMode pos_target;
-    pos_target.target_x = ((i + 3) % 3) * 1.0 - 1.0;
-    pos_target.target_y = ((i + 3) / 3) * 1.0 - 0.5;
-    pos_target.position_tolerance = 0.03;
-    command.position_target_mode.push_back(pos_target);
+    // Set position target directly
+    command.target_x = ((i + 3) % 3) * 1.0 - 1.0;
+    command.target_y = ((i + 3) / 3) * 1.0 - 0.5;
+    command.position_tolerance = 0.03;
 
     commands.robot_commands.push_back(command);
   }

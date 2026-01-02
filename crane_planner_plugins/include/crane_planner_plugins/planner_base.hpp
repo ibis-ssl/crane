@@ -10,9 +10,10 @@
 #include <algorithm>
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/position_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
@@ -72,12 +73,12 @@ public:
     return selected_robots;
   }
 
-  auto getRobotCommands() -> crane_msgs::msg::RobotCommands
+  auto getPositionCommands() -> crane_msgs::msg::PositionCommands
   {
-    auto [latest_status, robot_commands] = calculateRobotCommand(robots);
+    auto [latest_status, position_commands] = calculatePositionCommand(robots);
     auto wrong_ids =
-      robot_commands |
-      // remove robot_command.robot_id is included in robots
+      position_commands |
+      // remove position_command.robot_id is included in robots
       ranges::views::filter([&](const auto & command) {
         return std::ranges::find_if(robots, [&](const auto & robot) {
                  return robot.id == command.robot_id;
@@ -87,15 +88,15 @@ public:
       ranges::to<std::vector>();
     if (not wrong_ids.empty()) {
       std::stringstream what;
-      what << "RobotCommands from " << name << " planner includes wrong robot_id : " << wrong_ids
+      what << "PositionCommands from " << name << " planner includes wrong robot_id : " << wrong_ids
            << std::endl;
       RCLCPP_ERROR_STREAM(rclcpp::get_logger("PlannerBase"), what.str());
     }
     status = latest_status;
-    crane_msgs::msg::RobotCommands msg;
+    crane_msgs::msg::PositionCommands msg;
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
-    for (const auto & command : robot_commands) {
+    for (const auto & command : position_commands) {
       msg.robot_commands.emplace_back(command);
     }
     visualizer->flush();
@@ -177,12 +178,13 @@ protected:
     return selected_robots;
   }
 
-  // ロボットを最適な位置に割り当て、ロボットコマンドを生成する共通メソッド
+  // ロボットを最適な位置に割り当て、位置コマンドを生成する共通メソッド
   auto assignRobotsToPoints(
     const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,
     const std::string & command_name, const Point & look_at_point,
-    const std::function<void(std::shared_ptr<RobotCommandWrapper> &)> & customize_command =
-      [](std::shared_ptr<RobotCommandWrapper> &) {}) -> std::vector<crane_msgs::msg::RobotCommand>
+    const std::function<void(std::shared_ptr<PositionCommandWrapper> &)> & customize_command =
+      [](std::shared_ptr<PositionCommandWrapper> &) {})
+    -> std::vector<crane_msgs::msg::PositionCommand>
   {
     if (robots.empty() || target_points.empty()) {
       return {};
@@ -197,13 +199,14 @@ protected:
     // 最適割り当てを計算
     auto solution = getOptimalAssignments(robot_points, target_points);
 
-    // 各ロボットにコマンドを生成
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+    // 各ロボットに位置コマンドを生成
+    std::vector<crane_msgs::msg::PositionCommand> position_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = target_points[solution[index]];
 
-      auto command = std::make_shared<RobotCommandWrapper>(command_name, robot_id->id, world_model);
+      auto command =
+        std::make_shared<PositionCommandWrapper>(command_name, robot_id->id, world_model);
 
       command->setTargetPosition(target_point);
       command->setTargetTheta(getAngle(look_at_point - target_point));
@@ -211,10 +214,10 @@ protected:
       // カスタム設定を適用
       customize_command(command);
 
-      robot_commands.emplace_back(command->getMsg());
+      position_commands.emplace_back(command->getMsg());
     }
 
-    return robot_commands;
+    return position_commands;
   }
 
   std::vector<RobotIdentifier> robots;
@@ -223,7 +226,7 @@ protected:
 
   std::unordered_map<std::string, PlannerParameterType> session_params_;
 
-  virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  virtual std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
   Status status = Status::RUNNING;

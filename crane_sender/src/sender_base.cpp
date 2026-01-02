@@ -18,8 +18,8 @@ namespace crane
 SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & options)
 : Node(name, options),
   sub_commands(
-    create_subscription<RobotCommandsMsg>(
-      "/robot_commands", 10, [this](const RobotCommandsMsg & msg) { callback(msg); })),
+    create_subscription<VelocityCommandsMsg>(
+      "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); })),
   clock(RCL_ROS_TIME)
 {
   declare_parameter<bool>("no_movement", false);
@@ -40,7 +40,7 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
   world_model = std::make_shared<WorldModelWrapper>(*this);
 }
 
-void SenderBase::callback(const RobotCommandsMsg & msg)
+void SenderBase::callback(const VelocityCommandsMsg & msg)
 {
   if (!world_model->hasUpdated()) {
     return;
@@ -48,7 +48,7 @@ void SenderBase::callback(const RobotCommandsMsg & msg)
 
   const auto now = clock.now();
 
-  RobotCommandsMsg preprocessed_msg = msg;
+  VelocityCommandsMsg preprocessed_msg = msg;
 
   for (auto & command : preprocessed_msg.robot_commands) {
     command.latency_ms = current_latency_ms;
@@ -75,29 +75,13 @@ void SenderBase::callback(const RobotCommandsMsg & msg)
         command.target_theta = previous_command->target_theta;
       }
     }
-
-    switch (command.control_mode) {
-      case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
-        break;
-      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
-        break;
-      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
-        break;
-      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
-        break;
-    }
   }
 
   if (no_movement) {
     for (auto & command : preprocessed_msg.robot_commands) {
-      command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-      command.omega_limit = 0.0F;
-      command.simple_velocity_target_mode.clear();
-      crane_msgs::msg::SimpleVelocityTargetMode target;
-      target.target_vx = 0.0F;
-      target.target_vy = 0.0F;
-      target.speed_limit_at_target = 0.0F;
-      command.simple_velocity_target_mode.push_back(target);
+      command.target_velocity_r = 0.0f;
+      command.target_velocity_theta = 0.0f;
+      command.omega_limit = 0.0f;
       command.chip_enable = false;
       command.dribble_power = 0.0;
       command.kick_power = 0.0;

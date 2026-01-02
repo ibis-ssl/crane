@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__PASSABLE_BALL_PLACEMENT_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__PASSABLE_BALL_PLACEMENT_PLANNER_HPP_
 
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
@@ -30,8 +30,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
   {
     if (ball_placement) {
       ball_placement->run();
@@ -86,8 +86,8 @@ public:
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
+  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
   {
     if (placer) {
       placer->lookAtBall();
@@ -122,7 +122,8 @@ public:
         if (selected.empty()) {
           return {};
         } else {
-          placer = std::make_shared<RobotCommandWrapper>("placer", selected.front(), world_model);
+          placer =
+            std::make_shared<PositionCommandWrapper>("placer", selected.front(), world_model);
           target = placement_target.value();
           return {selected.front()};
         }
@@ -132,7 +133,7 @@ public:
     }
   }
 
-  std::shared_ptr<RobotCommandWrapper> placer = nullptr;
+  std::shared_ptr<PositionCommandWrapper> placer = nullptr;
 
   Point target;
 };

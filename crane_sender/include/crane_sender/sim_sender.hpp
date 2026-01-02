@@ -12,7 +12,7 @@
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_comm/udp_sender.hpp>
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -109,7 +109,7 @@ public:
     chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
-  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
+  void sendCommands(const crane_msgs::msg::VelocityCommands & msg) override;
 
   //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
   //  {

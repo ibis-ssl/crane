@@ -9,7 +9,7 @@
 
 #include <../magic_enum.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <format>
 #include <functional>
@@ -101,12 +101,12 @@ public:
   }
 
   SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : command(std::make_shared<RobotCommandWrapper>(name, id, wm)),
+  : command(std::make_shared<PositionCommandWrapper>(name, id, wm)),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name))
   {
   }
 
-  explicit SkillInterface(std::shared_ptr<RobotCommandWrapper> & command)
+  explicit SkillInterface(std::shared_ptr<PositionCommandWrapper> & command)
   : command(command),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name))
   {
@@ -130,7 +130,7 @@ public:
 
   void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
 
-  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
+  virtual crane_msgs::msg::PositionCommand getRobotCommand() = 0;
 
   template <class T>
   auto getParameter(const std::string & key) const
@@ -156,7 +156,7 @@ public:
   void clearVisualizer() { visualizer->clearBuffer(); }
 
 protected:
-  std::shared_ptr<RobotCommandWrapper> command;
+  std::shared_ptr<PositionCommandWrapper> command;
 
   std::shared_ptr<WorldModelWrapper> world_model() const { return command->getWorldModel(); }
 
@@ -210,7 +210,7 @@ public:
 
   virtual Status update() = 0;
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
+  crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 
@@ -269,7 +269,7 @@ public:
     return ret;
   }
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
+  crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 

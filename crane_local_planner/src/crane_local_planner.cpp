@@ -11,7 +11,7 @@
 
 namespace crane
 {
-auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
+auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::PositionCommands & msg)
   -> void
 {
   auto & world_model = planner->world_model;
@@ -41,70 +41,24 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
-  // 各種制御モードをメッセージの内容を照合
-  crane_msgs::msg::RobotCommands commands;
+  // 位置指令を検証して処理
+  crane_msgs::msg::PositionCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
-    bool is_valid = true;
-    switch (raw_command.control_mode) {
-      case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
-        if (raw_command.local_camera_mode.empty()) {
-          is_valid = false;
-          logValidationError(
-            raw_command.robot_id, "LOCAL_CAMERA_MODE", raw_command.state_factors,
-            "local_camera_mode が設定されていません。");
-        }
-        break;
-      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
-        if (raw_command.position_target_mode.empty()) {
-          is_valid = false;
-          logValidationError(
-            raw_command.robot_id, "POSITION_TARGET_MODE", raw_command.state_factors,
-            "position_target_mode が設定されていません。");
-        } else {
-          planner->visualizer->drawLine(
-            Point(raw_command.current_pose.x, raw_command.current_pose.y),
-            Point(
-              raw_command.position_target_mode.front().target_x,
-              raw_command.position_target_mode.front().target_y),
-            "yellow", 20, 0.3);
-        }
-        break;
-      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
-        if (raw_command.simple_velocity_target_mode.empty()) {
-          is_valid = false;
-          logValidationError(
-            raw_command.robot_id, "SIMPLE_VELOCITY_TARGET_MODE", raw_command.state_factors,
-            "simple_velocity_target_mode が設定されていません。");
-        }
-        break;
-      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
-        if (raw_command.polar_velocity_target_mode.empty()) {
-          is_valid = false;
-          logValidationError(
-            raw_command.robot_id, "POLAR_VELOCITY_TARGET_MODE", raw_command.state_factors,
-            "polar_velocity_target_mode が設定されていません。");
-        }
-        break;
-      default:
-        is_valid = false;
-        logValidationError(
-          raw_command.robot_id, "不明な制御モード", raw_command.state_factors,
-          "未知の制御モードです。");
-        break;
-    }
-    // 一致しなかったらエラーメッセージ＆ロボットを待機状態にする
-    if (is_valid) {
-      crane_msgs::msg::RobotCommand command = raw_command;
-      auto robot = world_model->getOurRobot(command.robot_id);
-      command.current_pose.x = robot->pose.pos.x();
-      command.current_pose.y = robot->pose.pos.y();
-      command.current_pose.theta = robot->pose.theta + theta_offset;
-      command.current_velocity.x = robot->vel.linear.x();
-      command.current_velocity.y = robot->vel.linear.y();
-      command.current_velocity.theta = robot->vel.omega;
-      command.target_theta += theta_offset;
-      commands.robot_commands.push_back(command);
-    }
+    // 位置目標の可視化
+    planner->visualizer->drawLine(
+      Point(raw_command.current_pose.x, raw_command.current_pose.y),
+      Point(raw_command.target_x, raw_command.target_y), "yellow", 20, 0.3);
+
+    crane_msgs::msg::PositionCommand command = raw_command;
+    auto robot = world_model->getOurRobot(command.robot_id);
+    command.current_pose.x = robot->pose.pos.x();
+    command.current_pose.y = robot->pose.pos.y();
+    command.current_pose.theta = robot->pose.theta + theta_offset;
+    command.current_velocity.x = robot->vel.linear.x();
+    command.current_velocity.y = robot->vel.linear.y();
+    command.current_velocity.theta = robot->vel.omega;
+    command.target_theta += theta_offset;
+    commands.robot_commands.push_back(command);
   }
 
   // キックパワーの調整

@@ -8,7 +8,7 @@
 #define CRANE_PLANNER_PLUGINS__DEFENDER_PLANNER_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/defense_functions.hpp>
@@ -34,7 +34,7 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(

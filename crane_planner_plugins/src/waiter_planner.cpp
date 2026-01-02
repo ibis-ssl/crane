@@ -8,13 +8,13 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+WaiterPlanner::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   for (auto robot_id : robots) {
     auto command =
-      std::make_shared<crane::RobotCommandWrapper>("waiter_planner", robot_id.id, world_model);
+      std::make_shared<crane::PositionCommandWrapper>("waiter_planner", robot_id.id, world_model);
     command->stopHere();
     if (command->getRobot()->vel.linear.norm() < 0.5) {
       command->stopHere();

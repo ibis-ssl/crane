@@ -13,7 +13,7 @@
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/position_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <deque>
@@ -72,7 +72,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
-  DiagnosedPublisher<crane_msgs::msg::RobotCommands> robot_commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::PositionCommands> position_commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
 
