@@ -44,6 +44,7 @@ set(msg_files
   "msg/analysis/GameEvent.msg"
   "msg/analysis/DelayCheckpoint.msg"
   "msg/analysis/DelayCheckpoints.msg"
+  "msg/analysis/RonarEvent.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"
