@@ -276,6 +276,14 @@ auto GameAnalyzerComponent::detectAndPublishRonarEvents() -> void
 auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySituation & msg)
   -> void
 {
+  // チーム名の動的更新（空文字列でない場合のみ）
+  if (!msg.our_team_info.name.empty()) {
+    our_team_name_ = msg.our_team_info.name;
+  }
+  if (!msg.their_team_info.name.empty()) {
+    their_team_name_ = msg.their_team_info.name;
+  }
+
   uint8_t current = static_cast<uint8_t>(msg.command.value);
 
   // 初回は状態を保存するのみ
