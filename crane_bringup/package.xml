@@ -13,6 +13,7 @@
   <exec_depend>foxglove_bridge</exec_depend>
   <exec_depend>joy</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>crane_commentary</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
