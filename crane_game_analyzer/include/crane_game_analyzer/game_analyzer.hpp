@@ -11,11 +11,13 @@
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/game_event.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/game_event.hpp>
+#include <robocup_ssl_msgs/msg/game_event_one_of_event.hpp>
+#include <robocup_ssl_msgs/msg/team.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -257,7 +259,7 @@ private:
   std::optional<uint8_t> last_play_situation_command_;
 
   // GameEvent (autoref) 購読
-  rclcpp::Subscription<crane_msgs::msg::GameEvent>::SharedPtr game_event_sub_;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::GameEvent>::SharedPtr game_event_sub_;
 
   // チーム名
   std::string our_team_name_;
@@ -272,7 +274,10 @@ private:
     -> crane_msgs::msg::RonarEvent;
 
   // GameEvent (autoref) イベント処理
-  auto onGameEvent(const crane_msgs::msg::GameEvent & msg) -> void;
+  auto onGameEvent(const robocup_ssl_msgs::msg::GameEvent & msg) -> void;
+
+  // ヘルパー関数
+  auto getTeamName(const robocup_ssl_msgs::msg::Team & team) -> std::string;
 };
 }  // namespace crane
 

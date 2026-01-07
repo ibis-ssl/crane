@@ -88,8 +88,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     [this](const crane_msgs::msg::PlaySituation & msg) { onPlaySituationChanged(msg); });
 
   // GameEvent (autoref) トピックの購読
-  game_event_sub_ = create_subscription<crane_msgs::msg::GameEvent>(
-    "/game_event", 10, [this](const crane_msgs::msg::GameEvent & msg) { onGameEvent(msg); });
+  game_event_sub_ = create_subscription<robocup_ssl_msgs::msg::GameEvent>(
+    "/game_event", 10, [this](const robocup_ssl_msgs::msg::GameEvent & msg) { onGameEvent(msg); });
 
   world_model->addCallback([&]() {
     auto robot_collision_info = getRobotCollisionInfo();
@@ -419,83 +419,166 @@ auto GameAnalyzerComponent::createPlaySituationEvent(
   return event;
 }
 
-auto GameAnalyzerComponent::onGameEvent(const crane_msgs::msg::GameEvent & msg) -> void
+auto GameAnalyzerComponent::onGameEvent(const robocup_ssl_msgs::msg::GameEvent & msg) -> void
 {
+  using OneOfEvent = robocup_ssl_msgs::msg::GameEventOneOfEvent;
+  using Team = robocup_ssl_msgs::msg::Team;
+
   crane_msgs::msg::RonarEvent event;
   event.header.stamp = now();
   event.confidence = 1.0f;
   event.ball_speed = 0.0f;
 
-  // イベントタイプに応じた変換
-  if (msg.event_type == "GOAL" || msg.event_type == "POSSIBLE_GOAL") {
-    event.event_type = crane_msgs::msg::RonarEvent::EVENT_GOAL;
-  } else if (
-    msg.event_type == "BALL_LEFT_FIELD_TOUCH_LINE" ||
-    msg.event_type == "BALL_LEFT_FIELD_GOAL_LINE" || msg.event_type == "AIMLESS_KICK" ||
-    msg.event_type == "BOUNDARY_CROSSING") {
-    event.event_type = crane_msgs::msg::RonarEvent::EVENT_BALL_OUT;
-  } else {
-    // その他のイベントはFOULとして処理
-    event.event_type = crane_msgs::msg::RonarEvent::EVENT_FOUL;
+  // event_which でアクティブなイベントタイプを判定
+  switch (msg.event.event_which) {
+    case OneOfEvent::EVENT_GOAL_SET:
+    case OneOfEvent::EVENT_POSSIBLE_GOAL_SET: {
+      event.event_type = crane_msgs::msg::RonarEvent::EVENT_GOAL;
+      const auto & goal = (msg.event.event_which == OneOfEvent::EVENT_GOAL_SET)
+                            ? msg.event.goal
+                            : msg.event.possible_goal;
+
+      // 位置情報
+      if (goal.has_field & goal.LOCATION_FIELD_SET) {
+        event.position.x = goal.location.x;
+        event.position.y = goal.location.y;
+        event.position.z = 0.0;
+      }
+
+      // ロボット情報
+      if (goal.has_field & goal.KICKING_BOT_FIELD_SET) {
+        event.has_primary_robot = true;
+        event.primary_robot_id = static_cast<uint8_t>(goal.kicking_bot);
+        bool is_yellow = world_model->isYellow();
+        event.primary_robot_is_ours = (is_yellow && goal.kicking_team.value == Team::YELLOW) ||
+                                      (!is_yellow && goal.kicking_team.value == Team::BLUE);
+      } else {
+        event.has_primary_robot = false;
+      }
+      event.has_secondary_robot = false;
+
+      // メタデータ
+      std::string team_name = getTeamName(goal.kicking_team);
+      std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
+      std::ostringstream metadata;
+      metadata << R"({"event_type": "GOAL", "team": ")" << team_name << R"(", "origin": ")"
+               << origin_str << R"(")";
+      if (goal.has_field & goal.MAX_BALL_HEIGHT_FIELD_SET) {
+        metadata << R"(, "max_ball_height": )" << goal.max_ball_height;
+      }
+      metadata << "}";
+      event.metadata_json = metadata.str();
+    } break;
+
+    case OneOfEvent::EVENT_BALL_LEFT_FIELD_TOUCH_LINE_SET:
+    case OneOfEvent::EVENT_BALL_LEFT_FIELD_GOAL_LINE_SET: {
+      event.event_type = crane_msgs::msg::RonarEvent::EVENT_BALL_OUT;
+      const auto & ball_left =
+        (msg.event.event_which == OneOfEvent::EVENT_BALL_LEFT_FIELD_TOUCH_LINE_SET)
+          ? msg.event.ball_left_field_touch_line
+          : msg.event.ball_left_field_goal_line;
+
+      // 位置情報
+      if (ball_left.has_field & ball_left.LOCATION_FIELD_SET) {
+        event.position.x = ball_left.location.x;
+        event.position.y = ball_left.location.y;
+        event.position.z = 0.0;
+      }
+
+      // ロボット情報
+      if (ball_left.has_field & ball_left.BY_BOT_FIELD_SET) {
+        event.has_primary_robot = true;
+        event.primary_robot_id = static_cast<uint8_t>(ball_left.by_bot);
+        bool is_yellow = world_model->isYellow();
+        event.primary_robot_is_ours = (is_yellow && ball_left.by_team.value == Team::YELLOW) ||
+                                      (!is_yellow && ball_left.by_team.value == Team::BLUE);
+      } else {
+        event.has_primary_robot = false;
+      }
+      event.has_secondary_robot = false;
+
+      // メタデータ
+      std::string team_name = getTeamName(ball_left.by_team);
+      std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
+      event.metadata_json = std::format(
+        R"({{"event_type": "BALL_LEFT_FIELD", "team": "{}", "origin": "{}"}})", team_name,
+        origin_str);
+    } break;
+
+    case OneOfEvent::EVENT_AIMLESS_KICK_SET: {
+      event.event_type = crane_msgs::msg::RonarEvent::EVENT_BALL_OUT;
+      const auto & aimless = msg.event.aimless_kick;
+
+      // 位置情報
+      if (aimless.has_field & aimless.LOCATION_FIELD_SET) {
+        event.position.x = aimless.location.x;
+        event.position.y = aimless.location.y;
+        event.position.z = 0.0;
+      }
+
+      // ロボット情報
+      if (aimless.has_field & aimless.BY_BOT_FIELD_SET) {
+        event.has_primary_robot = true;
+        event.primary_robot_id = static_cast<uint8_t>(aimless.by_bot);
+        bool is_yellow = world_model->isYellow();
+        event.primary_robot_is_ours = (is_yellow && aimless.by_team.value == Team::YELLOW) ||
+                                      (!is_yellow && aimless.by_team.value == Team::BLUE);
+      } else {
+        event.has_primary_robot = false;
+      }
+      event.has_secondary_robot = false;
+
+      // メタデータ
+      std::string team_name = getTeamName(aimless.by_team);
+      std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
+      event.metadata_json = std::format(
+        R"({{"event_type": "AIMLESS_KICK", "team": "{}", "origin": "{}"}})", team_name, origin_str);
+    } break;
+
+    case OneOfEvent::EVENT_BOUNDARY_CROSSING_SET: {
+      event.event_type = crane_msgs::msg::RonarEvent::EVENT_BALL_OUT;
+      const auto & boundary = msg.event.boundary_crossing;
+
+      // 位置情報
+      if (boundary.has_field & boundary.LOCATION_FIELD_SET) {
+        event.position.x = boundary.location.x;
+        event.position.y = boundary.location.y;
+        event.position.z = 0.0;
+      }
+
+      // ロボット情報（boundary_crossingにはby_botなし）
+      event.has_primary_robot = false;
+      event.has_secondary_robot = false;
+
+      // メタデータ
+      std::string team_name = getTeamName(boundary.by_team);
+      std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
+      event.metadata_json = std::format(
+        R"({{"event_type": "BOUNDARY_CROSSING", "team": "{}", "origin": "{}"}})", team_name,
+        origin_str);
+    } break;
+
+    default:
+      // その他のイベントはFOULとして処理
+      event.event_type = crane_msgs::msg::RonarEvent::EVENT_FOUL;
+      event.position.x = 0.0;
+      event.position.y = 0.0;
+      event.position.z = 0.0;
+      event.has_primary_robot = false;
+      event.has_secondary_robot = false;
+
+      std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
+      event.metadata_json = std::format(
+        R"({{"event_type": "FOUL", "type_value": {}, "origin": "{}"}})", msg.type.value,
+        origin_str);
+      break;
   }
-
-  // 位置情報（存在する場合）
-  if (!msg.position_values.empty()) {
-    event.position.x = msg.position_values[0].x;
-    event.position.y = msg.position_values[0].y;
-    event.position.z = 0.0;
-  }
-
-  // ロボット情報
-  if (msg.robot_id > 0) {
-    event.has_primary_robot = true;
-    event.primary_robot_id = static_cast<uint8_t>(msg.robot_id);
-    // チーム判定: world_model から自チームカラーを取得
-    event.primary_robot_is_ours = (msg.team == (world_model->isYellow() ? "YELLOW" : "BLUE"));
-  } else {
-    event.has_primary_robot = false;
-  }
-  event.has_secondary_robot = false;
-
-  // チーム名の変換（YELLOW/BLUE → チームキー）
-  std::string team_name = "unknown";
-  bool is_our_team_event = (msg.team == (world_model->isYellow() ? "YELLOW" : "BLUE"));
-  if (is_our_team_event) {
-    team_name = our_team_name_;
-  } else if (msg.team == (world_model->isYellow() ? "BLUE" : "YELLOW")) {
-    team_name = their_team_name_;
-  }
-
-  // メタデータ生成（チーム名と詳細情報を含む）
-  std::string origin_str = msg.origin.empty() ? "" : msg.origin[0];
-  std::ostringstream metadata;
-  metadata << R"({"event_type": ")" << msg.event_type << R"(", "team": ")" << team_name
-           << R"(", "origin": ")" << origin_str << R"(")";
-
-  // 追加の浮動小数点値
-  for (const auto & fval : msg.float_values) {
-    metadata << R"(, ")" << fval.name << R"(": )" << fval.value;
-  }
-
-  // 追加の文字列値
-  for (const auto & sval : msg.string_values) {
-    metadata << R"(, ")" << sval.name << R"(": ")" << sval.value << R"(")";
-  }
-
-  // 追加の位置情報
-  for (const auto & pval : msg.position_values) {
-    metadata << R"(, ")" << pval.name << R"(": {"x": )" << pval.x << R"(, "y": )" << pval.y << "}";
-  }
-
-  metadata << "}";
-  event.metadata_json = metadata.str();
 
   // イベントをパブリッシュとメモリ保存
-  // 重複チェックは game_controller_component で実施済み
   event_memory_->processEvent(event);
   ronar_events_pub_->publish(event);
 
-  // イベント名を取得してログ出力
+  // ログ出力
   std::string event_name;
   switch (event.event_type) {
     case crane_msgs::msg::RonarEvent::EVENT_GOAL:
@@ -513,8 +596,25 @@ auto GameAnalyzerComponent::onGameEvent(const crane_msgs::msg::GameEvent & msg) 
   }
 
   RCLCPP_INFO(
-    get_logger(), "Autoref Event: %s (%s), team=%s, robot=%d", event_name.c_str(),
-    msg.event_type.c_str(), msg.team.c_str(), msg.robot_id);
+    get_logger(), "Autoref Event: %s (type=%d), position=(%.2f, %.2f)", event_name.c_str(),
+    msg.type.value, event.position.x, event.position.y);
+}
+
+auto GameAnalyzerComponent::getTeamName(const robocup_ssl_msgs::msg::Team & team) -> std::string
+{
+  using Team = robocup_ssl_msgs::msg::Team;
+
+  bool is_yellow = world_model->isYellow();
+  bool is_our_team =
+    (is_yellow && team.value == Team::YELLOW) || (!is_yellow && team.value == Team::BLUE);
+
+  if (is_our_team) {
+    return our_team_name_;
+  } else if (team.value == Team::YELLOW || team.value == Team::BLUE) {
+    return their_team_name_;
+  } else {
+    return "unknown";
+  }
 }
 
 }  // namespace crane
