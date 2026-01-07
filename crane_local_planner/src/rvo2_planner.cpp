@@ -4,13 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_physics/bang_bang_trajectory.hpp"
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
 #include <crane_local_planner/visualization_helpers.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+
+#include "crane_physics/bang_bang_trajectory.hpp"
 
 // cspell: ignore OBST
 

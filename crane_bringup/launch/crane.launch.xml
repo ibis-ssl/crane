@@ -91,6 +91,7 @@ limitations under the License.
   <!-- 機能フラグ -->
   <!-- ============================================================ -->
   <arg name="speak" default="false" description="音声ノードの起動フラグ"/>
+  <arg name="commentary" default="false" description="実況システムの起動フラグ"/>
   <arg name="record" default="true" description="rosbag記録フラグ"/>
   <arg name="ball_physics_config_path" default="grsim_ball_physics.yaml" description="ボール物理パラメータ設定ファイル名（configフォルダ内）"/>
 
@@ -229,6 +230,13 @@ limitations under the License.
   <!-- 音声出力（条件付き起動） -->
   <group if="$(var speak)">
     <node pkg="crane_speaker" exec="crane_speaker_node"/>
+  </group>
+
+  <!-- 実況システム（条件付き起動） -->
+  <group if="$(var commentary)">
+    <node pkg="crane_commentary" exec="commentary_node.py" name="commentary_node" output="screen">
+      <param from="$(find-pkg-share crane_commentary)/config/commentary_config.yaml"/>
+    </node>
   </group>
 
   <!-- 音声合成エンジン -->
