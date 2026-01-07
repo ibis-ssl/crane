@@ -268,8 +268,8 @@ private:
 
   // PlaySituation イベント処理
   auto onPlaySituationChanged(const crane_msgs::msg::PlaySituation & msg) -> void;
-  auto createPlaySituationEvent(
-    uint8_t event_type, const crane_msgs::msg::PlaySituation & msg) -> crane_msgs::msg::RonarEvent;
+  auto createPlaySituationEvent(uint8_t event_type, const crane_msgs::msg::PlaySituation & msg)
+    -> crane_msgs::msg::RonarEvent;
 
   // GameEvent (autoref) イベント処理
   auto onGameEvent(const crane_msgs::msg::GameEvent & msg) -> void;

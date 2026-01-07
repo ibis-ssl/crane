@@ -78,22 +78,6 @@ class WorldModelReader:
         """
         context = self._writer.get_context()
 
-        # Build JSON payload for Gemini
-        payload = {
-            "mode": "reflex",
-            "event": {
-                "type": event_type,
-                "hint": self._reflex_templates.get(event_type, ""),
-                "data": event_data,
-            },
-            "context": {
-                "score": {"ours": context.our_score, "theirs": context.their_score},
-                "elapsed_minutes": context.elapsed_seconds / 60.0,
-                "momentum": context.momentum,
-                "recent_events": context.recent_events[-3:],
-            },
-        }
-
         # Determine priority
         priority = 1
         if event_type in ["GOAL"]:
@@ -184,9 +168,7 @@ class WorldModelReader:
             "recent_events": context.recent_events[-3:],
         }
 
-    def _determine_analysis_type(
-        self, context: GameContext, highlights: list
-    ) -> str:
+    def _determine_analysis_type(self, context: GameContext, highlights: list) -> str:
         """Determine what type of analysis to provide."""
         if highlights:
             top = max(highlights, key=lambda h: h.score)

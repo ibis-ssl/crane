@@ -161,9 +161,7 @@ class WorldModelWriter:
             # Return highlights from the last 30 seconds
             now = datetime.now()
             recent = [
-                h
-                for h in self._highlights
-                if (now - h.timestamp).total_seconds() < 30
+                h for h in self._highlights if (now - h.timestamp).total_seconds() < 30
             ]
             return recent
 
@@ -203,9 +201,7 @@ class WorldModelWriter:
                 "momentum": self._context.momentum,
             },
             "recent_flow": self._context.recent_events[-5:],
-            "highlights_available": len(
-                [h for h in self._highlights if h.score >= 70]
-            ),
+            "highlights_available": len([h for h in self._highlights if h.score >= 70]),
         }
         self._narrative_cache = json.dumps(narrative, ensure_ascii=False)
 
@@ -257,7 +253,9 @@ class WorldModelWriter:
             if hasattr(world_model_msg, "play_situation"):
                 ps = world_model_msg.play_situation
                 # command is NamedInt type, need to access .value
-                command_value = ps.command.value if hasattr(ps.command, 'value') else ps.command
+                command_value = (
+                    ps.command.value if hasattr(ps.command, "value") else ps.command
+                )
                 self._play_situation_name = self._situation_to_name(command_value)
                 if hasattr(ps, "our_team_info"):
                     self._context.our_score = ps.our_team_info.score
@@ -273,8 +271,16 @@ class WorldModelWriter:
             # Update ball state
             if hasattr(world_model_msg, "ball_info"):
                 ball = world_model_msg.ball_info
-                pos = (ball.position.x, ball.position.y, getattr(ball.position, "z", 0.0))
-                vel = (ball.velocity.x, ball.velocity.y, getattr(ball.velocity, "z", 0.0))
+                pos = (
+                    ball.position.x,
+                    ball.position.y,
+                    getattr(ball.position, "z", 0.0),
+                )
+                vel = (
+                    ball.velocity.x,
+                    ball.velocity.y,
+                    getattr(ball.velocity, "z", 0.0),
+                )
                 self._current_ball_pos = pos
                 self._current_ball_vel = vel
 
@@ -298,7 +304,11 @@ class WorldModelWriter:
                             math.hypot(robot.velocity.x, robot.velocity.y),
                             robot.velocity.theta,
                         ),
-                        is_available=(robot.available_vision or robot.available_feedback or robot.available_tracker),
+                        is_available=(
+                            robot.available_vision
+                            or robot.available_feedback
+                            or robot.available_tracker
+                        ),
                         has_ball_contact=getattr(robot, "ball_contact", False),
                     )
 
@@ -313,7 +323,11 @@ class WorldModelWriter:
                             math.hypot(robot.velocity.x, robot.velocity.y),
                             robot.velocity.theta,
                         ),
-                        is_available=(robot.available_vision or robot.available_feedback or robot.available_tracker),
+                        is_available=(
+                            robot.available_vision
+                            or robot.available_feedback
+                            or robot.available_tracker
+                        ),
                         has_ball_contact=False,  # We don't track opponent ball contact
                     )
 
@@ -389,7 +403,9 @@ class WorldModelWriter:
     def get_robot_status_data(self, robot_id: int, is_ours: bool) -> Dict[str, Any]:
         """Get robot status data for get_robot_status function."""
         with self._lock:
-            snapshots = self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+            snapshots = (
+                self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+            )
             robot = snapshots.get(robot_id)
 
             if not robot:
@@ -544,7 +560,9 @@ class WorldModelWriter:
 
     def _infer_robot_role(self, robot_id: int, is_ours: bool) -> str:
         """Infer robot role based on position."""
-        snapshots = self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+        snapshots = (
+            self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+        )
         robot = snapshots.get(robot_id)
         if not robot:
             return "不明"
@@ -568,7 +586,9 @@ class WorldModelWriter:
 
     def _build_team_summary(self, is_ours: bool) -> Dict[str, Any]:
         """Build summary for a team."""
-        snapshots = self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+        snapshots = (
+            self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+        )
         goalie_id = self._our_goalie_id if is_ours else self._their_goalie_id
 
         active_robots = [r for r in snapshots.values() if r.is_available]
@@ -608,9 +628,7 @@ class WorldModelWriter:
         else:
             return "opponent_goal_area"
 
-    def _determine_formation(
-        self, robots: List[RobotSnapshot], goalie_id: int
-    ) -> str:
+    def _determine_formation(self, robots: List[RobotSnapshot], goalie_id: int) -> str:
         """Determine formation based on robot positions."""
         # Count robots in each zone (excluding goalkeeper)
         zones = {"defense": 0, "midfield": 0, "attack": 0}

@@ -51,17 +51,14 @@ class CommentaryNode(Node):
         self.declare_parameter("analyst_silence_threshold", 5.0)
 
         # Get parameters
-        api_key = (
-            self.get_parameter("gemini_api_key").value
-            or os.environ.get("GEMINI_API_KEY", "")
+        api_key = self.get_parameter("gemini_api_key").value or os.environ.get(
+            "GEMINI_API_KEY", ""
         )
         model = self.get_parameter("gemini_model").value
         sample_rate = self.get_parameter("audio_sample_rate").value
         audio_device = self.get_parameter("audio_device").value or None
         writer_rate = self.get_parameter("writer_update_rate").value
-        self._analyst_threshold = self.get_parameter(
-            "analyst_silence_threshold"
-        ).value
+        self._analyst_threshold = self.get_parameter("analyst_silence_threshold").value
 
         # Initialize Statler components
         self._writer = WorldModelWriter()
@@ -195,7 +192,9 @@ class CommentaryNode(Node):
                 # Send initial context first
                 self._send_initial_context()
                 # Send greeting
-                self._send_to_gemini("実況システム起動。RoboCup SSL の実況を開始します。")
+                self._send_to_gemini(
+                    "実況システム起動。RoboCup SSL の実況を開始します。"
+                )
             else:
                 self.get_logger().error("Failed to connect to Gemini API")
             return success
@@ -290,6 +289,7 @@ class CommentaryNode(Node):
         if msg.metadata_json:
             try:
                 import json
+
                 metadata = json.loads(msg.metadata_json)
 
                 # Convert team name to reading if exists
@@ -299,7 +299,9 @@ class CommentaryNode(Node):
 
                 event_data["metadata"] = metadata
             except json.JSONDecodeError:
-                self.get_logger().warning(f"Failed to parse metadata_json: {msg.metadata_json}")
+                self.get_logger().warning(
+                    f"Failed to parse metadata_json: {msg.metadata_json}"
+                )
 
         self.get_logger().info(f"Received event: {event_type}")
 

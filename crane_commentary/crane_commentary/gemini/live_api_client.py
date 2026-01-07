@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Callable, Optional, List, Dict, Any
+from typing import Callable, Optional, Dict, Any
 from dataclasses import dataclass
 import base64
 
@@ -35,7 +35,9 @@ class GeminiConfig:
     api_key: str = ""
     model: str = "gemini-2.0-flash-exp"
     sample_rate: int = 24000
-    voice: str = "Aoede"  # Available: Aoede, Charon, Fenrir, Kore, Puck, Zubenelgenubi, etc.
+    voice: str = (
+        "Aoede"  # Available: Aoede, Charon, Fenrir, Kore, Puck, Zubenelgenubi, etc.
+    )
 
 
 # System instruction for commentary
@@ -157,7 +159,9 @@ class GeminiLiveApiClient:
         self._ws: Optional[WebSocketClientProtocol] = None
         self._connected = False
         self._audio_callback: Optional[Callable[[bytes], None]] = None
-        self._function_call_handler: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None
+        self._function_call_handler: Optional[
+            Callable[[str, Dict[str, Any]], Dict[str, Any]]
+        ] = None
         self._receive_task: Optional[asyncio.Task] = None
 
         # Build WebSocket URL
@@ -193,9 +197,7 @@ class GeminiLiveApiClient:
                             }
                         },
                     },
-                    "system_instruction": {
-                        "parts": [{"text": SYSTEM_INSTRUCTION}]
-                    },
+                    "system_instruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
                     "tools": [{"function_declarations": FUNCTION_DECLARATIONS}],
                 }
             }
@@ -315,7 +317,9 @@ class GeminiLiveApiClient:
                                 audio_b64 = inline_data.get("data", "")
                                 if audio_b64 and self._audio_callback:
                                     audio_bytes = base64.b64decode(audio_b64)
-                                    logger.info(f"Received audio: {len(audio_bytes)} bytes")
+                                    logger.info(
+                                        f"Received audio: {len(audio_bytes)} bytes"
+                                    )
                                     self._audio_callback(audio_bytes)
 
             # Check for turn complete
@@ -342,15 +346,21 @@ class GeminiLiveApiClient:
                 result = self._function_call_handler(fc_name, fc_args)
                 logger.info(f"Function result: {fc_name} -> {len(str(result))} chars")
                 # Send response asynchronously
-                asyncio.create_task(self._send_function_response(fc_id, fc_name, result))
+                asyncio.create_task(
+                    self._send_function_response(fc_id, fc_name, result)
+                )
             except Exception as e:
                 logger.error(f"Function call error: {fc_name} -> {e}")
                 error_result = {"error": str(e)}
-                asyncio.create_task(self._send_function_response(fc_id, fc_name, error_result))
+                asyncio.create_task(
+                    self._send_function_response(fc_id, fc_name, error_result)
+                )
         else:
             logger.warning(f"No handler for function call: {fc_name}")
             error_result = {"error": "No function handler registered"}
-            asyncio.create_task(self._send_function_response(fc_id, fc_name, error_result))
+            asyncio.create_task(
+                self._send_function_response(fc_id, fc_name, error_result)
+            )
 
     async def _send_function_response(
         self, fc_id: str, fc_name: str, result: Dict[str, Any]
@@ -390,9 +400,7 @@ class GeminiLiveApiClientSync:
 
     def connect(self) -> bool:
         """Connect to Gemini API (blocking)."""
-        return asyncio.get_event_loop().run_until_complete(
-            self._async_client.connect()
-        )
+        return asyncio.get_event_loop().run_until_complete(self._async_client.connect())
 
     def disconnect(self) -> None:
         """Disconnect from Gemini API (blocking)."""
@@ -408,12 +416,8 @@ class GeminiLiveApiClientSync:
 
     def send_text(self, text: str) -> None:
         """Send text (blocking)."""
-        asyncio.get_event_loop().run_until_complete(
-            self._async_client.send_text(text)
-        )
+        asyncio.get_event_loop().run_until_complete(self._async_client.send_text(text))
 
     def send_json(self, data: dict) -> None:
         """Send JSON (blocking)."""
-        asyncio.get_event_loop().run_until_complete(
-            self._async_client.send_json(data)
-        )
+        asyncio.get_event_loop().run_until_complete(self._async_client.send_json(data))

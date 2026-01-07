@@ -9,12 +9,11 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ronar_event.hpp>
+#include <crane_physics/ball_info.hpp>
 #include <deque>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
-
-#include <crane_physics/ball_info.hpp>
 
 namespace crane
 {
@@ -26,7 +25,7 @@ struct RonarConfig
   double possession_hysteresis = 0.03;          // m
 
   // シュート検出
-  double shot_velocity_threshold = 6.0;  // m/s (FAST_SHOTの閾値)
+  double shot_velocity_threshold = 6.0;     // m/s (FAST_SHOTの閾値)
   double shot_goal_angle_threshold = 30.0;  // degrees
 
   // ゴール検出

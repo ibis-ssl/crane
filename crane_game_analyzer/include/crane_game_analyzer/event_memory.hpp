@@ -282,7 +282,10 @@ public:
   [[nodiscard]] auto workingMemory() const -> const WorkingMemory & { return working_memory_; }
 
   /// HighlightBufferへのアクセス
-  [[nodiscard]] auto highlightBuffer() const -> const HighlightBuffer & { return highlight_buffer_; }
+  [[nodiscard]] auto highlightBuffer() const -> const HighlightBuffer &
+  {
+    return highlight_buffer_;
+  }
 
   /// メモリをクリア
   auto clear() -> void

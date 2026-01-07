@@ -306,9 +306,7 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_HALT, msg);
     event->metadata_json =
       std::format(R"({{"previous_command": {}, "reason": "{}"}})", last, msg.reason_text);
-  }
-  // STOP (1, 60-66)
-  else if (
+  } else if (  // STOP (1, 60-66)
     (current == 1 || (current >= 60 && current <= 66)) &&
     !(last == 1 || (last >= 60 && last <= 66))) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_STOP, msg);
@@ -317,9 +315,7 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     event->metadata_json = std::format(
       R"({{"stop_type": "{}", "command_value": {}, "next_command": {}, "reason": "{}"}})",
       stop_type, current, next_cmd, msg.reason_text);
-  }
-  // INPLAY (50-53)
-  else if ((current >= 50 && current <= 53) && !(last >= 50 && last <= 53)) {
+  } else if ((current >= 50 && current <= 53) && !(last >= 50 && last <= 53)) {  // INPLAY (50-53)
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_INPLAY_START, msg);
     std::string inplay_type;
     switch (current) {
@@ -341,24 +337,18 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     }
     event->metadata_json =
       std::format(R"({{"inplay_type": "{}", "previous_command": {}}})", inplay_type, last);
-  }
-  // TIMEOUT (17, 27)
-  else if ((current == 17 || current == 27) && last != 17 && last != 27) {
+  } else if ((current == 17 || current == 27) && last != 17 && last != 27) {  // TIMEOUT (17, 27)
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_TIMEOUT, msg);
     bool is_ours = (current == 17);
     const auto & team_info = is_ours ? msg.our_team_info : msg.their_team_info;
     event->metadata_json = std::format(
       R"({{"team": "{}", "timeouts_left": {}}})", is_ours ? "ours" : "theirs", team_info.timeouts);
-  }
-  // HALF_TIME (100)
-  else if (current == 100 && last != 100) {
+  } else if (current == 100 && last != 100) {  // HALF_TIME (100)
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_HALF_TIME, msg);
     event->metadata_json = std::format(
       R"({{"our_score": {}, "their_score": {}, "stage": "{}"}})", msg.our_team_info.score,
       msg.their_team_info.score, msg.stage.name);
-  }
-  // GAME_END (101)
-  else if (current == 101 && last != 101) {
+  } else if (current == 101 && last != 101) {  // GAME_END (101)
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_GAME_END, msg);
     std::string result;
     if (msg.our_team_info.score > msg.their_team_info.score) {
@@ -439,10 +429,10 @@ auto GameAnalyzerComponent::onGameEvent(const crane_msgs::msg::GameEvent & msg) 
   // イベントタイプに応じた変換
   if (msg.event_type == "GOAL" || msg.event_type == "POSSIBLE_GOAL") {
     event.event_type = crane_msgs::msg::RonarEvent::EVENT_GOAL;
-  } else if (msg.event_type == "BALL_LEFT_FIELD_TOUCH_LINE" ||
-             msg.event_type == "BALL_LEFT_FIELD_GOAL_LINE" ||
-             msg.event_type == "AIMLESS_KICK" ||
-             msg.event_type == "BOUNDARY_CROSSING") {
+  } else if (
+    msg.event_type == "BALL_LEFT_FIELD_TOUCH_LINE" ||
+    msg.event_type == "BALL_LEFT_FIELD_GOAL_LINE" || msg.event_type == "AIMLESS_KICK" ||
+    msg.event_type == "BOUNDARY_CROSSING") {
     event.event_type = crane_msgs::msg::RonarEvent::EVENT_BALL_OUT;
   } else {
     // その他のイベントはFOULとして処理
@@ -523,8 +513,8 @@ auto GameAnalyzerComponent::onGameEvent(const crane_msgs::msg::GameEvent & msg) 
   }
 
   RCLCPP_INFO(
-    get_logger(), "Autoref Event: %s (%s), team=%s, robot=%d",
-    event_name.c_str(), msg.event_type.c_str(), msg.team.c_str(), msg.robot_id);
+    get_logger(), "Autoref Event: %s (%s), team=%s, robot=%d", event_name.c_str(),
+    msg.event_type.c_str(), msg.team.c_str(), msg.robot_id);
 }
 
 }  // namespace crane

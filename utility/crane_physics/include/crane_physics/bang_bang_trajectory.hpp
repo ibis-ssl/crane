@@ -84,8 +84,8 @@ public:
    * @param max_acc 最大加速度
    */
   BangBangTrajectory1D & generate(
-    const double initial_pos, const double target_pos, const double initial_vel, const double max_vel,
-    const double max_acc)
+    const double initial_pos, const double target_pos, const double initial_vel,
+    const double max_vel, const double max_acc)
   {
     // フルブレーキ時に停止する位置を計算（プロファイル選択の基準）
     const double braking_pos = computeBrakingPosition(initial_pos, initial_vel, max_acc);
@@ -219,14 +219,12 @@ private:
     double sqrt_val;
     if (acceleration > 0) {
       // 正方向移動: 加速(+a) → 減速(-a)
-      sqrt_val =
-        ((acceleration * (final_pos - initial_pos)) + (0.5 * initial_vel * initial_vel)) /
-        (acceleration * acceleration);
+      sqrt_val = ((acceleration * (final_pos - initial_pos)) + (0.5 * initial_vel * initial_vel)) /
+                 (acceleration * acceleration);
     } else {
       // 負方向移動: 減速(-a) → 加速(+a)
-      sqrt_val =
-        ((-acceleration * (initial_pos - final_pos)) + (0.5 * initial_vel * initial_vel)) /
-        (acceleration * acceleration);
+      sqrt_val = ((-acceleration * (initial_pos - final_pos)) + (0.5 * initial_vel * initial_vel)) /
+                 (acceleration * acceleration);
     }
 
     const double decel_time = (sqrt_val > 0.0) ? std::sqrt(sqrt_val) : 0.0;

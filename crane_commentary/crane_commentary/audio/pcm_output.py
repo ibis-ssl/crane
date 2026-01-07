@@ -65,7 +65,9 @@ class PcmAudioOutput:
         self._thread = threading.Thread(target=self._playback_loop, daemon=True)
         self._thread.start()
 
-        logger.info(f"Audio output started: {self._sample_rate}Hz, {self._channels}ch (PyAudio)")
+        logger.info(
+            f"Audio output started: {self._sample_rate}Hz, {self._channels}ch (PyAudio)"
+        )
 
     def stop(self) -> None:
         """Stop audio output thread."""

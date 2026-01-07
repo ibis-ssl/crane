@@ -11,9 +11,7 @@
 namespace crane
 {
 RonarEventDetector::RonarEventDetector(rclcpp::Clock::SharedPtr clock)
-: clock_(clock),
-  possession_hysteresis_(0.15, 0.03),
-  shot_start_time_(clock->now())
+: clock_(clock), possession_hysteresis_(0.15, 0.03), shot_start_time_(clock->now())
 {
 }
 
@@ -59,8 +57,9 @@ auto RonarEventDetector::detectPossessionChange(const WorldModelWrapper & wm)
   // ボールに十分近いロボットがいる場合のみ所持判定
   if (!possession_hysteresis_.is_high && distance < config_.possession_distance_threshold) {
     // 所持者が変わった場合のみイベント発火
-    if (!current_possession_ || current_possession_->id != robot_id.id ||
-        current_possession_->is_ours != robot_id.is_ours) {
+    if (
+      !current_possession_ || current_possession_->id != robot_id.id ||
+      current_possession_->is_ours != robot_id.is_ours) {
       auto old_possession = current_possession_;
       current_possession_ = robot_id;
 
@@ -115,7 +114,7 @@ auto RonarEventDetector::detectShot(const WorldModelWrapper & wm)
 auto RonarEventDetector::detectPass(const WorldModelWrapper & wm)
   -> std::optional<crane_msgs::msg::RonarEvent>
 {
-  // TODO: KickEventDetectorと統合してパス検出を実装
+  // TODO(hans): KickEventDetectorと統合してパス検出を実装
   // キックイベント発生 + 受け手検出でPASSイベントを生成
   return std::nullopt;
 }
@@ -129,13 +128,11 @@ auto RonarEventDetector::detectSetPlay(const WorldModelWrapper & wm)
   if (current_situation != last_play_situation_) {
     // セットプレー系の状況変化を検出
     // KICKOFF, PENALTY, DIRECT_FREE, INDIRECT_FREE, BALL_PLACEMENT
-    bool is_set_play =
-      (current_situation >= 11 && current_situation <= 19) ||   // OUR系
-      (current_situation >= 21 && current_situation <= 29);     // THEIR系
+    bool is_set_play = (current_situation >= 11 && current_situation <= 19) ||  // OUR系
+                       (current_situation >= 21 && current_situation <= 29);    // THEIR系
 
     if (is_set_play) {
-      return createEvent(
-        crane_msgs::msg::RonarEvent::EVENT_SET_PLAY, wm.ball().pos, 0.0f, 1.0f);
+      return createEvent(crane_msgs::msg::RonarEvent::EVENT_SET_PLAY, wm.ball().pos, 0.0f, 1.0f);
     }
   }
 
@@ -172,8 +169,8 @@ auto RonarEventDetector::findNearestRobotToBall(const WorldModelWrapper & wm) co
   return std::nullopt;
 }
 
-auto RonarEventDetector::isBallMovingTowardsGoal(const WorldModelWrapper & wm, bool their_goal)
-  const -> bool
+auto RonarEventDetector::isBallMovingTowardsGoal(
+  const WorldModelWrapper & wm, bool their_goal) const -> bool
 {
   Point ball_vel = wm.ball().vel;
   if (ball_vel.norm() < 1.0) {
