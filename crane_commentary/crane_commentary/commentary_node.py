@@ -189,12 +189,8 @@ class CommentaryNode(Node):
                 self._audio_output.start()
                 self.get_logger().info("Connected to Gemini API")
                 self.get_logger().info("Audio output started")
-                # Send initial context first
-                self._send_initial_context()
-                # Send greeting
-                self._send_to_gemini(
-                    "実況システム起動。RoboCup SSL の実況を開始します。"
-                )
+                self.get_logger().info("Waiting for team information from PlaySituation...")
+                # Initial context will be sent after receiving PlaySituation
             else:
                 self.get_logger().error("Failed to connect to Gemini API")
             return success
@@ -228,10 +224,35 @@ class CommentaryNode(Node):
 
     def _on_play_situation(self, msg: PlaySituation) -> None:
         """Handle incoming PlaySituation messages to get team names."""
-        if msg.our_team_info.name:
+        team_changed = False
+
+        # Update team names
+        if msg.our_team_info.name and msg.our_team_info.name != self._our_team_name:
+            old_name = self._our_team_name
             self._our_team_name = msg.our_team_info.name
-        if msg.their_team_info.name:
+            self.get_logger().info(f"Our team name updated: {old_name} -> {self._our_team_name}")
+            team_changed = True
+
+        if msg.their_team_info.name and msg.their_team_info.name != self._their_team_name:
+            old_name = self._their_team_name
             self._their_team_name = msg.their_team_info.name
+            self.get_logger().info(f"Their team name updated: {old_name} -> {self._their_team_name}")
+            team_changed = True
+
+        # Send initial context when both team names are available
+        if not self._initial_context_sent and self._their_team_name and self._connected:
+            self.get_logger().info(
+                f"Both team names received: {self._our_team_name} vs {self._their_team_name}"
+            )
+            self._send_initial_context()
+            # Send greeting after initial context
+            self._send_to_gemini(
+                "実況システム起動。RoboCup SSL の実況を開始します。"
+            )
+        # If initial context already sent and team changed, send update
+        elif self._initial_context_sent and team_changed and self._connected:
+            self.get_logger().info("Sending team information update to Gemini")
+            self._send_team_update()
 
     def _on_world_model(self, msg: WorldModel) -> None:
         """Handle incoming WorldModel messages for Function Calling data."""
@@ -374,6 +395,30 @@ class CommentaryNode(Node):
         self.get_logger().info("Sending initial context to Gemini")
         self._send_to_gemini(f"[SYSTEM CONTEXT]\n{context}")
         self._initial_context_sent = True
+
+    def _send_team_update(self) -> None:
+        """Send team information update to Gemini."""
+        import json
+        from crane_commentary.data.team_profiles import get_team_profile, get_team_reading
+
+        update = {
+            "type": "team_update",
+            "our_team": {
+                "name": get_team_reading(self._our_team_name),
+                "key": self._our_team_name,
+                **get_team_profile(self._our_team_name),
+            },
+        }
+
+        if self._their_team_name:
+            update["their_team"] = {
+                "name": get_team_reading(self._their_team_name),
+                "key": self._their_team_name,
+                **get_team_profile(self._their_team_name),
+            }
+
+        update_json = json.dumps(update, ensure_ascii=False, indent=2)
+        self._send_to_gemini(f"[TEAM UPDATE]\n{update_json}")
 
     def _send_to_gemini(self, json_payload: str) -> None:
         """Send payload to Gemini API."""
