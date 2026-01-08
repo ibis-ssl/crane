@@ -36,11 +36,16 @@ auto Forward::update() -> Status
       if (nearest_enemy) {
         // 0.0~1.0 : 遠いほど高スコア
         score *= std::clamp(nearest_enemy->distance, 0.2, 2.0) / 2.0;
-      } else {
-        score = 0.0;
       }
+      // else: 敵がいない = 安全なので score は 1.0 のまま
 
       double distance = (p - ball.pos).norm();
+      // 最小距離制約: 1.5m未満は大幅減点
+      constexpr double MIN_PASS_DISTANCE = 1.5;
+      if (distance < MIN_PASS_DISTANCE) {
+        score *= distance / MIN_PASS_DISTANCE;  // 1.0mなら0.67倍、0.5mなら0.33倍
+      }
+      // ボールとの距離評価（近すぎず遠すぎず）
       score *= (std::clamp(1.0 - distance / max_ball_distance, 0.0, 1.0) * 0.5 + 0.5);
 
       if (planner_visualizer) {
