@@ -148,7 +148,8 @@ void Kick::initialize()
       }
     }();
 
-    command->setTargetPosition(approach + kick_vec * kick_vec_gain).lookAtFrom(target, ball_pos);
+    command->lookAtFrom(target, ball_pos)
+      .setDribblerTargetPosition(approach + kick_vec * kick_vec_gain);
     command->disableBallAvoidance();
     using boost::math::constants::degree;
     if (

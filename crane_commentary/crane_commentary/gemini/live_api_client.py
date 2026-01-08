@@ -70,6 +70,9 @@ SYSTEM_INSTRUCTION = """あなたはRoboCup Small Size Leagueの実況・解説�
 - 数値の単位は必ず日本語で表現する
   - 良い例: 「秒速7.2メートル」「1.5メートル」「6.5メートル毎秒」
   - 悪い例: 「7.2m/s」「1.5m」
+- 数字は絶対に英語ではなく日本語で発音する
+  - 良い例：「6.5」->「ろくてんご」
+  - 悪い例：「6.5」->「six point five」
 
 SSLルール（ファール一覧）:
 公式ルール参照: https://kkimurak.github.io/ssl-rules-ja/sslrules.html

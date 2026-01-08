@@ -76,7 +76,6 @@
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
 | [rvo2_vendor](./rvo2_vendor.md) | RVO2衝突回避アルゴリズム | 🟢 安定 | ✅ 作成済み | 完了 |
-| [modern_orca](./modern_orca.md) | Modern ORCA衝突回避ライブラリ | 🟡 中活動 | ✅ 作成済み | 完了 |
 | [matplotlib_cpp_17_vendor](./matplotlib_cpp_17_vendor.md) | C++17対応matplotlib | 🟢 安定 | ✅ 作成済み | 完了 |
 | [closest_point_vendor](./closest_point_vendor.md) | 最近点計算ライブラリ | 🟢 安定 | ✅ 作成済み | 完了 |
 
