@@ -68,4 +68,42 @@ FUNCTION_DECLARATIONS = [
             "required": [],
         },
     },
+    {
+        "name": "get_formation_analysis",
+        "description": "両チームの陣形を詳細に分析する。守備的・攻撃的布陣の判定、"
+        "ロボットの配置パターン（密集・分散）、ボール周辺の数的優位、"
+        "攻守の形（カウンター/ポゼッション型）を含む。戦術的な解説時に使用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "focus": {
+                    "type": "string",
+                    "enum": ["offensive", "defensive", "both"],
+                    "description": "分析の焦点（攻撃、守備、両方）デフォルト: both",
+                }
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "get_highlight_details",
+        "description": "直近のハイライト（ゴール・シュート・セーブ）の詳細情報を取得する。"
+        "シュートのコース、キーパーの反応、関与したロボット、"
+        "ボールの軌跡と速度変化を含む。リプレイ解説時に使用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "highlight_type": {
+                    "type": "string",
+                    "enum": ["goal", "shot", "save", "any"],
+                    "description": "取得するハイライトの種類（デフォルト: any）",
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "取得する件数（デフォルト: 1、最大: 5）",
+                },
+            },
+            "required": [],
+        },
+    },
 ]
