@@ -109,10 +109,13 @@ class WorldModelReader:
         if not highlights and not context.recent_events:
             return None
 
-        # Build analysis payload
+        analysis_type = self._determine_analysis_type(context, highlights)
+
+        # Build analysis payload with recommended functions
         payload = {
             "mode": "analyst",
-            "analysis_type": self._determine_analysis_type(context, highlights),
+            "analysis_type": analysis_type,
+            "recommended_functions": self._get_recommended_functions(analysis_type),
             "context": {
                 "score": {"ours": context.our_score, "theirs": context.their_score},
                 "elapsed_minutes": context.elapsed_seconds / 60.0,
@@ -184,3 +187,36 @@ class WorldModelReader:
             return "game_summary"
         else:
             return "team_introduction"
+
+    def _get_recommended_functions(self, analysis_type: str) -> list[str]:
+        """Get recommended functions for each analysis type."""
+        recommendations = {
+            "goal_replay": [
+                "get_highlight_details(highlight_type='goal')",
+                "get_robot_status（シューターのIDで）",
+            ],
+            "shot_analysis": [
+                "get_highlight_details(highlight_type='shot')",
+                "get_ball_trajectory",
+                "get_robot_status（関与したロボット）",
+            ],
+            "save_highlight": [
+                "get_highlight_details(highlight_type='save')",
+                "get_robot_status（ゴールキーパーのID）",
+            ],
+            "game_summary": [
+                "get_game_state",
+                "get_formation_analysis",
+                "get_highlight_details(highlight_type='any', count=3)",
+            ],
+            "team_introduction": [
+                "get_all_robots_summary",
+                "get_formation_analysis",
+            ],
+            "tactical_analysis": [
+                "get_formation_analysis",
+                "get_all_robots_summary",
+                "get_game_state",
+            ],
+        }
+        return recommendations.get(analysis_type, ["get_game_state"])

@@ -444,6 +444,55 @@ class WorldModelWriter:
             result["ball_possession"] = self._ball_possession_team
             return result
 
+    def get_formation_analysis_data(self, focus: str = "both") -> Dict[str, Any]:
+        """Get formation analysis data for get_formation_analysis function."""
+        with self._lock:
+            result: Dict[str, Any] = {}
+
+            # Analyze both teams
+            if focus in ("offensive", "both"):
+                result["ours"] = self._analyze_team_formation(True)
+            if focus in ("defensive", "both"):
+                result["theirs"] = self._analyze_team_formation(False)
+
+            # Tactical situation
+            result["tactical_situation"] = self._analyze_tactical_situation()
+
+            return result
+
+    def get_highlight_details_data(
+        self, highlight_type: str = "any", count: int = 1
+    ) -> Dict[str, Any]:
+        """Get highlight details data for get_highlight_details function."""
+        count = min(count, 5)  # Max 5 highlights
+
+        with self._lock:
+            # Filter highlights by type
+            type_mapping = {
+                "goal": ["GOAL"],
+                "shot": ["SHOT", "FAST_SHOT"],
+                "save": ["SAVE"],
+                "any": ["GOAL", "SHOT", "FAST_SHOT", "SAVE"],
+            }
+            allowed_types = type_mapping.get(highlight_type, type_mapping["any"])
+
+            filtered = [
+                h for h in self._highlights if h.event_type in allowed_types
+            ]
+
+            # Sort by timestamp (most recent first) and take top N
+            filtered.sort(key=lambda h: h.timestamp, reverse=True)
+            selected = filtered[:count]
+
+            now = datetime.now()
+            highlights_data = []
+
+            for h in selected:
+                highlight_info = self._build_highlight_detail(h, now)
+                highlights_data.append(highlight_info)
+
+            return {"highlights": highlights_data, "total_available": len(filtered)}
+
     # ========== Helper Methods ==========
 
     def _situation_to_name(self, situation: int) -> str:
@@ -652,3 +701,286 @@ class WorldModelWriter:
             return f"{d}-{m}-{a}（攻撃的布陣）"
         else:
             return f"{d}-{m}-{a}（バランス型）"
+
+    def _analyze_team_formation(self, is_ours: bool) -> Dict[str, Any]:
+        """Analyze a single team's formation."""
+        snapshots = (
+            self._robot_snapshots_ours if is_ours else self._robot_snapshots_theirs
+        )
+        goalie_id = self._our_goalie_id if is_ours else self._their_goalie_id
+
+        active_robots = [r for r in snapshots.values() if r.is_available]
+
+        # Calculate formation string
+        formation = self._determine_formation(active_robots, goalie_id)
+
+        # Determine pattern (spread/compact/balanced)
+        pattern = self._determine_pattern(active_robots)
+
+        # Determine pressure zone
+        pressure_zone = self._determine_pressure_zone(active_robots, is_ours)
+
+        # Count robots near ball
+        robots_near_ball = self._count_robots_near_ball(active_robots, threshold=1.5)
+
+        # Goalkeeper position analysis
+        goalkeeper = snapshots.get(goalie_id)
+        gk_info = {
+            "x": round(goalkeeper.position[0], 2) if goalkeeper else 0.0,
+            "y": round(goalkeeper.position[1], 2) if goalkeeper else 0.0,
+            "advanced": (
+                goalkeeper.position[0] > -4.5
+                if (is_ours and goalkeeper)
+                else False
+            ),
+        }
+
+        return {
+            "formation": formation,
+            "pattern": pattern,
+            "pressure_zone": pressure_zone,
+            "robots_near_ball": robots_near_ball,
+            "goalkeeper_position": gk_info,
+        }
+
+    def _determine_pattern(self, robots: List[RobotSnapshot]) -> str:
+        """Determine team's positioning pattern (spread/compact/balanced)."""
+        if len(robots) < 2:
+            return "unknown"
+
+        # Calculate average distance between robots
+        positions = [(r.position[0], r.position[1]) for r in robots]
+        total_dist = 0.0
+        count = 0
+        for i, p1 in enumerate(positions):
+            for p2 in positions[i + 1 :]:
+                dist = math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+                total_dist += dist
+                count += 1
+
+        avg_dist = total_dist / count if count > 0 else 0
+
+        if avg_dist < 2.0:
+            return "compact"
+        elif avg_dist > 4.0:
+            return "spread"
+        else:
+            return "balanced"
+
+    def _determine_pressure_zone(
+        self, robots: List[RobotSnapshot], is_ours: bool
+    ) -> str:
+        """Determine where the team is applying pressure."""
+        if not robots:
+            return "unknown"
+
+        avg_x = sum(r.position[0] for r in robots) / len(robots)
+
+        # Adjust for team side (assuming positive x = opponent's goal for "ours")
+        if is_ours:
+            if avg_x > 2.0:
+                return "opponent_half"
+            elif avg_x < -2.0:
+                return "own_half"
+            else:
+                return "midfield"
+        else:
+            # Opponent's perspective is reversed
+            if avg_x < -2.0:
+                return "opponent_half"
+            elif avg_x > 2.0:
+                return "own_half"
+            else:
+                return "midfield"
+
+    def _count_robots_near_ball(
+        self, robots: List[RobotSnapshot], threshold: float
+    ) -> int:
+        """Count robots within threshold distance of the ball."""
+        ball_pos = self._current_ball_pos[:2]
+        count = 0
+        for robot in robots:
+            dist = math.hypot(
+                robot.position[0] - ball_pos[0], robot.position[1] - ball_pos[1]
+            )
+            if dist < threshold:
+                count += 1
+        return count
+
+    def _analyze_tactical_situation(self) -> Dict[str, Any]:
+        """Analyze overall tactical situation."""
+        ball_x, ball_y = self._current_ball_pos[0], self._current_ball_pos[1]
+
+        # Ball zone
+        if ball_x < -3.0:
+            x_zone = "own_deep"
+        elif ball_x < 0:
+            x_zone = "own_half"
+        elif ball_x < 3.0:
+            x_zone = "opponent_half"
+        else:
+            x_zone = "opponent_deep"
+
+        if ball_y > 1.5:
+            y_zone = "left"
+        elif ball_y < -1.5:
+            y_zone = "right"
+        else:
+            y_zone = "center"
+
+        ball_zone = f"{x_zone}_{y_zone}"
+
+        # Numerical advantage near ball
+        our_near = self._count_robots_near_ball(
+            list(self._robot_snapshots_ours.values()), 2.0
+        )
+        their_near = self._count_robots_near_ball(
+            list(self._robot_snapshots_theirs.values()), 2.0
+        )
+
+        # Determine attack/defense style
+        ball_speed = math.hypot(self._current_ball_vel[0], self._current_ball_vel[1])
+        if ball_speed > 4.0:
+            attack_style = "counter"
+        elif self._ball_possession_team == "ours":
+            attack_style = "possession"
+        else:
+            attack_style = "transition"
+
+        return {
+            "ball_zone": ball_zone,
+            "numerical_advantage": {
+                "zone": "ball_vicinity",
+                "ours": our_near,
+                "theirs": their_near,
+            },
+            "attack_style": attack_style,
+            "defense_style": "zonal",  # Simplified for now
+        }
+
+    def _build_highlight_detail(
+        self, highlight: HighlightEvent, now: datetime
+    ) -> Dict[str, Any]:
+        """Build detailed information for a single highlight."""
+        time_offset = -(now - highlight.timestamp).total_seconds()
+
+        result = {
+            "type": highlight.event_type.lower(),
+            "timestamp_offset_sec": round(time_offset, 1),
+            "importance_score": highlight.score,
+        }
+
+        # Extract shooter info from event data
+        data = highlight.data
+        if "primary_robot" in data:
+            robot_info = data["primary_robot"]
+            result["shooter"] = {
+                "robot_id": robot_info.get("id", -1),
+                "is_ours": robot_info.get("is_ours", True),
+                "position_at_shot": data.get("position", {"x": 0, "y": 0}),
+                "distance_to_goal_m": self._calculate_distance_to_goal(
+                    data.get("position", {"x": 0, "y": 0}),
+                    robot_info.get("is_ours", True),
+                ),
+            }
+
+        # Shot details
+        ball_speed = data.get("ball_speed", 0)
+        result["shot_details"] = {
+            "ball_speed_mps": round(ball_speed, 1),
+            "shot_angle_deg": self._estimate_shot_angle(data),
+            "target_zone": self._determine_target_zone(data),
+            "shot_type": "direct",  # Simplified
+        }
+
+        # Goalkeeper response (if save)
+        if highlight.event_type == "SAVE" and "secondary_robot" in data:
+            gk_info = data["secondary_robot"]
+            result["goalkeeper_response"] = {
+                "robot_id": gk_info.get("id", 0),
+                "reaction_time_sec": 0.2,  # Estimated
+                "dive_direction": self._estimate_dive_direction(data),
+                "save_attempt": True,
+            }
+        elif highlight.event_type == "GOAL":
+            result["goalkeeper_response"] = {
+                "robot_id": self._their_goalie_id,
+                "reaction_time_sec": 0.15,
+                "dive_direction": "none",
+                "save_attempt": False,
+            }
+
+        # Context
+        result["context"] = {
+            "score_before": data.get("score_before", {"ours": 0, "theirs": 0}),
+            "score_after": data.get("score_after", {"ours": 0, "theirs": 0}),
+            "game_minute": round(self._context.elapsed_seconds / 60.0, 1),
+            "significance": self._determine_goal_significance(data),
+        }
+
+        return result
+
+    def _calculate_distance_to_goal(
+        self, position: Dict[str, float], is_ours: bool
+    ) -> float:
+        """Calculate distance from position to opponent's goal."""
+        goal_x = 6.0 if is_ours else -6.0
+        goal_y = 0.0
+        return round(
+            math.hypot(position.get("x", 0) - goal_x, position.get("y", 0) - goal_y),
+            1,
+        )
+
+    def _estimate_shot_angle(self, data: Dict[str, Any]) -> float:
+        """Estimate shot angle in degrees."""
+        pos = data.get("position", {"x": 0, "y": 0})
+        # Simplified: angle from shot position to goal center
+        goal_x = 6.0
+        dx = goal_x - pos.get("x", 0)
+        dy = 0 - pos.get("y", 0)
+        angle_rad = math.atan2(dy, dx)
+        return round(math.degrees(angle_rad), 1)
+
+    def _determine_target_zone(self, data: Dict[str, Any]) -> str:
+        """Determine which part of goal was targeted."""
+        # Simplified based on ball y position
+        pos = data.get("position", {"x": 0, "y": 0})
+        y = pos.get("y", 0)
+        if y > 0.3:
+            return "top_left"
+        elif y < -0.3:
+            return "top_right"
+        else:
+            return "center"
+
+    def _estimate_dive_direction(self, data: Dict[str, Any]) -> str:
+        """Estimate goalkeeper dive direction."""
+        pos = data.get("position", {"x": 0, "y": 0})
+        y = pos.get("y", 0)
+        if y > 0.2:
+            return "left"
+        elif y < -0.2:
+            return "right"
+        else:
+            return "center"
+
+    def _determine_goal_significance(self, data: Dict[str, Any]) -> str:
+        """Determine the significance of a goal."""
+        before = data.get("score_before", {"ours": 0, "theirs": 0})
+        after = data.get("score_after", {"ours": 0, "theirs": 0})
+
+        our_diff = after.get("ours", 0) - before.get("ours", 0)
+
+        if our_diff > 0:
+            # We scored
+            if before.get("ours", 0) < before.get("theirs", 0):
+                if after.get("ours", 0) == after.get("theirs", 0):
+                    return "equalizer"
+                elif after.get("ours", 0) > after.get("theirs", 0):
+                    return "comeback"
+            elif before.get("ours", 0) == before.get("theirs", 0):
+                return "go_ahead"
+            else:
+                return "insurance"
+
+        return "regular"

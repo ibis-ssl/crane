@@ -42,6 +42,8 @@ class FunctionHandler:
             "get_ball_trajectory": self._handle_get_ball_trajectory,
             "get_robot_status": self._handle_get_robot_status,
             "get_all_robots_summary": self._handle_get_all_robots_summary,
+            "get_formation_analysis": self._handle_get_formation_analysis,
+            "get_highlight_details": self._handle_get_highlight_details,
         }
 
         handler = handlers.get(name)
@@ -78,3 +80,14 @@ class FunctionHandler:
         """Handle get_all_robots_summary function call."""
         team = args.get("team", "all")
         return self._writer.get_all_robots_summary_data(team)
+
+    def _handle_get_formation_analysis(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle get_formation_analysis function call."""
+        focus = args.get("focus", "both")
+        return self._writer.get_formation_analysis_data(focus)
+
+    def _handle_get_highlight_details(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle get_highlight_details function call."""
+        highlight_type = args.get("highlight_type", "any")
+        count = args.get("count", 1)
+        return self._writer.get_highlight_details_data(highlight_type, count)
