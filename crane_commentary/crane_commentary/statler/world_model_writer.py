@@ -476,9 +476,7 @@ class WorldModelWriter:
             }
             allowed_types = type_mapping.get(highlight_type, type_mapping["any"])
 
-            filtered = [
-                h for h in self._highlights if h.event_type in allowed_types
-            ]
+            filtered = [h for h in self._highlights if h.event_type in allowed_types]
 
             # Sort by timestamp (most recent first) and take top N
             filtered.sort(key=lambda h: h.timestamp, reverse=True)
@@ -729,9 +727,7 @@ class WorldModelWriter:
             "x": round(goalkeeper.position[0], 2) if goalkeeper else 0.0,
             "y": round(goalkeeper.position[1], 2) if goalkeeper else 0.0,
             "advanced": (
-                goalkeeper.position[0] > -4.5
-                if (is_ours and goalkeeper)
-                else False
+                goalkeeper.position[0] > -4.5 if (is_ours and goalkeeper) else False
             ),
         }
 
