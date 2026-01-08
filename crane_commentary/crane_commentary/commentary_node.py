@@ -189,7 +189,9 @@ class CommentaryNode(Node):
                 self._audio_output.start()
                 self.get_logger().info("Connected to Gemini API")
                 self.get_logger().info("Audio output started")
-                self.get_logger().info("Waiting for team information from PlaySituation...")
+                self.get_logger().info(
+                    "Waiting for team information from PlaySituation..."
+                )
                 # Initial context will be sent after receiving PlaySituation
             else:
                 self.get_logger().error("Failed to connect to Gemini API")
@@ -230,13 +232,20 @@ class CommentaryNode(Node):
         if msg.our_team_info.name and msg.our_team_info.name != self._our_team_name:
             old_name = self._our_team_name
             self._our_team_name = msg.our_team_info.name
-            self.get_logger().info(f"Our team name updated: {old_name} -> {self._our_team_name}")
+            self.get_logger().info(
+                f"Our team name updated: {old_name} -> {self._our_team_name}"
+            )
             team_changed = True
 
-        if msg.their_team_info.name and msg.their_team_info.name != self._their_team_name:
+        if (
+            msg.their_team_info.name
+            and msg.their_team_info.name != self._their_team_name
+        ):
             old_name = self._their_team_name
             self._their_team_name = msg.their_team_info.name
-            self.get_logger().info(f"Their team name updated: {old_name} -> {self._their_team_name}")
+            self.get_logger().info(
+                f"Their team name updated: {old_name} -> {self._their_team_name}"
+            )
             team_changed = True
 
         # Send initial context when both team names are available
@@ -246,9 +255,7 @@ class CommentaryNode(Node):
             )
             self._send_initial_context()
             # Send greeting after initial context
-            self._send_to_gemini(
-                "実況システム起動。RoboCup SSL の実況を開始します。"
-            )
+            self._send_to_gemini("実況システム起動。RoboCup SSL の実況を開始します。")
         # If initial context already sent and team changed, send update
         elif self._initial_context_sent and team_changed and self._connected:
             self.get_logger().info("Sending team information update to Gemini")
@@ -399,7 +406,10 @@ class CommentaryNode(Node):
     def _send_team_update(self) -> None:
         """Send team information update to Gemini."""
         import json
-        from crane_commentary.data.team_profiles import get_team_profile, get_team_reading
+        from crane_commentary.data.team_profiles import (
+            get_team_profile,
+            get_team_reading,
+        )
 
         update = {
             "type": "team_update",
