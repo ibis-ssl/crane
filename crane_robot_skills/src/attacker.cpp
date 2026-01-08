@@ -320,6 +320,16 @@ double Attacker::calculatePassScore(const Point & target)
 {
   double score = 1.0;
 
+  // パス距離の評価（1.5m〜4mが最適、1.0m以下は大幅減点）
+  const double pass_distance = (target - world_model()->ball().pos).norm();
+  if (pass_distance < 1.0) {
+    // 1.0m以下の超近距離パスは大幅減点
+    score *= pass_distance;  // 0.5mなら0.5倍、0.3mなら0.3倍
+  } else {
+    // 1.0m以上は距離に応じてボーナス（最大+2.0）
+    score += std::clamp((pass_distance - 1.0) * 0.5, 0.0, 2.0);
+  }
+
   // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
   double goal_angle_width = evaluateGoalAngle(target);
   score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
@@ -346,7 +356,7 @@ double Attacker::calculatePassScore(const Point & target)
   if (auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
       nearest_enemy) {
-    score *= 1.0 / (1.0 + nearest_enemy->distance);
+    score *= std::clamp(nearest_enemy->distance / 2.0, 0.0, 1.0);
   }
 
   return score;
