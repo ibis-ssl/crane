@@ -44,6 +44,8 @@ private:
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
   rclcpp::Publisher<robocup_ssl_msgs::msg::GameEvent>::SharedPtr pub_game_event;
+
+  std::vector<robocup_ssl_msgs::msg::GameEvent> previous_game_events_;
 };
 
 }  // namespace robocup_ssl_comm

@@ -14,6 +14,7 @@
 
 #include "robocup_ssl_comm/game_controller_component.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -54,12 +55,22 @@ void GameController::on_timer()
 
       pub_referee->publish(std::move(referee_msg));
 
-      // Process game events
+      // Process game events - only publish new events
+      std::vector<robocup_ssl_msgs::msg::GameEvent> current_events;
       for (const auto & proto_event : packet.game_events()) {
-        auto event_msg = std::make_unique<robocup_ssl_msgs::msg::GameEvent>();
-        robocup_ssl_msgs::conversions::Convert(proto_event, event_msg.get());
-        pub_game_event->publish(std::move(event_msg));
+        robocup_ssl_msgs::msg::GameEvent event_msg;
+        robocup_ssl_msgs::conversions::Convert(proto_event, &event_msg);
+        current_events.push_back(event_msg);
       }
+
+      for (const auto & event : current_events) {
+        auto it = std::find(previous_game_events_.begin(), previous_game_events_.end(), event);
+        if (it == previous_game_events_.end()) {
+          pub_game_event->publish(event);
+        }
+      }
+
+      previous_game_events_ = std::move(current_events);
     }
   }
 }
