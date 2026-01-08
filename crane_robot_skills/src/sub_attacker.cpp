@@ -148,8 +148,14 @@ double SubAttacker::getPointScore(
     auto reflect_angle = std::abs(getAngleDiff(angle, getAngle(world_model->ball().pos - p)));
     score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));
   }
-  // 距離 大きいほどよい
+  // 距離評価: 最小距離制約と適度な距離を評価
   const double dist = (world_model->ball().pos - p).norm();
+  // 最小距離制約: 1.5m未満は大幅減点
+  constexpr double MIN_PASS_DISTANCE = 1.5;
+  if (dist < MIN_PASS_DISTANCE) {
+    score *= dist / MIN_PASS_DISTANCE;  // 1.0mなら0.67倍、0.5mなら0.33倍
+  }
+  // 距離が遠すぎても減点（10m以上はスコア0）
   score = score * std::max(1.0 - dist / 10.0, 0.0);
 
   // シュートラインに近すぎる場所は避ける
