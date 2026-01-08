@@ -153,12 +153,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(current_position.x(), current_position.y()),
       Eigen::Vector2d(command.target_x, command.target_y),
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
-    // ルックアヘッド時間をピーク速度発生時刻に設定
-    // - 三角形プロファイル: totalTime/2 でピーク速度
-    // - 台形プロファイル: totalTime/2 は定速区間（最大速度）
-    // 上限0.5秒で長距離移動時の応答性を維持
-    const double peak_time = trajectory.getTotalTime() * 0.5;
-    const double lookahead_time = std::min(0.5, std::max(0.01, peak_time));
+    // ルックアヘッド時間を固定値に設定
+    const double lookahead_time = std::min(0.05, trajectory.getTotalTime());
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
     target_vel << next_vel.x(), next_vel.y();
 
