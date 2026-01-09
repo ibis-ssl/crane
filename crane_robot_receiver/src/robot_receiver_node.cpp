@@ -4,12 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <sys/socket.h>
-
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <crane_comm/multicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -19,9 +16,6 @@
 #include <unordered_set>
 
 using boost::asio::ip::udp;
-
-// SO_REUSEPORTソケットオプションの定義
-typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
 struct RobotInterfaceConfig
 {
@@ -176,114 +170,44 @@ inline auto readByte(const std::vector<uint8_t> & buffer, int offset) -> uint8_t
 {
   return buffer[offset];
 }
+
+// std::vector<char> 版のオーバーロード（crane::MulticastReceiver用）
+inline auto readFloat(const std::vector<char> & buffer, int offset) -> float
+{
+  return readFloat(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+}
+
+inline auto readUint16(const std::vector<char> & buffer, int offset) -> uint16_t
+{
+  return readUint16(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+}
+
+inline auto readByte(const std::vector<char> & buffer, int offset) -> uint8_t
+{
+  return readByte(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+}
 }  // namespace protocol
 
-class MulticastReceiver
+class RobotFeedbackReceiver
 {
 public:
-  MulticastReceiver(const std::string & host, const int port)
+  RobotFeedbackReceiver(const std::string & host, const int port)
   : robot_id(port - 50100),
-    socket(io_service, boost::asio::ip::udp::v4()),
-    buffer(protocol::BUFFER_SIZE),
-    received_size(0),
+    receiver_(std::make_unique<crane::MulticastReceiver>(host, port)),
+    buffer_(protocol::BUFFER_SIZE),
     clock(RCL_ROS_TIME)
   {
     // 初回比較時のエラー回避
     robot_feedback.received_stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
-    boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
-    if (!addr.is_multicast()) {
-      throw std::runtime_error("expected multicast address");
-    }
-
-    // ソケットオプションを先に設定
-    boost::system::error_code ec;
-
-    socket.set_option(boost::asio::socket_base::reuse_address(true), ec);
-
-    socket.set_option(reuse_port(true), ec);
-
-    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port), ec);
-    if (ec) {
-      std::cerr << "[ERROR] bind失敗: " << ec.message() << std::endl;
-      throw std::runtime_error("bind failed: " + ec.message());
-    } else {
-      std::cout << "[DEBUG] bind成功: port=" << port << std::endl;
-    }
-
-    socket.non_blocking(true);
-
-    // その後、全てのネットワークデバイスでマルチキャストに参加
-    try {
-      struct ifaddrs * interfaces = nullptr;
-      struct ifaddrs * ifa = nullptr;
-
-      // ネットワークインターフェース情報の取得
-      if (getifaddrs(&interfaces) == -1) {
-        throw std::runtime_error("Error: getifaddrs failed.");
-      }
-
-      int interface_count = 0;
-      int success_count = 0;
-      int skip_count = 0;
-      std::unordered_set<std::string> joined_interfaces;  // 参加済みインターフェース名を記録
-
-      // ネットワークインターフェースのリストを巡回
-      for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == nullptr) {
-          continue;
-        }
-
-        if (ifa->ifa_addr->sa_family == AF_INET) {
-          // IPv4アドレスのみ
-          char ip[INET_ADDRSTRLEN];
-          inet_ntop(
-            AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
-            INET_ADDRSTRLEN);
-
-          interface_count++;
-          std::cout << "[DEBUG] インターフェース検出: " << ifa->ifa_name << ": " << ip << std::endl;
-
-          // 同じインターフェースで既に参加済みの場合はスキップ
-          std::string if_name(ifa->ifa_name);
-          if (joined_interfaces.count(if_name) > 0) {
-            skip_count++;
-            continue;
-          }
-
-          boost::asio::ip::detail::socket_option::multicast_request<
-            IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
-            join_device(addr.to_v4(), boost::asio::ip::address::from_string(ip).to_v4());
-
-          boost::system::error_code join_ec;
-          socket.set_option(join_device, join_ec);
-
-          if (join_ec) {
-            skip_count++;
-          } else {
-            joined_interfaces.insert(if_name);  // 参加成功したインターフェースを記録
-            success_count++;
-          }
-        }
-      }
-
-      freeifaddrs(interfaces);  // メモリの解放
-    } catch (std::exception & e) {
-      std::cerr << "[ERROR] マルチキャスト設定中に例外: " << e.what() << std::endl;
-    }
   }
 
   auto receive() -> bool
   {
-    if (socket.available()) {
-      boost::system::error_code error;
-      received_size = socket.receive(boost::asio::buffer(buffer), 0, error);
-      if (error && error != boost::asio::error::message_size) {
-        throw boost::system::system_error(error);
-      }
+    if (receiver_->available()) {
+      receiver_->receive(buffer_);
       return true;
-    } else {
-      return false;
     }
+    return false;
   }
 
   auto updateFeedback() -> void
@@ -296,65 +220,65 @@ public:
     feedback.received_stamp = clock.now();
 
     // 基本情報
-    feedback.counter = protocol::readByte(buffer, protocol::offset::COUNTER);
-    feedback.yaw_angle = protocol::readFloat(buffer, protocol::offset::YAW_ANGLE);
-    feedback.voltage[0] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_0);
+    feedback.counter = protocol::readByte(buffer_, protocol::offset::COUNTER);
+    feedback.yaw_angle = protocol::readFloat(buffer_, protocol::offset::YAW_ANGLE);
+    feedback.voltage[0] = protocol::readFloat(buffer_, protocol::offset::VOLTAGE_0);
 
     // ボール検出
-    feedback.ball_detection[0] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_0);
-    feedback.ball_detection[1] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_1);
-    feedback.ball_detection[2] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_2);
-    feedback.ball_detection[3] = protocol::readByte(buffer, protocol::offset::BALL_DETECTION_3);
+    feedback.ball_detection[0] = protocol::readByte(buffer_, protocol::offset::BALL_DETECTION_0);
+    feedback.ball_detection[1] = protocol::readByte(buffer_, protocol::offset::BALL_DETECTION_1);
+    feedback.ball_detection[2] = protocol::readByte(buffer_, protocol::offset::BALL_DETECTION_2);
+    feedback.ball_detection[3] = protocol::readByte(buffer_, protocol::offset::BALL_DETECTION_3);
     feedback.kick_state =
-      protocol::readByte(buffer, protocol::offset::KICK_STATE) * protocol::KICK_STATE_SCALE;
+      protocol::readByte(buffer_, protocol::offset::KICK_STATE) * protocol::KICK_STATE_SCALE;
 
     // エラー情報
-    feedback.error_id = protocol::readUint16(buffer, protocol::offset::ERROR_ID);
-    feedback.error_info = protocol::readUint16(buffer, protocol::offset::ERROR_INFO);
-    feedback.error_value = protocol::readFloat(buffer, protocol::offset::ERROR_VALUE);
+    feedback.error_id = protocol::readUint16(buffer_, protocol::offset::ERROR_ID);
+    feedback.error_info = protocol::readUint16(buffer_, protocol::offset::ERROR_INFO);
+    feedback.error_value = protocol::readFloat(buffer_, protocol::offset::ERROR_VALUE);
 
     // モーター電流
-    feedback.motor_current[0] =
-      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_0) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[1] =
-      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_1) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[2] =
-      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_2) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[3] =
-      protocol::readByte(buffer, protocol::offset::MOTOR_CURRENT_3) / protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[0] = protocol::readByte(buffer_, protocol::offset::MOTOR_CURRENT_0) /
+                                protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[1] = protocol::readByte(buffer_, protocol::offset::MOTOR_CURRENT_1) /
+                                protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[2] = protocol::readByte(buffer_, protocol::offset::MOTOR_CURRENT_2) /
+                                protocol::MOTOR_CURRENT_SCALE;
+    feedback.motor_current[3] = protocol::readByte(buffer_, protocol::offset::MOTOR_CURRENT_3) /
+                                protocol::MOTOR_CURRENT_SCALE;
 
     // 温度
-    feedback.temperature[0] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_0);
-    feedback.temperature[1] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_1);
-    feedback.temperature[2] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_2);
-    feedback.temperature[3] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_3);
-    feedback.temperature[4] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_4);
-    feedback.temperature[5] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_5);
-    feedback.temperature[6] = protocol::readByte(buffer, protocol::offset::TEMPERATURE_6);
+    feedback.temperature[0] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_0);
+    feedback.temperature[1] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_1);
+    feedback.temperature[2] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_2);
+    feedback.temperature[3] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_3);
+    feedback.temperature[4] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_4);
+    feedback.temperature[5] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_5);
+    feedback.temperature[6] = protocol::readByte(buffer_, protocol::offset::TEMPERATURE_6);
 
     // 角度と電圧
-    feedback.diff_angle = protocol::readFloat(buffer, protocol::offset::DIFF_ANGLE);
-    feedback.voltage[1] = protocol::readFloat(buffer, protocol::offset::VOLTAGE_1);
+    feedback.diff_angle = protocol::readFloat(buffer_, protocol::offset::DIFF_ANGLE);
+    feedback.voltage[1] = protocol::readFloat(buffer_, protocol::offset::VOLTAGE_1);
 
     // オドメトリ
-    feedback.odom[0] = protocol::readFloat(buffer, protocol::offset::ODOM_X);
-    feedback.odom[1] = protocol::readFloat(buffer, protocol::offset::ODOM_Y);
-    feedback.odom_speed[0] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_X);
-    feedback.odom_speed[1] = protocol::readFloat(buffer, protocol::offset::ODOM_SPEED_Y);
+    feedback.odom[0] = protocol::readFloat(buffer_, protocol::offset::ODOM_X);
+    feedback.odom[1] = protocol::readFloat(buffer_, protocol::offset::ODOM_Y);
+    feedback.odom_speed[0] = protocol::readFloat(buffer_, protocol::offset::ODOM_SPEED_X);
+    feedback.odom_speed[1] = protocol::readFloat(buffer_, protocol::offset::ODOM_SPEED_Y);
 
-    feedback.check_ver = protocol::readByte(buffer, protocol::offset::CHECK_VER);
+    feedback.check_ver = protocol::readByte(buffer_, protocol::offset::CHECK_VER);
 
     // マウスセンサー
-    feedback.mouse_odom[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_X);
-    feedback.mouse_odom[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_ODOM_Y);
-    feedback.mouse_vel[0] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_X);
-    feedback.mouse_vel[1] = protocol::readFloat(buffer, protocol::offset::MOUSE_VEL_Y);
+    feedback.mouse_odom[0] = protocol::readFloat(buffer_, protocol::offset::MOUSE_ODOM_X);
+    feedback.mouse_odom[1] = protocol::readFloat(buffer_, protocol::offset::MOUSE_ODOM_Y);
+    feedback.mouse_vel[0] = protocol::readFloat(buffer_, protocol::offset::MOUSE_VEL_X);
+    feedback.mouse_vel[1] = protocol::readFloat(buffer_, protocol::offset::MOUSE_VEL_Y);
 
     // デバッグ値
     feedback.values.clear();
     for (size_t i = protocol::offset::DEBUG_VALUES_START;
          i < protocol::DEBUG_VALUES_END - protocol::FLOAT_SIZE; i += protocol::FLOAT_SIZE) {
-      feedback.values.push_back(protocol::readFloat(buffer, static_cast<int>(i)));
+      feedback.values.push_back(protocol::readFloat(buffer_, static_cast<int>(i)));
     }
 
     robot_feedback = feedback;
@@ -365,13 +289,9 @@ public:
   const int robot_id;
 
 private:
-  boost::asio::io_service io_service;
+  std::unique_ptr<crane::MulticastReceiver> receiver_;
 
-  boost::asio::ip::udp::socket socket;
-
-  std::vector<uint8_t> buffer;
-
-  size_t received_size;
+  std::vector<char> buffer_;
 
   RobotFeedback robot_feedback;
 
@@ -389,7 +309,7 @@ public:
 
     for (int i = 0; i < robot_num; i++) {
       auto config = makeConfig(i);
-      receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
+      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(config.ip, config.port));
     }
 
     using std::chrono::operator""ms;
@@ -461,7 +381,7 @@ public:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::vector<std::shared_ptr<MulticastReceiver>> receivers;
+  std::vector<std::shared_ptr<RobotFeedbackReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
