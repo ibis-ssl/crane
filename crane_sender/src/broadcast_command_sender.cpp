@@ -10,9 +10,9 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 
-#include <cstring>
-#include <iostream>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <vector>
 
 namespace crane
 {
@@ -22,30 +22,29 @@ BroadcastCommandSender::BroadcastCommandSender()
   try {
     // ブロードキャスト許可フラグを設定
     socket.set_option(boost::asio::socket_base::broadcast(true));
-    std::cout << "✓ SO_BROADCASTフラグ設定完了" << std::endl;
+    RCLCPP_INFO(rclcpp::get_logger("BroadcastCommandSender"), "✓ SO_BROADCAST flag set");
 
-    // レゾルバでエンドポイント解決
-    boost::asio::ip::udp::resolver resolver(io_service);
     std::string host = CommConfig::BROADCAST_ADDRESS;
     int port = CommConfig::DEFAULT_PORT;
+    endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(host), port);
 
-    boost::asio::ip::udp::resolver::query query(host, std::to_string(port));
-    auto resolver_iterator = resolver.resolve(query);
-    endpoint = *resolver_iterator;
-
-    // 詳細なネットワーク設定情報を表示
-    std::cout << "【実機・ブロードキャストモード初期化完了】" << std::endl;
-    std::cout << "  送信先アドレス: " << host << ":" << port << std::endl;
-    std::cout << "  解決されたエンドポイント: " << endpoint.address().to_string() << ":"
-              << endpoint.port() << std::endl;
-    std::cout << "  ローカルソケット: " << socket.local_endpoint().address().to_string() << ":"
-              << socket.local_endpoint().port() << std::endl;
-
-    // ネットワークインターフェース情報の確認
+    // インターフェース情報の確認（デバッグ用）
     checkNetworkInterfaces();
-  } catch (const std::exception & e) {
-    std::cerr << "❌ BroadcastCommandSender初期化エラー: " << e.what() << std::endl;
-    throw;
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("BroadcastCommandSender"), "【Real Robot Broadcast Mode Initialized】");
+    RCLCPP_INFO(
+      rclcpp::get_logger("BroadcastCommandSender"), "  Target Address: %s:%d", host.c_str(), port);
+    RCLCPP_INFO(
+      rclcpp::get_logger("BroadcastCommandSender"), "  Resolved Endpoint: %s:%d",
+      endpoint.address().to_string().c_str(), endpoint.port());
+    RCLCPP_INFO(
+      rclcpp::get_logger("BroadcastCommandSender"), "  Local Socket: %s:%d",
+      socket.local_endpoint().address().to_string().c_str(), socket.local_endpoint().port());
+  } catch (std::exception & e) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "❌ BroadcastCommandSender Init Error: %s",
+      e.what());
   }
 }
 
@@ -64,27 +63,34 @@ void BroadcastCommandSender::sendBroadcastPackets(
   // パケット送信
   size_t total_size = sizeof(broadcast_buf);
   try {
-    socket.send_to(boost::asio::buffer(broadcast_buf, total_size), endpoint);
-  } catch (const boost::system::system_error & e) {
-    std::cerr << "❌ パケット送信エラー (boost): " << e.what() << std::endl;
-    std::cerr << "  エラーコード: " << e.code() << std::endl;
-    std::cerr << "  エラーメッセージ: " << e.code().message() << std::endl;
-  } catch (const std::exception & e) {
-    std::cerr << "❌ パケット送信例外: " << e.what() << std::endl;
+    socket.send_to(boost::asio::buffer(broadcast_buf), endpoint);
+  } catch (boost::system::system_error & e) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "❌ Packet Send Error (boost): %s", e.what());
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "  Error Code: %d", e.code().value());
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "  Error Message: %s",
+      e.code().message().c_str());
+  } catch (std::exception & e) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "❌ Packet Send Exception: %s", e.what());
   }
 }
 
 void BroadcastCommandSender::checkNetworkInterfaces() const
 {
-  std::cout << "🌐 利用可能なネットワークインターフェース情報:" << std::endl;
+  struct ifaddrs * interfaces = nullptr;
 
-  struct ifaddrs * ifaddrs_ptr;
-  if (getifaddrs(&ifaddrs_ptr) == -1) {
-    std::cerr << "❌ ネットワークインターフェース情報取得エラー" << std::endl;
+  RCLCPP_INFO(rclcpp::get_logger("BroadcastCommandSender"), "🌐 Available Network Interfaces:");
+
+  if (getifaddrs(&interfaces) == -1) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BroadcastCommandSender"), "❌ Failed to get network interface info");
     return;
   }
 
-  for (struct ifaddrs * ifa = ifaddrs_ptr; ifa != nullptr; ifa = ifa->ifa_next) {
+  for (struct ifaddrs * ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
     if (ifa->ifa_addr == nullptr) continue;
 
     // IPv4アドレスのみ表示
@@ -101,22 +107,26 @@ void BroadcastCommandSender::checkNetworkInterfaces() const
         inet_ntop(AF_INET, &(broadcast_in->sin_addr), broadcast_str, INET_ADDRSTRLEN);
       }
 
-      std::cout << "  インターフェース: " << ifa->ifa_name << " IP: " << ip_str
-                << " ブロードキャスト: " << broadcast_str;
+      std::string log_msg = "  Interface: " + std::string(ifa->ifa_name) +
+                            " IP: " + std::string(ip_str) +
+                            " Broadcast: " + std::string(broadcast_str);
 
       // インターフェースの状態を表示
-      if (ifa->ifa_flags & IFF_UP) std::cout << " [UP]";
-      if (ifa->ifa_flags & IFF_RUNNING) std::cout << " [RUNNING]";
-      if (ifa->ifa_flags & IFF_BROADCAST) std::cout << " [BROADCAST]";
-      std::cout << std::endl;
+      if (ifa->ifa_flags & IFF_UP) log_msg += " [UP]";
+      if (ifa->ifa_flags & IFF_RUNNING) log_msg += " [RUNNING]";
+      if (ifa->ifa_flags & IFF_BROADCAST) log_msg += " [BROADCAST]";
+
+      RCLCPP_INFO(rclcpp::get_logger("BroadcastCommandSender"), "%s", log_msg.c_str());
 
       // 設定されたブロードキャストアドレスとの照合
       if (std::string(broadcast_str) == CommConfig::BROADCAST_ADDRESS) {
-        std::cout << "    ✅ 設定されたブロードキャストアドレスと一致!" << std::endl;
+        RCLCPP_INFO(
+          rclcpp::get_logger("BroadcastCommandSender"),
+          "    ✅ Matches configured broadcast address!");
       }
     }
   }
 
-  freeifaddrs(ifaddrs_ptr);
+  freeifaddrs(interfaces);
 }
 }  // namespace crane

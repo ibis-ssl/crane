@@ -36,9 +36,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [&](const std_msgs::msg::String & msg) {
       // イベント注入（次のレフェリーイベント発生まで有効）
-      std::stringstream ss;
-      ss << "[SESSION_INJECTION] " << msg.data;
-      RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+      RCLCPP_INFO_STREAM(this->get_logger(), "[SESSION_INJECTION] " << msg.data);
       play_situation_msg.command =
         getSituationCommandNamedInt(crane_msgs::msg::PlaySituation::INJECTION);
       play_situation_msg.header.stamp = now();

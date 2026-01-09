@@ -8,7 +8,6 @@
 
 #include <chrono>
 #include <cmath>
-#include <cstdio>
 #include <memory>
 #include <string>
 
@@ -27,7 +26,7 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
       if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
         robot_id = p.as_int();
       } else {
-        std::cout << "robot_id is not integer" << std::endl;
+        RCLCPP_WARN(get_logger(), "robot_id is not integer");
       }
     });
 
@@ -74,11 +73,11 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     is_kick_mode_straight = true;
   }
 
-  auto update_mode = [msg](bool & mode_variable, const int button, bool & is_pushed) {
+  auto update_mode = [this, msg](bool & mode_variable, const int button, bool & is_pushed) {
     // trigger button up
     if (msg->buttons[button]) {
       if (!is_pushed) {
-        std::cout << "toggle mode!" << std::endl;
+        RCLCPP_INFO(get_logger(), "toggle mode!");
         mode_variable = not mode_variable;
       }
       is_pushed = true;
@@ -105,12 +104,12 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
       if (!is_pushed) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, 0.1);
-          std::cout << "kick up: " << kick_power << std::endl;
+          RCLCPP_INFO(get_logger(), "kick up: %f", kick_power);
         }
 
         if (msg->buttons[BUTTON_ADJUST_DRIBBLE]) {
           adjust_value(dribble_power, 0.1);
-          std::cout << "dribble up:" << dribble_power << std::endl;
+          RCLCPP_INFO(get_logger(), "dribble up: %f", dribble_power);
         }
       }
       is_pushed = true;
@@ -119,11 +118,11 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
       if (!is_pushed) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, -0.1);
-          std::cout << "kick down: " << kick_power << std::endl;
+          RCLCPP_INFO(get_logger(), "kick down: %f", kick_power);
         }
         if (msg->buttons[BUTTON_ADJUST_DRIBBLE]) {
           adjust_value(dribble_power, -0.1);
-          std::cout << "dribble down: " << dribble_power << std::endl;
+          RCLCPP_INFO(get_logger(), "dribble down: %f", dribble_power);
         }
       }
       is_pushed = true;

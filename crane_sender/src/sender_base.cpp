@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <iostream>
 #include <ranges>
 
 namespace crane
@@ -61,7 +60,7 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
       const auto elapsed = now - world_model->getOurRobot(command.robot_id)->vision_detection_stamp;
       command.elapsed_time_ms_since_last_vision = elapsed.nanoseconds() / 1e6;
     } catch (...) {
-      std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
+      RCLCPP_ERROR(get_logger(), "Failed to get elapsed time of vision from world_model");
       command.elapsed_time_ms_since_last_vision = 0;
     }
 

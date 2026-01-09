@@ -9,7 +9,9 @@
 #include <boost/stacktrace.hpp>
 #include <crane_local_planner/visualization_helpers.hpp>
 #include <range/v3/algorithm/find_if.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <sstream>
 
 #include "crane_physics/bang_bang_trajectory.hpp"
 
@@ -293,10 +295,12 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::PositionCommands & msg
     // NaN値検証とフォールバック処理
     const Point current_pos(command.current_pose.x, command.current_pose.y);
     if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
-      std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
-                << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
-                << target_pos.y() << "), using current position as fallback" << std::endl;
-      to_block_style_yaml(command, std::cout);
+      RCLCPP_WARN_STREAM(
+        rclcpp::get_logger("rvo2_local_planner"),
+        "[RVO2Planner] NaN detected in target_pos for robot "
+          << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
+          << target_pos.y() << "), using current position as fallback\n"
+          << crane_msgs::msg::to_yaml(command));
       target_pos = current_pos;  // フォールバック: 現在位置に設定
       command.target_x = target_pos.x();
       command.target_y = target_pos.y();
@@ -304,9 +308,11 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::PositionCommands & msg
     }
 
     if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
-      std::cout << "[RVO2Planner] NaN detected in current_pos for robot "
-                << static_cast<int>(command.robot_id) << ": current_pos(" << current_pos.x() << ", "
-                << current_pos.y() << "), skipping robot" << std::endl;
+      RCLCPP_WARN(
+        rclcpp::get_logger("rvo2_local_planner"),
+        "[RVO2Planner] NaN detected in current_pos for robot %d: current_pos(%f, %f), skipping "
+        "robot",
+        static_cast<int>(command.robot_id), current_pos.x(), current_pos.y());
       continue;  // この場合は処理をスキップ
     }
 

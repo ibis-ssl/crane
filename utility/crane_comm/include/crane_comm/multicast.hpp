@@ -21,7 +21,7 @@
 
 #include <boost/asio.hpp>
 #include <exception>
-#include <iostream>
+#include <rclcpp/logging.hpp>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -54,7 +54,7 @@ public:
 
     socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port), ec);
     if (ec) {
-      std::cerr << "[ERROR] bind失敗: " << ec.message() << std::endl;
+      RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
       throw std::runtime_error("bind failed: " + ec.message());
     }
 
@@ -90,7 +90,7 @@ public:
           interface_count++;
           // 同じインターフェースで既に参加済みの場合はスキップ
           std::string if_name(ifa->ifa_name);
-          std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
+          RCLCPP_DEBUG(rclcpp::get_logger("crane_comm"), "Multicast: %s: %s", ifa->ifa_name, ip);
           if (joined_interfaces.count(if_name) > 0) {
             skip_count++;
             continue;
@@ -114,7 +114,7 @@ public:
 
       freeifaddrs(interfaces);  // メモリの解放
     } catch (std::exception & e) {
-      std::cerr << e.what() << std::endl;
+      RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "%s", e.what());
     }
   }
 

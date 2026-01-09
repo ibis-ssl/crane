@@ -10,6 +10,7 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/travel_time.hpp>
 #include <iostream>
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -325,9 +326,9 @@ auto WorldModelWrapper::getBallSlackTime(
 
   // NaN値チェック
   if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
-    std::cout
-      << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ"
-      << std::endl;
+    RCLCPP_WARN(
+      rclcpp::get_logger("WorldModelWrapper"),
+      "getBallSlackTime: intercept_point is NaN, skipping processing");
     return std::nullopt;
   }
 
@@ -345,8 +346,9 @@ auto WorldModelWrapper::getBallSlackTime(
   double slack_time = time - best_robot.second;
   // slack_timeのNaN値チェック
   if (!std::isfinite(slack_time)) {
-    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: slack_timeがNaN値のため処理をスキップ"
-              << std::endl;
+    RCLCPP_WARN(
+      rclcpp::get_logger("WorldModelWrapper"),
+      "getBallSlackTime: slack_time is NaN, skipping processing");
     return std::nullopt;
   }
 
