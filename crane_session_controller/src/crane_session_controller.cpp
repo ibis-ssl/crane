@@ -67,6 +67,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
+    if (play_situation.command.name.empty()) {
+      return;  // PlaySituation未受信時はスキップ
+    }
     assign(play_situation.command.name);
   });
 
@@ -111,7 +114,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       robot_changed = true;
     }
 
-    if (robot_changed) {
+    if (robot_changed && !play_situation.command.name.empty()) {
       assign(play_situation.command.name);
     }
 
