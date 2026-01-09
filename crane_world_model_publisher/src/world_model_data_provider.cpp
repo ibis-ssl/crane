@@ -632,7 +632,9 @@ auto WorldModelDataProvider::convertFieldGeometry(
 
 auto WorldModelDataProvider::reportError(const std::string & error_message) -> void
 {
-  RCLCPP_WARN(node.get_logger(), "WorldModelDataProvider error: %s", error_message.c_str());
+  RCLCPP_WARN_THROTTLE(
+    node.get_logger(), *node.get_clock(), 1000, "WorldModelDataProvider error: %s",
+    error_message.c_str());
 }
 
 auto WorldModelDataProvider::processTrackedFrame(

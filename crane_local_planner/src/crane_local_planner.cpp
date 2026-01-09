@@ -31,12 +31,12 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
     ranges::sort(commands, [](const auto & a, const auto & b) { return a.robot_id < b.robot_id; });
     for (size_t i = 1; i < commands.size(); i++) {
       if (commands[i - 1].robot_id == commands[i].robot_id) {
-        std::stringstream what;
-        what << "ロボット " << static_cast<int>(commands[i].robot_id) << " が重複しています("
-             << commands[i].planner_name << ", " << aggregateStates(commands[i].state_factors)
-             << " と " << commands[i - 1].planner_name << ", "
-             << aggregateStates(commands[i - 1].state_factors) << ")";
-        RCLCPP_ERROR(get_logger(), what.str().c_str());
+        RCLCPP_ERROR_STREAM(
+          get_logger(), "ロボット " << static_cast<int>(commands[i].robot_id)
+                                    << " が重複しています(" << commands[i].planner_name << ", "
+                                    << aggregateStates(commands[i].state_factors) << " と "
+                                    << commands[i - 1].planner_name << ", "
+                                    << aggregateStates(commands[i - 1].state_factors) << ")");
       }
     }
   }
@@ -125,10 +125,10 @@ auto LocalPlannerComponent::logValidationError(
   const std::vector<crane_msgs::msg::NamedString> & state_factors,
   const std::string & error_detail) const -> void
 {
-  std::stringstream what;
-  what << "ロボット " << static_cast<int>(robot_id) << " は \"" << aggregateStates(state_factors)
-       << "\" スキルにより " << mode_name << " に指定されていますが、" << error_detail;
-  RCLCPP_ERROR(get_logger(), what.str().c_str());
+  RCLCPP_ERROR_STREAM(
+    get_logger(), "ロボット " << static_cast<int>(robot_id) << " は \""
+                              << aggregateStates(state_factors) << "\" スキルにより " << mode_name
+                              << " に指定されていますが、" << error_detail);
 }
 }  // namespace crane
 

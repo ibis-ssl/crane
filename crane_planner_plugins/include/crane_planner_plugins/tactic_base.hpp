@@ -103,10 +103,9 @@ public:
       ranges::views::transform([](const auto & command) { return command.robot_id; }) |
       ranges::to<std::vector>();
     if (not wrong_ids.empty()) {
-      std::stringstream what;
-      what << "PositionCommands from " << name << " tactic includes wrong robot_id : " << wrong_ids
-           << std::endl;
-      RCLCPP_ERROR_STREAM(rclcpp::get_logger("TacticBase"), what.str());
+      RCLCPP_ERROR_STREAM(
+        rclcpp::get_logger("TacticBase"),
+        "PositionCommands from " << name << " tactic includes wrong robot_id : " << wrong_ids);
     }
     status = latest_status;
     crane_msgs::msg::PositionCommands msg;

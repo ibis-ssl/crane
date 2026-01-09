@@ -12,7 +12,6 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
 #include <format>
-#include <iostream>
 #include <rclcpp/rclcpp.hpp>
 #include <unordered_set>
 
@@ -144,6 +143,8 @@ public:
     std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
     int port_base = declare_parameter("port_base", 50100);
     int ip_offset = declare_parameter("ip_octet_offset", 100);
+
+    RCLCPP_INFO(get_logger(), "Listening for robot feedbacks (max_robot_id: %d)", max_robot_id);
 
     for (int i = 0; i <= max_robot_id; i++) {
       std::string ip = std::format("{}.{}", ip_base, i + ip_offset);

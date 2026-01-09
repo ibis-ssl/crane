@@ -7,6 +7,7 @@
 #include <crane_geometry/ddps.hpp>
 #include <crane_physics/pass.hpp>
 #include <crane_robot_skills/attacker.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane::skills
 {
@@ -41,7 +42,7 @@ void Attacker::initialize()
   setPostUpdateFunction([this]() {
     over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
     if (over_dribble.distance > 0.5) {
-      std::cout << "オーバードリブル[m]: " << over_dribble.distance << std::endl;
+      RCLCPP_INFO(rclcpp::get_logger("Attacker"), "オーバードリブル[m]: %f", over_dribble.distance);
       command->stopHere();
     } else {
       command->setOmegaLimit(10.0);

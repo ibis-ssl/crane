@@ -416,8 +416,10 @@ void SingleBallPlacement::initialize()
                   (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
 
       if (flag && !robot()->ball_sensor) {
-        std::cout << "[SingleBallPlacement] Ball sensor is not working, so return to ENTRY_POINT:"
-                  << std::abs((now - *(robot()->ball_sensor_stamp)).seconds()) << "s" << std::endl;
+        RCLCPP_INFO(
+          rclcpp::get_logger("SingleBallPlacement"),
+          "Ball sensor is not working, so return to ENTRY_POINT: %fs",
+          std::abs((now - *(robot()->ball_sensor_stamp)).seconds()));
         return true;
       } else {
         return false;

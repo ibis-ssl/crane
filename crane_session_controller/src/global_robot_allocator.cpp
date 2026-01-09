@@ -105,17 +105,9 @@ auto GlobalRobotAllocator::allocateHardConstraints(
       }
     }
 
-    RCLCPP_DEBUG(
-      logger_, "ハード制約Tactic「%s」に%luロボットを割り当て: %s", req.name.c_str(),
-      assigned_robots.size(),
-      [&]() {
-        std::stringstream ss;
-        for (const auto & id : assigned_robots) {
-          ss << static_cast<int>(id) << " ";
-        }
-        return ss.str();
-      }()
-        .c_str());
+    RCLCPP_DEBUG_STREAM(
+      logger_, "ハード制約Tactic「" << req.name << "」に" << assigned_robots.size()
+                                    << "ロボットを割り当て: " << assigned_robots);
   }
 }
 
@@ -278,17 +270,9 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
   // 結果をマージ
   for (const auto & [tactic_name, robots] : tactic_assignments) {
     result[tactic_name] = robots;
-    RCLCPP_DEBUG(
-      logger_, "ソフト制約Tactic「%s」に%luロボットを割り当て: %s", tactic_name.c_str(),
-      robots.size(),
-      [&]() {
-        std::stringstream ss;
-        for (const auto & id : robots) {
-          ss << static_cast<int>(id) << " ";
-        }
-        return ss.str();
-      }()
-        .c_str());
+    RCLCPP_DEBUG_STREAM(
+      logger_, "ソフト制約Tactic「" << tactic_name << "」に" << robots.size()
+                                    << "ロボットを割り当て: " << robots);
   }
 }
 

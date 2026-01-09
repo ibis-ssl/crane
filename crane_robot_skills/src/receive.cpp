@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <rclcpp/rclcpp.hpp>
 #include <sstream>
 #include <string>
 
@@ -118,8 +119,8 @@ Point Receive::getInterceptionPoint() const
 
   // closest_pointのNaN値チェック
   if (!isValidPoint(closest_point)) {
-    std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用"
-              << std::endl;
+    RCLCPP_WARN(
+      rclcpp::get_logger("Receive"), "closest_point is NaN, falling back to robot position");
     command->addStateFactor(
       "Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
     closest_point = robot()->pose.pos;
@@ -171,13 +172,16 @@ Point Receive::getInterceptionPoint() const
 
     if (slack_times.empty()) {
       std::string message = "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック";
-      std::cout << message << std::endl;
+      RCLCPP_WARN(
+        rclcpp::get_logger("Receive"), "slack_times is empty, falling back to closest point");
       command->addStateFactor("Receive", message);
       Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
       if (!isValidPoint(fallback_point)) {
         // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
         std::string message = "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用";
-        std::cout << message << std::endl;
+        RCLCPP_WARN(
+          rclcpp::get_logger("Receive"),
+          "fallback_point is also NaN, falling back to robot position");
         command->addStateFactor("Receive", message);
         return robot()->pose.pos;
       }
@@ -210,7 +214,8 @@ Point Receive::getInterceptionPoint() const
     // 選択されたポイントのNaN値チェック
     if (!isValidPoint(selected_point)) {
       std::string message = "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
-      std::cout << message << std::endl;
+      RCLCPP_WARN(
+        rclcpp::get_logger("Receive"), "selected_point is NaN, falling back to robot position");
       command->addStateFactor("Receive", message);
       return robot()->pose.pos;
     }

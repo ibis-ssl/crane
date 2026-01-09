@@ -68,19 +68,19 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       const std::string situation_name = situation_entry.first.as<std::string>();
       const auto & situation_data = situation_entry.second;
 
-      std::stringstream ss;
-      ss << "SITUATION : " << situation_name << std::endl;
-      ss << "DESCRIPTION : " << situation_data["description"] << std::endl;
-      ss << "SESSIONS : " << std::endl;
-
       std::vector<TacticSlot> session_capacity_list;
-      for (const auto & session_node : situation_data["sessions"]) {
-        ss << "\tNAME     : " << session_node["name"] << std::endl;
-        ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
+      std::stringstream ss;
+      ss << "SITUATION : " << situation_name << "\n";
+      ss << "DESCRIPTION : " << situation_data["description"] << "\n";
+      ss << "SESSIONS : " << "\n";
 
+      for (const auto & session_node : situation_data["sessions"]) {
         TacticSlot session_capacity;
         session_capacity.session_name = session_node["name"].as<std::string>();
         session_capacity.selectable_robot_num = session_node["capacity"].as<int>();
+
+        ss << "\tNAME     : " << session_capacity.session_name << "\n";
+        ss << "\tCAPACITY : " << session_capacity.selectable_robot_num << "\n";
 
         // params の読み込み（存在する場合のみ）
         if (session_node["params"]) {
@@ -110,15 +110,15 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
               }
             }
           }
-          ss << "\tPARAMS   : " << session_capacity.params.size() << " entries" << std::endl;
+          ss << "\tPARAMS   : " << session_capacity.params.size() << " entries\n";
         }
 
         session_capacity_list.emplace_back(session_capacity);
       }
       robot_selection_priority_map_[situation_name] = session_capacity_list;
 
-      ss << "----------------------------------------" << std::endl;
-      RCLCPP_DEBUG(logger_, "%s", ss.str().c_str());
+      ss << "----------------------------------------";
+      RCLCPP_DEBUG_STREAM(logger_, ss.str());
     }
   }
 

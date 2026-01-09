@@ -83,13 +83,13 @@ public:
         if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
           debug_id = p.as_int();
         } else {
-          std::cout << "警告: debug_idは整数である必要があります" << std::endl;
+          RCLCPP_WARN(get_logger(), "Warning: debug_id must be an integer");
         }
       });
 
     // ブロードキャスト送信システム初期化
     broadcast_sender = std::make_shared<BroadcastCommandSender>();
-    std::cout << "ibis_sender_node 開始" << std::endl;
+    RCLCPP_INFO(get_logger(), "ibis_sender_node started");
   }
 
 private:
@@ -155,9 +155,9 @@ public:
       counter = 0;
     }
 
-    std::cout << "🚀 sendCommands メソッド呼び出し #" << call_count << " (カウンタ=" << counter
-              << ")" << std::endl;
-    std::cout << "  受信したロボットコマンド数: " << msg.robot_commands.size() << std::endl;
+    RCLCPP_DEBUG(
+      get_logger(), "🚀 sendCommands method called #%d (counter=%d)", call_count, counter);
+    RCLCPP_DEBUG(get_logger(), "  Received robot command count: %ld", msg.robot_commands.size());
 
     // ブロードキャストモード：全ロボットのパケットを作成して一括送信
     std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> robot_packets;
@@ -177,8 +177,9 @@ public:
       }
     }
 
-    std::cout << "  処理されたコマンド数: " << processed_commands << "/"
-              << msg.robot_commands.size() << std::endl;
+    RCLCPP_DEBUG(
+      get_logger(), "  Processed command count: %d/%ld", processed_commands,
+      msg.robot_commands.size());
 
     // 全スロットを順番にパケットリストに追加（空のスロットは空パケット）
     int filled_slots = 0;
@@ -193,16 +194,18 @@ public:
       }
     }
 
-    std::cout << "  パケットスロット使用状況: " << filled_slots << "/"
-              << CommConfig::AI_CMD_V2_ROBOT_NUM << " スロット使用中" << std::endl;
-    std::cout << "  ブロードキャスト送信準備完了 → パケット送信開始" << std::endl;
+    RCLCPP_DEBUG(
+      get_logger(), "  Packet slot usage: %d/%d slots used", filled_slots,
+      CommConfig::AI_CMD_V2_ROBOT_NUM);
+    RCLCPP_DEBUG(get_logger(), "  Broadcast preparation complete -> Start sending packet");
 
     broadcast_sender->sendBroadcastPackets(robot_packets, counter);
 
     // 定期的な詳細ログ（100回に1回）
     if (call_count % 100 == 0) {
-      std::cout << "📈 統計情報 (100回毎): 総呼び出し=" << call_count
-                << " 平均コマンド数=" << (msg.robot_commands.size()) << std::endl;
+      RCLCPP_INFO(
+        get_logger(), "📈 Statistics (every 100 calls): Total calls=%d Avg cmd count=%ld",
+        call_count, msg.robot_commands.size());
     }
   }
 };

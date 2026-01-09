@@ -12,7 +12,7 @@ Status Teleop::update()
 {
   rclcpp::spin_some(this->get_node_base_interface());
   if (last_joy_msg.buttons.empty()) {
-    std::cout << "no joy message" << std::endl;
+    RCLCPP_INFO(get_logger(), "no joy message");
     return Status::RUNNING;
   }
 
@@ -41,11 +41,11 @@ Status Teleop::update()
   static bool is_dribble_enable = false;
 
   if (last_joy_msg.buttons[BUTTON_KICK_CHIP]) {
-    std::cout << "chip mode" << std::endl;
+    RCLCPP_INFO(get_logger(), "chip mode");
     is_kick_mode_straight = false;
   }
   if (last_joy_msg.buttons[BUTTON_KICK_STRAIGHT]) {
-    std::cout << "straight mode" << std::endl;
+    RCLCPP_INFO(get_logger(), "straight mode");
     is_kick_mode_straight = true;
   }
 
@@ -53,7 +53,7 @@ Status Teleop::update()
     // trigger button up
     if (last_joy_msg.buttons[button]) {
       if (!is_pushed) {
-        std::cout << "toggle mode!" << std::endl;
+        RCLCPP_INFO(get_logger(), "toggle mode!");
         mode_variable = not mode_variable;
       }
       is_pushed = true;
@@ -68,7 +68,7 @@ Status Teleop::update()
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
   update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
-  auto adjust_value = [](double & value, const double step) {
+  auto adjust_value = [&](double & value, const double step) {
     value += step;
     value = std::clamp(value, 0.0, 1.0);
   };
@@ -80,12 +80,12 @@ Status Teleop::update()
       if (!is_pushed) {
         if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, 0.1);
-          std::cout << "kick up: " << kick_power << std::endl;
+          RCLCPP_INFO(get_logger(), "kick up: %f", kick_power);
         }
 
         if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
           adjust_value(dribble_power, 0.1);
-          std::cout << "dribble up:" << dribble_power << std::endl;
+          RCLCPP_INFO(get_logger(), "dribble up: %f", dribble_power);
         }
       }
       is_pushed = true;
@@ -94,11 +94,11 @@ Status Teleop::update()
       if (!is_pushed) {
         if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, -0.1);
-          std::cout << "kick down: " << kick_power << std::endl;
+          RCLCPP_INFO(get_logger(), "kick down: %f", kick_power);
         }
         if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
           adjust_value(dribble_power, -0.1);
-          std::cout << "dribble down: " << dribble_power << std::endl;
+          RCLCPP_INFO(get_logger(), "dribble down: %f", dribble_power);
         }
       }
       is_pushed = true;
