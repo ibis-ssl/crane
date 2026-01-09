@@ -27,7 +27,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace multicast
+namespace crane
 {
 namespace asio = boost::asio;
 
@@ -137,6 +137,6 @@ private:
   asio::ip::udp::socket socket;
 };
 
-}  // namespace multicast
+}  // namespace crane
 
 #endif  // CRANE_COMM__MULTICAST_HPP_
