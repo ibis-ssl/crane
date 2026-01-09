@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
-#include "crane_session_controller/session_controller.hpp"
+#include "crane_session_controller/tactic_coordinator.hpp"
 
-TEST(SessionController, dummy_test)
+TEST(TacticCoordinator, dummy_test)
 {
   // 現在はダミーテスト
   // 依存性注入パターン導入後に本格的なテストを追加予定

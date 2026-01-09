@@ -18,7 +18,7 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 
 ## コンポーネント構成
 
-### SessionController（メイン制御）
+### TacticCoordinator（メイン制御）
 
 - **状態管理**: SSL Referee状態の追跡と対応
 - **プランナー選択**: 状況に応じた最適プランナーの選択
@@ -70,7 +70,7 @@ situations:
 ### 状況判定→プランナー選択
 
 ```cpp
-void SessionController::update() {
+void TacticCoordinator::update() {
   // 1. 現在状況の分析
   auto situation = analyzeCurrent Situation();
 
@@ -112,9 +112,9 @@ situations:
 ### プランナー管理
 
 ```cpp
-class SessionController {
+class TacticCoordinator {
 private:
-  std::map<std::string, std::shared_ptr<PlannerBase>> planners_;
+  std::map<std::string, std::shared_ptr<TacticBase>> planners_;
   std::string current_planner_name_;
 
 public:
@@ -136,7 +136,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
   } else if (situation.is_penalty) {
     return situation.our_penalty ? "PenaltyOffensePlanner" : "PenaltyDefensePlanner";
   } else {
-    return "InplayPlanner";
+    return "InplayTactic";
   }
 }
 ```
@@ -145,7 +145,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 
 ### コア依存
 
-- **crane_planner_plugins**: 実際の戦略プランナー群
+- **crane_tactics**: 実際の戦略プランナー群
 - **crane_msg_wrappers**: メッセージ変換・統合
 - **crane_msgs**: システムメッセージ定義
 
@@ -175,10 +175,10 @@ situation: "CUSTOM_DEFENSE"
 robots:
   - id: 0
     role: "goalie"
-    planner: "GoaliePlanner"
+    planner: "GoalieTactic"
   - id: [1,2,3]
     role: "defender"
-    planner: "DefensePlanner"
+    planner: "DefenseTactic"
 ```
 
 ## 診断機能
@@ -242,4 +242,4 @@ robots:
 
 ---
 
-**関連パッケージ**: [crane_planner_plugins](./crane_planner_plugins.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)
+**関連パッケージ**: [crane_tactics](./crane_tactics.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)

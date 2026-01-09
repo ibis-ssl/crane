@@ -37,7 +37,7 @@ auto ConfigurationManager::getSessionNameForEvent(const std::string & event_name
 }
 
 auto ConfigurationManager::getSessionCapacitiesForSituation(
-  const std::string & situation_name) const -> std::optional<std::vector<SessionCapacity>>
+  const std::string & situation_name) const -> std::optional<std::vector<TacticSlot>>
 {
   auto it = robot_selection_priority_map_.find(situation_name);
   if (it != robot_selection_priority_map_.end()) {
@@ -73,12 +73,12 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       ss << "DESCRIPTION : " << situation_data["description"] << std::endl;
       ss << "SESSIONS : " << std::endl;
 
-      std::vector<SessionCapacity> session_capacity_list;
+      std::vector<TacticSlot> session_capacity_list;
       for (const auto & session_node : situation_data["sessions"]) {
         ss << "\tNAME     : " << session_node["name"] << std::endl;
         ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
 
-        SessionCapacity session_capacity;
+        TacticSlot session_capacity;
         session_capacity.session_name = session_node["name"].as<std::string>();
         session_capacity.selectable_robot_num = session_node["capacity"].as<int>();
 

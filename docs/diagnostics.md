@@ -61,10 +61,10 @@ Crane診断システムは以下の3層構造で構成されています：
 │  │ - communication    │  └───────────────────────┘      │
 │  │ - battery          │                                  │
 │  │ - robot_error      │  ┌───────────────────────┐      │
-│  └────────────────────┘  │ SessionController     │      │
+│  └────────────────────┘  │ TacticCoordinator     │      │
 │                          │ - ai_planner/planning │      │
 │  ┌────────────────────┐  └───────────────────────┘      │
-│  │ LocalPlanner       │                                  │
+│  │ LocalTactic       │                                  │
 │  │ - path_planning    │  ┌───────────────────────┐      │
 │  └────────────────────┘  │ DiagnosedPublisher    │      │
 │                          │ (トピック頻度監視)     │      │
@@ -394,8 +394,8 @@ AI計画の実行サイクルとWorldModelの更新状態を監視します。
 | コンポーネント | トピック | 最小頻度 | 最大頻度 |
 |----------------|----------|----------|----------|
 | WorldModelPublisher | `/world_model` | 50 Hz | 70 Hz |
-| SessionController | `/robot_commands` | 50 Hz | 70 Hz |
-| LocalPlanner | `/robot_commands` | 50 Hz | 70 Hz |
+| TacticCoordinator | `/robot_commands` | 50 Hz | 70 Hz |
+| LocalTactic | `/robot_commands` | 50 Hz | 70 Hz |
 | SimSender | grSimコマンド | 50 Hz | 70 Hz |
 
 #### 動作原理
@@ -632,8 +632,8 @@ ROS 2 diagnosticsが提供する標準トピックです。
 
 - DiagnosticPublisher（各ロボット×3診断）
 - WorldModelPublisher
-- SessionController
-- LocalPlanner
+- TacticCoordinator
+- LocalTactic
 - DiagnosedPublisher（各トピック）
 
 **サンプル確認**:

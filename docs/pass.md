@@ -53,7 +53,7 @@
 
 ## 受け手予約と受取準備
 
-- `SessionController` が `GameAnalysis.pass_target_id` を参照。
+- `TacticCoordinator` が `GameAnalysis.pass_target_id` を参照。
 - `PassReceiverPlanner` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
   - ボールが十分動いている、または `ongoing_kick.is_kicker_friend` が真のときは能動受け取り（`Receive::update()` 実行）。
   - キック前は整列動作を行わず、その場で停止しボールを注視。

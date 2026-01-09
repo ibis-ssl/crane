@@ -1,10 +1,10 @@
 # SimplePlacerPlanner
 
 > **最終更新**: 2025年6月22日（JapanOpen2025後）  
-> **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md)  
+> **関連パッケージ**: [crane_tactics](./packages/crane_tactics.md)  
 > **現在の状況**: プラグインアーキテクチャに統合済み
 
-`SimplePlacerPlanner`は、crane_planner_pluginsパッケージのプラグインシステムに統合されたエリア配置戦略プランナーです。
+`SimplePlacerPlanner`は、crane_tacticsパッケージのプラグインシステムに統合されたエリア配置戦略プランナーです。
 
 ## 概要
 
@@ -12,9 +12,9 @@
 
 ## プラグインアーキテクチャでの統合
 
-### crane_planner_pluginsでの位置づけ
+### crane_tacticsでの位置づけ
 
-- **プラグインベース**: `PlannerBase`クラスを継承したプラグイン実装
+- **プラグインベース**: `TacticBase`クラスを継承したプラグイン実装
 - **動的ロード**: YAMLファイルによる戦略選択とパラメータ設定
 - **セッション制御**: `crane_session_controller`による実行タイミング制御
 
@@ -41,7 +41,7 @@
 
 ## 現在の実装状況
 
-### crane_planner_pluginsでの統合
+### crane_tacticsでの統合
 
 - **プラグイン登録**: プランナープラグインとして登録済み
 - **設定駆動**: YAMLファイルによるエリア定義とパラメータ調整
@@ -55,7 +55,7 @@
 
 ## 技術的詳細
 
-このプランナーは、`PlannerBase`クラスを継承し、`calculateRobotCommand`メソッドと`getSelectedRobots`メソッドを実装します。ワールドモデルの情報に基づいて、各ロボットを最適なエリアに動的に割り当て、チーム全体の戦略的な配置を支援します。
+このプランナーは、`TacticBase`クラスを継承し、`calculateRobotCommand`メソッドと`getSelectedRobots`メソッドを実装します。ワールドモデルの情報に基づいて、各ロボットを最適なエリアに動的に割り当て、チーム全体の戦略的な配置を支援します。
 
 ### 関連システム
 
@@ -65,4 +65,4 @@
 
 ---
 
-**詳細な実装**: [crane_planner_plugins](./packages/crane_planner_plugins.md)のプラグインシステムを参照
+**詳細な実装**: [crane_tactics](./packages/crane_tactics.md)のプラグインシステムを参照
