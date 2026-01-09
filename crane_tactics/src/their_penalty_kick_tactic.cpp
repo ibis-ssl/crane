@@ -42,25 +42,4 @@ TheirPenaltyKickTactic::calculatePositionCommand(
   return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto TheirPenaltyKickTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  goalie = std::make_shared<skills::Goalie>(
-    static_cast<uint8_t>(world_model->getOurGoalieId()), world_model);
-  auto robots_sorted = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots,
-    [&](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールに近いほうが先頭
-      return 100. / robot->getDistance(world_model->ball().pos);
-    },
-    prev_roles);
-  for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
-    if (*it != world_model->getOurGoalieId()) {
-      other_robots.emplace_back(
-        std::make_shared<PositionCommandWrapper>("their_penalty_kick_planner", *it, world_model));
-    }
-  }
-  return robots_sorted;
-}
 }  // namespace crane

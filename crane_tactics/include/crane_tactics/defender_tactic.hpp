@@ -37,32 +37,6 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    Segment ball_line{world_model->goal(), world_model->ball().pos};
-    auto parameter = getDefenseLinePointParameter(ball_line, world_model);
-    if (not parameter) {
-      return {};
-    }
-    const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
-    auto selected = this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
-      [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
-        if (robot->id == world_model->getOurGoalieId()) {
-          // ゴールキーパーは選出しない
-          return -100.;
-        } else {
-          // defense pointに近いほどスコアが高い
-          return 100. - robot->getSquareDistance(defense_point);
-        }
-      },
-      prev_roles);
-
-    return selected;
-  }
-
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {

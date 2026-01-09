@@ -33,32 +33,4 @@ OurPenaltyKickTactic::calculatePositionCommand(
   }
   return {Status::RUNNING, robot_commands};
 }
-auto OurPenaltyKickTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  auto robots_sorted = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots,
-    [&](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールに近いほうが先頭
-      return 100. / robot->getDistance(world_model->ball().pos);
-    },
-    prev_roles);
-  // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
-  if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
-    robots_sorted.erase(robots_sorted.begin());
-  }
-  if (not robots_sorted.empty()) {
-    // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<skills::PenaltyKick>(robots_sorted.front(), world_model);
-  }
-  if (robots_sorted.size() > 1) {
-    for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(
-        std::make_shared<PositionCommandWrapper>(
-          "our_penalty_kick_planner/other", *it, world_model));
-    }
-  }
-  return robots_sorted;
-}
 }  // namespace crane

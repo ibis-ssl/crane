@@ -165,26 +165,6 @@ SimpleAITactic::calculatePositionCommand(const std::vector<RobotIdentifier> &)
   return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto SimpleAITactic::getSelectedRobots(
-  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> &) -> std::vector<uint8_t>
-{
-  // For SimpleAI tactic, if we have a running skill, always return the robot_id
-  // even if it's not in selectable_robots. This ensures WebUI skill execution works.
-  if (running_skill) {
-    return {robot_id};
-  }
-
-  // if robot_id is in selectable_robots, add it to selected robots.
-  if (
-    std::find(selectable_robots.begin(), selectable_robots.end(), robot_id) !=
-    selectable_robots.end()) {
-    return {robot_id};
-  } else {
-    return {};
-  }
-}
-
 void SimpleAITactic::registerSkill(
   const std::string & name, std::function<std::shared_ptr<skills::SkillInterface>(
                               uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>

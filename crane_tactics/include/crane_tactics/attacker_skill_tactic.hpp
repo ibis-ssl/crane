@@ -78,31 +78,6 @@ public:
     return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 
-  auto getSelectedRobots(
-    [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    if (auto our_frontier = world_model->getOurFrontier();
-        our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
-      skill = std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
-      return {our_frontier->robot->id};
-    } else {
-      // ボールに一番近いロボットを選択
-      auto selected_robots = this->getSelectedRobotsByScore(
-        1, selectable_robots,
-        [this](const std::shared_ptr<RobotInfo> & robot) {
-          // ボールに近いほどスコアが高い
-          return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
-        },
-        prev_roles);
-      if (not selected_robots.empty()) {
-        skill =
-          std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);
-      }
-      return {selected_robots.front()};
-    }
-  }
-
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {

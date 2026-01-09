@@ -88,43 +88,4 @@ auto ForwardTactic::calculatePositionCommand(const std::vector<RobotIdentifier> 
   }
   return {TacticBase::Status::RUNNING, robot_commands};
 }
-
-auto ForwardTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  auto forward_lines = createForwardLines();
-  const uint8_t selectable_num =
-    std::min(selectable_robots_num, static_cast<uint8_t>(forward_lines.size()));
-  auto selected = this->getSelectedRobotsByScore(
-    selectable_num, selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      // choose id smaller first
-      return 15. - static_cast<double>(robot->id);
-    },
-    prev_roles);
-  if (forward_lines.size() > selected.size()) {
-    forward_lines.resize(selected.size());
-  }
-
-  std::vector<Point> selected_robot_pos =
-    selected | ranges::views::transform([this](const auto & robot_id) -> Point {
-      return world_model->getOurRobot(robot_id)->pose.pos;
-    }) |
-    ranges::to<std::vector>;
-
-  auto solution = getOptimalAssignments(selected_robot_pos, forward_lines);
-
-  for (const auto & [index, selected_robot_id] : selected | ranges::views::enumerate) {
-    auto skill = std::make_shared<skills::Forward>(selected_robot_id, world_model);
-    auto line = forward_lines[solution[index]];
-    skill->setParameter("front_point", line.second);
-    skill->setParameter("back_point", line.first);
-    skill->setParameter("max_vel", 1.5);
-    skill->planner_visualizer = visualizer;
-    forward_skills.emplace_back(skill);
-  }
-
-  return selected;
-}
 }  // namespace crane
