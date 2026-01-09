@@ -1,7 +1,7 @@
 # ディフェンス戦術システム
 
 > **最終更新**: 2024年12月（システム再構築後）
-> **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md), [crane_robot_skills](./packages/crane_robot_skills.md)
+> **関連パッケージ**: [crane_tactics](./packages/crane_tactics.md), [crane_robot_skills](./packages/crane_robot_skills.md)
 
 Craneシステムのディフェンス戦術は、プラグインベースの戦略プランナーとスキルベースのロボット制御により実現されています。
 
@@ -111,7 +111,7 @@ Markerスキルは、指定された敵ロボットをマークするスキル�
 
 ### プラグインアーキテクチャ統合
 
-* **crane_planner_plugins**: TotalDefenseFormationの戦略実装
+* **crane_tactics**: TotalDefenseFormationの戦略実装
 * **crane_robot_skills**: Goalieスキル、Markerスキルの個別制御
 * **crane_session_controller**: 試合状況に応じた防御戦術選択
 
@@ -123,4 +123,4 @@ Markerスキルは、指定された敵ロボットをマークするスキル�
 
 ---
 
-**詳細な実装**: [crane_planner_plugins](./packages/crane_planner_plugins.md)の防御戦術と[crane_robot_skills](./packages/crane_robot_skills.md)の防御スキルを参照
+**詳細な実装**: [crane_tactics](./packages/crane_tactics.md)の防御戦術と[crane_robot_skills](./packages/crane_robot_skills.md)の防御スキルを参照

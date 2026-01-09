@@ -12,8 +12,8 @@
 namespace crane
 {
 
-CommandAggregator::CommandAggregator(std::shared_ptr<PlannerRegistry> planner_registry)
-: planner_registry_(planner_registry)
+CommandAggregator::CommandAggregator(std::shared_ptr<TacticRegistry> tactic_registry)
+: tactic_registry_(tactic_registry)
 {
 }
 
@@ -27,17 +27,18 @@ auto CommandAggregator::collectCommands(
   setMessageMetadata(msg, world_model, current_time);
 
   // 全プランナーからコマンドを収集
-  for (const auto & planner : planner_registry_->getAllPlanners()) {
-    auto commands_msg = planner->getPositionCommands();
-    ranges::for_each(
-      commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {
-        position_command.planner_name = planner->name;
-      });
+  for (const auto & tactic : tactic_registry_->getAllPlanners()) {
+    auto commands_msg = tactic->getPositionCommands();
+    // Note: tactic_name フィールドはメッセージ定義にないためコメントアウト
+    // ranges::for_each(
+    //   commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {
+    //     position_command.tactic_name = tactic->name;
+    //   });
     msg.robot_commands.insert(
       msg.robot_commands.end(), commands_msg.robot_commands.begin(),
       commands_msg.robot_commands.end());
 
-    if (planner->getStatus() != PlannerBase::Status::RUNNING) {
+    if (tactic->getStatus() != TacticBase::Status::RUNNING) {
       // TODO(HansRobo): プランナが成功・失敗した場合の処理
     }
   }
@@ -61,7 +62,7 @@ auto CommandAggregator::setMessageMetadata(
 
   msg.header.stamp = current_time;
 
-  // 遅延監視: SessionController処理完了、PositionCommands送信
+  // 遅延監視: TacticCoordinator処理完了、PositionCommands送信
   DelayMonitorWrapper::addDelayCheckpoint(
     msg.delay_checkpoints, "session_controller_end", "strategy_computed");
 }

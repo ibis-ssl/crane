@@ -1,9 +1,9 @@
 # オフェンス戦術システム
 
 > **最終更新**: 2024年12月（システム再構築後）
-> **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_planner_plugins](./packages/crane_planner_plugins.md)
+> **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_tactics](./packages/crane_tactics.md)
 
-Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_planner_plugins`の戦略プランナーにより実現されています。
+Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_tactics`の戦略プランナーにより実現されています。
 
 ## アーキテクチャ概要
 
@@ -90,7 +90,7 @@ stateDiagram-v2
 
 ## 戦略レベルの統合
 
-### crane_planner_pluginsとの連携
+### crane_tacticsとの連携
 
 **AttackFormation**:
 
@@ -109,5 +109,5 @@ stateDiagram-v2
 各スキルの実装詳細は以下のドキュメントを参照してください：
 
 - **[crane_robot_skills](./packages/crane_robot_skills.md)** - 個別スキルの実装仕様
-- **[crane_planner_plugins](./packages/crane_planner_plugins.md)** - 戦略プランナーの統合実装
+- **[crane_tactics](./packages/crane_tactics.md)** - 戦略プランナーの統合実装
 - **[attacker.md](./attacker.md)** - Attackerスキルの詳細な状態遷移

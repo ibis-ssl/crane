@@ -5,40 +5,40 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_geometry/ddps.hpp>
-#include <crane_planner_plugins/skill_planner.hpp>
+#include <crane_planner_plugins/skill_tactic.hpp>
 #include <range/v3/algorithm/max_element.hpp>
 
 namespace crane
 {
-auto GoalieSkillPlanner::calculatePositionCommand(
+auto GoalieSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
+    return {TacticBase::Status::RUNNING, {}};
   } else {
     auto status = skill->run();
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
 
-auto BallPlacementSkillPlanner::calculatePositionCommand(
+auto BallPlacementSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
+    return {TacticBase::Status::RUNNING, {}};
   } else {
     if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
       skill->setParameter("placement_x", target->x());
       skill->setParameter("placement_y", target->y());
     }
     auto status = skill->run();
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
 
-auto BallPlacementSkillPlanner::getSelectedRobots(
+auto BallPlacementSkillTactic::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
@@ -69,19 +69,19 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
   }
 }
 
-auto SubAttackerSkillPlanner::calculatePositionCommand(
+auto SubAttackerSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
+    return {TacticBase::Status::RUNNING, {}};
   } else {
     auto status = skill->run();
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
 
-auto SubAttackerSkillPlanner::getSelectedRobots(
+auto SubAttackerSkillTactic::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
@@ -115,19 +115,19 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   }
 }
 
-auto SimpleKickOffSkillPlanner::calculatePositionCommand(
+auto SimpleKickOffSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
+    return {TacticBase::Status::RUNNING, {}};
   } else {
     auto status = skill->run();
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
 
-auto SimpleKickOffSkillPlanner::getSelectedRobots(
+auto SimpleKickOffSkillTactic::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
@@ -147,19 +147,19 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
   }
 }
 
-auto BallNearByPositionerSkillPlanner::calculatePositionCommand(
+auto BallNearByPositionerSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   auto robot_commands = skills | ranges::views::transform([this](const auto & skill) {
                           skill->run();
                           return skill->getRobotCommand();
                         }) |
                         ranges::to<std::vector<crane_msgs::msg::PositionCommand>>();
-  return {PlannerBase::Status::RUNNING, robot_commands};
+  return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto BallNearByPositionerSkillPlanner::getSelectedRobots(
+auto BallNearByPositionerSkillTactic::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
@@ -191,9 +191,9 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
   return selected;
 }
 
-auto PlacementTargetNearByPositionerSkillPlanner::calculatePositionCommand(
+auto PlacementTargetNearByPositionerSkillTactic::calculatePositionCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-  -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   auto target = world_model->getBallPlacementTarget().value_or(world_model->ball().pos);
   auto robot_commands = skills | ranges::views::transform([&](const auto & skill) {
@@ -203,10 +203,10 @@ auto PlacementTargetNearByPositionerSkillPlanner::calculatePositionCommand(
                           return skill->getRobotCommand();
                         }) |
                         ranges::to<std::vector<crane_msgs::msg::PositionCommand>>();
-  return {PlannerBase::Status::RUNNING, robot_commands};
+  return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto PlacementTargetNearByPositionerSkillPlanner::getSelectedRobots(
+auto PlacementTargetNearByPositionerSkillTactic::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {

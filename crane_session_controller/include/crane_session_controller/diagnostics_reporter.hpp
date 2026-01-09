@@ -12,7 +12,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "planner_registry.hpp"
+#include "tactic_registry.hpp"
 
 namespace crane
 {
@@ -24,7 +24,7 @@ class DiagnosticsReporter
 {
 public:
   explicit DiagnosticsReporter(
-    rclcpp::Clock::SharedPtr clock, std::shared_ptr<PlannerRegistry> planner_registry,
+    rclcpp::Clock::SharedPtr clock, std::shared_ptr<TacticRegistry> tactic_registry,
     rclcpp::Logger logger);
 
   /**
@@ -41,7 +41,7 @@ public:
 
 private:
   rclcpp::Clock::SharedPtr clock_;
-  std::shared_ptr<PlannerRegistry> planner_registry_;
+  std::shared_ptr<TacticRegistry> tactic_registry_;
   rclcpp::Logger logger_;
 
   rclcpp::Time last_planning_time_;

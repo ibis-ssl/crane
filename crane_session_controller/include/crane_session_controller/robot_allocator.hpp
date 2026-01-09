@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "configuration_manager.hpp"
-#include "planner_registry.hpp"
+#include "tactic_registry.hpp"
 
 namespace crane
 {
@@ -29,7 +29,7 @@ class RobotAllocator
 public:
   explicit RobotAllocator(
     std::shared_ptr<ConfigurationManager> config_manager,
-    std::shared_ptr<PlannerRegistry> planner_registry, rclcpp::Logger logger);
+    std::shared_ptr<TacticRegistry> tactic_registry, rclcpp::Logger logger);
 
   /**
    * @brief セッション名と利用可能ロボットから割当を実行
@@ -71,13 +71,13 @@ private:
    * @brief プランナーへのロボット割り当てを試行（エラーハンドリング含む）
    */
   auto tryAssignRobotToPlanner(
-    const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-    const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
+    const TacticSlot & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
+    const std::vector<TacticBase::SharedPtr> & prev_available_planners,
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
     crane_msgs::msg::RobotSelectResults & results) -> bool;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
-  std::shared_ptr<PlannerRegistry> planner_registry_;
+  std::shared_ptr<TacticRegistry> tactic_registry_;
   rclcpp::Logger logger_;
 
   std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;

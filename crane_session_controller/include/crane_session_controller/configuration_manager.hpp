@@ -19,7 +19,7 @@ namespace crane
 {
 using SessionParameterType = std::variant<double, bool, int, std::string>;
 
-struct SessionCapacity
+struct TacticSlot
 {
   std::string session_name;
   int selectable_robot_num;
@@ -56,12 +56,12 @@ public:
   auto getSessionNameForEvent(const std::string & event_name) const -> std::optional<std::string>;
 
   /**
-   * @brief セッション名に対応するSessionCapacityリストを取得
+   * @brief セッション名に対応するTacticSlotリストを取得
    * @param situation_name セッション名
-   * @return SessionCapacityリスト（存在しない場合はstd::nullopt）
+   * @return TacticSlotリスト（存在しない場合はstd::nullopt）
    */
   auto getSessionCapacitiesForSituation(const std::string & situation_name) const
-    -> std::optional<std::vector<SessionCapacity>>;
+    -> std::optional<std::vector<TacticSlot>>;
 
   /**
    * @brief イベントマップを取得（読み取り専用）
@@ -81,8 +81,8 @@ private:
   // イベント名 → セッション名のマッピング
   std::unordered_map<std::string, std::string> event_map_;
 
-  // セッション名 → SessionCapacityリストのマッピング
-  std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map_;
+  // セッション名 → TacticSlotリストのマッピング
+  std::unordered_map<std::string, std::vector<TacticSlot>> robot_selection_priority_map_;
 
   rclcpp::Logger logger_;
 

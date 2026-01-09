@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rclcpp/rclcpp.hpp>
+#include <algorithm>
+#include <chrono>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <nlohmann/json.hpp>
-
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
+#include <mutex>
+#include <nlohmann/json.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <set>
 #include <sstream>
 #include <vector>
-#include <algorithm>
-#include <set>
-#include <chrono>
-#include <mutex>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -33,8 +32,7 @@ namespace fs = std::filesystem;
 class StateHistoryLogger : public rclcpp::Node
 {
 public:
-  StateHistoryLogger()
-  : Node("state_history_logger")
+  StateHistoryLogger() : Node("state_history_logger")
   {
     // パラメータ宣言
     this->declare_parameter("enabled", true);
@@ -65,8 +63,7 @@ public:
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << output_dir << "/state_history_"
-       << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S")
+    ss << output_dir << "/state_history_" << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S")
        << ".jsonl";
     log_file_path_ = ss.str();
 
@@ -78,7 +75,8 @@ public:
       return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "StateHistoryLogger started. Output: %s", log_file_path_.c_str());
+    RCLCPP_INFO(
+      this->get_logger(), "StateHistoryLogger started. Output: %s", log_file_path_.c_str());
 
     // フィルタパラメータ取得
     auto robot_ids_param = this->get_parameter("filter.robot_ids").as_integer_array();
@@ -98,10 +96,12 @@ public:
       RCLCPP_INFO(this->get_logger(), "Filter robot IDs: %s", ids_ss.str().c_str());
     }
     if (!filter_planner_names_.empty()) {
-      RCLCPP_INFO(this->get_logger(), "Filter planner names: %zu patterns", filter_planner_names_.size());
+      RCLCPP_INFO(
+        this->get_logger(), "Filter planner names: %zu patterns", filter_planner_names_.size());
     }
     if (!filter_skill_names_.empty()) {
-      RCLCPP_INFO(this->get_logger(), "Filter skill names: %zu patterns", filter_skill_names_.size());
+      RCLCPP_INFO(
+        this->get_logger(), "Filter skill names: %zu patterns", filter_skill_names_.size());
     }
 
     // サブスクライバー作成
@@ -122,7 +122,8 @@ public:
   {
     if (log_file_.is_open()) {
       log_file_.close();
-      RCLCPP_INFO(this->get_logger(), "StateHistoryLogger stopped. Log saved to: %s", log_file_path_.c_str());
+      RCLCPP_INFO(
+        this->get_logger(), "StateHistoryLogger stopped. Log saved to: %s", log_file_path_.c_str());
     }
   }
 
@@ -210,7 +211,9 @@ private:
 
     // プランナー名フィルタ
     if (!filter_planner_names_.empty()) {
-      if (std::find(filter_planner_names_.begin(), filter_planner_names_.end(), cmd.planner_name) == filter_planner_names_.end()) {
+      if (
+        std::find(filter_planner_names_.begin(), filter_planner_names_.end(), cmd.planner_name) ==
+        filter_planner_names_.end()) {
         return false;
       }
     }
@@ -219,7 +222,9 @@ private:
     if (!filter_skill_names_.empty()) {
       bool found = false;
       for (const auto & factor : cmd.state_factors) {
-        if (std::find(filter_skill_names_.begin(), filter_skill_names_.end(), factor.name) != filter_skill_names_.end()) {
+        if (
+          std::find(filter_skill_names_.begin(), filter_skill_names_.end(), factor.name) !=
+          filter_skill_names_.end()) {
           found = true;
           break;
         }
@@ -239,7 +244,7 @@ private:
     }
 
     if (path[0] == '~') {
-      const char* home = std::getenv("HOME");
+      const char * home = std::getenv("HOME");
       if (home) {
         return std::string(home) + path.substr(1);
       }

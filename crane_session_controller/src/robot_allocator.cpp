@@ -19,8 +19,8 @@ namespace crane
 
 RobotAllocator::RobotAllocator(
   std::shared_ptr<ConfigurationManager> config_manager,
-  std::shared_ptr<PlannerRegistry> planner_registry, rclcpp::Logger logger)
-: config_manager_(config_manager), planner_registry_(planner_registry), logger_(logger)
+  std::shared_ptr<TacticRegistry> tactic_registry, rclcpp::Logger logger)
+: config_manager_(config_manager), tactic_registry_(tactic_registry), logger_(logger)
 {
 }
 
@@ -42,8 +42,8 @@ auto RobotAllocator::allocate(
   const auto & session_capacities = session_capacities_opt.value();
 
   // 前回のプランナーリストを保存し、新しいリストをクリア
-  auto prev_available_planners = planner_registry_->getAllPlanners();
-  planner_registry_->clear();
+  auto prev_available_planners = tactic_registry_->getAllPlanners();
+  tactic_registry_->clear();
   prev_robot_roles_.clear();
 
   crane_msgs::msg::RobotSelectResults results;
@@ -60,7 +60,7 @@ auto RobotAllocator::allocate(
 
   // 割り当てられなかったロボットを待機状態にする
   if (not selectable_robot_ids.empty()) {
-    SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size()), {}};
+    TacticSlot waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size()), {}};
     tryAssignRobotToPlanner(
       waiter_session, selectable_robot_ids, prev_available_planners, world_model, node, results);
   }
@@ -93,8 +93,8 @@ auto RobotAllocator::detectRobotChange(const std::vector<uint8_t> & observed_rob
 auto RobotAllocator::getAssignedRobotIds() const -> std::vector<uint8_t>
 {
   auto assigned_robot_ids =
-    planner_registry_->getAllPlanners() |
-    ranges::views::transform([](const auto & planner) { return planner->getRobots(); }) |
+    tactic_registry_->getAllPlanners() |
+    ranges::views::transform([](const auto & tactic) { return tactic->getRobots(); }) |
     ranges::views::join | ranges::views::transform([](const auto & robot) { return robot.id; }) |
     ranges::to<std::vector>() | ranges::actions::sort;
   return assigned_robot_ids;
@@ -104,13 +104,13 @@ auto RobotAllocator::buildAssignmentLog() const -> std::string
 {
   std::stringstream assignment_log;
   bool first = true;
-  for (const auto & planner : planner_registry_->getAllPlanners()) {
+  for (const auto & tactic : tactic_registry_->getAllPlanners()) {
     if (!first) {
       assignment_log << ", ";
     }
     first = false;
-    assignment_log << planner->name << ":[";
-    const auto & robots = planner->getRobots();
+    assignment_log << tactic->name << ":[";
+    const auto & robots = tactic->getRobots();
     for (size_t i = 0; i < robots.size(); ++i) {
       if (i > 0) {
         assignment_log << ",";
@@ -135,8 +135,8 @@ auto RobotAllocator::logAssignmentIfChanged(const std::string & current_assignme
 }
 
 auto RobotAllocator::tryAssignRobotToPlanner(
-  const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-  const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
+  const TacticSlot & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
+  const std::vector<TacticBase::SharedPtr> & prev_available_planners,
   WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
   crane_msgs::msg::RobotSelectResults & results) -> bool
 {
@@ -152,17 +152,17 @@ auto RobotAllocator::tryAssignRobotToPlanner(
 
   try {
     // プランナー生成とロボット選択
-    // PlannerRegistryを使ってプランナーを取得または生成
-    auto planner = planner_registry_->getOrCreatePlanner(
+    // TacticRegistryを使ってプランナーを取得または生成
+    auto tactic = tactic_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
-    auto selected_robots = planner->selectRobots(
+    auto selected_robots = tactic->selectRobots(
       selectable_robot_ids, session_capacity.selectable_robot_num, prev_robot_roles_);
     results.results.push_back(result);
 
     // プランナーをレジストリに登録
-    planner_registry_->addPlanner(planner);
+    tactic_registry_->addPlanner(tactic);
 
     if (not selectable_robot_ids.empty()) {
       RCLCPP_DEBUG_STREAM(

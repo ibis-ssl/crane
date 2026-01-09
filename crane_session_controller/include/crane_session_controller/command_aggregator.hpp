@@ -12,7 +12,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "planner_registry.hpp"
+#include "tactic_registry.hpp"
 
 namespace crane
 {
@@ -23,7 +23,7 @@ namespace crane
 class CommandAggregator
 {
 public:
-  explicit CommandAggregator(std::shared_ptr<PlannerRegistry> planner_registry);
+  explicit CommandAggregator(std::shared_ptr<TacticRegistry> tactic_registry);
 
   /**
    * @brief 全プランナーからコマンドを収集してメッセージを構築
@@ -48,7 +48,7 @@ private:
    */
   auto assignPriorities(crane_msgs::msg::PositionCommands & msg) -> void;
 
-  std::shared_ptr<PlannerRegistry> planner_registry_;
+  std::shared_ptr<TacticRegistry> tactic_registry_;
 };
 
 }  // namespace crane

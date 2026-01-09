@@ -1,4 +1,4 @@
-# crane_planner_plugins
+# crane_tactics
 
 ## 概要
 
@@ -20,26 +20,26 @@ Craneシステムの**戦術戦略層**として、session_controllerからの�
 
 ### 守備系プランナー
 
-- **GoaliePlanner**: ゴールキーパー専用戦略
+- **GoalieTactic**: ゴールキーパー専用戦略
   - ゴールライン防御
   - ボール軌道予測対応
   - クリアランス判断
 
-- **DefenderPlanner**: ディフェンダー戦略
+- **DefenderTactic**: ディフェンダー戦略
   - エリア守備
   - マーク対応
   - インターセプト
 
 ### 攻撃系プランナー
 
-- **AttackerPlanner**: アタッカー戦略
+- **AttackerTactic**: アタッカー戦略
   - 得点機会創出
   - パス・ドリブル選択
   - ポジション取り
 
 ### 特殊状況プランナー
 
-- **KickoffPlanner**: キックオフ戦略
+- **KickoffTactic**: キックオフ戦略
   - 開始配置
   - 第一手戦術
   - フォーメーション移行
@@ -51,7 +51,7 @@ Craneシステムの**戦術戦略層**として、session_controllerからの�
 
 ### ユーティリティプランナー
 
-- **WaiterPlanner**: 待機戦略
+- **WaiterTactic**: 待機戦略
   - 指示待ち状態
   - 基本ポジション維持
   - 状況監視
@@ -61,7 +61,7 @@ Craneシステムの**戦術戦略層**として、session_controllerからの�
 ### PlannerBase基底クラス
 
 ```cpp
-class PlannerBase {
+class TacticBase {
 public:
   virtual void plan(const Context& context) = 0;
   virtual bool isReady() const = 0;
@@ -78,10 +78,10 @@ protected:
 ### プラグイン登録（plugins.xml）
 
 ```xml
-<class type="crane::AttackerPlanner" base_class_type="crane::PlannerBase">
+<class type="crane::AttackerTactic" base_class_type="crane::TacticBase">
   <description>a planner plugin for attacker</description>
 </class>
-<class type="crane::GoaliePlanner" base_class_type="crane::PlannerBase">
+<class type="crane::GoalieTactic" base_class_type="crane::TacticBase">
   <description>a planner plugin for goalie</description>
 </class>
 ```
@@ -90,10 +90,10 @@ protected:
 
 ```cpp
 // pluginlibによる動的ロード
-pluginlib::ClassLoader<crane::PlannerBase> planner_loader(
-  "crane_planner_plugins", "crane::PlannerBase");
+pluginlib::ClassLoader<crane::TacticBase> planner_loader(
+  "crane_tactics", "crane::TacticBase");
 
-auto attacker_planner = planner_loader.createInstance("crane::AttackerPlanner");
+auto attacker_planner = planner_loader.createInstance("crane::AttackerTactic");
 ```
 
 ## 高度な戦略実装
@@ -101,7 +101,7 @@ auto attacker_planner = planner_loader.createInstance("crane::AttackerPlanner");
 ### 協調的攻撃戦略
 
 ```cpp
-void AttackerPlanner::plan(const Context& context) {
+void AttackerTactic::plan(const Context& context) {
   // 1. 得点機会の評価
   auto scoring_opportunity = evaluateScoringChances();
 
@@ -119,7 +119,7 @@ void AttackerPlanner::plan(const Context& context) {
 ### 適応的守備戦略
 
 ```cpp
-void DefenderPlanner::plan(const Context& context) {
+void DefenderTactic::plan(const Context& context) {
   // 敵攻撃パターンの分析
   auto threat_analysis = analyzeEnemyThreats();
 
@@ -145,7 +145,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
   } else if (situation.is_ball_placement) {
     return "BallPlacementPlanner";
   } else {
-    return "FormationPlanner";  // デフォルト
+    return "FormationTactic";  // デフォルト
   }
 }
 ```
@@ -190,9 +190,9 @@ void executeMultiplePlanners() {
 ### プランナー単体実行
 
 ```cpp
-#include "crane_planner_plugins/attacker_planner.hpp"
+#include "crane_tactics/attacker_planner.hpp"
 
-auto planner = std::make_shared<AttackerPlanner>();
+auto planner = std::make_shared<AttackerTactic>();
 planner->initialize(world_model, game_analysis);
 
 Context context;
@@ -206,19 +206,19 @@ planner->plan(context);
 robots:
   - id: 0
     role: "goalie"
-    planner: "GoaliePlanner"
+    planner: "GoalieTactic"
   - id: 1
     role: "attacker"
-    planner: "AttackerPlanner"
+    planner: "AttackerTactic"
   - id: [2,3,4]
     role: "defender"
-    planner: "DefenderPlanner"
+    planner: "DefenderTactic"
 ```
 
 ### カスタムプランナー作成
 
 ```cpp
-class CustomPlanner : public PlannerBase {
+class CustomTactic : public TacticBase {
 public:
   void plan(const Context& context) override {
     // カスタム戦略実装
@@ -227,12 +227,12 @@ public:
   }
 
   std::string getName() const override {
-    return "CustomPlanner";
+    return "CustomTactic";
   }
 };
 
 // プラグイン登録
-PLUGINLIB_EXPORT_CLASS(CustomPlanner, crane::PlannerBase)
+PLUGINLIB_EXPORT_CLASS(CustomTactic, crane::TacticBase)
 ```
 
 ## 最近の開発状況

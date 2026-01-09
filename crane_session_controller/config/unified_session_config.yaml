@@ -113,7 +113,7 @@ situations:
       - name: emplace_robot
         capacity: 19
   CENTER_STOP_KICK:
-    description: Center stop kick testing using CenterStopKickPlanner for stop distance
+    description: Center stop kick testing using CenterStopKickTactic for stop distance
       kick verification
     sessions:
       - name: center_stop_kick
@@ -152,7 +152,7 @@ situations:
       - name: ball_placement_avoidance
         capacity: 20
   simple_ai:
-    description: Simple AI planner for individual robot skill execution via WebUI
+    description: Simple AI tactic for individual robot skill execution via WebUI
     sessions:
       - name: simple_ai
         capacity: 16
