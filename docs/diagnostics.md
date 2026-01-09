@@ -352,7 +352,7 @@ Vision GCからのデータ受信状態を監視します。
 
 ---
 
-### crane_session_controller
+### crane_tactic_coordinator
 
 AI計画サイクルの監視を行います。
 
@@ -375,7 +375,7 @@ AI計画の実行サイクルとWorldModelの更新状態を監視します。
 | 更新遅延（500ms以上） | WARN | "Planning cycle is slow (last update: {time} ms ago)" |
 | 正常動作 | OK | "Planning cycle is running normally (last update: {time} ms ago)" |
 
-**実装ファイル**: `session/crane_session_controller/src/session_controller.cpp`
+**実装ファイル**: `session/crane_tactic_coordinator/src/session_controller.cpp`
 
 ---
 
@@ -899,7 +899,7 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 - [crane_robot_receiver](./packages/crane_robot_receiver.md) - DiagnosticPublisher実装詳細
 - [crane_local_planner](./packages/crane_local_planner.md) - LocalPlanner診断実装
 - [crane_world_model_publisher](./packages/crane_world_model_publisher.md) - Vision診断実装
-- [crane_session_controller](./packages/crane_session_controller.md) - AI計画診断実装
+- [crane_tactic_coordinator](./packages/crane_tactic_coordinator.md) - AI計画診断実装
 - [crane_comm](./packages/crane_comm.md) - DiagnosedPublisher実装詳細
 
 ### Crane内部実装ファイル
@@ -916,7 +916,7 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 - `crane_msg_wrappers/src/world_model_wrapper.cpp` - 診断情報の利用可否判定への統合
 - `crane_local_planner/src/local_planner.cpp` - LocalPlanner診断実装
 - `crane_world_model_publisher/src/world_model_publisher.cpp` - Vision診断実装
-- `session/crane_session_controller/src/session_controller.cpp` - SessionController診断実装
+- `session/crane_tactic_coordinator/src/session_controller.cpp` - SessionController診断実装
 
 #### 設定ファイル
 

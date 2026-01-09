@@ -205,13 +205,13 @@ sleep 5  # 必要に応じて増やす
    ```
 
 2. **コードを修正**
-   エディタで`crane_planner_plugins/`などを編集
+   エディタで`crane_tactics/`などを編集
 
 3. **ワークスペースを再ビルド**
 
    ```bash
    cd /path/to/ibis_ws_3
-   colcon build --symlink-install --packages-select crane_planner_plugins
+   colcon build --symlink-install --packages-select crane_tactics
    ```
 
 4. **テストを再実行**

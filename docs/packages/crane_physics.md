@@ -148,7 +148,7 @@ using Circle = crane::geometry::model::Circle<Point>;  // 円
 - **crane_world_model_publisher**: 状態推定・ボール追跡
 - **crane_robot_skills**: モーション実行タイミング
 - **crane_local_planner**: 経路計画・軌道生成
-- **crane_session_controller**: マルチロボット協調
+- **crane_tactic_coordinator**: マルチロボット協調
 
 ## パフォーマンス特性
 

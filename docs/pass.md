@@ -15,7 +15,7 @@
 - `crane_world_model_publisher`:
   - `PassTargetSelector` が `GameAnalysis.pass_scores` を算出し、`pass_target_id` を選定・配信。
   - 連続切替え抑制（ヒステリシス）と可視化出力を実装。
-- `crane_session_controller`:
+- `crane_tactic_coordinator`:
   - `GameAnalysis.pass_target_id` を参照してパス連携を調整。
   - `pass_receive` セッションで受け手ロボットに Receive スキルを割当（予約）。
 - `crane_robot_skills::Attacker`:
@@ -61,7 +61,7 @@
 
 ## セッション設定（例）
 
-統一設定ファイル `session/crane_session_controller/config/unified_session_config.yaml` で設定：
+統一設定ファイル `session/crane_tactic_coordinator/config/unified_session_config.yaml` で設定：
 
 ```yaml
 situations:
@@ -93,7 +93,7 @@ situations:
 ## 動作確認手順（抜粋）
 
 - ビルド（ワークスペースルートで実行）
-  - `colcon build --symlink-install --packages-select crane_msgs crane_world_model_publisher crane_robot_skills crane_session_controller`
+  - `colcon build --symlink-install --packages-select crane_msgs crane_world_model_publisher crane_robot_skills crane_tactic_coordinator`
 - 起動（例）
   - `ros2 launch crane_bringup crane.launch.xml sim:=true`
 - 可視化・デバッグ

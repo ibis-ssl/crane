@@ -30,4 +30,4 @@ PlayType current_play = play_switcher->selectPlay(world_model, referee_info);
 
 ---
 
-**関連パッケージ**: [crane_game_analyzer](./crane_game_analyzer.md) | [crane_session_controller](./crane_session_controller.md)
+**関連パッケージ**: [crane_game_analyzer](./crane_game_analyzer.md) | [crane_tactic_coordinator](./crane_tactic_coordinator.md)
