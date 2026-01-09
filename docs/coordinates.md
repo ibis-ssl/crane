@@ -87,19 +87,23 @@ Point transformToFieldFrame(const Point& robot_point, const RobotPose& robot_pos
 
 ### 幾何学ライブラリ
 
-座標計算には`crane_geometry`パッケージの関数を使用：
+座標計算には`crane_geometry`パッケージや、`RobotInfo`のメソッドを使用：
 
 ```cpp
-#include <crane_geometry/geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/robot_info.hpp>
 
 // 角度の正規化
-double normalized_angle = normalizeAngle(angle);
+double normalized_angle = crane::normalizeAngle(angle);
 
-// 2点間距離
-double distance = getDistance(point1, point2);
+// 2点間距離 (Eigenの機能を使用)
+double distance = (point1 - point2).norm();
 
-// 角度計算
-double angle = getAngle(from_point, to_point);
+// ロボットからの距離 (RobotInfoのメソッドを使用)
+double dist_to_ball = robot->getDistance(ball_pos);
+
+// 点1から点2への方向（角度）
+double angle = crane::getAngle(point2 - point1);
 ```
 
 ## 関連ドキュメント

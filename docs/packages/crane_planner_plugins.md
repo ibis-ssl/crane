@@ -1,12 +1,12 @@
-# crane_tactics
+# crane_planner_plugins
 
 ## 概要
 
-Craneシステムの**戦略プランナープラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。プラグインアーキテクチャにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
+Craneシステムの**戦略プランナープラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。`crane_tactics`（旧称）から改称・統合されました。ファクトリパターンにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
 
 ## 主要機能
 
-- **プラグインアーキテクチャ**: pluginlibベースの動的戦略ロード
+- **ファクトリベースの生成**: `TacticFactory`による動的戦略生成
 - **多様な戦略実装**: 20種類以上の専門プランナー
 - **状況適応制御**: 試合状況に応じた戦略自動選択
 - **ロボット協調**: マルチロボット戦術の統合実行
@@ -14,13 +14,13 @@ Craneシステムの**戦略プランナープラグインコレクション**�
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**戦術戦略層**として、session_controllerからの指示を受けて具体的な戦術を実行し、robot_skillsに個別ロボット行動を指示します。プラグイン方式により新戦術の追加と既存戦術の改良が容易です。
+Craneシステムの**戦術戦略層**として、`crane_session_controller`からの指示を受けて具体的な戦術を実行し、`crane_robot_skills`に個別ロボット行動を指示します。
 
 ## プランナープラグイン一覧
 
 ### 守備系プランナー
 
-- **GoalieTactic**: ゴールキーパー専用戦略
+- **GoalieSkillTactic**: ゴールキーパー専用戦略
   - ゴールライン防御
   - ボール軌道予測対応
   - クリアランス判断
@@ -30,140 +30,62 @@ Craneシステムの**戦術戦略層**として、session_controllerからの�
   - マーク対応
   - インターセプト
 
+- **TotalDefenseTactic**: 統合守備戦略
+
 ### 攻撃系プランナー
 
-- **AttackerTactic**: アタッカー戦略
+- **AttackerSkillTactic**: アタッカー戦略
   - 得点機会創出
   - パス・ドリブル選択
   - ポジション取り
 
+- **SubAttackerSkillTactic**: アタッカー支援
+
 ### 特殊状況プランナー
 
-- **KickoffTactic**: キックオフ戦略
-  - 開始配置
-  - 第一手戦術
-  - フォーメーション移行
-
-- **BallPlacementPlanner**: ボール配置戦略
-  - 正確なボール配置
-  - 障害物回避
-  - 時間最適化
+- **SimpleKickOffSkillTactic**: キックオフ戦略
+- **OurPenaltyKickTactic**: 自チームペナルティキック
+- **TheirPenaltyKickTactic**: 敵チームペナルティキック
+- **BallPlacementSkillTactic**: ボール配置戦略
 
 ### ユーティリティプランナー
 
 - **WaiterTactic**: 待機戦略
-  - 指示待ち状態
-  - 基本ポジション維持
-  - 状況監視
+- **SimplePlacerTactic**: エリア配置戦略
+- **BallCalibrationDataCollectorTactic**: キャリブレーション用
 
 ## プランナーベースアーキテクチャ
 
-### PlannerBase基底クラス
+### TacticBase基底クラス
 
 ```cpp
 class TacticBase {
 public:
-  virtual void plan(const Context& context) = 0;
-  virtual bool isReady() const = 0;
-  virtual void reset() = 0;
-  virtual std::string getName() const = 0;
-
-protected:
-  std::shared_ptr<WorldModelWrapper> world_model_;
-  std::shared_ptr<GameAnalysisWrapper> game_analysis_;
-  std::shared_ptr<RobotCommandsWrapper> robot_commands_;
+  virtual Status calculateRobotCommand(const std::vector<RobotIdentifier>& robots) = 0;
+  // ...
 };
 ```
 
-### プラグイン登録（plugins.xml）
-
-```xml
-<class type="crane::AttackerTactic" base_class_type="crane::TacticBase">
-  <description>a planner plugin for attacker</description>
-</class>
-<class type="crane::GoalieTactic" base_class_type="crane::TacticBase">
-  <description>a planner plugin for goalie</description>
-</class>
-```
-
-### 動的プランナーロード
+### プランナー生成（TacticFactory）
 
 ```cpp
-// pluginlibによる動的ロード
-pluginlib::ClassLoader<crane::TacticBase> planner_loader(
-  "crane_tactics", "crane::TacticBase");
-
-auto attacker_planner = planner_loader.createInstance("crane::AttackerTactic");
-```
-
-## 高度な戦略実装
-
-### 協調的攻撃戦略
-
-```cpp
-void AttackerTactic::plan(const Context& context) {
-  // 1. 得点機会の評価
-  auto scoring_opportunity = evaluateScoringChances();
-
-  // 2. 最適なロボット選択
-  auto selected_robots = selectOptimalRobots(scoring_opportunity);
-
-  // 3. 役割分担の決定
-  assignRoles(selected_robots);
-
-  // 4. 協調行動の実行
-  executeCooperativeAttack();
+// tactic_factory.cpp
+auto generatePlanner(
+  const std::string & tactic_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  -> TacticBase::SharedPtr
+{
+  // 登録済みファクトリから生成
+  return factory_map.at(tactic_name)(world_model, node);
 }
 ```
 
-### 適応的守備戦略
+### 登録マップ
 
 ```cpp
-void DefenderTactic::plan(const Context& context) {
-  // 敵攻撃パターンの分析
-  auto threat_analysis = analyzeEnemyThreats();
-
-  // 守備陣形の最適化
-  auto formation = optimizeDefensiveFormation(threat_analysis);
-
-  // 個別守備役割の割り当て
-  assignDefensiveRoles(formation);
-}
-```
-
-## 戦略選択アルゴリズム
-
-### 状況評価による自動選択
-
-```cpp
-std::string selectOptimalPlanner(const GameSituation& situation) {
-  // 優先度ベースの選択
-  if (situation.is_emergency_defense) {
-    return "EmergencyDefensePlanner";
-  } else if (situation.has_scoring_chance) {
-    return "FastAttackPlanner";
-  } else if (situation.is_ball_placement) {
-    return "BallPlacementPlanner";
-  } else {
-    return "FormationTactic";  // デフォルト
-  }
-}
-```
-
-### 複数プランナーの組み合わせ
-
-```cpp
-void executeMultiplePlanners() {
-  // ゴールキーパーは常時専用プランナー
-  goalie_planner_->plan(context_);
-
-  // フィールドプレイヤーは状況に応じて選択
-  auto field_planner = selectFieldPlanner();
-  field_planner->plan(context_);
-
-  // 結果の統合
-  mergeRobotCommands();
-}
+PLANNER_ENTRY("attacker_skill", AttackerSkillTactic),
+PLANNER_ENTRY("goalie_skill", GoalieSkillTactic),
+PLANNER_ENTRY("defender", DefenderTactic),
+// ...
 ```
 
 ## 依存関係
@@ -171,110 +93,37 @@ void executeMultiplePlanners() {
 ### コア依存
 
 - **crane_robot_skills**: 個別ロボット行動の実行
-- **crane_game_analyzer**: 試合状況の分析結果
+- **crane_msg_wrappers**: メッセージラッパー
 - **crane_geometry**: 幾何学計算ライブラリ
 - **crane_physics**: 物理計算・ボールモデル
 
-### アーキテクチャ依存
-
-- **pluginlib**: プラグインシステム基盤
-- **rclcpp_action**: アクションベース実行制御
-
-### 可視化依存
-
-- **matplotlib_cpp_17_vendor**: 戦略可視化
-- **crane_visualization_interfaces**: デバッグ表示
-
-## 使用方法
-
-### プランナー単体実行
-
-```cpp
-#include "crane_tactics/attacker_planner.hpp"
-
-auto planner = std::make_shared<AttackerTactic>();
-planner->initialize(world_model, game_analysis);
-
-Context context;
-planner->plan(context);
-```
+### 使用方法
 
 ### Session Controllerからの利用
 
-```cpp
-// YAML設定による自動選択
+`crane_session_controller` の設定ファイルで名前を指定します。
+
+```yaml
+# YAML設定による自動選択
 robots:
   - id: 0
     role: "goalie"
-    planner: "GoalieTactic"
+    planner: "goalie_skill"
   - id: 1
     role: "attacker"
-    planner: "AttackerTactic"
+    planner: "attacker_skill"
   - id: [2,3,4]
     role: "defender"
-    planner: "DefenderTactic"
-```
-
-### カスタムプランナー作成
-
-```cpp
-class CustomTactic : public TacticBase {
-public:
-  void plan(const Context& context) override {
-    // カスタム戦略実装
-    auto custom_strategy = developCustomStrategy();
-    executeStrategy(custom_strategy);
-  }
-
-  std::string getName() const override {
-    return "CustomTactic";
-  }
-};
-
-// プラグイン登録
-PLUGINLIB_EXPORT_CLASS(CustomTactic, crane::TacticBase)
+    planner: "defender"
 ```
 
 ## 最近の開発状況
 
 ### 2025年の主要変更
 
-- **ラインプレイ強化**: JapanOpen用プレッシャーブループランナーを追加
-- **協調アルゴリズム**: 役割交代時の安全マージン推定を導入
-- **適応制御**: 対戦相手ヒューリスティックをWorldModelと共有化
-- **パフォーマンス最適化**: 戦略切替時のウォームスタート実装
-
-### 開発活発度
-
-🔴 **高活動**: 新戦術の実装、既存戦略のアップデート、協調アルゴリズムの改修が継続しており、JapanOpen以降も定期的な調整が続いている。
-
-### 技術的進歩
-
-- **機械学習統合**: 戦術選択の学習的最適化
-- **予測制御**: より長期的な戦略計画
-- **対戦分析**: 敵チーム戦術の分析・対応
-
-## パフォーマンス特性
-
-### 計算性能
-
-- **戦略決定時間**: <15ms（全プランナー）
-- **更新頻度**: 60Hz対応
-- **同時実行**: 最大6プランナー並列
-
-### 戦術効果
-
-- **得点効率**: 従来比30%向上
-- **失点削減**: 守備成功率85%以上
-- **適応性**: 未知戦術への対応率70%以上
-
-## 将来展望
-
-### 技術発展方向
-
-- **AI戦略**: 深層学習による戦術自動生成
-- **リアルタイム学習**: 試合中の戦術適応
-- **対戦相手分析**: より精密な相手戦術分析
+- **パッケージ統合**: `crane_tactics` を `crane_planner_plugins` へ統合・改称
+- **ファクトリ化**: `pluginlib` 依存からの脱却と静的マップによる管理への移行
+- **スキル連携強化**: `SkillTactic` 系クラスによるスキルパッケージとの密結合化
 
 ---
 
