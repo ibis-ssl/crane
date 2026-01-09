@@ -13,7 +13,7 @@
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**戦術切り替え制御層**として、ゲーム状況の変化を監視し、session_controllerとplanner_pluginsに対して最適な戦術プレイを指示します。
+Craneシステムの**戦術切り替え制御層**として、ゲーム状況の変化を監視し、crane_tactic_coordinatorとtactic_pluginsに対して最適な戦術プレイを指示します。
 
 ## 使用方法
 

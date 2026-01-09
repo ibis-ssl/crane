@@ -2,12 +2,12 @@
 
 ## 概要
 
-Craneシステムの**戦略プランナープラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。`crane_tactics`（旧称）から改称・統合されました。ファクトリパターンにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
+Craneシステムの**戦略タクティックプラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。`crane_tactics`（旧称）から改称・統合されました。ファクトリパターンにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
 
 ## 主要機能
 
 - **ファクトリベースの生成**: `TacticFactory`による動的戦略生成
-- **多様な戦略実装**: 20種類以上の専門プランナー
+- **多様な戦略実装**: 20種類以上の専門タクティック
 - **状況適応制御**: 試合状況に応じた戦略自動選択
 - **ロボット協調**: マルチロボット戦術の統合実行
 - **リアルタイム計画**: 高速な戦術決定と実行
@@ -16,9 +16,9 @@ Craneシステムの**戦略プランナープラグインコレクション**�
 
 Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`からの指示を受けて具体的な戦術を実行し、`crane_robot_skills`に個別ロボット行動を指示します。
 
-## プランナープラグイン一覧
+## タクティックプラグイン一覧
 
-### 守備系プランナー
+### 守備系タクティック
 
 - **GoalieSkillTactic**: ゴールキーパー専用戦略
   - ゴールライン防御
@@ -32,7 +32,7 @@ Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`か
 
 - **TotalDefenseTactic**: 統合守備戦略
 
-### 攻撃系プランナー
+### 攻撃系タクティック
 
 - **AttackerSkillTactic**: アタッカー戦略
   - 得点機会創出
@@ -41,20 +41,20 @@ Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`か
 
 - **SubAttackerSkillTactic**: アタッカー支援
 
-### 特殊状況プランナー
+### 特殊状況タクティック
 
 - **SimpleKickOffSkillTactic**: キックオフ戦略
 - **OurPenaltyKickTactic**: 自チームペナルティキック
 - **TheirPenaltyKickTactic**: 敵チームペナルティキック
 - **BallPlacementSkillTactic**: ボール配置戦略
 
-### ユーティリティプランナー
+### ユーティリティタクティック
 
 - **WaiterTactic**: 待機戦略
 - **SimplePlacerTactic**: エリア配置戦略
 - **BallCalibrationDataCollectorTactic**: キャリブレーション用
 
-## プランナーベースアーキテクチャ
+## タクティックベースアーキテクチャ
 
 ### TacticBase基底クラス
 
@@ -66,7 +66,7 @@ public:
 };
 ```
 
-### プランナー生成（TacticFactory）
+### タクティック生成（TacticFactory）
 
 ```cpp
 // tactic_factory.cpp
@@ -82,9 +82,9 @@ auto generatePlanner(
 ### 登録マップ
 
 ```cpp
-PLANNER_ENTRY("attacker_skill", AttackerSkillTactic),
-PLANNER_ENTRY("goalie_skill", GoalieSkillTactic),
-PLANNER_ENTRY("defender", DefenderTactic),
+TACTIC_ENTRY("attacker_skill", AttackerSkillTactic),
+TACTIC_ENTRY("goalie_skill", GoalieSkillTactic),
+TACTIC_ENTRY("defender", DefenderTactic),
 // ...
 ```
 
@@ -108,13 +108,13 @@ PLANNER_ENTRY("defender", DefenderTactic),
 robots:
   - id: 0
     role: "goalie"
-    planner: "goalie_skill"
+    tactic: "goalie_skill"
   - id: 1
     role: "attacker"
-    planner: "attacker_skill"
+    tactic: "attacker_skill"
   - id: [2,3,4]
     role: "defender"
-    planner: "defender"
+    tactic: "defender"
 ```
 
 ## 最近の開発状況

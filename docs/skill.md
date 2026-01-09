@@ -146,10 +146,10 @@ visualizer->arrow(start, end, "white");
 
 ## 統合手順
 
-### 1. SimpleAIプランナーでの使用
+### 1. SimpleAIタクティックでの使用
 
 ```cpp
-// SimpleAIプランナーでの使用
+// SimpleAIタクティックでの使用
 auto skill = std::make_shared<YourSkill>(robot_id, world_model);
 skill->setParameter("target", target_position);
 // 実行
@@ -167,7 +167,7 @@ auto cmd = skill->getRobotCommand();
 situations:
   YOUR_SITUATION:
     sessions:
-      - name: your_skill_planner
+      - name: your_skill_tactic
         capacity: 1
 ```
 

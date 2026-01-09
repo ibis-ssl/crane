@@ -2,27 +2,27 @@
 
 ## 概要
 
-**crane_tactic_coordinator**パッケージは、Crane SSLロボットシステムの**最上位制御レイヤー**として、包括的な試合管理とゲーム状態制御を提供します。セッションベースのロボット役割管理システムを実装し、動的プランナープラグイン管理とYAML駆動設定を通じてSSL試合中の複数ロボットを協調制御します。柔軟で設定駆動なロボット役割管理により、SSL試合での洗練されたマルチロボット協調を実現します。
+**crane_tactic_coordinator**パッケージは、Crane SSLロボットシステムの**最上位制御レイヤー**として、包括的な試合管理とゲーム状態制御を提供します。セッションベースのロボット役割管理システムを実装し、動的タクティックプラグイン管理とYAML駆動設定を通じてSSL試合中の複数ロボットを協調制御します。柔軟で設定駆動なロボット役割管理により、SSL試合での洗練されたマルチロボット協調を実現します。
 
 ## 主要機能
 
 - **試合統括制御**: SSL試合全体のフロー管理
-- **プランナープラグイン管理**: 状況に応じた戦略プランナーの選択・切り替え
+- **タクティックプラグイン管理**: 状況に応じた戦略タクティックの選択・切り替え
 - **ゲーム状態管理**: Referee信号に基づく状態遷移制御
 - **コンテキスト管理**: 試合状況の履歴・コンテキスト保持
 - **YAML設定駆動**: 柔軟な状況対応設定
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**最上位制御層**として、SSL Refereeからの指示を解釈し、適切な戦略プランナーを選択・実行することで、試合全体を統括します。プランナープラグインアーキテクチャにより、様々な戦術を状況に応じて動的に切り替えます。
+Craneシステムの**最上位制御層**として、SSL Refereeからの指示を解釈し、適切な戦略タクティックを選択・実行することで、試合全体を統括します。タクティックプラグインアーキテクチャにより、様々な戦術を状況に応じて動的に切り替えます。
 
 ## コンポーネント構成
 
 ### TacticCoordinator（メイン制御）
 
 - **状態管理**: SSL Referee状態の追跡と対応
-- **プランナー選択**: 状況に応じた最適プランナーの選択
-- **実行制御**: 選択されたプランナーの実行管理
+- **タクティック選択**: 状況に応じた最適タクティックの選択
+- **実行制御**: 選択されたタクティックの実行管理
 - **エラーハンドリング**: 異常状況での安全な動作
 
 ## 統一設定ファイル（unified_session_config.yaml）
@@ -67,7 +67,7 @@ situations:
 
 ## 動作フロー
 
-### 状況判定→プランナー選択
+### 状況判定→タクティック選択
 
 ```cpp
 void TacticCoordinator::update() {
@@ -77,11 +77,11 @@ void TacticCoordinator::update() {
   // 2. 適切な設定ファイルの選択
   auto config = loadSituationConfig(situation);
 
-  // 3. プランナーの選択・切り替え
-  auto planner = selectOptimalPlanner(config);
+  // 3. タクティックの選択・切り替え
+  auto tactic = selectOptimalTactic(config);
 
-  // 4. プランナーの実行
-  planner->plan(context_);
+  // 4. タクティックの実行
+  tactic->plan(context_);
 
   // 5. 結果の統合・配信
   publishRobotCommands();
@@ -107,30 +107,30 @@ situations:
   timeout: 10.0       # タイムアウト時間
 ```
 
-## プランナーインテグレーション
+## タクティックインテグレーション
 
-### プランナー管理
+### タクティック管理
 
 ```cpp
 class TacticCoordinator {
 private:
-  std::map<std::string, std::shared_ptr<TacticBase>> planners_;
-  std::string current_planner_name_;
+  std::map<std::string, std::shared_ptr<TacticBase>> tactics_;
+  std::string current_tactic_name_;
 
 public:
-  void switchPlanner(const std::string& planner_name) {
-    if (planners_.count(planner_name)) {
-      current_planner_ = planners_[planner_name];
-      current_planner_->reset();
+  void switchTactic(const std::string& tactic_name) {
+    if (tactics_.count(tactic_name)) {
+      current_tactic_ = tactics_[tactic_name];
+      current_tactic_->reset();
     }
   }
 };
 ```
 
-### 動的プランナー選択
+### 動的タクティック選択
 
 ```cpp
-std::string selectOptimalPlanner(const GameSituation& situation) {
+std::string selectOptimalTactic(const GameSituation& situation) {
   if (situation.is_freekick) {
     return situation.our_freekick ? "FreekickOffensePlanner" : "FreekickDefensePlanner";
   } else if (situation.is_penalty) {
@@ -145,7 +145,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 
 ### コア依存
 
-- **crane_tactics**: 実際の戦略プランナー群
+- **crane_tactics**: 実際の戦略タクティック群
 - **crane_msg_wrappers**: メッセージ変換・統合
 - **crane_msgs**: システムメッセージ定義
 
@@ -175,10 +175,10 @@ situation: "CUSTOM_DEFENSE"
 robots:
   - id: 0
     role: "goalie"
-    planner: "GoalieTactic"
+    tactic: "GoalieTactic"
   - id: [1,2,3]
     role: "defender"
-    planner: "DefenseTactic"
+    tactic: "DefenseTactic"
 ```
 
 ## 診断機能
@@ -187,7 +187,7 @@ robots:
 
 ### 提供する診断項目
 
-- **AI計画サイクル状態** (`ai_planner/planning_cycle`)
+- **AI計画サイクル状態** (`ai_tactic/planning_cycle`)
   - WorldModelの準備状態
   - 計画サイクルの更新頻度
 
@@ -206,16 +206,16 @@ robots:
 - **セッション自動復帰**: 途中再起動時のロール再割当フローを整備
 - **プレイバンドル化**: キック系シナリオのテンプレート化で設定ファイルを統一
 - **状況判定精度向上**: Referee+Analyzer複合判定の閾値再調整
-- **パフォーマンス最適化**: プランナー切り替え時のデータ同期をノンブロッキング化
+- **パフォーマンス最適化**: タクティック切り替え時のデータ同期をノンブロッキング化
 
 ### 開発活発度
 
-🟡 **中活動**: 試合規則変更や新フォーメーション適用に伴う設定更新が継続中。特にテンプレート化されたYAMLシナリオとプランナー連携の改修が活発。
+🟡 **中活動**: 試合規則変更や新フォーメーション適用に伴う設定更新が継続中。特にテンプレート化されたYAMLシナリオとタクティック連携の改修が活発。
 
 ### 技術的特徴
 
 - **設定駆動アーキテクチャ**: コード変更なしでの戦術調整
-- **プラグイン統合**: 動的なプランナー選択・切り替え
+- **プラグイン統合**: 動的なタクティック選択・切り替え
 - **状況適応**: SSL規則変更への柔軟な対応
 
 ## パフォーマンス特性
@@ -223,14 +223,14 @@ robots:
 ### 応答性能
 
 - **状況判定時間**: <5ms
-- **プランナー切り替え**: <10ms
+- **タクティック切り替え**: <10ms
 - **全体制御周期**: 60Hz対応
 
 ### 管理容量
 
 - **同時管理ロボット**: 最大11台
 - **設定ファイル**: 25種類の状況対応
-- **プランナー種類**: 20種類以上
+- **タクティック種類**: 20種類以上
 
 ## 将来展望
 

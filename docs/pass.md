@@ -7,7 +7,7 @@
 
 - 上位層でパス先ロボットを決定し、WorldModel の GameAnalysis に載せて配信。
 - Attacker は配信されたパス先に基づいてキックを実施。
-- 受け手側は PassReceiverPlanner が予約（指名）し、Receive スキルを割り当てて受け準備。
+- 受け手側は PassReceiverTactic が予約（指名）し、Receive スキルを割り当てて受け準備。
 - 頻繁なパス先フリップを抑制するため、上位層の選定にヒステリシスを導入。
 
 ## 関係コンポーネント
@@ -20,7 +20,7 @@
   - `pass_receive` セッションで受け手ロボットに Receive スキルを割当（予約）。
 - `crane_robot_skills::Attacker`:
   - `pass_target_id` を優先してパス先・キックターゲットを決定。
-- `PassReceiverPlanner`:
+- `PassReceiverTactic`:
   - 受け手ロボットに `Receive` を割当。キック中は能動受取、キック前はその場停止しつつボールを注視。
 
 ## メッセージ拡張
@@ -54,7 +54,7 @@
 ## 受け手予約と受取準備
 
 - `TacticCoordinator` が `GameAnalysis.pass_target_id` を参照。
-- `PassReceiverPlanner` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
+- `PassReceiverTactic` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
   - ボールが十分動いている、または `ongoing_kick.is_kicker_friend` が真のときは能動受け取り（`Receive::update()` 実行）。
   - キック前は整列動作を行わず、その場で停止しボールを注視。
   - 2025シーズンでは、PassTargetSelectorの確定まで待機する「遅延切替」ロジックが標準となり、受け手のスキルフリップが減少。
@@ -108,12 +108,12 @@ situations:
 ## 既知の注意点
 
 - 受け手が物理的に不達な位置にいる場合は Receive 側が `closest` へフォールバック。
-- `pass_target_id` が未選択（-1）の場合、Attacker はパス分岐に入らず、PassReceiverPlanner はロボットを取得しません（受け手予約なし）。
+- `pass_target_id` が未選択（-1）の場合、Attacker はパス分岐に入らず、PassReceiverTactic はロボットを取得しません（受け手予約なし）。
 
 ## 変更ファイル一覧（実装反映）
 
 - `crane_msgs/msg/analysis/GameAnalysis.msg`: `pass_target_id` の追加
 - `crane_world_model_publisher`: `pass_target_id` の選定とスイッチ抑制
 - `crane_robot_skills/src/attacker.cpp`: 上位決定の優先適用
-- `session/.../pass_receiver_planner.hpp`: 受取準備ロジックの最適化
+- `session/.../pass_receiver_tactic.hpp`: 受取準備ロジックの最適化
 - `session/.../play_situation/*.yaml`: `pass_receive` の追加
