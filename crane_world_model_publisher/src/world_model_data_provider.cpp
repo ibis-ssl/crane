@@ -54,7 +54,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // MulticastReceiver初期化（Vision UDP）
   try {
     multicast_receiver_ =
-      std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
+      std::make_unique<crane::MulticastReceiver>(config_.vision_address, config_.vision_port);
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Vision設定: %s:%d", config_.vision_address.c_str(),
       config_.vision_port);
@@ -67,7 +67,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   try {
     auto tracker_addr = node.get_parameter("tracker_address").get_value<std::string>();
     auto tracker_port = node.get_parameter("tracker_port").get_value<int>();
-    tracker_receiver_ = std::make_unique<multicast::MulticastReceiver>(tracker_addr, tracker_port);
+    tracker_receiver_ = std::make_unique<crane::MulticastReceiver>(tracker_addr, tracker_port);
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
       static_cast<int>(tracker_port));

@@ -29,10 +29,10 @@ public:
     declare_parameter("multicast_address", "224.5.23.2");
     declare_parameter("blue_port", 10301);
     declare_parameter("yellow_port", 10302);
-    yellow_receiver = std::make_unique<multicast::MulticastReceiver>(
+    yellow_receiver = std::make_unique<crane::MulticastReceiver>(
       get_parameter("multicast_address").get_value<std::string>(),
       get_parameter("yellow_port").get_value<int>());
-    blue_receiver = std::make_unique<multicast::MulticastReceiver>(
+    blue_receiver = std::make_unique<crane::MulticastReceiver>(
       get_parameter("multicast_address").get_value<std::string>(),
       get_parameter("blue_port").get_value<int>());
     pub_robots_status_blue =
@@ -100,9 +100,9 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::unique_ptr<multicast::MulticastReceiver> yellow_receiver;
+  std::unique_ptr<crane::MulticastReceiver> yellow_receiver;
 
-  std::unique_ptr<multicast::MulticastReceiver> blue_receiver;
+  std::unique_ptr<crane::MulticastReceiver> blue_receiver;
 
   robocup_ssl_msgs::msg::RobotsStatus yellow_status_msg;
 

@@ -38,7 +38,7 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
   const int multicast_port = get_parameter("multicast_port").get_value<int>();
 
-  receiver = std::make_unique<multicast::MulticastReceiver>(multicast_address, multicast_port);
+  receiver = std::make_unique<crane::MulticastReceiver>(multicast_address, multicast_port);
 
   pub_detection_frame =
     create_publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>("detection_frame", 10);

@@ -29,7 +29,7 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10010);
-  receiver = std::make_unique<multicast::MulticastReceiver>(
+  receiver = std::make_unique<crane::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
   pub_tracked_frame = create_publisher<robocup_ssl_msgs::msg::TrackedFrame>("tracked_frame", 10);

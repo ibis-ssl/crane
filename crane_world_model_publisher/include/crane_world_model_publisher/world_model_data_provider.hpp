@@ -129,7 +129,7 @@ private:
   TeamColor our_team_color_;
 
   // ネットワーク通信
-  std::unique_ptr<multicast::MulticastReceiver> multicast_receiver_;
+  std::unique_ptr<crane::MulticastReceiver> multicast_receiver_;
 
   // データ状態
   crane_msgs::msg::BallInfo ball_info_;
@@ -237,7 +237,7 @@ private:
   bool has_tracked_frame_updated_;
 
   // Tracker UDP receiver
-  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver_;
+  std::unique_ptr<crane::MulticastReceiver> tracker_receiver_;
 
   // Whether to use UDP detection (legacy Vision) for ball/robots
   bool use_udp_detection_ = false;

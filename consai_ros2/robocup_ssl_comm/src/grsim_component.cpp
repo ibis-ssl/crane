@@ -29,7 +29,7 @@ using std::placeholders::_1;
 
 GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
 {
-  sender = std::make_unique<udp_sender::UDPSender>("127.0.0.1", 20011);
+  sender = std::make_unique<crane::UDPSender>("127.0.0.1", 20011);
 
   sub_commands =
     create_subscription<Commands>("commands", 10, std::bind(&GrSim::callback_commands, this, _1));
