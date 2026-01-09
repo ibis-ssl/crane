@@ -50,27 +50,41 @@ class PcmAudioOutput:
         if self._running:
             return
 
-        self._running = True
-        self._pyaudio = pyaudio.PyAudio()
+        try:
+            self._pyaudio = pyaudio.PyAudio()
 
-        # Open persistent output stream
-        self._stream = self._pyaudio.open(
-            format=FORMAT,
-            channels=self._channels,
-            rate=self._sample_rate,
-            output=True,
-            frames_per_buffer=CHUNK_SIZE,
-        )
+            # Open persistent output stream
+            self._stream = self._pyaudio.open(
+                format=FORMAT,
+                channels=self._channels,
+                rate=self._sample_rate,
+                output=True,
+                frames_per_buffer=CHUNK_SIZE,
+            )
 
-        self._thread = threading.Thread(target=self._playback_loop, daemon=True)
-        self._thread.start()
+            self._running = True
+            self._thread = threading.Thread(target=self._playback_loop, daemon=True)
+            self._thread.start()
 
-        logger.info(
-            f"Audio output started: {self._sample_rate}Hz, {self._channels}ch (PyAudio)"
-        )
+            logger.info(
+                f"Audio output started: {self._sample_rate}Hz, {self._channels}ch (PyAudio)"
+            )
+        except Exception as e:
+            logger.error(f"Failed to start audio output: {e}")
+            logger.warning("Audio output will be disabled.")
+            if self._stream:
+                self._stream.close()
+                self._stream = None
+            if self._pyaudio:
+                self._pyaudio.terminate()
+                self._pyaudio = None
+            self._running = False
 
     def stop(self) -> None:
         """Stop audio output thread."""
+        if not self._running:
+            return
+
         self._running = False
 
         # Clear queue to unblock the thread
@@ -105,7 +119,7 @@ class PcmAudioOutput:
         Args:
             pcm_data: Raw PCM audio bytes (16-bit signed, little-endian)
         """
-        if not self._running:
+        if not self._running or not self._stream:
             return
 
         self._audio_queue.put(pcm_data)

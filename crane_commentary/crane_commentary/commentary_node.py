@@ -12,16 +12,22 @@ import logging
 import os
 import threading
 import time
+import json
+import yaml  # Requires PyYAML
 from typing import Optional
 
+from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from crane_msgs.msg import PlaySituation, RonarEvent, WorldModel
 
-from crane_commentary.data import generate_initial_context
-from crane_commentary.data.team_profiles import get_team_reading
+from crane_commentary.data import (
+    generate_initial_context,
+    get_team_profile_from_data,
+    get_team_reading_from_data,
+)
 from crane_commentary.statler import WorldModelWriter, WorldModelReader
 from crane_commentary.statler.world_model_reader import CommentaryMode
 from crane_commentary.gemini import GeminiLiveApiClient, FunctionHandler
@@ -67,11 +73,52 @@ class CommentaryNode(Node):
         # Initialize Function Handler for Gemini Function Calling
         self._function_handler = FunctionHandler(self._writer)
 
+        # Load configuration files
+        self._ssl_rules = {}
+        self._team_profiles = {}
+        self._load_config_files()
+
+        # Load system instruction
+        system_instruction = ""
+        try:
+            pkg_share = get_package_share_directory("crane_commentary")
+            instruction_path = os.path.join(
+                pkg_share, "config", "system_instruction.md"
+            )
+            if os.path.exists(instruction_path):
+                with open(instruction_path, "r", encoding="utf-8") as f:
+                    system_instruction = f.read()
+                self.get_logger().info(
+                    f"Loaded system instruction from {instruction_path}"
+                )
+            else:
+                self.get_logger().warning(
+                    f"System instruction file not found: {instruction_path}"
+                )
+        except Exception as e:
+            self.get_logger().error(f"Failed to load system instruction: {e}")
+
+        # Load tools configuration
+        tools_config = []
+        try:
+            pkg_share = get_package_share_directory("crane_commentary")
+            tools_path = os.path.join(pkg_share, "config", "function_declarations.json")
+            if os.path.exists(tools_path):
+                with open(tools_path, "r", encoding="utf-8") as f:
+                    tools_config = json.load(f)
+                self.get_logger().info(f"Loaded tools config from {tools_path}")
+            else:
+                self.get_logger().warning(f"Tools config file not found: {tools_path}")
+        except Exception as e:
+            self.get_logger().error(f"Failed to load tools config: {e}")
+
         # Initialize Gemini client
         gemini_config = GeminiConfig(
             api_key=api_key,
             model=model,
             sample_rate=sample_rate,
+            system_instruction=system_instruction,
+            tools_config=tools_config,
         )
         self._gemini_client = GeminiLiveApiClient(gemini_config)
 
@@ -157,6 +204,34 @@ class CommentaryNode(Node):
         }
 
         self.get_logger().info("Commentary node initialized")
+
+    def _load_config_files(self) -> None:
+        """Load SSL rules and team profiles from YAML configuration files."""
+        try:
+            pkg_share = get_package_share_directory("crane_commentary")
+
+            # Load SSL rules
+            rules_path = os.path.join(pkg_share, "config", "ssl_rules.yaml")
+            if os.path.exists(rules_path):
+                with open(rules_path, "r", encoding="utf-8") as f:
+                    self._ssl_rules = yaml.safe_load(f)
+                self.get_logger().info(f"Loaded SSL rules from {rules_path}")
+            else:
+                self.get_logger().warning(f"SSL rules file not found: {rules_path}")
+
+            # Load team profiles
+            profiles_path = os.path.join(pkg_share, "config", "team_profiles.yaml")
+            if os.path.exists(profiles_path):
+                with open(profiles_path, "r", encoding="utf-8") as f:
+                    self._team_profiles = yaml.safe_load(f)
+                self.get_logger().info(f"Loaded team profiles from {profiles_path}")
+            else:
+                self.get_logger().warning(
+                    f"Team profiles file not found: {profiles_path}"
+                )
+
+        except Exception as e:
+            self.get_logger().error(f"Failed to load config files: {e}")
 
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Run asyncio event loop in background thread."""
@@ -316,14 +391,14 @@ class CommentaryNode(Node):
         # Parse metadata_json and convert team names to readings
         if msg.metadata_json:
             try:
-                import json
-
                 metadata = json.loads(msg.metadata_json)
 
                 # Convert team name to reading if exists
                 if "team" in metadata:
                     team_key = metadata["team"]
-                    metadata["team"] = get_team_reading(team_key)
+                    metadata["team"] = get_team_reading_from_data(
+                        team_key, self._team_profiles
+                    )
 
                 event_data["metadata"] = metadata
             except json.JSONDecodeError:
@@ -395,6 +470,8 @@ class CommentaryNode(Node):
             return
 
         context = generate_initial_context(
+            ssl_rules=self._ssl_rules,
+            team_profiles=self._team_profiles,
             our_team_name=self._our_team_name,
             their_team_name=self._their_team_name,
         )
@@ -405,26 +482,26 @@ class CommentaryNode(Node):
 
     def _send_team_update(self) -> None:
         """Send team information update to Gemini."""
-        import json
-        from crane_commentary.data.team_profiles import (
-            get_team_profile,
-            get_team_reading,
-        )
-
         update = {
             "type": "team_update",
             "our_team": {
-                "name": get_team_reading(self._our_team_name),
+                "name": get_team_reading_from_data(
+                    self._our_team_name, self._team_profiles
+                ),
                 "key": self._our_team_name,
-                **get_team_profile(self._our_team_name),
+                **get_team_profile_from_data(self._our_team_name, self._team_profiles),
             },
         }
 
         if self._their_team_name:
             update["their_team"] = {
-                "name": get_team_reading(self._their_team_name),
+                "name": get_team_reading_from_data(
+                    self._their_team_name, self._team_profiles
+                ),
                 "key": self._their_team_name,
-                **get_team_profile(self._their_team_name),
+                **get_team_profile_from_data(
+                    self._their_team_name, self._team_profiles
+                ),
             }
 
         update_json = json.dumps(update, ensure_ascii=False, indent=2)
