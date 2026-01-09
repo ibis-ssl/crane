@@ -53,6 +53,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   diagnostics_reporter_ =
     std::make_unique<DiagnosticsReporter>(get_clock(), planner_registry_, get_logger());
 
+  // コマンドアグリゲーターの初期化
+  command_aggregator_ = std::make_unique<CommandAggregator>(planner_registry_);
+
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
@@ -90,14 +93,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     // 遅延監視: WorldModel受信完了とSessionController処理開始
     world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
 
-    crane_msgs::msg::PositionCommands msg;
-    msg.header = world_model->getMsg().header;
-    msg.on_positive_half = world_model->onPositiveHalf();
-    msg.is_yellow = world_model->isYellow();
-
-    // WorldModelのdelay_checkpointsをPositionCommandsにコピー
-    msg.delay_checkpoints = world_model->getDelayCheckpoints();
-
     // ロボットが過不足なく割り当てられているか確認
     auto assigned_robot_ids = getAssignedRobotIds();
     auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
@@ -121,29 +116,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       assign(play_situation.command.name);
     }
 
-    for (const auto & planner : planner_registry_->getAllPlanners()) {
-      auto commands_msg = planner->getPositionCommands();
-      ranges::for_each(
-        commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {
-          position_command.planner_name = planner->name;
-        });
-      msg.robot_commands.insert(
-        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
-        commands_msg.robot_commands.end());
-      if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO(HansRobo): プランナが成功・失敗した場合の処理
-      }
-    }
-
-    // ロボットの優先度を設定(値が高いほど優先度が高い)
-    uint8_t robot_priority = 100;
-    for (auto & position_command : msg.robot_commands) {
-      position_command.local_planner_config.priority = --robot_priority;
-    }
-    msg.header.stamp = now();
-    // 遅延監視: SessionController処理完了、PositionCommands送信
-    DelayMonitorWrapper::addDelayCheckpoint(
-      msg.delay_checkpoints, "session_controller_end", "strategy_computed");
+    // コマンド収集と構築
+    auto msg = command_aggregator_->collectCommands(world_model, now());
 
     position_commands_pub.publish(msg);
     visualizer->flush();

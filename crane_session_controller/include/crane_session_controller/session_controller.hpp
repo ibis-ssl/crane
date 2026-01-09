@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "command_aggregator.hpp"
 #include "configuration_manager.hpp"
 #include "diagnostics_reporter.hpp"
 #include "planner_registry.hpp"
@@ -70,6 +71,8 @@ private:
   std::shared_ptr<PlannerRegistry> planner_registry_;
 
   std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
+
+  std::unique_ptr<CommandAggregator> command_aggregator_;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
