@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PHYSICS__ALLOCATION_HYSTERESIS_HPP_
-#define CRANE_PHYSICS__ALLOCATION_HYSTERESIS_HPP_
+#ifndef CRANE_PHYSICS__HYSTERESIS_HPP_
+#define CRANE_PHYSICS__HYSTERESIS_HPP_
 
 #include <cassert>
 #include <functional>
@@ -124,4 +124,4 @@ private:
 };
 
 }  // namespace crane
-#endif  // CRANE_PHYSICS__ALLOCATION_HYSTERESIS_HPP_
+#endif  // CRANE_PHYSICS__HYSTERESIS_HPP_

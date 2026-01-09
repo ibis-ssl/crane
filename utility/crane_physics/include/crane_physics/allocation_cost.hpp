@@ -146,8 +146,8 @@ inline double calculateSimpleDistanceCost(const Point & robot_pos, const Point &
  * @brief SharedPtr版のコスト関数（WorldModelWrapper互換用）
  */
 inline double calculateAllocationCost(
-  const std::shared_ptr<RobotInfo> & robot, const Point & target,
-  const AssignmentContext & context, const AllocationCostConfig & config = AllocationCostConfig())
+  const std::shared_ptr<RobotInfo> & robot, const Point & target, const AssignmentContext & context,
+  const AllocationCostConfig & config = AllocationCostConfig())
 {
   return calculateAllocationCost(*robot, target, context, config);
 }
