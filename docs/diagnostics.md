@@ -62,7 +62,7 @@ Crane診断システムは以下の3層構造で構成されています：
 │  │ - battery          │                                  │
 │  │ - robot_error      │  ┌───────────────────────┐      │
 │  └────────────────────┘  │ TacticCoordinator     │      │
-│                          │ - ai_planner/planning │      │
+│                          │ - ai_tactic/planning │      │
 │  ┌────────────────────┐  └───────────────────────┘      │
 │  │ LocalTactic       │                                  │
 │  │ - path_planning    │  ┌───────────────────────┐      │
@@ -87,7 +87,7 @@ Crane診断システムは以下の3層構造で構成されています：
 │  SSL_System/                                               │
 │  ├── Base_Station/                                         │
 │  │   ├── Vision/       (vision/*)                          │
-│  │   ├── AI_Planner/   (ai_planner/*)                      │
+│  │   ├── AI_Tactic/   (ai_tactic/*)                      │
 │  │   └── Local_Planner/ (local_planner/*)                  │
 │  └── Team/                                                  │
 │      ├── Robot_00/      (robot_00/*)                        │
@@ -141,8 +141,8 @@ SSL_System/
 ├── Base_Station/           # 計算PC上のコンポーネント
 │   ├── Vision/            # vision/* の診断
 │   │   └── vision/processing
-│   ├── AI_Planner/        # ai_planner/* の診断
-│   │   └── ai_planner/planning_cycle
+│   ├── AI_Tactic/        # ai_tactic/* の診断
+│   │   └── ai_tactic/planning_cycle
 │   └── Local_Planner/     # local_planner/* の診断
 │       └── local_planner/path_planning
 └── Team/                   # ロボット群
@@ -359,7 +359,7 @@ AI計画サイクルの監視を行います。
 #### 診断名
 
 ```text
-ai_planner/planning_cycle
+ai_tactic/planning_cycle
 ```
 
 #### 監視項目
@@ -552,10 +552,10 @@ analyzers:
           contains: ['vision/']
           timeout: 5.0
 
-        ai_planner:
+        ai_tactic:
           type: diagnostic_aggregator/GenericAnalyzer
           path: AI_Planner
-          contains: ['ai_planner/']
+          contains: ['ai_tactic/']
           timeout: 5.0
 
         local_planner:
@@ -770,7 +770,7 @@ void MyNode::timerCallback() {
 **良い例**:
 
 - `vision/processing`
-- `ai_planner/planning_cycle`
+- `ai_tactic/planning_cycle`
 - `robot_00/communication`
 - `my_component/initialization`
 
