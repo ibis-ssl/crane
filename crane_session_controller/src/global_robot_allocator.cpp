@@ -23,10 +23,6 @@ auto GlobalRobotAllocator::allocate(
 {
   std::unordered_map<std::string, std::vector<uint8_t>> result;
 
-  RCLCPP_INFO(
-    logger_, "[GlobalRobotAllocator] 割当開始: %lu Tactics, %lu ロボット", requirements.size(),
-    available_robots.size());
-
   if (available_robots.empty()) {
     RCLCPP_WARN(logger_, "[GlobalRobotAllocator] 利用可能なロボットがありません");
     return result;
@@ -54,22 +50,13 @@ auto GlobalRobotAllocator::allocate(
 
   auto remaining_robots = available_robots;
 
-  RCLCPP_INFO(
-    logger_, "[GlobalRobotAllocator] ハード制約: %lu, ソフト制約: %lu", hard_requirements.size(),
-    soft_requirements.size());
-
   // Phase 1: ハード制約Tacticを先に処理
   allocateHardConstraints(
     hard_requirements, remaining_robots, world_model, prev_state, config, result);
 
-  RCLCPP_INFO(
-    logger_, "[GlobalRobotAllocator] ハード制約処理後の残りロボット: %lu", remaining_robots.size());
-
   // Phase 2: 残りのロボットでソフト制約Tacticをハンガリアン法で処理
   allocateSoftConstraints(
     soft_requirements, remaining_robots, world_model, prev_state, config, result);
-
-  RCLCPP_INFO(logger_, "[GlobalRobotAllocator] 割当完了: %lu Tactics", result.size());
 
   return result;
 }
