@@ -67,7 +67,8 @@ public:
    * @param tactic_name 割り当てられたTactic名
    * @param target_position ターゲット位置
    */
-  void updateAssignment(uint8_t robot_id, const std::string & tactic_name, const Point & target_position)
+  void updateAssignment(
+    uint8_t robot_id, const std::string & tactic_name, const Point & target_position)
   {
     // Tactic割当を更新
     bool same_tactic = wasAssignedTo(robot_id, tactic_name);

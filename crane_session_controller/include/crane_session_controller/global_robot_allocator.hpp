@@ -113,7 +113,7 @@ private:
     std::string tactic_name;
     int tactic_priority;
     size_t robot_index;
-    std::function<double(const std::shared_ptr<RobotInfo> &)> suitability_func;
+    std::shared_ptr<std::function<double(const std::shared_ptr<RobotInfo> &)>> suitability_func;
   };
 
   /**

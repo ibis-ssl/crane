@@ -75,10 +75,7 @@ public:
   {
     allocation_cost_config_ = config;
   }
-  const AllocationCostConfig & getAllocationCostConfig() const
-  {
-    return allocation_cost_config_;
-  }
+  const AllocationCostConfig & getAllocationCostConfig() const { return allocation_cost_config_; }
 
 private:
   std::shared_ptr<ConfigurationManager> config_manager_;

@@ -36,7 +36,8 @@ auto RobotAllocator::allocate(
   if (!session_capacities_opt.has_value()) {
     RCLCPP_ERROR(
       logger_,
-      "\t「%s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
+      "\t「%"
+      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
       session_name.c_str());
     return crane_msgs::msg::RobotSelectResults{};
   }
@@ -72,8 +73,7 @@ auto RobotAllocator::allocate(
 
   // GlobalRobotAllocatorで割当を実行
   auto allocation = global_allocator_->allocate(
-    requirements, selectable_robot_ids, world_model, allocation_state_,
-    allocation_cost_config_);
+    requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
 
   // 割当結果を適用
   crane_msgs::msg::RobotSelectResults results;
@@ -99,9 +99,13 @@ auto RobotAllocator::allocate(
 
     if (tactic) {
       // ロボット割当をTacticに反映
-      // selectRobots()を呼び出してロボットを割り当てる
-      // ただし、GlobalRobotAllocatorが既に選択済みなので、直接渡す
-      tactic->selectRobots(robot_ids, robot_ids.size(), prev_robot_roles_);
+      // GlobalRobotAllocatorが選択したロボットを直接設定（getSelectedRobotsをバイパス）
+      tactic->setAllocatedRobots(robot_ids);
+
+      // 設定後のロボット数を確認
+      RCLCPP_INFO(
+        logger_, "\tTactic「%s」のロボット設定: 設定前=%lu, 設定後=%lu", tactic_name.c_str(),
+        tactic->getRobots().size() - robot_ids.size(), tactic->getRobots().size());
 
       // レジストリに追加
       if (tactic_it == tactic_registry_->getAllPlanners().end()) {
@@ -115,9 +119,9 @@ auto RobotAllocator::allocate(
         prev_robot_roles_.insert_or_assign(id, RobotRole{tactic_name, ""});
       }
 
-      RCLCPP_DEBUG_STREAM(
-        logger_, "\tグローバルアロケータ: セッション「" << tactic_name << "」のロボット割当："
-                                                        << robot_ids);
+      RCLCPP_INFO_STREAM(
+        logger_,
+        "\tグローバルアロケータ: セッション「" << tactic_name << "」のロボット割当：" << robot_ids);
     }
   }
 
