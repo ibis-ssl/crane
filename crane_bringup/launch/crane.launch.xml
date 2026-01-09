@@ -98,7 +98,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- コアシステム -->
   <!-- ============================================================ -->
-  <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
+  <node pkg="crane_tactic_coordinator" exec="crane_tactic_coordinator_node" output="screen">
     <param name="initial_session" value="HALT"/>
     <param name="event_config_file_name" value="normal.yaml"/>
     <param name="slack.robot_max_acceleration" value="$(var slack.robot_max_acceleration)"/>

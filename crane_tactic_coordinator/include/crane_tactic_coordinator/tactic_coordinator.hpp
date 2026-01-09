@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__TACTIC_COORDINATOR_HPP_
-#define CRANE_SESSION_CONTROLLER__TACTIC_COORDINATOR_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__TACTIC_COORDINATOR_HPP_
+#define CRANE_TACTIC_COORDINATOR__TACTIC_COORDINATOR_HPP_
 
 #include <chrono>
 #include <crane_comm/diagnosed_publisher.hpp>
@@ -15,7 +15,7 @@
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
-#include <crane_planner_plugins/tactic_base.hpp>
+#include <crane_tactics/tactic_base.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
@@ -93,4 +93,4 @@ private:
 };
 
 }  // namespace crane
-#endif  // CRANE_SESSION_CONTROLLER__TACTIC_COORDINATOR_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__TACTIC_COORDINATOR_HPP_

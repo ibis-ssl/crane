@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_session_controller/command_aggregator.hpp"
+#include "crane_tactic_coordinator/command_aggregator.hpp"
 
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <range/v3/algorithm/for_each.hpp>

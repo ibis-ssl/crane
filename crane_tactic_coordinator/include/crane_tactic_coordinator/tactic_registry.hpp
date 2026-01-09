@@ -4,17 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__TACTIC_REGISTRY_HPP_
-#define CRANE_SESSION_CONTROLLER__TACTIC_REGISTRY_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__TACTIC_REGISTRY_HPP_
+#define CRANE_TACTIC_COORDINATOR__TACTIC_REGISTRY_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_planner_plugins/tactic_base.hpp>
+#include <crane_tactics/tactic_base.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
-#include "crane_session_controller/configuration_manager.hpp"
+#include "crane_tactic_coordinator/configuration_manager.hpp"
 
 namespace crane
 {
@@ -77,4 +77,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSION_CONTROLLER__TACTIC_REGISTRY_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__TACTIC_REGISTRY_HPP_

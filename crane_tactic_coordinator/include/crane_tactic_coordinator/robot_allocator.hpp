@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__ROBOT_ALLOCATOR_HPP_
-#define CRANE_SESSION_CONTROLLER__ROBOT_ALLOCATOR_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__ROBOT_ALLOCATOR_HPP_
+#define CRANE_TACTIC_COORDINATOR__ROBOT_ALLOCATOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
@@ -93,4 +93,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSION_CONTROLLER__ROBOT_ALLOCATOR_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__ROBOT_ALLOCATOR_HPP_

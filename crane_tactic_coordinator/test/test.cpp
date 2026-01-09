@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "crane_session_controller/tactic_coordinator.hpp"
+#include "crane_tactic_coordinator/tactic_coordinator.hpp"
 
 TEST(TacticCoordinator, dummy_test)
 {

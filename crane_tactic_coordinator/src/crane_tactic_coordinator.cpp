@@ -9,7 +9,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
-#include <crane_planner_plugins/tactic_factory.hpp>
+#include <crane_tactics/tactic_factory.hpp>
 #include <crane_utils/stream.hpp>
 #include <crane_utils/time.hpp>
 #include <filesystem>
@@ -21,9 +21,9 @@
 #include <range/v3/view/transform.hpp>
 #include <std_msgs/msg/string.hpp>
 
-#include "crane_session_controller/configuration_manager.hpp"
-#include "crane_session_controller/tactic_coordinator.hpp"
-#include "crane_session_controller/tactic_registry.hpp"
+#include "crane_tactic_coordinator/configuration_manager.hpp"
+#include "crane_tactic_coordinator/tactic_coordinator.hpp"
+#include "crane_tactic_coordinator/tactic_registry.hpp"
 
 namespace crane
 {

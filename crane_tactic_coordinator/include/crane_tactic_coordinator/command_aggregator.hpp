@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__COMMAND_AGGREGATOR_HPP_
-#define CRANE_SESSION_CONTROLLER__COMMAND_AGGREGATOR_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__COMMAND_AGGREGATOR_HPP_
+#define CRANE_TACTIC_COORDINATOR__COMMAND_AGGREGATOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
@@ -53,4 +53,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSION_CONTROLLER__COMMAND_AGGREGATOR_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__COMMAND_AGGREGATOR_HPP_

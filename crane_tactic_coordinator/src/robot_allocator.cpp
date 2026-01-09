@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_session_controller/robot_allocator.hpp"
+#include "crane_tactic_coordinator/robot_allocator.hpp"
 
 #include <algorithm>
 #include <crane_utils/stream.hpp>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(crane_session_controller)
+project(crane_tactic_coordinator)
 
 # Default to C++20
 if (NOT CMAKE_CXX_STANDARD)
@@ -24,14 +24,14 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/command_aggregator.cpp
   src/robot_allocator.cpp
   src/global_robot_allocator.cpp
-  include/crane_session_controller/tactic_coordinator.hpp
-  include/crane_session_controller/configuration_manager.hpp
-  include/crane_session_controller/tactic_registry.hpp
-  include/crane_session_controller/diagnostics_reporter.hpp
-  include/crane_session_controller/command_aggregator.hpp
-  include/crane_session_controller/robot_allocator.hpp
-  include/crane_session_controller/global_robot_allocator.hpp
-  include/crane_session_controller/allocation_state.hpp)
+  include/crane_tactic_coordinator/tactic_coordinator.hpp
+  include/crane_tactic_coordinator/configuration_manager.hpp
+  include/crane_tactic_coordinator/tactic_registry.hpp
+  include/crane_tactic_coordinator/diagnostics_reporter.hpp
+  include/crane_tactic_coordinator/command_aggregator.hpp
+  include/crane_tactic_coordinator/robot_allocator.hpp
+  include/crane_tactic_coordinator/global_robot_allocator.hpp
+  include/crane_tactic_coordinator/allocation_state.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 target_precompile_headers(${PROJECT_NAME}_component

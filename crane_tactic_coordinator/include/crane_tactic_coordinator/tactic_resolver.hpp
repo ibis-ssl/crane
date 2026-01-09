@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__TACTIC_RESOLVER_HPP_
-#define CRANE_SESSION_CONTROLLER__TACTIC_RESOLVER_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__TACTIC_RESOLVER_HPP_
+#define CRANE_TACTIC_COORDINATOR__TACTIC_RESOLVER_HPP_
 
 #include <memory>
 #include <optional>
@@ -55,4 +55,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSION_CONTROLLER__TACTIC_RESOLVER_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__TACTIC_RESOLVER_HPP_

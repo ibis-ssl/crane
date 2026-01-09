@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include "crane_session_controller/tactic_coordinator.hpp"
+#include "crane_tactic_coordinator/tactic_coordinator.hpp"
 
 auto main(int argc, char * argv[]) -> int
 {

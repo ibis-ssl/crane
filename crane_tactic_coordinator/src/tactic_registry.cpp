@@ -4,10 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_session_controller/tactic_registry.hpp"
+#include "crane_tactic_coordinator/tactic_registry.hpp"
 
 #include <algorithm>
-#include <crane_planner_plugins/tactic_factory.hpp>
+#include <crane_tactics/tactic_factory.hpp>
 #include <ranges>
 
 namespace crane

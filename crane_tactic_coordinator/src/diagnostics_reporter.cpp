@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_session_controller/diagnostics_reporter.hpp"
+#include "crane_tactic_coordinator/diagnostics_reporter.hpp"
 
 namespace crane
 {

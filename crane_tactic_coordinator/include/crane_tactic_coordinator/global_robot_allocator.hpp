@@ -4,14 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_CONTROLLER__GLOBAL_ROBOT_ALLOCATOR_HPP_
-#define CRANE_SESSION_CONTROLLER__GLOBAL_ROBOT_ALLOCATOR_HPP_
+#ifndef CRANE_TACTIC_COORDINATOR__GLOBAL_ROBOT_ALLOCATOR_HPP_
+#define CRANE_TACTIC_COORDINATOR__GLOBAL_ROBOT_ALLOCATOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_physics/allocation_cost.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_physics/robot_info.hpp>
-#include <crane_session_controller/allocation_state.hpp>
+#include <crane_tactic_coordinator/allocation_state.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/logger.hpp>
@@ -127,4 +127,4 @@ private:
 };
 
 }  // namespace crane
-#endif  // CRANE_SESSION_CONTROLLER__GLOBAL_ROBOT_ALLOCATOR_HPP_
+#endif  // CRANE_TACTIC_COORDINATOR__GLOBAL_ROBOT_ALLOCATOR_HPP_
