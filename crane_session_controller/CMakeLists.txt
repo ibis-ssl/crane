@@ -20,9 +20,15 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_session_controller.cpp
   src/configuration_manager.cpp
   src/planner_registry.cpp
+  src/diagnostics_reporter.cpp
+  src/command_aggregator.cpp
+  src/robot_allocator.cpp
   include/crane_session_controller/session_controller.hpp
   include/crane_session_controller/configuration_manager.hpp
-  include/crane_session_controller/planner_registry.hpp)
+  include/crane_session_controller/planner_registry.hpp
+  include/crane_session_controller/diagnostics_reporter.hpp
+  include/crane_session_controller/command_aggregator.hpp
+  include/crane_session_controller/robot_allocator.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 target_precompile_headers(${PROJECT_NAME}_component

@@ -33,8 +33,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   position_commands_pub(this, "/control_targets", 1, 50., 70.),
   robot_select_results_pub(
     create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10)),
-  diagnostic_updater_(this),
-  last_planning_time_(this->now())
+  diagnostic_updater_(this)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -49,6 +48,17 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   // プランナー管理の初期化
   planner_registry_ = std::make_shared<PlannerRegistry>();
+
+  // 診断レポーターの初期化
+  diagnostics_reporter_ =
+    std::make_unique<DiagnosticsReporter>(get_clock(), planner_registry_, get_logger());
+
+  // コマンドアグリゲーターの初期化
+  command_aggregator_ = std::make_unique<CommandAggregator>(planner_registry_);
+
+  // ロボット割当マネージャーの初期化
+  robot_allocator_ =
+    std::make_unique<RobotAllocator>(config_manager_, planner_registry_, get_logger());
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
@@ -77,80 +87,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto initial_session = get_parameter("initial_session").as_string();
   assign(initial_session);
 
-  world_model->addCallback([this]() {
-    ScopedTimer timer(callback_process_time_pub);
-
-    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
-      world_model_ready = true;
-    }
-
-    // 遅延監視: WorldModel受信完了とSessionController処理開始
-    world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
-
-    crane_msgs::msg::PositionCommands msg;
-    msg.header = world_model->getMsg().header;
-    msg.on_positive_half = world_model->onPositiveHalf();
-    msg.is_yellow = world_model->isYellow();
-
-    // WorldModelのdelay_checkpointsをPositionCommandsにコピー
-    msg.delay_checkpoints = world_model->getDelayCheckpoints();
-
-    // ロボットが過不足なく割り当てられているか確認
-    auto assigned_robot_ids = getAssignedRobotIds();
-    auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
-    std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
-
-    bool robot_changed = false;
-    if (assigned_robot_ids.size() != observed_robot_ids.size()) {
-      RCLCPP_DEBUG_STREAM(
-        get_logger(), "ロボットの数が変動しています｜割当数："
-                        << assigned_robot_ids.size() << ", 観測数：" << observed_robot_ids.size());
-      robot_changed = true;
-    } else if (assigned_robot_ids != observed_robot_ids) {
-      RCLCPP_DEBUG_STREAM(
-        get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
-                        << "\tbefore: " << assigned_robot_ids
-                        << "\tafter : " << observed_robot_ids);
-      robot_changed = true;
-    }
-
-    if (robot_changed && !play_situation.command.name.empty()) {
-      assign(play_situation.command.name);
-    }
-
-    for (const auto & planner : planner_registry_->getAllPlanners()) {
-      auto commands_msg = planner->getPositionCommands();
-      ranges::for_each(
-        commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {
-          position_command.planner_name = planner->name;
-        });
-      msg.robot_commands.insert(
-        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
-        commands_msg.robot_commands.end());
-      if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO(HansRobo): プランナが成功・失敗した場合の処理
-      }
-    }
-
-    // ロボットの優先度を設定(値が高いほど優先度が高い)
-    uint8_t robot_priority = 100;
-    for (auto & position_command : msg.robot_commands) {
-      position_command.local_planner_config.priority = --robot_priority;
-    }
-    msg.header.stamp = now();
-    // 遅延監視: SessionController処理完了、PositionCommands送信
-    DelayMonitorWrapper::addDelayCheckpoint(
-      msg.delay_checkpoints, "session_controller_end", "strategy_computed");
-
-    position_commands_pub.publish(msg);
-    visualizer->flush();
-    CraneVisualizerBuffer::publish();
-
-    // 診断情報を更新
-    planning_count_++;
-    last_planning_time_ = now();
-    diagnostic_updater_.force_update();
-  });
+  world_model->addCallback([this]() { onWorldModelUpdate(); });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [this](const std_msgs::msg::String & msg) {
@@ -177,10 +114,15 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
     prev_session_name_ = session_name;
 
     try {
-      request(session_name, world_model->ours().getAvailableRobotIds());
+      auto results = robot_allocator_->allocate(
+        session_name, world_model->ours().getAvailableRobotIds(), world_model,
+        static_cast<rclcpp::Node &>(*this));
+
+      // 結果をパブリッシュ
+      robot_select_results_pub->publish(results);
 
       // 全セッションの割当状況をログ出力
-      logAssignmentIfChanged(buildAssignmentLog());
+      robot_allocator_->logAssignmentIfChanged(robot_allocator_->buildAssignmentLog());
     } catch (const std::exception & e) {
       std::stringstream what;
       what << "例外が発生しました: \n"
@@ -200,174 +142,41 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
   }
 }
 
-auto SessionControllerComponent::request(
-  const std::string & situation, std::vector<uint8_t> selectable_robot_ids) -> void
+auto SessionControllerComponent::onWorldModelUpdate() -> void
 {
-  auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(situation);
-  if (!session_capacities_opt.has_value()) {
-    RCLCPP_ERROR(
-      get_logger(),
-      "\t「%"
-      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
-      situation.c_str());
-    return;
+  ScopedTimer timer(callback_process_time_pub);
+
+  if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
+    world_model_ready = true;
   }
 
-  const auto & session_capacities = session_capacities_opt.value();
+  // 遅延監視: WorldModel受信完了とSessionController処理開始
+  world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
 
-  // 前回のプランナーリストを保存し、新しいリストをクリア
-  auto prev_available_planners = planner_registry_->getAllPlanners();
-  planner_registry_->clear();
-  prev_robot_roles_.clear();
-
-  crane_msgs::msg::RobotSelectResults results;
-
-  // 優先順位が高いPlannerから順にロボットを割り当てる
-  for (const auto & session_capacity : session_capacities) {
-    if (!tryAssignRobotToPlanner(
-          session_capacity, selectable_robot_ids, prev_available_planners, results)) {
-      // エラーが発生した場合はループを抜ける
-      break;
-    }
+  // ロボット変動検出と再割当
+  auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
+  if (
+    robot_allocator_->detectRobotChange(observed_robot_ids) &&
+    !play_situation.command.name.empty()) {
+    assign(play_situation.command.name);
   }
 
-  robot_select_results_pub->publish(results);
+  // コマンド収集と構築
+  auto msg = command_aggregator_->collectCommands(world_model, now());
 
-  // 割り当てられなかったロボットを待機状態にする
-  if (not selectable_robot_ids.empty()) {
-    SessionCapacity waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size()), {}};
-    tryAssignRobotToPlanner(waiter_session, selectable_robot_ids, prev_available_planners, results);
-  }
-}
+  position_commands_pub.publish(msg);
+  visualizer->flush();
+  CraneVisualizerBuffer::publish();
 
-auto SessionControllerComponent::getAssignedRobotIds() const -> std::vector<uint8_t>
-{
-  auto assigned_robot_ids =
-    planner_registry_->getAllPlanners() |
-    ranges::views::transform([](const auto & planner) { return planner->getRobots(); }) |
-    ranges::views::join | ranges::views::transform([](const auto & robot) { return robot.id; }) |
-    ranges::to<std::vector>() | ranges::actions::sort;
-  return assigned_robot_ids;
-}
-
-auto SessionControllerComponent::buildAssignmentLog() const -> std::string
-{
-  std::stringstream assignment_log;
-  bool first = true;
-  for (const auto & planner : planner_registry_->getAllPlanners()) {
-    if (!first) {
-      assignment_log << ", ";
-    }
-    first = false;
-    assignment_log << planner->name << ":[";
-    const auto & robots = planner->getRobots();
-    for (size_t i = 0; i < robots.size(); ++i) {
-      if (i > 0) {
-        assignment_log << ",";
-      }
-      assignment_log << static_cast<int>(robots[i].id);
-    }
-    assignment_log << "]";
-  }
-  return assignment_log.str();
-}
-
-auto SessionControllerComponent::logAssignmentIfChanged(const std::string & current_assignment)
-  -> void
-{
-  if (current_assignment != prev_assignment_log_) {
-    if (current_assignment.empty()) {
-      RCLCPP_DEBUG(get_logger(), "ロボット割当: なし");
-    } else {
-      RCLCPP_DEBUG(get_logger(), "ロボット割当: %s", current_assignment.c_str());
-    }
-    prev_assignment_log_ = current_assignment;
-  }
-}
-
-auto SessionControllerComponent::tryAssignRobotToPlanner(
-  const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-  const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
-  crane_msgs::msg::RobotSelectResults & results) -> bool
-{
-  // 割り当て可能なロボットがない場合はスキップ
-  if (session_capacity.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
-    return true;
-  }
-
-  crane_msgs::msg::RobotSelectResult result;
-  result.name = session_capacity.session_name;
-  result.selectable_robots_num = session_capacity.selectable_robot_num;
-  std::ranges::copy(selectable_robot_ids, std::back_inserter(result.selectable_robots));
-
-  try {
-    // プランナー生成とロボット選択
-    // PlannerRegistryを使ってプランナーを取得または生成
-    auto planner = planner_registry_->getOrCreatePlanner(
-      session_capacity.session_name, world_model, static_cast<rclcpp::Node &>(*this),
-      prev_available_planners, session_capacity.params);
-
-    auto selected_robots = planner->selectRobots(
-      selectable_robot_ids, session_capacity.selectable_robot_num, prev_robot_roles_);
-    results.results.push_back(result);
-
-    // プランナーをレジストリに登録
-    planner_registry_->addPlanner(planner);
-
-    if (not selectable_robot_ids.empty()) {
-      RCLCPP_DEBUG_STREAM(
-        get_logger(), "\tセッション「" << session_capacity.session_name << "」のロボット選択："
-                                       << selectable_robot_ids << " -> " << selected_robots);
-    }
-
-    // 割当依頼結果の反映
-    for (auto selected_robot_id : selected_robots) {
-      // 割当されたロボットを利用可能ロボットリストから削除
-      selectable_robot_ids.erase(
-        remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
-        selectable_robot_ids.end());
-      // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-      prev_robot_roles_.insert_or_assign(
-        selected_robot_id, RobotRole{session_capacity.session_name, ""});
-    }
-
-    return true;
-  } catch (std::exception & e) {
-    RCLCPP_ERROR(
-      get_logger(), "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
-      session_capacity.session_name.c_str(), e.what());
-    return false;
-  }
+  // 診断情報を更新
+  diagnostics_reporter_->recordCycle();
+  diagnostic_updater_.force_update();
 }
 
 auto SessionControllerComponent::updateDiagnostics(
   diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
 {
-  // WorldModelが準備できているかチェック
-  if (!world_model_ready) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::WARN, "Waiting for world model to be ready");
-    return;
-  }
-
-  // プランニングが実行されているかチェック
-  auto time_since_last_planning = (now() - last_planning_time_).seconds();
-
-  if (time_since_last_planning > 1.0) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planning not running (no update for >1s)");
-  } else if (time_since_last_planning > 0.5) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::WARN,
-      "Planning update slow (>0.5s since last update)");
-  } else {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Planning is running normally");
-  }
-
-  stat.add("time_since_last_planning", time_since_last_planning);
-  stat.add("planning_count", planning_count_);
-  stat.add("active_planners", static_cast<int>(planner_registry_->getAllPlanners().size()));
-  stat.add("available_robots", static_cast<int>(world_model->ours().getAvailableRobotIds().size()));
+  diagnostics_reporter_->updateDiagnostics(stat, world_model_ready, world_model);
 }
 }  // namespace crane
 
