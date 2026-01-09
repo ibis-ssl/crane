@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_planner_plugins/marker_functions.hpp>
 #include <crane_planner_plugins/tactic_base.hpp>
 #include <crane_robot_skills/marker.hpp>
 #include <functional>
@@ -39,6 +40,27 @@ public:
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // 危険な敵ロボットの中心位置に近いロボットを優先
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      auto danger_enemies = getDangerEnemies(wm);
+      if (danger_enemies.empty()) {
+        // 敵がいない場合はフィールド中央への距離を返す
+        return robot->getDistance(Point(0.0, 0.0));
+      }
+      // 危険な敵ロボットの平均位置を計算
+      Point center(0.0, 0.0);
+      for (const auto & [enemy, score] : danger_enemies) {
+        center += enemy->pose.pos;
+      }
+      center /= static_cast<double>(danger_enemies.size());
+      return robot->getDistance(center);
+    };
+  }
 
 private:
   auto assignMarkingTarget(

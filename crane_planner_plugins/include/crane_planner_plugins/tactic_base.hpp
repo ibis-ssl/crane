@@ -140,6 +140,30 @@ public:
 
   bool hasTacticParameter(const std::string & key) const { return tactic_params_.contains(key); }
 
+  /**
+   * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
+   *
+   * 各Tacticに適したロボットを評価するための関数を返す。
+   * 返される関数は、ロボット情報を受け取り、適性コスト（小さいほど適している）を返す。
+   *
+   * @return ロボット適性評価関数
+   */
+  virtual auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)>
+  {
+    // デフォルト実装: すべてのロボットを等価とみなす（コスト0）
+    return [](const std::shared_ptr<RobotInfo> &) { return 0.0; };
+  }
+
+  /**
+   * @brief ハード制約Tacticかどうかを返す
+   *
+   * trueを返すTacticは優先的にロボットが割り当てられる（キーパーなど）。
+   *
+   * @return ハード制約の場合true
+   */
+  virtual bool isHardConstraint() const { return false; }
+
 protected:
   virtual auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,

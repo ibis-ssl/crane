@@ -39,6 +39,18 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // セカンド脅威守備位置に近いロボットを優先
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      constexpr double offset = 0.3;
+      auto target = skills::SecondThreatDefender::getDefaultPoint(wm, offset);
+      return robot->getDistance(target);
+    };
+  }
+
 private:
   std::shared_ptr<skills::SecondThreatDefender> skill;
 };

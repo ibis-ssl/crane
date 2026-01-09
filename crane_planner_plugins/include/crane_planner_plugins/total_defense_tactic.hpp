@@ -59,6 +59,23 @@ public:
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // 守備位置に近いロボットを優先
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      Segment ball_line{wm->goal(), wm->ball().pos};
+      auto parameter = getDefenseLinePointParameter(ball_line, wm);
+      if (not parameter) {
+        // パラメータが取得できない場合はゴール位置への距離を使用
+        return robot->getDistance(wm->getOurGoalCenter());
+      }
+      const auto defense_point = getDefenseLinePoint(parameter.value(), wm);
+      return robot->getDistance(defense_point);
+    };
+  }
 };
 
 }  // namespace crane

@@ -98,6 +98,16 @@ public:
       return {selected_robots.front()};
     }
   }
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // ボールに近いロボットを優先（距離が小さいほど適している）
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      return robot->getDistance(wm->ball().pos);
+    };
+  }
 };
 
 }  // namespace crane

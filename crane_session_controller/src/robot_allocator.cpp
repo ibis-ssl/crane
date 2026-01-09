@@ -20,7 +20,10 @@ namespace crane
 RobotAllocator::RobotAllocator(
   std::shared_ptr<ConfigurationManager> config_manager,
   std::shared_ptr<TacticRegistry> tactic_registry, rclcpp::Logger logger)
-: config_manager_(config_manager), tactic_registry_(tactic_registry), logger_(logger)
+: config_manager_(config_manager),
+  tactic_registry_(tactic_registry),
+  logger_(logger),
+  global_allocator_(std::make_unique<GlobalRobotAllocator>(logger))
 {
 }
 
@@ -33,8 +36,7 @@ auto RobotAllocator::allocate(
   if (!session_capacities_opt.has_value()) {
     RCLCPP_ERROR(
       logger_,
-      "\t「%"
-      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
+      "\t「%s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
       session_name.c_str());
     return crane_msgs::msg::RobotSelectResults{};
   }
@@ -44,25 +46,79 @@ auto RobotAllocator::allocate(
   // 前回のプランナーリストを保存し、新しいリストをクリア
   auto prev_available_planners = tactic_registry_->getAllPlanners();
   tactic_registry_->clear();
-  prev_robot_roles_.clear();
 
-  crane_msgs::msg::RobotSelectResults results;
-
-  // 優先順位が高いPlannerから順にロボットを割り当てる
+  // TacticRequirementリストを構築
+  std::vector<TacticRequirement> requirements;
+  int priority = 0;
   for (const auto & session_capacity : session_capacities) {
-    if (!tryAssignRobotToPlanner(
-          session_capacity, selectable_robot_ids, prev_available_planners, world_model, node,
-          results)) {
-      // エラーが発生した場合はループを抜ける
-      break;
+    if (session_capacity.selectable_robot_num <= 0) {
+      continue;
     }
+
+    // プランナー生成
+    auto tactic = tactic_registry_->getOrCreatePlanner(
+      session_capacity.session_name, world_model, node, prev_available_planners,
+      session_capacity.params);
+
+    // 適性関数とハード制約フラグを取得
+    auto suitability_func = tactic->getRobotSuitabilityFunc();
+    bool is_hard = tactic->isHardConstraint();
+
+    requirements.emplace_back(
+      session_capacity.session_name, priority++, 1,  // min_robots
+      session_capacity.selectable_robot_num,         // max_robots
+      suitability_func, is_hard);
   }
 
-  // 割り当てられなかったロボットを待機状態にする
-  if (not selectable_robot_ids.empty()) {
-    TacticSlot waiter_session{"waiter", static_cast<int>(selectable_robot_ids.size()), {}};
-    tryAssignRobotToPlanner(
-      waiter_session, selectable_robot_ids, prev_available_planners, world_model, node, results);
+  // GlobalRobotAllocatorで割当を実行
+  auto allocation = global_allocator_->allocate(
+    requirements, selectable_robot_ids, world_model, allocation_state_,
+    allocation_cost_config_);
+
+  // 割当結果を適用
+  crane_msgs::msg::RobotSelectResults results;
+  for (const auto & [tactic_name, robot_ids] : allocation) {
+    // Tacticを取得または再生成
+    auto tactic_it = std::find_if(
+      tactic_registry_->getAllPlanners().begin(), tactic_registry_->getAllPlanners().end(),
+      [&tactic_name](const auto & t) { return t->name == tactic_name; });
+
+    TacticBase::SharedPtr tactic;
+    if (tactic_it != tactic_registry_->getAllPlanners().end()) {
+      tactic = *tactic_it;
+    } else {
+      // 見つからない場合は新規生成（通常はここには来ない）
+      auto session_it = std::find_if(
+        session_capacities.begin(), session_capacities.end(),
+        [&tactic_name](const auto & s) { return s.session_name == tactic_name; });
+      if (session_it != session_capacities.end()) {
+        tactic = tactic_registry_->getOrCreatePlanner(
+          tactic_name, world_model, node, prev_available_planners, session_it->params);
+      }
+    }
+
+    if (tactic) {
+      // ロボット割当をTacticに反映
+      // selectRobots()を呼び出してロボットを割り当てる
+      // ただし、GlobalRobotAllocatorが既に選択済みなので、直接渡す
+      tactic->selectRobots(robot_ids, robot_ids.size(), prev_robot_roles_);
+
+      // レジストリに追加
+      if (tactic_it == tactic_registry_->getAllPlanners().end()) {
+        tactic_registry_->addPlanner(tactic);
+      }
+
+      // AllocationStateを更新（ターゲット位置は現時点では不明なのでロボット位置を使用）
+      for (auto id : robot_ids) {
+        auto robot = world_model->getOurRobot(id);
+        allocation_state_.updateAssignment(id, tactic_name, robot->pose.pos);
+        prev_robot_roles_.insert_or_assign(id, RobotRole{tactic_name, ""});
+      }
+
+      RCLCPP_DEBUG_STREAM(
+        logger_, "\tグローバルアロケータ: セッション「" << tactic_name << "」のロボット割当："
+                                                        << robot_ids);
+    }
   }
 
   return results;
@@ -131,62 +187,6 @@ auto RobotAllocator::logAssignmentIfChanged(const std::string & current_assignme
       RCLCPP_DEBUG(logger_, "ロボット割当: %s", current_assignment.c_str());
     }
     prev_assignment_log_ = current_assignment;
-  }
-}
-
-auto RobotAllocator::tryAssignRobotToPlanner(
-  const TacticSlot & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-  const std::vector<TacticBase::SharedPtr> & prev_available_planners,
-  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
-  crane_msgs::msg::RobotSelectResults & results) -> bool
-{
-  // 割り当て可能なロボットがない場合はスキップ
-  if (session_capacity.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
-    return true;
-  }
-
-  crane_msgs::msg::RobotSelectResult result;
-  result.name = session_capacity.session_name;
-  result.selectable_robots_num = session_capacity.selectable_robot_num;
-  std::ranges::copy(selectable_robot_ids, std::back_inserter(result.selectable_robots));
-
-  try {
-    // プランナー生成とロボット選択
-    // TacticRegistryを使ってプランナーを取得または生成
-    auto tactic = tactic_registry_->getOrCreatePlanner(
-      session_capacity.session_name, world_model, node, prev_available_planners,
-      session_capacity.params);
-
-    auto selected_robots = tactic->selectRobots(
-      selectable_robot_ids, session_capacity.selectable_robot_num, prev_robot_roles_);
-    results.results.push_back(result);
-
-    // プランナーをレジストリに登録
-    tactic_registry_->addPlanner(tactic);
-
-    if (not selectable_robot_ids.empty()) {
-      RCLCPP_DEBUG_STREAM(
-        logger_, "\tセッション「" << session_capacity.session_name << "」のロボット選択："
-                                  << selectable_robot_ids << " -> " << selected_robots);
-    }
-
-    // 割当依頼結果の反映
-    for (auto selected_robot_id : selected_robots) {
-      // 割当されたロボットを利用可能ロボットリストから削除
-      selectable_robot_ids.erase(
-        remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
-        selectable_robot_ids.end());
-      // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
-      prev_robot_roles_.insert_or_assign(
-        selected_robot_id, RobotRole{session_capacity.session_name, ""});
-    }
-
-    return true;
-  } catch (std::exception & e) {
-    RCLCPP_ERROR(
-      logger_, "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
-      session_capacity.session_name.c_str(), e.what());
-    return false;
   }
 }
 

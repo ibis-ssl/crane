@@ -39,6 +39,17 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // フォワードライン（敵ゴール前）に近いロボットを優先
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      // 敵ゴール位置に近いほど適している
+      return robot->getDistance(wm->getTheirGoalCenter());
+    };
+  }
+
   std::vector<std::shared_ptr<skills::Forward>> forward_skills;
 };
 }  // namespace crane
