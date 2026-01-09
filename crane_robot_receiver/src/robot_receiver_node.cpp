@@ -10,183 +10,15 @@
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <crane_robot_receiver/robot_feedback_protocol.hpp>
 #include <format>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 #include <unordered_set>
 
 using boost::asio::ip::udp;
-
-struct RobotInterfaceConfig
-{
-  std::string ip;
-
-  int port;
-};
-
-auto makeConfig(uint8_t id) -> RobotInterfaceConfig
-{
-  RobotInterfaceConfig config;
-  config.ip = std::format("224.5.20.{}", id + 100);
-  config.port = 50100 + id;
-  return config;
-}
-
-struct RobotFeedback
-{
-  rclcpp::Time received_stamp;
-
-  uint8_t counter = 0;
-
-  uint8_t kick_state = 0;
-
-  uint8_t temperature[7] = {};
-
-  uint16_t error_id = 0;
-
-  uint16_t error_info = 0;
-
-  float error_value = 0.0f;
-
-  float motor_current[4] = {};
-
-  uint8_t ball_detection[4] = {};
-
-  bool ball_sensor = false;
-
-  float_t yaw_angle = 0.0f;
-
-  float_t diff_angle = 0.0f;
-
-  std::array<float_t, 2> odom = {0.0f, 0.0f};
-
-  std::array<float_t, 2> odom_speed = {0.0f, 0.0f};
-
-  std::array<float_t, 2> mouse_odom = {0.0f, 0.0f};
-
-  std::array<float_t, 2> mouse_vel = {0.0f, 0.0f};
-
-  std::array<float_t, 2> voltage = {0.0f, 0.0f};
-
-  uint8_t check_ver = 0;
-
-  std::vector<float> values;
-};
-
-union FloatUnion {
-  float f;
-
-  std::array<char, 4> b;
-};
-
-union Uint16Union {
-  uint16_t u16;
-
-  std::array<char, 2> b;
-};
-
-// ロボットフィードバックプロトコル定数
-namespace protocol
-{
-// バッファサイズ
-constexpr size_t BUFFER_SIZE = 2048;
-constexpr size_t DEBUG_VALUES_END = 128;
-
-// バイトオフセット定義
-namespace offset
-{
-constexpr int COUNTER = 3;
-
-constexpr int YAW_ANGLE = 4;
-constexpr int VOLTAGE_0 = 8;
-
-constexpr int BALL_DETECTION_0 = 12;
-constexpr int BALL_DETECTION_1 = 13;
-constexpr int BALL_DETECTION_2 = 14;
-constexpr int KICK_STATE = 15;
-
-constexpr int ERROR_ID = 16;
-constexpr int ERROR_INFO = 18;
-constexpr int ERROR_VALUE = 20;
-
-constexpr int MOTOR_CURRENT_0 = 24;
-constexpr int MOTOR_CURRENT_1 = 25;
-constexpr int MOTOR_CURRENT_2 = 26;
-constexpr int MOTOR_CURRENT_3 = 27;
-
-constexpr int BALL_DETECTION_3 = 28;
-
-constexpr int TEMPERATURE_0 = 29;
-constexpr int TEMPERATURE_1 = 30;
-constexpr int TEMPERATURE_2 = 31;
-constexpr int TEMPERATURE_3 = 32;
-constexpr int TEMPERATURE_4 = 33;
-constexpr int TEMPERATURE_5 = 34;
-constexpr int TEMPERATURE_6 = 35;
-
-constexpr int DIFF_ANGLE = 36;
-constexpr int VOLTAGE_1 = 40;
-
-constexpr int ODOM_X = 44;
-constexpr int ODOM_Y = 48;
-constexpr int ODOM_SPEED_X = 52;
-constexpr int ODOM_SPEED_Y = 56;
-
-constexpr int CHECK_VER = 60;
-
-constexpr int MOUSE_ODOM_X = 64;
-constexpr int MOUSE_ODOM_Y = 68;
-constexpr int MOUSE_VEL_X = 72;
-constexpr int MOUSE_VEL_Y = 76;
-
-constexpr int DEBUG_VALUES_START = 64;
-}  // namespace offset
-
-// 定数値
-constexpr float MOTOR_CURRENT_SCALE = 10.0f;
-constexpr int KICK_STATE_SCALE = 10;
-constexpr int FLOAT_SIZE = 4;
-
-// バッファ読み取りヘルパー関数
-inline auto readFloat(const std::vector<uint8_t> & buffer, int offset) -> float
-{
-  FloatUnion float_union;
-  float_union.b[0] = buffer[offset];
-  float_union.b[1] = buffer[offset + 1];
-  float_union.b[2] = buffer[offset + 2];
-  float_union.b[3] = buffer[offset + 3];
-  return float_union.f;
-}
-
-inline auto readUint16(const std::vector<uint8_t> & buffer, int offset) -> uint16_t
-{
-  Uint16Union uint16_union;
-  uint16_union.b[0] = buffer[offset];
-  uint16_union.b[1] = buffer[offset + 1];
-  return uint16_union.u16;
-}
-
-inline auto readByte(const std::vector<uint8_t> & buffer, int offset) -> uint8_t
-{
-  return buffer[offset];
-}
-
-// std::vector<char> 版のオーバーロード（crane::MulticastReceiver用）
-inline auto readFloat(const std::vector<char> & buffer, int offset) -> float
-{
-  return readFloat(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
-}
-
-inline auto readUint16(const std::vector<char> & buffer, int offset) -> uint16_t
-{
-  return readUint16(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
-}
-
-inline auto readByte(const std::vector<char> & buffer, int offset) -> uint8_t
-{
-  return readByte(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
-}
-}  // namespace protocol
+using crane::robot_receiver::RobotFeedback;
+namespace protocol = crane::robot_receiver::protocol;
 
 class RobotFeedbackReceiver
 {
@@ -301,15 +133,22 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"), clock(RCL_ROS_TIME)
+  explicit RobotReceiverNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : rclcpp::Node("robot_receiver_node", options), clock(RCL_ROS_TIME)
   {
     crane::CraneVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
-    for (int i = 0; i < robot_num; i++) {
-      auto config = makeConfig(i);
-      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(config.ip, config.port));
+    // パラメータの宣言と取得
+    int max_robot_id = declare_parameter("max_robot_id", 15);
+    std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
+    int port_base = declare_parameter("port_base", 50100);
+    int ip_offset = declare_parameter("ip_octet_offset", 100);
+
+    for (int i = 0; i <= max_robot_id; i++) {
+      std::string ip = std::format("{}.{}", ip_base, i + ip_offset);
+      int port = port_base + i;
+      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(ip, port));
     }
 
     using std::chrono::operator""ms;
