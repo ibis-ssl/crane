@@ -19,9 +19,9 @@
 #include <robocup_ssl_msgs/grSim_Commands.pb.h>
 #include <robocup_ssl_msgs/grSim_Replacement.pb.h>
 
+#include <crane_comm/udp_sender.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_comm/udp_sender.hpp>
 #include <robocup_ssl_msgs/msg/gr_sim_commands.hpp>
 #include <robocup_ssl_msgs/msg/gr_sim_replacement.hpp>
 #include <robocup_ssl_msgs/msg/gr_sim_robot_command.hpp>
@@ -58,7 +58,7 @@ private:
     robocup_ssl::grSim_RobotReplacement * robot_replacement,
     const RobotReplacement & msg_robot_replacement);
 
-  std::unique_ptr<udp_sender::UDPSender> sender;
+  std::unique_ptr<crane::UDPSender> sender;
 
   rclcpp::TimerBase::SharedPtr timer;
 
