@@ -8,6 +8,5 @@
 
 from .live_api_client import GeminiLiveApiClient
 from .function_handler import FunctionHandler
-from .function_declarations import FUNCTION_DECLARATIONS
 
-__all__ = ["GeminiLiveApiClient", "FunctionHandler", "FUNCTION_DECLARATIONS"]
+__all__ = ["GeminiLiveApiClient", "FunctionHandler"]

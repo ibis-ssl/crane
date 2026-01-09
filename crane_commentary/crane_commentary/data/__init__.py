@@ -6,13 +6,14 @@
 
 """Data modules for SSL commentary context."""
 
-from .ssl_rules import SSL_RULES
-from .team_profiles import TEAM_PROFILES, get_team_profile
-from .initial_context import generate_initial_context
+from .initial_context import (
+    generate_initial_context,
+    get_team_profile_from_data,
+    get_team_reading_from_data,
+)
 
 __all__ = [
-    "SSL_RULES",
-    "TEAM_PROFILES",
-    "get_team_profile",
     "generate_initial_context",
+    "get_team_profile_from_data",
+    "get_team_reading_from_data",
 ]

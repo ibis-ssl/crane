@@ -1,0 +1,86 @@
+basic_info:
+  field_size:
+    divA:
+      length: 12.0
+      width: 9.0
+      unit: "m"
+    divB:
+      length: 9.0
+      width: 6.0
+      unit: "m"
+  robots:
+    max_per_team: 11
+    max_on_field_divA: 11
+    max_on_field_divB: 6
+  match_duration:
+    half_time: 300
+    break_time: 300
+  ball_speed_limit: 6.5
+  robot_speed_in_stop: 1.5
+
+fouls:
+  KEEPER_HELD_BALL:
+    name_jp: "キーパーボール保持違反"
+    description: "ディフェンスエリアでボールを保持しすぎ（Div.A: 5秒、Div.B: 10秒）"
+    penalty: "STOP後フリーキック"
+  BOUNDARY_CROSSING:
+    name_jp: "境界越え"
+    description: "フィールド外（木枠の外）にボールを蹴り出す"
+    penalty: "STOP後フリーキック"
+  BOT_DRIBBLED_BALL_TOO_FAR:
+    name_jp: "オーバードリブル"
+    description: "1m以上のドリブル（ボールプレイスメント時は除外）"
+    penalty: "STOP後フリーキック"
+  ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
+    name_jp: "アタッカー相手ディフェンスエリア内接触"
+    description: "相手ディフェンスエリアでボールに触れる（侵入のみは対象外）"
+    penalty: "STOP後フリーキック"
+  BOT_KICKED_BALL_TOO_FAST:
+    name_jp: "ボール速度超過"
+    description: "ボールを6.5m/s以上で蹴る"
+    penalty: "STOP後フリーキック"
+  BOT_CRASH_UNIQUE:
+    name_jp: "ロボット衝突（単独）"
+    description: "相対速度1.5m/s超の衝突（より速いロボット側のチーム）"
+    penalty: "STOP後フリーキック"
+  BOT_CRASH_DRAWN:
+    name_jp: "ロボット衝突（両成敗）"
+    description: "相対速度1.5m/s超の衝突（速度差0.3m/s未満）"
+    penalty: "STOP後フリーキック（両チーム）"
+  ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
+    name_jp: "アタッカーディフェンスエリア接近違反"
+    description: "STOP/フリーキック中に相手ディフェンスエリア＋0.2m内に侵入（2秒猶予）"
+    penalty: "STOP後フリーキック"
+  BOT_TOO_FAST_IN_STOP:
+    name_jp: "STOP中速度超過"
+    description: "STOP中に1.5m/s超で移動（STOP後2秒間猶予）"
+    penalty: "STOP後フリーキック"
+  DEFENDER_TOO_CLOSE_TO_KICK_POINT:
+    name_jp: "ディフェンダーキックポイント接近違反"
+    description: "敵キックオフ/フリーキック時にボールから0.5m未満"
+    penalty: "STOP後フリーキック"
+  BOT_INTERFERED_PLACEMENT:
+    name_jp: "ボールプレイスメント妨害"
+    description: "ボールプレイスメント中にボール-ターゲット線分から0.5m未満"
+    penalty: "STOP後フリーキック"
+  BOT_PUSHED_BOT:
+    name_jp: "ロボット押し出し"
+    description: "ロボット同士の押し合いで相手を動かす（押し勝ったチーム）"
+    penalty: "STOP後フリーキック"
+    note: "AutoRef判定なし"
+  BOT_HELD_BALL_DELIBERATELY:
+    name_jp: "ボールホールディング"
+    description: "ボールをロボットで囲み、敵のアプローチを防ぐ"
+    penalty: "STOP後フリーキック"
+    note: "AutoRef判定なし"
+  BOT_TIPPED_OVER:
+    name_jp: "ロボット転倒・部品落下"
+    description: "ロボットが倒れるまたは部品を落とす"
+    penalty: "違反ロボット交代必須"
+
+set_plays:
+  kickoff: "センターサークルからの試合開始"
+  free_kick: "ファール後の再開（間接フリーキック）"
+  penalty_kick: "重大なファール後のペナルティキック"
+  ball_placement: "ボールを指定位置に配置（各チームに与えられる再開手段）"
+  force_start: "レフェリーによる強制開始"

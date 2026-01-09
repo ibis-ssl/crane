@@ -1,0 +1,108 @@
+[
+  {
+    "name": "get_game_state",
+    "description": "現在の試合状態を取得する。スコア、経過時間、プレイ状況（INPLAY/HALT/STOP等）、勢い（どちらのチームが押しているか）を含む。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_ball_trajectory",
+    "description": "ボールの直近の軌跡を取得する。現在位置・速度と、過去数秒間の位置履歴を含む。ボールの動きを分析する際に使用。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seconds": {
+          "type": "number",
+          "description": "取得する過去の秒数（デフォルト: 3秒、最大: 10秒）"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_robot_status",
+    "description": "指定したロボットの詳細状態を取得する。位置、速度、ボール接触状態、ゴールキーパーかどうか、役割のヒントを含む。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "robot_id": {
+          "type": "integer",
+          "description": "ロボットID（0-15）"
+        },
+        "is_ours": {
+          "type": "boolean",
+          "description": "自チーム（ibis）のロボットかどうか"
+        }
+      },
+      "required": [
+        "robot_id",
+        "is_ours"
+      ]
+    }
+  },
+  {
+    "name": "get_all_robots_summary",
+    "description": "全ロボットの概要を取得する。各チームのアクティブロボット数、ゴールキーパーID、各ロボットの位置ゾーン、陣形サマリーを含む。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "team": {
+          "type": "string",
+          "enum": [
+            "ours",
+            "theirs",
+            "all"
+          ],
+          "description": "対象チーム（デフォルト: all）"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_formation_analysis",
+    "description": "両チームの陣形を詳細に分析する。守備的・攻撃的布陣の判定、ロボットの配置パターン（密集・分散）、ボール周辺の数的優位、攻守の形（カウンター/ポゼッション型）を含む。戦術的な解説時に使用。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "focus": {
+          "type": "string",
+          "enum": [
+            "offensive",
+            "defensive",
+            "both"
+          ],
+          "description": "分析の焦点（攻撃、守備、両方）デフォルト: both"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_highlight_details",
+    "description": "直近のハイライト（ゴール・シュート・セーブ）の詳細情報を取得する。シュートのコース、キーパーの反応、関与したロボット、ボールの軌跡と速度変化を含む。リプレイ解説時に使用。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "highlight_type": {
+          "type": "string",
+          "enum": [
+            "goal",
+            "shot",
+            "save",
+            "any"
+          ],
+          "description": "取得するハイライトの種類（デフォルト: any）"
+        },
+        "count": {
+          "type": "integer",
+          "description": "取得する件数（デフォルト: 1、最大: 5）"
+        }
+      },
+      "required": []
+    }
+  }
+]
