@@ -87,34 +87,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto initial_session = get_parameter("initial_session").as_string();
   assign(initial_session);
 
-  world_model->addCallback([this]() {
-    ScopedTimer timer(callback_process_time_pub);
-
-    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
-      world_model_ready = true;
-    }
-
-    // 遅延監視: WorldModel受信完了とSessionController処理開始
-    world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
-
-    // ロボット変動検出と再割当
-    auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
-    if (robot_allocator_->detectRobotChange(observed_robot_ids) &&
-        !play_situation.command.name.empty()) {
-      assign(play_situation.command.name);
-    }
-
-    // コマンド収集と構築
-    auto msg = command_aggregator_->collectCommands(world_model, now());
-
-    position_commands_pub.publish(msg);
-    visualizer->flush();
-    CraneVisualizerBuffer::publish();
-
-    // 診断情報を更新
-    diagnostics_reporter_->recordCycle();
-    diagnostic_updater_.force_update();
-  });
+  world_model->addCallback([this]() { onWorldModelUpdate(); });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [this](const std_msgs::msg::String & msg) {
@@ -167,6 +140,37 @@ auto SessionControllerComponent::assign(const std::string & event_name) -> void
       get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
       event_name.c_str());
   }
+}
+
+auto SessionControllerComponent::onWorldModelUpdate() -> void
+{
+  ScopedTimer timer(callback_process_time_pub);
+
+  if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
+    world_model_ready = true;
+  }
+
+  // 遅延監視: WorldModel受信完了とSessionController処理開始
+  world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
+
+  // ロボット変動検出と再割当
+  auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
+  if (
+    robot_allocator_->detectRobotChange(observed_robot_ids) &&
+    !play_situation.command.name.empty()) {
+    assign(play_situation.command.name);
+  }
+
+  // コマンド収集と構築
+  auto msg = command_aggregator_->collectCommands(world_model, now());
+
+  position_commands_pub.publish(msg);
+  visualizer->flush();
+  CraneVisualizerBuffer::publish();
+
+  // 診断情報を更新
+  diagnostics_reporter_->recordCycle();
+  diagnostic_updater_.force_update();
 }
 
 auto SessionControllerComponent::updateDiagnostics(

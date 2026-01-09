@@ -50,6 +50,8 @@ public:
 private:
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
+  auto onWorldModelUpdate() -> void;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
