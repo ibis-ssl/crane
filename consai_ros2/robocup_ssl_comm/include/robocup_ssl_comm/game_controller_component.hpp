@@ -40,7 +40,7 @@ protected:
 private:
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::unique_ptr<multicast::MulticastReceiver> receiver;
+  std::unique_ptr<crane::MulticastReceiver> receiver;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
   rclcpp::Publisher<robocup_ssl_msgs::msg::GameEvent>::SharedPtr pub_game_event;

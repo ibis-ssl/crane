@@ -31,7 +31,7 @@ GameController::GameController(const rclcpp::NodeOptions & options)
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
-  receiver = std::make_unique<multicast::MulticastReceiver>(
+  receiver = std::make_unique<crane::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
