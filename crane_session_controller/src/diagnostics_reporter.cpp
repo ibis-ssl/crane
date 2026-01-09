@@ -12,7 +12,10 @@ namespace crane
 DiagnosticsReporter::DiagnosticsReporter(
   rclcpp::Clock::SharedPtr clock, std::shared_ptr<PlannerRegistry> planner_registry,
   rclcpp::Logger logger)
-: clock_(clock), planner_registry_(planner_registry), logger_(logger), last_planning_time_(clock_->now())
+: clock_(clock),
+  planner_registry_(planner_registry),
+  logger_(logger),
+  last_planning_time_(clock_->now())
 {
 }
 
