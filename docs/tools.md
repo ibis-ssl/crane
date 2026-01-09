@@ -85,23 +85,23 @@ source ~/.bashrc
 Refereeの信号やビジョンデータを自動で記録するツールです。
 
 ```bash
-# 基本的な使用方法
-ssl-auto-recorder -referee-address "224.5.23.1:11003"
+# 基本的な使用方法 (実機モードのポート)
+ssl-auto-recorder -referee-address "224.5.23.1:10003" -vision-address "224.5.23.2:10006"
+
+# シミュレーションモードのポート
+ssl-auto-recorder -referee-address "224.5.23.1:11003" -vision-address "224.5.23.2:10020"
 
 # HTTPサーバーを立ち上げてログを提供
 ssl-auto-recorder -http-serve -http-port "8084"
 ```
 
-主なオプション：
+主なオプションとプロジェクトでのデフォルト値：
 
-```text
--output-folder string       出力フォルダ (default "logs")
--referee-address string     Refereeのマルチキャストアドレス (default "224.5.23.1:10003")
--vision-address string      Visionのマルチキャストアドレス (default "224.5.23.2:10006")
--vision-tracker-address     Vision Trackerのアドレス (default "224.5.23.2:10010")
--http-serve                 HTTPサーバーの有効化 (default true)
--http-port string           HTTPポート (default "8084")
-```
+| オプション | 実機 (`sim:=false`) | シミュレーション (`sim:=true`) |
+|-----------|--------------------|----------------------------|
+| `-referee-address` | `224.5.23.1:10003` | `224.5.23.1:11003` |
+| `-vision-address` | `224.5.23.2:10006` | `224.5.23.2:10020` |
+| `-vision-tracker-address` | `224.5.23.2:10010` | `224.5.23.2:11010` |
 
 #### ssl-match-client
 

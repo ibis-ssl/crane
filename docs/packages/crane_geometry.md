@@ -6,7 +6,7 @@
 
 ## 主要機能
 
-- **独自Vector実装**: Eigen非依存のVector2d/3dクラス
+- **Eigen統合**: Boost.Geometryで利用可能なEigen::Vector2d/3dアダプタ
 - **幾何学プリミティブ**: Circle、Capsule等の基本図形
 - **座標変換**: Rotation2d、座標系変換機能
 - **Boost.Geometry統合**: 高度な幾何学演算サポート
@@ -55,21 +55,24 @@ class Rotation2d {
 
 - **標準ライブラリ**: STL、数学関数
 - **Boost.Geometry**: 高度な幾何学演算（オプション）
+- **Eigen**: ベクトル・行列演算
 
 ## 使用方法
 
 ### 基本的な幾何学計算
 
 ```cpp
-#include "crane_geometry/vector2d.hpp"
+#include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/geometry_operations.hpp"
 
-Vector2d robot_pos{1.0, 2.0};
-Vector2d ball_pos{3.0, 4.0};
+using crane::Vector2; // Eigen::Vector2d alias
 
-double distance = robot_pos.distanceTo(ball_pos);
-Vector2d direction = (ball_pos - robot_pos).normalized();
-Vector2d target = robot_pos + direction * 0.5;
+Vector2 robot_pos{1.0, 2.0};
+Vector2 ball_pos{3.0, 4.0};
+
+double distance = (robot_pos - ball_pos).norm();
+Vector2 direction = (ball_pos - robot_pos).normalized();
+Vector2 target = robot_pos + direction * 0.5;
 ```
 
 ### 図形の交差判定

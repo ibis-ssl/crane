@@ -18,7 +18,7 @@ crane リポジトリのルートディレクトリを基準とした相対パ�
 例: `crane` リポジトリを `~/crane_ws/src/crane` にクローンした場合:
 
 ```bash
-cd ~/crane_ws/src/crane/docker/sim
+cd ~/ibis_ws/src/crane/docker/sim
 docker compose up
 ```
 

@@ -25,13 +25,13 @@ SSL Vision UDP → VisionDataProcessor → BallTracker → world_model topic →
 
 ## コンポーネント詳細
 
-### 1. VisionDataProcessor
+1. **VisionDataProcessor**: Visionパケットの受信とデータ抽出
 
 **責任**: SSL visionパケットの受信とBallTrackerへのデータ受け渡し
 
 **主要機能**:
 
-- UDPマルチキャスト受信（デフォルト: 224.5.23.2:10020）
+- UDPマルチキャスト受信（実機: 10006, シミュレーション: 10020）
 - ボール位置データの抽出・変換（mm → m）
 - BallTrackerManagerへのデータ委譲
 - ジオメトリ情報の処理

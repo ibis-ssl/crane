@@ -15,40 +15,57 @@ Skillは単一ロボットの行動を表す基本単位です。
 | ベースクラス | 用途 | 実装要件 |
 |------------|------|---------|
 | `SkillBase` | シンプルな行動制御 | `update()`メソッドのみ |
-| `SkillBaseWithState<T>` | 複雑な状態遷移 | `update()` + 状態定義 |
+| `SkillBaseWithState<T>` | 複雑な状態遷移 | `addStateFunction()` + `addTransition()` |
 
 ### 基本実装パターン
+
+#### シンプルスキル例
 
 ```cpp
 // シンプルスキル例
 class SimpleMove : public SkillBase
 {
 public:
-  explicit SimpleMove(uint8_t id) : SkillBase("SimpleMove", id) {}
+  // コンストラクタ: ワールドモデルも受け取る必要がある
+  explicit SimpleMove(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+    : SkillBase("SimpleMove", id, wm) {}
 
   Status update() override {
-    auto command = getCommand();
-    command.setTargetPosition(target_position);
+    // commander()経由でコマンド操作
+    commander()->setTargetPosition(getParameter<Point>("target"));
     return Status::RUNNING;
   }
 };
+```
 
+#### 状態付きスキル例
+
+```cpp
 // 状態付きスキル例  
-enum class KickState { APPROACH, KICK, FINISH };
+enum class KickState { ENTRY_POINT, APPROACH, KICK, FINISH };
 
 class Kick : public SkillBaseWithState<KickState>
 {
 public:
-  explicit Kick(uint8_t id) : SkillBaseWithState("Kick", id) {
-    setCurrentState(KickState::APPROACH);
-  }
+  explicit Kick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+    : SkillBaseWithState("Kick", id, wm) {
 
-  Status update() override {
-    switch(getCurrentState()) {
-      case KickState::APPROACH: return approachBall();
-      case KickState::KICK: return executekick();
-      case KickState::FINISH: return Status::SUCCESS;
-    }
+    // 状態ごとの処理定義
+    addStateFunction(KickState::ENTRY_POINT, [this]() {
+       visualizer->drawDebugLabel(robot()->pose.pos, "Kick::ENTRY_POINT");
+       return Status::RUNNING;
+    });
+
+    // 遷移定義
+    addTransition(KickState::ENTRY_POINT, KickState::APPROACH, [this]() {
+       return true; // 遷移条件
+    });
+
+    addStateFunction(KickState::APPROACH, [this]() {
+      return approachBall();
+    });
+
+    // ...
   }
 };
 ```
@@ -59,10 +76,12 @@ public:
 
 | メソッド | 戻り値 | 説明 |
 |---------|-------|------|
-| `getCommand()` | `RobotCommandWrapper&` | ロボットコマンド取得 |
+| `commander()` | `PositionCommandWrapper::SharedPtr` | ロボットコマンド操作用ラッパー |
 | `world_model()` | `WorldModelWrapper::SharedPtr` | ワールド状態取得 |
 | `getID()` | `uint8_t` | ロボットID取得 |
+| `robot()` | `RobotInfo::SharedPtr` | 自身のロボット情報取得 |
 | `setParameter(key, value)` | `void` | パラメータ設定 |
+| `getParameter<T>(key)` | `T` | パラメータ取得 |
 
 ### Status列挙型
 
@@ -87,41 +106,56 @@ auto velocity = getParameter<double>("max_velocity");
 
 ### 可視化
 
+`crane::VisualizerMessageBuilder`を使用します。`SkillBase`が自動的にインスタンスを管理します。
+
 ```cpp
-// 可視化
-addCircle(center, radius, color);
-addText(position, "Status: Running");
+// VisualizerMessageBuilderを使用
+visualizer->drawCircle(center, radius, "blue");
+visualizer->drawDebugLabel(robot()->pose.pos, "Status: Running");
+visualizer->arrow(start, end, "white");
 ```
 
 ## 主要スキル一覧
 
 ### 攻撃系
 
-- **Attacker**: メイン攻撃ロボット（状態遷移型）
+- **Attacker**: メイン攻撃ロボット
+- **SubAttacker**: 攻撃サポート
 - **Kick**: ボールキック実行
 - **Receive**: パス受け取り
+- **PenaltyKick**: ペナルティキック実行
 
 ### 守備系  
 
 - **Goalie**: ゴールキーパー専用
+- **SecondThreatDefender**: 守備
 - **Marker**: 敵ロボットマーク
-- **Steal**: ボール奪取
 
-### ユーティリティ
+### ユーティリティ・その他
 
-- **SimpleMove**: 基本移動
-- **Sleep**: 待機状態
+- **Idle**: 待機
 - **Teleop**: 手動操作
+- **Sleep**: 待機状態
+- **BallNearbyPositioner**: ボール近傍位置合わせ
+- **GoalKick**: ゴールキック
+- **SimpleKickoff**: キックオフ
+- **CenterStopKick**: センターサークルでの停止・キック
+- **EmplaceRobot**: 指定位置へのロボット配置
+- **SingleBallPlacement**: ボールプレースメント
+- **BallCalibrationDataCollector**: ボールモデル学習用データ収集
 
 ## 統合手順
 
-### 1. SimpleAI統合
+### 1. SimpleAIプランナーでの使用
 
 ```cpp
 // SimpleAIプランナーでの使用
-auto skill = std::make_shared<YourSkill>(robot_id);
+auto skill = std::make_shared<YourSkill>(robot_id, world_model);
 skill->setParameter("target", target_position);
-assigned_robots[robot_id] = skill;
+// 実行
+skill->run();
+// コマンド取得
+auto cmd = skill->getRobotCommand();
 ```
 
 ### 2. セッション統合
@@ -135,15 +169,6 @@ situations:
     sessions:
       - name: your_skill_planner
         capacity: 1
-```
-
-### 3. 可視化統合
-
-```cpp
-// スキル内での可視化
-addCircle(target_pos, 0.1, "blue");
-addText(robot_pos, skill_name + ": " + status_text);
-addLine(robot_pos, target_pos, "green");
 ```
 
 ## ベストプラクティス
@@ -181,11 +206,11 @@ addLine(robot_pos, target_pos, "green");
 ```cpp
 // ログ出力
 RCLCPP_INFO(logger_, "Skill %s: State=%d, Target=(%.2f,%.2f)",
-           getName().c_str(), static_cast<int>(getCurrentState()),
+           name.c_str(), static_cast<int>(getCurrentState()),
            target.x(), target.y());
 
 // 可視化デバッグ
-addText(getPosition(), fmt::format("{}: {}", getName(), getStatusString()));
+visualizer->drawDebugLabel(robot()->pose.pos, fmt::format("{}: {}", name, state_string));
 ```
 
 ## 関連ドキュメント

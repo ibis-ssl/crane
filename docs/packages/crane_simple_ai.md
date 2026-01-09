@@ -34,4 +34,4 @@ ros2 run crane_simple_ai simple_ai_node
 
 ---
 
-**関連パッケージ**: [crane_session_controller](./crane_session_controller.md) | [crane_tactics](./crane_tactics.md)
+**関連パッケージ**: [crane_session_controller](./crane_session_controller.md) | [crane_planner_plugins](./crane_planner_plugins.md)

@@ -145,7 +145,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 
 ### コア依存
 
-- **crane_tactics**: 実際の戦略プランナー群
+- **crane_planner_plugins**: 実際の戦略プランナー群
 - **crane_msg_wrappers**: メッセージ変換・統合
 - **crane_msgs**: システムメッセージ定義
 
@@ -242,4 +242,4 @@ robots:
 
 ---
 
-**関連パッケージ**: [crane_tactics](./crane_tactics.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)
+**関連パッケージ**: [crane_planner_plugins](./crane_planner_plugins.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)
