@@ -42,7 +42,7 @@
 - 状態機械とパラメータシステム
 - 可視化統合対応
 
-#### [crane_session_controller](./packages/crane_session_controller.md)
+#### [crane_tactic_coordinator](./packages/crane_tactic_coordinator.md)
 
 試合統括・ゲーム状態管理 - 最上位制御レイヤー
 

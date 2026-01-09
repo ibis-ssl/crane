@@ -79,7 +79,7 @@ Web UIとROS 2を接続するブリッジノード。
 
 ### 実行時依存
 
-- `crane_session_controller` または `crane_simple_ai`（スキル実行サーバー）
+- `crane_tactic_coordinator` または `crane_simple_ai`（スキル実行サーバー）
 
 ## 使用方法
 
@@ -149,7 +149,7 @@ http://localhost:8080/standalone.html
 
 - [crane_robot_skills](./crane_robot_skills.md) - テスト対象のスキルライブラリ
 - [crane_msgs](./crane_msgs.md) - SkillExecutionアクションメッセージ
-- [crane_session_controller](./crane_session_controller.md) - スキル実行サーバー
+- [crane_tactic_coordinator](./crane_tactic_coordinator.md) - スキル実行サーバー
 
 ## トラブルシューティング
 

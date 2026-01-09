@@ -1,7 +1,7 @@
 # ディフェンス戦術システム
 
 > **最終更新**: 2026年1月
-> **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md), [crane_robot_skills](./packages/crane_robot_skills.md)
+> **関連パッケージ**: [crane_tactics](./packages/crane_tactics.md), [crane_robot_skills](./packages/crane_robot_skills.md)
 
 Craneシステムのディフェンス戦術は、プラグインベースの戦略Tacticとスキルベースのロボット制御により実現されています。
 
@@ -61,4 +61,4 @@ graph LR
 
 ---
 
-**詳細な実装**: [crane_planner_plugins](./packages/crane_planner_plugins.md) と [crane_robot_skills](./packages/crane_robot_skills.md) を参照
+**詳細な実装**: [crane_tactics](./packages/crane_tactics.md) と [crane_robot_skills](./packages/crane_robot_skills.md) を参照

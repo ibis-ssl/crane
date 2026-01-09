@@ -1,4 +1,4 @@
-# crane_planner_plugins
+# crane_tactics
 
 ## 概要
 
@@ -14,7 +14,7 @@ Craneシステムの**戦略プランナープラグインコレクション**�
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**戦術戦略層**として、`crane_session_controller`からの指示を受けて具体的な戦術を実行し、`crane_robot_skills`に個別ロボット行動を指示します。
+Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`からの指示を受けて具体的な戦術を実行し、`crane_robot_skills`に個別ロボット行動を指示します。
 
 ## プランナープラグイン一覧
 
@@ -101,7 +101,7 @@ PLANNER_ENTRY("defender", DefenderTactic),
 
 ### Session Controllerからの利用
 
-`crane_session_controller` の設定ファイルで名前を指定します。
+`crane_tactic_coordinator` の設定ファイルで名前を指定します。
 
 ```yaml
 # YAML設定による自動選択
@@ -121,10 +121,10 @@ robots:
 
 ### 2025年の主要変更
 
-- **パッケージ統合**: `crane_tactics` を `crane_planner_plugins` へ統合・改称
+- **パッケージ統合**: `crane_tactics` を `crane_tactics` へ統合・改称
 - **ファクトリ化**: `pluginlib` 依存からの脱却と静的マップによる管理への移行
 - **スキル連携強化**: `SkillTactic` 系クラスによるスキルパッケージとの密結合化
 
 ---
 
-**関連パッケージ**: [crane_session_controller](./crane_session_controller.md) | [crane_robot_skills](./crane_robot_skills.md) | [crane_game_analyzer](./crane_game_analyzer.md)
+**関連パッケージ**: [crane_tactic_coordinator](./crane_tactic_coordinator.md) | [crane_robot_skills](./crane_robot_skills.md) | [crane_game_analyzer](./crane_game_analyzer.md)

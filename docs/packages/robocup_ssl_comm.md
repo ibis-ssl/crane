@@ -108,7 +108,7 @@ crane_world_model_publisher → WorldModel
 
 ```text
 SSL Referee → Referee Protocol → robocup_ssl_comm →
-crane_session_controller → Strategy Selection
+crane_tactic_coordinator → Strategy Selection
 ```
 
 ### Commands → Robots

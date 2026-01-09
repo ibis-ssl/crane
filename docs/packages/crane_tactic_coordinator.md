@@ -1,8 +1,8 @@
-# crane_session_controller
+# crane_tactic_coordinator
 
 ## 概要
 
-**crane_session_controller**パッケージは、Crane SSLロボットシステムの**最上位制御レイヤー**として、包括的な試合管理とゲーム状態制御を提供します。セッションベースのロボット役割管理システムを実装し、動的プランナープラグイン管理とYAML駆動設定を通じてSSL試合中の複数ロボットを協調制御します。柔軟で設定駆動なロボット役割管理により、SSL試合での洗練されたマルチロボット協調を実現します。
+**crane_tactic_coordinator**パッケージは、Crane SSLロボットシステムの**最上位制御レイヤー**として、包括的な試合管理とゲーム状態制御を提供します。セッションベースのロボット役割管理システムを実装し、動的プランナープラグイン管理とYAML駆動設定を通じてSSL試合中の複数ロボットを協調制御します。柔軟で設定駆動なロボット役割管理により、SSL試合での洗練されたマルチロボット協調を実現します。
 
 ## 主要機能
 
@@ -27,7 +27,7 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 
 ## 統一設定ファイル（unified_session_config.yaml）
 
-**設定ファイル**: `session/crane_session_controller/config/unified_session_config.yaml`
+**設定ファイル**: `session/crane_tactic_coordinator/config/unified_session_config.yaml`
 
 すべての試合状況設定が単一ファイルに統合されています。各状況（situation）は、セッション（session）のリストとして定義され、各セッションにロボットが動的に割り当てられます。
 
@@ -145,7 +145,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 
 ### コア依存
 
-- **crane_planner_plugins**: 実際の戦略プランナー群
+- **crane_tactics**: 実際の戦略プランナー群
 - **crane_msg_wrappers**: メッセージ変換・統合
 - **crane_msgs**: システムメッセージ定義
 
@@ -161,7 +161,7 @@ std::string selectOptimalPlanner(const GameSituation& situation) {
 
 ```bash
 # セッションコントローラー起動
-ros2 run crane_session_controller crane_session_controller_node
+ros2 run crane_tactic_coordinator crane_tactic_coordinator_node
 
 # システム全体起動（含む）
 ros2 launch crane_bringup crane.launch.xml
@@ -197,7 +197,7 @@ robots:
 - **WARN**: WorldModel未準備、または500ms以上更新遅延
 - **OK**: 正常動作中（更新時間も報告）
 
-詳細は[診断システムドキュメント](../diagnostics.md#crane_session_controller)を参照してください。
+詳細は[診断システムドキュメント](../diagnostics.md#crane_tactic_coordinator)を参照してください。
 
 ## 最近の開発状況
 
@@ -242,4 +242,4 @@ robots:
 
 ---
 
-**関連パッケージ**: [crane_planner_plugins](./crane_planner_plugins.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)
+**関連パッケージ**: [crane_tactics](./crane_tactics.md) | [crane_play_switcher](./crane_play_switcher.md) | [crane_robot_skills](./crane_robot_skills.md)
