@@ -33,8 +33,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   position_commands_pub(this, "/control_targets", 1, 50., 70.),
   robot_select_results_pub(
     create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10)),
-  diagnostic_updater_(this),
-  last_planning_time_(this->now())
+  diagnostic_updater_(this)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -49,6 +48,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   // プランナー管理の初期化
   planner_registry_ = std::make_shared<PlannerRegistry>();
+
+  // 診断レポーターの初期化
+  diagnostics_reporter_ =
+    std::make_unique<DiagnosticsReporter>(get_clock(), planner_registry_, get_logger());
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
@@ -147,8 +150,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     CraneVisualizerBuffer::publish();
 
     // 診断情報を更新
-    planning_count_++;
-    last_planning_time_ = now();
+    diagnostics_reporter_->recordCycle();
     diagnostic_updater_.force_update();
   });
 
@@ -343,31 +345,7 @@ auto SessionControllerComponent::tryAssignRobotToPlanner(
 auto SessionControllerComponent::updateDiagnostics(
   diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
 {
-  // WorldModelが準備できているかチェック
-  if (!world_model_ready) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::WARN, "Waiting for world model to be ready");
-    return;
-  }
-
-  // プランニングが実行されているかチェック
-  auto time_since_last_planning = (now() - last_planning_time_).seconds();
-
-  if (time_since_last_planning > 1.0) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planning not running (no update for >1s)");
-  } else if (time_since_last_planning > 0.5) {
-    stat.summary(
-      diagnostic_msgs::msg::DiagnosticStatus::WARN,
-      "Planning update slow (>0.5s since last update)");
-  } else {
-    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Planning is running normally");
-  }
-
-  stat.add("time_since_last_planning", time_since_last_planning);
-  stat.add("planning_count", planning_count_);
-  stat.add("active_planners", static_cast<int>(planner_registry_->getAllPlanners().size()));
-  stat.add("available_robots", static_cast<int>(world_model->ours().getAvailableRobotIds().size()));
+  diagnostics_reporter_->updateDiagnostics(stat, world_model_ready, world_model);
 }
 }  // namespace crane
 

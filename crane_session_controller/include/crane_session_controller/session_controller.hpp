@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "configuration_manager.hpp"
+#include "diagnostics_reporter.hpp"
 #include "planner_registry.hpp"
 #include "visibility_control.h"
 
@@ -68,6 +69,8 @@ private:
 
   std::shared_ptr<PlannerRegistry> planner_registry_;
 
+  std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
+
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
@@ -92,10 +95,6 @@ private:
     std::make_shared<VisualizerMessageBuilder>("session_controller");
 
   diagnostic_updater::Updater diagnostic_updater_;
-
-  rclcpp::Time last_planning_time_;
-
-  int planning_count_ = 0;
 
   std::string prev_session_name_;
 
