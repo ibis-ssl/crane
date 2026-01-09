@@ -292,9 +292,7 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     // ID番号の小さいロボットを優先（通常の割当順序を維持）
-    return [](const std::shared_ptr<RobotInfo> & robot) {
-      return static_cast<double>(robot->id);
-    };
+    return [](const std::shared_ptr<RobotInfo> & robot) { return static_cast<double>(robot->id); };
   }
 
   auto getSelectedRobots(

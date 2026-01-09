@@ -65,18 +65,23 @@ SimpleAITactic::SimpleAITactic(WorldModelWrapper::SharedPtr & world_model, rclcp
     // ゴール（通常の指令）のコールバック
     [&](const rclcpp_action::GoalUUID, std::shared_ptr<const SkillExecution::Goal> goal)
       -> rclcpp_action::GoalResponse {
-      std::cout << "Received goal: " << goal->name << std::endl;
+      RCLCPP_INFO(action_node->get_logger(), "Received goal: %s", goal->name.c_str());
       if (running_skill) {
         running_skill.reset();
       }
       if (auto skill_generator = skill_generators.find(goal->name);
           skill_generator != skill_generators.end()) {
-        std::cout << "Start executing skill: " << goal->name << " for robot "
-                  << static_cast<int>(goal->robot_id) << std::endl;
+        RCLCPP_INFO(
+          action_node->get_logger(), "Start executing skill: %s for robot %d", goal->name.c_str(),
+          static_cast<int>(goal->robot_id));
         robot_id = goal->robot_id;
-        std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
+        RCLCPP_DEBUG(
+          action_node->get_logger(), "Skill pointer (before): %p",
+          static_cast<void *>(running_skill.get()));
         running_skill = skill_generator->second(goal->name, goal->robot_id, this->world_model);
-        std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
+        RCLCPP_DEBUG(
+          action_node->get_logger(), "Skill pointer (after): %p",
+          static_cast<void *>(running_skill.get()));
         skill_status = skills::Status::RUNNING;
         parameters.clear();
 
@@ -104,14 +109,14 @@ SimpleAITactic::SimpleAITactic(WorldModelWrapper::SharedPtr & world_model, rclcp
         }
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       } else {
-        std::cerr << "No skill found: " << goal->name << std::endl;
+        RCLCPP_ERROR(action_node->get_logger(), "No skill found: %s", goal->name.c_str());
         return rclcpp_action::GoalResponse::REJECT;
       }
     },
     // キャンセルのコールバック
     [&](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> &)
       -> rclcpp_action::CancelResponse {
-      std::cout << "Canceling goal: " << std::endl;
+      RCLCPP_INFO(action_node->get_logger(), "Canceling goal");
       skill_execution_goal_handle.reset();
       if (running_skill) {
         running_skill.reset();
@@ -122,7 +127,7 @@ SimpleAITactic::SimpleAITactic(WorldModelWrapper::SharedPtr & world_model, rclcp
     [this](
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle) -> void {
       skill_execution_goal_handle = goal_handle;
-      std::cout << "accept goal callback" << std::endl;
+      RCLCPP_INFO(action_node->get_logger(), "Accept goal callback");
     });
 
   action_sync_timer = action_node->create_wall_timer(std::chrono::milliseconds(200), [this]() {

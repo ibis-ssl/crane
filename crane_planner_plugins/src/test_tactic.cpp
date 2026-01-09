@@ -60,14 +60,14 @@ TestTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots
   auto now = rclcpp::Clock().now();
   if (command->getTargetDistance() < 0.05) {
     if (not sleep_until.has_value()) {
-      std::cout << "[TestTactic] 到着" << std::endl;
+      RCLCPP_INFO(rclcpp::get_logger("TestTactic"), "Arrived");
       sleep_until = now + rclcpp::Duration::from_seconds(default_sleep_sec);
     } else if (now >= *sleep_until) {
       sleep_until.reset();
       current_index = (current_index + 1) % waypoints.size();
       auto next_wp = waypoints.at(current_index).pos;
-      std::cout << "[TestTactic] 次のポイントへ: " << next_wp.x() << ", " << next_wp.y()
-                << std::endl;
+      RCLCPP_INFO(
+        rclcpp::get_logger("TestTactic"), "Next waypoint: %f, %f", next_wp.x(), next_wp.y());
     }
   }
   robot_commands.emplace_back(command->getMsg());

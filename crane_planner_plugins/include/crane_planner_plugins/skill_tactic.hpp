@@ -40,13 +40,15 @@ namespace crane
     std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(    \
       const std::vector<RobotIdentifier> & robots) override                                       \
     {                                                                                             \
-      if (not skill) {                                                                            \
+      if (robots.empty()) {                                                                       \
         return {TacticBase::Status::RUNNING, {}};                                                 \
-      } else {                                                                                    \
-        std::vector<crane_msgs::msg::PositionCommand> robot_commands;                             \
-        auto status = skill->run();                                                               \
-        return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};             \
       }                                                                                           \
+      if (not skill) {                                                                            \
+        skill = std::make_shared<skills::CLASS_NAME>(robots.front().id, world_model);             \
+      }                                                                                           \
+      std::vector<crane_msgs::msg::PositionCommand> robot_commands;                               \
+      auto status = skill->run();                                                                 \
+      return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};               \
     }                                                                                             \
     auto getSelectedRobots(                                                                       \
       uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,              \

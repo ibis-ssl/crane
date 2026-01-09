@@ -47,8 +47,11 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // キーパーIDを優先（通常は0番）
-    return [](const std::shared_ptr<RobotInfo> & robot) { return static_cast<double>(robot->id); };
+    // ゴールキーパーだけ退場させにくくする
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      return (robot->id == wm->getOurGoalieId()) ? 100.0 : 0.0;
+    };
   }
 
 private:

@@ -44,8 +44,14 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    if (!receive_skill) {
+    // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
+    if (robots.empty()) {
       return {TacticBase::Status::RUNNING, {}};
+    }
+    if (!receive_skill) {
+      receive_skill =
+        std::make_shared<skills::Receive>("pass_receiver", robots.front().id, world_model);
+      receive_skill->setParameter("policy", std::string("closest"));
     }
 
     // If a kick is ongoing by our team or ball is moving sufficiently, actively receive

@@ -41,9 +41,7 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     // ID番号の小さいロボットを優先（待機ロボットとして低IDを使用）
-    return [](const std::shared_ptr<RobotInfo> & robot) {
-      return static_cast<double>(robot->id);
-    };
+    return [](const std::shared_ptr<RobotInfo> & robot) { return static_cast<double>(robot->id); };
   }
 
 private:

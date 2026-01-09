@@ -73,6 +73,22 @@ public:
     return selected_robots;
   }
 
+  /**
+   * @brief GlobalRobotAllocatorが選択したロボットを直接設定する
+   *
+   * 既存のgetSelectedRobotsをバイパスして、外部で決定されたロボットIDを直接設定する。
+   *
+   * @param robot_ids 割り当てられたロボットIDリスト
+   */
+  void setAllocatedRobots(const std::vector<uint8_t> & robot_ids)
+  {
+    robots.clear();
+    for (auto id : robot_ids) {
+      RobotIdentifier robot_id{true, id};
+      robots.emplace_back(robot_id);
+    }
+  }
+
   auto getPositionCommands() -> crane_msgs::msg::PositionCommands
   {
     auto [latest_status, position_commands] = calculatePositionCommand(robots);
