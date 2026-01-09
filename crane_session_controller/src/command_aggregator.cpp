@@ -28,7 +28,17 @@ auto CommandAggregator::collectCommands(
 
   // 全プランナーからコマンドを収集
   for (const auto & tactic : tactic_registry_->getAllPlanners()) {
+    auto robot_count = tactic->getRobots().size();
     auto commands_msg = tactic->getPositionCommands();
+    auto command_count = commands_msg.robot_commands.size();
+
+    if (robot_count > 0 && command_count == 0) {
+      // ロボットは割り当てられているがコマンドが生成されていない
+      std::cerr << "[CommandAggregator] 警告: Tactic「" << tactic->name << "」にロボット "
+                << robot_count << " 台が割り当てられていますが、"
+                << "コマンドが0件生成されました" << std::endl;
+    }
+
     // Note: tactic_name フィールドはメッセージ定義にないためコメントアウト
     // ranges::for_each(
     //   commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {

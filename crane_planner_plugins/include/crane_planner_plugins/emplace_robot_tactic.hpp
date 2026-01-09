@@ -42,6 +42,18 @@ public:
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
+  bool isHardConstraint() const override { return true; }
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // ゴールキーパーだけ退場させにくくする
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      return (robot->id == wm->getOurGoalieId()) ? 100.0 : 0.0;
+    };
+  }
+
 private:
   std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
 };

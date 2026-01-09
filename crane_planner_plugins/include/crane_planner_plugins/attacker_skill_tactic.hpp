@@ -41,37 +41,41 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    if (not skill) {
+    // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
+    if (robots.empty()) {
       return {TacticBase::Status::RUNNING, {}};
-    } else {
-      std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
-      {
-        visualizer->circle()
-          .center(skill->commander()->getRobot()->pose.pos)
-          .radius(0.3)
-          .stroke("red")
-          .strokeWidth(20)
-          .build();
-      }
-      if (world_model->ball().isMoving()) {
-        {
-          auto polyline_builder = visualizer->polyline();
-          for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
-            polyline_builder.addPoint(point);
-          }
-          polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
-        }
-      }
-      auto status = skill->run();
-      if (skill->getID() != robots.front().id) {
-        std::stringstream ss;
-        ss << "スキルのIDは" << static_cast<int>(skill->getID())
-           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().id) << "です。";
-        ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
-        std::cout << ss.str() << std::endl;
-      }
-      return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
     }
+    if (not skill) {
+      skill = std::make_shared<skills::Attacker>("attacker", robots.front().id, world_model);
+    }
+
+    std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
+    {
+      visualizer->circle()
+        .center(skill->commander()->getRobot()->pose.pos)
+        .radius(0.3)
+        .stroke("red")
+        .strokeWidth(20)
+        .build();
+    }
+    if (world_model->ball().isMoving()) {
+      {
+        auto polyline_builder = visualizer->polyline();
+        for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
+          polyline_builder.addPoint(point);
+        }
+        polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
+      }
+    }
+    auto status = skill->run();
+    if (skill->getID() != robots.front().id) {
+      std::stringstream ss;
+      ss << "スキルのIDは" << static_cast<int>(skill->getID()) << "ですが、選択されたロボットのIDは"
+         << static_cast<int>(robots.front().id) << "です。";
+      ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
+      RCLCPP_WARN(rclcpp::get_logger("AttackerSkillTactic"), "%s", ss.str().c_str());
+    }
+    return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 
   auto getSelectedRobots(
@@ -97,6 +101,15 @@ public:
       }
       return {selected_robots.front()};
     }
+  }
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // ボールに近いロボットを優先（距離が小さいほど適している）
+    auto wm = world_model;  // shared_ptrをコピー
+    return
+      [wm](const std::shared_ptr<RobotInfo> & robot) { return robot->getDistance(wm->ball().pos); };
   }
 };
 

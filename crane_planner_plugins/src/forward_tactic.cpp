@@ -50,10 +50,37 @@ auto ForwardTactic::createForwardLines() const -> std::vector<Segment>
   return forward_lines;
 }
 
-auto ForwardTactic::calculatePositionCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+auto ForwardTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
   -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
+  // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
+  if (forward_skills.size() != robots.size()) {
+    forward_skills.clear();
+
+    auto forward_lines = createForwardLines();
+    if (forward_lines.size() > robots.size()) {
+      forward_lines.resize(robots.size());
+    }
+
+    std::vector<Point> robot_positions =
+      robots | ranges::views::transform([this](const auto & robot_id) -> Point {
+        return world_model->getRobot(robot_id)->pose.pos;
+      }) |
+      ranges::to<std::vector>;
+
+    auto solution = getOptimalAssignments(robot_positions, forward_lines);
+
+    for (const auto & [index, robot_id] : robots | ranges::views::enumerate) {
+      auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);
+      auto line = forward_lines[solution[index]];
+      skill->setParameter("front_point", line.second);
+      skill->setParameter("back_point", line.first);
+      skill->setParameter("max_vel", 1.5);
+      skill->planner_visualizer = visualizer;
+      forward_skills.emplace_back(skill);
+    }
+  }
+
   std::vector<crane_msgs::msg::PositionCommand> robot_commands;
   for (auto forward_skill : forward_skills) {
     forward_skill->run();

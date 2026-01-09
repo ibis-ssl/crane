@@ -15,7 +15,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "allocation_state.hpp"
 #include "configuration_manager.hpp"
+#include "global_robot_allocator.hpp"
 #include "tactic_registry.hpp"
 
 namespace crane
@@ -66,22 +68,27 @@ public:
    */
   auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
 
-private:
   /**
-   * @brief プランナーへのロボット割り当てを試行（エラーハンドリング含む）
+   * @brief コスト設定を取得/設定
    */
-  auto tryAssignRobotToPlanner(
-    const TacticSlot & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-    const std::vector<TacticBase::SharedPtr> & prev_available_planners,
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
-    crane_msgs::msg::RobotSelectResults & results) -> bool;
+  void setAllocationCostConfig(const AllocationCostConfig & config)
+  {
+    allocation_cost_config_ = config;
+  }
+  const AllocationCostConfig & getAllocationCostConfig() const { return allocation_cost_config_; }
 
+private:
   std::shared_ptr<ConfigurationManager> config_manager_;
   std::shared_ptr<TacticRegistry> tactic_registry_;
   rclcpp::Logger logger_;
 
   std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
   std::string prev_assignment_log_;
+
+  // 全体最適化用メンバ
+  std::unique_ptr<GlobalRobotAllocator> global_allocator_;
+  AllocationState allocation_state_;
+  AllocationCostConfig allocation_cost_config_;
 };
 
 }  // namespace crane

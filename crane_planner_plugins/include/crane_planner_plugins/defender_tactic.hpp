@@ -62,6 +62,22 @@ public:
 
     return selected;
   }
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // 守備ライン位置に近いロボットを優先
+    auto wm = world_model;  // shared_ptrをコピー
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      Segment ball_line{wm->goal(), wm->ball().pos};
+      auto parameter = getDefenseLinePointParameter(ball_line, wm);
+      if (not parameter) {
+        return 1000.0;  // パラメータが無効な場合は大きなコスト
+      }
+      const auto defense_point = getDefenseLinePoint(parameter.value(), wm);
+      return robot->getDistance(defense_point);
+    };
+  }
 };
 
 }  // namespace crane

@@ -37,6 +37,13 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // ID番号の小さいロボットを優先（待機ロボットとして低IDを使用）
+    return [](const std::shared_ptr<RobotInfo> & robot) { return static_cast<double>(robot->id); };
+  }
+
 private:
   std::unordered_map<uint8_t, Pose2D> stop_poses;
 };

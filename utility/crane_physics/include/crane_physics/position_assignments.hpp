@@ -239,5 +239,42 @@ inline auto getOptimalAssignments(
   return solution_index;
 }
 
+/**
+ * @brief カスタムコスト関数を用いた最適割当計算
+ *
+ * ユーザー定義のコスト関数を使用してロボットとターゲットの最適割当を計算する。
+ *
+ * @tparam CostFunc コスト関数の型 (int robot_index, int target_index) -> double
+ * @param num_robots ロボット数
+ * @param num_targets ターゲット数
+ * @param cost_func コスト計算関数
+ * @return 割当結果のインデックスベクター（solution_index[robot_index] = target_index）
+ */
+template <typename CostFunc>
+inline auto getOptimalAssignmentsWithCost(
+  size_t num_robots, size_t num_targets, CostFunc && cost_func) -> std::vector<int>
+{
+  assert(num_robots <= num_targets);
+  if (num_robots == 0) {
+    return {};
+  }
+  if (num_robots == 1) {
+    return {0};
+  }
+
+  // コスト行列を構築
+  std::vector<std::vector<double>> cost(num_robots, std::vector<double>(num_targets));
+  for (size_t i = 0; i < num_robots; ++i) {
+    for (size_t j = 0; j < num_targets; ++j) {
+      cost[i][j] = cost_func(i, j);
+    }
+  }
+
+  math::Hungarian<double> hungarian_solver(cost);
+  const auto [solution_cost, solution_index] = hungarian_solver.solve();
+
+  return solution_index;
+}
+
 }  // namespace crane
 #endif  // CRANE_PHYSICS__POSITION_ASSIGNMENTS_HPP_
