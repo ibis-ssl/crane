@@ -294,60 +294,6 @@ public:
     // ID番号の小さいロボットを優先（通常の割当順序を維持）
     return [](const std::shared_ptr<RobotInfo> & robot) { return static_cast<double>(robot->id); };
   }
-
-  auto getSelectedRobots(
-    [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    // 前回からの割り当て情報を維持
-    std::vector<uint8_t> selected = this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
-      [](const std::shared_ptr<RobotInfo> & robot) {
-        // choose id smaller first
-        return 15. - static_cast<double>(-robot->id);
-      },
-      prev_roles);
-
-    // 新しく選択されたロボットだけを初期化
-    for (const auto & robot_id : selected) {
-      if (assignment_map.find(robot_id) == assignment_map.end()) {
-        // 初期割り当てを空に
-        Point current_pos = world_model->getOurRobot(robot_id)->pose.pos;
-
-        // 現在位置から最も近いエリアを選択
-        double min_distance = std::numeric_limits<double>::max();
-        std::string closest_area = "";
-
-        for (const auto & area : defense_areas) {
-          Point centroid;
-          bg::centroid(area.box, centroid);
-          double distance = (current_pos - centroid).norm();
-
-          if (distance < min_distance) {
-            min_distance = distance;
-            closest_area = area.name;
-          }
-        }
-
-        if (!closest_area.empty()) {
-          assignment_map[robot_id] = closest_area;
-        }
-      }
-    }
-
-    // 選択から外れたロボットの情報をクリア
-    for (auto it = assignment_map.begin(); it != assignment_map.end();) {
-      if (std::find(selected.begin(), selected.end(), it->first) == selected.end()) {
-        it = assignment_map.erase(it);
-        target_positions.erase(it->first);
-        reassignment_cooldown.erase(it->first);
-      } else {
-        ++it;
-      }
-    }
-
-    return selected;
-  }
 };
 
 }  // namespace crane

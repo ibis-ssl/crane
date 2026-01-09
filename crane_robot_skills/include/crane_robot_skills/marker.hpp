@@ -30,8 +30,6 @@ public:
   void initialize();
 
   Status update() override;
-
-  void print(std::ostream & os) const override { os << "[Marker]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MARKER_HPP_

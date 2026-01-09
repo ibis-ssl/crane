@@ -113,36 +113,4 @@ OurDirectFreeKickTactic::calculatePositionCommand(
   }
   return {Status::RUNNING, robot_commands};
 }
-auto OurDirectFreeKickTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  cached_prev_roles = prev_roles;
-
-  auto robots_sorted = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots,
-    [&](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールに近いほうが先頭
-      return 100. / robot->getDistance(world_model->ball().pos);
-    },
-    prev_roles);
-  // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
-  if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
-    robots_sorted.erase(robots_sorted.begin());
-  }
-
-  if (not robots_sorted.empty()) {
-    // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<PositionCommandWrapper>(
-      "our_free_kick_planner/kicker", robots_sorted.front(), world_model);
-  } else {
-    return {};
-  }
-  for (const auto & robot_id : robots_sorted | ranges::views::drop(1)) {
-    other_robots.emplace_back(
-      std::make_shared<PositionCommandWrapper>(
-        "our_free_kick_planner/other", robot_id, world_model));
-  }
-  return robots_sorted;
-}
 }  // namespace crane

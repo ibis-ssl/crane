@@ -41,39 +41,6 @@ public:
     }
   }
 
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    if (selectable_robots.empty()) {
-      return {};
-    } else {
-      std::vector<uint8_t> selected_robots;
-      // ボールに近いロボットを1台選択
-      auto ball_selected_robots = this->getSelectedRobotsByScore(
-        1, selectable_robots,
-        [this](const std::shared_ptr<RobotInfo> & robot) {
-          if (robot->id == world_model->getOurGoalieId()) {
-            // ゴールキーパーは選出しない
-            return -100.;
-          } else {
-            // ボールに近いほどスコアが高い
-            return 100.0 / std::max(robot->getSquareDistance(world_model->ball().pos), 0.01);
-          }
-        },
-        prev_roles);
-
-      if (ball_selected_robots.empty()) {
-        return {};
-      }
-
-      ball_placement = std::make_shared<skills::SingleBallPlacement>(
-        "ball_placement", selected_robots.front(), world_model);
-      ball_placement->setParameter("pass_enable", true);
-      return {ball_selected_robots.front()};
-    }
-  }
-
   std::shared_ptr<skills::SingleBallPlacement> ball_placement;
 };
 
@@ -95,41 +62,6 @@ public:
       return {TacticBase::Status::RUNNING, {placer->getMsg()}};
     } else {
       return {TacticBase::Status::RUNNING, {}};
-    }
-  }
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    if (selectable_robots.empty()) {
-      return {};
-    } else {
-      std::vector<uint8_t> selected_robots;
-      // ボールに近いロボットを1台選択
-      if (auto placement_target = world_model->getBallPlacementTarget(); placement_target) {
-        auto selected = this->getSelectedRobotsByScore(
-          1, selectable_robots,
-          [&](const std::shared_ptr<RobotInfo> & robot) {
-            if (robot->id == world_model->getOurGoalieId()) {
-              // ゴールキーパーは選出しない
-              return -100.;
-            } else {
-              return 100.0 / std::max(robot->getDistance(placement_target.value()), 0.01);
-            }
-          },
-          prev_roles);
-        if (selected.empty()) {
-          return {};
-        } else {
-          placer =
-            std::make_shared<PositionCommandWrapper>("placer", selected.front(), world_model);
-          target = placement_target.value();
-          return {selected.front()};
-        }
-      } else {
-        return {};
-      }
     }
   }
 

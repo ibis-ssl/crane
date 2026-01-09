@@ -32,14 +32,6 @@ MarkerTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robo
   return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto MarkerTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> &) -> std::vector<uint8_t>
-{
-  auto lock = std::lock_guard(markers_mutex);
-  return assignMarkingTarget(selectable_robots_num, selectable_robots);
-}
-
 auto MarkerTactic::assignMarkingTarget(
   uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
   -> std::vector<uint8_t>

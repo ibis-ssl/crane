@@ -27,42 +27,29 @@
 
 namespace crane
 {
-#define DEFINE_SKILL_PLANNER(CLASS_NAME)                                                          \
-  class CLASS_NAME##SkillTactic : public TacticBase                                               \
-  {                                                                                               \
-  public:                                                                                         \
-    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
-    COMPOSITION_PUBLIC explicit CLASS_NAME##SkillTactic(                                          \
-      WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)           \
-    : TacticBase(#CLASS_NAME, world_model)                                                        \
-    {                                                                                             \
-    }                                                                                             \
-    std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(    \
-      const std::vector<RobotIdentifier> & robots) override                                       \
-    {                                                                                             \
-      if (robots.empty()) {                                                                       \
-        return {TacticBase::Status::RUNNING, {}};                                                 \
-      }                                                                                           \
-      if (not skill) {                                                                            \
-        skill = std::make_shared<skills::CLASS_NAME>(robots.front().id, world_model);             \
-      }                                                                                           \
-      std::vector<crane_msgs::msg::PositionCommand> robot_commands;                               \
-      auto status = skill->run();                                                                 \
-      return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};               \
-    }                                                                                             \
-    auto getSelectedRobots(                                                                       \
-      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,              \
-      const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override \
-    {                                                                                             \
-      auto robots = getSelectedRobotsByScore(                                                     \
-        selectable_robots_num, selectable_robots,                                                 \
-        [this](const std::shared_ptr<RobotInfo> & robot) {                                        \
-          return 15. - static_cast<double>(-robot->id);                                           \
-        },                                                                                        \
-        prev_roles);                                                                              \
-      skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                  \
-      return {robots.front()};                                                                    \
-    }                                                                                             \
+#define DEFINE_SKILL_PLANNER(CLASS_NAME)                                                       \
+  class CLASS_NAME##SkillTactic : public TacticBase                                            \
+  {                                                                                            \
+  public:                                                                                      \
+    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                       \
+    COMPOSITION_PUBLIC explicit CLASS_NAME##SkillTactic(                                       \
+      WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)        \
+    : TacticBase(#CLASS_NAME, world_model)                                                     \
+    {                                                                                          \
+    }                                                                                          \
+    std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand( \
+      const std::vector<RobotIdentifier> & robots) override                                    \
+    {                                                                                          \
+      if (robots.empty()) {                                                                    \
+        return {TacticBase::Status::RUNNING, {}};                                              \
+      }                                                                                        \
+      if (not skill) {                                                                         \
+        skill = std::make_shared<skills::CLASS_NAME>(robots.front().id, world_model);          \
+      }                                                                                        \
+      std::vector<crane_msgs::msg::PositionCommand> robot_commands;                            \
+      auto status = skill->run();                                                              \
+      return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};            \
+    }                                                                                          \
   }
 
 class GoalieSkillTactic : public TacticBase
@@ -78,16 +65,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    [[maybe_unused]] uint8_t selectable_robots_num,
-    [[maybe_unused]] const std::vector<uint8_t> & selectable_robots,
-    [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
-    -> std::vector<uint8_t> override
-  {
-    skill = std::make_shared<skills::Goalie>("goalie", world_model->getOurGoalieId(), world_model);
-    return {world_model->getOurGoalieId()};
-  }
 };
 
 class BallPlacementSkillTactic : public TacticBase
@@ -103,10 +80,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
 class SubAttackerSkillTactic : public TacticBase
@@ -122,10 +95,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
 class SimpleKickOffSkillTactic : public TacticBase
@@ -141,10 +110,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
 class BallNearByPositionerSkillTactic : public TacticBase
@@ -160,10 +125,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
 class PlacementTargetNearByPositionerSkillTactic : public TacticBase
@@ -179,10 +140,6 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
-
-  auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 }  // namespace crane
 #endif  // CRANE_TACTICS__SKILL_TACTIC_HPP_

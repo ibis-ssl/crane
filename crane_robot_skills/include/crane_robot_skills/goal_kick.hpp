@@ -26,8 +26,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override { os << "[GoalKick] "; }
-
   Kick kick_skill;
 
   static double getBestAngleToShootFromPoint(

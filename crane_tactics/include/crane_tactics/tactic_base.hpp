@@ -58,25 +58,8 @@ public:
 
   virtual ~TacticBase() { visualizer->clearBuffer(); }
 
-  auto selectRobots(
-    const std::vector<uint8_t> & available_robots, const uint8_t max_selection_count,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-  {
-    auto selected_robots = getSelectedRobots(max_selection_count, available_robots, prev_roles);
-
-    robots.clear();
-    for (auto id : selected_robots) {
-      RobotIdentifier robot_id{true, id};
-      robots.emplace_back(robot_id);
-    }
-
-    return selected_robots;
-  }
-
   /**
    * @brief GlobalRobotAllocatorが選択したロボットを直接設定する
-   *
-   * 既存のgetSelectedRobotsをバイパスして、外部で決定されたロボットIDを直接設定する。
    *
    * @param robot_ids 割り当てられたロボットIDリスト
    */
@@ -118,11 +101,11 @@ public:
     return msg;
   }
 
-  bool isSameConfiguration(TacticBase * other_planner)
+  bool isSameConfiguration(TacticBase * other_tactic)
   {
-    return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
+    return name == other_tactic->name && robots.size() == other_tactic->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
-      std::vector<RobotIdentifier> others = other_planner->robots;
+      std::vector<RobotIdentifier> others = other_tactic->robots;
       std::ranges::sort(ours, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
       std::ranges::sort(others, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
       return ours == others;
@@ -153,8 +136,6 @@ public:
     return default_value;
   }
 
-  bool hasTacticParameter(const std::string & key) const { return tactic_params_.contains(key); }
-
   /**
    * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
    *
@@ -180,43 +161,6 @@ public:
   virtual bool isHardConstraint() const { return false; }
 
 protected:
-  virtual auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> = 0;
-
-  auto getSelectedRobotsByScore(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::function<double(const std::shared_ptr<RobotInfo> &)> & score_func,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
-      [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
-  {
-    std::vector<std::pair<int, double>> robot_with_score;
-    for (const auto & id : selectable_robots) {
-      if (auto prev = prev_roles.find(id);
-          prev != prev_roles.end() && prev->second.tactic_name == name) {
-        robot_with_score.emplace_back(
-          id,
-          score_func(world_model->getOurRobot(id)) + hysteresis_func(world_model->getOurRobot(id)));
-      } else {
-        robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
-      }
-    }
-    std::ranges::sort(robot_with_score, [](const auto & a, const auto & b) -> bool {
-      // greater score first
-      return a.second > b.second;
-    });
-
-    std::vector<uint8_t> selected_robots;
-    for (int i = 0; i < selectable_robots_num; i++) {
-      if (i >= robot_with_score.size()) {
-        break;
-      }
-      selected_robots.emplace_back(robot_with_score.at(i).first);
-    }
-    return selected_robots;
-  }
-
   // ロボットを最適な位置に割り当て、位置コマンドを生成する共通メソッド
   auto assignRobotsToPoints(
     const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,

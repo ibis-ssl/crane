@@ -488,31 +488,4 @@ void SingleBallPlacement::initialize()
              world_model()->getMsg().ball_info.detected;
     });
 }
-
-void SingleBallPlacement::print(std::ostream & os) const
-{
-  os << "[SingleBallPlacement]";
-
-  using enum SingleBallPlacementStates;
-  switch (getCurrentState()) {
-    case GO_OVER_BALL:
-      os << " GO_OVER_BALL";
-      break;
-    case CONTACT_BALL:
-      os << " CONTACT_BALL";
-      break;
-    case MOVE_TO_TARGET:
-      os << " MOVE_TO_TARGET";
-      break;
-    case SLEEP:
-      sleep->print(os);
-      break;
-    case LEAVE_BALL:
-      os << " LEAVE_BALL";
-      break;
-    default:
-      os << " UNKNOWN";
-      break;
-  }
-}
 }  // namespace crane::skills

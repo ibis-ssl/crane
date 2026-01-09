@@ -42,8 +42,6 @@ public:
 
   void initialize();
 
-  void print(std::ostream & os) const override { os << "[Attacker] "; }
-
   void printTextOnRobot(std::string s)
   {
     visualizer->drawCenteredLabel(robot()->pose.pos + Vector2(0., 0.5), s, "white", 50);
@@ -71,6 +69,9 @@ public:
 
     auto update(const Point & current_position, const Point & ball_position) -> void;
   } over_dribble;
+
+protected:
+  void onPostUpdate() override;
 
 private:
   void configurePassKick(const Point & target, Kick & kick_skill);

@@ -20,26 +20,4 @@ auto SecondThreatDefenderTactic::calculatePositionCommand(
     return {TacticBase::Status::RUNNING, {}};
   }
 }
-
-auto SecondThreatDefenderTactic::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  if (selectable_robots_num < 1) {
-    return {};
-  } else {
-    constexpr double offset = 0.3;
-    auto target = skills::SecondThreatDefender::getDefaultPoint(world_model, offset);
-    auto selected = this->getSelectedRobotsByScore(
-      1, selectable_robots,
-      [&](const std::shared_ptr<RobotInfo> & robot) {
-        // ターゲットに一番近いロボット
-        return 100. / robot->getDistance(target);
-      },
-      prev_roles);
-    skill = std::make_shared<skills::SecondThreatDefender>(selected.front(), world_model);
-    skill->setParameter("offset", offset);
-    return selected;
-  }
-}
 }  // namespace crane

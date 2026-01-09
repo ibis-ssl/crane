@@ -33,8 +33,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override { os << "[SimpleKickOff]"; }
-
   Kick kick_skill;
 };
 }  // namespace crane::skills

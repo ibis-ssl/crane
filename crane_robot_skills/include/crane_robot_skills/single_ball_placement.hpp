@@ -55,8 +55,6 @@ public:
   }
 
   void initialize();
-
-  void print(std::ostream & os) const override;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_

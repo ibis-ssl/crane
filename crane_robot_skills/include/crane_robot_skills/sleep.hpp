@@ -24,8 +24,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override;
-
   double getRestTime() const;
 
   void reset() { is_started = false; }

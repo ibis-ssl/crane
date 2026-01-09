@@ -20,14 +20,6 @@
 #include <utility>
 #include <vector>
 
-template <class... Ts>
-struct overloaded : Ts...
-{
-  using Ts::operator()...;
-};
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
 namespace crane::skills
 {
 template <typename StatesType>
@@ -36,45 +28,42 @@ class StateMachine
 public:
   struct Transition
   {
-    StatesType from;
     StatesType to;
     std::function<bool()> condition;
-    Transition(StatesType f, StatesType t, std::function<bool()> cond)
-    : from(f), to(t), condition(cond)
-    {
-    }
   };
 
-  explicit StateMachine(StatesType init_state) : current_state(init_state) {}
+  explicit StateMachine(StatesType init_state) : current_state_(init_state) {}
 
   void addTransition(
     const StatesType & from, const StatesType & to, std::function<bool()> condition)
   {
-    transitions.emplace_back(from, to, condition);
+    transitions_[from].push_back({to, std::move(condition)});
   }
 
   void update()
   {
-    if (auto it = std::ranges::find_if(
-          transitions,
-          [this](const Transition & transition) {
-            return transition.from == current_state && transition.condition();
-          });
-        it != transitions.end()) {
-      // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。state functionの実行は行われない
-      if (current_state = it->to; magic_enum::enum_name(current_state) == "ENTRY_POINT") {
-        // 再帰的に評価を行うので、無限ループに注意！！！
-        update();
+    auto it = transitions_.find(current_state_);
+    if (it == transitions_.end()) return;
+
+    for (const auto & trans : it->second) {
+      if (trans.condition()) {
+        current_state_ = trans.to;
+        // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。
+        // state functionの実行は行われない
+        if (magic_enum::enum_name(current_state_) == "ENTRY_POINT") {
+          // 再帰的に評価を行うので、無限ループに注意！！！
+          update();
+        }
+        return;
       }
     }
   }
 
-  StatesType getCurrentState() const { return current_state; }
+  StatesType getCurrentState() const { return current_state_; }
 
-protected:
-  StatesType current_state;
-
-  std::vector<Transition> transitions;
+private:
+  StatesType current_state_;
+  std::unordered_map<StatesType, std::vector<Transition>> transitions_;
 };
 
 enum class Status {
@@ -142,16 +131,7 @@ public:
     }
   }
 
-  virtual void print(std::ostream &) const {}
-
-  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
-
   uint8_t getID() const { return command->getRobot()->id; }
-
-  void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
-
-  void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
 
   void clearVisualizer() { visualizer->clearBuffer(); }
 
@@ -166,9 +146,23 @@ protected:
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
-  std::function<void()> pre_update = nullptr;
+  void prepareFrame()
+  {
+    command->clearMaxVelocityFactors();
+    command->clearMaxAccelerationFactors();
+    command->clearSkillStates();
 
-  std::function<void()> post_update = nullptr;
+    auto & msg = command->getEditableMsg();
+    msg.current_pose.x = robot()->pose.pos.x();
+    msg.current_pose.y = robot()->pose.pos.y();
+    msg.current_pose.theta = robot()->pose.theta;
+  }
+
+  void finalizeFrame(Status status)
+  {
+    command->addStateFactor(name, std::string(magic_enum::enum_name(status)));
+    visualizer->flush();
+  }
 };
 
 class SkillBase : public SkillInterface
@@ -187,25 +181,10 @@ public:
       parameters = parameters_opt.value();
     }
 
-    // 毎フレーム自動クリア
-    command->clearMaxVelocityFactors();
-    command->clearMaxAccelerationFactors();
-    command->clearSkillStates();
-
-    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
-    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
-    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
-
-    if (pre_update) {
-      pre_update();
-    }
-    auto ret = update();
-    if (post_update) {
-      post_update();
-    }
-    command->addStateFactor(name, std::string(magic_enum::enum_name(ret)));
-    visualizer->flush();
-    return ret;
+    prepareFrame();
+    auto status = update();
+    finalizeFrame(status);
+    return status;
   }
 
   virtual Status update() = 0;
@@ -213,10 +192,6 @@ public:
   crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
-
-protected:
-  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase & skill_base);
 };
 
 template <typename StatesType>
@@ -227,7 +202,7 @@ public:
 
   template <typename... Args>
   explicit SkillBaseWithState(Args &&... args)
-  : SkillInterface(std::forward<Args>(args)...), state_machine(static_cast<StatesType>(0))
+  : SkillInterface(std::forward<Args>(args)...), state_machine_(static_cast<StatesType>(0))
   {
   }
 
@@ -238,35 +213,28 @@ public:
     if (parameters_opt) {
       parameters = parameters_opt.value();
     }
-    state_machine.update();
-    state_string = magic_enum::enum_name(state_machine.getCurrentState());
 
-    // 毎フレーム自動クリア
-    command->clearMaxVelocityFactors();
-    command->clearMaxAccelerationFactors();
-    command->clearSkillStates();
+    state_machine_.update();
+    prepareFrame();
 
-    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
-    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
-    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
+    auto current_state = state_machine_.getCurrentState();
+    auto it = state_functions_.find(current_state);
+    Status status = (it != state_functions_.end()) ? it->second() : Status::RUNNING;
 
-    if (pre_update) {
-      pre_update();
-    }
-    auto ret = state_functions[state_machine.getCurrentState()]();
-    if (post_update) {
-      post_update();
-    }
-    command->addStateFactor(name, state_string);
+    onPostUpdate();
+
+    auto state_name = magic_enum::enum_name(current_state);
+    command->addStateFactor(name, std::string(state_name));
 
     visualizer->text()
       .position(robot()->pose.pos)
-      .text(state_string)
+      .text(std::string(state_name))
       .fontSize(50)
       .fill("white")
       .build();
     visualizer->flush();
-    return ret;
+
+    return status;
   }
 
   crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
@@ -275,12 +243,12 @@ public:
 
   void addStateFunction(const StatesType & state, StateFunctionType function)
   {
-    if (state_functions.find(state) != state_functions.end()) {
+    if (state_functions_.find(state) != state_functions_.end()) {
       RCLCPP_WARN(
         rclcpp::get_logger("State: " + name),
         "State function already exists and is overwritten now.");
     }
-    state_functions[state] = function;
+    state_functions_[state] = function;
   }
 
   void addTransitions(
@@ -288,59 +256,23 @@ public:
     std::vector<std::pair<StatesType, std::function<bool()>>> transition_targets)
   {
     for (const auto & transition_target : transition_targets) {
-      state_machine.addTransition(from, transition_target.first, transition_target.second);
+      state_machine_.addTransition(from, transition_target.first, transition_target.second);
     }
   }
 
   void addTransition(const StatesType from, const StatesType to, std::function<bool()> condition)
   {
-    state_machine.addTransition(from, to, condition);
+    state_machine_.addTransition(from, to, condition);
   }
 
-  StatesType getCurrentState() const { return state_machine.getCurrentState(); }
+  StatesType getCurrentState() const { return state_machine_.getCurrentState(); }
 
 protected:
-  //    Status status = Status::RUNNING;
+  virtual void onPostUpdate() {}
 
-  StateMachine<StatesType> state_machine;
-
-  std::unordered_map<StatesType, StateFunctionType> state_functions;
-
-  std::string state_string;
-
-  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  template <typename T>
-  friend std::ostream & operator<<(std::ostream & os, const SkillBaseWithState<T> & skill_base);
+  StateMachine<StatesType> state_machine_;
+  std::unordered_map<StatesType, StateFunctionType> state_functions_;
 };
 }  // namespace crane::skills
-
-inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillInterface & skill)
-{
-  skill.print(os);
-  return os;
-}
-
-inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::skills::SkillInterface> & skill)
-{
-  skill->print(os);
-  return os;
-}
-
-template <typename StatesType>
-inline std::ostream & operator<<(
-  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType> & skill)
-{
-  skill.print(os);
-  return os;
-}
-
-template <typename StatesType>
-inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType>> & skill)
-{
-  skill->print(os);
-  return os;
-}
 
 #endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_

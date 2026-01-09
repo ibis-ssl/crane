@@ -75,20 +75,6 @@ TestTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots
   return {TacticBase::Status::RUNNING, robot_commands};
 }
 
-auto TestTactic::getSelectedRobots(
-  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
-  -> std::vector<uint8_t>
-{
-  if (ranges::count(selectable_robots, target_robot_id) > 0) {
-    command =
-      std::make_shared<crane::PositionCommandWrapper>("test_planner", target_robot_id, world_model);
-    return {target_robot_id};
-  } else {
-    return {};
-  }
-}
-
 auto TestTactic::applyLegLimits(crane::PositionCommandWrapper & cmd, const Waypoint & wp) -> void
 {
   double vmax = wp.max_velocity.has_value() ? *wp.max_velocity : default_max_velocity;

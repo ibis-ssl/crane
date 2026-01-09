@@ -64,22 +64,4 @@ CenterStopKickTactic::calculatePositionCommand(const std::vector<RobotIdentifier
   return {tactic_status, robot_commands};
 }
 
-auto CenterStopKickTactic::getSelectedRobots(
-  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  auto selected = this->getSelectedRobotsByScore(
-    1,  // 1台のロボットのみ必要
-    selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) { return 10.0 - robot->id; }, prev_roles);
-
-  if (!selected.empty()) {
-    RCLCPP_DEBUG(
-      rclcpp::get_logger("CenterStopKickTactic"), "選択されたロボット: ID=%d, ボール距離=%.3fm",
-      selected[0], world_model->getOurRobot(selected[0])->getDistance(world_model->ball().pos));
-  }
-
-  return selected;
-}
-
 }  // namespace crane

@@ -35,12 +35,6 @@ public:
 
   void initialize();
 
-  void print(std::ostream & os) const override
-  {
-    os << "[Idle] stop_by_position: "
-       << (getParameter<bool>("stop_by_position") ? "true" : "false");
-  }
-
   Kick kick_skill;
 
   std::optional<Point> start_ball_point = std::nullopt;

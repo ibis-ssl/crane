@@ -37,8 +37,6 @@ public:
   }
 
   Status update() override;
-
-  void print(std::ostream & os) const override { os << "[SecondThreatDefender]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SECOND_THREAT_DEFENDER_HPP_

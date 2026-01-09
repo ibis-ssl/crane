@@ -41,8 +41,6 @@ public:
    */
   auto getBallExitPointFromField(const double offset = 0.3) -> Point;
 
-  void print(std::ostream & os) const override { os << "[Kick]"; }
-
 private:
   void initialize();
 

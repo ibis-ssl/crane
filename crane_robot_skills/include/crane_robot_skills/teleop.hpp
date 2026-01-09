@@ -29,8 +29,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override { os << "[Teleop]"; }
-
 private:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joystick_subscription;
 

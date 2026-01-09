@@ -61,21 +61,4 @@ BallCalibrationDataCollectorTactic::calculatePositionCommand(
   return {tactic_status, robot_commands};
 }
 
-auto BallCalibrationDataCollectorTactic::getSelectedRobots(
-  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  // 1台のロボットのみ選択
-  auto selected = this->getSelectedRobotsByScore(
-    1,  // 1台のロボットのみ必要
-    selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      // 最もボールに近いロボットを選択
-      return 15. - robot->id;
-    },
-    prev_roles);
-
-  return selected;
-}
-
 }  // namespace crane

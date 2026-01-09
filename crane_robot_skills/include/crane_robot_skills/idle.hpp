@@ -26,8 +26,6 @@ public:
     command->stopHere();
     return Status::RUNNING;
   }
-
-  void print(std::ostream & os) const override { os << "[Idle]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__IDLE_HPP_

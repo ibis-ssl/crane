@@ -38,8 +38,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override { os << "[Receive]"; }
-
   Point getInterceptionPoint() const;
 };
 

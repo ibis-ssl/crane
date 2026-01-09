@@ -43,8 +43,6 @@ public:
 
   void initialize();
 
-  void print(std::ostream & os) const override { os << "[CenterStopKick]"; }
-
 private:
   /**
    * @brief キック実行位置を取得

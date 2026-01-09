@@ -32,8 +32,6 @@ public:
 
   void inplay(bool enable_emit);
 
-  void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
-
   std::string phase;
 
   Kick kick_skill;

@@ -111,30 +111,6 @@ public:
     }
     return {Status::RUNNING, robot_commands};
   }
-
-  auto getSelectedRobots(
-    [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    commands.clear();
-    for (size_t index = 0; const auto & robot_id : selectable_robots) {
-      if (index >= selectable_robots_num) {
-        break;
-      }
-
-      commands.emplace_back(
-        CommandWithOriginalPosition{
-          std::make_shared<PositionCommandWrapper>(
-            "ball_placement_avoidance_planner", robot_id, world_model),
-          world_model->getOurRobot(robot_id)->pose.pos});
-      ++index;
-    }
-    // commandsからrobot_idのリストを作成
-    return commands | ranges::views::transform([](const auto & command) {
-             return command.command->getRobot()->id;
-           }) |
-           ranges::to<std::vector<uint8_t>>();
-  }
 };
 
 }  // namespace crane
