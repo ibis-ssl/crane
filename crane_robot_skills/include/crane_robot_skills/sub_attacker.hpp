@@ -30,8 +30,6 @@ public:
 
   Status update() override;
 
-  void print(std::ostream & os) const override { os << "[SubAttacker]"; }
-
   static std::vector<std::pair<double, Point>> getPositionsWithScore(
     const Segment & ball_line, const Point & next_target,
     const WorldModelWrapper::SharedPtr & world_model);

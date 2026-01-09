@@ -48,7 +48,8 @@ public:
     for (const auto & trans : it->second) {
       if (trans.condition()) {
         current_state_ = trans.to;
-        // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。state functionの実行は行われない
+        // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。
+        // state functionの実行は行われない
         if (magic_enum::enum_name(current_state_) == "ENTRY_POINT") {
           // 再帰的に評価を行うので、無限ループに注意！！！
           update();

@@ -22,7 +22,6 @@ Status Sleep::update()
     return Status::RUNNING;
   }
 }
-void Sleep::print(std::ostream & os) const { os << "[Sleep] 残り時間: " << getRestTime() << "秒"; }
 
 double Sleep::getRestTime() const
 {

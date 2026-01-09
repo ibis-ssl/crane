@@ -36,8 +36,6 @@ public:
   }
 
   auto update() -> Status override;
-
-  auto print(std::ostream & os) const -> void override { os << "[BallNearByPositioner]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__BALL_NEARBY_POSITIONER_HPP_

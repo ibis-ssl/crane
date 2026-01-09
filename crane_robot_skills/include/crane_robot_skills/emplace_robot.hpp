@@ -33,8 +33,6 @@ public:
   }
 
   Status update() override;
-
-  void print(std::ostream & os) const override { os << "[EmplaceRobot]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__EMPLACE_ROBOT_HPP_

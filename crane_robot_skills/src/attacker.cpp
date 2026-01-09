@@ -39,16 +39,6 @@ void Attacker::initialize()
     return Status::RUNNING;
   });
 
-  setPostUpdateFunction([this]() {
-    over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
-    if (over_dribble.distance > 0.5) {
-      RCLCPP_INFO(rclcpp::get_logger("Attacker"), "オーバードリブル[m]: %f", over_dribble.distance);
-      command->stopHere();
-    } else {
-      command->setOmegaLimit(10.0);
-    }
-  });
-
   // "ENTRY_POINT"のstate functionは実行されない（skill_base.hppのStateMachine::update参照）
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -242,6 +232,17 @@ void Attacker::initialize()
       return goal_kick_skill.run();
     }
   });
+}
+
+void Attacker::onPostUpdate()
+{
+  over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
+  if (over_dribble.distance > 0.5) {
+    RCLCPP_INFO(rclcpp::get_logger("Attacker"), "オーバードリブル[m]: %f", over_dribble.distance);
+    command->stopHere();
+  } else {
+    command->setOmegaLimit(10.0);
+  }
 }
 
 auto Attacker::OverDribbleInfo::update(const Point & current_position, const Point & ball_position)
