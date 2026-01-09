@@ -31,6 +31,7 @@
 #include "configuration_manager.hpp"
 #include "diagnostics_reporter.hpp"
 #include "planner_registry.hpp"
+#include "robot_allocator.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -49,21 +50,6 @@ public:
 private:
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
-  // 現在割り当て済みのロボットIDをソート済みで取得
-  auto getAssignedRobotIds() const -> std::vector<uint8_t>;
-
-  // 割当状況のログ文字列を生成
-  auto buildAssignmentLog() const -> std::string;
-
-  // 前回と変わっていればログ出力
-  auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
-
-  // プランナーへのロボット割り当てを試行（エラーハンドリング含む）
-  auto tryAssignRobotToPlanner(
-    const SessionCapacity & session_capacity, std::vector<uint8_t> & selectable_robot_ids,
-    const std::vector<PlannerBase::SharedPtr> & prev_available_planners,
-    crane_msgs::msg::RobotSelectResults & results) -> bool;
-
   WorldModelWrapper::SharedPtr world_model;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
@@ -73,6 +59,8 @@ private:
   std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
 
   std::unique_ptr<CommandAggregator> command_aggregator_;
+
+  std::unique_ptr<RobotAllocator> robot_allocator_;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
@@ -100,11 +88,6 @@ private:
   diagnostic_updater::Updater diagnostic_updater_;
 
   std::string prev_session_name_;
-
-  std::string prev_assignment_log_;
-
-  // 前回のロボットロール情報を保存
-  std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
 };
 
 }  // namespace crane
