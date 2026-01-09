@@ -1,0 +1,43 @@
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include <crane_tactics/waiter_tactic.hpp>
+
+namespace crane
+{
+std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+WaiterTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+{
+  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  for (auto robot_id : robots) {
+    auto command =
+      std::make_shared<crane::PositionCommandWrapper>("waiter_planner", robot_id.id, world_model);
+    command->stopHere();
+    if (command->getRobot()->vel.linear.norm() < 0.5) {
+      command->stopHere();
+    }
+    robot_commands.emplace_back(command->getMsg());
+  }
+  return {TacticBase::Status::RUNNING, robot_commands};
+}
+
+auto WaiterTactic::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  auto selected = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      // choose id smaller first
+      return 15. - static_cast<double>(-robot->id);
+    },
+    prev_roles);
+  for (auto robot : selected) {
+    stop_poses.try_emplace(robot, world_model->getOurRobot(robot)->pose);
+  }
+  return selected;
+}
+}  // namespace crane
