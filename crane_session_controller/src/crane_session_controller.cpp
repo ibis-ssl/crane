@@ -277,9 +277,9 @@ auto SessionControllerComponent::logAssignmentIfChanged(const std::string & curr
 {
   if (current_assignment != prev_assignment_log_) {
     if (current_assignment.empty()) {
-      RCLCPP_INFO(get_logger(), "ロボット割当: なし");
+      RCLCPP_DEBUG(get_logger(), "ロボット割当: なし");
     } else {
-      RCLCPP_INFO(get_logger(), "ロボット割当: %s", current_assignment.c_str());
+      RCLCPP_DEBUG(get_logger(), "ロボット割当: %s", current_assignment.c_str());
     }
     prev_assignment_log_ = current_assignment;
   }
