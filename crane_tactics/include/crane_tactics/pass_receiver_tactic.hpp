@@ -75,6 +75,9 @@ public:
     receive_skill->commander()->stopHere().lookAtBall();
     return {TacticBase::Status::RUNNING, {receive_skill->getRobotCommand()}};
   }
+
+protected:
+  void onRobotsChanged() override { receive_skill.reset(); }
 };
 
 }  // namespace crane

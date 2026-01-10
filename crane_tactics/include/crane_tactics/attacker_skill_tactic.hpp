@@ -102,6 +102,9 @@ public:
       return false;
     }
   }
+
+protected:
+  void onRobotsChanged() override { skill.reset(); }
 };
 
 }  // namespace crane
