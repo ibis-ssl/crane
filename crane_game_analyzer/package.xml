@@ -14,6 +14,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_physics</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>crane_world_model_publisher</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
