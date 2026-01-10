@@ -7,6 +7,7 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
 
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
 #include <queue>
