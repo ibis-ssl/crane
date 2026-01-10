@@ -40,10 +40,10 @@ private:
   std::unordered_map<uint8_t, double> ema_scores_;
 
   // ヒステリシスパラメータ
-  static constexpr double MIN_HOLD_DURATION_SEC = 2.0;     // 2秒に延長
-  static constexpr double MIN_IMPROVEMENT_RATIO = 0.5;     // 50%改善で切り替え（相対値）
-  static constexpr double EMERGENCY_SWITCH_RATIO = 2.0;    // 2倍良ければ即切り替え
-  static constexpr double EMA_ALPHA = 0.3;                 // スムージング係数
+  static constexpr double MIN_HOLD_DURATION_SEC = 2.0;   // 2秒に延長
+  static constexpr double MIN_IMPROVEMENT_RATIO = 0.5;   // 50%改善で切り替え（相対値）
+  static constexpr double EMERGENCY_SWITCH_RATIO = 2.0;  // 2倍良ければ即切り替え
+  static constexpr double EMA_ALPHA = 0.3;               // スムージング係数
 
 }  // namespace crane::metrics
 
