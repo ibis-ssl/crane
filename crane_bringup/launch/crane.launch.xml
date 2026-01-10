@@ -223,6 +223,7 @@ limitations under the License.
     <param name="slack.distance_horizon" value="$(var slack.distance_horizon)"/>
     <param name="slack.velocity_epsilon" value="$(var slack.velocity_epsilon)"/>
     <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
+    <param name="field_geometry_config_path" value="$(var field_geometry_config_path)"/>
   </node>
 
   <!-- プレイ選択（試合状況に応じた戦略切り替え） -->
