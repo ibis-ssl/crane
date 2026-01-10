@@ -94,7 +94,14 @@ public:
     crane_msgs::msg::PositionCommands msg;
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
-    for (const auto & command : position_commands) {
+    for (auto command : position_commands) {
+      // WorldModelから現在の速度情報を取得して設定
+      auto robot = world_model->getOurRobot(command.robot_id);
+      if (robot) {
+        command.current_velocity.x = robot->vel.linear.x();
+        command.current_velocity.y = robot->vel.linear.y();
+        command.current_velocity.theta = robot->vel.omega;
+      }
       msg.robot_commands.emplace_back(command);
     }
     visualizer->flush();
