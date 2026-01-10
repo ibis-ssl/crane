@@ -9,8 +9,7 @@
 namespace crane
 {
 std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
-OurPenaltyKickTactic::calculatePositionCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> &)
+OurPenaltyKickTactic::calculatePositionCommand(const std::vector<RobotIdentifier> &)
 {
   std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 

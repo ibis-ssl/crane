@@ -142,6 +142,9 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+protected:
+  void onRobotsChanged() override { skills.clear(); }
 };
 
 class PlacementTargetNearByPositionerSkillTactic : public TacticBase
@@ -157,6 +160,9 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+protected:
+  void onRobotsChanged() override { skills.clear(); }
 };
 }  // namespace crane
 #endif  // CRANE_TACTICS__SKILL_TACTIC_HPP_

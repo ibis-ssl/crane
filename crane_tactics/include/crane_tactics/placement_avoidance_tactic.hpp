@@ -24,16 +24,8 @@
 
 namespace crane
 {
-struct CommandWithOriginalPosition
-{
-  std::shared_ptr<PositionCommandWrapper> command;
-  Point original_position;
-};
 class BallPlacementAvoidanceTactic : public TacticBase
 {
-private:
-  std::vector<CommandWithOriginalPosition> commands;
-
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidanceTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
@@ -55,22 +47,32 @@ public:
       }
     };
 
-    for (auto & command : commands) {
-      if (isInPlacementArea(command.original_position, 0.2)) {
+    for (const auto & robot_id : robots) {
+      auto robot = world_model->getOurRobot(robot_id.id);
+      if (!robot) {
+        continue;
+      }
+
+      Point current_position = robot->pose.pos;
+      auto command = std::make_shared<PositionCommandWrapper>(
+        "ball_placement_avoidance", robot_id.id, world_model);
+
+      Point target_position = current_position;
+
+      if (isInPlacementArea(current_position, 0.2)) {
         auto [distance, closest_point] = getClosestPointAndDistance(
-          world_model->getBallPlacementArea().value().segment, command.original_position);
-        // 0.6m離れる
-        Point target_position =
-          closest_point + (command.original_position - closest_point).normalized() * 0.8;
+          world_model->getBallPlacementArea().value().segment, current_position);
+        // 0.8m離れる
+        target_position = closest_point + (current_position - closest_point).normalized() * 0.8;
+
         if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
-          // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
-          target_position =
-            closest_point + (closest_point - command.original_position).normalized() * 0.8;
+          // 一番近いフィールド外のポイントがだめなので逆方向に0.8m離れる
+          target_position = closest_point + (closest_point - current_position).normalized() * 0.8;
 
           if (auto segment = world_model->getBallPlacementArea().value().segment;
               (closest_point == segment.first || closest_point == segment.second)) {
             // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
-            // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
+            // 垂直方向に0.8m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
             std::vector<Point> target_candidates;
             Vector2 vertical_vec =
               getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
@@ -81,33 +83,29 @@ public:
                   target_candidates,
                   [&](const auto & target_candidate) {
                     return (
-                      not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                      world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
                       not isInPlacementArea(target_candidate, 0.1));
                   });
                 target != target_candidates.end()) {
               target_position = *target;
             } else {
               // どの候補もだめな場合は移動しない
-              target_position = command.original_position;
+              target_position = current_position;
             }
           }
         }
-        // ボールプレイスメントエリアを横切ってしまうことがあるため、上書きしてしまう
-        command.original_position = target_position;
-        command.command->setTargetPosition(target_position);
+
         visualizer->line()
-          .start(command.original_position)
+          .start(current_position)
           .end(target_position)
           .stroke("yellow")
           .strokeWidth(20)
           .build();
-      } else {
-        command.command->setTargetPosition(command.original_position);
       }
 
-      command.command->disableGoalAreaAvoidance().setTargetTheta(
-        command.command->getMsg().current_pose.theta);
-      robot_commands.push_back(command.command->getMsg());
+      command->setTargetPosition(target_position);
+      command->disableGoalAreaAvoidance().setTargetTheta(robot->pose.theta);
+      robot_commands.push_back(command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
   }

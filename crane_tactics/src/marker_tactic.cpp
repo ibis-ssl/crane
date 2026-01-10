@@ -96,6 +96,16 @@ auto MarkerTactic::assignMarkingTarget(
         "black", 20);
     }
   }
+
+  // マークする敵がいない場合、残りのロボットには待機スキルを割り当てる
+  for (const auto & robot : remaining_selectable_robots) {
+    markers.emplace_back(
+      std::make_shared<skills::Marker>(
+        "marker_planner", static_cast<uint8_t>(robot->id), world_model));
+    // デフォルトのパラメータで待機させる（マーク対象なし）
+    selected_robots.push_back(robot->id);
+  }
+
   return selected_robots;
 }
 }  // namespace crane
