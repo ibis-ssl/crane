@@ -109,9 +109,8 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // 緊急切り替え: 新しいロボットが2倍以上良い場合は保持時間を無視して即座に切り替え
     if (best_score >= current_score * EMERGENCY_SWITCH_RATIO) {
       should_switch = true;
-    }
-    // 通常切り替え: 保持時間経過後、相対的に50%以上改善がある場合のみ切り替え
-    else if (time_since_switch >= MIN_HOLD_DURATION_SEC) {
+    } else if (time_since_switch >= MIN_HOLD_DURATION_SEC) {
+      // 通常切り替え: 保持時間経過後、相対的に50%以上改善がある場合のみ切り替え
       double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
       if (improvement_ratio >= MIN_IMPROVEMENT_RATIO) {
         should_switch = true;
