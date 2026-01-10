@@ -157,9 +157,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
 
     // BangBangTrajectoryから速度を取得
-    // sim_sender側のベクトル加速度制限で方向変化時の加速度も制限される
-    // lookahead時間を短くすることでVision遅延の影響を軽減
-    const double lookahead_time = 0.05;
+    // Vision遅延（~100ms）を考慮してlookahead時間を設定
+    const double lookahead_time = 0.1;
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
     target_vel << next_vel.x(), next_vel.y();
 
