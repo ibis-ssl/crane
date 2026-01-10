@@ -46,9 +46,6 @@ auto RobotAllocator::allocate(
 
   // 前回のプランナーリストを保存し、新しいリストをクリア
   auto prev_available_planners = tactic_registry_->getAllPlanners();
-  RCLCPP_INFO(
-    logger_, "[RobotAllocator::allocate] Session「%s」: 前回のプランナー数=%zu",
-    session_name.c_str(), prev_available_planners.size());
   tactic_registry_->clear();
 
   // TacticRequirementリストを構築
@@ -104,11 +101,6 @@ auto RobotAllocator::allocate(
       // ロボット割当をTacticに反映
       // GlobalRobotAllocatorが選択したロボットを直接設定（getSelectedRobotsをバイパス）
       tactic->setAllocatedRobots(robot_ids);
-
-      // 設定後のロボット数を確認
-      RCLCPP_INFO(
-        logger_, "\tTactic「%s」のロボット設定: 設定前=%lu, 設定後=%lu", tactic_name.c_str(),
-        tactic->getRobots().size() - robot_ids.size(), tactic->getRobots().size());
 
       // レジストリに追加
       if (tactic_it == tactic_registry_->getAllPlanners().end()) {
