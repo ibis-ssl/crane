@@ -108,6 +108,9 @@ struct RobotInfo
 
   auto geometry() const { return Circle{.center = pose.pos, .radius = 0.060}; }
 
+  // モーター温度情報（/robot_feedback 由来）
+  std::vector<uint8_t> motor_temperatures;
+
   auto getDistance(const Point & pos) const -> double { return (pos - pose.pos).norm(); }
 
   auto getDistance(const Pose2D & pose2d) const -> double

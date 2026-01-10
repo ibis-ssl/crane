@@ -133,6 +133,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       info->ball_contact.update((info->kicker_center() - ball_.pos).norm() < 0.1);
       // ボールセンサは味方だけ
       info->ball_sensor = robot.ball_sensor;
+      // モーター温度情報を転送
+      info->motor_temperatures = robot.motor_temperatures;
       if (robot.last_ball_sensor_stamp.sec == 0 && robot.last_ball_sensor_stamp.nanosec == 0) {
         info->ball_sensor_stamp = std::nullopt;
       } else {
