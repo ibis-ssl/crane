@@ -38,6 +38,26 @@ public:
 
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
+
+protected:
+  void onRobotsChanged() override
+  {
+    // ロボット割り当てが変更されたら、kickerとother_robotsを再初期化
+    kicker.reset();
+    other_robots.clear();
+
+    if (!robots.empty()) {
+      // 最初のロボットをキッカーとして選択
+      kicker = std::make_shared<skills::PenaltyKick>(robots[0].id, world_model);
+
+      // 残りのロボットをother_robotsに割り当て
+      for (size_t i = 1; i < robots.size(); ++i) {
+        auto command =
+          std::make_shared<PositionCommandWrapper>("our_penalty_kick", robots[i].id, world_model);
+        other_robots.push_back(command);
+      }
+    }
+  }
 };
 }  // namespace crane
 #endif  // CRANE_TACTICS__OUR_PENALTY_KICK_TACTIC_HPP_

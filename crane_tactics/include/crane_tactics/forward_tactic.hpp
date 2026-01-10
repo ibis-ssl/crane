@@ -46,6 +46,10 @@ public:
     };
   }
 
+protected:
+  void onRobotsChanged() override { forward_skills.clear(); }
+
+private:
   std::vector<std::shared_ptr<skills::Forward>> forward_skills;
 };
 }  // namespace crane
