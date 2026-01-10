@@ -94,6 +94,12 @@ limitations under the License.
   <arg name="commentary" default="false" description="実況システムの起動フラグ"/>
   <arg name="record" default="true" description="rosbag記録フラグ"/>
   <arg name="ball_physics_config_path" default="grsim_ball_physics.yaml" description="ボール物理パラメータ設定ファイル名（configフォルダ内）"/>
+  <arg name="field_geometry" default="B" description="フィールドジオメトリ設定: A (Division A), B (Division B), vision (Visionから取得)"/>
+
+  <!-- フィールドジオメトリ設定の解決 -->
+  <let name="field_geometry_config_path" value="field_geometry_div_a.yaml" if="$(eval '\'$(var field_geometry)\' == \'A\'')"/>
+  <let name="field_geometry_config_path" value="field_geometry_div_b.yaml" if="$(eval '\'$(var field_geometry)\' == \'B\'')"/>
+  <let name="field_geometry_config_path" value="" if="$(eval '\'$(var field_geometry)\' == \'vision\'')"/>
 
   <!-- ============================================================ -->
   <!-- コアシステム -->
