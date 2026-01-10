@@ -55,9 +55,10 @@ public:
       "/world_model", 10,
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) { broadcastWorldModel(msg); });
 
-    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
+    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::VelocityCommands>(
+      "/robot_commands", 10, [this](const crane_msgs::msg::VelocityCommands::SharedPtr msg) {
+        broadcastRobotCommands(msg);
+      });
 
     // Initialize WebSocket server
     initializeWebSocketServer();
@@ -412,7 +413,7 @@ private:
     broadcastToAll(world_model);
   }
 
-  void broadcastRobotCommands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
+  void broadcastRobotCommands(const crane_msgs::msg::VelocityCommands::SharedPtr msg)
   {
     json commands = {{"type", "robot_commands"}, {"commands", json::array()}};
 
@@ -448,7 +449,7 @@ private:
   // ROS components
   SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
 
   // WebSocket components
   WebSocketServer server_;
