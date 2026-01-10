@@ -102,8 +102,8 @@ auto MetricEngine::buildExecutionOrder() -> bool
     std::stringstream ss;
     ss << "Unresolved metrics: ";
     for (const auto & [id, metric] : metrics_) {
-      if (std::find(execution_order_.begin(), execution_order_.end(), id) ==
-          execution_order_.end()) {
+      if (
+        std::find(execution_order_.begin(), execution_order_.end(), id) == execution_order_.end()) {
         ss << metric->getName() << " ";
       }
     }

@@ -8,9 +8,8 @@
 #define CRANE_GAME_ANALYZER__METRICS__METRIC_ENGINE_HPP_
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
-#include <rclcpp/rclcpp.hpp>
-
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -65,8 +64,8 @@ public:
    * @param ctx 計算コンテキスト
    * @param visualizer 可視化メッセージビルダー
    */
-  auto visualizeAll(
-    MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer) -> void;
+  auto visualizeAll(MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer)
+    -> void;
 
 private:
   /**

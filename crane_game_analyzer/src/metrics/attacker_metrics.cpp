@@ -114,5 +114,4 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
   ctx.analysis.recommended_pass_receiver_id = -1;
 }
 
-
 }  // namespace crane::metrics

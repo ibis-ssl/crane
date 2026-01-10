@@ -40,7 +40,6 @@ private:
   static constexpr double MIN_IMPROVEMENT_MARGIN = 0.2;
 };
 
-
 }  // namespace crane::metrics
 
 #endif  // CRANE_GAME_ANALYZER__METRICS__ATTACKER_METRICS_HPP_

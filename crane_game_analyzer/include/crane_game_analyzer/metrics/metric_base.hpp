@@ -8,7 +8,6 @@
 #define CRANE_GAME_ANALYZER__METRICS__METRIC_BASE_HPP_
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -23,20 +22,19 @@ namespace crane::metrics
  *
  * 各メトリクスを一意に識別するための列挙型
  */
-enum class MetricId
-{
+enum class MetricId {
   // 基礎メトリクス
-  BALL_HORIZON,      ///< ボールライン長
-  OUR_SLACK,         ///< 味方ロボットのSlack時間
-  THEIR_SLACK,       ///< 敵ロボットのSlack時間
+  BALL_HORIZON,  ///< ボールライン長
+  OUR_SLACK,     ///< 味方ロボットのSlack時間
+  THEIR_SLACK,   ///< 敵ロボットのSlack時間
 
   // 脅威評価
-  BALL_THREAT,             ///< ボール脅威
-  ROBOT_THREATS,           ///< ロボット脅威（優先度順）
-  RECOMMENDED_DEFENDERS,   ///< 推奨守備者数
+  BALL_THREAT,            ///< ボール脅威
+  ROBOT_THREATS,          ///< ロボット脅威（優先度順）
+  RECOMMENDED_DEFENDERS,  ///< 推奨守備者数
 
   // 役割決定（新規）
-  ATTACKER_CANDIDATE,         ///< 推奨アタッカー
+  ATTACKER_CANDIDATE,  ///< 推奨アタッカー
 };
 
 /**

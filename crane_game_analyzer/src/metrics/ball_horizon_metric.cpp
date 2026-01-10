@@ -32,8 +32,9 @@ auto BallHorizonMetric::compute(MetricContext & ctx) -> void
       // 距離が0.5m以下のものを抽出
       | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
       // ball.posとの距離を計算
-      | ranges::views::transform(
-          [&](const ClosestPoint & pair) -> double { return (pair.closest_point - ball.pos).norm(); });
+      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+          return (pair.closest_point - ball.pos).norm();
+        });
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();
 }
