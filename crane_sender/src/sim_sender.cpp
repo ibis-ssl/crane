@@ -30,31 +30,55 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & 
     omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
     move_local_velocity->set_angular(omega);
 
-    // VelocityCommand は常に極座標速度モード
-    double v_r = command.target_velocity_r;
+    // VelocityCommand は極座標速度モード
+    //
+    // 【座標系の設計について】
+    // RVO2Plannerから受け取る座標系：
+    // - target_velocity_theta: theta_offsetを含むGLOBAL角度
+    // - current_pose.theta: theta_offsetを含むGLOBAL角度
+    // - current_velocity.x/y: フィールド座標系（theta_offset未適用）※参考用のみ
+    //
+    // 本実装では：
+    // - velocity_theta = target_velocity_theta - current_theta でロボットローカル角度に変換
+    // - ローカル座標系で速度ベクトルを構築してベクトル加速度制限を適用
+    // - previous_velocity（前回の出力、ローカル座標）を現在速度として使用
     double current_theta = command.current_pose.theta + omega * delay_s;
+    const double dt = 1.0 / 30.0;
+
+    // Step 1: ロボットローカル座標系での目標速度ベクトルを構築
     double velocity_theta = command.target_velocity_theta - current_theta;
+    Eigen::Vector2d target_vel_local(
+      command.target_velocity_r * std::cos(velocity_theta),
+      command.target_velocity_r * std::sin(velocity_theta));
 
-    double current_velocity = std::hypot(command.current_velocity.x, command.current_velocity.y);
-    double target_velocity = v_r;
+    // Step 2: ローカル座標系での現在速度（前回の出力速度を使用）
+    Eigen::Vector2d current_vel_local = robot_states_[command.robot_id].previous_velocity;
 
+    // Step 3: 加速度制限を選択（速度の大きさで加速/減速を判定）
+    double current_speed = current_vel_local.norm();
+    double target_speed = target_vel_local.norm();
     double acceleration_limit = calculateAccelerationLimit(
-      current_velocity, target_velocity, robot_acceleration_acceleration_,
+      current_speed, target_speed, robot_acceleration_acceleration_,
       robot_acceleration_deceleration_high_, robot_acceleration_deceleration_low_,
       robot_acceleration_velocity_threshold_);
 
-    const double dt = 1.0 / 30.0;
+    // Step 4: ローカル座標系で速度変化ベクトルの大きさを制限（方向は維持）
+    Eigen::Vector2d delta_vel = target_vel_local - current_vel_local;
+    double max_delta_vel = acceleration_limit * dt;
+    Eigen::Vector2d limited_vel_local;
+    if (delta_vel.norm() > max_delta_vel) {
+      limited_vel_local = current_vel_local + delta_vel.normalized() * max_delta_vel;
+    } else {
+      limited_vel_local = target_vel_local;
+    }
 
-    double max_velocity_by_acceleration = current_velocity + acceleration_limit * dt;
-
-    double limited_velocity = std::min(target_velocity, max_velocity_by_acceleration);
-
-    double vx = limited_velocity * cos(velocity_theta);
-    double vy = limited_velocity * sin(velocity_theta);
+    double vx = limited_vel_local.x();  // forward
+    double vy = limited_vel_local.y();  // left
 
     move_local_velocity->set_forward(vx);
     move_local_velocity->set_left(vy);
 
+    // 次回の計算用に保存
     robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
 
     // ストップ

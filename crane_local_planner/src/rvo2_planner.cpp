@@ -155,21 +155,16 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(current_position.x(), current_position.y()),
       Eigen::Vector2d(command.target_x, command.target_y),
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
-    // ルックアヘッド時間を動的に調整：軌道時間の20%または最大0.2秒
-    // 加速初期段階でも十分な速度を目標とするため、固定0.05秒から変更
-    const double lookahead_time = std::min(0.2, std::max(0.05, trajectory.getTotalTime() * 0.2));
+
+    // BangBangTrajectoryから速度を取得
+    // sim_sender側のベクトル加速度制限で方向変化時の加速度も制限される
+    // lookahead時間を短くすることでVision遅延の影響を軽減
+    const double lookahead_time = 0.05;
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
     target_vel << next_vel.x(), next_vel.y();
 
-    // すでに目標に到達している場合のNaN回避
-    if (target_vel.norm() > 1e-6) {
-      // target_velはすでにBangBangTrajectoryによってスケーリングされています（方向と大きさを含む）
-      // BangBangの同期プロファイルを尊重するため、再度正規化してmax_velを掛ける必要はありません
-      // ただし、終端速度（terminal_velocity）はチェックします
-      if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
-        target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
-      }
-    } else {
+    // 目標到達済みの場合
+    if (target_vel.norm() < 1e-6) {
       target_vel.setZero();
     }
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
@@ -234,6 +229,11 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     }
 
     command.target_velocity_r = vel.norm();
+    // 座標系の設計について：
+    // - target_velocity_thetaはtheta_offsetを含む（half_court_practice_mode対応）
+    // - vel.x/y（RVOの出力）はフィールド座標系のまま（theta_offset未適用）
+    // - sim_senderで velocity_theta = target_velocity_theta - current_theta により
+    //   ロボットローカル座標系に変換される
     command.target_velocity_theta = std::atan2(vel.y(), vel.x()) + theta_offset;
 
     // 解決済みの速度・加速度制限を設定
