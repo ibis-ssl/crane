@@ -42,6 +42,10 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
   }
 
   // 位置指令を検証して処理
+  // 【座標系の設計】
+  // - 位置・速度のベクトル成分(x,y)：フィールド座標系のまま（theta_offset未適用）
+  // - 角度(theta)：theta_offsetを適用（half_court_practice_mode対応）
+  // - この設計により、位置・速度は元の座標系を保持しつつ、角度だけ変換できる
   crane_msgs::msg::PositionCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
     // 位置目標の可視化
@@ -51,13 +55,13 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
 
     crane_msgs::msg::PositionCommand command = raw_command;
     auto robot = world_model->getOurRobot(command.robot_id);
-    command.current_pose.x = robot->pose.pos.x();
-    command.current_pose.y = robot->pose.pos.y();
-    command.current_pose.theta = robot->pose.theta + theta_offset;
-    command.current_velocity.x = robot->vel.linear.x();
-    command.current_velocity.y = robot->vel.linear.y();
+    command.current_pose.x = robot->pose.pos.x();  // フィールド座標系
+    command.current_pose.y = robot->pose.pos.y();  // フィールド座標系
+    command.current_pose.theta = robot->pose.theta + theta_offset;  // theta_offset適用
+    command.current_velocity.x = robot->vel.linear.x();  // フィールド座標系
+    command.current_velocity.y = robot->vel.linear.y();  // フィールド座標系
     command.current_velocity.theta = robot->vel.omega;
-    command.target_theta += theta_offset;
+    command.target_theta += theta_offset;  // theta_offset適用
     commands.robot_commands.push_back(command);
   }
 

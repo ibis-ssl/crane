@@ -155,22 +155,34 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(current_position.x(), current_position.y()),
       Eigen::Vector2d(command.target_x, command.target_y),
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
-    // ルックアヘッド時間を動的に調整：軌道時間の20%または最大0.2秒
-    // 加速初期段階でも十分な速度を目標とするため、固定0.05秒から変更
-    const double lookahead_time = std::min(0.2, std::max(0.05, trajectory.getTotalTime() * 0.2));
-    Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
-    target_vel << next_vel.x(), next_vel.y();
 
-    // すでに目標に到達している場合のNaN回避
-    if (target_vel.norm() > 1e-6) {
-      // target_velはすでにBangBangTrajectoryによってスケーリングされています（方向と大きさを含む）
-      // BangBangの同期プロファイルを尊重するため、再度正規化してmax_velを掛ける必要はありません
-      // ただし、終端速度（terminal_velocity）はチェックします
-      if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
-        target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
-      }
-    } else {
+    // BangBangTrajectoryから速度を取得
+    // Vision遅延（~100ms）を考慮してlookahead時間を設定
+    const double lookahead_time = 0.1;
+    Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
+
+    // 目標との距離を計算
+    double distance_to_target = std::hypot(
+      command.target_x - current_position.x(), command.target_y - current_position.y());
+
+    // 疑似I項：低速かつ目標から離れている場合に補正
+    // terminal_velocity（0の場合はフォールバック値0.3 m/sを使用）
+    const double terminal_vel = command.local_planner_config.terminal_velocity > 0
+                                  ? command.local_planner_config.terminal_velocity
+                                  : 0.3;
+    const double min_distance =
+      std::max(static_cast<double>(command.position_tolerance) * 2, 0.03);  // 最低3cm
+
+    if (next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
+      // 低速かつ目標から離れている場合、目標方向への terminal_velocity を設定
+      Eigen::Vector2d direction =
+        (Eigen::Vector2d(command.target_x, command.target_y) - current_position).normalized();
+      target_vel = direction * terminal_vel;
+    } else if (next_vel.norm() < 1e-6) {
+      // 目標到達済み
       target_vel.setZero();
+    } else {
+      target_vel << next_vel.x(), next_vel.y();
     }
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
@@ -234,6 +246,11 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     }
 
     command.target_velocity_r = vel.norm();
+    // 座標系の設計について：
+    // - target_velocity_thetaはtheta_offsetを含む（half_court_practice_mode対応）
+    // - vel.x/y（RVOの出力）はフィールド座標系のまま（theta_offset未適用）
+    // - sim_senderで velocity_theta = target_velocity_theta - current_theta により
+    //   ロボットローカル座標系に変換される
     command.target_velocity_theta = std::atan2(vel.y(), vel.x()) + theta_offset;
 
     // 解決済みの速度・加速度制限を設定
