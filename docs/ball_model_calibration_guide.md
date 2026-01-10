@@ -18,7 +18,7 @@ ros2 bag record /ball_info /robot_command_* -o kick_calibration_data
 
 #### 自動データ収集
 
-BallCalibrationDataCollectorPlannerを使用した完全自動キャリブレーション
+BallCalibrationDataCollectorTacticを使用した完全自動キャリブレーション
 
 ### ROSトピック経由での開始
 
@@ -45,18 +45,6 @@ ros2 topic pub --once /session_injection std_msgs/String '{data: "BALL_CALIBRATI
 - 球拾いロボット: ボール停止後に回収・返球
 - 20サイクルの自動データ収集を実行
 - 9段階のキックパワー設定(0.2-1.0)でデータ収集
-
-### パラメータ設定
-
-ROS 2パラメータで調整可能：
-
-```bash
-# キッカー位置調整
-ros2 param set /session_controller calibration.kicker_x_offset 1.5
-
-# 収集サイクル数調整  
-ros2 param set /session_controller calibration.data_collection_cycles 30
-```
 
 ### キャリブレーション実行
 
@@ -192,7 +180,7 @@ ros2 bag info /path/to/rosbag/file  # /ball_info, /robot_command_* が必要
 ### パワー別データ不足
 
 特定のパワー値でサンプル数が少ない場合、そのパワーでの追加データ収集が必要。
-BallCalibrationDataCollectorPlannerで自動収集を推奨。
+BallCalibrationDataCollectorTacticで自動収集を推奨。
 
 ### 減速度最適化失敗
 
@@ -215,9 +203,9 @@ command.setKickerModel(kicker_model);
 2. BallPhysicsModelの減速度パラメータ調整
 3. 実機環境での追加キャリブレーション実行
 
-## CenterStopKickPlannerでの検証
+## CenterStopKickTacticでの検証
 
-キャリブレーション結果の検証にはCenterStopKickPlannerを使用:
+キャリブレーション結果の検証にはCenterStopKickTacticを使用:
 
 ```bash
 # CENTER_STOP_KICKプレイシチュエーションでテスト

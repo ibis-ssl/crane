@@ -32,28 +32,17 @@ Craneシステムの**メッセージ基盤層**として、全コンポーネ�
 - **RobotCommand.msg**: 個別ロボットへの制御コマンド
 - **RobotCommands.msg**: 複数ロボットへのコマンド配列
 - **RobotFeedback.msg**: ロボットからのフィードバック情報
+- **RobotSelectResults.msg**: ロボット選択結果
 - **TargetMode系**: 位置・速度・極座標での目標値指定
 - **LocalCameraMode.msg**: ローカルカメラ制御
-- **StateFactor.msg**: 状態評価ファクター
-
-### ワールドモデルメッセージ (world_model/)
-
-- **WorldModel.msg**: 統合世界モデル（全体状況）
-- **BallInfo.msg**: ボール情報（位置・速度・状態）
-- **RobotInfo.msg**: ロボット情報（位置・姿勢・状態）
-- **BallContact.msg**: ボール接触検出
-- **FieldSize.msg**: フィールド寸法定義
-- **Pose2DStamped.msg**: 時刻付き2D姿勢
 
 ## サービス・アクション定義
 
 ### サービス (srv/)
 
-- **RobotSelect.srv**: ロボット選択サービス
+現在、サービス定義はありません。
 
 ### アクション (action/)
-
-- **SkillExecution.action**: スキル実行アクション
 
 ## 依存関係
 

@@ -24,11 +24,31 @@ Craneシステムの**メッセージ処理基盤**として、異なるメッ�
 ## 使用方法
 
 ```cpp
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 
-WorldModelWrapper world_model(world_model_msg);
-auto ball_position = world_model.getBallPosition();
-auto robot_info = world_model.getRobotInfo(robot_id);
+class MyNode : public rclcpp::Node
+{
+private:
+  crane::WorldModelWrapper::SharedPtr world_model;
+
+public:
+  MyNode() : Node("my_node")
+  {
+    // ノードを渡して初期化（自動的にサブスクライバが設定されます）
+    world_model = std::make_shared<crane::WorldModelWrapper>(*this);
+
+    // 更新時のコールバック登録
+    world_model->addCallback([this]() {
+        // ボール情報へのアクセス
+        auto ball_pos = world_model->ball().pos;
+
+        // ロボット情報へのアクセス
+        if (auto robot = world_model->getOurRobot(0)) {
+            // ロボットが有効な場合
+        }
+    });
+  }
+};
 ```
 
 ## 最近の開発状況

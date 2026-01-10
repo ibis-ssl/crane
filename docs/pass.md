@@ -61,7 +61,7 @@
 
 ## セッション設定（例）
 
-統一設定ファイル `session/crane_tactic_coordinator/config/unified_session_config.yaml` で設定：
+統一設定ファイル `crane_tactic_coordinator/config/unified_session_config.yaml` で設定：
 
 ```yaml
 situations:
@@ -115,5 +115,5 @@ situations:
 - `crane_msgs/msg/analysis/GameAnalysis.msg`: `pass_target_id` の追加
 - `crane_world_model_publisher`: `pass_target_id` の選定とスイッチ抑制
 - `crane_robot_skills/src/attacker.cpp`: 上位決定の優先適用
-- `session/.../pass_receiver_tactic.hpp`: 受取準備ロジックの最適化
-- `session/.../play_situation/*.yaml`: `pass_receive` の追加
+- `crane_tactics/include/crane_tactics/pass_receiver_tactic.hpp`: 受取準備ロジックの最適化
+- `crane_tactic_coordinator/config/unified_session_config.yaml`: `pass_receive` の追加

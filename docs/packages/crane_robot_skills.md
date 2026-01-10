@@ -47,6 +47,7 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 - **Idle**: 待機状態
 - **Sleep**: 休止状態
 - **Teleop**: 手動操縦
+- **BallCalibrationDataCollector**: ボールモデル学習用データ収集
 
 ## スキルベースアーキテクチャ
 
@@ -138,11 +139,11 @@ auto status = attacker->run();
 auto command_msg = attacker->getRobotCommand();
 ```
 
-### プランナーからの利用
+### タクティックからの利用
 
 ```cpp
-// プランナー内での使用例
-void MyPlanner::calculate_robot_command(const RobotInfo::SharedPtr & robot) {
+// タクティック内での使用例
+void MyTactic::calculate_robot_command(const RobotInfo::SharedPtr & robot) {
     // スキルの取得または生成
     auto skill = get_skill<Attacker>(robot->id);
 
@@ -177,11 +178,11 @@ public:
 - **ポゼッション維持強化**: 抑制系スキルにボール保護モードを追加
 - **セットプレー拡充**: JapanOpen向けリスタートスキル群を統合
 - **パフォーマンス最適化**: 計算パスを整理し実行周期のばらつきを抑制
-- **状況適応改良**: Planner連携用のコンテキスト引数を標準化
+- **状況適応改良**: Tactic連携用のコンテキスト引数を標準化
 
 ### 開発活発度
 
-🟡 **中活動**: 攻撃系・ゴールキーパー系スキルのリファインが継続し、プランナーパッケージとの連携改善を中心にアップデートが行われている。
+🟡 **中活動**: 攻撃系・ゴールキーパー系スキルのリファインが継続し、タクティックパッケージとの連携改善を中心にアップデートが行われている。
 
 ---
 

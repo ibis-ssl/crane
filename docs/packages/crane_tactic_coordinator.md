@@ -27,7 +27,7 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 
 ## 統一設定ファイル（unified_session_config.yaml）
 
-**設定ファイル**: `session/crane_tactic_coordinator/config/unified_session_config.yaml`
+**設定ファイル**: `crane_tactic_coordinator/config/unified_session_config.yaml`
 
 すべての試合状況設定が単一ファイルに統合されています。各状況（situation）は、セッション（session）のリストとして定義され、各セッションにロボットが動的に割り当てられます。
 
@@ -72,7 +72,7 @@ situations:
 ```cpp
 void TacticCoordinator::update() {
   // 1. 現在状況の分析
-  auto situation = analyzeCurrent Situation();
+  auto situation = analyzeCurrentSituation();
 
   // 2. 適切な設定ファイルの選択
   auto config = loadSituationConfig(situation);
@@ -130,13 +130,13 @@ public:
 ### 動的タクティック選択
 
 ```cpp
-std::string selectOptimalTactic(const GameSituation& situation) {
+std_string selectOptimalTactic(const GameSituation& situation) {
   if (situation.is_freekick) {
-    return situation.our_freekick ? "FreekickOffensePlanner" : "FreekickDefensePlanner";
+    return situation.our_freekick ? "our_direct_free" : "total_defense";
   } else if (situation.is_penalty) {
-    return situation.our_penalty ? "PenaltyOffensePlanner" : "PenaltyDefensePlanner";
+    return situation.our_penalty ? "our_penalty_kick" : "their_penalty_kick";
   } else {
-    return "InplayTactic";
+    return "attacker_skill";
   }
 }
 ```
