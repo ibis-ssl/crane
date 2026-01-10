@@ -35,3 +35,7 @@ uint16 error_info
 float32 error_value
 builtin_interfaces/Time last_error_stamp
 float32 error_duration_sec
+
+# モーター温度情報（/robot_feedback 由来）
+# motor_temperatures[0-3]: モーター1-4の温度（℃）
+uint8[] motor_temperatures

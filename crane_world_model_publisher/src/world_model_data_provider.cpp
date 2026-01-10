@@ -431,6 +431,9 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
             feedback_robot.error_duration_sec = 0.0f;
           }
 
+          // モーター温度情報を転送
+          feedback_robot.motor_temperatures = feedback.temperatures;
+
           // visionデータとfeedbackデータを統合
           robot = mergeRobotInfo(robot, feedback_robot);
           break;
