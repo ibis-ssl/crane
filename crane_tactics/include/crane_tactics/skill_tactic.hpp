@@ -50,6 +50,9 @@ namespace crane
       auto status = skill->run();                                                              \
       return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};            \
     }                                                                                          \
+                                                                                               \
+  protected:                                                                                   \
+    void onRobotsChanged() override { skill.reset(); }                                         \
   }
 
 class GoalieSkillTactic : public TacticBase
@@ -65,6 +68,11 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+  bool isHardConstraint() const override { return true; }
+
+protected:
+  void onRobotsChanged() override { skill.reset(); }
 };
 
 class BallPlacementSkillTactic : public TacticBase
@@ -80,6 +88,9 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+protected:
+  void onRobotsChanged() override { skill.reset(); }
 };
 
 class SubAttackerSkillTactic : public TacticBase
@@ -95,6 +106,9 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+protected:
+  void onRobotsChanged() override { skill.reset(); }
 };
 
 class SimpleKickOffSkillTactic : public TacticBase
@@ -110,6 +124,9 @@ public:
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+
+protected:
+  void onRobotsChanged() override { skill.reset(); }
 };
 
 class BallNearByPositionerSkillTactic : public TacticBase

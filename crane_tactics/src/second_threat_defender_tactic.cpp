@@ -10,14 +10,16 @@
 namespace crane
 {
 auto SecondThreatDefenderTactic::calculatePositionCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+  const std::vector<RobotIdentifier> & robots)
   -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
-  if (skill) {
-    skill->run();
-    return {TacticBase::Status::RUNNING, {skill->getRobotCommand()}};
-  } else {
+  if (robots.empty()) {
     return {TacticBase::Status::RUNNING, {}};
   }
+  if (not skill) {
+    skill = std::make_shared<skills::SecondThreatDefender>(robots.front().id, world_model);
+  }
+  skill->run();
+  return {TacticBase::Status::RUNNING, {skill->getRobotCommand()}};
 }
 }  // namespace crane

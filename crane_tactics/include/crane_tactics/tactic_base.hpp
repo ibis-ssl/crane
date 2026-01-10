@@ -65,10 +65,20 @@ public:
    */
   void setAllocatedRobots(const std::vector<uint8_t> & robot_ids)
   {
+    // ロボットIDが変更されたかチェック
+    bool robots_changed =
+      robots.size() != robot_ids.size() ||
+      !std::ranges::equal(robots, robot_ids, [](const auto & r, uint8_t id) { return r.id == id; });
+
     robots.clear();
     for (auto id : robot_ids) {
       RobotIdentifier robot_id{true, id};
       robots.emplace_back(robot_id);
+    }
+
+    // 変更があれば通知
+    if (robots_changed) {
+      onRobotsChanged();
     }
   }
 
@@ -179,6 +189,13 @@ public:
   virtual bool isHardConstraint() const { return false; }
 
 protected:
+  /**
+   * @brief ロボット割り当てが変更された時に呼ばれるコールバック
+   *
+   * サブクラスでオーバーライドして、ロボットID変更時の処理を実装する。
+   * 例: スキルオブジェクトの再作成など
+   */
+  virtual void onRobotsChanged() {}
   // ロボットを最適な位置に割り当て、位置コマンドを生成する共通メソッド
   auto assignRobotsToPoints(
     const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,
