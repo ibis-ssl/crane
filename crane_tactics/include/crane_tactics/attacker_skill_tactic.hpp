@@ -68,23 +68,39 @@ public:
       }
     }
     auto status = skill->run();
-    if (skill->getID() != robots.front().id) {
-      std::stringstream ss;
-      ss << "スキルのIDは" << static_cast<int>(skill->getID()) << "ですが、選択されたロボットのIDは"
-         << static_cast<int>(robots.front().id) << "です。";
-      ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
-      RCLCPP_WARN(rclcpp::get_logger("AttackerSkillTactic"), "%s", ss.str().c_str());
-    }
     return {static_cast<TacticBase::Status>(status), {skill->getRobotCommand()}};
   }
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // ボールに近いロボットを優先（距離が小さいほど適している）
     auto wm = world_model;  // shared_ptrをコピー
-    return
-      [wm](const std::shared_ptr<RobotInfo> & robot) { return robot->getDistance(wm->ball().pos); };
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      // game_analysisで推奨ロボットが設定されている場合、そのロボットを最優先
+      try {
+        const auto & game_analysis = wm->getMsg().game_analysis;
+        if (
+          game_analysis.recommended_attacker_id >= 0 &&
+          robot->id == static_cast<uint8_t>(game_analysis.recommended_attacker_id)) {
+          return 0.0;  // 最高の適性（コスト最小）
+        }
+      } catch (...) {
+      }
+
+      // それ以外はボール距離ベース
+      return robot->getDistance(wm->ball().pos);
+    };
+  }
+
+  bool isHardConstraint() const override
+  {
+    // game_analysisでrecommended_attacker_idが設定されている場合はハード制約として扱う
+    try {
+      const auto & game_analysis = world_model->getMsg().game_analysis;
+      return game_analysis.recommended_attacker_id >= 0;
+    } catch (...) {
+      return false;
+    }
   }
 };
 
