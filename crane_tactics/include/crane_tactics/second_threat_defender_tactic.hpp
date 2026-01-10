@@ -47,6 +47,9 @@ public:
     };
   }
 
+protected:
+  void onRobotsChanged() override { skill.reset(); }
+
 private:
   std::shared_ptr<skills::SecondThreatDefender> skill;
 };
