@@ -47,6 +47,36 @@ TestTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots
     reload_requested = false;
   }
 
+  // commandを初期化（まだ初期化されていない場合）
+  auto robot_id = robots[0];
+  if (!command) {
+    command =
+      std::make_shared<crane::PositionCommandWrapper>("test_tactic", robot_id.id, world_model);
+  }
+
+  auto now = rclcpp::Clock().now();
+
+  // 待機時間経過後、次のウェイポイントに遷移
+  if (sleep_until.has_value()) {
+    double remaining_sec = (*sleep_until - now).seconds();
+    if (remaining_sec > 0.1) {  // 0.1秒以上残っている場合のみログ出力（頻度削減）
+      static rclcpp::Time last_log_time;
+      if ((now - last_log_time).seconds() > 1.0) {  // 1秒ごとにログ
+        RCLCPP_INFO(
+          rclcpp::get_logger("TestTactic"), "Sleeping... remaining: %.1f sec", remaining_sec);
+        last_log_time = now;
+      }
+    }
+
+    if (now >= *sleep_until) {
+      sleep_until.reset();
+      current_index = (current_index + 1) % waypoints.size();
+      RCLCPP_INFO(
+        rclcpp::get_logger("TestTactic"), "Next waypoint[%zu]: %.2f, %.2f", current_index,
+        waypoints.at(current_index).pos.x(), waypoints.at(current_index).pos.y());
+    }
+  }
+
   auto & wp = waypoints.at(current_index);
   // 毎フレームfactorsをクリア
   command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
@@ -57,18 +87,12 @@ TestTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots
     command->setTargetTheta(wp.theta.value());
   }
 
-  auto now = rclcpp::Clock().now();
-  if (command->getTargetDistance() < 0.05) {
-    if (not sleep_until.has_value()) {
-      RCLCPP_INFO(rclcpp::get_logger("TestTactic"), "Arrived");
-      sleep_until = now + rclcpp::Duration::from_seconds(default_sleep_sec);
-    } else if (now >= *sleep_until) {
-      sleep_until.reset();
-      current_index = (current_index + 1) % waypoints.size();
-      auto next_wp = waypoints.at(current_index).pos;
-      RCLCPP_INFO(
-        rclcpp::get_logger("TestTactic"), "Next waypoint: %f, %f", next_wp.x(), next_wp.y());
-    }
+  // 目標位置に到達したら待機開始
+  if (command->getTargetDistance() < 0.05 && not sleep_until.has_value()) {
+    RCLCPP_INFO(
+      rclcpp::get_logger("TestTactic"), "Arrived at waypoint[%zu], sleeping for %.1f sec",
+      current_index, default_sleep_sec);
+    sleep_until = now + rclcpp::Duration::from_seconds(default_sleep_sec);
   }
   robot_commands.emplace_back(command->getMsg());
 
@@ -102,6 +126,9 @@ auto TestTactic::loadConfigFromFile(const std::string & path) -> bool
       if (d["max_acceleration"]) default_max_acceleration = d["max_acceleration"].as<double>();
       if (d["sleep_sec"]) default_sleep_sec = d["sleep_sec"].as<double>();
     }
+    RCLCPP_INFO(
+      rclcpp::get_logger("TestTactic"), "設定読込完了: sleep_sec=%.1f, max_vel=%.1f, max_acc=%.1f",
+      default_sleep_sec, default_max_velocity, default_max_acceleration);
 
     // 経由点
     waypoints.clear();
