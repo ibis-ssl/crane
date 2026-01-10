@@ -6,6 +6,7 @@
 
 #include "crane_sender/sim_sender.hpp"
 
+#include <Eigen/Core>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <iostream>
@@ -30,32 +31,49 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & 
     omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
     move_local_velocity->set_angular(omega);
 
-    // VelocityCommand は常に極座標速度モード
-    double v_r = command.target_velocity_r;
-    double current_theta = command.current_pose.theta + omega * delay_s;
-    double velocity_theta = command.target_velocity_theta - current_theta;
+    // グローバル座標での速度ベクトルを使用
+    Eigen::Vector2d current_vel(command.current_velocity.x, command.current_velocity.y);
 
-    double current_velocity = std::hypot(command.current_velocity.x, command.current_velocity.y);
-    double target_velocity = v_r;
+    // 目標速度（極座標からグローバル座標に変換）
+    Eigen::Vector2d target_vel(
+      command.target_velocity_r * std::cos(command.target_velocity_theta),
+      command.target_velocity_r * std::sin(command.target_velocity_theta));
 
+    // 速度変化量を計算し、加速度制限を適用
+    Eigen::Vector2d delta_vel = target_vel - current_vel;
+    double delta_vel_norm = delta_vel.norm();
+
+    double current_speed = current_vel.norm();
+    double target_speed = target_vel.norm();
     double acceleration_limit = calculateAccelerationLimit(
-      current_velocity, target_velocity, robot_acceleration_acceleration_,
+      current_speed, target_speed, robot_acceleration_acceleration_,
       robot_acceleration_deceleration_high_, robot_acceleration_deceleration_low_,
       robot_acceleration_velocity_threshold_);
 
     const double dt = 1.0 / 30.0;
+    double max_delta_vel = acceleration_limit * dt;
 
-    double max_velocity_by_acceleration = current_velocity + acceleration_limit * dt;
+    Eigen::Vector2d limited_vel;
+    if (delta_vel_norm > max_delta_vel && delta_vel_norm > 1e-6) {
+      limited_vel = current_vel + delta_vel.normalized() * max_delta_vel;
+    } else {
+      limited_vel = target_vel;
+    }
 
-    double limited_velocity = std::min(target_velocity, max_velocity_by_acceleration);
-
-    double vx = limited_velocity * cos(velocity_theta);
-    double vy = limited_velocity * sin(velocity_theta);
+    // グローバル座標からローカル座標（ロボット座標系）に変換
+    // forward = x * cos(θ) + y * sin(θ)
+    // left = -x * sin(θ) + y * cos(θ)
+    double current_theta = command.current_pose.theta + omega * delay_s;
+    double cos_theta = std::cos(current_theta);
+    double sin_theta = std::sin(current_theta);
+    double vx = limited_vel.x() * cos_theta + limited_vel.y() * sin_theta;   // forward
+    double vy = -limited_vel.x() * sin_theta + limited_vel.y() * cos_theta;  // left
 
     move_local_velocity->set_forward(vx);
     move_local_velocity->set_left(vy);
 
-    robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
+    // グローバル座標で速度を保存
+    robot_states_[command.robot_id].previous_velocity = Velocity(limited_vel.x(), limited_vel.y());
 
     // ストップ
     if (command.stop_flag) {
