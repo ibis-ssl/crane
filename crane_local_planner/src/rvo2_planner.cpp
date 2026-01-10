@@ -155,8 +155,9 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(current_position.x(), current_position.y()),
       Eigen::Vector2d(command.target_x, command.target_y),
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
-    // ルックアヘッド時間を固定値に設定
-    const double lookahead_time = std::min(0.05, trajectory.getTotalTime());
+    // ルックアヘッド時間を動的に調整：軌道時間の20%または最大0.2秒
+    // 加速初期段階でも十分な速度を目標とするため、固定0.05秒から変更
+    const double lookahead_time = std::min(0.2, std::max(0.05, trajectory.getTotalTime() * 0.2));
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
     target_vel << next_vel.x(), next_vel.y();
 
