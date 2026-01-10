@@ -36,9 +36,14 @@ private:
   rclcpp::Time last_switch_time_{static_cast<int64_t>(0), RCL_ROS_TIME};
   rclcpp::Clock ros_clock_{RCL_ROS_TIME};
 
-  static constexpr double MIN_HOLD_DURATION_SEC = 0.5;
-  static constexpr double MIN_IMPROVEMENT_MARGIN = 0.2;
-};
+  // EMAスコア管理用マップ
+  std::unordered_map<uint8_t, double> ema_scores_;
+
+  // ヒステリシスパラメータ
+  static constexpr double MIN_HOLD_DURATION_SEC = 2.0;     // 2秒に延長
+  static constexpr double MIN_IMPROVEMENT_RATIO = 0.5;     // 50%改善で切り替え（相対値）
+  static constexpr double EMERGENCY_SWITCH_RATIO = 2.0;    // 2倍良ければ即切り替え
+  static constexpr double EMA_ALPHA = 0.3;                 // スムージング係数
 
 }  // namespace crane::metrics
 
