@@ -261,17 +261,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               has_vision_updated_ = true;
               last_vision_recv_time_ = node.get_clock()->now();
             }
-            if (packet.has_geometry()) {
-              RCLCPP_INFO(node.get_logger(), "Geometryパケット受信！");
-              processGeometryData(packet.geometry());
-            } else {
-              static int no_geometry_count = 0;
-              if (++no_geometry_count % 100 == 1) {
-                RCLCPP_INFO(
-                  node.get_logger(), "Visionパケット受信中（geometry無し）: %d回目",
-                  no_geometry_count);
-              }
-            }
           } else {
             RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
           }
@@ -669,13 +658,6 @@ auto WorldModelDataProvider::convertFieldGeometry(
 
   field_geometry_.center_circle_radius = 0.5;  // 標準SSL値
   field_geometry_.is_valid = true;
-
-  RCLCPP_INFO(
-    node.get_logger(),
-    "フィールド情報を設定: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
-    field_geometry_.field_width, field_geometry_.field_height, field_geometry_.goal_width,
-    field_geometry_.goal_height, field_geometry_.penalty_area_width,
-    field_geometry_.penalty_area_height);
 }
 
 auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & config_path) -> bool
