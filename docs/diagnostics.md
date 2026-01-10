@@ -62,7 +62,7 @@ Crane診断システムは以下の3層構造で構成されています：
 │  │ - battery          │                                  │
 │  │ - robot_error      │  ┌───────────────────────┐      │
 │  └────────────────────┘  │ TacticCoordinator     │      │
-│                          │ - ai_tactic/planning │      │
+│                          │ - ai_planner/planning │      │
 │  ┌────────────────────┐  └───────────────────────┘      │
 │  │ LocalTactic       │                                  │
 │  │ - path_planning    │  ┌───────────────────────┐      │
@@ -87,7 +87,7 @@ Crane診断システムは以下の3層構造で構成されています：
 │  SSL_System/                                               │
 │  ├── Base_Station/                                         │
 │  │   ├── Vision/       (vision/*)                          │
-│  │   ├── AI_Tactic/   (ai_tactic/*)                      │
+│  │   ├── AI_Planner/   (ai_planner/*)                      │
 │  │   └── Local_Planner/ (local_planner/*)                  │
 │  └── Team/                                                  │
 │      ├── Robot_00/      (robot_00/*)                        │
@@ -141,8 +141,8 @@ SSL_System/
 ├── Base_Station/           # 計算PC上のコンポーネント
 │   ├── Vision/            # vision/* の診断
 │   │   └── vision/processing
-│   ├── AI_Tactic/        # ai_tactic/* の診断
-│   │   └── ai_tactic/planning_cycle
+│   ├── AI_Planner/        # ai_planner/* の診断
+│   │   └── ai_planner/planning_cycle
 │   └── Local_Planner/     # local_planner/* の診断
 │       └── local_planner/path_planning
 └── Team/                   # ロボット群
@@ -359,7 +359,7 @@ AI計画サイクルの監視を行います。
 #### 診断名
 
 ```text
-ai_tactic/planning_cycle
+ai_planner/planning_cycle
 ```
 
 #### 監視項目
@@ -375,7 +375,7 @@ AI計画の実行サイクルとWorldModelの更新状態を監視します。
 | 更新遅延（500ms以上） | WARN | "Planning cycle is slow (last update: {time} ms ago)" |
 | 正常動作 | OK | "Planning cycle is running normally (last update: {time} ms ago)" |
 
-**実装ファイル**: `session/crane_tactic_coordinator/src/session_controller.cpp`
+**実装ファイル**: `crane_tactic_coordinator/src/crane_tactic_coordinator.cpp`
 
 ---
 
@@ -552,10 +552,10 @@ analyzers:
           contains: ['vision/']
           timeout: 5.0
 
-        ai_tactic:
+        ai_planner:
           type: diagnostic_aggregator/GenericAnalyzer
           path: AI_Planner
-          contains: ['ai_tactic/']
+          contains: ['ai_planner/']
           timeout: 5.0
 
         local_planner:
@@ -770,7 +770,7 @@ void MyNode::timerCallback() {
 **良い例**:
 
 - `vision/processing`
-- `ai_tactic/planning_cycle`
+- `ai_planner/planning_cycle`
 - `robot_00/communication`
 - `my_component/initialization`
 
@@ -916,7 +916,7 @@ ros2 topic echo /diagnostics | grep -A 10 "robot_00/battery"
 - `crane_msg_wrappers/src/world_model_wrapper.cpp` - 診断情報の利用可否判定への統合
 - `crane_local_planner/src/local_planner.cpp` - LocalPlanner診断実装
 - `crane_world_model_publisher/src/world_model_publisher.cpp` - Vision診断実装
-- `session/crane_tactic_coordinator/src/session_controller.cpp` - SessionController診断実装
+- `crane_tactic_coordinator/src/crane_tactic_coordinator.cpp` - TacticCoordinator診断実装
 
 #### 設定ファイル
 

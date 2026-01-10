@@ -2,7 +2,7 @@
 
 ## 概要
 
-Craneシステムの**戦略タクティックプラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。`crane_tactics`（旧称）から改称・統合されました。ファクトリパターンにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
+Craneシステムの**戦略タクティックプラグインコレクション**として、様々な試合状況に対応した戦略実装を提供するパッケージです。`crane_planner_plugins`（旧称）から改称・統合されました。ファクトリパターンにより、攻撃・守備・特殊状況の戦略を柔軟に組み合わせ、動的な戦術実行を実現します。
 
 ## 主要機能
 
@@ -50,6 +50,9 @@ Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`か
 
 ### ユーティリティタクティック
 
+- **SimpleAITactic**: デバッグ・テスト用バイパス戦略
+  - 外部（Action）からの直接スキル指定
+  - パラメータの動的変更対応
 - **WaiterTactic**: 待機戦略
 - **SimplePlacerTactic**: エリア配置戦略
 - **BallCalibrationDataCollectorTactic**: キャリブレーション用
@@ -82,9 +85,9 @@ auto generatePlanner(
 ### 登録マップ
 
 ```cpp
-TACTIC_ENTRY("attacker_skill", AttackerSkillTactic),
-TACTIC_ENTRY("goalie_skill", GoalieSkillTactic),
-TACTIC_ENTRY("defender", DefenderTactic),
+PLANNER_ENTRY("attacker_skill", AttackerSkillTactic),
+PLANNER_ENTRY("goalie_skill", GoalieSkillTactic),
+PLANNER_ENTRY("defender", DefenderTactic),
 // ...
 ```
 
