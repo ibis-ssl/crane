@@ -1,0 +1,21 @@
+# SSL RoboCup Field Geometry Configuration - Division B
+# フィールドジオメトリ設定 - Division B
+#
+# このファイルは、Visionシステムがgeometryパケットを送信しない場合に使用されます。
+# SSL Division B標準サイズを設定しています。
+
+field_geometry:
+  # フィールドサイズ (SSL Division B標準)
+  field_length: 9.0       # フィールド長さ [m]
+  field_width: 6.0        # フィールド幅 [m]
+
+  # ゴールサイズ
+  goal_width: 1.0         # ゴール幅 [m]
+  goal_depth: 0.18        # ゴール深さ [m]
+
+  # ペナルティエリアサイズ
+  penalty_area_depth: 1.0  # ペナルティエリア深さ [m]
+  penalty_area_width: 2.0  # ペナルティエリア幅 [m]
+
+  # その他
+  center_circle_radius: 0.5  # センターサークル半径 [m]
