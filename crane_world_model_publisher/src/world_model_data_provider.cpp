@@ -10,9 +10,11 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>
 #include <vector>
@@ -100,6 +102,32 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
+
+  // フィールドジオメトリ設定ファイルの読み込み
+  node.declare_parameter("field_geometry_config_path", "");
+  std::string field_geometry_config_path =
+    node.get_parameter("field_geometry_config_path").as_string();
+  if (!field_geometry_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = field_geometry_config_path;
+    if (!std::filesystem::path(field_geometry_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / field_geometry_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          node.get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    if (loadFieldGeometryFromConfig(full_config_path)) {
+      geometry_initialized = true;
+      updateGeometryIfNeeded();
+    }
+  }
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
 
@@ -234,7 +262,15 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               last_vision_recv_time_ = node.get_clock()->now();
             }
             if (packet.has_geometry()) {
+              RCLCPP_INFO(node.get_logger(), "Geometryパケット受信！");
               processGeometryData(packet.geometry());
+            } else {
+              static int no_geometry_count = 0;
+              if (++no_geometry_count % 100 == 1) {
+                RCLCPP_INFO(
+                  node.get_logger(), "Visionパケット受信中（geometry無し）: %d回目",
+                  no_geometry_count);
+              }
             }
           } else {
             RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
@@ -603,6 +639,8 @@ auto WorldModelDataProvider::convertFieldGeometry(
   const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void
 {
   if (!ssl_geometry.has_field()) {
+    RCLCPP_WARN(
+      node.get_logger(), "GeometryデータにFieldが含まれていません（has_field() = false）");
     return;
   }
 
@@ -628,6 +666,60 @@ auto WorldModelDataProvider::convertFieldGeometry(
 
   field_geometry_.center_circle_radius = 0.5;  // 標準SSL値
   field_geometry_.is_valid = true;
+
+  RCLCPP_INFO(
+    node.get_logger(),
+    "フィールド情報を設定: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+    field_geometry_.field_width, field_geometry_.field_height, field_geometry_.goal_width,
+    field_geometry_.goal_height, field_geometry_.penalty_area_width,
+    field_geometry_.penalty_area_height);
+}
+
+auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & config_path) -> bool
+{
+  if (config_path.empty()) {
+    return false;
+  }
+
+  try {
+    YAML::Node config = YAML::LoadFile(config_path);
+    if (!config["field_geometry"]) {
+      RCLCPP_WARN(
+        node.get_logger(), "設定ファイルに'field_geometry'セクションが見つかりません: %s",
+        config_path.c_str());
+      return false;
+    }
+
+    auto geometry = config["field_geometry"];
+
+    field_geometry_.field_width = geometry["field_length"].as<double>();
+    field_geometry_.field_height = geometry["field_width"].as<double>();
+    field_geometry_.goal_width = geometry["goal_width"].as<double>();
+    field_geometry_.goal_height = geometry["goal_depth"].as<double>();
+    field_geometry_.penalty_area_height = geometry["penalty_area_depth"].as<double>();
+    field_geometry_.penalty_area_width = geometry["penalty_area_width"].as<double>();
+    field_geometry_.center_circle_radius = geometry["center_circle_radius"].as<double>(0.5);
+    field_geometry_.is_valid = true;
+
+    RCLCPP_INFO(
+      node.get_logger(),
+      "設定ファイルからフィールド情報を読み込みました: field=%.3fx%.3f, goal=%.3fx%.3f, "
+      "penalty_area=%.3fx%.3f",
+      field_geometry_.field_width, field_geometry_.field_height, field_geometry_.goal_width,
+      field_geometry_.goal_height, field_geometry_.penalty_area_width,
+      field_geometry_.penalty_area_height);
+    return true;
+  } catch (const YAML::Exception & e) {
+    RCLCPP_WARN(
+      node.get_logger(), "フィールド設定ファイルのYAMLパースエラー: %s (file: %s)", e.what(),
+      config_path.c_str());
+    return false;
+  } catch (const std::exception & e) {
+    RCLCPP_WARN(
+      node.get_logger(), "フィールド設定ファイルの読み込みに失敗: %s (file: %s)", e.what(),
+      config_path.c_str());
+    return false;
+  }
 }
 
 auto WorldModelDataProvider::reportError(const std::string & error_message) -> void

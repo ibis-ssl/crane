@@ -256,6 +256,7 @@ private:
   auto processGeometryData(const robocup_ssl::SSL_GeometryData & geometry) -> bool;
   auto convertBallDetection(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
   auto convertFieldGeometry(const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void;
+  auto loadFieldGeometryFromConfig(const std::string & config_path) -> bool;
   auto reportError(const std::string & error_message) -> void;
 
   auto mergeRobotInfo(
