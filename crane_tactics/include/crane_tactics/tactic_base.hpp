@@ -94,7 +94,14 @@ public:
     crane_msgs::msg::PositionCommands msg;
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
-    for (const auto & command : position_commands) {
+    for (auto command : position_commands) {
+      // WorldModelから現在の速度情報を取得して設定
+      auto robot = world_model->getOurRobot(command.robot_id);
+      if (robot) {
+        command.current_velocity.x = robot->vel.linear.x();
+        command.current_velocity.y = robot->vel.linear.y();
+        command.current_velocity.theta = robot->vel.omega;
+      }
       msg.robot_commands.emplace_back(command);
     }
     visualizer->flush();
@@ -103,7 +110,18 @@ public:
 
   bool isSameConfiguration(TacticBase * other_tactic)
   {
-    return name == other_tactic->name && robots.size() == other_tactic->robots.size() && [&]() {
+    // 名前が異なる場合は別の設定
+    if (name != other_tactic->name) {
+      return false;
+    }
+
+    // どちらかのrobotsが空の場合は、名前のみで判定（ロボット割り当て前の比較用）
+    if (robots.empty() || other_tactic->robots.empty()) {
+      return true;
+    }
+
+    // 両方ともrobotsが設定されている場合は、ロボット構成も比較
+    return robots.size() == other_tactic->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
       std::vector<RobotIdentifier> others = other_tactic->robots;
       std::ranges::sort(ours, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
