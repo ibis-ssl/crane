@@ -55,11 +55,11 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
 
     crane_msgs::msg::PositionCommand command = raw_command;
     auto robot = world_model->getOurRobot(command.robot_id);
-    command.current_pose.x = robot->pose.pos.x();  // フィールド座標系
-    command.current_pose.y = robot->pose.pos.y();  // フィールド座標系
+    command.current_pose.x = robot->pose.pos.x();                   // フィールド座標系
+    command.current_pose.y = robot->pose.pos.y();                   // フィールド座標系
     command.current_pose.theta = robot->pose.theta + theta_offset;  // theta_offset適用
-    command.current_velocity.x = robot->vel.linear.x();  // フィールド座標系
-    command.current_velocity.y = robot->vel.linear.y();  // フィールド座標系
+    command.current_velocity.x = robot->vel.linear.x();             // フィールド座標系
+    command.current_velocity.y = robot->vel.linear.y();             // フィールド座標系
     command.current_velocity.theta = robot->vel.omega;
     command.target_theta += theta_offset;  // theta_offset適用
     commands.robot_commands.push_back(command);

@@ -59,7 +59,20 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
 
     double total_score = distance_score * 0.6 + slack_score * 0.4;
 
-    robot_scores.push_back({robot->id, total_score});
+    // EMAでスムージング
+    auto it = ema_scores_.find(robot->id);
+    double smoothed_score;
+    if (it == ema_scores_.end()) {
+      // 初回は生スコアをそのまま使用
+      ema_scores_[robot->id] = total_score;
+      smoothed_score = total_score;
+    } else {
+      // EMA更新: smoothed = α * new + (1-α) * old
+      smoothed_score = EMA_ALPHA * total_score + (1.0 - EMA_ALPHA) * it->second;
+      ema_scores_[robot->id] = smoothed_score;
+    }
+
+    robot_scores.push_back({robot->id, smoothed_score});
   }
 
   // スコアでソート（降順）
@@ -84,19 +97,22 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // 異なるロボットの場合
     double time_since_switch = (current_time - last_switch_time_).seconds();
 
-    if (time_since_switch >= MIN_HOLD_DURATION_SEC) {
-      // 最低保持時間が経過している
-      // 現在のロボットのスコアを取得
-      double current_score = 0.0;
-      for (const auto & rs : robot_scores) {
-        if (static_cast<int>(rs.id) == last_attacker_id_) {
-          current_score = rs.score;
-          break;
-        }
+    // 現在のロボットのスコアを取得
+    double current_score = 0.0;
+    for (const auto & rs : robot_scores) {
+      if (static_cast<int>(rs.id) == last_attacker_id_) {
+        current_score = rs.score;
+        break;
       }
+    }
 
-      // 十分な改善がある場合のみスイッチ
-      if (best_score > current_score + MIN_IMPROVEMENT_MARGIN) {
+    // 緊急切り替え: 新しいロボットが2倍以上良い場合は保持時間を無視して即座に切り替え
+    if (best_score >= current_score * EMERGENCY_SWITCH_RATIO) {
+      should_switch = true;
+    } else if (time_since_switch >= MIN_HOLD_DURATION_SEC) {
+      // 通常切り替え: 保持時間経過後、相対的に50%以上改善がある場合のみ切り替え
+      double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
+      if (improvement_ratio >= MIN_IMPROVEMENT_RATIO) {
         should_switch = true;
       }
     }

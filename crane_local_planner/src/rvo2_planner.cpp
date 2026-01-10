@@ -162,8 +162,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
 
     // 目標との距離を計算
-    double distance_to_target = std::hypot(
-      command.target_x - current_position.x(), command.target_y - current_position.y());
+    double distance_to_target =
+      std::hypot(command.target_x - current_position.x(), command.target_y - current_position.y());
 
     // 疑似I項：低速かつ目標から離れている場合に補正
     // terminal_velocity（0の場合はフォールバック値0.3 m/sを使用）
