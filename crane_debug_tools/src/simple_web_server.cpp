@@ -8,7 +8,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cctype>
 #include <crane_msgs/action/skill_execution.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <filesystem>
 #include <fstream>
@@ -48,8 +48,8 @@ public:
         latest_world_model_ = msg;
       });
 
-    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
+    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::VelocityCommands>(
+      "/robot_commands", 10, [this](const crane_msgs::msg::VelocityCommands::SharedPtr msg) {
         // Store latest robot commands
         latest_robot_commands_ = msg;
       });
@@ -80,7 +80,7 @@ private:
   // ROS components
   SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
 
   // HTTP server components
   std::thread server_thread_;
@@ -90,7 +90,7 @@ private:
 
   // Latest data storage
   crane_msgs::msg::WorldModel::SharedPtr latest_world_model_;
-  crane_msgs::msg::RobotCommands::SharedPtr latest_robot_commands_;
+  crane_msgs::msg::VelocityCommands::SharedPtr latest_robot_commands_;
 };
 
 int main(int argc, char ** argv)
