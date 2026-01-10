@@ -160,11 +160,29 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
     // Vision遅延（~100ms）を考慮してlookahead時間を設定
     const double lookahead_time = 0.1;
     Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
-    target_vel << next_vel.x(), next_vel.y();
 
-    // 目標到達済みの場合
-    if (target_vel.norm() < 1e-6) {
+    // 目標との距離を計算
+    double distance_to_target = std::hypot(
+      command.target_x - current_position.x(), command.target_y - current_position.y());
+
+    // 疑似I項：低速かつ目標から離れている場合に補正
+    // terminal_velocity（0の場合はフォールバック値0.3 m/sを使用）
+    const double terminal_vel = command.local_planner_config.terminal_velocity > 0
+                                  ? command.local_planner_config.terminal_velocity
+                                  : 0.3;
+    const double min_distance =
+      std::max(static_cast<double>(command.position_tolerance) * 2, 0.03);  // 最低3cm
+
+    if (next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
+      // 低速かつ目標から離れている場合、目標方向への terminal_velocity を設定
+      Eigen::Vector2d direction =
+        (Eigen::Vector2d(command.target_x, command.target_y) - current_position).normalized();
+      target_vel = direction * terminal_vel;
+    } else if (next_vel.norm() < 1e-6) {
+      // 目標到達済み
       target_vel.setZero();
+    } else {
+      target_vel << next_vel.x(), next_vel.y();
     }
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
