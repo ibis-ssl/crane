@@ -39,8 +39,11 @@ endif()
 ament_auto_add_library(${PROJECT_NAME}_component SHARED ${WORLD_MODEL_PUBLISHER_SRCS})
 
 # Enable Unity Build for faster compilation
-set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
-set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 4)
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 4)
+endif()
 
 target_link_libraries(${PROJECT_NAME}_component
         ${robocup_ssl_msgs_LIBRARIES}

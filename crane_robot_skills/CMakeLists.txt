@@ -20,11 +20,12 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   DIRECTORY src include
 )
 
-set_target_properties(${PROJECT_NAME}_component
-  PROPERTIES
-    UNITY_BUILD ON
-    UNITY_BUILD_BATCH_SIZE 8
-)
+# Enable Unity Build for faster compilation
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
+endif()
 
 target_precompile_headers(${PROJECT_NAME}_component
   PRIVATE
