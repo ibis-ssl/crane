@@ -155,17 +155,17 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
       Eigen::Vector2d(current_position.x(), current_position.y()),
       Eigen::Vector2d(command.target_x, command.target_y),
       Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
-    // ルックアヘッド時間を動的に調整：軌道時間の20%または最大0.2秒
-    // 加速初期段階でも十分な速度を目標とするため、固定0.05秒から変更
-    const double lookahead_time = std::min(0.2, std::max(0.05, trajectory.getTotalTime() * 0.2));
-    Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
-    target_vel << next_vel.x(), next_vel.y();
+    // 軌道の方向のみを使用し、大きさは最大速度を指定
+    // 加速度制限はロボット側で行う（IMU/オドメトリによる高精度制御）
+    Eigen::Vector2d traj_vel = trajectory.getVelocity(0.01);  // 方向取得用（10ms後）
+    if (traj_vel.norm() > 1e-6) {
+      target_vel = traj_vel.normalized() * max_vel;
+    } else {
+      target_vel.setZero();
+    }
 
-    // すでに目標に到達している場合のNaN回避
+    // 終端速度のチェック
     if (target_vel.norm() > 1e-6) {
-      // target_velはすでにBangBangTrajectoryによってスケーリングされています（方向と大きさを含む）
-      // BangBangの同期プロファイルを尊重するため、再度正規化してmax_velを掛ける必要はありません
-      // ただし、終端速度（terminal_velocity）はチェックします
       if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
         target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
       }
