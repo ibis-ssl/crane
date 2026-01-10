@@ -17,8 +17,7 @@ auto SecondThreatDefenderTactic::calculatePositionCommand(
     return {TacticBase::Status::RUNNING, {}};
   }
   if (not skill) {
-    skill = std::make_shared<skills::SecondThreatDefender>(
-      robots.front().id, world_model);
+    skill = std::make_shared<skills::SecondThreatDefender>(robots.front().id, world_model);
   }
   skill->run();
   return {TacticBase::Status::RUNNING, {skill->getRobotCommand()}};
