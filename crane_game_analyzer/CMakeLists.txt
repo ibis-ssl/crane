@@ -24,6 +24,11 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/evaluations.cpp
   src/threat_evaluator.cpp
   src/ronar_event_detector.cpp
+  src/metrics/metric_engine.cpp
+  src/metrics/threat_metrics.cpp
+  src/metrics/ball_horizon_metric.cpp
+  src/metrics/slack_metrics.cpp
+  src/metrics/attacker_metrics.cpp
 )
 
 target_precompile_headers(${PROJECT_NAME}_component

@@ -29,3 +29,8 @@ uint8 pass_disruption_defender_id
 
 # 推奨守備者数
 uint8 recommended_num_defenders
+
+# 推奨役割（新規フィールド）
+int32 recommended_attacker_id        # 推奨アタッカーID（-1は未選択）
+float32 attacker_suitability_score   # アタッカー適性スコア
+int32 recommended_pass_receiver_id   # 推奨パスレシーバーID（-1は未選択）

@@ -12,6 +12,10 @@
 #include <vector>
 
 #include "crane_game_analyzer/game_analyzer.hpp"
+#include "crane_game_analyzer/metrics/attacker_metrics.hpp"
+#include "crane_game_analyzer/metrics/ball_horizon_metric.hpp"
+#include "crane_game_analyzer/metrics/slack_metrics.hpp"
+#include "crane_game_analyzer/metrics/threat_metrics.hpp"
 
 namespace crane
 {
@@ -91,6 +95,35 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   game_event_sub_ = create_subscription<robocup_ssl_msgs::msg::GameEvent>(
     "/game_event", 10, [this](const robocup_ssl_msgs::msg::GameEvent & msg) { onGameEvent(msg); });
 
+  // メトリクス計算エンジンの初期化
+  metric_engine_ = std::make_unique<metrics::MetricEngine>(get_logger());
+
+  // 基礎メトリクス
+  metric_engine_->registerMetric(std::make_shared<metrics::BallHorizonMetric>());
+  metric_engine_->registerMetric(std::make_shared<metrics::OurSlackMetric>());
+  metric_engine_->registerMetric(std::make_shared<metrics::TheirSlackMetric>());
+
+  // 脅威評価メトリクス
+  auto ball_threat_metric = std::make_shared<metrics::BallThreatMetric>();
+  metric_engine_->registerMetric(ball_threat_metric);
+
+  auto robot_threats_metric = std::make_shared<metrics::RobotThreatsMetric>(ball_threat_metric);
+  metric_engine_->registerMetric(robot_threats_metric);
+
+  metric_engine_->registerMetric(
+    std::make_shared<metrics::RecommendedDefendersMetric>(
+      ball_threat_metric, robot_threats_metric));
+
+  // 役割決定メトリクス（新規）
+  auto attacker_metric = std::make_shared<metrics::AttackerCandidateMetric>();
+  metric_engine_->registerMetric(attacker_metric);
+
+  // メトリクスエンジン初期化（トポロジカルソート・循環依存検出）
+  if (!metric_engine_->initialize()) {
+    RCLCPP_FATAL(get_logger(), "Failed to initialize metric engine!");
+    throw std::runtime_error("Metric engine initialization failed");
+  }
+
   world_model->addCallback([&]() {
     auto robot_collision_info = getRobotCollisionInfo();
 
@@ -102,8 +135,25 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
         robot_collision_info->relative_velocity);
     }
 
-    // 脅威評価を実行
-    auto analysis = evaluateThreats();
+    // ボール履歴を更新
+    crane_msgs::msg::BallInfo ball_info_msg;
+    world_model->ball().toMsg(ball_info_msg);
+    ball_history_.push_front(ball_info_msg);
+    if (ball_history_.size() > 100) {
+      ball_history_.pop_back();
+    }
+
+    // メトリクス計算エンジンで脅威評価を実行
+    crane_msgs::msg::GameAnalysis analysis;
+    metrics::MetricContext ctx{
+      .world_model = world_model.get(),
+      .ball_history = &ball_history_,
+      .clock = get_clock(),
+      .analysis = analysis};
+
+    metric_engine_->computeAll(ctx);
+    metric_engine_->visualizeAll(ctx, visualizer);
+
     game_analysis_pub_->publish(analysis);
 
     // RONARイベント検出を実行
