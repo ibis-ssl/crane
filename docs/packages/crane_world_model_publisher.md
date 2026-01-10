@@ -100,6 +100,7 @@ world_model_publisher:
 ## 診断機能
 
 `vision/processing` 項目で以下の情報を監視します：
+
 - Vision/Trackerデータの受信状態（1秒以上の無受信でERROR）
 - ボール検出状態
 - 検出ロボット数

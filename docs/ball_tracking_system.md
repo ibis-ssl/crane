@@ -29,7 +29,7 @@ SSL Vision / Tracker UDP → WorldModelDataProvider → WorldModelPublisher → 
 
 **主要機能**:
 
-- **マルチキャスト受信**: 
+- **マルチキャスト受信**:
   - Vision UDP（実機: 10006, シミュレーション: 10020）
   - Tracker UDP（既定: 10010）
 - **データの正規化**: 外部トラッカーからの `TrackedFrame` を最優先ソースとし、未検出時はVision生データで補完。
@@ -73,6 +73,7 @@ struct Config {
 ### 飛行物理
 
 **放物運動**:
+
 - $x(t) = x_0 + v_{x0} \cdot t$
 - $y(t) = y_0 + v_{y0} \cdot t$
 - $z(t) = z_0 + v_{z0} \cdot t + 0.5 \cdot g \cdot t^2$
