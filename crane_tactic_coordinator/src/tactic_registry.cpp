@@ -30,8 +30,14 @@ auto TacticRegistry::getOrCreatePlanner(
   TacticBase::SharedPtr result_planner;
   if (matched_planner != prev_planners.end()) {
     result_planner = *matched_planner;
+    RCLCPP_INFO(
+      rclcpp::get_logger("TacticRegistry"), "Tactic「%s」を再利用 (robots: prev=%zu, new=%zu)",
+      tactic_name.c_str(), (*matched_planner)->getRobots().size(), new_planner->getRobots().size());
   } else {
     result_planner = new_planner;
+    RCLCPP_INFO(
+      rclcpp::get_logger("TacticRegistry"), "Tactic「%s」を新規作成 (robots: new=%zu)",
+      tactic_name.c_str(), new_planner->getRobots().size());
   }
 
   // パラメータを設定（新規・再利用どちらでも）
