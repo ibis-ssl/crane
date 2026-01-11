@@ -230,6 +230,9 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     // 障害物回避を無効にする場合、目標速度をそのまま使う
     if (command.local_planner_config.disable_collision_avoidance) {
       vel = toPoint(rvo_sim->getAgentPrefVelocity(original_command.robot_id));
+      if (vel.norm() > rvo_sim->getAgentMaxSpeed(original_command.robot_id)) {
+        vel = vel.normalized() * rvo_sim->getAgentMaxSpeed(original_command.robot_id);
+      }
     }
 
     // 位置目標が許容誤差以下の場合、速度目標を0にする
