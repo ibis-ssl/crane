@@ -8,6 +8,8 @@
 
 namespace crane
 {
+void EmplaceRobotTactic::onRobotsChanged() { m_skill_map.clear(); }
+
 std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 EmplaceRobotTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {

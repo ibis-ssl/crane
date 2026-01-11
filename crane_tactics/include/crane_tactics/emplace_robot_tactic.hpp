@@ -43,6 +43,9 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override;
 
+protected:
+  void onRobotsChanged() override;
+
 private:
   std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
 };
