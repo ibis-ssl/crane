@@ -232,7 +232,6 @@ auto RobotData::batteryDiagnosticCallback(
       stat.summary(level, message);
       removeError("battery");
     } else {
-
       // 実機環境ではWARN（フィードバックなしでもVision/Trackerで制御可能）
       std::string message = "No robot feedback received";
       int level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
