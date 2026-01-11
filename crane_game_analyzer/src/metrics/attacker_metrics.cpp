@@ -21,7 +21,7 @@ AttackerCandidateMetric::AttackerCandidateMetric()
 auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
 {
   const auto & ball_pos = ctx.world_model->ball().pos;
-  const auto available_robots = ctx.world_model->ours().getAvailableRobots();
+  const auto available_robots = ctx.world_model->ours().getAvailableRobots(255, true);
 
   if (available_robots.empty()) {
     ctx.analysis.recommended_attacker_id = -1;
@@ -43,21 +43,33 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
   for (const auto & robot : available_robots) {
     double distance = (robot->pose.pos - ball_pos).norm();
 
-    // Slack時間を取得
-    double min_slack_time = 10.0;  // デフォルト値
+    // Slack情報を取得
+    double metric_distance = distance;
+    bool has_valid_intercept = false;
+
     for (const auto & slack : ctx.analysis.our_slack) {
       if (slack.id == robot->id) {
-        min_slack_time = slack.min.slack_time;
+        // min.slack_time > 0 なら有効なインターセプト地点が存在する
+        if (slack.min.slack_time > 0.001) {
+          Point intercept_pos(slack.min.x, slack.min.y);
+          // インターセプト地点までの距離を指標とする
+          metric_distance = (robot->pose.pos - intercept_pos).norm();
+          has_valid_intercept = true;
+        }
         break;
       }
     }
 
-    // スコア計算（距離が近く、Slack時間が短いほど高スコア）
-    // 距離0m→スコア無限大を避けるため、最小距離0.1mとする
-    double distance_score = 1.0 / std::max(distance, 0.1);
-    double slack_score = 1.0 / std::max(min_slack_time, 0.1);
+    // スコア計算
+    // 到達距離が短いほど高スコア
+    double score = 10.0 / std::max(metric_distance, 0.1);
 
-    double total_score = distance_score * 0.6 + slack_score * 0.4;
+    // インターセプト計算ができなかった（ボールに追いつけない等）場合はスコアを下げる
+    if (!has_valid_intercept) {
+      score *= 0.5;
+    }
+
+    double total_score = score;
 
     // EMAでスムージング
     auto it = ema_scores_.find(robot->id);
