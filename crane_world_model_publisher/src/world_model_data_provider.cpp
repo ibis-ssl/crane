@@ -261,6 +261,9 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               has_vision_updated_ = true;
               last_vision_recv_time_ = node.get_clock()->now();
             }
+            if (packet.has_geometry()) {
+              processGeometryData(packet.geometry());
+            }
           } else {
             RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
           }
