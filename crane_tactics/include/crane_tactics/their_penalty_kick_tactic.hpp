@@ -33,7 +33,7 @@ private:
 public:
   COMPOSITION_PUBLIC
   explicit TheirPenaltyKickTactic(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("TheirPenaltyKickTactic", world_model)
+  : TacticBase("their_penalty_kick", world_model)
   {
   }
 

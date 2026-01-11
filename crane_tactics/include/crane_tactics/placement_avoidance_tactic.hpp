@@ -29,7 +29,7 @@ class BallPlacementAvoidanceTactic : public TacticBase
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidanceTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("BallPlacementAvoidance", world_model)
+  : TacticBase("ball_placement_avoidance", world_model)
   {
   }
 

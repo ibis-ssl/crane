@@ -11,7 +11,7 @@ namespace crane
 
 CenterStopKickTactic::CenterStopKickTactic(
   WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
-: TacticBase("CenterStopKick", world_model), skill_(nullptr), current_robot_id_()
+: TacticBase("center_stop_kick", world_model), skill_(nullptr), current_robot_id_()
 {
 }
 

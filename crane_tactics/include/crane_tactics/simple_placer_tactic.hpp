@@ -69,7 +69,7 @@ private:
 public:
   COMPOSITION_PUBLIC explicit SimplePlacerTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("SimplePlacer", world_model)
+  : TacticBase("simple_placer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
     Point p1;

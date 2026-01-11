@@ -62,7 +62,7 @@ public:
 
   COMPOSITION_PUBLIC explicit GoalieSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("Goalie", world_model)
+  : TacticBase("goalie_skill", world_model)
   {
   }
 
@@ -82,7 +82,7 @@ public:
 
   COMPOSITION_PUBLIC explicit BallPlacementSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("BallPlacement", world_model)
+  : TacticBase("ball_placement_skill", world_model)
   {
   }
 
@@ -100,7 +100,7 @@ public:
 
   COMPOSITION_PUBLIC explicit SubAttackerSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("SubAttacker", world_model)
+  : TacticBase("sub_attacker_skill", world_model)
   {
   }
 
@@ -118,7 +118,7 @@ public:
 
   COMPOSITION_PUBLIC explicit SimpleKickOffSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("SimpleKickOff", world_model)
+  : TacticBase("simple_kickoff", world_model)
   {
   }
 
