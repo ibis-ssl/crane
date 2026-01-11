@@ -13,11 +13,6 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-# CLI Skill Tester
-ament_auto_add_executable(crane_skill_cli
-  src/cli_skill_tester.cpp
-)
-
 # Simple Web Server (temporary solution)
 ament_auto_add_executable(crane_web_server
   src/simple_web_server.cpp
@@ -41,12 +36,5 @@ else()
   target_include_directories(crane_websocket_server PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-# Install scripts
-install(PROGRAMS scripts/crane_skill DESTINATION lib/${PROJECT_NAME})
-
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
+# Install
 ament_auto_package(INSTALL_TO_SHARE web launch)
