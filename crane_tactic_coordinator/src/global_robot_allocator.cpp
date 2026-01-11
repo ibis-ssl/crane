@@ -18,13 +18,14 @@ namespace crane
 auto GlobalRobotAllocator::allocate(
   const std::vector<TacticRequirement> & requirements,
   const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
-  const AllocationState & prev_state, const AllocationCostConfig & config)
-  -> std::unordered_map<std::string, std::vector<uint8_t>>
+  const AllocationState & prev_state, const AllocationCostConfig & config,
+  rclcpp::Clock::SharedPtr clock) -> std::unordered_map<std::string, std::vector<uint8_t>>
 {
   std::unordered_map<std::string, std::vector<uint8_t>> result;
 
   if (available_robots.empty()) {
-    RCLCPP_WARN(logger_, "[GlobalRobotAllocator] 利用可能なロボットがありません");
+    RCLCPP_WARN_THROTTLE(
+      logger_, *clock, 1000, "[GlobalRobotAllocator] 利用可能なロボットがありません");
     return result;
   }
 
@@ -199,7 +200,7 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
 
   // Hungarian法は非負のコスト行列を要求するため、負の値がある場合はオフセットを追加
   if (min_cost < 0.0) {
-    RCLCPP_WARN(
+    RCLCPP_DEBUG(
       logger_, "[allocateSoftConstraints] 負のコスト値を検出: %f。オフセットを追加します",
       min_cost);
     double offset = -min_cost + 1.0;
@@ -261,7 +262,7 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
           req.name.c_str(), req.min_robots, it->second.size());
       }
     } else if (req.min_robots > 0) {
-      RCLCPP_WARN(
+      RCLCPP_DEBUG(
         logger_, "Tactic「%s」にロボットを割り当てられませんでした（最小要求: %d）",
         req.name.c_str(), req.min_robots);
     }

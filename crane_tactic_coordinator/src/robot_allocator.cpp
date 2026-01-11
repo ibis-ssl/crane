@@ -73,10 +73,30 @@ auto RobotAllocator::allocate(
 
   // GlobalRobotAllocatorで割当を実行
   auto allocation = global_allocator_->allocate(
-    requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
+    requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_,
+    node.get_clock());
 
   // 割当結果を適用
   crane_msgs::msg::RobotSelectResults results;
+  int result_priority = 0;
+  for (const auto & session_capacity : session_capacities) {
+    if (session_capacity.selectable_robot_num <= 0) {
+      continue;
+    }
+
+    crane_msgs::msg::RobotSelectResult result;
+    result.tactic_name = session_capacity.session_name;
+    result.min_robots_num = 1;
+    result.max_robots_num = session_capacity.selectable_robot_num;
+    result.priority = result_priority++;
+    result.selectable_robots = selectable_robot_ids;
+
+    if (allocation.count(session_capacity.session_name)) {
+      result.selected_robots = allocation.at(session_capacity.session_name);
+    }
+    results.results.push_back(result);
+  }
+
   for (const auto & [tactic_name, robot_ids] : allocation) {
     // Tacticを取得または再生成
     auto tactic_it = std::find_if(

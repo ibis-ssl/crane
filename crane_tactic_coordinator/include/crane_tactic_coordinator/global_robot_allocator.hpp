@@ -81,8 +81,8 @@ public:
   auto allocate(
     const std::vector<TacticRequirement> & requirements,
     const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
-    const AllocationState & prev_state, const AllocationCostConfig & config)
-    -> std::unordered_map<std::string, std::vector<uint8_t>>;
+    const AllocationState & prev_state, const AllocationCostConfig & config,
+    rclcpp::Clock::SharedPtr clock) -> std::unordered_map<std::string, std::vector<uint8_t>>;
 
 private:
   rclcpp::Logger logger_;
