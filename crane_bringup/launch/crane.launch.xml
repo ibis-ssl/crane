@@ -243,6 +243,8 @@ limitations under the License.
   <group if="$(var commentary)">
     <node pkg="crane_commentary" exec="commentary_node.py" name="commentary_node" output="screen">
       <param from="$(find-pkg-share crane_commentary)/config/commentary_config.yaml"/>
+      <!-- モード切替: reflex_analyst（通常の実況）または self_commentary（自己解説） -->
+      <param name="mode" value="reflex_analyst"/>
     </node>
   </group>
 

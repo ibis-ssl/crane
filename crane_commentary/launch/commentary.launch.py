@@ -27,6 +27,11 @@ def generate_launch_description():
                 default_value="",
                 description="Gemini API key (can also be set via GEMINI_API_KEY env var)",
             ),
+            DeclareLaunchArgument(
+                "mode",
+                default_value="reflex_analyst",
+                description="Commentary mode: reflex_analyst or self_commentary",
+            ),
             Node(
                 package="crane_commentary",
                 executable="commentary_node.py",
@@ -35,6 +40,7 @@ def generate_launch_description():
                     config_file,
                     {
                         "gemini_api_key": LaunchConfiguration("gemini_api_key"),
+                        "mode": LaunchConfiguration("mode"),
                     },
                 ],
                 output="screen",
