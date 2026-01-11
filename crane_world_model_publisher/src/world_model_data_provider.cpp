@@ -828,16 +828,19 @@ auto WorldModelDataProvider::convertTrackedRobot(
     robot_info.velocity_norm = 0.0;
   }
 
-  // Vision情報
+  // Vision情報（Trackerは内部でVisionを統合しているため、Vision情報としても扱う）
   robot_info.vision.stamp = now;
   robot_info.vision.pose.x = tracked_robot.pos.x;
   robot_info.vision.pose.y = tracked_robot.pos.y;
   robot_info.vision.pose.theta = tracked_robot.orientation;
 
-  // 検出フラグ
-  robot_info.available_vision = false;
+  // 検出フラグ（TrackerはVisionを統合しているため、両方trueに設定）
+  robot_info.available_vision = true;
   robot_info.available_feedback = false;
   robot_info.available_tracker = true;
+
+  // タイムスタンプ設定
+  robot_info.last_tracker_detection_stamp = now;
 
   return robot_info;
 }
