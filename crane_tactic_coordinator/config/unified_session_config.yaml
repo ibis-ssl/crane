@@ -5,6 +5,8 @@ situations:
   INPLAY:
     description: INPLAY
     sessions:
+      - name: goalie_skill
+        capacity: 1
       - name: emplace_robot
         capacity: 1
       - name: attacker_skill
@@ -21,6 +23,7 @@ situations:
         capacity: 3
       - name: forward
         capacity: 20
+
   OUR_BALL_PLACEMENT:
     description: OUR_BALL_PLACEMENT
     sessions:
@@ -157,11 +160,6 @@ situations:
         capacity: 1
       - name: ball_placement_avoidance
         capacity: 20
-  simple_ai:
-    description: Simple AI tactic for individual robot skill execution via WebUI
-    sessions:
-      - name: simple_ai
-        capacity: 16
   wing_formation:
     description: wing/キーパーなし
     sessions:
@@ -216,8 +214,6 @@ events:
     situation: THEIR_FREE_KICK
   - name: formation
     situation: formation
-  - name: simple_ai
-    situation: simple_ai
   - name: INJECTION
     situation: HALT
   - name: OUR_TIMEOUT

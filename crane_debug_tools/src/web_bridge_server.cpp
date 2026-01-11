@@ -102,9 +102,6 @@ private:
       std::lock_guard<std::mutex> lock(connections_mutex_);
       connections_.insert(hdl);
       RCLCPP_INFO(this->get_logger(), "WebSocket connection opened");
-
-      // Send available skills list to new connection
-      sendAvailableSkills(hdl);
     });
 
     server_.set_close_handler([this](websocketpp::connection_hdl hdl) {
@@ -193,60 +190,13 @@ private:
     }
   }
 
-  // Parameter type detection functions
-  bool isBooleanString(const std::string & value) const
-  {
-    std::string lower_value = value;
-    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
-    return lower_value == "true" || lower_value == "false";
-  }
-
-  bool parseBool(const std::string & value) const
-  {
-    std::string lower_value = value;
-    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
-    return lower_value == "true";
-  }
-
-  bool isIntegerString(const std::string & value) const
-  {
-    if (value.empty()) return false;
-
-    size_t start = 0;
-    if (value[0] == '-' || value[0] == '+') start = 1;
-
-    if (start >= value.length()) return false;
-
-    for (size_t i = start; i < value.length(); ++i) {
-      if (!std::isdigit(value[i])) return false;
-    }
-    return true;
-  }
-
-  bool isFloatString(const std::string & value) const
-  {
-    if (value.empty()) return false;
-
-    try {
-      size_t pos;
-      (void)std::stof(value, &pos);
-      return pos == value.length() && value.find('.') != std::string::npos;
-    } catch (...) {
-      return false;
-    }
-  }
-
   void handleWebSocketMessage(websocketpp::connection_hdl hdl, WebSocketServer::message_ptr msg)
   {
     try {
       json request = json::parse(msg->get_payload());
       std::string type = request["type"];
 
-      if (type == "execute_skill") {
-        handleSkillExecution(hdl, request);
-      } else if (type == "get_skills") {
-        sendAvailableSkills(hdl);
-      } else if (type == "get_world_model") {
+      if (type == "get_world_model") {
         // World model is automatically broadcasted, but we can send current state if needed
         json response = {
           {"type", "world_model_request_acknowledged"},
@@ -261,102 +211,6 @@ private:
         {"type", "error"}, {"message", "Failed to parse request: " + std::string(e.what())}};
       sendToConnection(hdl, error_response);
     }
-  }
-
-  void handleSkillExecution(websocketpp::connection_hdl hdl, const json & request)
-  {
-    try {
-      auto goal_msg = SkillExecutionAction::Goal();
-      goal_msg.robot_id = request["robot_id"];
-      goal_msg.name = request["skill_name"];
-
-      // Parse parameters
-      if (request.contains("parameters")) {
-        for (const auto & param : request["parameters"]) {
-          std::string name = param["name"];
-          std::string value = param["value"];
-
-          // Auto-detect parameter type and add to appropriate array
-          if (isBooleanString(value)) {
-            crane_msgs::msg::NamedBool bool_param;
-            bool_param.name = name;
-            bool_param.value = parseBool(value);
-            goal_msg.parameter.bool_values.push_back(bool_param);
-          } else if (isIntegerString(value)) {
-            crane_msgs::msg::NamedInt int_param;
-            int_param.name = name;
-            int_param.value = std::stoi(value);
-            goal_msg.parameter.int_values.push_back(int_param);
-          } else if (isFloatString(value)) {
-            crane_msgs::msg::NamedFloat float_param;
-            float_param.name = name;
-            float_param.value = std::stof(value);
-            goal_msg.parameter.float_values.push_back(float_param);
-          } else {
-            crane_msgs::msg::NamedString string_param;
-            string_param.name = name;
-            string_param.value = value;
-            goal_msg.parameter.string_values.push_back(string_param);
-          }
-        }
-      }
-
-      // Send goal to action server
-      if (!skill_client_->wait_for_action_server(std::chrono::milliseconds(100))) {
-        json error_response = {
-          {"type", "error"}, {"message", "Skill execution action server not available"}};
-        sendToConnection(hdl, error_response);
-        return;
-      }
-
-      auto send_goal_options = rclcpp_action::Client<SkillExecutionAction>::SendGoalOptions();
-
-      send_goal_options.goal_response_callback =
-        [this, hdl](const SkillExecutionClient::GoalHandle::SharedPtr & goal_handle) {
-          json response = {{"type", "skill_goal_response"}, {"accepted", goal_handle != nullptr}};
-          sendToConnection(hdl, response);
-        };
-
-      send_goal_options.feedback_callback =
-        [this, hdl](
-          const SkillExecutionClient::GoalHandle::SharedPtr &,
-          const std::shared_ptr<const SkillExecutionAction::Feedback> & feedback) {
-          json response = {{"type", "skill_feedback"}, {"message", feedback->message}};
-          sendToConnection(hdl, response);
-        };
-
-      send_goal_options.result_callback =
-        [this, hdl](const SkillExecutionClient::GoalHandle::WrappedResult & result) {
-          json response = {
-            {"type", "skill_result"},
-            {"code", static_cast<int>(result.code)},
-            {"result", result.result ? result.result->result : 0}};
-          sendToConnection(hdl, response);
-        };
-
-      skill_client_->async_send_goal(goal_msg, send_goal_options);
-
-      json ack_response = {
-        {"type", "skill_execution_started"},
-        {"skill_name", goal_msg.name},
-        {"robot_id", goal_msg.robot_id}};
-      sendToConnection(hdl, ack_response);
-    } catch (const std::exception & e) {
-      json error_response = {
-        {"type", "error"}, {"message", "Failed to execute skill: " + std::string(e.what())}};
-      sendToConnection(hdl, error_response);
-    }
-  }
-
-  void sendAvailableSkills(websocketpp::connection_hdl hdl)
-  {
-    json skills_list = {
-      {"type", "available_skills"},
-      {"skills",
-       {"Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-        "SingleBallPlacement", "GoalKick", "SimpleKickOff", "Marker", "EmplaceRobot", "Forward",
-        "BallNearbyPositioner", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"}}};
-    sendToConnection(hdl, skills_list);
   }
 
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
