@@ -6,13 +6,55 @@
 
 #include <crane_tactics/emplace_robot_tactic.hpp>
 
+#include <cstdlib>
+#include <filesystem>
+
 namespace crane
 {
 void EmplaceRobotTactic::onRobotsChanged() { m_skill_map.clear(); }
 
+auto EmplaceRobotTactic::findAvailableSoundFile() -> std::string
+{
+  // 複数の候補パスを試す（優先順位順）
+  std::vector<std::string> candidates = {
+    "/usr/share/sounds/freedesktop/stereo/dialog-warning.oga",
+    "/usr/share/sounds/freedesktop/stereo/bell.oga",
+    "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
+    "/usr/share/sounds/ubuntu/stereo/dialog-warning.ogg",
+    "/usr/share/sounds/ubuntu/stereo/bell.ogg",
+    "/usr/share/sounds/sound-icons/trumpet-12.wav",
+    "/usr/share/sounds/sound-icons/canary-long.wav"};
+
+  for (const auto & path : candidates) {
+    if (std::filesystem::exists(path)) {
+      return path;
+    }
+  }
+
+  return "";  // 何も見つからなかった
+}
+
 std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 EmplaceRobotTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
+  // ロボット退場中の警告ビープ
+  if (!robots.empty()) {
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_beep_time_ >= BEEP_INTERVAL) {
+      // 初回または音声ファイルパスが未設定の場合、利用可能なファイルを探す
+      if (beep_sound_path_.empty()) {
+        beep_sound_path_ = findAvailableSoundFile();
+      }
+
+      // 警告音をバックグラウンドで再生
+      if (!beep_sound_path_.empty()) {
+        std::string command = "paplay " + beep_sound_path_ + " &";
+        std::system(command.c_str());
+      }
+      last_beep_time_ = now;
+    }
+  }
+
   // GlobalRobotAllocator対応: robotsが変更されたらスキルマップを再生成
   // ロボットの優先順位はgetRobotSuitabilityFunc()で決定される（モーター温度が高いほど優先）
   if (m_skill_map.size() != robots.size()) {

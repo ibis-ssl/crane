@@ -8,6 +8,7 @@
 #define CRANE_TACTICS__EMPLACE_ROBOT_TACTIC_HPP_
 
 #include <algorithm>
+#include <chrono>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
@@ -48,6 +49,13 @@ protected:
 
 private:
   std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
+
+  // ビープ音制御用
+  std::chrono::steady_clock::time_point last_beep_time_{};
+  static constexpr std::chrono::milliseconds BEEP_INTERVAL{2000};  // 2秒間隔
+  std::string beep_sound_path_;
+
+  auto findAvailableSoundFile() -> std::string;
 };
 
 }  // namespace crane
