@@ -30,7 +30,9 @@ class RobotIntent:
     tactic_name: str = ""
     skill_name: str = ""  # state_factors[0].name
     skill_state: str = ""  # state_factors[0].value
-    nested_skills: List[Dict[str, str]] = field(default_factory=list)  # state_factors[1:]
+    nested_skills: List[Dict[str, str]] = field(
+        default_factory=list
+    )  # state_factors[1:]
     planner_name: str = ""
 
     def __eq__(self, other: object) -> bool:
@@ -135,7 +137,10 @@ class IntentTracker:
                 # Remaining elements are nested skills
                 for i in range(1, len(cmd.state_factors)):
                     nested_skills.append(
-                        {"name": cmd.state_factors[i].name, "value": cmd.state_factors[i].value}
+                        {
+                            "name": cmd.state_factors[i].name,
+                            "value": cmd.state_factors[i].value,
+                        }
                     )
 
             planner_name = getattr(cmd, "planner_name", "")

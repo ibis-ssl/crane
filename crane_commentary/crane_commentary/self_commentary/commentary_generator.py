@@ -18,7 +18,9 @@ class CommentaryGenerator:
     def __init__(self, intent_tracker: IntentTracker):
         self._tracker = intent_tracker
 
-    def generate_commentary(self, changes: List[IntentChange], max_changes: int = 3) -> str:
+    def generate_commentary(
+        self, changes: List[IntentChange], max_changes: int = 3
+    ) -> str:
         """Generate self-commentary JSON from intent changes.
 
         Args:

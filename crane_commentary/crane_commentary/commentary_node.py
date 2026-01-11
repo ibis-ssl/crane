@@ -21,7 +21,13 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
-from crane_msgs.msg import PlaySituation, RonarEvent, WorldModel, RobotSelectResults, PositionCommands
+from crane_msgs.msg import (
+    PlaySituation,
+    RonarEvent,
+    WorldModel,
+    RobotSelectResults,
+    PositionCommands,
+)
 
 from crane_commentary.data import (
     generate_initial_context,
@@ -91,9 +97,7 @@ class CommentaryNode(Node):
             else:
                 instruction_filename = "system_instruction.md"
 
-            instruction_path = os.path.join(
-                pkg_share, "config", instruction_filename
-            )
+            instruction_path = os.path.join(pkg_share, "config", instruction_filename)
             if os.path.exists(instruction_path):
                 with open(instruction_path, "r", encoding="utf-8") as f:
                     system_instruction = f.read()
