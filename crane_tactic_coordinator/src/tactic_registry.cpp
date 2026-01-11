@@ -17,21 +17,21 @@ auto TacticRegistry::getOrCreatePlanner(
   const std::vector<TacticBase::SharedPtr> & prev_planners,
   const std::unordered_map<std::string, SessionParameterType> & params) -> TacticBase::SharedPtr
 {
-  // 新しいプランナーを生成
-  auto new_planner = generatePlanner(tactic_name, world_model, node);
+  // 前回のプランナーリストから名前で探す（新規生成を回避）
+  auto matched_planner = std::ranges::find_if(
+    prev_planners, [&tactic_name](const auto & planner) { return planner->name == tactic_name; });
 
-  // 前回のプランナーリストから同じ設定のプランナーを探す
-  auto matched_planner =
-    std::ranges::find_if(prev_planners, [&new_planner](const auto & prev_planner) {
-      return prev_planner->isSameConfiguration(new_planner.get());
-    });
-
-  // 見つかれば再利用、見つからなければ新規プランナーを返す
+  // 見つかれば再利用、見つからなければ新規生成
   TacticBase::SharedPtr result_planner;
   if (matched_planner != prev_planners.end()) {
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("TacticRegistry"), "タクティクス再利用: %s", tactic_name.c_str());
     result_planner = *matched_planner;
   } else {
-    result_planner = new_planner;
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("TacticRegistry"), "タクティクス新規生成: %s (prev_planners.size=%zu)",
+      tactic_name.c_str(), prev_planners.size());
+    result_planner = generatePlanner(tactic_name, world_model, node);
   }
 
   // パラメータを設定（新規・再利用どちらでも）
