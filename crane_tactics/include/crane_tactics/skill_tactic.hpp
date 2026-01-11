@@ -136,7 +136,8 @@ public:
 
   COMPOSITION_PUBLIC explicit BallNearByPositionerSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("BallNearByPositionerSkill", world_model)
+
+  : TacticBase("ball_nearby_positioner_skill", world_model)
   {
   }
 
@@ -154,7 +155,7 @@ public:
 
   COMPOSITION_PUBLIC explicit PlacementTargetNearByPositionerSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("PlacementTargetNearByPositionerSkill", world_model)
+  : TacticBase("placement_target_nearby_positioner_skill", world_model)
   {
   }
 

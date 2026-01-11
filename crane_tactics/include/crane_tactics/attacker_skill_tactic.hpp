@@ -33,7 +33,7 @@ public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit AttackerSkillTactic(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)
   : TacticBase("attacker_skill", world_model)
   {
   }
@@ -62,7 +62,7 @@ public:
       {
         auto polyline_builder = visualizer->polyline();
         for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
-          polyline_builder.addPoint(point);
+          (void)polyline_builder.addPoint(point);
         }
         polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
       }

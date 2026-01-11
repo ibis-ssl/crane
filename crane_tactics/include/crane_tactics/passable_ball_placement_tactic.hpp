@@ -30,7 +30,7 @@ public:
   {
   }
 
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+  auto calculatePositionCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
   {
     if (ball_placement) {
@@ -53,7 +53,7 @@ public:
   {
   }
 
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+  auto calculatePositionCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
   {
     if (placer) {

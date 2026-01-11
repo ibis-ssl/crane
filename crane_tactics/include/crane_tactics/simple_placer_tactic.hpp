@@ -259,7 +259,6 @@ public:
         .build();
 
       // 目標到達状態を可視化
-      uint8_t robot_id = cmd.robot_id;
       double distance =
         (Point(cmd.current_pose.x, cmd.current_pose.y) - Point(cmd.target_x, cmd.target_y)).norm();
 

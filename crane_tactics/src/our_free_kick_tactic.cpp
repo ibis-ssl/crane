@@ -13,7 +13,8 @@
 namespace crane
 {
 std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
-OurDirectFreeKickTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+OurDirectFreeKickTactic::calculatePositionCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::PositionCommand> robot_commands;
 
