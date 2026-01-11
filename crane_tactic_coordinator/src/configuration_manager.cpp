@@ -89,7 +89,8 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         if (session_node["max_robots"]) {
           session_capacity.max_robots = session_node["max_robots"].as<int>();
         } else {
-          session_capacity.max_robots = session_capacity.min_robots;  // デフォルト: min_robotsと同じ
+          session_capacity.max_robots =
+            session_capacity.min_robots;  // デフォルト: min_robotsと同じ
         }
 
         // バリデーション
@@ -110,7 +111,8 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         if (session_capacity.min_robots > session_capacity.max_robots) {
           RCLCPP_WARN(
             logger_,
-            "Invalid range for session '%s': min_robots (%d) > max_robots (%d). Adjusting min_robots to match max_robots.",
+            "Invalid range for session '%s': min_robots (%d) > max_robots (%d). Adjusting "
+            "min_robots to match max_robots.",
             session_capacity.session_name.c_str(), session_capacity.min_robots,
             session_capacity.max_robots);
           session_capacity.min_robots = session_capacity.max_robots;
