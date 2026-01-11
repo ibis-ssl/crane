@@ -77,10 +77,48 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       for (const auto & session_node : situation_data["sessions"]) {
         TacticSlot session_capacity;
         session_capacity.session_name = session_node["name"].as<std::string>();
-        session_capacity.selectable_robot_num = session_node["capacity"].as<int>();
 
-        ss << "\tNAME     : " << session_capacity.session_name << "\n";
-        ss << "\tCAPACITY : " << session_capacity.selectable_robot_num << "\n";
+        // min_robotsの読み込みとデフォルト値設定
+        if (session_node["min_robots"]) {
+          session_capacity.min_robots = session_node["min_robots"].as<int>();
+        } else {
+          session_capacity.min_robots = 1;  // デフォルト: 1
+        }
+
+        // max_robotsの読み込みとデフォルト値設定
+        if (session_node["max_robots"]) {
+          session_capacity.max_robots = session_node["max_robots"].as<int>();
+        } else {
+          session_capacity.max_robots = session_capacity.min_robots;  // デフォルト: min_robotsと同じ
+        }
+
+        // バリデーション
+        if (session_capacity.min_robots < 0) {
+          RCLCPP_ERROR(
+            logger_, "Invalid min_robots (%d) for session '%s': must be >= 0. Using 0.",
+            session_capacity.min_robots, session_capacity.session_name.c_str());
+          session_capacity.min_robots = 0;
+        }
+
+        if (session_capacity.max_robots <= 0) {
+          RCLCPP_WARN(
+            logger_, "Invalid max_robots (%d) for session '%s': must be > 0. Using 1.",
+            session_capacity.max_robots, session_capacity.session_name.c_str());
+          session_capacity.max_robots = 1;
+        }
+
+        if (session_capacity.min_robots > session_capacity.max_robots) {
+          RCLCPP_WARN(
+            logger_,
+            "Invalid range for session '%s': min_robots (%d) > max_robots (%d). Adjusting min_robots to match max_robots.",
+            session_capacity.session_name.c_str(), session_capacity.min_robots,
+            session_capacity.max_robots);
+          session_capacity.min_robots = session_capacity.max_robots;
+        }
+
+        ss << "\tNAME       : " << session_capacity.session_name << "\n";
+        ss << "\tMIN_ROBOTS : " << session_capacity.min_robots << "\n";
+        ss << "\tMAX_ROBOTS : " << session_capacity.max_robots << "\n";
 
         // params の読み込み（存在する場合のみ）
         if (session_node["params"]) {
