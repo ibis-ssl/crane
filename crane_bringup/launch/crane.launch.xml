@@ -90,7 +90,6 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- 機能フラグ -->
   <!-- ============================================================ -->
-  <arg name="speak" default="false" description="音声ノードの起動フラグ"/>
   <arg name="commentary" default="false" description="実況システムの起動フラグ"/>
   <arg name="record" default="true" description="rosbag記録フラグ"/>
   <arg name="ball_physics_config_path" default="grsim_ball_physics.yaml" description="ボール物理パラメータ設定ファイル名（configフォルダ内）"/>
@@ -234,11 +233,6 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- その他機能 -->
   <!-- ============================================================ -->
-  <!-- 音声出力（条件付き起動） -->
-  <group if="$(var speak)">
-    <node pkg="crane_speaker" exec="crane_speaker_node"/>
-  </group>
-
   <!-- 実況システム（条件付き起動） -->
   <group if="$(var commentary)">
     <node pkg="crane_commentary" exec="commentary_node.py" name="commentary_node" output="screen">
@@ -247,14 +241,6 @@ limitations under the License.
       <param name="mode" value="reflex_analyst"/>
     </node>
   </group>
-
-  <!-- 音声合成エンジン -->
-  <node pkg="speak_ros" exec="speak_ros_node">
-    <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
-    <param name="voicevox_plugin/speaker" value="13"/>
-    <param name="voicevox_plugin/speedScale" value="0.8"/>
-    <param name="voicevox_plugin/volumeScale" value="1.0"/>
-  </node>
 
   <!-- 診断情報の配信 -->
   <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node">

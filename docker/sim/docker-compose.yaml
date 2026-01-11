@@ -66,9 +66,3 @@ services:
 #      - VNC_GEOMETRY=1920x1080
 #    network_mode: host
 #    command: vnc
-
-  voicevox:
-    image: voicevox/voicevox_engine:cpu-latest
-    # image: voicevox/voicevox_engine:nvidia-latest
-    ports:
-      - 127.0.0.1:50021:50021

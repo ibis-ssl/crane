@@ -40,7 +40,7 @@
 | [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_gui](./crane_gui.md) | GUI（開発中止） | ⚫ 無効 | ✅ 作成済み | 完了 |
-| [crane_speaker](./crane_speaker.md) | 音声出力システム | 🟢 安定 | ✅ 作成済み | 完了 |
+
 | [crane_commentary](./crane_commentary.md) | Gemini AI リアルタイム実況 | 🔴 高活動 | ✅ 新規作成 | 2026-01 |
 
 ### 🎯 Session系パッケージ群 (2/2) - 高優先度
