@@ -58,6 +58,13 @@ public:
     };
   }
 
+  int getDesiredRobotNumber(int /* min_robots */, int /* max_robots */) const override
+  {
+    // 危険な敵の数に基づいてロボット数を決定
+    auto danger_enemies = getDangerEnemies(world_model);
+    return static_cast<int>(danger_enemies.size());
+  }
+
 private:
   auto assignMarkingTarget(
     uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)

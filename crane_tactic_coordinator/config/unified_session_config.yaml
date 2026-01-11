@@ -1,170 +1,174 @@
 situations:
   HALT:
     description: HALT
-    sessions: []
+    sessions:
+      - name: waiter
+        max_robots: 20
   INPLAY:
     description: INPLAY
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: emplace_robot
-        capacity: 1
+        max_robots: 1
       - name: attacker_skill
-        capacity: 1
+        max_robots: 1
       - name: pass_receive
-        capacity: 1
+        max_robots: 1
       - name: defender
-        capacity: 2
+        max_robots: 2
       - name: second_threat_defender
-        capacity: 1
+        max_robots: 1
       - name: sub_attacker_skill
-        capacity: 1
+        max_robots: 1
       - name: marker
-        capacity: 3
+        max_robots: 3
       - name: forward
-        capacity: 20
+        max_robots: 20
 
   OUR_BALL_PLACEMENT:
     description: OUR_BALL_PLACEMENT
     sessions:
       - name: ball_placement_skill
-        capacity: 1
+        max_robots: 1
       - name: ball_placement_avoidance
-        capacity: 20
+        max_robots: 20
   OUR_FREE_KICK:
     description: OUR_FREE_KICK
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: attacker_skill
-        capacity: 1
+        max_robots: 1
       - name: pass_receive
-        capacity: 1
+        max_robots: 1
       - name: defender
-        capacity: 2
+        max_robots: 2
       - name: marker
-        capacity: 2
+        max_robots: 2
       - name: forward
-        capacity: 20
+        max_robots: 20
   OUR_KICKOFF_START:
     description: OUR_KICKOFF_START
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: simple_kickoff
-        capacity: 1
+        max_robots: 1
   OUR_PENALTY_KICK:
     description: OUR_PENALTY_KICK
     sessions:
       - name: our_penalty_kick
-        capacity: 20
+        max_robots: 20
   PRE_KICK_OFF:
     description: PRE_KICK_OFF
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: wing_formation
-        capacity: 20
+        max_robots: 20
   STOP:
     description: STOP
     sessions:
       - name: emplace_robot
-        capacity: 1
+        max_robots: 1
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: defender
-        capacity: 2
+        max_robots: 3
       - name: second_threat_defender
-        capacity: 1
+        max_robots: 1
       - name: ball_nearby_positioner_skill
-        capacity: 1
+        max_robots: 1
       - name: marker
-        capacity: 2
+        max_robots: 2
       - name: forward
-        capacity: 20
+        max_robots: 20
   TEST:
     description: TEST
     sessions:
       - name: test
-        capacity: 1
+        max_robots: 1
+      - name: waiter
+        max_robots: 20
   THEIR_BALL_PLACEMENT:
     description: THEIR_BALL_PLACEMENT
     sessions:
       - name: defender
-        capacity: 2
+        max_robots: 2
       - name: ball_placement_avoidance
-        capacity: 20
+        max_robots: 20
   THEIR_FREE_KICK:
     description: THEIR_FREE_KICK
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: defender
-        capacity: 2
+        max_robots: 2
       - name: second_threat_defender
-        capacity: 1
+        max_robots: 1
       - name: ball_nearby_positioner_skill
-        capacity: 1
+        max_robots: 1
       - name: marker
-        capacity: 5
+        max_robots: 5
       - name: forward
-        capacity: 20
+        max_robots: 20
   THEIR_PENALTY_KICK:
     description: THEIR_PENALTY_KICK
     sessions:
       - name: their_penalty_kick
-        capacity: 20
+        max_robots: 20
   BALL_CALIBRATION_DATA_COLLECTION:
     description: Ball calibration data collection using single kicker robot
     sessions:
       - name: ball_calibration_data_collector
-        capacity: 1
+        max_robots: 1
       - name: emplace_robot
-        capacity: 19
+        max_robots: 19
   CENTER_STOP_KICK:
     description: Center stop kick testing using CenterStopKickTactic for stop distance
       kick verification
     sessions:
       - name: center_stop_kick
-        capacity: 1
+        max_robots: 1
       - name: emplace_robot
-        capacity: 19
+        max_robots: 19
   emplace_robot:
     description: emplace_robot
     sessions:
       - name: emplace_robot
-        capacity: 100
+        max_robots: 100
   formation:
     description: formation
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
       - name: wing_formation
-        capacity: 20
+        max_robots: 20
   goalie:
     description: for goalie
     sessions:
       - name: goalie_skill
-        capacity: 1
+        max_robots: 1
   ibis_formation:
     description: ibisのi/キーパーなし
     sessions:
       - name: ibis_formation
-        capacity: 20
+        max_robots: 20
   pass_placement:
     description: pass_placement
     sessions:
       - name: passable_ball_placement
-        capacity: 1
+        max_robots: 1
       - name: placement_target_placer
-        capacity: 1
+        max_robots: 1
       - name: ball_placement_avoidance
-        capacity: 20
+        max_robots: 20
   wing_formation:
     description: wing/キーパーなし
     sessions:
       - name: wing_formation
-        capacity: 20
+        max_robots: 20
 events:
   - name: HALT
     situation: HALT

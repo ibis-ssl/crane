@@ -52,7 +52,7 @@ auto RobotAllocator::allocate(
   std::vector<TacticRequirement> requirements;
   int priority = 0;
   for (const auto & session_capacity : session_capacities) {
-    if (session_capacity.selectable_robot_num <= 0) {
+    if (session_capacity.max_robots <= 0) {
       continue;
     }
 
@@ -65,9 +65,16 @@ auto RobotAllocator::allocate(
     auto suitability_func = tactic->getRobotSuitabilityFunc();
     bool is_hard = tactic->isHardConstraint();
 
+    // 動的ロボット数を取得してクランプ
+    int desired =
+      tactic->getDesiredRobotNumber(session_capacity.min_robots, session_capacity.max_robots);
+    int effective_max =
+      std::clamp(desired, session_capacity.min_robots, session_capacity.max_robots);
+
     requirements.emplace_back(
-      session_capacity.session_name, priority++, 1,  // min_robots
-      session_capacity.selectable_robot_num,         // max_robots
+      session_capacity.session_name, priority++,
+      session_capacity.min_robots,  // min_robots
+      effective_max,                // max_robots（動的に調整）
       suitability_func, is_hard);
   }
 

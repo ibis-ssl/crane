@@ -188,6 +188,18 @@ public:
    */
   virtual bool isHardConstraint() const { return false; }
 
+  /**
+   * @brief 現在の状況に基づく推奨ロボット数を返す（動的ロボット割当用）
+   *
+   * Tacticが状況に応じて必要なロボット数を動的に決定するためのメソッド。
+   * 返される値は呼び出し側でmin_robots〜max_robotsの範囲にクランプされる。
+   *
+   * @param min_robots YAML設定の最小ロボット数
+   * @param max_robots YAML設定の最大ロボット数
+   * @return 推奨ロボット数。デフォルトはmax_robots
+   */
+  virtual int getDesiredRobotNumber(int min_robots, int max_robots) const { return max_robots; }
+
 protected:
   /**
    * @brief ロボット割り当てが変更された時に呼ばれるコールバック
