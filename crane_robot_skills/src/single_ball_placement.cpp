@@ -156,8 +156,17 @@ void SingleBallPlacement::initialize()
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-      // 500ms以上ボールに触れたらバック
-      return robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+
+      // ボールセンサーが利用可能な場合はその反応も確認する
+      if (robot()->getBallSensorAvailable(now, rclcpp::Duration::from_seconds(0.1))) {
+        // センサーが反応していて、かつ500ms以上接触している
+        return robot()->ball_sensor &&
+               robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
+      } else {
+        // センサーが利用不可の場合は接触時間のみで判定（フォールバック）
+        return robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
+      }
     });
 
   // 失敗の場合は最初に戻る
@@ -319,18 +328,25 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
       static int count = 0;
-      if (
-        robot()->getBallSensorAvailable(now, rclcpp::Duration::from_seconds(0.1)) &&
-        robot()->ball_sensor) {
-        if (++count > 2) {
-          count = 0;
-          return true;
+
+      // ボールセンサーが利用可能な場合は必ずセンサー反応を待つ
+      if (robot()->getBallSensorAvailable(now, rclcpp::Duration::from_seconds(0.1))) {
+        // センサーが反応している場合のみカウント
+        if (robot()->ball_sensor) {
+          if (++count > 2) {
+            count = 0;
+            return true;
+          } else {
+            return false;
+          }
         } else {
+          // センサーは利用可能だが反応していない → まだ接触していない
+          count = 0;
           return false;
         }
       } else {
+        // センサーが利用不可の場合のみ距離で判定（フォールバック）
         count = 0;
-        // ボールセンサが動いていないとき
         return robot()->getDistance(world_model()->ball().pos) < 0.15;
       }
     });
