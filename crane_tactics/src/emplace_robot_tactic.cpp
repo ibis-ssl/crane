@@ -17,12 +17,12 @@ auto EmplaceRobotTactic::findAvailableSoundFile() -> std::string
 {
   // 複数の候補パスを試す（優先順位順）
   std::vector<std::string> candidates = {
+    "/usr/share/sounds/sound-icons/trumpet-12.wav",
     "/usr/share/sounds/freedesktop/stereo/dialog-warning.oga",
     "/usr/share/sounds/freedesktop/stereo/bell.oga",
     "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
     "/usr/share/sounds/ubuntu/stereo/dialog-warning.ogg",
     "/usr/share/sounds/ubuntu/stereo/bell.ogg",
-    "/usr/share/sounds/sound-icons/trumpet-12.wav",
     "/usr/share/sounds/sound-icons/canary-long.wav"};
 
   for (const auto & path : candidates) {
