@@ -44,6 +44,9 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
   STOP_STATE_MAX_VELOCITY = node.get_parameter("stop_state_max_velocity").as_double();
 
+  node.declare_parameter("field_boundary_offset", FIELD_BOUNDARY_OFFSET);
+  FIELD_BOUNDARY_OFFSET = node.get_parameter("field_boundary_offset").as_double();
+
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -337,13 +340,62 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::PositionCommands & msg
       continue;  // この場合は処理をスキップ
     }
 
-    // 3つの独立した回避ロジックを適用
+    // 4つの独立した回避ロジックを適用
+    adjustForFieldBoundary(target_pos, current_pos, command);
     adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
     adjustForBallAvoidance(target_pos, current_pos, command);
     adjustForPlacementAvoidance(target_pos, current_pos, command);
 
     command.target_x = target_pos.x();
     command.target_y = target_pos.y();
+  }
+}
+
+auto RVO2Planner::adjustForFieldBoundary(
+  Point & target_pos, const Point & current_pos,
+  const crane_msgs::msg::PositionCommand & command) const -> void
+{
+  const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
+  const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
+
+  // フィールド境界のBox
+  Box field_box;
+  field_box.min_corner() << -max_x, -max_y;
+  field_box.max_corner() << max_x, max_y;
+
+  // 目標位置がフィールド内ならそのまま
+  if (isInBox(field_box, target_pos)) {
+    return;
+  }
+
+  // 現在位置から目標位置への線分
+  Segment move_line(current_pos, target_pos);
+
+  // フィールド境界の4辺
+  Segment top_edge(Point(-max_x, max_y), Point(max_x, max_y));
+  Segment bottom_edge(Point(-max_x, -max_y), Point(max_x, -max_y));
+  Segment right_edge(Point(max_x, -max_y), Point(max_x, max_y));
+  Segment left_edge(Point(-max_x, -max_y), Point(-max_x, max_y));
+
+  // 各辺との交点を計算
+  std::vector<Point> all_intersections;
+  for (const auto & edge : {top_edge, bottom_edge, right_edge, left_edge}) {
+    auto intersections = getIntersections(move_line, edge);
+    all_intersections.insert(all_intersections.end(), intersections.begin(), intersections.end());
+  }
+
+  // 現在位置に最も近い交点を選択（最初に交差する点）
+  if (!all_intersections.empty()) {
+    auto closest = std::min_element(
+      all_intersections.begin(), all_intersections.end(),
+      [&current_pos](const Point & a, const Point & b) {
+        return bg::distance(a, current_pos) < bg::distance(b, current_pos);
+      });
+    target_pos = *closest;
+  } else {
+    // 交点がない場合（現在位置がフィールド外など）、単純なクランプにフォールバック
+    target_pos.x() = std::clamp(target_pos.x(), -max_x, max_x);
+    target_pos.y() = std::clamp(target_pos.y(), -max_y, max_y);
   }
 }
 
