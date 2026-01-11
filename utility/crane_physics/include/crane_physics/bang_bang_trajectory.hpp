@@ -304,6 +304,7 @@ class BangBangTrajectory2D
 public:
   BangBangTrajectory1D x;
   BangBangTrajectory1D y;
+  double max_vel = 0.0;
 
   /// 二分探索の初期刻み幅
   static constexpr double BINARY_SEARCH_INITIAL_INCREMENT = M_PI / 8.0;
@@ -323,7 +324,12 @@ public:
 
   [[nodiscard]] Eigen::Vector2d getVelocity(const double t) const noexcept
   {
-    return Eigen::Vector2d(x.getVelocity(t), y.getVelocity(t));
+    Eigen::Vector2d vel(x.getVelocity(t), y.getVelocity(t));
+    const double vel_norm_sq = vel.squaredNorm();
+    if (max_vel > 0.0 && vel_norm_sq > max_vel * max_vel) {
+      return vel * (max_vel / std::sqrt(vel_norm_sq));
+    }
+    return vel;
   }
 
   [[nodiscard]] Eigen::Vector2d getAcceleration(const double t) const noexcept
@@ -349,6 +355,7 @@ public:
     const Eigen::Vector2d & s0, const Eigen::Vector2d & s1, const Eigen::Vector2d & v0,
     const double vmax, const double acc, const double accuracy = DEFAULT_SYNC_ACCURACY)
   {
+    max_vel = vmax;
     const double s0x = s0.x();
     const double s0y = s0.y();
     const double s1x = s1.x();
