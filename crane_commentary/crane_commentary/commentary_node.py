@@ -21,7 +21,13 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
-from crane_msgs.msg import PlaySituation, RonarEvent, WorldModel
+from crane_msgs.msg import (
+    PlaySituation,
+    RonarEvent,
+    WorldModel,
+    RobotSelectResults,
+    PositionCommands,
+)
 
 from crane_commentary.data import (
     generate_initial_context,
@@ -33,6 +39,7 @@ from crane_commentary.statler.world_model_reader import CommentaryMode
 from crane_commentary.gemini import GeminiLiveApiClient, FunctionHandler
 from crane_commentary.gemini.live_api_client import GeminiConfig
 from crane_commentary.audio import PcmAudioOutput
+from crane_commentary.self_commentary import IntentTracker, CommentaryGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +62,7 @@ class CommentaryNode(Node):
         self.declare_parameter("audio_device", "")
         self.declare_parameter("writer_update_rate", 1.0)
         self.declare_parameter("analyst_silence_threshold", 5.0)
+        self.declare_parameter("mode", "reflex_analyst")
 
         # Get parameters
         api_key = self.get_parameter("gemini_api_key").value or os.environ.get(
@@ -65,6 +73,7 @@ class CommentaryNode(Node):
         audio_device = self.get_parameter("audio_device").value or None
         writer_rate = self.get_parameter("writer_update_rate").value
         self._analyst_threshold = self.get_parameter("analyst_silence_threshold").value
+        self._mode = self.get_parameter("mode").value
 
         # Initialize Statler components
         self._writer = WorldModelWriter()
@@ -82,14 +91,18 @@ class CommentaryNode(Node):
         system_instruction = ""
         try:
             pkg_share = get_package_share_directory("crane_commentary")
-            instruction_path = os.path.join(
-                pkg_share, "config", "system_instruction.md"
-            )
+            # Choose system instruction based on mode
+            if self._mode == "self_commentary":
+                instruction_filename = "system_instruction_self.md"
+            else:
+                instruction_filename = "system_instruction.md"
+
+            instruction_path = os.path.join(pkg_share, "config", instruction_filename)
             if os.path.exists(instruction_path):
                 with open(instruction_path, "r", encoding="utf-8") as f:
                     system_instruction = f.read()
                 self.get_logger().info(
-                    f"Loaded system instruction from {instruction_path}"
+                    f"Loaded system instruction from {instruction_path} (mode: {self._mode})"
                 )
             else:
                 self.get_logger().warning(
@@ -159,6 +172,33 @@ class CommentaryNode(Node):
             self._on_world_model,
             qos,
         )
+
+        # Self-commentary mode initialization
+        if self._mode == "self_commentary":
+            self._intent_tracker = IntentTracker()
+            self._commentary_generator = CommentaryGenerator(self._intent_tracker)
+
+            # Subscribe to robot selection and control targets
+            self._robot_select_sub = self.create_subscription(
+                RobotSelectResults,
+                "/robot_select_results",
+                self._on_robot_select_results,
+                qos,
+            )
+            self._control_targets_sub = self.create_subscription(
+                PositionCommands,
+                "/control_targets",
+                self._on_control_targets,
+                qos,
+            )
+
+            # Self-commentary timer (2 seconds interval)
+            self._self_commentary_timer = self.create_timer(
+                2.0,
+                self._self_commentary_callback,
+            )
+
+            self.get_logger().info("Self-commentary mode enabled")
 
         # Timers
         self._writer_timer = self.create_timer(
@@ -523,6 +563,40 @@ class CommentaryNode(Node):
     def _on_audio_received(self, pcm_data: bytes) -> None:
         """Handle received audio from Gemini API."""
         self._audio_output.play(pcm_data)
+
+    # ========== Self-commentary mode callbacks ==========
+
+    def _on_robot_select_results(self, msg: RobotSelectResults) -> None:
+        """Handle incoming RobotSelectResults messages (self-commentary mode)."""
+        if self._mode != "self_commentary":
+            return
+
+        self._intent_tracker.update_from_robot_select_results(msg)
+
+    def _on_control_targets(self, msg: PositionCommands) -> None:
+        """Handle incoming PositionCommands messages (self-commentary mode)."""
+        if self._mode != "self_commentary":
+            return
+
+        self._intent_tracker.update_from_control_targets(msg)
+
+    def _self_commentary_callback(self) -> None:
+        """Periodic callback for self-commentary mode."""
+        if not self._connected:
+            return
+
+        # Detect intent changes
+        changes = self._intent_tracker.detect_changes()
+
+        if not changes:
+            return
+
+        # Generate commentary JSON
+        json_payload = self._commentary_generator.generate_commentary(changes)
+
+        if json_payload:
+            self.get_logger().info(f"Self-commentary: {len(changes)} changes detected")
+            self._send_to_gemini(json_payload)
 
 
 def main(args=None):
