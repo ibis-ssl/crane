@@ -13,7 +13,7 @@ namespace crane::skills
 {
 namespace
 {
-constexpr double GOAL_ANGLE_THRESHOLD_DEG = 5.0;
+constexpr double GOAL_ANGLE_THRESHOLD_DEG = 3.0;
 constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
 constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 2.0;
 constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
