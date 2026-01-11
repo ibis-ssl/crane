@@ -50,9 +50,6 @@ Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`か
 
 ### ユーティリティタクティック
 
-- **SimpleAITactic**: デバッグ・テスト用バイパス戦略
-  - 外部（Action）からの直接スキル指定
-  - パラメータの動的変更対応
 - **WaiterTactic**: 待機戦略
 - **SimplePlacerTactic**: エリア配置戦略
 - **BallCalibrationDataCollectorTactic**: キャリブレーション用

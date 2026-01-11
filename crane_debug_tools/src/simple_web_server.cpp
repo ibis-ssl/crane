@@ -7,22 +7,17 @@
 #include <algorithm>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cctype>
-#include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <filesystem>
 #include <fstream>
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <sstream>
 #include <thread>
 
 class SimpleWebServer : public rclcpp::Node
 {
 public:
-  using SkillExecutionAction = crane_msgs::action::SkillExecution;
-  using SkillExecutionClient = rclcpp_action::Client<SkillExecutionAction>;
-
   SimpleWebServer() : Node("simple_web_server")
   {
     this->declare_parameter("port", 8080);
@@ -36,10 +31,6 @@ public:
       RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());
       web_root_ = "./web";  // fallback to local directory
     }
-
-    // Initialize action client
-    skill_client_ =
-      rclcpp_action::create_client<SkillExecutionAction>(this, "/simple_ai/skill_execution");
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
@@ -78,7 +69,6 @@ private:
   }
 
   // ROS components
-  SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
 

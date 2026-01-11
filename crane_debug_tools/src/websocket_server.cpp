@@ -14,7 +14,6 @@
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
-#include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
@@ -25,7 +24,6 @@
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <set>
 #include <sstream>
 #include <std_msgs/msg/string.hpp>
@@ -234,9 +232,6 @@ private:
 class WebSocketDebugServer : public rclcpp::Node
 {
 public:
-  using SkillExecutionAction = crane_msgs::action::SkillExecution;
-  using SkillExecutionClient = rclcpp_action::Client<SkillExecutionAction>;
-
   WebSocketDebugServer() : Node("websocket_debug_server"), port_(8090), websocket_port_(8091)
   {
     this->declare_parameter("port", 8090);
@@ -252,10 +247,6 @@ public:
       RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());
       web_root_ = "./web";
     }
-
-    // Initialize action client
-    skill_client_ =
-      rclcpp_action::create_client<SkillExecutionAction>(this, "/simple_ai/skill_execution");
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
@@ -281,10 +272,6 @@ public:
         [this](const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg) {
           broadcastSvgUpdates(msg);
         });
-
-    // Initialize publisher for session injection
-    session_injection_pub_ =
-      this->create_publisher<std_msgs::msg::String>("/session_injection", 10);
 
     // Start servers
     startServers();
@@ -375,9 +362,6 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "WebSocket connection established");
 
-    // Send available skills list
-    sendAvailableSkills(connection);
-
     // Message processing loop
     while (connection->isConnected() && running_) {
       std::string message = connection->receiveMessage();
@@ -405,12 +389,8 @@ private:
       json request = json::parse(message);
       std::string type = request["type"];
 
-      if (type == "execute_skill") {
-        handleSkillExecution(connection, request);
-      } else if (type == "get_skills") {
-        sendAvailableSkills(connection);
-      } else if (type == "activate_simple_ai") {
-        activateSimpleAI(connection);
+      if (type == "get_world_model") {
+        // World model is automatically broadcasted, but we can send current state if needed
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
         connection->sendMessage(error_response.dump());
@@ -420,104 +400,6 @@ private:
         {"type", "error"}, {"message", "Failed to parse request: " + std::string(e.what())}};
       connection->sendMessage(error_response.dump());
     }
-  }
-
-  void handleSkillExecution(std::shared_ptr<WebSocketConnection> connection, const json & request)
-  {
-    try {
-      auto goal_msg = SkillExecutionAction::Goal();
-      goal_msg.robot_id = request["robot_id"];
-      goal_msg.name = request["skill_name"];
-
-      // Parse parameters
-      if (request.contains("parameters")) {
-        for (const auto & param : request["parameters"]) {
-          std::string name = param["name"];
-          std::string value = param["value"];
-
-          // Auto-detect parameter type and add to appropriate array
-          if (isBooleanString(value)) {
-            crane_msgs::msg::NamedBool bool_param;
-            bool_param.name = name;
-            bool_param.value = parseBool(value);
-            goal_msg.parameter.bool_values.push_back(bool_param);
-          } else if (isIntegerString(value)) {
-            crane_msgs::msg::NamedInt int_param;
-            int_param.name = name;
-            int_param.value = std::stoi(value);
-            goal_msg.parameter.int_values.push_back(int_param);
-          } else if (isFloatString(value)) {
-            crane_msgs::msg::NamedFloat float_param;
-            float_param.name = name;
-            float_param.value = std::stof(value);
-            goal_msg.parameter.float_values.push_back(float_param);
-          } else {
-            crane_msgs::msg::NamedString string_param;
-            string_param.name = name;
-            string_param.value = value;
-            goal_msg.parameter.string_values.push_back(string_param);
-          }
-        }
-      }
-
-      // Send goal to action server
-      if (!skill_client_->wait_for_action_server(std::chrono::milliseconds(100))) {
-        json error_response = {
-          {"type", "error"}, {"message", "Skill execution action server not available"}};
-        connection->sendMessage(error_response.dump());
-        return;
-      }
-
-      auto send_goal_options = rclcpp_action::Client<SkillExecutionAction>::SendGoalOptions();
-
-      send_goal_options.goal_response_callback =
-        [this, connection](const SkillExecutionClient::GoalHandle::SharedPtr & goal_handle) {
-          json response = {{"type", "skill_goal_response"}, {"accepted", goal_handle != nullptr}};
-          connection->sendMessage(response.dump());
-        };
-
-      send_goal_options.feedback_callback =
-        [this, connection](
-          const SkillExecutionClient::GoalHandle::SharedPtr &,
-          const std::shared_ptr<const SkillExecutionAction::Feedback> & feedback) {
-          json response = {{"type", "skill_feedback"}, {"message", feedback->message}};
-          connection->sendMessage(response.dump());
-        };
-
-      send_goal_options.result_callback =
-        [this, connection, robot_id = goal_msg.robot_id](
-          const SkillExecutionClient::GoalHandle::WrappedResult & result) {
-          json response = {
-            {"type", "skill_result"},
-            {"code", static_cast<int>(result.code)},
-            {"result", result.result ? result.result->result : 0},
-            {"robot_id", robot_id}};
-          connection->sendMessage(response.dump());
-        };
-
-      skill_client_->async_send_goal(goal_msg, send_goal_options);
-
-      json ack_response = {
-        {"type", "skill_execution_started"},
-        {"skill_name", goal_msg.name},
-        {"robot_id", goal_msg.robot_id}};
-      connection->sendMessage(ack_response.dump());
-    } catch (const std::exception & e) {
-      json error_response = {
-        {"type", "error"}, {"message", "Failed to execute skill: " + std::string(e.what())}};
-      connection->sendMessage(error_response.dump());
-    }
-  }
-
-  void sendAvailableSkills(std::shared_ptr<WebSocketConnection> connection)
-  {
-    json skills_list = {
-      {"type", "available_skills"},
-      {"skills",
-       {"Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-        "SingleBallPlacement", "GoalKick", "SimpleKickOff", "Marker", "EmplaceRobot", "Forward",
-        "BallNearbyPositioner", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"}}};
-    connection->sendMessage(skills_list.dump());
   }
 
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
@@ -720,70 +602,13 @@ private:
     }
   }
 
-  void activateSimpleAI(std::shared_ptr<WebSocketConnection> connection)
-  {
-    auto msg = std_msgs::msg::String();
-    msg.data = "simple_ai";
-    session_injection_pub_->publish(msg);
-
-    json response = {{"type", "simple_ai_activated"}, {"message", "SimpleAI session activated"}};
-    connection->sendMessage(response.dump());
-
-    RCLCPP_INFO(this->get_logger(), "Activated SimpleAI session via session injection");
-  }
-
-  // Parameter type detection functions
-  bool isBooleanString(const std::string & value) const
-  {
-    std::string lower_value = value;
-    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
-    return lower_value == "true" || lower_value == "false";
-  }
-
-  bool parseBool(const std::string & value) const
-  {
-    std::string lower_value = value;
-    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
-    return lower_value == "true";
-  }
-
-  bool isIntegerString(const std::string & value) const
-  {
-    if (value.empty()) return false;
-
-    size_t start = 0;
-    if (value[0] == '-' || value[0] == '+') start = 1;
-
-    if (start >= value.length()) return false;
-
-    for (size_t i = start; i < value.length(); ++i) {
-      if (!std::isdigit(value[i])) return false;
-    }
-    return true;
-  }
-
-  bool isFloatString(const std::string & value) const
-  {
-    if (value.empty()) return false;
-
-    try {
-      size_t pos;
-      (void)std::stof(value, &pos);
-      return pos == value.length() && value.find('.') != std::string::npos;
-    } catch (...) {
-      return false;
-    }
-  }
-
   // ROS components
-  SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgSnapshot>::SharedPtr
     aggregated_svgs_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgUpdates>::SharedPtr
     visualizer_svgs_sub_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
 
   // Server components
   std::thread http_thread_;

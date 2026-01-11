@@ -53,11 +53,6 @@ Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パ�
 
 ### crane_tactics との連携
 
-**SimpleAITactic**:
-
-- 最もシンプルな攻撃戦略実装
-- ボールに最も近いロボットに `Attacker` スキルを割り当て
-
 **FormationTactic**:
 
 - 攻撃時のロボット配置（FW, MF等）を管理

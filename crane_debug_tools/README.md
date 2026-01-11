@@ -28,9 +28,6 @@ crane_skill multi Attacker 0,1,2
 
 # シナリオファイルを実行
 crane_skill scenario test_sequence.json
-
-# インタラクティブモード
-ros2 run crane_debug_tools crane_skill_cli
 ```
 
 ### Web インターフェース（オプション）

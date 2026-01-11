@@ -24,7 +24,6 @@
 #include <crane_tactics/passable_ball_placement_tactic.hpp>
 #include <crane_tactics/placement_avoidance_tactic.hpp>
 #include <crane_tactics/second_threat_defender_tactic.hpp>
-#include <crane_tactics/simple_ai_tactic.hpp>
 #include <crane_tactics/simple_placer_tactic.hpp>
 #include <crane_tactics/skill_tactic.hpp>
 #include <crane_tactics/test_tactic.hpp>
@@ -66,7 +65,6 @@ auto getTacticFactoryMap() -> const std::unordered_map<std::string, TacticFactor
     PLANNER_ENTRY("pass_receive", PassReceiverTactic),
     PLANNER_ENTRY("their_penalty_kick", TheirPenaltyKickTactic),
     PLANNER_ENTRY("our_direct_free", OurDirectFreeKickTactic),
-    PLANNER_ENTRY("simple_ai", SimpleAITactic),
     PLANNER_ENTRY("simple_kickoff", SimpleKickOffSkillTactic),
     PLANNER_ENTRY("simple_placer", SimplePlacerTactic),
     PLANNER_ENTRY("test", TestTactic),
