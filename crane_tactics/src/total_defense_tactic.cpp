@@ -157,6 +157,9 @@ TotalDefenseTactic::calculatePositionCommand(const std::vector<RobotIdentifier> 
   // 残りのロボットをMarkerに割り当て
   if (not marker_robot_ids.empty()) {
     assignMarkingTargets(marker_robot_ids);
+  } else {
+    std::lock_guard lock(markers_mutex);
+    markers.clear();
   }
 
   // Markerの実行
