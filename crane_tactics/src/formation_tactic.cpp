@@ -93,9 +93,10 @@ FormationTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & r
 
   auto robot_commands = assignRobotsToPoints(
     robots, formation_points, "formation_planner", world_model->getOurGoalCenter(),
-    [target_theta](std::shared_ptr<PositionCommandWrapper> & command) {
+    [this, target_theta](std::shared_ptr<PositionCommandWrapper> & command) {
       // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
+      command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
     });
   return {TacticBase::Status::RUNNING, robot_commands};
 }

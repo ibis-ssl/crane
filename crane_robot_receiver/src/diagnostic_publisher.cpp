@@ -232,11 +232,11 @@ auto RobotData::batteryDiagnosticCallback(
       stat.summary(level, message);
       removeError("battery");
     } else {
-      // 実機環境ではERROR
+      // 実機環境ではWARN（フィードバックなしでもVision/Trackerで制御可能）
       std::string message = "No robot feedback received";
-      int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+      int level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
       stat.summary(level, message);
-      updateErrorMap("battery", message, level, now_time);
+      removeError("battery");
     }
   }
 }
@@ -276,11 +276,10 @@ auto RobotData::robotErrorDiagnosticCallback(
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, message);
       removeError("robot_error");
     } else {
-      // 実機環境ではERROR
+      // 実機環境ではWARN（フィードバックなしでもVision/Trackerで制御可能）
       std::string message = "No robot feedback received";
-      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, message);
-      updateErrorMap(
-        "robot_error", message, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
+      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, message);
+      removeError("robot_error");
     }
   }
 }
