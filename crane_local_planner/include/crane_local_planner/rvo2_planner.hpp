@@ -51,6 +51,10 @@ private:
     Point & target_pos, const Point & current_pos,
     const crane_msgs::msg::PositionCommand & command) const -> void;
 
+  auto adjustForFieldBoundary(
+    Point & target_pos, const Point & current_pos,
+    const crane_msgs::msg::PositionCommand & command) const -> void;
+
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   crane_msgs::msg::PositionCommands pre_commands;
@@ -70,6 +74,7 @@ private:
   double MAX_VEL = 5.0;
   double ACCELERATION = 4.0;
   double STOP_STATE_MAX_VELOCITY = 1.0;
+  double FIELD_BOUNDARY_OFFSET = 0.2;
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 
