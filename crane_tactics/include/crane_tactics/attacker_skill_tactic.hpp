@@ -33,7 +33,7 @@ public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit AttackerSkillTactic(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)
   : TacticBase("attacker_skill", world_model)
   {
   }
