@@ -56,7 +56,7 @@ auto EmplaceRobotTactic::getRobotSuitabilityFunc() const
   return [wm](const std::shared_ptr<RobotInfo> & robot) {
     // ゴールキーパーは退場させにくくする
     if (robot->id == wm->getOurGoalieId()) {
-      return 100.0;
+      return 10000.0;
     }
 
     // モーター温度の最大値を計算
@@ -70,9 +70,9 @@ auto EmplaceRobotTactic::getRobotSuitabilityFunc() const
     // 温度が高いほど小さい値を返す（逆数）
     // 温度が0の場合は大きな値を返して退場優先度を下げる
     if (max_temp > 0.0f) {
-      return 1.0 / max_temp;
+      return 1000.0 / max_temp;
     }
-    return 99.0;  // 温度情報がない場合は退場させにくい
+    return 1000.0;  // 温度情報がない場合は退場させにくい
   };
 }
 
