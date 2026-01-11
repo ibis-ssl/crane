@@ -373,11 +373,9 @@ void SingleBallPlacement::initialize()
     }();
 
     // 目標までの距離に応じた速度制限を計算（元の速度モードロジックを再利用）
-    double max_vel = [&]() {
-      double dist = (placement_target - robot()->pose.pos).norm();
-      double acc = 0.5;
-      return std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
-    }();
+    double dist = (placement_target - robot()->pose.pos).norm();
+    double acc = 0.5;
+    double max_vel = std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
     command->setTargetPosition(placement_target);
     command->lookAt(placement_target);
     command->disableAnyAreaAvoidance();
@@ -385,11 +383,12 @@ void SingleBallPlacement::initialize()
     command->setMaxAcceleration("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
     command->setOmegaLimit(0.3);
     // 開始時にボールに接していることが前提にある
-    if (not robot()->ball_contact.findPastContact(1.0)) {
-      // 1秒以上ボールが離れたら失敗
-      return skill_status = Status::FAILURE;
-    } else if ((world_model()->ball().pos - placement_target).norm() < 0.10) {
+    if ((world_model()->ball().pos - placement_target).norm() < 0.10) {
       // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
+      return skill_status = Status::SUCCESS;
+    } else if (dist < 0.2 && robot()->ball_sensor == true) {
+      // ・ビジョンから消えている & 目標位置にいる & ボールセンサーが反応している
+      // 離れてみて成功しているか確認する
       return skill_status = Status::SUCCESS;
     } else {
       command->dribble(0.2);
