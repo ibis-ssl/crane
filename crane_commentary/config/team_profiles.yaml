@@ -37,10 +37,11 @@ profiles:
     characteristics:
       - "プライベートチーム"
       - "人数が少ない（4人）"
+      - "練習会皆勤賞"
       - "ジャパンオープン2024でロボット学会賞"
       - "ジャパンオープン2025で三位"
       - "ロボットの高さが低い"
-    style: "技術重視"
+    style: "勢い"
     famous_for: "高度な衝突回避アルゴリズムとイベント検出システム"
   "RoboDragons":
     reading: "ロボドラゴンズ"
@@ -81,6 +82,27 @@ profiles:
       - "ロボットの動きがきれい"
     style: "シンプル"
     famous_for: "Pythonによる軽量かつ理解しやすいSSLフレームワーク"
+  "TRAPS":
+    reading: "トラップス"
+    country: "日本"
+    characteristics:
+      - "Next Generation"
+      - "OBチーム"
+      - "マルチロボットの機械学習技術に強み"
+      - "マシンデザインがきれい"
+      - "時々オムニホイールが取れる"
+      - "ロボットの効果音が面白い"
+    style: "知的"
+    famous_for: "高度な戦術アルゴリズムとチームワーク"
+  "GreenTea":
+    reading: "グリーンティー"
+    country: "日本"
+    characteristics:
+      - "競技運営活動も積極的に行う"
+      - "社会人チーム"
+      - "現場で開発"
+    style: "バランス型"
+    famous_for: "堅実な戦術と安定したパフォーマンス"
   "opponent":
     reading: "相手チーム"
     country: "不明"
