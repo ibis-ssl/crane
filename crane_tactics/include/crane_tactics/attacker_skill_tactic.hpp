@@ -62,7 +62,7 @@ public:
       {
         auto polyline_builder = visualizer->polyline();
         for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
-          polyline_builder.addPoint(point);
+          (void)polyline_builder.addPoint(point);
         }
         polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
       }
