@@ -37,7 +37,7 @@ public:
 
   COMPOSITION_PUBLIC explicit PassReceiverTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("PassReceiver", world_model)
+  : TacticBase("pass_receive", world_model)
   {
   }
 

@@ -31,7 +31,7 @@ class EmplaceRobotTactic : public TacticBase
 public:
   COMPOSITION_PUBLIC explicit EmplaceRobotTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("EmplaceRobot", world_model)
+  : TacticBase("emplace_robot", world_model)
   {
   }
 

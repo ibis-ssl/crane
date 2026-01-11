@@ -39,7 +39,7 @@ private:
 public:
   COMPOSITION_PUBLIC
   explicit OurDirectFreeKickTactic(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("OurDirectFreeKickTactic", world_model)
+  : TacticBase("our_direct_free", world_model)
   {
   }
 

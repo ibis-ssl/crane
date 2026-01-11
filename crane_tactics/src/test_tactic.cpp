@@ -14,7 +14,7 @@
 namespace crane
 {
 TestTactic::TestTactic(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-: TacticBase("Test", world_model), topics_interface(node.get_node_topics_interface())
+: TacticBase("test", world_model), topics_interface(node.get_node_topics_interface())
 {
   config_file_path =
     (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_tactics")) /

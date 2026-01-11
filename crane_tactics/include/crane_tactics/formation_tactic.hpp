@@ -32,8 +32,9 @@ public:
   };
   COMPOSITION_PUBLIC
   explicit FormationTactic(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &, const FormationType formation_type)
-  : TacticBase("formation", world_model), formation_type(formation_type)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &, const FormationType formation_type,
+    const std::string & tactic_name = "formation")
+  : TacticBase(tactic_name, world_model), formation_type(formation_type)
   {
   }
 
@@ -52,7 +53,7 @@ class IbisFormationTactic final : public FormationTactic
 public:
   COMPOSITION_PUBLIC
   explicit IbisFormationTactic(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-  : FormationTactic(world_model, node, FormationType::IBIS)
+  : FormationTactic(world_model, node, FormationType::IBIS, "ibis_formation")
   {
   }
 };
@@ -62,7 +63,7 @@ class WingFormationTactic final : public FormationTactic
 public:
   COMPOSITION_PUBLIC
   explicit WingFormationTactic(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-  : FormationTactic(world_model, node, FormationType::WING)
+  : FormationTactic(world_model, node, FormationType::WING, "wing_formation")
   {
   }
 };

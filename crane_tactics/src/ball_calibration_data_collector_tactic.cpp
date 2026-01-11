@@ -11,7 +11,7 @@ namespace crane
 
 BallCalibrationDataCollectorTactic::BallCalibrationDataCollectorTactic(
   WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
-: TacticBase("BallCalibrationDataCollector", world_model), skill_(nullptr), current_robot_id_()
+: TacticBase("ball_calibration_data_collector", world_model), skill_(nullptr), current_robot_id_()
 {
 }
 

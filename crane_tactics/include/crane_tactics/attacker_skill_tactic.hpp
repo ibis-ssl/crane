@@ -34,7 +34,7 @@ public:
 
   COMPOSITION_PUBLIC explicit AttackerSkillTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-  : TacticBase("AttackerSkill", world_model)
+  : TacticBase("attacker_skill", world_model)
   {
   }
 
