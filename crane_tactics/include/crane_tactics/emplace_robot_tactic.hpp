@@ -38,9 +38,7 @@ public:
   COMPOSITION_PUBLIC explicit EmplaceRobotTactic(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
 
-  ~EmplaceRobotTactic() override
-  {
-  }
+  ~EmplaceRobotTactic() override {}
 
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;

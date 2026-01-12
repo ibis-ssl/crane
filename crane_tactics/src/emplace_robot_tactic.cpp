@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_tactics/emplace_robot_tactic.hpp>
-
 #include <cstdlib>
 #include <filesystem>
 
