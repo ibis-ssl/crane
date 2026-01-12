@@ -28,8 +28,10 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 ## 統一設定ファイル（unified_session_config.yaml）
 
 **設定ファイル**: `crane_tactic_coordinator/config/unified_session_config.yaml`
+**ROSパラメータ**: `session_config_file_name` (デフォルト: "unified_session_config.yaml")
 
-すべての試合状況設定が単一ファイルに統合されています。各状況（situation）は、セッション（session）のリストとして定義され、各セッションにロボットが動的に割り当てられます。
+すべての試合状況設定が単一ファイルに統合されています。
+**イベント（events）** が **状況（situations）** にマッピングされ、各状況は **セッション（sessions）** のリストとして定義されます。
 
 ### 設定構造
 
@@ -37,109 +39,60 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 situations:
   HALT:
     description: 試合停止
-    sessions: []
+    sessions:
+      - name: waiter
+        max_robots: 20
   INPLAY:
     description: 通常プレイ
     sessions:
       - name: attacker_skill
-        capacity: 1
+        max_robots: 1
       - name: total_defense
-        capacity: 3
+        max_robots: 3
       # ...
   OUR_FREE_KICK:
     description: 自チームフリーキック
     sessions:
       - name: attacker_skill
-      - name: total_defense
+        max_robots: 1
+      - name: defender
+        max_robots: 2
       # ...
+
+events:
+  - name: HALT
+    situation: HALT
+  - name: STOP
+    situation: STOP
+  - name: INPLAY
+    situation: INPLAY
+  - name: OUR_DIRECT_FREE
+    situation: OUR_FREE_KICK
 ```
 
-### 主要な試合状況
+### 主要な構成要素
 
-- **HALT**: 試合停止（ロボット無動作）
-- **STOP**: 一時停止
-- **INPLAY**: 通常プレイ
-- **OUR_KICKOFF_START / OUR_KICKOFF_PREPARATION**: 自チームキックオフ
-- **OUR_FREE_KICK**: 自チームフリーキック
-- **OUR_PENALTY_KICK**: 自チームペナルティキック
-- **OUR_BALL_PLACEMENT**: 自チームボール配置
-- **THEIR_***: 敵チーム対応状況
+- **situations**: ロボットの役割分担（セッション構成）を定義
+- **sessions**: 特定のタクティック（`crane_tactics`）と最大割り当て台数（`max_robots`）のペア
+- **events**: `PlaySituation` のイベント名と `situations` の対応付け
 
 ## 動作フロー
 
-### 状況判定→タクティック選択
+### 状況判定とロボット割当
 
-```cpp
-void TacticCoordinator::update() {
-  // 1. 現在状況の分析
-  auto situation = analyzeCurrentSituation();
+1. **イベント受信**: `/play_situation` トピックから現在のイベント名（例: "STOP", "INPLAY"）を受信
+2. **状況解決**: 設定ファイルの `events` マッピングを使用して、イベント名から状況名（Situation Name）を特定
+3. **セッション取得**: 特定された状況に対応するセッションリストを取得
+4. **ロボット割当**: `RobotAllocator` が利用可能なロボットを各セッション（タクティック）に割り当て
+   - 優先度や役割適性（`game_analysis` 推奨など）を考慮して最適化
+5. **コマンド生成**: 各タクティックが割り当てられたロボットに対して動作コマンドを生成
 
-  // 2. 適切な設定ファイルの選択
-  auto config = loadSituationConfig(situation);
+### コンポーネント構成
 
-  // 3. タクティックの選択・切り替え
-  auto tactic = selectOptimalTactic(config);
-
-  // 4. タクティックの実行
-  tactic->plan(context_);
-
-  // 5. 結果の統合・配信
-  publishRobotCommands();
-}
-```
-
-### 統一設定ファイル例
-
-```yaml
-# unified_session_config.yaml（抜粋）
-situations:
-  OUR_FREE_KICK:
-    description: OUR_FREE_KICK
-    sessions:
-      - name: total_defense
-        capacity: 3
-      - name: attacker_skill
-        capacity: 1
-      - name: pass_receive
-        capacity: 1
-      - name: forward
-        capacity: 20
-  timeout: 10.0       # タイムアウト時間
-```
-
-## タクティックインテグレーション
-
-### タクティック管理
-
-```cpp
-class TacticCoordinator {
-private:
-  std::map<std::string, std::shared_ptr<TacticBase>> tactics_;
-  std::string current_tactic_name_;
-
-public:
-  void switchTactic(const std::string& tactic_name) {
-    if (tactics_.count(tactic_name)) {
-      current_tactic_ = tactics_[tactic_name];
-      current_tactic_->reset();
-    }
-  }
-};
-```
-
-### 動的タクティック選択
-
-```cpp
-std_string selectOptimalTactic(const GameSituation& situation) {
-  if (situation.is_freekick) {
-    return situation.our_freekick ? "our_direct_free" : "total_defense";
-  } else if (situation.is_penalty) {
-    return situation.our_penalty ? "our_penalty_kick" : "their_penalty_kick";
-  } else {
-    return "attacker_skill";
-  }
-}
-```
+- **ConfigurationManager**: YAML設定ファイルの読み込みとイベント・状況マッピングの管理
+- **RobotAllocator**: 定義されたセッションへのロボット動的割り当てロジック
+- **TacticRegistry**: 利用可能なタクティックの管理
+- **CommandAggregator**: 各タクティックから生成されたコマンドの集約
 
 ## 依存関係
 

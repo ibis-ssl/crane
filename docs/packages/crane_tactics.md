@@ -18,41 +18,52 @@ Craneシステムの**戦術戦略層**として、`crane_tactic_coordinator`か
 
 ## タクティックプラグイン一覧
 
+（カッコ内は設定ファイルで使用するキー名）
+
 ### 守備系タクティック
 
-- **GoalieSkillTactic**: ゴールキーパー専用戦略
-  - ゴールライン防御
-  - ボール軌道予測対応
-  - クリアランス判断
-
-- **DefenderTactic**: ディフェンダー戦略
-  - エリア守備
-  - マーク対応
-  - インターセプト
-
-- **TotalDefenseTactic**: 統合守備戦略
+- **GoalieSkillTactic** (`goalie_skill`): ゴールキーパー専用戦略
+- **DefenderTactic** (`defender`): ディフェンダー戦略
+- **TotalDefenseTactic** (`total_defense`): 統合守備戦略
+- **SecondThreatDefenderTactic** (`second_threat_defender`): セカンドディフェンダー（シュートコースブロック等）
+- **MarkerTactic** (`marker`): 敵ロボットマーク戦略
 
 ### 攻撃系タクティック
 
-- **AttackerSkillTactic**: アタッカー戦略
-  - 得点機会創出
-  - パス・ドリブル選択
-  - ポジション取り
+- **AttackerSkillTactic** (`attacker_skill`): アタッカー戦略
+- **SubAttackerSkillTactic** (`sub_attacker_skill`): アタッカー支援
+- **ForwardTactic** (`forward`): フォワードポジショニング（パスコース確保）
+- **PassReceiverTactic** (`pass_receive`): パスレシーブ戦略
 
-- **SubAttackerSkillTactic**: アタッカー支援
+### 特殊状況・セットプレー系タクティック
 
-### 特殊状況タクティック
+- **SimpleKickOffSkillTactic** (`simple_kickoff`): キックオフ戦略
+- **OurPenaltyKickTactic** (`our_penalty_kick`): 自チームペナルティキック
+- **TheirPenaltyKickTactic** (`their_penalty_kick`): 敵チームペナルティキック
+- **OurDirectFreeKickTactic** (`our_direct_free`): 自チーム直接フリーキック
+- **CenterStopKickTactic** (`center_stop_kick`): センターサークル停止キック（デモ・テスト用）
 
-- **SimpleKickOffSkillTactic**: キックオフ戦略
-- **OurPenaltyKickTactic**: 自チームペナルティキック
-- **TheirPenaltyKickTactic**: 敵チームペナルティキック
-- **BallPlacementSkillTactic**: ボール配置戦略
+### ボールプレースメント関連タクティック
+
+- **BallPlacementSkillTactic** (`ball_placement_skill`): 基本ボール配置
+- **PassableBallPlacementTactic** (`passable_ball_placement`): パス連携によるボール配置
+- **BallPlacementAvoidanceTactic** (`ball_placement_avoidance`): 配置エリア回避
+- **PlacementTargetPlacerTactic** (`placement_target_placer`): 配置目標地点への移動
+- **PlacementTargetNearByPositionerSkillTactic** (`placement_target_nearby_positioner_skill`): 配置目標近傍待機
+
+### フォーメーション・ポジショニング系タクティック
+
+- **WingFormationTactic** (`wing_formation`): ウィングフォーメーション
+- **IbisFormationTactic** (`ibis_formation`): ibis基本フォーメーション
+- **BallNearByPositionerSkillTactic** (`ball_nearby_positioner_skill`): ボール近傍陣形
 
 ### ユーティリティタクティック
 
-- **WaiterTactic**: 待機戦略
-- **SimplePlacerTactic**: エリア配置戦略
-- **BallCalibrationDataCollectorTactic**: キャリブレーション用
+- **WaiterTactic** (`waiter`): 待機戦略
+- **SimplePlacerTactic** (`simple_placer`): エリア配置戦略
+- **EmplaceRobotTactic** (`emplace_robot`): 指定位置へのロボット配置
+- **BallCalibrationDataCollectorTactic** (`ball_calibration_data_collector`): キャリブレーションデータ収集
+- **TestTactic** (`test`): テスト用タクティック
 
 ## タクティックベースアーキテクチャ
 

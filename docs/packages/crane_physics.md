@@ -86,13 +86,18 @@ struct RobotInfo {
 - ロボット半径: 0.060m（衝突検出用）
 - ドリブラー距離: 0.090m（中心からボール接触点）
 
-### 移動時間計算 (`travel_time.hpp`)
+### 移動時間計算 (`travel_time.hpp` / `bang_bang_trajectory.hpp`)
 
 **台形運動プロファイル**:
 
 1. **加速フェーズ**: `t₁ = (v_max - v₀) / a`
 2. **巡航フェーズ**: `t₂ = d_remaining / v_max`
 3. **減速フェーズ**: `t₃ = v_max / a`
+
+**Bang-Bang制御プロファイル**:
+
+- 最大加速・最大減速を用いた最短時間制御
+- 1次元移動の最適時間計算
 
 ```cpp
 double getTravelTimeTrapezoidal(
@@ -102,6 +107,11 @@ double getTravelTimeTrapezoidal(
     double max_velocity
 );
 ```
+
+### キッカーモデル (`kicker_model.hpp`)
+
+- **キック力計算**: 目標距離に応じた必要キック力の算出
+- **パラメータ管理**: キックパワー係数等の調整
 
 ### PID制御器 (`pid_controller.hpp`)
 

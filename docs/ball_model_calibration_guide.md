@@ -27,17 +27,6 @@ BallCalibrationDataCollectorTacticを使用した完全自動キャリブレー�
 ros2 topic pub --once /session_injection std_msgs/String '{data: "BALL_CALIBRATION_DATA_COLLECTION"}'
 ```
 
-### GUIビューアー経由での開始
-
-1. consai_visualizerを起動:
-
-   ```bash
-   ros2 run consai_visualizer consai_visualizer
-   ```
-
-2. 「セッション挿入」コンボボックスから`BALL_CALIBRATION_DATA_COLLECTION`を選択
-3. 「セッション挿入」ボタンをクリック
-
 ### 動作仕様
 
 - 自動的に2台のロボットを選択（ID順）

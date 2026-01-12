@@ -2,27 +2,55 @@
 
 ## 概要
 
-試合状況に応じた**プレイ自動選択システム**として、Vision・Referee データから状況を抽出し、最適な戦術プレイを自動選択・切り替えを行うパッケージです。ゲーム状況の変化に応じて動的に戦術を調整します。
+**crane_play_switcher**は、SSL-Referee（審判）からのコマンドを解釈し、Craneシステム内部で使用する**プレイ状況（PlaySituation）**へ変換・配信するROS 2ノードです。レフェリーコマンドの単純なマッピングだけでなく、ルール（ボール移動によるインプレイ開始など）に基づいた状況遷移判定も行います。
 
 ## 主要機能
 
-- **状況認識**: Vision/Referee データからのゲーム状況抽出
-- **プレイ選択**: 状況に最適な戦術プレイの自動選択
-- **動的切り替え**: リアルタイムでの戦術変更
-- **状況履歴管理**: 過去の状況変化パターンの記録
+- **レフェリーコマンド解釈**: SSL-Refereeプロトコルの受信と解釈
+- **状況遷移管理**: ルールに基づくインプレイ/ストップ等の状態遷移判定
+- **セッション注入**: デバッグ用の強制イベント注入機能
+- **状況配信**: `/play_situation` トピックによるシステム全体への状況通知
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**戦術切り替え制御層**として、ゲーム状況の変化を監視し、crane_tactic_coordinatorとtactic_pluginsに対して最適な戦術プレイを指示します。
+Craneシステムの**ゲーム状態管理層**として、外部からの審判指示をシステム内部の共通言語（PlaySituation）に翻訳し、`crane_tactic_coordinator` などの上位層が適切な戦術を決定するための基礎情報を提供します。
+
+## 処理ロジック
+
+### コマンドマッピング
+
+SSL-Refereeのコマンド（`STOP`, `FORCE_START`など）をCrane内部コマンドに変換します。
+
+- `NORMAL_START` -> `KICKOFF_START` / `PENALTY_START` (直前のPREPARATION状態による)
+- `STOP` -> 次のコマンド（`NEXT_COMMAND`）を考慮した詳細なSTOP状態へ
+
+### インプレイ判定（自動遷移）
+
+以下の条件で `INPLAY` 状態へ自動遷移します：
+
+- ボールが0.05m以上移動した（キックオフ・フリーキック時）
+- キックオフから10秒経過
+- フリーキックからN秒経過（DivA: 5秒, DivB: 10秒）
 
 ## 使用方法
 
-```cpp
-#include "crane_play_switcher/play_switcher.hpp"
+### 起動（crane_bringup経由）
 
-auto play_switcher = std::make_shared<PlaySwitcher>();
-PlayType current_play = play_switcher->selectPlay(world_model, referee_info);
+`crane.launch.xml` に含まれており、自動的に起動します。
+
+```bash
+ros2 launch crane_bringup crane.launch.xml
 ```
+
+### パラメータ
+
+- `team_name`: チーム名（デフォルト: "ibis"）- 自分のチームカラー判定に使用
+
+### 入出力トピック
+
+- **Sub**: `/referee` (robocup_ssl_msgs/Referee)
+- **Sub**: `/session_injection` (std_msgs/String) - デバッグ用
+- **Pub**: `/play_situation` (crane_msgs/PlaySituation)
 
 ## 最近の開発状況
 

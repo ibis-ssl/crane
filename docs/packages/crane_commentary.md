@@ -64,10 +64,29 @@ ros2 run crane_commentary commentary_node
 | `gemini_model` | string | 使用するGeminiモデル名 | "gemini-2.0-flash-exp" |
 | `audio_sample_rate` | int | 音声サンプリングレート(Hz) | 24000 |
 | `analyst_silence_threshold` | float | 解析モードに移行する無音時間(s) | 5.0 |
+| `mode` | string | 動作モード ("reflex_analyst", "self_commentary") | "reflex_analyst" |
+
+## 動作モード
+
+### Reflex Analyst Mode (`reflex_analyst`)
+
+デフォルトのモードです。第三者視点の実況解説者として振る舞います。
+
+- **Reflex**: シュートやゴールなどのイベントに即座に反応
+- **Analyst**: 試合が落ち着いている時に戦術分析を行う
+
+### Self Commentary Mode (`self_commentary`)
+
+システム（またはロボット）自身の視点として、意思決定や意図を語るモードです。
+
+- **意図追跡**: `IntentTracker`により、ロボットの役割変更や目標位置の変更を追跡
+- **内部状態の実況**: 「攻撃に切り替えます」「ロボット1にパスコースを作らせます」といった、システムの思考プロセスを言語化します。
+- **用途**: デバッグやデモンストレーション、システムの透明性向上
 
 ## 設定ファイル
 
 - **system_instruction.md**: AI実況者の性格、役割、実況スタイルを定義
+- **system_instruction_self.md**: Self Commentaryモード用のシステム指示書
 - **function_declarations.json**: AIが使用可能なツール（世界モデル取得など）の定義
 - **team_profiles.yaml**: チーム名の読み方や特徴の設定
 - **ssl_rules.yaml**: SSLのルール情報のサマリー
