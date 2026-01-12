@@ -13,9 +13,8 @@
 
 ## コンポーネント
 
-- **SimSender**: grSimシミュレータ向け送信
-- **SimulationProtocolSender**: 公式シミュレーションプロトコル対応
-- **IbisSender**: 実機ロボット向け送信
+- **SimSender**: シミュレーション環境（grSim / Official Protocol）向け送信
+- **IbisSender**: 実機ロボット（Ibis）向け送信
 
 ## アーキテクチャ上の役割
 

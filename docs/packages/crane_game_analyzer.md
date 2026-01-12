@@ -36,6 +36,19 @@ private:
 };
 ```
 
+### RonarEventDetector（イベント検出）
+
+- **目的**: 試合中の重要なイベント（ゴール、シュート、パスカット等）を検出
+- **用途**: `crane_commentary` パッケージでのリアルタイム実況生成に使用
+- **特徴**: イベント発生時のコンテキスト（関与ロボット、場所）を保持
+
+### イベント統合機能（GameAnalyzerComponent）
+
+物理的なイベント検出（RonarEventDetector）に加え、外部からの情報を統合して包括的なイベントストリーム（`RonarEvent`）を生成します。
+
+- **PlaySituation統合**: `crane_play_switcher` からの試合状況変化（HALT, STOP, INPLAY, TIMEOUT等）をイベント化
+- **Autoref統合**: SSL-Refereeからの判定イベント（ゴール, ボールアウト, ファウル等）をイベント化
+
 ## 分析機能詳細
 
 ### ボール分析

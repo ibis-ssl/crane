@@ -39,4 +39,4 @@ ros2 topic echo /aggregated_svgs crane_visualization_interfaces/msg/SvgSnapshot
 ros2 topic echo /visualizer_svgs crane_visualization_interfaces/msg/SvgUpdates
 ```
 
-関連: [crane_visualization_aggregator](./crane_visualization_aggregator.md) | [consai_visualizer](./consai_visualizer.md)
+関連: [crane_visualization_aggregator](./crane_visualization_aggregator.md)

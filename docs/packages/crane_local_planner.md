@@ -27,16 +27,9 @@ Craneシステムの**動作計画層**として、上位スキルからの目�
   - 実時間性能保証
 - **適用場面**: 通常のマルチロボット制御
 
-### ModernORCAPlanner（新規開発中）
-
-- **アルゴリズム**: Modern ORCA (Optimal Reciprocal Collision Avoidance)
-- **特徴**:
-  - 拡張可能な制約システム
-  - プラグインサポート
-  - C++20モダン実装
-- **適用場面**: 将来的にRVO2の後継として利用予定
-
 ## RVO2アルゴリズム詳細
+
+詳細なパラメータ設定やアルゴリズムの解説については、[RVO2 Local Planner詳細ドキュメント](../rvo2_local_planner.md)を参照してください。
 
 ### 基本原理
 
