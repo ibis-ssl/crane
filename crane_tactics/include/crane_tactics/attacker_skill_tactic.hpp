@@ -74,7 +74,7 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    auto wm = world_model;  // shared_ptrをコピー
+    auto wm = world_model;                   // shared_ptrをコピー
     auto game_analysis = getGameAnalysis();  // GameAnalysisをコピー
 
     // デバッグ用：推奨ロボットIDをログ出力
@@ -101,8 +101,8 @@ public:
       // それ以外はボール距離ベース
       double distance = robot->getDistance(wm->ball().pos);
       RCLCPP_DEBUG(
-        rclcpp::get_logger("AttackerSkillTactic"),
-        "Robot %d cost: %.2f (ball distance)", robot->id, distance);
+        rclcpp::get_logger("AttackerSkillTactic"), "Robot %d cost: %.2f (ball distance)", robot->id,
+        distance);
       return distance;
     };
   }

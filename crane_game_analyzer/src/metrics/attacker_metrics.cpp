@@ -89,8 +89,8 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // デバッグログ: 各ロボットのスコア
     RCLCPP_DEBUG(
       rclcpp::get_logger("AttackerMetric"),
-      "Robot %d: raw_score=%.2f, smoothed=%.2f, has_intercept=%d, distance=%.2f",
-      robot->id, score, smoothed_score, has_valid_intercept, metric_distance);
+      "Robot %d: raw_score=%.2f, smoothed=%.2f, has_intercept=%d, distance=%.2f", robot->id, score,
+      smoothed_score, has_valid_intercept, metric_distance);
   }
 
   // スコアでソート（降順）
@@ -129,8 +129,8 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
 
     // 絶対値判定の閾値とタイムアウト
-    constexpr double absolute_threshold = 2.0;      // スコア差2.0以上（約0.2m距離差に相当）
-    constexpr double force_switch_timeout = 3.0;    // 3秒経過後は強制再評価
+    constexpr double absolute_threshold = 2.0;    // スコア差2.0以上（約0.2m距離差に相当）
+    constexpr double force_switch_timeout = 3.0;  // 3秒経過後は強制再評価
 
     // 切り替え判定（優先度順）
     if (time_since_switch >= force_switch_timeout) {
@@ -165,12 +165,12 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
       RCLCPP_INFO(
         rclcpp::get_logger("AttackerMetric"),
         "SWITCH: %d -> %d (old_score=%.2f, new_score=%.2f, improvement=%.1f%%, time=%.2fs)",
-        last_attacker_id_, best_id, current_score, best_score,
-        improvement_ratio * 100, time_since_switch);
+        last_attacker_id_, best_id, current_score, best_score, improvement_ratio * 100,
+        time_since_switch);
     } else {
       RCLCPP_INFO(
-        rclcpp::get_logger("AttackerMetric"),
-        "INITIAL: selected robot %d (score=%.2f)", best_id, best_score);
+        rclcpp::get_logger("AttackerMetric"), "INITIAL: selected robot %d (score=%.2f)", best_id,
+        best_score);
     }
     last_attacker_id_ = best_id;
     last_switch_time_ = current_time;
@@ -186,8 +186,8 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     double time_since_switch = (current_time - last_switch_time_).seconds();
     RCLCPP_DEBUG(
       rclcpp::get_logger("AttackerMetric"),
-      "HOLD: robot %d (best=%d, best_score=%.2f, current=%.2f, time=%.2fs)",
-      last_attacker_id_, best_id, best_score, current_score, time_since_switch);
+      "HOLD: robot %d (best=%d, best_score=%.2f, current=%.2f, time=%.2fs)", last_attacker_id_,
+      best_id, best_score, current_score, time_since_switch);
   }
 
   ctx.analysis.recommended_attacker_id = last_attacker_id_;
