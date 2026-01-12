@@ -569,8 +569,8 @@ auto WorldModelDataProvider::processGeometryData(const robocup_ssl::SSL_Geometry
   return true;
 }
 
-auto WorldModelDataProvider::updateVisionBallState(
-  const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void
+auto WorldModelDataProvider::updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball)
+  -> void
 {
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
@@ -719,8 +719,8 @@ auto WorldModelDataProvider::updateTrackerBallState(
   auto now = node.get_clock()->now();
 
   // Tracker状態を更新
-  tracker_ball_state_.position = Eigen::Vector3d(
-    tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z);
+  tracker_ball_state_.position =
+    Eigen::Vector3d(tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z);
 
   // 速度情報（オプション）
   if (tracked_ball.has_field & tracked_ball.VEL_FIELD_SET) {
@@ -734,10 +734,10 @@ auto WorldModelDataProvider::updateTrackerBallState(
   tracker_ball_state_.detected = true;
 
   RCLCPP_DEBUG(
-    node.get_logger(), "Tracker ball updated at (%.3f, %.3f, %.3f) with velocity (%.3f, %.3f, %.3f)",
-    tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z,
-    tracker_ball_state_.velocity.x(), tracker_ball_state_.velocity.y(),
-    tracker_ball_state_.velocity.z());
+    node.get_logger(),
+    "Tracker ball updated at (%.3f, %.3f, %.3f) with velocity (%.3f, %.3f, %.3f)",
+    tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z, tracker_ball_state_.velocity.x(),
+    tracker_ball_state_.velocity.y(), tracker_ball_state_.velocity.z());
 }
 
 auto WorldModelDataProvider::integrateBallInfo() -> void
