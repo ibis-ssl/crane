@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
@@ -200,6 +201,25 @@ public:
    */
   virtual int getDesiredRobotNumber(int min_robots, int max_robots) const { return max_robots; }
 
+  /**
+   * @brief GameAnalysisメッセージを設定する
+   *
+   * TacticCoordinatorから呼ばれ、game_analyzerが計算した分析結果を受け取る。
+   *
+   * @param game_analysis GameAnalysisメッセージ
+   */
+  void setGameAnalysis(const crane_msgs::msg::GameAnalysis & game_analysis)
+  {
+    game_analysis_ = game_analysis;
+  }
+
+  /**
+   * @brief GameAnalysisメッセージを取得する
+   *
+   * @return GameAnalysisメッセージの参照
+   */
+  const crane_msgs::msg::GameAnalysis & getGameAnalysis() const { return game_analysis_; }
+
 protected:
   /**
    * @brief ロボット割り当てが変更された時に呼ばれるコールバック
@@ -262,6 +282,9 @@ protected:
   Status status = Status::RUNNING;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
+
+private:
+  crane_msgs::msg::GameAnalysis game_analysis_;
 };
 
 }  // namespace crane

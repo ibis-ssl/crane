@@ -12,6 +12,7 @@
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
@@ -68,6 +69,8 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
+
   DiagnosedPublisher<crane_msgs::msg::PositionCommands> position_commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
@@ -77,6 +80,8 @@ private:
   rclcpp::Publisher<crane_msgs::msg::RobotSelectResults>::SharedPtr robot_select_results_pub;
 
   crane_msgs::msg::PlaySituation play_situation;
+
+  crane_msgs::msg::GameAnalysis latest_game_analysis_;
 
   rclcpp::TimerBase::SharedPtr timer;
 

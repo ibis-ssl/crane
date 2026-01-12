@@ -8,6 +8,7 @@
 #define CRANE_TACTIC_COORDINATOR__COMMAND_AGGREGATOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -29,11 +30,12 @@ public:
    * @brief 全プランナーからコマンドを収集してメッセージを構築
    * @param world_model WorldModelの参照
    * @param current_time 現在時刻
+   * @param game_analysis GameAnalysisメッセージ
    * @return 構築されたPositionCommandsメッセージ
    */
   auto collectCommands(
-    const WorldModelWrapper::SharedPtr & world_model, const rclcpp::Time & current_time)
-    -> crane_msgs::msg::PositionCommands;
+    const WorldModelWrapper::SharedPtr & world_model, const rclcpp::Time & current_time,
+    const crane_msgs::msg::GameAnalysis & game_analysis) -> crane_msgs::msg::PositionCommands;
 
 private:
   /**
