@@ -18,12 +18,16 @@ Craneシステムの**ゲーム状態管理層**として、外部からの審�
 ## 処理ロジック
 
 ### コマンドマッピング
+
 SSL-Refereeのコマンド（`STOP`, `FORCE_START`など）をCrane内部コマンドに変換します。
+
 - `NORMAL_START` -> `KICKOFF_START` / `PENALTY_START` (直前のPREPARATION状態による)
 - `STOP` -> 次のコマンド（`NEXT_COMMAND`）を考慮した詳細なSTOP状態へ
 
 ### インプレイ判定（自動遷移）
+
 以下の条件で `INPLAY` 状態へ自動遷移します：
+
 - ボールが0.05m以上移動した（キックオフ・フリーキック時）
 - キックオフから10秒経過
 - フリーキックからN秒経過（DivA: 5秒, DivB: 10秒）
