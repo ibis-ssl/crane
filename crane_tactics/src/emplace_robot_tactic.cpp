@@ -13,6 +13,42 @@ namespace crane
 {
 void EmplaceRobotTactic::onRobotsChanged() { m_skill_map.clear(); }
 
+EmplaceRobotTactic::EmplaceRobotTactic(
+  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+: TacticBase("emplace_robot", world_model), topics_interface_(node.get_node_topics_interface())
+{
+  // パラメータを取得（既に宣言されている場合はその値を使用、未宣言ならデフォルト値を使用）
+  if (!node.has_parameter("emplace_robot.use_voice_announcement")) {
+    use_voice_announcement_ = node.declare_parameter("emplace_robot.use_voice_announcement", true);
+  } else {
+    use_voice_announcement_ = node.get_parameter("emplace_robot.use_voice_announcement").as_bool();
+  }
+
+  // speakアクションクライアントを作成
+  speak_client_ = rclcpp_action::create_client<Speak>(
+    node.get_node_base_interface(), node.get_node_graph_interface(),
+    node.get_node_logging_interface(), node.get_node_waitables_interface(), "/speak");
+}
+
+auto EmplaceRobotTactic::sendSpeakGoal(const std::string & text) -> void
+{
+  if (!speak_client_) {
+    return;
+  }
+
+  // アクションサーバーが利用可能か確認（非ブロッキング）
+  if (!speak_client_->wait_for_action_server(std::chrono::milliseconds(100))) {
+    return;
+  }
+
+  auto goal_msg = Speak::Goal();
+  goal_msg.text = text;
+  goal_msg.speed_rate = 1.0;
+
+  // ゴールを非同期送信（結果を待たない）
+  speak_client_->async_send_goal(goal_msg);
+}
+
 auto EmplaceRobotTactic::findAvailableSoundFile() -> std::string
 {
   // 複数の候補パスを試す（優先順位順）
@@ -37,21 +73,24 @@ auto EmplaceRobotTactic::findAvailableSoundFile() -> std::string
 std::pair<TacticBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 EmplaceRobotTactic::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
-  // ロボット退場中の警告ビープ
+  // ロボット退場中の警告
   if (!robots.empty()) {
     auto now = std::chrono::steady_clock::now();
-    if (now - last_beep_time_ >= BEEP_INTERVAL) {
-      // 初回または音声ファイルパスが未設定の場合、利用可能なファイルを探す
-      if (beep_sound_path_.empty()) {
-        beep_sound_path_ = findAvailableSoundFile();
+    if (now - last_announce_time_ >= ANNOUNCE_INTERVAL) {
+      if (use_voice_announcement_) {
+        // 音声アナウンス
+        sendSpeakGoal("退出ロボットを確認してください");
+      } else {
+        // ビープ音
+        if (beep_sound_path_.empty()) {
+          beep_sound_path_ = findAvailableSoundFile();
+        }
+        if (!beep_sound_path_.empty()) {
+          std::string command = "paplay " + beep_sound_path_ + " &";
+          std::system(command.c_str());
+        }
       }
-
-      // 警告音をバックグラウンドで再生
-      if (!beep_sound_path_.empty()) {
-        std::string command = "paplay " + beep_sound_path_ + " &";
-        std::system(command.c_str());
-      }
-      last_beep_time_ = now;
+      last_announce_time_ = now;
     }
   }
 

@@ -18,6 +18,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <speak_ros_interfaces/action/speak.hpp>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -30,9 +32,13 @@ namespace crane
 class EmplaceRobotTactic : public TacticBase
 {
 public:
+  using Speak = speak_ros_interfaces::action::Speak;
+  using GoalHandleSpeak = rclcpp_action::ClientGoalHandle<Speak>;
+
   COMPOSITION_PUBLIC explicit EmplaceRobotTactic(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : TacticBase("emplace_robot", world_model)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
+
+  ~EmplaceRobotTactic() override
   {
   }
 
@@ -50,11 +56,17 @@ protected:
 private:
   std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
 
+  // 音声アナウンス制御用
+  rclcpp_action::Client<Speak>::SharedPtr speak_client_;
+  rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr topics_interface_;
+  std::chrono::steady_clock::time_point last_announce_time_{};
+  static constexpr std::chrono::milliseconds ANNOUNCE_INTERVAL{5000};  // 5秒間隔
+  bool use_voice_announcement_{true};  // true: 音声アナウンス, false: ビープ音
+
   // ビープ音制御用
-  std::chrono::steady_clock::time_point last_beep_time_{};
-  static constexpr std::chrono::milliseconds BEEP_INTERVAL{2000};  // 2秒間隔
   std::string beep_sound_path_;
 
+  auto sendSpeakGoal(const std::string & text) -> void;
   auto findAvailableSoundFile() -> std::string;
 };
 
