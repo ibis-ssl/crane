@@ -11,6 +11,7 @@
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
+#include <deque>
 #include <format>
 #include <rclcpp/rclcpp.hpp>
 #include <unordered_set>
@@ -36,6 +37,8 @@ public:
   {
     if (receiver_->available()) {
       receiver_->receive(buffer_);
+      // 受信タイムスタンプを記録
+      receive_timestamps_.push_back(clock.now());
       return true;
     }
     return false;
@@ -117,6 +120,21 @@ public:
 
   auto getFeedback() const -> RobotFeedback { return robot_feedback; }
 
+  auto getPacketFrequency() -> float
+  {
+    using std::chrono::operator""ms;
+    auto now = clock.now();
+
+    // 1秒より古いタイムスタンプを削除
+    while (!receive_timestamps_.empty() &&
+           (now - receive_timestamps_.front()) > 1000ms) {
+      receive_timestamps_.pop_front();
+    }
+
+    // 最近1秒間の受信回数を返す
+    return static_cast<float>(receive_timestamps_.size());
+  }
+
   const int robot_id;
 
 private:
@@ -127,6 +145,9 @@ private:
   RobotFeedback robot_feedback;
 
   rclcpp::Clock clock;
+
+  // パケット受信頻度計算用のタイムスタンプキュー
+  std::deque<rclcpp::Time> receive_timestamps_;
 };
 
 class RobotReceiverNode : public rclcpp::Node
@@ -168,6 +189,7 @@ public:
           crane_msgs::msg::RobotFeedback robot_feedback_msg;
           robot_feedback_msg.received_stamp = robot_feedback.received_stamp;
           robot_feedback_msg.robot_id = receiver->robot_id;
+          robot_feedback_msg.packet_frequency_hz = receiver->getPacketFrequency();
           robot_feedback_msg.counter = robot_feedback.counter;
           robot_feedback_msg.kick_state = robot_feedback.kick_state;
           for (auto temperature : robot_feedback.temperature) {

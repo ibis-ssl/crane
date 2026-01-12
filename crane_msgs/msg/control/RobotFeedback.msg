@@ -1,5 +1,6 @@
 builtin_interfaces/Time received_stamp
 uint8 robot_id
+float32 packet_frequency_hz
 
 uint8 counter
 
