@@ -29,6 +29,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/metrics/ball_horizon_metric.cpp
   src/metrics/slack_metrics.cpp
   src/metrics/attacker_metrics.cpp
+  src/metrics/sub_attacker_metrics.cpp
 )
 
 target_precompile_headers(${PROJECT_NAME}_component

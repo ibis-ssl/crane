@@ -15,6 +15,7 @@
 #include "crane_game_analyzer/metrics/attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/ball_horizon_metric.hpp"
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
+#include "crane_game_analyzer/metrics/sub_attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/threat_metrics.hpp"
 
 namespace crane
@@ -117,6 +118,9 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // 役割決定メトリクス（新規）
   auto attacker_metric = std::make_shared<metrics::AttackerCandidateMetric>();
   metric_engine_->registerMetric(attacker_metric);
+
+  auto sub_attacker_position_metric = std::make_shared<metrics::SubAttackerPositionMetric>();
+  metric_engine_->registerMetric(sub_attacker_position_metric);
 
   // メトリクスエンジン初期化（トポロジカルソート・循環依存検出）
   if (!metric_engine_->initialize()) {

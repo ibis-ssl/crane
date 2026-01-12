@@ -36,18 +36,19 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // 注意: SubAttacker用のDPPS最適位置は将来game_analyzerのmetricsで計算予定
-    // 現時点では簡略版を使用し、metrics追加後に更新する
-    // TODO: game_analyzerにSubAttacker用metricsが追加されたら、
-    //       recommended_sub_attacker_position等を使用するように更新
     auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールが自陣にある場合は高コスト（SubAttacker不要）
-      if (wm->point_checker.isInOurHalf(wm->ball().pos)) {
+      const auto & ga = wm->getMsg().game_analysis;
+
+      // 有効な推奨位置がない場合は高コスト
+      if (!ga.has_sub_attacker_position) {
         return 10000.0;
       }
-      // 敵ゴール方向でボール付近のロボットを優先
-      return robot->getSquareDistance(wm->ball().pos);
+
+      // 推奨位置への距離をコストとして返す
+      Point recommended_pos{
+        ga.recommended_sub_attacker_position.x, ga.recommended_sub_attacker_position.y};
+      return robot->getSquareDistance(recommended_pos);
     };
   }
 
