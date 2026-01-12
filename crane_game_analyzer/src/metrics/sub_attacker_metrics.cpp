@@ -21,8 +21,7 @@ namespace
 {
 // SubAttacker::getPointScoreのロジックを再実装
 // TODO: 将来的にはcrane_geometryなど共通パッケージに移動すべき
-double evaluateSubAttackerPosition(
-  const Point & p, const WorldModelWrapper * world_model)
+double evaluateSubAttackerPosition(const Point & p, const WorldModelWrapper * world_model)
 {
   Segment line{world_model->ball().pos, p};
 
@@ -117,8 +116,7 @@ auto SubAttackerPositionMetric::compute(MetricContext & ctx) -> void
   // フィルタリング：フィールド内かつペナルティエリア外
   std::vector<Point> valid_candidates;
   for (const auto & candidate : candidates) {
-    if (wm->point_checker.isFieldInside(candidate) &&
-        !wm->point_checker.isPenaltyArea(candidate)) {
+    if (wm->point_checker.isFieldInside(candidate) && !wm->point_checker.isPenaltyArea(candidate)) {
       valid_candidates.push_back(candidate);
     }
   }
@@ -143,8 +141,8 @@ auto SubAttackerPositionMetric::compute(MetricContext & ctx) -> void
   // ヒステリシス：前回位置から大きく変わる場合のみ更新
   constexpr double HYSTERESIS_THRESHOLD = 0.5;  // 0.5m以上動いたら更新
   if (has_last_position_) {
-    double distance = std::hypot(
-      best_position.x() - last_position_.x(), best_position.y() - last_position_.y());
+    double distance =
+      std::hypot(best_position.x() - last_position_.x(), best_position.y() - last_position_.y());
     if (distance < HYSTERESIS_THRESHOLD) {
       // 前回位置を維持
       best_position = last_position_;
