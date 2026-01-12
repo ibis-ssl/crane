@@ -120,6 +120,24 @@ auto RobotAllocator::allocate(
         allocation_state_.updateAssignment(id, tactic_name, robot->pose.pos);
         prev_robot_roles_.insert_or_assign(id, RobotRole{tactic_name, ""});
       }
+
+      // RobotSelectResult を構築
+      crane_msgs::msg::RobotSelectResult result;
+      result.name = tactic_name;
+
+      // session_capacities から min/max を取得
+      auto session_it = std::find_if(
+        session_capacities.begin(), session_capacities.end(),
+        [&tactic_name](const auto & s) { return s.session_name == tactic_name; });
+      if (session_it != session_capacities.end()) {
+        result.min_robots_num = static_cast<uint8_t>(session_it->min_robots);
+        result.max_robots_num = static_cast<uint8_t>(session_it->max_robots);
+      }
+
+      result.selectable_robots_num = static_cast<uint8_t>(selectable_robot_ids.size());
+      result.selectable_robots = selectable_robot_ids;
+      result.selected_robots = robot_ids;
+      results.results.push_back(result);
     }
   }
 
