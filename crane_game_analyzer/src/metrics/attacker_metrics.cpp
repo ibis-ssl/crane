@@ -64,9 +64,9 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // 到達距離が短いほど高スコア
     double score = 10.0 / std::max(metric_distance, 0.1);
 
-    // インターセプト計算ができなかった（ボールに追いつけない等）場合はスコアを下げる
+    // インターセプト計算ができなかった（ボールに追いつけない等）場合はスコアを大幅に下げる
     if (!has_valid_intercept) {
-      score *= 0.5;
+      score *= 0.3;  // 0.5 -> 0.3に強化（インターセプト不可能なロボットの優先度を下げる）
     }
 
     double total_score = score;
@@ -85,6 +85,12 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     }
 
     robot_scores.push_back({robot->id, smoothed_score});
+
+    // デバッグログ: 各ロボットのスコア
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("AttackerMetric"),
+      "Robot %d: raw_score=%.2f, smoothed=%.2f, has_intercept=%d, distance=%.2f", robot->id, score,
+      smoothed_score, has_valid_intercept, metric_distance);
   }
 
   // スコアでソート（降順）
@@ -118,12 +124,26 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
       }
     }
 
-    // 緊急切り替え: 新しいロボットが2倍以上良い場合は保持時間を無視して即座に切り替え
-    if (best_score >= current_score * EMERGENCY_SWITCH_RATIO) {
+    // スコア差を計算
+    double score_diff = best_score - current_score;
+    double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
+
+    // 絶対値判定の閾値とタイムアウト
+    constexpr double absolute_threshold = 2.0;    // スコア差2.0以上（約0.2m距離差に相当）
+    constexpr double force_switch_timeout = 3.0;  // 3秒経過後は強制再評価
+
+    // 切り替え判定（優先度順）
+    if (time_since_switch >= force_switch_timeout) {
+      // 1. タイムアウト: わずかでも良ければ切り替え
+      should_switch = (score_diff > 0.1);
+    } else if (score_diff >= absolute_threshold) {
+      // 2. 絶対値判定: 大きな差がある場合は即座に切り替え
+      should_switch = true;
+    } else if (best_score >= current_score * EMERGENCY_SWITCH_RATIO) {
+      // 3. 緊急切り替え: 相対的に大幅に良い場合は即座に切り替え
       should_switch = true;
     } else if (time_since_switch >= MIN_HOLD_DURATION_SEC) {
-      // 通常切り替え: 保持時間経過後、相対的に50%以上改善がある場合のみ切り替え
-      double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
+      // 4. 通常切り替え: 保持時間経過後、相対的に改善がある場合のみ切り替え
       if (improvement_ratio >= MIN_IMPROVEMENT_RATIO) {
         should_switch = true;
       }
@@ -131,8 +151,43 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
   }
 
   if (should_switch) {
+    // スイッチ実行時のログ
+    if (last_attacker_id_ >= 0) {
+      double current_score = 0.0;
+      for (const auto & rs : robot_scores) {
+        if (static_cast<int>(rs.id) == last_attacker_id_) {
+          current_score = rs.score;
+          break;
+        }
+      }
+      double improvement_ratio = (best_score - current_score) / std::max(current_score, 0.1);
+      double time_since_switch = (current_time - last_switch_time_).seconds();
+      RCLCPP_INFO(
+        rclcpp::get_logger("AttackerMetric"),
+        "SWITCH: %d -> %d (old_score=%.2f, new_score=%.2f, improvement=%.1f%%, time=%.2fs)",
+        last_attacker_id_, best_id, current_score, best_score, improvement_ratio * 100,
+        time_since_switch);
+    } else {
+      RCLCPP_INFO(
+        rclcpp::get_logger("AttackerMetric"), "INITIAL: selected robot %d (score=%.2f)", best_id,
+        best_score);
+    }
     last_attacker_id_ = best_id;
     last_switch_time_ = current_time;
+  } else if (last_attacker_id_ >= 0 && best_id != last_attacker_id_) {
+    // ホールド時のログ（異なるロボットが最適だが切り替えない場合）
+    double current_score = 0.0;
+    for (const auto & rs : robot_scores) {
+      if (static_cast<int>(rs.id) == last_attacker_id_) {
+        current_score = rs.score;
+        break;
+      }
+    }
+    double time_since_switch = (current_time - last_switch_time_).seconds();
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("AttackerMetric"),
+      "HOLD: robot %d (best=%d, best_score=%.2f, current=%.2f, time=%.2fs)", last_attacker_id_,
+      best_id, best_score, current_score, time_since_switch);
   }
 
   ctx.analysis.recommended_attacker_id = last_attacker_id_;

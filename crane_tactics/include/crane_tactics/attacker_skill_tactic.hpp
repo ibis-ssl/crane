@@ -74,33 +74,44 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    auto wm = world_model;  // shared_ptrをコピー
-    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+    auto wm = world_model;                   // shared_ptrをコピー
+    auto game_analysis = getGameAnalysis();  // GameAnalysisをコピー
+
+    // デバッグ用：推奨ロボットIDをログ出力
+    static int last_logged_id = -999;
+    if (game_analysis.recommended_attacker_id != last_logged_id) {
+      RCLCPP_INFO(
+        rclcpp::get_logger("AttackerSkillTactic"),
+        "Recommended attacker ID from game_analysis: %d (score: %.2f)",
+        game_analysis.recommended_attacker_id, game_analysis.attacker_suitability_score);
+      last_logged_id = game_analysis.recommended_attacker_id;
+    }
+
+    return [wm, game_analysis](const std::shared_ptr<RobotInfo> & robot) {
       // game_analysisで推奨ロボットが設定されている場合、そのロボットを最優先
-      try {
-        const auto & game_analysis = wm->getMsg().game_analysis;
-        if (
-          game_analysis.recommended_attacker_id >= 0 &&
-          robot->id == static_cast<uint8_t>(game_analysis.recommended_attacker_id)) {
-          return 0.0;  // 最高の適性（コスト最小）
-        }
-      } catch (...) {
+      if (
+        game_analysis.recommended_attacker_id >= 0 &&
+        robot->id == static_cast<uint8_t>(game_analysis.recommended_attacker_id)) {
+        RCLCPP_DEBUG(
+          rclcpp::get_logger("AttackerSkillTactic"),
+          "Robot %d matches recommended attacker, returning cost 0.0", robot->id);
+        return 0.0;  // 最高の適性（コスト最小）
       }
 
       // それ以外はボール距離ベース
-      return robot->getDistance(wm->ball().pos);
+      double distance = robot->getDistance(wm->ball().pos);
+      RCLCPP_DEBUG(
+        rclcpp::get_logger("AttackerSkillTactic"), "Robot %d cost: %.2f (ball distance)", robot->id,
+        distance);
+      return distance;
     };
   }
 
   bool isHardConstraint() const override
   {
     // game_analysisでrecommended_attacker_idが設定されている場合はハード制約として扱う
-    try {
-      const auto & game_analysis = world_model->getMsg().game_analysis;
-      return game_analysis.recommended_attacker_id >= 0;
-    } catch (...) {
-      return false;
-    }
+    const auto & game_analysis = getGameAnalysis();
+    return game_analysis.recommended_attacker_id >= 0;
   }
 
 protected:

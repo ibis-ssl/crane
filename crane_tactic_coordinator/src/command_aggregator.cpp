@@ -18,8 +18,8 @@ CommandAggregator::CommandAggregator(std::shared_ptr<TacticRegistry> tactic_regi
 }
 
 auto CommandAggregator::collectCommands(
-  const WorldModelWrapper::SharedPtr & world_model, const rclcpp::Time & current_time)
-  -> crane_msgs::msg::PositionCommands
+  const WorldModelWrapper::SharedPtr & world_model, const rclcpp::Time & current_time,
+  const crane_msgs::msg::GameAnalysis & game_analysis) -> crane_msgs::msg::PositionCommands
 {
   crane_msgs::msg::PositionCommands msg;
 
@@ -28,6 +28,9 @@ auto CommandAggregator::collectCommands(
 
   // 全プランナーからコマンドを収集
   for (const auto & tactic : tactic_registry_->getAllPlanners()) {
+    // 各Tacticにgame_analysisを設定
+    tactic->setGameAnalysis(game_analysis);
+
     auto robot_count = tactic->getRobots().size();
     auto commands_msg = tactic->getPositionCommands();
     auto command_count = commands_msg.robot_commands.size();

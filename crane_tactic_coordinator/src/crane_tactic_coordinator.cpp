@@ -94,6 +94,14 @@ TacticCoordinatorComponent::TacticCoordinatorComponent(const rclcpp::NodeOptions
       config_manager_->updateEventMapping("INJECTION", msg.data);
     });
 
+  game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
+    "/game_analysis", 10, [this](const crane_msgs::msg::GameAnalysis::SharedPtr msg) {
+      latest_game_analysis_ = *msg;
+      RCLCPP_DEBUG(
+        get_logger(), "Received game_analysis: recommended_attacker_id=%d",
+        latest_game_analysis_.recommended_attacker_id);
+    });
+
   // 診断Updater設定
   diagnostic_updater_.setHardwareID("session_controller");
   diagnostic_updater_.add(
@@ -162,7 +170,7 @@ auto TacticCoordinatorComponent::onWorldModelUpdate() -> void
   }
 
   // コマンド収集と構築
-  auto msg = command_aggregator_->collectCommands(world_model, now());
+  auto msg = command_aggregator_->collectCommands(world_model, now(), latest_game_analysis_);
 
   position_commands_pub.publish(msg);
   visualizer->flush();
