@@ -29,7 +29,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   has_latest_detection_frame_(false),
   last_t_capture_(0.0),
   last_t_sent_(0.0),
-  last_ball_detect_time_(node.get_clock()->now()),
   last_prediction_time_(node.get_clock()->now()),
   last_vision_recv_time_(node.get_clock()->now()),
   last_tracker_recv_time_(node.get_clock()->now()),
@@ -98,9 +97,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   ball_info_.tracker_detected = false;
   ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
 
-  // ボールデータ品質管理初期化
-  last_ball_data_ = {Eigen::Vector3d::Zero(), node.get_clock()->now()};
-  velocity_history_.clear();
+  // ボール状態の初期化
+  vision_ball_state_.last_detect_time = node.get_clock()->now();
+  tracker_ball_state_.last_detect_time = node.get_clock()->now();
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
@@ -546,19 +545,11 @@ auto WorldModelDataProvider::processDetectionFrame(
   // ボール検出処理
   if (!detection.balls().empty()) {
     const auto & ssl_ball = detection.balls().at(0);
-    convertBallDetection(ssl_ball);
-    last_ball_detect_time_ = node.get_clock()->now();
-  } else {
-    // ボール未検出時の処理
-    auto now = node.get_clock()->now();
-    if ((now - last_ball_detect_time_).seconds() > 0.1) {
-      ball_info_.detected = false;
-      ball_info_.vision_detected = false;
-      ball_info_.velocity.x = 0.0;
-      ball_info_.velocity.y = 0.0;
-      ball_info_.velocity.z = 0.0;
-    }
+    updateVisionBallState(ssl_ball);
   }
+
+  // Vision/Tracker状態を統合してball_info_を更新
+  integrateBallInfo();
 
   // ロボット検出は現在TrackedFrameで処理される
   // Vision detection frameは主にgeometry情報のために保持
@@ -578,61 +569,25 @@ auto WorldModelDataProvider::processGeometryData(const robocup_ssl::SSL_Geometry
   return true;
 }
 
-auto WorldModelDataProvider::convertBallDetection(const robocup_ssl::SSL_DetectionBall & ssl_ball)
-  -> void
+auto WorldModelDataProvider::updateVisionBallState(
+  const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void
 {
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
   double y = ssl_ball.y() / 1000.0;
   double z = ssl_ball.has_z() ? ssl_ball.z() / 1000.0 : 0.0;
 
-  Eigen::Vector3d current_pos(x, y, z);
   auto now = node.get_clock()->now();
-  double dt = (now - last_ball_data_.second).seconds();
 
-  // 初回データまたは長時間の空白後はリセット
-  if (!ball_data_initialized_ || dt > 1.0) {
-    ball_data_initialized_ = true;
-    last_ball_data_ = {current_pos, now};
-    velocity_history_.clear();
+  // Vision状態を更新
+  vision_ball_state_.position = Eigen::Vector3d(x, y, z);
+  vision_ball_state_.last_detect_time = now;
+  vision_ball_state_.detected = true;
+  vision_ball_state_.raw_position.x = x;
+  vision_ball_state_.raw_position.y = y;
+  vision_ball_state_.raw_position.z = z;
 
-    // 位置のみ更新、速度は0とする
-    ball_info_.position.x = x;
-    ball_info_.position.y = y;
-    ball_info_.position.z = z;
-    ball_info_.velocity.x = 0.0;
-    ball_info_.velocity.y = 0.0;
-    ball_info_.velocity.z = 0.0;
-    ball_info_.velocity_norm = 0.0;
-
-    RCLCPP_DEBUG(node.get_logger(), "Ball tracking initialized at (%.3f, %.3f, %.3f)", x, y, z);
-
-    ball_info_.detected = true;
-    ball_info_.vision_detected = true;
-    ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
-
-    // Vision情報更新
-    ball_info_.vision.stamp = now;
-    ball_info_.vision.pos.x = x;
-    ball_info_.vision.pos.y = y;
-    ball_info_.vision.pos.z = z;
-    return;
-  }
-
-  // 位置情報更新
-  ball_info_.position.x = x;
-  ball_info_.position.y = y;
-  ball_info_.position.z = z;
-
-  // Vision情報更新
-  ball_info_.vision.stamp = now;
-  ball_info_.vision.pos.x = x;
-  ball_info_.vision.pos.y = y;
-  ball_info_.vision.pos.z = z;
-
-  ball_info_.detected = true;
-  ball_info_.vision_detected = true;
-  ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
+  RCLCPP_DEBUG(node.get_logger(), "Vision ball updated at (%.3f, %.3f, %.3f)", x, y, z);
 }
 
 auto WorldModelDataProvider::convertFieldGeometry(
@@ -730,20 +685,11 @@ auto WorldModelDataProvider::processTrackedFrame(
   // ボール情報の処理
   if (!tracked_frame.balls.empty()) {
     const auto & tracked_ball = tracked_frame.balls[0];  // 最初のボールをプライマリとする
-    ball_info_ = convertTrackedBall(tracked_ball);
-    ball_info_.detected = true;
-    ball_info_.tracker_detected = true;
-    last_ball_detect_time_ = now;
-  } else {
-    // ボール未検出時の処理
-    if ((now - last_ball_detect_time_).seconds() > 0.1) {
-      ball_info_.detected = false;
-      ball_info_.tracker_detected = false;
-      ball_info_.velocity.x = 0.0;
-      ball_info_.velocity.y = 0.0;
-      ball_info_.velocity.z = 0.0;
-    }
+    updateTrackerBallState(tracked_ball);
   }
+
+  // Vision/Tracker状態を統合してball_info_を更新
+  integrateBallInfo();
 
   // ロボット情報の処理
   // 全チーム・全ロボットIDをリセット
@@ -767,47 +713,89 @@ auto WorldModelDataProvider::processTrackedFrame(
   }
 }
 
-auto WorldModelDataProvider::convertTrackedBall(
-  const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> crane_msgs::msg::BallInfo
+auto WorldModelDataProvider::updateTrackerBallState(
+  const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> void
 {
-  crane_msgs::msg::BallInfo ball_info;
   auto now = node.get_clock()->now();
 
-  // 位置情報
-  ball_info.position.x = tracked_ball.pos.x;
-  ball_info.position.y = tracked_ball.pos.y;
-  ball_info.position.z = tracked_ball.pos.z;
+  // Tracker状態を更新
+  tracker_ball_state_.position = Eigen::Vector3d(
+    tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z);
 
   // 速度情報（オプション）
   if (tracked_ball.has_field & tracked_ball.VEL_FIELD_SET) {
     const auto & vel = tracked_ball.vel;
-    ball_info.velocity.x = vel.x;
-    ball_info.velocity.y = vel.y;
-    ball_info.velocity.z = vel.z;
-    ball_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+    tracker_ball_state_.velocity = Eigen::Vector3d(vel.x, vel.y, vel.z);
   } else {
-    ball_info.velocity.x = 0.0;
-    ball_info.velocity.y = 0.0;
-    ball_info.velocity.z = 0.0;
-    ball_info.velocity_norm = 0.0;
+    tracker_ball_state_.velocity = Eigen::Vector3d::Zero();
   }
 
-  // ボール状態の決定（速度に基づく簡易判定）
-  if (ball_info.velocity_norm < 0.1) {
-    ball_info.state = crane_msgs::msg::BallInfo::STOPPED;
-  } else {
-    ball_info.state = crane_msgs::msg::BallInfo::ROLLING;
+  tracker_ball_state_.last_detect_time = now;
+  tracker_ball_state_.detected = true;
+
+  RCLCPP_DEBUG(
+    node.get_logger(), "Tracker ball updated at (%.3f, %.3f, %.3f) with velocity (%.3f, %.3f, %.3f)",
+    tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z,
+    tracker_ball_state_.velocity.x(), tracker_ball_state_.velocity.y(),
+    tracker_ball_state_.velocity.z());
+}
+
+auto WorldModelDataProvider::integrateBallInfo() -> void
+{
+  auto now = node.get_clock()->now();
+  constexpr double TIMEOUT_SEC = 0.1;
+
+  // タイムアウトチェック
+  if ((now - vision_ball_state_.last_detect_time).seconds() > TIMEOUT_SEC) {
+    vision_ball_state_.detected = false;
+  }
+  if ((now - tracker_ball_state_.last_detect_time).seconds() > TIMEOUT_SEC) {
+    tracker_ball_state_.detected = false;
   }
 
-  // Vision情報
-  ball_info.vision.stamp = now;
-  ball_info.vision.pos.x = tracked_ball.pos.x;
-  ball_info.vision.pos.y = tracked_ball.pos.y;
-  ball_info.vision.pos.z = tracked_ball.pos.z;
+  // 統合フラグ設定
+  ball_info_.vision_detected = vision_ball_state_.detected;
+  ball_info_.tracker_detected = tracker_ball_state_.detected;
+  ball_info_.detected = vision_ball_state_.detected || tracker_ball_state_.detected;
 
-  ball_info.detected = true;
-  ball_info.tracker_detected = true;
-  return ball_info;
+  // 位置・速度の決定（Tracker優先）
+  if (tracker_ball_state_.detected) {
+    ball_info_.position.x = tracker_ball_state_.position.x();
+    ball_info_.position.y = tracker_ball_state_.position.y();
+    ball_info_.position.z = tracker_ball_state_.position.z();
+    ball_info_.velocity.x = tracker_ball_state_.velocity.x();
+    ball_info_.velocity.y = tracker_ball_state_.velocity.y();
+    ball_info_.velocity.z = tracker_ball_state_.velocity.z();
+    ball_info_.velocity_norm = tracker_ball_state_.velocity.norm();
+  } else if (vision_ball_state_.detected) {
+    ball_info_.position.x = vision_ball_state_.position.x();
+    ball_info_.position.y = vision_ball_state_.position.y();
+    ball_info_.position.z = vision_ball_state_.position.z();
+    // Visionからは速度計算しない（Trackerがない場合は速度0）
+    ball_info_.velocity.x = 0.0;
+    ball_info_.velocity.y = 0.0;
+    ball_info_.velocity.z = 0.0;
+    ball_info_.velocity_norm = 0.0;
+  } else {
+    // 両方未検出 - 速度のみリセット
+    ball_info_.velocity.x = 0.0;
+    ball_info_.velocity.y = 0.0;
+    ball_info_.velocity.z = 0.0;
+    ball_info_.velocity_norm = 0.0;
+  }
+
+  // Vision情報の更新（常にVisionの生データを保持）
+  if (vision_ball_state_.detected) {
+    ball_info_.vision.stamp = vision_ball_state_.last_detect_time;
+    ball_info_.vision.pos = vision_ball_state_.raw_position;
+  }
+
+  // ボール状態の決定
+  if (ball_info_.velocity_norm < 0.1) {
+    ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
+  } else {
+    ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;
+  }
 }
 
 auto WorldModelDataProvider::convertTrackedRobot(
