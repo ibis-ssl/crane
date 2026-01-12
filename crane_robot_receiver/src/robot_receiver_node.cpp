@@ -126,8 +126,7 @@ public:
     auto now = clock.now();
 
     // 1秒より古いタイムスタンプを削除
-    while (!receive_timestamps_.empty() &&
-           (now - receive_timestamps_.front()) > 1000ms) {
+    while (!receive_timestamps_.empty() && (now - receive_timestamps_.front()) > 1000ms) {
       receive_timestamps_.pop_front();
     }
 
