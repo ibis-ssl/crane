@@ -34,7 +34,8 @@ enum class MetricId {
   RECOMMENDED_DEFENDERS,  ///< 推奨守備者数
 
   // 役割決定（新規）
-  ATTACKER_CANDIDATE,  ///< 推奨アタッカー
+  ATTACKER_CANDIDATE,     ///< 推奨アタッカー
+  SUB_ATTACKER_POSITION,  ///< SubAttacker推奨位置
 };
 
 /**

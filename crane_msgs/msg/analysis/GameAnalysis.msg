@@ -34,3 +34,8 @@ uint8 recommended_num_defenders
 int32 recommended_attacker_id        # 推奨アタッカーID（-1は未選択）
 float32 attacker_suitability_score   # アタッカー適性スコア
 int32 recommended_pass_receiver_id   # 推奨パスレシーバーID（-1は未選択）
+
+# SubAttacker推奨位置
+geometry_msgs/Point recommended_sub_attacker_position
+float32 sub_attacker_position_score
+bool has_sub_attacker_position  # 有効な位置が存在するか
