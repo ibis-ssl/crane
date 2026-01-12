@@ -8,6 +8,10 @@ Vector3Stamped vision
 
 bool detected
 
+# ソース別検出フラグ（vision/trackerの使い分け用）
+bool vision_detected
+bool tracker_detected
+
 # ボール状態
 uint8 STOPPED = 0
 uint8 ROLLING = 1

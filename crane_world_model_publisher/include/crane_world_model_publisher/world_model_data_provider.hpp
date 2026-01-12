@@ -73,6 +73,24 @@ struct ProcessorConfig
   ProcessorConfig() : vision_address("224.5.23.2"), vision_port(10020), confidence_threshold(0.3) {}
 };
 
+// Vision用ボール状態
+struct VisionBallState
+{
+  Eigen::Vector3d position{Eigen::Vector3d::Zero()};
+  rclcpp::Time last_detect_time{};
+  bool detected{false};
+  geometry_msgs::msg::Vector3 raw_position{};
+};
+
+// Tracker用ボール状態
+struct TrackerBallState
+{
+  Eigen::Vector3d position{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d velocity{Eigen::Vector3d::Zero()};
+  rclcpp::Time last_detect_time{};
+  bool detected{false};
+};
+
 class WorldModelDataProvider
 {
 public:
@@ -154,17 +172,15 @@ private:
   // タイムスタンプ
   double last_t_capture_;
   double last_t_sent_;
-  rclcpp::Time last_ball_detect_time_;
   rclcpp::Time last_prediction_time_;
   rclcpp::Time last_vision_recv_time_;
   rclcpp::Time last_tracker_recv_time_;
 
   static constexpr size_t MAX_ROBOT_COUNT = 20;
 
-  // ボールデータ品質管理
-  std::pair<Eigen::Vector3d, rclcpp::Time> last_ball_data_;
-  std::deque<Eigen::Vector3d> velocity_history_;  // 移動平均用
-  bool ball_data_initialized_ = false;
+  // ボール状態管理（Vision/Tracker分離）
+  VisionBallState vision_ball_state_;
+  TrackerBallState tracker_ball_state_;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
   rclcpp::TimerBase::SharedPtr status_check_timer_;
@@ -254,7 +270,6 @@ private:
 
   auto processDetectionFrame(const robocup_ssl::SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const robocup_ssl::SSL_GeometryData & geometry) -> bool;
-  auto convertBallDetection(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
   auto convertFieldGeometry(const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void;
   auto loadFieldGeometryFromConfig(const std::string & config_path) -> bool;
   auto reportError(const std::string & error_message) -> void;
@@ -263,10 +278,13 @@ private:
     const crane_msgs::msg::RobotInfo & vision_robot,
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
 
+  // ボール状態更新メソッド（Vision/Tracker分離）
+  auto updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
+  auto updateTrackerBallState(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> void;
+  auto integrateBallInfo() -> void;
+
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
-  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball)
-    -> crane_msgs::msg::BallInfo;
   auto convertTrackedRobot(
     const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
     -> crane_msgs::msg::RobotInfo;
