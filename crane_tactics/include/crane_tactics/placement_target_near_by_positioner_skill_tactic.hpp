@@ -33,6 +33,15 @@ public:
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    auto wm = world_model;
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      return robot->getSquareDistance(wm->ball().pos);
+    };
+  }
+
 protected:
   void onRobotsChanged() override { skills.clear(); }
 };

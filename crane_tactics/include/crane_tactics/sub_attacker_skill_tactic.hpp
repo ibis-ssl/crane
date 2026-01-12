@@ -33,6 +33,24 @@ public:
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // 注意: SubAttacker用のDPPS最適位置は将来game_analyzerのmetricsで計算予定
+    // 現時点では簡略版を使用し、metrics追加後に更新する
+    // TODO: game_analyzerにSubAttacker用metricsが追加されたら、
+    //       recommended_sub_attacker_position等を使用するように更新
+    auto wm = world_model;
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      // ボールが自陣にある場合は高コスト（SubAttacker不要）
+      if (wm->point_checker.isInOurHalf(wm->ball().pos)) {
+        return 10000.0;
+      }
+      // 敵ゴール方向でボール付近のロボットを優先
+      return robot->getSquareDistance(wm->ball().pos);
+    };
+  }
+
 protected:
   void onRobotsChanged() override { skill.reset(); }
 };

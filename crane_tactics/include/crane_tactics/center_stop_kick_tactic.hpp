@@ -35,6 +35,14 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    return [](const std::shared_ptr<RobotInfo> & robot) {
+      return static_cast<double>(robot->id);  // ID小優先
+    };
+  }
+
 private:
   // スキルインスタンス
   std::shared_ptr<skills::CenterStopKick> skill_;

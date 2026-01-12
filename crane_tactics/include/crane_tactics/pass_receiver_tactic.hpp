@@ -76,6 +76,14 @@ public:
     return {TacticBase::Status::RUNNING, {receive_skill->getRobotCommand()}};
   }
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // PassReceiverはgame_analysisのpass_target_idで指定されるため
+    // 適性関数でのフィルタリングは不要（デフォルトコスト0.0を返す）
+    return [](const std::shared_ptr<RobotInfo> &) { return 0.0; };
+  }
+
 protected:
   void onRobotsChanged() override { receive_skill.reset(); }
 };
