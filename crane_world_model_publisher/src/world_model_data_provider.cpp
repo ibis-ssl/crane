@@ -94,6 +94,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // ボール情報初期化
   ball_info_.detected = false;
+  ball_info_.vision_detected = false;
+  ball_info_.tracker_detected = false;
   ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
 
   // ボールデータ品質管理初期化
@@ -551,6 +553,7 @@ auto WorldModelDataProvider::processDetectionFrame(
     auto now = node.get_clock()->now();
     if ((now - last_ball_detect_time_).seconds() > 0.1) {
       ball_info_.detected = false;
+      ball_info_.vision_detected = false;
       ball_info_.velocity.x = 0.0;
       ball_info_.velocity.y = 0.0;
       ball_info_.velocity.z = 0.0;
@@ -605,6 +608,7 @@ auto WorldModelDataProvider::convertBallDetection(const robocup_ssl::SSL_Detecti
     RCLCPP_DEBUG(node.get_logger(), "Ball tracking initialized at (%.3f, %.3f, %.3f)", x, y, z);
 
     ball_info_.detected = true;
+    ball_info_.vision_detected = true;
     ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
 
     // Vision情報更新
@@ -627,6 +631,7 @@ auto WorldModelDataProvider::convertBallDetection(const robocup_ssl::SSL_Detecti
   ball_info_.vision.pos.z = z;
 
   ball_info_.detected = true;
+  ball_info_.vision_detected = true;
   ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
 }
 
@@ -727,11 +732,13 @@ auto WorldModelDataProvider::processTrackedFrame(
     const auto & tracked_ball = tracked_frame.balls[0];  // 最初のボールをプライマリとする
     ball_info_ = convertTrackedBall(tracked_ball);
     ball_info_.detected = true;
+    ball_info_.tracker_detected = true;
     last_ball_detect_time_ = now;
   } else {
     // ボール未検出時の処理
     if ((now - last_ball_detect_time_).seconds() > 0.1) {
       ball_info_.detected = false;
+      ball_info_.tracker_detected = false;
       ball_info_.velocity.x = 0.0;
       ball_info_.velocity.y = 0.0;
       ball_info_.velocity.z = 0.0;
@@ -799,6 +806,7 @@ auto WorldModelDataProvider::convertTrackedBall(
   ball_info.vision.pos.z = tracked_ball.pos.z;
 
   ball_info.detected = true;
+  ball_info.tracker_detected = true;
   return ball_info;
 }
 
