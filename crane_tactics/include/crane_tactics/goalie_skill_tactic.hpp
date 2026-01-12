@@ -35,6 +35,21 @@ public:
 
   bool isHardConstraint() const override { return true; }
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    // Refereeが指定したゴールキーパーIDを優先的に割り当てる
+    return [referee_goalie_id =
+              world_model->getOurGoalieId()](const std::shared_ptr<RobotInfo> & robot) {
+      // レフェリーが指定したゴールキーパーIDの場合、コスト0（最高の適性）
+      if (robot->id == referee_goalie_id) {
+        return 0.0;
+      }
+      // その他のロボットは非常に高いコストを返して避ける
+      return 1000.0;
+    };
+  }
+
 protected:
   void onRobotsChanged() override { skill.reset(); }
 };
