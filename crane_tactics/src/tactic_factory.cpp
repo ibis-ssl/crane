@@ -25,7 +25,12 @@
 #include <crane_tactics/placement_avoidance_tactic.hpp>
 #include <crane_tactics/second_threat_defender_tactic.hpp>
 #include <crane_tactics/simple_placer_tactic.hpp>
-#include <crane_tactics/skill_tactic.hpp>
+#include <crane_tactics/ball_near_by_positioner_skill_tactic.hpp>
+#include <crane_tactics/ball_placement_skill_tactic.hpp>
+#include <crane_tactics/goalie_skill_tactic.hpp>
+#include <crane_tactics/placement_target_near_by_positioner_skill_tactic.hpp>
+#include <crane_tactics/simple_kick_off_skill_tactic.hpp>
+#include <crane_tactics/sub_attacker_skill_tactic.hpp>
 #include <crane_tactics/test_tactic.hpp>
 #include <crane_tactics/their_penalty_kick_tactic.hpp>
 #include <crane_tactics/total_defense_tactic.hpp>
