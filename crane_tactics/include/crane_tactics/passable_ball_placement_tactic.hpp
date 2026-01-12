@@ -41,6 +41,18 @@ public:
     }
   }
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    auto wm = world_model;
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == wm->getOurGoalieId()) {
+        return 10000.0;  // ゴールキーパーは除外
+      }
+      return robot->getSquareDistance(wm->ball().pos);
+    };
+  }
+
   std::shared_ptr<skills::SingleBallPlacement> ball_placement;
 };
 
@@ -63,6 +75,21 @@ public:
     } else {
       return {TacticBase::Status::RUNNING, {}};
     }
+  }
+
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    auto wm = world_model;
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == wm->getOurGoalieId()) {
+        return 10000.0;  // ゴールキーパーは除外
+      }
+      if (auto target = wm->getBallPlacementTarget(); target) {
+        return robot->getDistance(target.value());
+      }
+      return robot->getDistance(wm->ball().pos);  // フォールバック
+    };
   }
 
   std::shared_ptr<PositionCommandWrapper> placer = nullptr;
