@@ -104,7 +104,10 @@ public:
 
   [[nodiscard]] auto available() const -> bool
   {
-    return has_vision_updated_ || has_tracked_frame_updated_;
+    bool has_data = has_vision_updated_ || has_tracked_frame_updated_;
+    bool has_field = geometry_initialized ||
+                     (game_data.field_w > 0.0 && game_data.field_h > 0.0);
+    return has_data && has_field;
   }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
@@ -117,6 +120,11 @@ public:
     -> void;
 
   auto updateGeometryIfNeeded() -> void;
+
+  // 状態確認用メソッド
+  [[nodiscard]] auto isGeometryInitialized() const -> bool { return geometry_initialized; }
+  [[nodiscard]] auto hasVisionUpdated() const -> bool { return has_vision_updated_; }
+  [[nodiscard]] auto hasTrackedFrameUpdated() const -> bool { return has_tracked_frame_updated_; }
 
   // Vision処理関連メソッド
   [[nodiscard]] auto getBallInfo() const -> const crane_msgs::msg::BallInfo & { return ball_info_; }

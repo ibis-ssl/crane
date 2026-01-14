@@ -148,9 +148,24 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       publishWorldModel();
       publishVisualization(wrapper_);
     } else {
-      RCLCPP_WARN_THROTTLE(
-        get_logger(), *get_clock(), 10000,
-        "No vision or tracker data available - world_model not published");
+      // より詳細な状態を表示
+      bool has_vision = data_provider_->hasVisionUpdated();
+      bool has_tracker = data_provider_->hasTrackedFrameUpdated();
+      bool has_geometry = data_provider_->isGeometryInitialized();
+
+      if (!has_vision && !has_tracker) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 10000,
+          "Vision/Trackerデータを待機中 - world_modelは未発行");
+      } else if (!has_geometry) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 10000,
+          "フィールド情報を待機中 - world_modelは未発行 (Vision/Trackerデータは受信済み)");
+      } else {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 10000,
+          "データ準備中 - world_modelは未発行");
+      }
     }
 
     // 診断情報を更新

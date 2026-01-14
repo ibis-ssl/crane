@@ -337,11 +337,20 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
   game_data.penalty_area_h = geometry.penalty_area_height;
 
   if (geometry_changed) {
-    RCLCPP_INFO(
-      node.get_logger(),
-      "フィールド情報受信（%s）: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
-      geometry_initialized ? "更新" : "初期化", game_data.field_w, game_data.field_h,
-      game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+    if (geometry_initialized) {
+      RCLCPP_INFO(
+        node.get_logger(),
+        "フィールド情報更新: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+        game_data.field_w, game_data.field_h,
+        game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+    } else {
+      RCLCPP_INFO(
+        node.get_logger(),
+        "フィールド情報初期化完了: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f "
+        "→ world_model発行が開始されます",
+        game_data.field_w, game_data.field_h,
+        game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+    }
   }
 
   constexpr double OFFSET = 0.3;
