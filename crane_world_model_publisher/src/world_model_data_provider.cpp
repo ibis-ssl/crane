@@ -341,15 +341,15 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
       RCLCPP_INFO(
         node.get_logger(),
         "フィールド情報更新: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
-        game_data.field_w, game_data.field_h,
-        game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+        game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
+        game_data.penalty_area_w, game_data.penalty_area_h);
     } else {
       RCLCPP_INFO(
         node.get_logger(),
         "フィールド情報初期化完了: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f "
         "→ world_model発行が開始されます",
-        game_data.field_w, game_data.field_h,
-        game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+        game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
+        game_data.penalty_area_w, game_data.penalty_area_h);
     }
   }
 

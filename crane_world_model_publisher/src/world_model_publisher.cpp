@@ -155,16 +155,14 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
       if (!has_vision && !has_tracker) {
         RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 10000,
-          "Vision/Trackerデータを待機中 - world_modelは未発行");
+          get_logger(), *get_clock(), 10000, "Vision/Trackerデータを待機中 - world_modelは未発行");
       } else if (!has_geometry) {
         RCLCPP_WARN_THROTTLE(
           get_logger(), *get_clock(), 10000,
           "フィールド情報を待機中 - world_modelは未発行 (Vision/Trackerデータは受信済み)");
       } else {
         RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 10000,
-          "データ準備中 - world_modelは未発行");
+          get_logger(), *get_clock(), 10000, "データ準備中 - world_modelは未発行");
       }
     }
 

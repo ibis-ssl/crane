@@ -105,8 +105,7 @@ public:
   [[nodiscard]] auto available() const -> bool
   {
     bool has_data = has_vision_updated_ || has_tracked_frame_updated_;
-    bool has_field = geometry_initialized ||
-                     (game_data.field_w > 0.0 && game_data.field_h > 0.0);
+    bool has_field = geometry_initialized || (game_data.field_w > 0.0 && game_data.field_h > 0.0);
     return has_data && has_field;
   }
 
