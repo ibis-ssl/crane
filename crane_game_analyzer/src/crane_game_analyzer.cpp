@@ -473,10 +473,30 @@ auto GameAnalyzerComponent::createPlaySituationEvent(
   return event;
 }
 
-auto GameAnalyzerComponent::onGameEvent(const robocup_ssl_msgs::msg::GameEvent & msg) -> void
+void GameAnalyzerComponent::onGameEvent(const robocup_ssl_msgs::msg::GameEvent & msg)
 {
   using OneOfEvent = robocup_ssl_msgs::msg::GameEventOneOfEvent;
   using Team = robocup_ssl_msgs::msg::Team;
+
+  // 無効なイベントをスキップ
+  if (msg.event.event_which == OneOfEvent::EVENT_NOT_SET) {
+    RCLCPP_DEBUG(get_logger(), "Skipping unset game event");
+    return;
+  }
+
+  // 同一イベントの重複出力を抑制
+  if (last_game_event_.has_value()) {
+    const auto & last = last_game_event_.value();
+    if (last.type.value == msg.type.value &&
+        last.event.event_which == msg.event.event_which) {
+      // 同一イベントタイプの連続受信 - ログ出力をスキップ
+      RCLCPP_DEBUG(
+        get_logger(), "Skipping duplicate game event (type=%d, event_which=%d)", msg.type.value,
+        msg.event.event_which);
+      return;
+    }
+  }
+  last_game_event_ = msg;
 
   crane_msgs::msg::RonarEvent event;
   event.header.stamp = now();

@@ -84,8 +84,7 @@ TacticCoordinatorComponent::TacticCoordinatorComponent(const rclcpp::NodeOptions
   });
 
   declare_parameter("initial_session", "HALT");
-  auto initial_session = get_parameter("initial_session").as_string();
-  assign(initial_session);
+  initial_session_name = get_parameter("initial_session").as_string();
 
   world_model->addCallback([this]() { onWorldModelUpdate(); });
 
@@ -154,8 +153,14 @@ auto TacticCoordinatorComponent::onWorldModelUpdate() -> void
 {
   ScopedTimer timer(callback_process_time_pub);
 
-  if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
+  if (not world_model_ready) {
     world_model_ready = true;
+
+    // 初期セッションを割り当て
+    if (!initial_assignment_done && !initial_session_name.empty()) {
+      assign(initial_session_name);
+      initial_assignment_done = true;
+    }
   }
 
   // 遅延監視: WorldModel受信完了とTacticCoordinator処理開始

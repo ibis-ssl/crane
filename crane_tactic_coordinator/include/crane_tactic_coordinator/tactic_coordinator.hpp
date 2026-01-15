@@ -87,6 +87,10 @@ private:
 
   bool world_model_ready = false;
 
+  bool initial_assignment_done = false;
+
+  std::string initial_session_name;
+
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
   VisualizerMessageBuilder::SharedPtr visualizer =
