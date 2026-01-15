@@ -487,8 +487,7 @@ void GameAnalyzerComponent::onGameEvent(const robocup_ssl_msgs::msg::GameEvent &
   // 同一イベントの重複出力を抑制
   if (last_game_event_.has_value()) {
     const auto & last = last_game_event_.value();
-    if (last.type.value == msg.type.value &&
-        last.event.event_which == msg.event.event_which) {
+    if (last.type.value == msg.type.value && last.event.event_which == msg.event.event_which) {
       // 同一イベントタイプの連続受信 - ログ出力をスキップ
       RCLCPP_DEBUG(
         get_logger(), "Skipping duplicate game event (type=%d, event_which=%d)", msg.type.value,
