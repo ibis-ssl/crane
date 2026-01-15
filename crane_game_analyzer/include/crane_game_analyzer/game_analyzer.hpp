@@ -14,6 +14,7 @@
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/game_event.hpp>
 #include <robocup_ssl_msgs/msg/game_event_one_of_event.hpp>
@@ -265,6 +266,7 @@ private:
 
   // GameEvent (autoref) 購読
   rclcpp::Subscription<robocup_ssl_msgs::msg::GameEvent>::SharedPtr game_event_sub_;
+  std::optional<robocup_ssl_msgs::msg::GameEvent> last_game_event_;
 
   // チーム名
   std::string our_team_name_;
