@@ -620,8 +620,7 @@ private:
     broadcastToAll(svg_update.dump());
   }
 
-  void handleTimeSyncRequest(
-    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  void handleTimeSyncRequest(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     // NTPライクな時刻同期
     // T1: クライアント送信時刻
@@ -726,14 +725,10 @@ private:
     // ゲームイベント（ファールなど）を取得
     std::string game_event = msg->reason_text;
 
-    json game_info = {
-      {"type", "game_info"},
-      {"play_situation", play_situation_str},
-      {"our_score", our_score},
-      {"their_score", their_score},
-      {"game_time", game_time},
-      {"game_stage", game_stage},
-      {"game_event", game_event}};
+    json game_info = {{"type", "game_info"},     {"play_situation", play_situation_str},
+                      {"our_score", our_score},  {"their_score", their_score},
+                      {"game_time", game_time},  {"game_stage", game_stage},
+                      {"game_event", game_event}};
 
     return game_info.dump();
   }
