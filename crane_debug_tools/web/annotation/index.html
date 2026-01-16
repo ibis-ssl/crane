@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta name="theme-color" content="#16213e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CraneAnnot">
+  <meta name="description" content="RoboCup SSL試合アノテーションツール">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Crane Annotation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ステータスバー -->
+  <header id="status-bar">
+    <div class="status-item">
+      <span id="connection-indicator" class="indicator offline"></span>
+      <span id="connection-status">未接続</span>
+    </div>
+    <div class="status-item">
+      <span id="time-sync-status">同期: --</span>
+    </div>
+  </header>
+
+  <!-- 試合情報パネル -->
+  <section id="game-info-panel">
+    <div class="game-info-grid">
+      <div class="info-card">
+        <div class="info-label">状況</div>
+        <div id="play-situation" class="info-value">---</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">スコア</div>
+        <div id="score" class="info-value">0 - 0</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">時間</div>
+        <div id="game-time" class="info-value">--:--</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">フェーズ</div>
+        <div id="game-stage" class="info-value">---</div>
+      </div>
+    </div>
+    <div id="game-event-banner" class="game-event-banner hidden">
+      <span id="game-event-text"></span>
+    </div>
+  </section>
+
+
+  <!-- クイックアノテーションボタン -->
+  <main id="quick-buttons">
+    <div class="button-grid-simple">
+      <button class="annotation-btn btn-issue" data-category="0" data-label="問題">
+        ⚠️<br>問題
+      </button>
+      <button class="annotation-btn btn-positive" data-category="1" data-label="良い動き">
+        ✨<br>良い動き
+      </button>
+      <button class="annotation-btn btn-note" data-category="2" data-label="メモ">
+        📝<br>メモ
+      </button>
+    </div>
+  </main>
+
+  <!-- リワインド機能 -->
+  <section id="rewind-section">
+    <div class="rewind-header">
+      <label for="rewind-slider">時刻調整</label>
+      <button id="rewind-lock" class="rewind-lock-btn">
+        <span id="lock-icon">🔓</span>
+        <span id="lock-text">リアルタイム</span>
+      </button>
+    </div>
+    <div class="slider-container">
+      <input type="range" id="rewind-slider" min="-30" max="0" value="0" step="1">
+      <span id="rewind-value">0秒前</span>
+    </div>
+  </section>
+
+  <!-- 詳細入力モーダル -->
+  <div id="detail-modal" class="modal hidden">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-content modal-compact">
+      <h3 id="modal-title">アノテーション</h3>
+
+      <!-- コンテキスト選択ボタン -->
+      <div class="context-buttons">
+        <button id="modal-robot-select-btn" class="btn-context-big">
+          <span class="context-icon">🤖</span>
+          <div class="context-text">
+            <div class="context-label">ロボット</div>
+            <div id="modal-robot-label" class="context-value">選択なし</div>
+          </div>
+        </button>
+        <button id="modal-position-select-btn" class="btn-context-big">
+          <span class="context-icon">📍</span>
+          <div class="context-text">
+            <div class="context-label">位置</div>
+            <div id="modal-position-label" class="context-value">選択なし</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- 詳細説明 -->
+      <div class="form-group">
+        <textarea id="modal-description" placeholder="詳細メモ（任意）..." rows="3"></textarea>
+      </div>
+
+      <!-- 音声入力ボタン -->
+      <button id="voice-input-btn" class="btn-voice">
+        <span id="voice-icon">🎤</span> <span>音声入力</span>
+      </button>
+
+      <!-- アクションボタン -->
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn-secondary">キャンセル</button>
+        <button id="modal-submit" class="btn-primary">送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ロボット選択モーダル -->
+  <div id="robot-modal" class="modal hidden">
+    <div class="modal-overlay" id="robot-modal-overlay"></div>
+    <div class="modal-content">
+      <h3>ロボット選択</h3>
+
+      <div class="form-group">
+        <label>チーム</label>
+        <div class="team-selector">
+          <button id="team-ours" class="team-btn active">自チーム</button>
+          <button id="team-theirs" class="team-btn">相手チーム</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ロボットID</label>
+        <div class="robot-id-grid" id="robot-id-grid">
+          <!-- 0-15のボタンが動的生成される -->
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="robot-modal-cancel" class="btn-secondary">キャンセル</button>
+        <button id="robot-modal-ok" class="btn-primary">決定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- フィールドマップ選択モーダル -->
+  <div id="field-modal" class="modal hidden">
+    <div class="modal-overlay" id="field-modal-overlay"></div>
+    <div class="modal-content modal-large">
+      <h3>フィールド上の位置を選択</h3>
+
+      <div class="field-container">
+        <svg id="field-svg" viewBox="-4.5 -3 9 6" xmlns="http://www.w3.org/2000/svg">
+          <!-- SSL Division A フィールド: 9m x 6m -->
+
+          <!-- 自陣エリア（左・青っぽい） -->
+          <rect x="-4.5" y="-3" width="4.5" height="6" fill="rgba(30, 120, 180, 0.15)"/>
+
+          <!-- 敵陣エリア（右・赤っぽい） -->
+          <rect x="0" y="-3" width="4.5" height="6" fill="rgba(220, 80, 80, 0.15)"/>
+
+          <!-- フィールド外枠 -->
+          <rect x="-4.5" y="-3" width="9" height="6" fill="none" stroke="#ffffff" stroke-width="0.05"/>
+
+          <!-- センターライン -->
+          <line x1="0" y1="-3" x2="0" y2="3" stroke="#ffffff" stroke-width="0.05"/>
+
+          <!-- センターサークル -->
+          <circle cx="0" cy="0" r="0.5" fill="none" stroke="#ffffff" stroke-width="0.05"/>
+
+          <!-- ペナルティエリア（左・自陣） -->
+          <rect x="-4.5" y="-1" width="1" height="2" fill="none" stroke="#ffffff" stroke-width="0.05"/>
+
+          <!-- ペナルティエリア（右・敵陣） -->
+          <rect x="3.5" y="-1" width="1" height="2" fill="none" stroke="#ffffff" stroke-width="0.05"/>
+
+          <!-- ゴール（左・自陣） -->
+          <rect x="-4.7" y="-0.45" width="0.2" height="0.9" fill="#4dabf7" stroke="#4dabf7" stroke-width="0.02"/>
+
+          <!-- ゴール（右・敵陣） -->
+          <rect x="4.5" y="-0.45" width="0.2" height="0.9" fill="#ff6b6b" stroke="#ff6b6b" stroke-width="0.02"/>
+
+          <!-- ラベル：自陣 -->
+          <text x="-2.25" y="-2.5" text-anchor="middle" fill="#ffffff" font-size="0.3" font-weight="bold">自陣</text>
+
+          <!-- ラベル：敵陣 -->
+          <text x="2.25" y="-2.5" text-anchor="middle" fill="#ffffff" font-size="0.3" font-weight="bold">敵陣</text>
+
+          <!-- 選択位置マーカー -->
+          <circle id="position-marker" cx="0" cy="0" r="0.15" fill="rgba(255, 220, 100, 0.9)" stroke="#ffffff" stroke-width="0.05" style="display: none;"/>
+        </svg>
+        <div class="field-info">
+          <span>タップして位置を選択</span>
+          <span id="position-coords">x: --, y: --</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="field-modal-cancel" class="btn-secondary">キャンセル</button>
+        <button id="field-modal-ok" class="btn-primary">決定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 履歴表示（下からスワイプ） -->
+  <aside id="history-panel" class="hidden">
+    <div class="history-header">
+      <h3>送信履歴</h3>
+      <button id="history-close">×</button>
+    </div>
+    <ul id="history-list"></ul>
+  </aside>
+
+  <!-- 履歴表示トグルボタン -->
+  <button id="history-toggle" class="history-toggle-btn">
+    📜 履歴
+  </button>
+
+  <!-- PWAインストールボタン -->
+  <button id="install-btn" class="install-btn hidden">
+    📱 アプリとしてインストール
+  </button>
+
+  <script src="app.js"></script>
+</body>
+</html>
