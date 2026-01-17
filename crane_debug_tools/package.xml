@@ -8,6 +8,7 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>ament_index_cpp</depend>
   <depend>crane_msg_wrappers</depend>
@@ -22,6 +23,11 @@
   <depend>rclcpp_action</depend>
   <depend>rosidl_runtime_cpp</depend>
   <depend>std_msgs</depend>
+
+  <!-- Python dependencies -->
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rosbag2_py</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
