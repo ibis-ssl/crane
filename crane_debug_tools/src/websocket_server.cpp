@@ -14,6 +14,8 @@
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
+#include <crane_msgs/msg/human_annotation.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
@@ -258,6 +260,16 @@ public:
         broadcastRobotCommands(msg);
       });
 
+    play_situation_sub_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
+      "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
+        // 最新のメッセージをキャッシュ
+        {
+          std::lock_guard<std::mutex> lock(game_info_mutex_);
+          latest_play_situation_ = msg;
+        }
+        broadcastGameInfo(msg);
+      });
+
     aggregated_svgs_sub_ =
       this->create_subscription<crane_visualization_interfaces::msg::SvgSnapshot>(
         "/aggregated_svgs", 10,
@@ -272,6 +284,10 @@ public:
         [this](const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg) {
           broadcastSvgUpdates(msg);
         });
+
+    // Human annotation publisher
+    annotation_pub_ =
+      this->create_publisher<crane_msgs::msg::HumanAnnotation>("/human_annotations", 10);
 
     // Start servers
     startServers();
@@ -362,6 +378,14 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "WebSocket connection established");
 
+    // 接続確立時に最新のゲーム情報を送信
+    {
+      std::lock_guard<std::mutex> lock(game_info_mutex_);
+      if (latest_play_situation_) {
+        sendGameInfoToConnection(connection, latest_play_situation_);
+      }
+    }
+
     // Message processing loop
     while (connection->isConnected() && running_) {
       std::string message = connection->receiveMessage();
@@ -389,7 +413,11 @@ private:
       json request = json::parse(message);
       std::string type = request["type"];
 
-      if (type == "get_world_model") {
+      if (type == "time_sync_request") {
+        handleTimeSyncRequest(connection, request);
+      } else if (type == "annotation") {
+        handleAnnotation(connection, request);
+      } else if (type == "get_world_model") {
         // World model is automatically broadcasted, but we can send current state if needed
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
@@ -592,6 +620,133 @@ private:
     broadcastToAll(svg_update.dump());
   }
 
+  void handleTimeSyncRequest(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    // NTPライクな時刻同期
+    // T1: クライアント送信時刻
+    // T2: サーバー受信時刻（now）
+    auto T2 = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch())
+                .count();
+
+    json response = {
+      {"type", "time_sync_response"},
+      {"client_send_time_ms", request["client_send_time_ms"]},
+      {"server_receive_time_ms", T2},
+      {"server_send_time_ms", T2},  // 処理時間が短いため同じ
+      {"ros_time_ns", this->get_clock()->now().nanoseconds()}};
+
+    connection->sendMessage(response.dump());
+  }
+
+  void handleAnnotation(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    auto msg = crane_msgs::msg::HumanAnnotation();
+
+    // ヘッダー設定
+    msg.header.stamp = this->get_clock()->now();
+    msg.header.frame_id = "human_annotation";
+
+    // 基本フィールド
+    msg.category = request.value("category", 0);
+    msg.priority = request.value("priority", 1);
+    msg.label = request.value("label", "");
+    msg.description = request.value("description", "");
+
+    // 時刻関連
+    msg.event_timestamp_ns = request.value("event_timestamp_ns", 0L);
+    msg.client_timestamp_ms = request.value("client_timestamp_ms", 0L);
+    msg.time_offset_ms = request.value("time_offset_ms", 0);
+
+    // デフォルトのタイムスタンプ
+    int64_t default_timestamp = this->get_clock()->now().nanoseconds();
+    if (msg.event_timestamp_ns == 0) {
+      msg.event_timestamp_ns = default_timestamp;
+    }
+
+    // 位置情報
+    if (request.contains("position")) {
+      msg.has_position = true;
+      msg.position.x = request["position"].value("x", 0.0);
+      msg.position.y = request["position"].value("y", 0.0);
+      msg.position.z = request["position"].value("z", 0.0);
+    } else {
+      msg.has_position = false;
+    }
+
+    // ロボットコンテキスト
+    if (request.contains("related_robot_ids")) {
+      msg.has_robot_context = true;
+      for (const auto & id : request["related_robot_ids"]) {
+        msg.related_robot_ids.push_back(id.get<uint8_t>());
+      }
+      if (request.contains("robot_is_ours")) {
+        for (const auto & is_ours : request["robot_is_ours"]) {
+          msg.robot_is_ours.push_back(is_ours.get<bool>());
+        }
+      }
+    } else {
+      msg.has_robot_context = false;
+    }
+
+    // メタデータ
+    if (request.contains("metadata")) {
+      msg.metadata_json = request["metadata"].dump();
+    }
+
+    // パブリッシュ
+    annotation_pub_->publish(msg);
+
+    // 確認レスポンス
+    json response = {
+      {"type", "annotation_ack"}, {"success", true}, {"timestamp_ns", default_timestamp}};
+    connection->sendMessage(response.dump());
+
+    RCLCPP_INFO(
+      this->get_logger(), "Human annotation received: [%s] %s", msg.label.c_str(),
+      msg.description.c_str());
+  }
+
+  std::string createGameInfoMessage(const crane_msgs::msg::PlaySituation::SharedPtr msg)
+  {
+    // プレイ状況の文字列を取得
+    std::string play_situation_str = msg->command.name;
+
+    // スコアを取得
+    int our_score = msg->our_team_info.score;
+    int their_score = msg->their_team_info.score;
+
+    // 試合時間を取得（秒単位）
+    int game_time = msg->referee_raw.stage_time_left / 1000000;  // マイクロ秒から秒へ
+
+    // ゲームステージを取得
+    std::string game_stage = msg->stage.name;
+
+    // ゲームイベント（ファールなど）を取得
+    std::string game_event = msg->reason_text;
+
+    json game_info = {{"type", "game_info"},     {"play_situation", play_situation_str},
+                      {"our_score", our_score},  {"their_score", their_score},
+                      {"game_time", game_time},  {"game_stage", game_stage},
+                      {"game_event", game_event}};
+
+    return game_info.dump();
+  }
+
+  void sendGameInfoToConnection(
+    std::shared_ptr<WebSocketConnection> connection,
+    const crane_msgs::msg::PlaySituation::SharedPtr msg)
+  {
+    if (connection->isConnected()) {
+      connection->sendMessage(createGameInfoMessage(msg));
+    }
+  }
+
+  void broadcastGameInfo(const crane_msgs::msg::PlaySituation::SharedPtr msg)
+  {
+    broadcastToAll(createGameInfoMessage(msg));
+  }
+
   void broadcastToAll(const std::string & message)
   {
     std::lock_guard<std::mutex> lock(connections_mutex_);
@@ -605,10 +760,12 @@ private:
   // ROS components
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgSnapshot>::SharedPtr
     aggregated_svgs_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgUpdates>::SharedPtr
     visualizer_svgs_sub_;
+  rclcpp::Publisher<crane_msgs::msg::HumanAnnotation>::SharedPtr annotation_pub_;
 
   // Server components
   std::thread http_thread_;
@@ -622,6 +779,10 @@ private:
   // WebSocket connections
   std::set<std::shared_ptr<WebSocketConnection>> connections_;
   std::mutex connections_mutex_;
+
+  // Game info cache
+  crane_msgs::msg::PlaySituation::SharedPtr latest_play_situation_;
+  std::mutex game_info_mutex_;
 };
 
 int main(int argc, char ** argv)
