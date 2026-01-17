@@ -7,7 +7,6 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from .extractor import AnnotationContext
 from .gemini_client import AnalysisResult
@@ -70,15 +69,11 @@ class ReportGenerator:
             lines.extend(self._generate_summary(annotations, analysis_results))
 
         # カテゴリ別分析
-        lines.extend(
-            self._generate_category_sections(annotations, analysis_results)
-        )
+        lines.extend(self._generate_category_sections(annotations, analysis_results))
 
         return "\n".join(lines)
 
-    def _generate_statistics(
-        self, annotations: list[AnnotationContext]
-    ) -> list[str]:
+    def _generate_statistics(self, annotations: list[AnnotationContext]) -> list[str]:
         """統計情報セクションを生成."""
         lines = ["## 統計情報", ""]
 
@@ -185,9 +180,7 @@ class ReportGenerator:
         ]
         sorted_categories = sorted(
             by_category.keys(),
-            key=lambda c: category_order.index(c)
-            if c in category_order
-            else 999,
+            key=lambda c: category_order.index(c) if c in category_order else 999,
         )
 
         for category in sorted_categories:
@@ -196,9 +189,7 @@ class ReportGenerator:
             lines.append("")
 
             for i, (ann, result) in enumerate(items, 1):
-                lines.extend(
-                    self._generate_annotation_detail(i, ann, result)
-                )
+                lines.extend(self._generate_annotation_detail(i, ann, result))
 
         return lines
 
@@ -237,9 +228,7 @@ class ReportGenerator:
         # WorldModelコンテキストサマリー
         if annotation.world_model_context:
             num_snapshots = len(annotation.world_model_context)
-            lines.append(
-                f"**WorldModelコンテキスト**: {num_snapshots}サンプル"
-            )
+            lines.append(f"**WorldModelコンテキスト**: {num_snapshots}サンプル")
             lines.append("")
 
         # Gemini解析結果
@@ -251,12 +240,8 @@ class ReportGenerator:
                 lines.append("**🤖 Gemini解析結果**")
                 lines.append("")
                 lines.append(f"- **根本原因**: {analysis_result.root_cause}")
-                lines.append(
-                    f"- **戦術的評価**: {analysis_result.tactical_analysis}"
-                )
-                lines.append(
-                    f"- **信頼度**: {analysis_result.confidence}"
-                )
+                lines.append(f"- **戦術的評価**: {analysis_result.tactical_analysis}")
+                lines.append(f"- **信頼度**: {analysis_result.confidence}")
 
                 if analysis_result.improvements:
                     lines.append("")

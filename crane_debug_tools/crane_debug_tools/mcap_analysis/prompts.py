@@ -104,7 +104,7 @@ def create_annotation_analysis_prompt(
         prompt += f"\n{robot_context}\n"
 
     # WorldModelサマリーは提供するが、詳細はツールで取得するよう促す
-    prompt += f"""
+    prompt += """
 # 基本情報
 
 WorldModelコンテキストが利用可能です（前3秒、後2秒）。
@@ -158,7 +158,9 @@ def summarize_world_model_context(world_model_snapshots: list) -> str:
     first_time = world_model_snapshots[0].timestamp_ns / 1e9
     last_time = world_model_snapshots[-1].timestamp_ns / 1e9
     duration = last_time - first_time
-    summary_lines.append(f"**時間範囲**: {first_time:.3f}秒 〜 {last_time:.3f}秒 ({duration:.2f}秒)")
+    summary_lines.append(
+        f"**時間範囲**: {first_time:.3f}秒 〜 {last_time:.3f}秒 ({duration:.2f}秒)"
+    )
 
     # ボールの動き
     ball_positions = [snap.ball_position for snap in world_model_snapshots]
@@ -172,9 +174,7 @@ def summarize_world_model_context(world_model_snapshots: list) -> str:
     summary_lines.append(f"**ボール移動距離**: {total_ball_distance:.2f}m")
 
     # ボール速度範囲
-    ball_speeds = [
-        (vx**2 + vy**2 + vz**2) ** 0.5 for vx, vy, vz in ball_velocities
-    ]
+    ball_speeds = [(vx**2 + vy**2 + vz**2) ** 0.5 for vx, vy, vz in ball_velocities]
     if ball_speeds:
         max_speed = max(ball_speeds)
         avg_speed = sum(ball_speeds) / len(ball_speeds)
@@ -200,7 +200,11 @@ def summarize_world_model_context(world_model_snapshots: list) -> str:
         summary_lines.append(f"**エラー発生ロボット**: {sorted(error_robots)}")
 
     # 詳細な時系列データ（最初、中間、最後の3サンプルのみ）
-    sample_indices = [0, len(world_model_snapshots) // 2, len(world_model_snapshots) - 1]
+    sample_indices = [
+        0,
+        len(world_model_snapshots) // 2,
+        len(world_model_snapshots) - 1,
+    ]
     summary_lines.append("\n## 時系列サンプル（抜粋）")
 
     for idx in sample_indices:
@@ -214,9 +218,7 @@ def summarize_world_model_context(world_model_snapshots: list) -> str:
 
         summary_lines.append(f"\n### t={time_sec:.3f}秒")
         summary_lines.append(f"- ボール位置: ({bx:.2f}, {by:.2f}, {bz:.2f})m")
-        summary_lines.append(
-            f"- ボール速度: ({bvx:.2f}, {bvy:.2f}, {bvz:.2f})m/s"
-        )
+        summary_lines.append(f"- ボール速度: ({bvx:.2f}, {bvy:.2f}, {bvz:.2f})m/s")
 
         # 自チームロボット（最大3台まで表示）
         summary_lines.append(f"- 自チームロボット ({len(snap.our_robots)}台):")

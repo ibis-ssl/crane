@@ -8,7 +8,6 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any
 
 from .extractor import AnnotationContext
 from .mcap_tools import MCAPToolsHandler, MCAP_TOOLS_SCHEMA
@@ -155,14 +154,16 @@ class GeminiAnalysisClient:
 
             # ツール定義を作成
             tools = [
-                self._types.Tool(function_declarations=[
-                    self._types.FunctionDeclaration(
-                        name=tool["name"],
-                        description=tool["description"],
-                        parameters=tool["parameters"],
-                    )
-                    for tool in MCAP_TOOLS_SCHEMA
-                ])
+                self._types.Tool(
+                    function_declarations=[
+                        self._types.FunctionDeclaration(
+                            name=tool["name"],
+                            description=tool["description"],
+                            parameters=tool["parameters"],
+                        )
+                        for tool in MCAP_TOOLS_SCHEMA
+                    ]
+                )
             ]
 
             # ToolConfigでANYモードを指定（ツール使用を強制）
@@ -201,7 +202,7 @@ class GeminiAnalysisClient:
 
                 # Function callがあるかチェック
                 has_function_call = any(
-                    hasattr(part, 'function_call') and part.function_call
+                    hasattr(part, "function_call") and part.function_call
                     for part in response.candidates[0].content.parts
                 )
 
@@ -212,7 +213,7 @@ class GeminiAnalysisClient:
                     # 全てのfunction callsを処理
                     function_response_parts = []
                     for part in response.candidates[0].content.parts:
-                        if hasattr(part, 'function_call') and part.function_call:
+                        if hasattr(part, "function_call") and part.function_call:
                             tool_call_count += 1
                             function_call = part.function_call
 
@@ -224,7 +225,9 @@ class GeminiAnalysisClient:
                             )
 
                             # ツールを実行
-                            tool_result = tools_handler.handle(function_name, function_args)
+                            tool_result = tools_handler.handle(
+                                function_name, function_args
+                            )
 
                             logger.debug(f"Tool result: {tool_result}")
 
@@ -306,9 +309,7 @@ class GeminiAnalysisClient:
                 error=str(e),
             )
 
-    def analyze_batch(
-        self, prompts: list[tuple[str, str]]
-    ) -> list[AnalysisResult]:
+    def analyze_batch(self, prompts: list[tuple[str, str]]) -> list[AnalysisResult]:
         """
         複数のアノテーションをバッチ解析.
 

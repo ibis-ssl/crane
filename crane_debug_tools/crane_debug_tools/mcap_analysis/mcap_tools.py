@@ -317,7 +317,9 @@ class MCAPToolsHandler:
 
     # ヘルパー関数
 
-    def _get_snapshot_at_offset(self, time_offset_sec: float) -> WorldModelSnapshot | None:
+    def _get_snapshot_at_offset(
+        self, time_offset_sec: float
+    ) -> WorldModelSnapshot | None:
         """オフセット時刻のスナップショットを取得."""
         target_time_ns = self.annotation.event_timestamp_ns + int(time_offset_sec * 1e9)
         if not self.world_model_snapshots:

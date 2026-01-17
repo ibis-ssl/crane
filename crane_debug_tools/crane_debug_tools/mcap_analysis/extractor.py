@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import rclpy
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 
@@ -135,7 +134,9 @@ class MCAPAnnotationExtractor:
         try:
             from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
 
-            storage_options = StorageOptions(uri=str(mcap_path.parent), storage_id="mcap")
+            storage_options = StorageOptions(
+                uri=str(mcap_path.parent), storage_id="mcap"
+            )
             converter_options = ConverterOptions(
                 input_serialization_format="cdr", output_serialization_format="cdr"
             )
@@ -178,7 +179,11 @@ class MCAPAnnotationExtractor:
 
             for annotation_time, annotation_msg in annotations_raw:
                 context = self._extract_annotation_context(
-                    annotation_msg, annotation_time, reader, topics_map, world_model_topic
+                    annotation_msg,
+                    annotation_time,
+                    reader,
+                    topics_map,
+                    world_model_topic,
                 )
                 annotations_with_context.append(context)
 
@@ -186,7 +191,9 @@ class MCAPAnnotationExtractor:
                 reader = SequentialReader()
                 reader.open(storage_options, converter_options)
 
-            logger.info(f"Extracted {len(annotations_with_context)} annotations with context")
+            logger.info(
+                f"Extracted {len(annotations_with_context)} annotations with context"
+            )
             return annotations_with_context
 
         except ImportError as e:
@@ -213,8 +220,16 @@ class MCAPAnnotationExtractor:
             position = (pos.x, pos.y, pos.z)
 
         # ロボットコンテキスト
-        related_robot_ids = list(annotation_msg.related_robot_ids) if annotation_msg.has_robot_context else []
-        robot_is_ours = list(annotation_msg.robot_is_ours) if annotation_msg.has_robot_context else []
+        related_robot_ids = (
+            list(annotation_msg.related_robot_ids)
+            if annotation_msg.has_robot_context
+            else []
+        )
+        robot_is_ours = (
+            list(annotation_msg.robot_is_ours)
+            if annotation_msg.has_robot_context
+            else []
+        )
 
         # WorldModelコンテキストを収集
         context_start = event_time_ns - self.context_before_ns
@@ -268,7 +283,9 @@ class MCAPAnnotationExtractor:
             world_model_context=world_model_snapshots,
         )
 
-    def _create_world_model_snapshot(self, timestamp: int, world_msg: Any) -> WorldModelSnapshot:
+    def _create_world_model_snapshot(
+        self, timestamp: int, world_msg: Any
+    ) -> WorldModelSnapshot:
         """WorldModelメッセージからスナップショットを作成."""
         # ボール情報
         ball_info = world_msg.ball_info
