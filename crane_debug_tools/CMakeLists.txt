@@ -11,6 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Simple Web Server (temporary solution)
@@ -35,6 +36,15 @@ else()
   target_link_libraries(crane_websocket_server ${OPENSSL_LIBRARIES})
   target_include_directories(crane_websocket_server PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
+
+# Install Python package
+ament_python_install_package(crane_debug_tools)
+
+# Install scripts
+install(PROGRAMS
+  scripts/mcap_analyzer.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 # Install
 ament_auto_package(INSTALL_TO_SHARE web launch)
