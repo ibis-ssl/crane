@@ -190,6 +190,7 @@ ros2 launch crane_bringup data.launch.py
 3つのプログラムで共通のパケット定義ファイル `robot_packet.h` を使用します。
 
 **ファイルパス**:
+
 - crane: `crane_sender/include/crane_sender/robot_packet.h`
 - Orion_CM4: `robot_packet.h` (リポジトリルート)
 - G474_Orion_main: `Core/Inc/robot_packet.h`
@@ -203,6 +204,7 @@ ros2 launch crane_bringup data.launch.py
 | G474_Orion_main | POLAR_VELOCITY_TARGET_MODE | 64バイト | crane と同じバージョン |
 
 **変更時の作業手順**:
+
 1. マスターファイル（crane版）を修正
 2. 構造体の互換性を確認（サイズ、アライメント、エンディアン）
 3. 3つのリポジトリすべてに同期（手動コピー）
@@ -210,6 +212,7 @@ ros2 launch crane_bringup data.launch.py
 5. 統合テストで通信確認
 
 **変更影響範囲**:
+
 - パケット構造の変更 → **全プログラムの再ビルド必須**
 - 新フィールド追加 → **下位互換性に注意**
 - エンディアン変更 → **異なるアーキテクチャ間の通信エラー発生**
@@ -219,6 +222,7 @@ ros2 launch crane_bringup data.launch.py
 詳細なネットワーク構成図と設定方法は `docs/network.md` を参照してください。
 
 **主要アドレス・ポート**:
+
 - SSL-Vision: `224.5.23.2:10006` (本番) / `:10020` (grSim)
 - SSL-GameController: `224.5.23.1:10003` (本番) / `:11003` (grSim)
 - ロボットコマンド: `192.168.20.100+機体番号:12345`
@@ -486,6 +490,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
 **調査手順**:
 
 1. **crane 側**: コマンド送信を確認
+
    ```bash
    # crane_sender が正常に動作しているか確認
    ros2 topic echo /robot_commands
@@ -493,6 +498,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
    ```
 
 2. **Orion_CM4 側**: パケット受信を確認
+
    ```bash
    # UDP受信ログを確認
    # UART送信ログを確認
@@ -505,6 +511,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
    - `robot_command.header` の値が正しいか確認
 
 **よくある原因**:
+
 - ネットワーク設定ミス（IPアドレス、ポート番号）
 - `robot_packet.h` のバージョン不一致
 - UART通信速度（ボーレート）の不一致
@@ -517,6 +524,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
 **調査手順**:
 
 1. **ネットワーク設定を確認**
+
    ```bash
    # crane 側: 送信先IPアドレスを確認
    ros2 param get /crane_sender robot_ip_base
@@ -538,6 +546,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
    - 構造体サイズが一致しているか確認（64バイト）
 
 **よくある原因**:
+
 - ネットワークケーブルの接続不良
 - スイッチングハブの設定ミス
 - パケットバッファのオーバーフロー
@@ -562,6 +571,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
    - 極座標 vs デカルト座標の混同がないか
 
 **よくある原因**:
+
 - `robot_packet.h` のバージョン不一致によるフィールドのずれ
 - エンディアンの違い（通常は問題ないが、カスタム実装の場合注意）
 - 制御モードの不一致
@@ -601,6 +611,7 @@ ros2 topic echo /robot_feedback
 詳細なネットワーク構成、アドレス、ポート設定は `docs/network.md` を参照。
 
 **主な通信先**:
+
 - SSL-Vision / SSL-GameController: マルチキャスト通信
 - ロボット: `192.168.20.100+機体番号:12345`
 
@@ -655,20 +666,24 @@ Docker環境の構築・起動方法は「開発環境」セクションを参�
 **役割**: UDP ↔ UART 通信ブリッジ、ローカルカメラ処理
 
 **主要ファイル**:
+
 - `robot_packet.h`: パケット定義（crane と同期が必要）
 - UDP受信・UART送信を行う通信プログラム
 - ローカルカメラによるボール検出（オプション機能）
 
 **実行環境**:
+
 - Raspberry Pi CM4 (Linux)
 - Python または C++ で実装
 
 **変更時の注意点**:
+
 - `robot_packet.h` を変更した場合は、crane/G474 と同期が必須
 - UART通信速度（ボーレート）の変更は G474 と合わせる必要あり
 - パケットバッファサイズの変更は通信エラーの原因となる
 
 参照が必要な場合:
+
 ```bash
 git clone git@github.com:ibis-ssl/Orion_CM4.git
 ```
@@ -680,21 +695,25 @@ git clone git@github.com:ibis-ssl/Orion_CM4.git
 **役割**: 500Hz制御ループでのモーター制御・センサー処理
 
 **主要ファイル**:
+
 - `Core/Inc/robot_packet.h`: パケット定義（crane と同期が必要）
 - `Core/Src/main.c`: メインループと制御ロジック
 - モーター制御、エンコーダ読み取り、IMU処理
 
 **実行環境**:
+
 - STM32G474 マイコン（ARM Cortex-M4）
 - ベアメタル環境（RTOS なし、または FreeRTOS）
 - STM32CubeIDE でビルド
 
 **変更時の注意点**:
+
 - `robot_packet.h` を変更した場合は、crane/Orion_CM4 と同期が必須
 - 制御ループ周期（500Hz）の変更はモーター制御に大きく影響
 - パケットデシリアライズのエンディアンに注意（Cortex-M4 はリトルエンディアン）
 
 参照が必要な場合:
+
 ```bash
 git clone git@github.com:ibis-ssl/G474_Orion_main.git
 ```
