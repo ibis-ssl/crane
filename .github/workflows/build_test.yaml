@@ -33,7 +33,7 @@ jobs:
         with:
           tool-cache: false
       - name: setup ROS
-        uses: ros-tooling/setup-ros@v0.7
+        uses: ros-tooling/setup-ros@main
         with:
           required-ros-distributions: ${{ matrix.rosdistro }}
 
