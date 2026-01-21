@@ -28,6 +28,17 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
+      - name: free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: false
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+          
       - name: setup ROS
         uses: ros-tooling/setup-ros@v0.7
         with:
