@@ -136,7 +136,7 @@ ros2 launch crane_bringup data.launch.py
 
 ### 通信フローとデータパス
 
-```
+```text
 ┌─────────────────┐
 │  SSL-Vision     │ (UDP Multicast: 224.5.23.2:10006)
 │  Game Controller│ (UDP Multicast: 224.5.23.1:10003)
