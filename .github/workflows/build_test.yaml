@@ -34,7 +34,6 @@ jobs:
           tool-cache: false
           dotnet: false
           large-packages: false
-          swap-storage: false
 
       - name: setup ROS
         uses: ros-tooling/setup-ros@v0.7
