@@ -32,7 +32,6 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
-          android: false
           dotnet: false
           haskell: false
           large-packages: false
