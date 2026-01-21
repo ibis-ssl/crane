@@ -66,7 +66,7 @@ macro(build_closest_point)
   )
   install(
     DIRECTORY
-      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/${PROJECT_NAME}/
     DESTINATION
       ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
   )
@@ -80,7 +80,7 @@ macro(build_closest_point)
 endmacro()
 
 build_closest_point()
-ament_export_include_directories(include/${PROJECT_NAME}/${PROJECT_NAME})
+ament_export_include_directories(include/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
