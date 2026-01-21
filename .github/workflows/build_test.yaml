@@ -117,7 +117,7 @@ jobs:
           if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" != "true" ]]; then
             echo "Installing dependencies..."
             sudo apt-get -yqq update
-            DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+            rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
           else
             echo "Rosdep cache hit. Skipping installation."
           fi
