@@ -19,8 +19,6 @@ SubAttackerPositionMetric::SubAttackerPositionMetric()
 
 namespace
 {
-// SubAttacker::getPointScoreのロジックを再実装
-// TODO(Hans): 将来的にはcrane_geometryなど共通パッケージに移動すべき
 double evaluateSubAttackerPosition(const Point & p, const WorldModelWrapper * world_model)
 {
   Segment line{world_model->ball().pos, p};
