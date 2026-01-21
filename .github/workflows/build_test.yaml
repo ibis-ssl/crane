@@ -33,7 +33,6 @@ jobs:
         with:
           tool-cache: false
           dotnet: false
-          haskell: false
           large-packages: false
           docker-images: false
           swap-storage: false
