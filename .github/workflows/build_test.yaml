@@ -44,7 +44,7 @@ jobs:
 
       - name: ensure cmake
         run: pip3 install cmake==3.*
-        
+
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
@@ -90,7 +90,7 @@ jobs:
 
       - name: ensure cmake
         run: pip3 install cmake==3.*
-        
+
 #      - name: Cache rosdep
 #        id: cache-rosdep
 #        uses: actions/cache@v4
