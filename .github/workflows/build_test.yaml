@@ -54,6 +54,14 @@ jobs:
       - name: Setup Problem Matchers for clang-format
         run: echo "::add-matcher::.github/matchers/clang-format.json"
 
+      - name: Downgrade CMake to 3.22.1
+        run: |
+          sudo rm -f /usr/local/bin/cmake /usr/local/bin/ctest /usr/local/bin/cpack
+          sudo rm -rf /usr/local/share/cmake-*
+          sudo apt-get update
+          sudo apt-get install -y cmake
+          cmake --version
+
       - name: Set git config
         uses: autowarefoundation/autoware-github-actions/set-git-config@v1
         with:
