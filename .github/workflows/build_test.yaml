@@ -34,9 +34,6 @@ jobs:
           tool-cache: false
           large-packages: false
 
-      - name: ensure cmake
-        run: pip3 install cmake==3.*
-
       - name: setup ROS
         uses: ros-tooling/setup-ros@v0.7
         with:
