@@ -32,17 +32,24 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
+          large-packages: false
+
+      - name: ensure cmake
+        run: pip3 install cmake==3.*
 
       - name: setup ROS
         uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.rosdistro }}
 
+      - name: ensure cmake
+        run: pip3 install cmake==3.*
+        
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -81,6 +88,9 @@ jobs:
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
 
+      - name: ensure cmake
+        run: pip3 install cmake==3.*
+        
 #      - name: Cache rosdep
 #        id: cache-rosdep
 #        uses: actions/cache@v4
@@ -121,6 +131,9 @@ jobs:
             echo "Rosdep cache hit. Skipping installation."
           fi
         shell: bash
+
+      - name: ensure cmake
+        run: pip3 install cmake==3.*
 
       - name: Build
         run: |
