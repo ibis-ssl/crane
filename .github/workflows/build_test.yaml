@@ -32,7 +32,6 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
-          dotnet: false
           large-packages: false
 
       - name: setup ROS
