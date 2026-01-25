@@ -15,6 +15,7 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
 #      # ccache configuration
@@ -28,15 +29,6 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
-      - name: free disk space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-      - name: setup ROS
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: ${{ matrix.rosdistro }}
-
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
@@ -67,17 +59,9 @@ jobs:
 #            dependency_ws-${{ matrix.rosdistro }}-
 
       - name: Clone dependency packages
-        if: steps.cache-dependency-ws.outputs.cache-hit != 'true'
         run: |
           mkdir -p dependency_ws
           vcs import dependency_ws < dependency_${{ matrix.rosdistro }}.repos
-        shell: bash
-
-      - name: Generate rosdep keys file
-        run: |
-          rosdep update
-          colcon list -p --base-paths . dependency_ws > packages.txt
-          rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
 
 #      - name: Cache rosdep
@@ -112,13 +96,9 @@ jobs:
 
       - name: Run rosdep install
         run: |
-          if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" != "true" ]]; then
-            echo "Installing dependencies..."
-            sudo apt-get -yqq update
-            DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
-          else
-            echo "Rosdep cache hit. Skipping installation."
-          fi
+          sudo apt-get -yqq update
+          rosdep update
+          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
       - name: Build
