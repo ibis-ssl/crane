@@ -13,7 +13,7 @@
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**ゲーム状態管理層**として、外部からの審判指示をシステム内部の共通言語（PlaySituation）に翻訳し、`crane_tactic_coordinator` などの上位層が適切な戦術を決定するための基礎情報を提供します。
+Craneシステムの**ゲーム状態管理層**として、外部からの審判指示をシステム内部の共通言語（PlaySituation）に翻訳し、`crane_session_coordinator` などの上位層が適切な戦術を決定するための基礎情報を提供します。
 
 ## 処理ロジック
 
@@ -58,4 +58,4 @@ ros2 launch crane_bringup crane.launch.xml
 
 ---
 
-**関連パッケージ**: [crane_game_analyzer](./crane_game_analyzer.md) | [crane_tactic_coordinator](./crane_tactic_coordinator.md)
+**関連パッケージ**: [crane_game_analyzer](./crane_game_analyzer.md) | [crane_session_coordinator](./crane_session_coordinator.md)

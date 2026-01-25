@@ -1,9 +1,9 @@
 # オフェンス戦術システム
 
 > **最終更新**: 2026年1月
-> **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_tactics](./packages/crane_tactics.md)
+> **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_sessions](./packages/crane_sessions.md)
 
-Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_tactics`の戦略Tacticにより実現されています。
+Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_sessions`の戦略Tacticにより実現されています。
 
 ## アーキテクチャ概要
 
@@ -51,7 +51,7 @@ Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パ�
 
 ## 戦略レベルの統合 (Tactic)
 
-### crane_tactics との連携
+### crane_sessions との連携
 
 **FormationTactic**:
 
@@ -63,5 +63,5 @@ Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パ�
 各スキルの実装詳細は以下のドキュメントを参照してください：
 
 - **[crane_robot_skills](./packages/crane_robot_skills.md)** - 個別スキルの実装仕様
-- **[crane_tactics](./packages/crane_tactics.md)** - 戦略Tacticの統合実装
+- **[crane_sessions](./packages/crane_sessions.md)** - 戦略Tacticの統合実装
 - **[attacker.md](./attacker.md)** - Attackerスキルの詳細な状態遷移

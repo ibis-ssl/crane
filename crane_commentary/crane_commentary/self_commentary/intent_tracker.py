@@ -28,11 +28,11 @@ class RobotIntent:
 
     robot_id: int
     tactic_name: str = ""
-    skill_name: str = ""  # state_factors[0].name
-    skill_state: str = ""  # state_factors[0].value
+    skill_name: str = ""  # planning_factors[0].name
+    skill_state: str = ""  # planning_factors[0].value
     nested_skills: List[Dict[str, str]] = field(
         default_factory=list
-    )  # state_factors[1:]
+    )  # planning_factors[1:]
     planner_name: str = ""
 
     def __eq__(self, other: object) -> bool:
@@ -123,23 +123,23 @@ class IntentTracker:
             robot_id = cmd.robot_id
             tactic_name = self._robot_to_tactic.get(robot_id, "Unknown")
 
-            # Extract skill and state from state_factors
+            # Extract skill and state from planning_factors
             skill_name = ""
             skill_state = ""
             nested_skills = []
 
-            if hasattr(cmd, "state_factors") and cmd.state_factors:
+            if hasattr(cmd, "planning_factors") and cmd.planning_factors:
                 # First element is the top-level skill
-                if len(cmd.state_factors) > 0:
-                    skill_name = cmd.state_factors[0].name
-                    skill_state = cmd.state_factors[0].value
+                if len(cmd.planning_factors) > 0:
+                    skill_name = cmd.planning_factors[0].name
+                    skill_state = cmd.planning_factors[0].value
 
                 # Remaining elements are nested skills
-                for i in range(1, len(cmd.state_factors)):
+                for i in range(1, len(cmd.planning_factors)):
                     nested_skills.append(
                         {
-                            "name": cmd.state_factors[i].name,
-                            "value": cmd.state_factors[i].value,
+                            "name": cmd.planning_factors[i].name,
+                            "value": cmd.planning_factors[i].value,
                         }
                     )
 

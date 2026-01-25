@@ -142,4 +142,4 @@ RobotCommand generateFeasibleCommand(
 
 ---
 
-**関連パッケージ**: [rvo2_vendor](./rvo2_vendor.md) | [crane_robot_skills](./crane_robot_skills.md) | [crane_tactics](./crane_tactics.md)
+**関連パッケージ**: [rvo2_vendor](./rvo2_vendor.md) | [crane_robot_skills](./crane_robot_skills.md) | [crane_sessions](./crane_sessions.md)

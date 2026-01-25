@@ -1,0 +1,83 @@
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include <crane_sessions/defender_session.hpp>
+#include <range/v3/view/enumerate.hpp>
+
+namespace crane
+{
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+{
+  if (robots.empty()) {
+    return {SessionBase::Status::RUNNING, {}};
+  }
+
+  const auto & ball = world_model->ball();
+  Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
+  {
+    // シュート判定
+    auto goal_posts = world_model->getOurGoalPosts();
+    Segment goal_line(goal_posts.first, goal_posts.second);
+    auto intersections = getIntersections(ball_line, goal_line);
+    if (intersections.empty()) {
+      // シュートがなければ通常の動き
+      ball_line.first = world_model->getOurGoalCenter();
+      ball_line.second = ball.pos;
+    }
+  }
+
+  std::vector<Point> defense_points = [&]() {
+    // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
+    if (
+      (world_model->ball().pos - world_model->getOurGoalCenter()).norm() <
+      world_model->fieldSize().y() * 0.5) {
+      return getDefenseLinePoints(robots.size(), ball_line, world_model);
+    } else {
+      return getDefenseArcPoints(robots.size(), ball_line, world_model);
+    }
+  }();
+
+  if (not defense_points.empty()) {
+    auto robot_commands = assignRobotsToPoints(
+      robots, defense_points, "defender_planner", ball.pos,
+      [&](std::shared_ptr<PositionCommandWrapper> & command) {
+        command->disableBasicAvoidances();
+        if (
+          world_model->getMsg().play_situation.command.value ==
+          crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+          command->disableAnyAreaAvoidance();
+          command->enablePlacementAvoidance();
+        } else {
+          command->disableAnyAreaAvoidance();
+          command->enableGoalAreaAvoidance();
+        }
+      });
+    return {SessionBase::Status::RUNNING, robot_commands};
+  } else {
+    std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+    for (const auto & [index, robot_id] : ranges::views::enumerate(robots)) {
+      [[maybe_unused]] Point target_point = [&]() {
+        if (not defense_points.empty()) {
+          return defense_points.at(index);
+        } else {
+          return Point(0, 0);
+        }
+      }();
+
+      auto command = std::make_shared<crane::PositionCommandWrapper>(
+        "defender_planner/stop", robot_id.id, world_model);
+
+      auto robot = world_model->getRobot(robot_id);
+
+      command->stopHere();
+
+      robot_commands.emplace_back(command->getMsg());
+    }
+    return {SessionBase::Status::RUNNING, robot_commands};
+  }
+}
+}  // namespace crane

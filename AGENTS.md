@@ -59,7 +59,7 @@ colcon build --symlink-install
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --mixin coverage-gcc coverage-pytest compile-commands
 
 # 特定パッケージのみ
-colcon build --packages-select crane_world_model_publisher crane_tactics
+colcon build --packages-select crane_world_model_publisher crane_sessions
 
 # ベンチマーク
 ./src/crane/scripts/optimized_build.bash benchmark
@@ -136,7 +136,7 @@ ros2 launch crane_bringup data.launch.py
 
 ### 通信フローとデータパス
 
-```
+```text
 ┌─────────────────┐
 │  SSL-Vision     │ (UDP Multicast: 224.5.23.2:10006)
 │  Game Controller│ (UDP Multicast: 224.5.23.1:10003)
@@ -232,8 +232,8 @@ ros2 launch crane_bringup data.launch.py
 
 ### コアコンポーネント
 
-- crane_tactic_coordinator: 試合進行とゲーム状態管理
-- crane_tactics: プラグイン型の戦略プランナー
+- crane_session_coordinator: 試合進行とゲーム状態管理
+- crane_sessions: プラグイン型の戦略プランナー
 - crane_robot_skills: 個別ロボット振る舞い（ゴールキーパー等）
 - crane_local_planner: RVO2 ベースの局所経路計画
 - crane_world_model_publisher: 状態推定とトラッキング
@@ -305,7 +305,7 @@ docker compose up -d
 1. メッセージ層: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`
 2. ユーティリティ層: `crane_geometry`, `crane_physics`, `crane_comm`, `crane_msg_wrappers`
 3. コンポーネント層: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_robot_skills`
-4. 計画層: `crane_tactic_coordinator`, `crane_tactics`, `crane_local_planner`
+4. 計画層: `crane_session_coordinator`, `crane_sessions`, `crane_local_planner`
 5. 統合層: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
 
 ## Git 運用

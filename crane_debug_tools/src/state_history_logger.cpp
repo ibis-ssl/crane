@@ -164,7 +164,7 @@ private:
 
       // states配列（フルネーム）
       json states_array = json::array();
-      for (const auto & factor : cmd.state_factors) {
+      for (const auto & factor : cmd.planning_factors) {
         states_array.push_back({{"name", factor.name}, {"value", factor.value}});
       }
       j["states"] = states_array;
@@ -221,7 +221,7 @@ private:
     // スキル名フィルタ
     if (!filter_skill_names_.empty()) {
       bool found = false;
-      for (const auto & factor : cmd.state_factors) {
+      for (const auto & factor : cmd.planning_factors) {
         if (
           std::find(filter_skill_names_.begin(), filter_skill_names_.end(), factor.name) !=
           filter_skill_names_.end()) {

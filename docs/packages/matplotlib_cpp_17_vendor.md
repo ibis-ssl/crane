@@ -59,4 +59,4 @@ plt::save("strategy_analysis.png");
 
 ---
 
-**関連パッケージ**: [crane_tactics](./crane_tactics.md) | [crane_game_analyzer](./crane_game_analyzer.md)
+**関連パッケージ**: [crane_sessions](./crane_sessions.md) | [crane_game_analyzer](./crane_game_analyzer.md)

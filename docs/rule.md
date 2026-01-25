@@ -158,7 +158,7 @@ STOPになってから2秒間は猶予時間がある。
 
 ### 対応状況
 
-`crane_tactic_coordinator`のプレイ状況管理により、STOP中は全ロボットに速度制限（1.0m/s）が適用される。  
+`crane_session_coordinator`のプレイ状況管理により、STOP中は全ロボットに速度制限（1.0m/s）が適用される。  
 `crane_local_planner`レベルでも追加の速度制限が実装されており、STOP検出から2秒間の猶予時間中に  
 段階的に減速する仕組みが導入済み。
 
@@ -176,7 +176,7 @@ STOPになってから2秒間は猶予時間がある。
 
 ### 対応状況
 
-`crane_tactics`の`DefenseFormation`において、敵フリーキック時の防御位置計算を実装済み。  
+`crane_sessions`の`DefenseFormation`において、敵フリーキック時の防御位置計算を実装済み。  
 ボールから0.5m + 安全マージン0.1mの距離を保つように、全ディフェンダーの配置が自動計算される。  
 `KeepDistance`スキルにより、指定距離の維持も可能。
 
@@ -235,7 +235,7 @@ STOPのちフリーキック、AutoRefによる判定はない。
 
 ### 対応状況
 
-`crane_tactics`の戦術プランナーにおいて、ロボット間の最小距離（0.3m）を保つ制約を実装。  
+`crane_sessions`の戦術プランナーにおいて、ロボット間の最小距離（0.3m）を保つ制約を実装。  
 ボール周辺への過度な集中を避けるため、各ロボットに明確な役割分担と位置制約を設定している。
 
 ### 非対応可能性
@@ -288,4 +288,4 @@ STOPのちフリーキック、AutoRefによる判定はない。
 - [crane_local_planner](./packages/crane_local_planner.md) - RVO2衝突回避システム
 - [crane_robot_skills](./packages/crane_robot_skills.md) - 各種ルール対応スキル
 - [crane_physics](./packages/crane_physics.md) - 物理制約と動力学計算
-- [crane_tactic_coordinator](./packages/crane_tactic_coordinator.md) - ゲーム状況管理
+- [crane_session_coordinator](./packages/crane_session_coordinator.md) - ゲーム状況管理

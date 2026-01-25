@@ -67,7 +67,7 @@ http://localhost:8080/standalone.html
 
 - [crane_robot_skills](./crane_robot_skills.md) - テスト対象のスキルライブラリ
 - [crane_msgs](./crane_msgs.md) - SkillExecutionアクションメッセージ
-- [crane_tactic_coordinator](./crane_tactic_coordinator.md) - スキル実行サーバー
+- [crane_session_coordinator](./crane_session_coordinator.md) - スキル実行サーバー
 
 ## トラブルシューティング
 
