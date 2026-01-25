@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__TACTIC_FACTORY_HPP_
-#define CRANE_SESSIONS__TACTIC_FACTORY_HPP_
+#ifndef CRANE_SESSIONS__SESSION_FACTORY_HPP_
+#define CRANE_SESSIONS__SESSION_FACTORY_HPP_
 
 #include <crane_sessions/session_base.hpp>
 #include <memory>
@@ -37,4 +37,4 @@ auto getAvailablePlannerNames() -> std::vector<std::string>;
 
 }  // namespace crane
 
-#endif  // CRANE_SESSIONS__TACTIC_FACTORY_HPP_
+#endif  // CRANE_SESSIONS__SESSION_FACTORY_HPP_

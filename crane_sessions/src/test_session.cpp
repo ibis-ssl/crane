@@ -21,7 +21,8 @@ TestSession::TestSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
      "config" / "test_planner.yaml")
       .string();
   if (not loadConfigFromFile(config_file_path)) {
-    RCLCPP_WARN(rclcpp::get_logger("TestSession"), "設定の読込に失敗: %s", config_file_path.c_str());
+    RCLCPP_WARN(
+      rclcpp::get_logger("TestSession"), "設定の読込に失敗: %s", config_file_path.c_str());
   }
   reload_sub = rclcpp::create_subscription<std_msgs::msg::Empty>(
     topics_interface, "/test_planner/reload", rclcpp::QoS(1),

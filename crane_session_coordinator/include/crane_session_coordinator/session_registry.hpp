@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_COORDINATOR__TACTIC_REGISTRY_HPP_
-#define CRANE_SESSION_COORDINATOR__TACTIC_REGISTRY_HPP_
+#ifndef CRANE_SESSION_COORDINATOR__SESSION_REGISTRY_HPP_
+#define CRANE_SESSION_COORDINATOR__SESSION_REGISTRY_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_sessions/session_base.hpp>
@@ -77,4 +77,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSION_COORDINATOR__TACTIC_REGISTRY_HPP_
+#endif  // CRANE_SESSION_COORDINATOR__SESSION_REGISTRY_HPP_

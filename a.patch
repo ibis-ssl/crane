@@ -3,14 +3,14 @@ index 5983039b..40d0548e 100644
 --- a/crane_bringup/launch/crane.launch.xml
 +++ b/crane_bringup/launch/crane.launch.xml
 @@ -38,8 +38,8 @@ limitations under the License.
- 
+
    <!-- sim=falseの場合（公式ポート） -->
    <let name="vision_port_final" value="10006" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
 -  <let name="referee_port_final" value="10003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
 -  <let name="tracker_port_final" value="10010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
 +  <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
 +  <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
- 
+
    <!-- ユーザー指定がある場合はそれを使用 -->
    <let name="vision_port_final" value="$(var vision_port)" unless="$(eval &quot;'$(var vision_port)' == ''&quot;)"/>
 @@ -57,7 +57,7 @@ limitations under the License.
@@ -19,7 +19,7 @@ index 5983039b..40d0548e 100644
    <!-- ============================================================ -->
 -  <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
 +  <arg name="max_vel" default="3.0" description="ロボットの最大速度 [m/s]"/>
- 
+
    <!-- Slack時間計算パラメータ -->
    <arg name="slack.robot_max_acceleration" default="2.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
 @@ -72,14 +72,14 @@ limitations under the License.
@@ -33,28 +33,28 @@ index 5983039b..40d0548e 100644
 +  <arg name="robot_acceleration.deceleration_high" default="3.0" description="減速時・高速域の減速度 [m/s^2]"/>
 +  <arg name="robot_acceleration.deceleration_low" default="3.0" description="減速時・低速域の減速度 [m/s^2]"/>
    <arg name="robot_acceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
- 
+
    <!-- 経路計画用の減速度パラメータ -->
 -  <arg name="planning_deceleration.high_speed" default="5.0" description="高速域での減速計算用の減速度 [m/s^2]"/>
 -  <arg name="planning_deceleration.low_speed" default="2.5" description="低速域での減速計算用の減速度 [m/s^2]"/>
 +  <arg name="planning_deceleration.high_speed" default="3.0" description="高速域での減速計算用の減速度 [m/s^2]"/>
 +  <arg name="planning_deceleration.low_speed" default="3.0" description="低速域での減速計算用の減速度 [m/s^2]"/>
    <arg name="planning_deceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
- 
+
    <!-- ============================================================ -->
 diff --git a/crane_commentary/crane_commentary/self_commentary/intent_tracker.py b/crane_commentary/crane_commentary/self_commentary/intent_tracker.py
 index d0b8e5b5..6619ffa2 100644
 --- a/crane_commentary/crane_commentary/self_commentary/intent_tracker.py
 +++ b/crane_commentary/crane_commentary/self_commentary/intent_tracker.py
 @@ -104,7 +104,7 @@ class IntentTracker:
- 
+
          # Build new mapping
          for result in msg.results:
 -            tactic_name = result.name
 +            tactic_name = result.tactic_name
              for robot_id in result.selected_robots:
                  self._robot_to_tactic[robot_id] = tactic_name
- 
+
 diff --git a/crane_local_planner/src/rvo2_planner.cpp b/crane_local_planner/src/rvo2_planner.cpp
 index d3bb7d8a..b09a1b8f 100644
 --- a/crane_local_planner/src/rvo2_planner.cpp
@@ -64,7 +64,7 @@ index d3bb7d8a..b09a1b8f 100644
        }
      }();
 +    current_position << command.current_pose.x, command.current_pose.y;
- 
+
      // 位置指令の処理
      Vector2 position_diff;
 @@ -157,11 +158,12 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg)
@@ -74,13 +74,13 @@ index d3bb7d8a..b09a1b8f 100644
 -      Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
 +      Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y) * 0.0, max_vel,
 +      max_acc);
- 
+
      // BangBangTrajectoryから速度を取得
      // Vision遅延（~100ms）を考慮してlookahead時間を設定
 -    const double lookahead_time = 0.1;
 +    const double lookahead_time = 0.3;
      Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
- 
+
      // 目標との距離を計算
 @@ -172,7 +174,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg)
      // terminal_velocity（0の場合はフォールバック値0.3 m/sを使用）
@@ -90,7 +90,7 @@ index d3bb7d8a..b09a1b8f 100644
 +                                  : (0.1 + distance_to_target);
      const double min_distance =
        std::max(static_cast<double>(command.position_tolerance) * 2, 0.03);  // 最低3cm
- 
+
 diff --git a/crane_msgs/msg/control/RobotFeedback.msg b/crane_msgs/msg/control/RobotFeedback.msg
 index 205b329f..a55e768b 100755
 --- a/crane_msgs/msg/control/RobotFeedback.msg
@@ -99,9 +99,9 @@ index 205b329f..a55e768b 100755
  builtin_interfaces/Time received_stamp
  uint8 robot_id
 +float32 packet_frequency_hz
- 
+
  uint8 counter
- 
+
 diff --git a/crane_robot_receiver/src/robot_receiver_node.cpp b/crane_robot_receiver/src/robot_receiver_node.cpp
 index 5ad5cb65..a22ec8c7 100644
 --- a/crane_robot_receiver/src/robot_receiver_node.cpp
@@ -124,9 +124,9 @@ index 5ad5cb65..a22ec8c7 100644
      }
      return false;
 @@ -117,6 +120,21 @@ public:
- 
+
    auto getFeedback() const -> RobotFeedback { return robot_feedback; }
- 
+
 +  auto getPacketFrequency() -> float
 +  {
 +    using std::chrono::operator""ms;
@@ -143,17 +143,17 @@ index 5ad5cb65..a22ec8c7 100644
 +  }
 +
    const int robot_id;
- 
+
  private:
 @@ -127,6 +145,9 @@ private:
    RobotFeedback robot_feedback;
- 
+
    rclcpp::Clock clock;
 +
 +  // パケット受信頻度計算用のタイムスタンプキュー
 +  std::deque<rclcpp::Time> receive_timestamps_;
  };
- 
+
  class RobotReceiverNode : public rclcpp::Node
 @@ -168,6 +189,7 @@ public:
            crane_msgs::msg::RobotFeedback robot_feedback_msg;
@@ -168,7 +168,7 @@ index ec34acdd..ae863f1a 100644
 --- a/crane_robot_skills/src/kick.cpp
 +++ b/crane_robot_skills/src/kick.cpp
 @@ -105,7 +105,9 @@ void Kick::initialize()
- 
+
    addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
      auto target = getParameter<Point>("target");
 -    Point ball_pos = world_model()->ball().pos;
@@ -192,7 +192,7 @@ index 94e62f89..95769655 100644
 --- a/crane_tactics/config/test_planner.yaml
 +++ b/crane_tactics/config/test_planner.yaml
 @@ -2,9 +2,9 @@
- 
+
  # 経由点で未指定の場合に適用する既定値
  defaults:
 -  max_velocity: 3.0        # m/s
@@ -201,7 +201,7 @@ index 94e62f89..95769655 100644
 +  max_velocity: 6.0        # m/s
 +  max_acceleration: 4.5    # m/s^2
 +  sleep_sec: 1.0           # 各経由点での休憩秒数（省略時）
- 
+
  waypoints:
    # position: [x, y] または [x, y, theta(度)]
 @@ -16,7 +16,7 @@ waypoints:
@@ -345,11 +345,11 @@ index 4ac191df..6298619a 100644
    BangBangTrajectory1D x;
    BangBangTrajectory1D y;
 +  double max_vel = 0.0;
- 
+
    /// 二分探索の初期刻み幅
    static constexpr double BINARY_SEARCH_INITIAL_INCREMENT = M_PI / 8.0;
 @@ -323,7 +324,12 @@ public:
- 
+
    [[nodiscard]] Eigen::Vector2d getVelocity(const double t) const noexcept
    {
 -    return Eigen::Vector2d(x.getVelocity(t), y.getVelocity(t));
@@ -360,7 +360,7 @@ index 4ac191df..6298619a 100644
 +    }
 +    return vel;
    }
- 
+
    [[nodiscard]] Eigen::Vector2d getAcceleration(const double t) const noexcept
 @@ -349,6 +355,7 @@ public:
      const Eigen::Vector2d & s0, const Eigen::Vector2d & s1, const Eigen::Vector2d & v0,

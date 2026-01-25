@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_TACTIC_HPP_
-#define CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_TACTIC_HPP_
+#ifndef CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_SESSION_HPP_
+#define CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_SESSION_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/ball_calibration_data_collector.hpp>
@@ -52,4 +52,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_TACTIC_HPP_
+#endif  // CRANE_SESSIONS__BALL_CALIBRATION_DATA_COLLECTOR_SESSION_HPP_

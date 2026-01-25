@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__SECOND_THREAT_DEFENDER_TACTIC_HPP_
-#define CRANE_SESSIONS__SECOND_THREAT_DEFENDER_TACTIC_HPP_
+#ifndef CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_
+#define CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_
 
 #include <algorithm>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
@@ -54,4 +54,4 @@ private:
   std::shared_ptr<skills::SecondThreatDefender> skill;
 };
 }  // namespace crane
-#endif  // CRANE_SESSIONS__SECOND_THREAT_DEFENDER_TACTIC_HPP_
+#endif  // CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_

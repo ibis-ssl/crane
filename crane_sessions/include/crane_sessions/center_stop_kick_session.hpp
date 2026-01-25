@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__CENTER_STOP_KICK_TACTIC_HPP_
-#define CRANE_SESSIONS__CENTER_STOP_KICK_TACTIC_HPP_
+#ifndef CRANE_SESSIONS__CENTER_STOP_KICK_SESSION_HPP_
+#define CRANE_SESSIONS__CENTER_STOP_KICK_SESSION_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
@@ -53,4 +53,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_SESSIONS__CENTER_STOP_KICK_TACTIC_HPP_
+#endif  // CRANE_SESSIONS__CENTER_STOP_KICK_SESSION_HPP_

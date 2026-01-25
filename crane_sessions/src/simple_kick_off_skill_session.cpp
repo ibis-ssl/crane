@@ -8,7 +8,8 @@
 
 namespace crane
 {
-auto SimpleKickOffSkillSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
+auto SimpleKickOffSkillSession::calculatePositionCommand(
+  const std::vector<RobotIdentifier> & robots)
   -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
   // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成

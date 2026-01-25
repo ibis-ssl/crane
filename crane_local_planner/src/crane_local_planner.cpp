@@ -131,8 +131,8 @@ auto LocalPlannerComponent::logValidationError(
 {
   RCLCPP_ERROR_STREAM(
     get_logger(), "ロボット " << static_cast<int>(robot_id) << " は \""
-                              << aggregateStates(planning_factors) << "\" スキルにより " << mode_name
-                              << " に指定されていますが、" << error_detail);
+                              << aggregateStates(planning_factors) << "\" スキルにより "
+                              << mode_name << " に指定されていますが、" << error_detail);
 }
 }  // namespace crane
 

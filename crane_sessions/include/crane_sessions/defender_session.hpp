@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__DEFENDER_TACTIC_HPP_
-#define CRANE_SESSIONS__DEFENDER_TACTIC_HPP_
+#ifndef CRANE_SESSIONS__DEFENDER_SESSION_HPP_
+#define CRANE_SESSIONS__DEFENDER_SESSION_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
@@ -55,4 +55,4 @@ public:
 };
 
 }  // namespace crane
-#endif  // CRANE_SESSIONS__DEFENDER_TACTIC_HPP_
+#endif  // CRANE_SESSIONS__DEFENDER_SESSION_HPP_

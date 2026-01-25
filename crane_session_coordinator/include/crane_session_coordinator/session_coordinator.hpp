@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSION_COORDINATOR__TACTIC_COORDINATOR_HPP_
-#define CRANE_SESSION_COORDINATOR__TACTIC_COORDINATOR_HPP_
+#ifndef CRANE_SESSION_COORDINATOR__SESSION_COORDINATOR_HPP_
+#define CRANE_SESSION_COORDINATOR__SESSION_COORDINATOR_HPP_
 
 #include <chrono>
 #include <crane_comm/diagnosed_publisher.hpp>
@@ -102,4 +102,4 @@ private:
 };
 
 }  // namespace crane
-#endif  // CRANE_SESSION_COORDINATOR__TACTIC_COORDINATOR_HPP_
+#endif  // CRANE_SESSION_COORDINATOR__SESSION_COORDINATOR_HPP_

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__WAITER_TACTIC_HPP_
-#define CRANE_SESSIONS__WAITER_TACTIC_HPP_
+#ifndef CRANE_SESSIONS__WAITER_SESSION_HPP_
+#define CRANE_SESSIONS__WAITER_SESSION_HPP_
 
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -25,7 +25,8 @@ class WaiterSession : public SessionBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterSession(WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
+  explicit WaiterSession(
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
   : SessionBase("waiter", world_model)
   {
   }
@@ -44,4 +45,4 @@ private:
   std::unordered_map<uint8_t, Pose2D> stop_poses;
 };
 }  // namespace crane
-#endif  // CRANE_SESSIONS__WAITER_TACTIC_HPP_
+#endif  // CRANE_SESSIONS__WAITER_SESSION_HPP_
