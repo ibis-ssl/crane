@@ -34,9 +34,9 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
         RCLCPP_ERROR_STREAM(
           get_logger(), "ロボット " << static_cast<int>(commands[i].robot_id)
                                     << " が重複しています(" << commands[i].planner_name << ", "
-                                    << aggregateStates(commands[i].state_factors) << " と "
+                                    << aggregateStates(commands[i].planning_factors) << " と "
                                     << commands[i - 1].planner_name << ", "
-                                    << aggregateStates(commands[i - 1].state_factors) << ")");
+                                    << aggregateStates(commands[i - 1].planning_factors) << ")");
       }
     }
   }
@@ -113,12 +113,12 @@ auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStat
 }
 
 auto LocalPlannerComponent::aggregateStates(
-  const std::vector<crane_msgs::msg::NamedString> & state_factors) const -> std::string
+  const std::vector<crane_msgs::msg::NamedString> & planning_factors) const -> std::string
 {
   std::stringstream ss;
   ss << "[";
-  for (const auto & state_factor : state_factors) {
-    ss << state_factor.name << ":" << state_factor.value << ", ";
+  for (const auto & planning_factor : planning_factors) {
+    ss << planning_factor.name << ":" << planning_factor.value << ", ";
   }
   ss << "]";
   return ss.str();
@@ -126,12 +126,12 @@ auto LocalPlannerComponent::aggregateStates(
 
 auto LocalPlannerComponent::logValidationError(
   uint8_t robot_id, const std::string & mode_name,
-  const std::vector<crane_msgs::msg::NamedString> & state_factors,
+  const std::vector<crane_msgs::msg::NamedString> & planning_factors,
   const std::string & error_detail) const -> void
 {
   RCLCPP_ERROR_STREAM(
     get_logger(), "ロボット " << static_cast<int>(robot_id) << " は \""
-                              << aggregateStates(state_factors) << "\" スキルにより " << mode_name
+                              << aggregateStates(planning_factors) << "\" スキルにより " << mode_name
                               << " に指定されていますが、" << error_detail);
 }
 }  // namespace crane

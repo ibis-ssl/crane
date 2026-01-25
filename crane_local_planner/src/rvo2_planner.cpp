@@ -223,7 +223,7 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     command.stop_flag = original_command.stop_flag;
     command.current_pose = original_command.current_pose;
     command.current_velocity = original_command.current_velocity;
-    command.state_factors = original_command.state_factors;
+    command.planning_factors = original_command.planning_factors;
     command.planner_name = original_command.planner_name;
     command.delay_checkpoints = original_command.delay_checkpoints;
     command.local_planner_config = original_command.local_planner_config;

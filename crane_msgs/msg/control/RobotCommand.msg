@@ -39,7 +39,7 @@ uint8 POLAR_VELOCITY_TARGET_MODE=3
 
 uint8 control_mode
 
-NamedString[] state_factors
+NamedString[] planning_factors
 string planner_name
 
 # 遅延監視用チェックポイント情報

@@ -235,7 +235,7 @@ void Goalie::inplay(bool enable_emit)
                 visualizer->drawLine(
                   intersect_to_goal_line.front(), *intersect_to_penalty_area, "red", 1.0);
                 phase += "(前進守備量可変)";
-                command->addStateFactor("goalie", "dist:" + std::to_string(dist));
+                command->addPlanningFactor("goalie", "dist:" + std::to_string(dist));
                 return std::make_pair(intersect_to_goal_line.front(), dist);
               }
             } else {

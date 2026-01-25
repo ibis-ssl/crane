@@ -1,0 +1,60 @@
+cmake_minimum_required(VERSION 3.12)
+project(crane_session_coordinator)
+
+# Default to C++20
+if (NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 20)
+endif ()
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
+endif ()
+
+add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
+
+find_package(ament_cmake_auto REQUIRED)
+find_package(rclcpp_components REQUIRED)
+ament_auto_find_build_dependencies()
+
+ament_auto_add_library(${PROJECT_NAME}_component SHARED
+  src/crane_session_coordinator.cpp
+  src/configuration_manager.cpp
+  src/session_registry.cpp
+  src/diagnostics_reporter.cpp
+  src/command_aggregator.cpp
+  src/robot_allocator.cpp
+  src/global_robot_allocator.cpp
+  include/crane_session_coordinator/session_coordinator.hpp
+  include/crane_session_coordinator/configuration_manager.hpp
+  include/crane_session_coordinator/session_registry.hpp
+  include/crane_session_coordinator/diagnostics_reporter.hpp
+  include/crane_session_coordinator/command_aggregator.hpp
+  include/crane_session_coordinator/robot_allocator.hpp
+  include/crane_session_coordinator/global_robot_allocator.hpp
+  include/crane_session_coordinator/allocation_state.hpp)
+target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
+
+target_precompile_headers(${PROJECT_NAME}_component
+  PUBLIC
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<crane_msgs/msg/world_model.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+    "<yaml-cpp/yaml.h>"
+    "<memory>"
+    "<string>"
+)
+
+rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::SessionCoordinatorComponent")
+
+ament_auto_add_executable(${PROJECT_NAME}_node src/crane_session_coordinator_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(test_session_controller test/test.cpp)
+  target_link_libraries(test_session_controller ${PROJECT_NAME}_component)
+endif()
+
+ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)

@@ -187,17 +187,17 @@ class CraneDebugger {
         // Update robot command visualization and show indicator
         this.showCommandIndicator();
 
-        // Update executing skills from robot commands state_factors
+        // Update executing skills from robot commands planning_factors
         if (commands && Array.isArray(commands)) {
             commands.forEach(cmd => {
                 const robotId = cmd.robot_id;
 
-                // Look for skill information in state_factors
-                if (cmd.state_factors && cmd.state_factors.length > 0) {
+                // Look for skill information in planning_factors
+                if (cmd.planning_factors && cmd.planning_factors.length > 0) {
                     // Find the main skill (usually the first factor or one with specific pattern)
-                    const skillFactor = cmd.state_factors.find(factor =>
+                    const skillFactor = cmd.planning_factors.find(factor =>
                         factor.name && factor.value === 'RUNNING'
-                    ) || cmd.state_factors[0]; // fallback to first factor
+                    ) || cmd.planning_factors[0]; // fallback to first factor
 
                     if (skillFactor && skillFactor.name) {
                         // Update executing skills map

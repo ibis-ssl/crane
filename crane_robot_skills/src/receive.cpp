@@ -20,7 +20,7 @@ Status Receive::update()
   auto offset = [&]() -> Point {
     Point offset(0, 0);
     if (getParameter<bool>("enable_software_bumper")) {
-      command->addStateFactor("Receive", "enable software bumper");
+      command->addPlanningFactor("Receive", "enable software bumper");
       // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
       double ball_speed = world_model()->ball().vel.norm();
       if (
@@ -33,7 +33,7 @@ Status Receive::update()
       }
     }
     if (getParameter<bool>("enable_active_receive")) {
-      command->addStateFactor("Receive", "enable active receive");
+      command->addPlanningFactor("Receive", "enable active receive");
       if (world_model()->ball().isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
         offset += (world_model()->ball().pos - robot()->pose.pos);
         double distance = (world_model()->ball().pos - robot()->pose.pos).norm();
@@ -65,7 +65,7 @@ Status Receive::update()
   }
 
   if (getParameter<bool>("enable_redirect")) {
-    command->addStateFactor("Receive", "enable redirect");
+    command->addPlanningFactor("Receive", "enable redirect");
     Point redirect_target = getParameter<Point>("redirect_target");
     auto target_angle = [&]() {
       Vector2 to_ball = world_model()->ball().pos - interception_point;
@@ -121,19 +121,19 @@ Point Receive::getInterceptionPoint() const
   if (!isValidPoint(closest_point)) {
     RCLCPP_WARN(
       rclcpp::get_logger("Receive"), "closest_point is NaN, falling back to robot position");
-    command->addStateFactor(
+    command->addPlanningFactor(
       "Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
     closest_point = robot()->pose.pos;
   }
 
   if (robot()->getDistance(closest_point) < 0.1) {
-    command->addStateFactor(
+    command->addPlanningFactor(
       "Receive", "ロボットがclosest_pointに十分近いため、closest policyを強制適用");
     return closest_point;
   }
 
   std::string policy = getParameter<std::string>("policy");
-  command->addStateFactor("Receive::policy", policy);
+  command->addPlanningFactor("Receive::policy", policy);
 
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray({robot()});
@@ -174,7 +174,7 @@ Point Receive::getInterceptionPoint() const
       std::string message = "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック";
       RCLCPP_WARN(
         rclcpp::get_logger("Receive"), "slack_times is empty, falling back to closest point");
-      command->addStateFactor("Receive", message);
+      command->addPlanningFactor("Receive", message);
       Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
       if (!isValidPoint(fallback_point)) {
         // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
@@ -182,7 +182,7 @@ Point Receive::getInterceptionPoint() const
         RCLCPP_WARN(
           rclcpp::get_logger("Receive"),
           "fallback_point is also NaN, falling back to robot position");
-        command->addStateFactor("Receive", message);
+        command->addPlanningFactor("Receive", message);
         return robot()->pose.pos;
       }
       return fallback_point;
@@ -216,7 +216,7 @@ Point Receive::getInterceptionPoint() const
       std::string message = "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
       RCLCPP_WARN(
         rclcpp::get_logger("Receive"), "selected_point is NaN, falling back to robot position");
-      command->addStateFactor("Receive", message);
+      command->addPlanningFactor("Receive", message);
       return robot()->pose.pos;
     }
 

@@ -31,6 +31,6 @@ geometry_msgs/Pose2D current_pose
 geometry_msgs/Pose2D current_velocity
 
 # デバッグ・診断
-NamedString[] state_factors
+NamedString[] planning_factors
 string planner_name
 crane_msgs/DelayCheckpoints delay_checkpoints

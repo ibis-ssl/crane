@@ -218,4 +218,4 @@ visualizer->drawDebugLabel(robot()->pose.pos, fmt::format("{}: {}", name, state_
 - **[crane_robot_skills](./packages/crane_robot_skills.md)**: パッケージ詳細
 - **[coordinates.md](./coordinates.md)**: 座標系仕様  
 - **[visualizer.md](./visualizer.md)**: 可視化API
-- **[session/crane_tactic_coordinator](./packages/crane_tactic_coordinator.md)**: セッション統合
+- **[session/crane_session_coordinator](./packages/crane_session_coordinator.md)**: セッション統合

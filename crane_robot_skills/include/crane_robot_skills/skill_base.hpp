@@ -150,7 +150,7 @@ protected:
   {
     command->clearMaxVelocityFactors();
     command->clearMaxAccelerationFactors();
-    command->clearSkillStates();
+    command->clearPlanningFactors();
 
     auto & msg = command->getEditableMsg();
     msg.current_pose.x = robot()->pose.pos.x();
@@ -160,7 +160,7 @@ protected:
 
   void finalizeFrame(Status status)
   {
-    command->addStateFactor(name, std::string(magic_enum::enum_name(status)));
+    command->addPlanningFactor(name, std::string(magic_enum::enum_name(status)));
     visualizer->flush();
   }
 };
@@ -224,7 +224,7 @@ public:
     onPostUpdate();
 
     auto state_name = magic_enum::enum_name(current_state);
-    command->addStateFactor(name, std::string(state_name));
+    command->addPlanningFactor(name, std::string(state_name));
 
     visualizer->text()
       .position(robot()->pose.pos)

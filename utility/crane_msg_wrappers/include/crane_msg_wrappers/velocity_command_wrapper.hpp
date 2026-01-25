@@ -187,20 +187,20 @@ public:
     return *this;
   }
 
-  auto addStateFactor(const std::string & name, const std::string & state) -> void
+  auto addPlanningFactor(const std::string & name, const std::string & state) -> void
   {
-    if (auto state_factor = ranges::find_if(
-          latest_msg.state_factors,
-          [name](const auto & state_factor) { return state_factor.name == name; });
-        state_factor == latest_msg.state_factors.end() || state_factor->value != state) {
+    if (auto planning_factor = ranges::find_if(
+          latest_msg.planning_factors,
+          [name](const auto & planning_factor) { return planning_factor.name == name; });
+        planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
       crane_msgs::msg::NamedString msg;
       msg.name = name;
       msg.value = state;
-      latest_msg.state_factors.emplace_back(msg);
+      latest_msg.planning_factors.emplace_back(msg);
     }
   }
 
-  auto clearSkillStates() -> void { latest_msg.state_factors.clear(); }
+  auto clearPlanningFactors() -> void { latest_msg.planning_factors.clear(); }
 
   auto setPlannerName(const std::string & planner_name) -> VelocityCommandWrapper &
   {
@@ -265,7 +265,7 @@ public:
     vel_cmd.stop_flag = pos_cmd.stop_flag;
     vel_cmd.current_pose = pos_cmd.current_pose;
     vel_cmd.current_velocity = pos_cmd.current_velocity;
-    vel_cmd.state_factors = pos_cmd.state_factors;
+    vel_cmd.planning_factors = pos_cmd.planning_factors;
     vel_cmd.planner_name = pos_cmd.planner_name;
     vel_cmd.delay_checkpoints = pos_cmd.delay_checkpoints;
     vel_cmd.local_planner_config = pos_cmd.local_planner_config;

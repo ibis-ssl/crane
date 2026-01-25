@@ -548,9 +548,9 @@ private:
     }
 
     for (const auto & cmd : msg->robot_commands) {
-      json state_factors_json = json::array();
-      for (const auto & factor : cmd.state_factors) {
-        state_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
+      json planning_factors_json = json::array();
+      for (const auto & factor : cmd.planning_factors) {
+        planning_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
       }
 
       // 個別ロボットコマンドの遅延チェックポイント
@@ -565,7 +565,7 @@ private:
       json cmd_json = {
         {"robot_id", cmd.robot_id},           {"kick_power", cmd.kick_power},
         {"dribble_power", cmd.dribble_power}, {"chip_enable", cmd.chip_enable},
-        {"target_theta", cmd.target_theta},   {"state_factors", state_factors_json},
+        {"target_theta", cmd.target_theta},   {"planning_factors", planning_factors_json},
         {"planner_name", cmd.planner_name},   {"delay_checkpoints", cmd_delay_checkpoints_json}};
       commands["commands"].push_back(cmd_json);
     }

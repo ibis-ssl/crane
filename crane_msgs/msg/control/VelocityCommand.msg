@@ -37,7 +37,7 @@ float32 latency_ms 0.0
 uint16 elapsed_time_ms_since_last_vision 0
 
 # デバッグ・診断
-NamedString[] state_factors
+NamedString[] planning_factors
 string planner_name
 crane_msgs/DelayCheckpoints delay_checkpoints
 crane_msgs/LocalPlannerConfig local_planner_config
