@@ -46,6 +46,57 @@ class MatchController:
         self.referee_address = "224.5.23.1"
         self.referee_port = 10003
 
+        # Track processed game events to avoid duplicates
+        self.processed_event_ids: set = set()
+
+    @staticmethod
+    def format_game_event(event, yellow_name: str = "ibis", blue_name: str = "TIGERs") -> str:
+        """
+        GameEventをシンプルな説明文に変換
+
+        Args:
+            event: GameEventオブジェクト
+            yellow_name: Yellowチーム名
+            blue_name: Blueチーム名
+
+        Returns:
+            イベントの説明文（元のイベント名 + チーム情報）
+        """
+        try:
+            event_type = referee_pb2.GameEvent.Type.Name(event.type)
+        except:
+            event_type = "UNKNOWN"
+
+        # Team name helper
+        def team_name(team_enum):
+            if team_enum == 0:  # YELLOW
+                return yellow_name
+            elif team_enum == 1:  # BLUE
+                return blue_name
+            return "UNKNOWN"
+
+        # Try to extract team information from common event fields
+        team_info = ""
+        try:
+            # Most events have a 'by_team' field
+            for field_name in ['by_team', 'by_team_yellow', 'by_team_blue']:
+                if event.HasField(field_name) or hasattr(event, field_name):
+                    # Get the first subfield that exists
+                    for sub in event.DESCRIPTOR.fields:
+                        if hasattr(event, sub.name) and event.HasField(sub.name):
+                            sub_event = getattr(event, sub.name)
+                            if hasattr(sub_event, 'by_team'):
+                                team_info = f" by {team_name(sub_event.by_team)}"
+                                break
+                            elif hasattr(sub_event, 'by_team_yellow'):
+                                team_info = f" (Yellow: {yellow_name}, Blue: {blue_name})"
+                                break
+                    break
+        except:
+            pass
+
+        return f"{event_type}{team_info}"
+
     def wait_for_services(self, timeout: int = 30) -> bool:
         """サービスが起動するまで待機（固定時間）"""
         print(f"サービスの起動を待機中（{timeout}秒）...")
@@ -151,6 +202,16 @@ class MatchController:
                         if current_stage == "POST_GAME":
                             print("\n✓ 試合が終了しました（POST_GAME）")
                             break
+
+                    # Process game events
+                    for game_event in referee_msg.game_events:
+                        # Create unique event ID to avoid duplicates
+                        event_id = f"{game_event.type}_{elapsed:.1f}"
+                        if event_id not in self.processed_event_ids:
+                            self.processed_event_ids.add(event_id)
+                            event_desc = self.format_game_event(game_event, self.yellow_name, self.blue_name)
+                            self.events.append((elapsed, event_desc))
+                            print(f"  [{elapsed:.1f}s] {event_desc}")
 
                     # Progress indicator
                     if message_count % 50 == 0:
