@@ -1,0 +1,103 @@
+network:
+  publish-address: 224.5.23.1:10003
+  publish-nif: ""
+  vision-address: 224.5.23.2:10020
+  tracker-address: 224.5.23.2:10010
+  skip-interfaces: []
+
+game:
+  yellow-card-duration: 2m0s
+  yellow-card-bot-removal-time: 10s
+  default-division: DIV_A
+
+  # 90秒試合設定（前半45秒 + 後半45秒）
+  normal:
+    half-duration: 45s
+    half-time-duration: 2s
+    timeout-duration: 1m0s
+    timeouts: 2
+    break-after: 1m0s
+
+  overtime:
+    half-duration: 30s
+    half-time-duration: 2s
+    timeout-duration: 30s
+    timeouts: 1
+    break-after: 30s
+
+  team-choice-timeout: 200ms
+  default-geometry:
+    DIV_A:
+      field-length: 12
+      field-width: 9
+      defense-area-depth: 1.8
+      defense-area-width: 3.6
+      penalty-kick-dist-to-goal: 8
+      goal-width: 1.8
+      center-circle-radius: 0.5
+      placement-offset-touch-line: 0.2
+      placement-offset-goal-line: 0.2
+      placement-offset-goal-line-goal-kick: 1
+      placement-offset-defense-area: 1
+    DIV_B:
+      field-length: 9
+      field-width: 6
+      defense-area-depth: 1
+      defense-area-width: 2
+      penalty-kick-dist-to-goal: 6
+      goal-width: 1
+      center-circle-radius: 0.5
+      placement-offset-touch-line: 0.2
+      placement-offset-goal-line: 0.2
+      placement-offset-goal-line-goal-kick: 1
+      placement-offset-defense-area: 1
+
+  multiple-card-step: 2
+  multiple-foul-step: 3
+  multiple-placement-failures: 5
+  max-bots:
+    DIV_A: 11
+    DIV_B: 6
+  auto-ref-proposal-timeout: 1s
+  prepare-timeout: 10s
+  free-kick-timeout:
+    DIV_A: 5s
+    DIV_B: 10s
+  no-progress-timeout:
+    DIV_A: 5s
+    DIV_B: 10s
+  ball-placement-time: 30s
+  ball-placement-time-top-up: 10s
+  state-store-file: /tmp/state-store.json.stream
+  ball-placement-required-distance: 1
+  ball-placement-min-distance-to-defense-area: 0.7
+  ball-placement-tolerance: 0.15
+  ball-placement-min-robot-distance: 0.05
+  distance-to-ball-in-stop: 0.5
+
+  # 自動承認設定（スムーズな試合進行のため）
+  auto-approve-goals: true
+  continue-from-halt: true
+
+  challenge-flags: 3
+  emergency-stop-grace-period: 10s
+  preparation-time-after-halt: 3s
+  preparation-time-before-resume: 2s
+
+server:
+  auto-ref:
+    address: :10007
+    trusted-keys-dir: /tmp/trusted_keys/auto_ref
+  team:
+    address: :10008
+    trusted-keys-dir: /tmp/trusted_keys/team
+  ci:
+    address: :10009
+  remote-control:
+    address: :10011
+    trusted-keys-dir: /tmp/trusted_keys/remote-control
+
+time-acquisition-mode: system
+
+engine:
+  config-filename: /tmp/engine.yaml

@@ -1,0 +1,134 @@
+name: TIGERs対戦CI
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎週月曜日 9:00 (JST) に実行
+    - cron: '0 0 * * 1'
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  build_crane_image:
+    name: craneイメージのビルド
+    runs-on: ubuntu-latest
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [jazzy]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build crane image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/scenario/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:match-${{ github.sha }}
+          cache-from: |
+            type=gha,scope=match-${{ github.ref_name }}
+            type=gha,scope=match-develop
+            type=gha,scope=match
+          cache-to: type=gha,mode=max,scope=match-${{ github.ref_name }}
+
+  match_vs_tigers:
+    needs: build_crane_image
+    name: TIGERs Sumatra AIとの対戦
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start Docker Compose services
+        run: |
+          docker compose -f docker/match_vs_tigers/docker-compose.yaml up -d
+        env:
+          CRANE_TAG: match-${{ github.sha }}
+
+      - name: Wait for match to complete
+        timeout-minutes: 5
+        run: |
+          echo "試合の完了を待機中..."
+          # match-controllerコンテナが終了するまで待機
+          while docker ps | grep -q match_controller; do
+            sleep 5
+          done
+          echo "試合が完了しました"
+
+      - name: Get match result
+        id: result
+        run: |
+          # 結果ファイルを取得
+          docker cp match_controller:/app/results/match_result.txt ./match_result.txt || echo "結果ファイルの取得に失敗"
+
+          # 結果を表示
+          if [ -f match_result.txt ]; then
+            cat match_result.txt
+            echo "RESULT_EXISTS=true" >> $GITHUB_ENV
+
+            # GitHub Step Summaryに追加
+            echo "## TIGERs対戦結果" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat match_result.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "結果ファイルが見つかりません"
+            echo "RESULT_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Get service logs
+        if: always()
+        run: |
+          echo "=== Docker Compose Logs ===" >> match_logs.txt
+          docker compose -f docker/match_vs_tigers/docker-compose.yaml logs >> match_logs.txt 2>&1
+
+      - name: Clean up Docker Compose services
+        if: always()
+        run: docker compose -f docker/match_vs_tigers/docker-compose.yaml down -v
+
+      - name: Upload match result
+        if: env.RESULT_EXISTS == 'true'
+        uses: actions/upload-artifact@v5
+        with:
+          name: match-result-${{ github.sha }}
+          path: match_result.txt
+
+      - name: Upload match logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: match-logs-${{ github.sha }}
+          path: match_logs.txt
+
+      - name: Check match result (fail if crane lost)
+        if: env.RESULT_EXISTS == 'true'
+        run: |
+          if grep -q "TIGERs WIN" match_result.txt; then
+            echo "::warning::craneが敗北しました"
+            exit 1
+          elif grep -q "CRANE WIN" match_result.txt; then
+            echo "::notice::craneが勝利しました！"
+            exit 0
+          else
+            echo "::warning::引き分けでした"
+            exit 0
+          fi
