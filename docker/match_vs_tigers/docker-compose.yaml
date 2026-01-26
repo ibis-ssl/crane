@@ -84,10 +84,12 @@ services:
       - ./scripts/match_controller.py:/app/match_controller.py:ro
       - ./results:/app/results:rw
     working_dir: /app
+    environment:
+      PYTHONUNBUFFERED: "1"
     command: >
       sh -c "
       pip install -q requests &&
-      python match_controller.py
+      python -u match_controller.py
       "
     restart: "no"
     depends_on:
