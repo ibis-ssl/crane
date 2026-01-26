@@ -82,13 +82,14 @@ services:
       - match
     volumes:
       - ./scripts/match_controller.py:/app/match_controller.py:ro
+      - ./proto:/app/proto:ro
       - ./results:/app/results:rw
     working_dir: /app
     environment:
       PYTHONUNBUFFERED: "1"
     command: >
       sh -c "
-      pip install -q requests &&
+      pip install -q requests protobuf &&
       python -u match_controller.py
       "
     restart: "no"

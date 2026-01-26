@@ -2,18 +2,28 @@
 """
 TIGERs対戦試合制御スクリプト
 
-ssl-game-controllerのAPIを使用して試合を開始し、
+ssl-game-controllerのProtocol Buffersメッセージを使用して試合を監視し、
 結果を監視してテキストサマリーを出力します。
 """
 
 import time
 import sys
+import socket
+import struct
 from typing import List, Tuple, Optional
 
 try:
     import requests
 except ImportError:
     print("requestsモジュールが必要です: pip install requests", file=sys.stderr)
+    sys.exit(1)
+
+# Add proto directory to path
+sys.path.insert(0, '/app/proto')
+try:
+    import ssl_gc_referee_message_pb2 as referee_pb2
+except ImportError:
+    print("protobufモジュールが必要です: pip install protobuf", file=sys.stderr)
     sys.exit(1)
 
 
@@ -32,6 +42,10 @@ class MatchController:
         self.start_time: Optional[float] = None
         self.match_duration = 0.0
 
+        # Referee message parameters
+        self.referee_address = "224.5.23.1"
+        self.referee_port = 10003
+
     def wait_for_services(self, timeout: int = 30) -> bool:
         """サービスが起動するまで待機（固定時間）"""
         print(f"サービスの起動を待機中（{timeout}秒）...")
@@ -46,6 +60,28 @@ class MatchController:
         print("✓ チーム接続待機完了")
         return True
 
+    def create_referee_socket(self) -> Optional[socket.socket]:
+        """レフェリーメッセージ受信用のマルチキャストソケットを作成"""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            # Bind to the referee port
+            sock.bind(('', self.referee_port))
+
+            # Join multicast group
+            mreq = struct.pack("4sl", socket.inet_aton(self.referee_address), socket.INADDR_ANY)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+            # Set non-blocking with timeout
+            sock.settimeout(1.0)
+
+            print(f"✓ レフェリーメッセージ受信開始: {self.referee_address}:{self.referee_port}")
+            return sock
+        except Exception as e:
+            print(f"✗ マルチキャストソケット作成エラー: {e}", file=sys.stderr)
+            return None
+
     def start_match_sequence(self) -> bool:
         """試合開始シーケンスを実行（自動開始を前提）"""
         print("試合の自動開始を待機中...")
@@ -53,15 +89,95 @@ class MatchController:
         self.start_time = time.time()
         return True
 
-    def monitor_match_simple(self, max_duration: int = 120):
+    def monitor_match_protobuf(self, max_duration: int = 180):
         """
-        試合を固定時間待機（簡易版）
+        Protocol Buffersを使用して試合状態を監視
+
+        Args:
+            max_duration: 最大試合時間（秒）
+        """
+        print(f"試合を監視中（Protocol Buffers使用、最大{max_duration}秒）...")
+
+        sock = self.create_referee_socket()
+        if not sock:
+            print("⚠  ソケット作成失敗。簡易モードにフォールバック")
+            return self.monitor_match_fallback(max_duration)
+
+        last_yellow_score = 0
+        last_blue_score = 0
+        last_stage = None
+        message_count = 0
+
+        start_monitor = time.time()
+
+        try:
+            while time.time() - start_monitor < max_duration:
+                try:
+                    # Receive referee message
+                    data, _ = sock.recvfrom(65536)
+                    message_count += 1
+
+                    # Parse protobuf message
+                    referee_msg = referee_pb2.Referee()
+                    referee_msg.ParseFromString(data)
+
+                    # Get current scores
+                    self.yellow_score = referee_msg.yellow.score
+                    self.blue_score = referee_msg.blue.score
+
+                    # Get current stage
+                    current_stage = referee_pb2.Referee.Stage.Name(referee_msg.stage)
+
+                    # Record score changes
+                    elapsed = time.time() - self.start_time if self.start_time else 0
+
+                    if self.yellow_score > last_yellow_score:
+                        self.events.append((elapsed, "GOAL by Yellow (ibis)"))
+                        print(f"  [{elapsed:.1f}s] 🟡 GOAL by Yellow! (Score: {self.yellow_score}-{self.blue_score})")
+                        last_yellow_score = self.yellow_score
+
+                    if self.blue_score > last_blue_score:
+                        self.events.append((elapsed, "GOAL by Blue (TIGERs)"))
+                        print(f"  [{elapsed:.1f}s] 🔵 GOAL by Blue! (Score: {self.yellow_score}-{self.blue_score})")
+                        last_blue_score = self.blue_score
+
+                    # Record stage changes
+                    if current_stage != last_stage:
+                        self.events.append((elapsed, f"Stage: {current_stage}"))
+                        print(f"  [{elapsed:.1f}s] Stage: {current_stage}")
+                        last_stage = current_stage
+
+                        # End match at POST_GAME
+                        if current_stage == "POST_GAME":
+                            print("\n✓ 試合が終了しました（POST_GAME）")
+                            break
+
+                    # Progress indicator
+                    if message_count % 50 == 0:
+                        print(f"  経過時間: {elapsed:.0f}秒 (Score: {self.yellow_score}-{self.blue_score})")
+
+                except socket.timeout:
+                    # No message received, continue
+                    continue
+                except Exception as e:
+                    print(f"⚠  メッセージ処理エラー: {e}", file=sys.stderr)
+                    continue
+
+        finally:
+            sock.close()
+
+        self.match_duration = time.time() - self.start_time if self.start_time else 0
+        print(f"\n試合監視完了（実行時間: {self.match_duration:.1f}秒、受信メッセージ数: {message_count}）")
+
+    def monitor_match_fallback(self, max_duration: int = 120):
+        """
+        試合を固定時間待機（フォールバック版）
 
         Args:
             max_duration: 試合時間（秒）
         """
-        print(f"試合を監視中（{max_duration}秒待機）...")
-        print("（注: HTTP APIが利用できないため、スコア/イベントの監視はできません）")
+        print(f"試合を監視中（フォールバック: {max_duration}秒待機）...")
+        print("（注: レフェリーメッセージを受信できないため、スコア/イベントの監視はできません）")
 
         for i in range(max_duration):
             if i % 10 == 0:
@@ -80,8 +196,13 @@ class MatchController:
             result = f"CRANE WIN ({self.yellow_name})"
         elif self.blue_score > self.yellow_score:
             result = f"TIGERs WIN ({self.blue_name})"
-        else:
+        elif self.yellow_score == 0 and self.blue_score == 0 and not self.events:
             result = "試合完了（スコア情報なし）"
+        else:
+            result = "DRAW (引き分け)"
+
+        # スコア情報の有無を判定
+        has_score_info = self.yellow_score > 0 or self.blue_score > 0 or len(self.events) > 0
 
         summary = f"""=====================================
         TIGERs対戦結果サマリー
@@ -92,8 +213,12 @@ class MatchController:
 
 【スコア】
   {self.yellow_name} (Yellow): {self.yellow_score}
-  {self.blue_name} (Blue): {self.blue_score}
-  ※ HTTP APIが利用できないため、スコアは取得できませんでした
+  {self.blue_name} (Blue): {self.blue_score}"""
+
+        if not has_score_info:
+            summary += "\n  ⚠  レフェリーメッセージを受信できませんでした"
+
+        summary += f"""
 
 【勝敗】
   {result}
@@ -108,8 +233,7 @@ class MatchController:
             for event_time, event_desc in self.events:
                 summary += f"  - [{event_time:.1f}s] {event_desc}\n"
         else:
-            summary += "  - HTTP APIが利用できないため、イベント記録はありません\n"
-            summary += "  - 将来の改善: Protocol Buffersを使用した詳細監視\n"
+            summary += "  - レフェリーメッセージを受信できなかったため、イベント記録はありません\n"
 
         summary += "\n=====================================\n"
 
@@ -149,8 +273,8 @@ def main():
         print("試合を開始できませんでした", file=sys.stderr)
         sys.exit(1)
 
-    # 試合監視（120秒待機）
-    controller.monitor_match_simple(max_duration=120)
+    # 試合監視（Protocol Buffers使用、最大180秒）
+    controller.monitor_match_protobuf(max_duration=180)
 
     # 結果保存
     controller.save_results()
