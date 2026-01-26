@@ -15,7 +15,6 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
-    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
 #      # ccache configuration
@@ -29,6 +28,23 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https software-properties-common
+          source /etc/os-release
+          wget -q https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          rm packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+        shell: bash
+
+      - name: setup ROS
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.rosdistro }}
+
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
@@ -59,9 +75,17 @@ jobs:
 #            dependency_ws-${{ matrix.rosdistro }}-
 
       - name: Clone dependency packages
+        if: steps.cache-dependency-ws.outputs.cache-hit != 'true'
         run: |
           mkdir -p dependency_ws
           vcs import dependency_ws < dependency_${{ matrix.rosdistro }}.repos
+        shell: bash
+
+      - name: Generate rosdep keys file
+        run: |
+          rosdep update
+          colcon list -p --base-paths . dependency_ws > packages.txt
+          rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
 
 #      - name: Cache rosdep
@@ -96,15 +120,19 @@ jobs:
 
       - name: Run rosdep install
         run: |
-          sudo apt-get -yqq update
-          rosdep update
-          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" != "true" ]]; then
+            echo "Installing dependencies..."
+            sudo apt-get -yqq update
+            DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          else
+            echo "Rosdep cache hit. Skipping installation."
+          fi
         shell: bash
 
       - name: Build
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon build --symlink-install --event-handlers console_cohesion+ \
+          colcon build --event-handlers console_cohesion+ \
             --parallel-workers $(nproc) \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
