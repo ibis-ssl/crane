@@ -12,7 +12,7 @@ TIGERs Mannheimの強豪AI「Sumatra」と対戦し、結果をテキストサ�
 
 ## ディレクトリ構成
 
-```
+```text
 docker/match_vs_tigers/
 ├── README.md                         # このファイル
 ├── docker-compose.yaml               # メイン構成
@@ -114,7 +114,7 @@ CRANE_TAG=develop ./scripts/match_vs_tigers/run_local.sh
 
 ## 出力サンプル
 
-```
+```text
 =====================================
         TIGERs対戦結果サマリー
 =====================================

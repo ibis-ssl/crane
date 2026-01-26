@@ -59,7 +59,6 @@ class MatchController:
             try:
                 response = requests.get(f"{self.gc_api_base}/state", timeout=2)
                 if response.status_code == 200:
-                    state = response.json()
                     # チーム接続状況を確認（簡易版）
                     print(".", end="", flush=True)
                     time.sleep(2)
