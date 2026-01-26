@@ -7,10 +7,7 @@ ssl-game-controllerのAPIを使用して試合を開始し、
 """
 
 import time
-import socket
-import struct
 import sys
-import json
 from typing import List, Tuple, Optional
 
 try:
@@ -42,10 +39,7 @@ class MatchController:
         start = time.time()
         while time.time() - start < timeout:
             try:
-                response = requests.get(
-                    f"{self.gc_api_base}/state",
-                    timeout=2
-                )
+                response = requests.get(f"{self.gc_api_base}/state", timeout=2)
                 if response.status_code == 200:
                     print("✓ ssl-game-controller 起動確認")
                     return True
@@ -90,7 +84,7 @@ class MatchController:
             response = requests.post(
                 f"{self.gc_api_base}/control/command",
                 json={"command": "normalStart"},
-                timeout=5
+                timeout=5,
             )
 
             if response.status_code != 200:
@@ -105,7 +99,7 @@ class MatchController:
             response = requests.post(
                 f"{self.gc_api_base}/control/command",
                 json={"command": "kickoff", "forTeam": "YELLOW"},
-                timeout=5
+                timeout=5,
             )
 
             if response.status_code == 200:
@@ -151,7 +145,9 @@ class MatchController:
                         self.blue_score = blue_state.get("goals", 0)
 
                         # スコア変化を記録
-                        elapsed = time.time() - self.start_time if self.start_time else 0
+                        elapsed = (
+                            time.time() - self.start_time if self.start_time else 0
+                        )
 
                         if self.yellow_score > last_yellow_score:
                             self.events.append((elapsed, "GOAL by Yellow"))
@@ -166,7 +162,9 @@ class MatchController:
                     # ステージ確認
                     current_stage = state.get("stage", "")
                     if current_stage != last_stage:
-                        elapsed = time.time() - self.start_time if self.start_time else 0
+                        elapsed = (
+                            time.time() - self.start_time if self.start_time else 0
+                        )
                         self.events.append((elapsed, f"Stage: {current_stage}"))
                         print(f"  [{elapsed:.1f}s] Stage: {current_stage}")
                         last_stage = current_stage
@@ -231,7 +229,7 @@ class MatchController:
         summary = self.generate_summary()
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(summary)
             print(f"✓ 結果を保存: {filepath}")
         except Exception as e:
