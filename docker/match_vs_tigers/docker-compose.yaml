@@ -82,14 +82,17 @@ services:
       - match
     volumes:
       - ./scripts/match_controller.py:/app/match_controller.py:ro
-      - ./proto:/app/proto:ro
+      - ./proto:/app/proto:rw
       - ./results:/app/results:rw
     working_dir: /app
     environment:
       PYTHONUNBUFFERED: "1"
     command: >
       sh -c "
-      pip install -q requests protobuf &&
+      pip install -q requests protobuf grpcio-tools &&
+      cd proto &&
+      python -m grpc_tools.protoc --python_out=. --proto_path=. ssl_gc_common.proto ssl_gc_geometry.proto ssl_gc_game_event.proto ssl_gc_referee_message.proto &&
+      cd .. &&
       python -u match_controller.py
       "
     restart: "no"
