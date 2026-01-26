@@ -78,3 +78,6 @@ ssl-go-tools/
 *.log.gz
 *.mp4
 *.avi
+
+# Match vs TIGERs results
+docker/match_vs_tigers/results/
