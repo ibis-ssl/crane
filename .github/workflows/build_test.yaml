@@ -104,7 +104,7 @@ jobs:
       - name: Build
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon build --event-handlers console_cohesion+ \
+          colcon build --symlink-install --event-handlers console_cohesion+ \
             --parallel-workers $(nproc) \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
