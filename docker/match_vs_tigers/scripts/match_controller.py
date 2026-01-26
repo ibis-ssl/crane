@@ -19,7 +19,7 @@ except ImportError:
     sys.exit(1)
 
 # Add proto directory to path
-sys.path.insert(0, '/app/proto')
+sys.path.insert(0, "/app/proto")
 try:
     import ssl_gc_referee_message_pb2 as referee_pb2
 except ImportError:
@@ -50,7 +50,9 @@ class MatchController:
         self.processed_event_ids: set = set()
 
     @staticmethod
-    def format_game_event(event, yellow_name: str = "ibis", blue_name: str = "TIGERs") -> str:
+    def format_game_event(
+        event, yellow_name: str = "ibis", blue_name: str = "TIGERs"
+    ) -> str:
         """
         GameEventをシンプルな説明文に変換
 
@@ -79,17 +81,19 @@ class MatchController:
         team_info = ""
         try:
             # Most events have a 'by_team' field
-            for field_name in ['by_team', 'by_team_yellow', 'by_team_blue']:
+            for field_name in ["by_team", "by_team_yellow", "by_team_blue"]:
                 if event.HasField(field_name) or hasattr(event, field_name):
                     # Get the first subfield that exists
                     for sub in event.DESCRIPTOR.fields:
                         if hasattr(event, sub.name) and event.HasField(sub.name):
                             sub_event = getattr(event, sub.name)
-                            if hasattr(sub_event, 'by_team'):
+                            if hasattr(sub_event, "by_team"):
                                 team_info = f" by {team_name(sub_event.by_team)}"
                                 break
-                            elif hasattr(sub_event, 'by_team_yellow'):
-                                team_info = f" (Yellow: {yellow_name}, Blue: {blue_name})"
+                            elif hasattr(sub_event, "by_team_yellow"):
+                                team_info = (
+                                    f" (Yellow: {yellow_name}, Blue: {blue_name})"
+                                )
                                 break
                     break
         except:
@@ -118,16 +122,20 @@ class MatchController:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             # Bind to the referee port
-            sock.bind(('', self.referee_port))
+            sock.bind(("", self.referee_port))
 
             # Join multicast group
-            mreq = struct.pack("4sl", socket.inet_aton(self.referee_address), socket.INADDR_ANY)
+            mreq = struct.pack(
+                "4sl", socket.inet_aton(self.referee_address), socket.INADDR_ANY
+            )
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
             # Set non-blocking with timeout
             sock.settimeout(1.0)
 
-            print(f"✓ レフェリーメッセージ受信開始: {self.referee_address}:{self.referee_port}")
+            print(
+                f"✓ レフェリーメッセージ受信開始: {self.referee_address}:{self.referee_port}"
+            )
             return sock
         except Exception as e:
             print(f"✗ マルチキャストソケット作成エラー: {e}", file=sys.stderr)
@@ -184,12 +192,16 @@ class MatchController:
 
                     if self.yellow_score > last_yellow_score:
                         self.events.append((elapsed, "GOAL by Yellow (ibis)"))
-                        print(f"  [{elapsed:.1f}s] 🟡 GOAL by Yellow! (Score: {self.yellow_score}-{self.blue_score})")
+                        print(
+                            f"  [{elapsed:.1f}s] 🟡 GOAL by Yellow! (Score: {self.yellow_score}-{self.blue_score})"
+                        )
                         last_yellow_score = self.yellow_score
 
                     if self.blue_score > last_blue_score:
                         self.events.append((elapsed, "GOAL by Blue (TIGERs)"))
-                        print(f"  [{elapsed:.1f}s] 🔵 GOAL by Blue! (Score: {self.yellow_score}-{self.blue_score})")
+                        print(
+                            f"  [{elapsed:.1f}s] 🔵 GOAL by Blue! (Score: {self.yellow_score}-{self.blue_score})"
+                        )
                         last_blue_score = self.blue_score
 
                     # Record stage changes
@@ -209,13 +221,17 @@ class MatchController:
                         event_id = f"{game_event.type}_{elapsed:.1f}"
                         if event_id not in self.processed_event_ids:
                             self.processed_event_ids.add(event_id)
-                            event_desc = self.format_game_event(game_event, self.yellow_name, self.blue_name)
+                            event_desc = self.format_game_event(
+                                game_event, self.yellow_name, self.blue_name
+                            )
                             self.events.append((elapsed, event_desc))
                             print(f"  [{elapsed:.1f}s] {event_desc}")
 
                     # Progress indicator
                     if message_count % 50 == 0:
-                        print(f"  経過時間: {elapsed:.0f}秒 (Score: {self.yellow_score}-{self.blue_score})")
+                        print(
+                            f"  経過時間: {elapsed:.0f}秒 (Score: {self.yellow_score}-{self.blue_score})"
+                        )
 
                 except socket.timeout:
                     # No message received, continue
@@ -228,7 +244,9 @@ class MatchController:
             sock.close()
 
         self.match_duration = time.time() - self.start_time if self.start_time else 0
-        print(f"\n試合監視完了（実行時間: {self.match_duration:.1f}秒、受信メッセージ数: {message_count}）")
+        print(
+            f"\n試合監視完了（実行時間: {self.match_duration:.1f}秒、受信メッセージ数: {message_count}）"
+        )
 
     def monitor_match_fallback(self, max_duration: int = 120):
         """
@@ -238,7 +256,9 @@ class MatchController:
             max_duration: 試合時間（秒）
         """
         print(f"試合を監視中（フォールバック: {max_duration}秒待機）...")
-        print("（注: レフェリーメッセージを受信できないため、スコア/イベントの監視はできません）")
+        print(
+            "（注: レフェリーメッセージを受信できないため、スコア/イベントの監視はできません）"
+        )
 
         for i in range(max_duration):
             if i % 10 == 0:
@@ -246,7 +266,9 @@ class MatchController:
                 print(f"  経過時間: {elapsed:.0f}秒")
             time.sleep(1)
 
-        self.match_duration = time.time() - self.start_time if self.start_time else max_duration
+        self.match_duration = (
+            time.time() - self.start_time if self.start_time else max_duration
+        )
         print(f"\n試合終了（実行時間: {self.match_duration:.1f}秒）")
 
     def generate_summary(self) -> str:
@@ -263,7 +285,9 @@ class MatchController:
             result = "DRAW (引き分け)"
 
         # スコア情報の有無を判定
-        has_score_info = self.yellow_score > 0 or self.blue_score > 0 or len(self.events) > 0
+        has_score_info = (
+            self.yellow_score > 0 or self.blue_score > 0 or len(self.events) > 0
+        )
 
         summary = f"""=====================================
         TIGERs対戦結果サマリー
