@@ -81,3 +81,9 @@ ssl-go-tools/
 
 # Match vs TIGERs results
 docker/match_vs_tigers/results/
+
+# Protocol Buffers generated files
+docker/match_vs_tigers/proto/**/*_pb2.py
+
+# Test scripts
+docker/match_vs_tigers/scripts/test_*.py
