@@ -36,7 +36,9 @@ services:
     container_name: match_crane
     network_mode: host
     volumes:
-      - /home/hans/workspace/ibis_ws:/root/ibis_ws:rw
+      - /home/hans/workspace/ibis_ws/src:/root/ibis_ws/src:rw
+      - /home/hans/workspace/ibis_ws/build:/root/ibis_ws/build:rw
+      - /home/hans/workspace/ibis_ws/install:/root/ibis_ws/install:rw
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
