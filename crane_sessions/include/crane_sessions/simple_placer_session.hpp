@@ -119,8 +119,8 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    const auto & our_robots = world_model->ours().getAvailableRobots();
-    const auto & their_robots = world_model->theirs().getAvailableRobots();
+    const auto & our_robots = world_model->ours().robotsWhere().available().get();
+    const auto & their_robots = world_model->theirs().robotsWhere().available().get();
     // update defense area info
     for (auto & area_with_info : defense_areas) {
       area_with_info.our_robot_count = std::ranges::count_if(our_robots, [&](const auto & robot) {

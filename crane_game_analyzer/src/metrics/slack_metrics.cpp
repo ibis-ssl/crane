@@ -15,7 +15,7 @@ OurSlackMetric::OurSlackMetric() : MetricBase(MetricId::OUR_SLACK, "OurSlack") {
 
 auto OurSlackMetric::compute(MetricContext & ctx) -> void
 {
-  for (const auto & robot : ctx.world_model->ours().getAvailableRobots()) {
+  for (const auto & robot : ctx.world_model->ours().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
       ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
@@ -45,7 +45,7 @@ TheirSlackMetric::TheirSlackMetric() : MetricBase(MetricId::THEIR_SLACK, "TheirS
 
 auto TheirSlackMetric::compute(MetricContext & ctx) -> void
 {
-  for (const auto & robot : ctx.world_model->theirs().getAvailableRobots()) {
+  for (const auto & robot : ctx.world_model->theirs().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
       ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);

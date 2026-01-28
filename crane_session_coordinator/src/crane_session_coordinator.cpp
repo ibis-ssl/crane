@@ -122,7 +122,7 @@ auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
 
     try {
       auto results = robot_allocator_->allocate(
-        session_name, world_model->ours().getAvailableRobotIds(), world_model,
+        session_name, world_model->ours().robotsWhere().available().getIds(), world_model,
         static_cast<rclcpp::Node &>(*this));
 
       // 結果をパブリッシュ
@@ -167,7 +167,7 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
   world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
 
   // ロボット変動検出と再割当
-  auto observed_robot_ids = world_model->ours().getAvailableRobotIds();
+  auto observed_robot_ids = world_model->ours().robotsWhere().available().getIds();
   if (
     robot_allocator_->detectRobotChange(observed_robot_ids) &&
     !play_situation.command.name.empty()) {

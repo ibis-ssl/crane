@@ -265,7 +265,7 @@ auto Attacker::OverDribbleInfo::update(const Point & current_position, const Poi
 void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
 {
   auto pass_analysis = getPassAnalysis(
-    world_model()->ball().pos, target, world_model()->theirs().getAvailableRobots());
+    world_model()->ball().pos, target, world_model()->theirs().robotsWhere().available().get());
 
   if (pass_analysis.need_chip || shouldUseChipKick(target)) {
     kick_skill.setParameter("chip_kick", true);
@@ -290,7 +290,7 @@ bool Attacker::shouldUseChipKick(const Point & target)
 {
   Segment kick_line{world_model()->ball().pos, target};
   if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        kick_line, world_model()->theirs().getAvailableRobots());
+        kick_line, world_model()->theirs().robotsWhere().available().get());
       nearest_enemy.has_value()) {
     return nearest_enemy->distance < PASS_OBSTACLE_DISTANCE &&
            nearest_enemy->robot->getDistance(world_model()->ball().pos) < ENEMY_NEAR_BALL_DISTANCE;
@@ -307,7 +307,7 @@ double Attacker::evaluateGoalAngle(const Point & position)
 bool Attacker::isPassBlocked(const Point & target)
 {
   Segment ball_to_target{world_model()->ball().pos, target};
-  const auto enemy_robots = world_model()->theirs().getAvailableRobots();
+  const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
 
   if (auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
@@ -354,7 +354,7 @@ double Attacker::calculatePassScore(const Point & target)
 
   // パスラインに敵がいるときはスコアを下げる
   Segment ball_to_target{world_model()->ball().pos, target};
-  const auto enemy_robots = world_model()->theirs().getAvailableRobots();
+  const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
   if (auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
       nearest_enemy) {

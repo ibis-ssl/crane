@@ -356,10 +356,10 @@ auto DiagnosticPublisherNode::feedbackMessageCallback(
 
 auto DiagnosticPublisherNode::worldModelCallback() -> void
 {
-  auto available_robot_ids = world_model->ours().getAvailableRobotIds();
+  auto available_robot_ids = world_model->ours().robotsWhere().available().getIds();
 
   // ロボットの位置情報を更新
-  for (const auto & robot : world_model->ours().getAvailableRobots()) {
+  for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
     robot_positions[robot->id] = {
       robot->pose.pos.x(), robot->pose.pos.y(), robot->pose.theta, true};
   }

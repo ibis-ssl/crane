@@ -117,7 +117,7 @@ double SubAttacker::getPointScore(
   auto closest_result = [&]() -> ClosestPoint {
     ClosestPoint closest_result;
     closest_result.distance = std::numeric_limits<double>::max();
-    for (const auto & robot : world_model->theirs().getAvailableRobots()) {
+    for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
       auto result = getClosestPointAndDistance(robot->pose.pos, line);
       if (result.distance < closest_result.distance) {
         closest_result = result;

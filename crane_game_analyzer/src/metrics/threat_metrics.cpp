@@ -173,7 +173,8 @@ auto RecommendedDefendersMetric::compute(MetricContext & ctx) -> void
   const auto & ball_threat = ball_threat_metric_->getLastBallThreat();
   const auto & robot_threats = robot_threats_metric_->getLastRobotThreats();
 
-  int available_robots = static_cast<int>(ctx.world_model->ours().getAvailableRobots().size());
+  int available_robots =
+    static_cast<int>(ctx.world_model->ours().robotsWhere().available().get().size());
   ctx.analysis.recommended_num_defenders = static_cast<uint8_t>(
     evaluator_.calculateRecommendedDefenders(ball_threat, robot_threats, available_robots));
 }

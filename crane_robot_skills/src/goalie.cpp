@@ -63,7 +63,8 @@ void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball().pos;
   // パスできるロボットのリストアップ
-  auto passable_robot_list = world_model()->ours().getAvailableRobots(command->getMsg().robot_id);
+  auto passable_robot_list =
+    world_model()->ours().robotsWhere().available().excludeId(command->getMsg().robot_id).get();
   std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
     if (
       std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
@@ -129,7 +130,7 @@ void Goalie::inplay(bool enable_emit)
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s = ball.getTrajectorySegmentByTime(4.0);
-        auto available_enemies = world_model()->theirs().getAvailableRobots();
+        auto available_enemies = world_model()->theirs().robotsWhere().available().get();
         auto candidates =
           available_enemies | ranges::views::filter([&](const auto & enemy) {
             Vector2 ball_to_enemy = (enemy->pose.pos - ball.pos).normalized();
@@ -209,8 +210,12 @@ void Goalie::inplay(bool enable_emit)
           }
 
           auto [weak_point, dist] = [&]() {
-            if (auto other_robots =
-                  world_model()->ours().getAvailableRobots(world_model()->getOurGoalieId());
+            if (auto other_robots = world_model()
+                                      ->ours()
+                                      .robotsWhere()
+                                      .available()
+                                      .excludeId(world_model()->getOurGoalieId())
+                                      .get();
                 not other_robots.empty()) {
               auto goal = world_model()->getLargestGoalAngleRangeFromPoint(
                 threat_point, world_model()->getOurGoalPosts(), other_robots);

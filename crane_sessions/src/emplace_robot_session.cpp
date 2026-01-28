@@ -126,7 +126,7 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
 bool EmplaceRobotSession::isHardConstraint() const
 {
   // 現在出ているロボット台数が出場可能台数を超えている場合はハード制約
-  auto available_robots = world_model->ours().getAvailableRobots();
+  auto available_robots = world_model->ours().robotsWhere().available().get();
   auto max_allowed = world_model->getOurMaxAllowedBots();
   return available_robots.size() > max_allowed;
 }

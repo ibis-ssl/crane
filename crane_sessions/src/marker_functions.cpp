@@ -19,7 +19,7 @@ auto getDangerEnemies(const WorldModelWrapper::SharedPtr & world_model)
   RobotList defense_robots;
   defense_robots.emplace_back(world_model->getOurRobot(world_model->getOurGoalieId()));
 
-  const auto their_robots = world_model->theirs().getAvailableRobots();
+  const auto their_robots = world_model->theirs().robotsWhere().available().get();
   auto robots_and_scores =
     their_robots | ranges::views::filter([&](const auto & robot) {
       if (not world_model->point_checker.isInOurHalf(robot->pose.pos)) {

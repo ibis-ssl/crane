@@ -91,7 +91,7 @@ double GoalKick::getBestAngleToShootFromPoint(
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
     if (goal_angle_width > minimum_angle_accuracy * 2.0) {
-      auto theirs = world_model->theirs().getAvailableRobots();
+      auto theirs = world_model->theirs().robotsWhere().available().get();
       auto ret_pos = world_model->getNearestRobotWithDistanceFromSegment(
         Segment{from_point, intersection_positive.front()}, theirs);
       auto ret_neg = world_model->getNearestRobotWithDistanceFromSegment(
