@@ -1,8 +1,8 @@
 network:
-  publish-address: 224.5.23.1:10003
+  publish-address: 224.5.23.1:11003
   publish-nif: ""
   vision-address: 224.5.23.2:10020
-  tracker-address: 224.5.23.2:10010
+  tracker-address: 224.5.23.2:11010
   skip-interfaces: []
 
 game:
@@ -100,4 +100,4 @@ server:
 time-acquisition-mode: system
 
 engine:
-  config-filename: /tmp/engine.yaml
+  config-filename: config/engine.yaml

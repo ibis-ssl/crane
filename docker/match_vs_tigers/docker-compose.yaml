@@ -1,87 +1,95 @@
 services:
-  grsim:
-    image: ghcr.io/ssl-roots/docker_images/grsim:main
-    container_name: match_grsim
-    networks:
-      - match
-    command: grSim --headless -platform offscreen
-    tty: true
-    stdin_open: true
-    restart: "no"
-
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:latest
     container_name: match_gc
-    networks:
-      - match
+    network_mode: host
+    entrypoint: /bin/sh
     command:
-      - -visionAddress
-      - 224.5.23.2:10020
-      - -publishAddress
-      - 224.5.23.1:10003
-      - -address
-      - :8081
-      - -timeAcquisitionMode
-      - system
+      - -c
+      - |
+        cp /config/state-store-initial.json.stream /tmp/state-store.json.stream
+        exec /app -visionAddress 224.5.23.2:10020 -publishAddress 224.5.23.1:11003 -address :8082 -timeAcquisitionMode system
     volumes:
       - ./config/ssl-game-controller-match.yaml:/config/ssl-game-controller.yaml:ro
+      - ./config/engine.yaml:/config/engine.yaml:ro
+      - ./config/state-store-initial.json.stream:/config/state-store-initial.json.stream:ro
+    tmpfs:
+      - /tmp
     restart: "no"
-    depends_on:
-      - grsim
 
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0
     container_name: match_autoref
-    networks:
-      - match
+    network_mode: host
     command:
       - --headless
       - --visionAddress
       - 224.5.23.2:10020
       - --refereeAddress
-      - 224.5.23.1:10003
+      - 224.5.23.1:11003
       - --trackerAddress
       - 224.5.23.2:11010
     restart: "no"
-    depends_on:
-      ssl-game-controller:
-        condition: service_started
 
   crane:
     image: ghcr.io/ibis-ssl/crane:${CRANE_TAG:-latest}
     container_name: match_crane
-    networks:
-      - match
+    network_mode: host
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=Yellow
       "
     tty: true
     stdin_open: true
     restart: "no"
-    depends_on:
-      ssl-game-controller:
-        condition: service_started
 
-  tigers:
+  tigers-blue:
     image: tigersmannheim/sumatra:latest
-    container_name: match_tigers
-    networks:
-      - match
-    command: --headless
+    container_name: match_tigers_blue
+    network_mode: host
+    extra_hosts:
+      - "match_grsim:127.0.0.1"
+    volumes:
+      - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
+    command:
+      - --headless
+      - --aiBlue
+      - --visionAddress
+      - 224.5.23.2:10020
+      - --refereeAddress
+      - 224.5.23.1:11003
+      - --matchStats
+      - --moduli
+      - simulation_protocol
     restart: "no"
-    depends_on:
-      ssl-game-controller:
-        condition: service_started
+
+  tigers-yellow:
+    image: tigersmannheim/sumatra:latest
+    container_name: match_tigers_yellow
+    network_mode: host
+    extra_hosts:
+      - "match_grsim:127.0.0.1"
+    volumes:
+      - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
+    command:
+      - --headless
+      - --aiYellow
+      - --visionAddress
+      - 224.5.23.2:10020
+      - --refereeAddress
+      - 224.5.23.1:11003
+      - --matchStats
+      - --moduli
+      - simulation_protocol
+    restart: "no"
 
   match-controller:
     image: python:3.12-slim
     container_name: match_controller
-    networks:
-      - match
+    network_mode: host
     volumes:
-      - ./scripts/match_controller.py:/app/match_controller.py:ro
+      - ./scripts/match_controller_pb.py:/app/match_controller.py:ro
       - ./proto:/app/proto:rw
       - ./results:/app/results:rw
     working_dir: /app
@@ -89,18 +97,10 @@ services:
       PYTHONUNBUFFERED: "1"
     command: >
       sh -c "
-      pip install -q requests protobuf grpcio-tools &&
+      pip install -q protobuf grpcio-tools websockets &&
       cd proto &&
-      python -m grpc_tools.protoc --python_out=. --proto_path=. ssl_gc_common.proto ssl_gc_geometry.proto ssl_gc_game_event.proto ssl_gc_referee_message.proto &&
+      python -m grpc_tools.protoc --python_out=. --proto_path=. api/ssl_gc_api.proto state/*.proto statemachine/*.proto engine/*.proto geom/*.proto &&
       cd .. &&
       python -u match_controller.py
       "
     restart: "no"
-    depends_on:
-      - ssl-game-controller
-
-networks:
-  match:
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.enable_ip_masquerade: "true"
