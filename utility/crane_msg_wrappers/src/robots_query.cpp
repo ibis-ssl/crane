@@ -41,8 +41,7 @@ auto RobotsQuery::availableLoose() -> RobotsQuery &
 
 auto RobotsQuery::excludeId(uint8_t id) -> RobotsQuery &
 {
-  predicates_.emplace_back(
-    [id](const RobotInfo::SharedPtr & robot) { return robot->id != id; });
+  predicates_.emplace_back([id](const RobotInfo::SharedPtr & robot) { return robot->id != id; });
   return *this;
 }
 
@@ -56,10 +55,9 @@ auto RobotsQuery::excludeIds(const std::vector<uint8_t> & ids) -> RobotsQuery &
 
 auto RobotsQuery::excludeGoalie() -> RobotsQuery &
 {
-  predicates_.emplace_back(
-    [goalie_id = goalie_id_](const RobotInfo::SharedPtr & robot) {
-      return robot->id != goalie_id;
-    });
+  predicates_.emplace_back([goalie_id = goalie_id_](const RobotInfo::SharedPtr & robot) {
+    return robot->id != goalie_id;
+  });
   return *this;
 }
 
@@ -82,9 +80,8 @@ auto RobotsQuery::get() const -> RobotList
 auto RobotsQuery::getIds() const -> std::vector<uint8_t>
 {
   auto robots = get();
-  return robots | ranges::views::transform([](const RobotInfo::SharedPtr & robot) {
-           return robot->id;
-         }) |
+  return robots |
+         ranges::views::transform([](const RobotInfo::SharedPtr & robot) { return robot->id; }) |
          ranges::to<std::vector>();
 }
 
@@ -97,14 +94,8 @@ auto RobotsQuery::getView() const -> decltype(auto)
          });
 }
 
-auto RobotsQuery::count() const -> size_t
-{
-  return get().size();
-}
+auto RobotsQuery::count() const -> size_t { return get().size(); }
 
-auto RobotsQuery::empty() const -> bool
-{
-  return count() == 0;
-}
+auto RobotsQuery::empty() const -> bool { return count() == 0; }
 
 }  // namespace crane
