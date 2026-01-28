@@ -24,7 +24,7 @@ auto BallHorizonMetric::compute(MetricContext & ctx) -> void
   // ボールラインの長さを計算
   ctx.analysis.ball_horizon = [&]() {
     Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
-    auto robots = ctx.world_model->theirs().getAvailableRobots();
+    auto robots = ctx.world_model->theirs().robotsWhere().available().get();
     auto ball_line_lengths =
       robots |
       ranges::views::transform(

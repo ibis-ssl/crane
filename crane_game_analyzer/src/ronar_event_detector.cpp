@@ -146,7 +146,7 @@ auto RonarEventDetector::findNearestRobotToBall(const WorldModelWrapper & wm) co
   std::optional<RobotIdentifier> nearest_robot;
 
   // 自チームロボットをチェック
-  for (const auto & robot : wm.ours().getAvailableRobots()) {
+  for (const auto & robot : wm.ours().robotsWhere().available().get()) {
     double dist = (robot->pose.pos - wm.ball().pos).norm();
     if (dist < min_distance) {
       min_distance = dist;
@@ -155,7 +155,7 @@ auto RonarEventDetector::findNearestRobotToBall(const WorldModelWrapper & wm) co
   }
 
   // 相手チームロボットをチェック
-  for (const auto & robot : wm.theirs().getAvailableRobots()) {
+  for (const auto & robot : wm.theirs().robotsWhere().available().get()) {
     double dist = (robot->pose.pos - wm.ball().pos).norm();
     if (dist < min_distance) {
       min_distance = dist;

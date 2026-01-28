@@ -183,7 +183,8 @@ auto GameAnalyzerComponent::evaluateThreats() -> crane_msgs::msg::GameAnalysis
   }
 
   // 推奨守備者数
-  int available_robots = static_cast<int>(world_model->ours().getAvailableRobots().size());
+  int available_robots =
+    static_cast<int>(world_model->ours().robotsWhere().available().get().size());
   msg.recommended_num_defenders = static_cast<uint8_t>(
     threat_evaluator_.calculateRecommendedDefenders(ball_threat, robot_threats, available_robots));
 

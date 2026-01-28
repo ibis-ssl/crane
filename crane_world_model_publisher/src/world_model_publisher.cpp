@@ -260,7 +260,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
   // ボールラインの長さを計算
   game_analysis_msg.ball_horizon = [&]() {
     Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
-    auto robots = world_model->theirs().getAvailableRobots();
+    auto robots = world_model->theirs().robotsWhere().available().get();
     auto ball_line_lengths =
       robots |
       ranges::views::transform(
@@ -274,7 +274,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();
 
-  for (const auto & robot : wrapper_->ours().getAvailableRobots()) {
+  for (const auto & robot : wrapper_->ours().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
       world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
@@ -323,7 +323,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     game_analysis_msg.our_slack.push_back(slack_msg);
   }
 
-  for (const auto & robot : wrapper_->theirs().getAvailableRobots()) {
+  for (const auto & robot : wrapper_->theirs().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
       world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
@@ -355,7 +355,7 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
   // ローカルセンサーの情報でボール情報を更新
-  auto friend_robots = wrapper_->ours().getAvailableRobots();
+  auto friend_robots = wrapper_->ours().robotsWhere().available().get();
   for (std::size_t i = 0; i < friend_robots.size(); i++) {
     auto robot = friend_robots[i];
     // ビジョンがボールを見失っているときに
@@ -385,8 +385,8 @@ auto WorldModelPublisherComponent::updateDiagnostics(
     }
 
     // 検出されたロボット数
-    auto our_robots = wrapper_->ours().getAvailableRobots();
-    auto their_robots = wrapper_->theirs().getAvailableRobots();
+    auto our_robots = wrapper_->ours().robotsWhere().available().get();
+    auto their_robots = wrapper_->theirs().robotsWhere().available().get();
     stat.add("our_robots_count", static_cast<int>(our_robots.size()));
     stat.add("their_robots_count", static_cast<int>(their_robots.size()));
   } else {

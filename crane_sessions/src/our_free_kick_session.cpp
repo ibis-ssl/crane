@@ -44,7 +44,8 @@ OurDirectFreeKickSession::calculatePositionCommand(
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
-        auto available_robots = world_model->ours().getAvailableRobots(kicker->getRobot()->id);
+        auto available_robots =
+          world_model->ours().robotsWhere().available().excludeId(kicker->getRobot()->id).get();
         auto our_robots = available_robots | ranges::views::filter([&](const auto & robot) {
                             auto role = cached_prev_roles.find(robot->id);
                             if (role == cached_prev_roles.end()) {
@@ -89,7 +90,7 @@ OurDirectFreeKickSession::calculatePositionCommand(
 
         double pass_line_to_enemy = [&]() {
           Segment line{world_model->ball().pos, best_pass_target};
-          auto enemies = world_model->theirs().getAvailableRobots();
+          auto enemies = world_model->theirs().robotsWhere().available().get();
           auto distances_view = enemies | ranges::views::transform([&](const auto & robot) {
                                   return bg::distance(robot->pose.pos, line);
                                 });

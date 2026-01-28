@@ -29,7 +29,7 @@ double evaluateSubAttackerPosition(const Point & p, const WorldModelWrapper * wo
   double min_enemy_dist = std::numeric_limits<double>::max();
   Point closest_enemy_point = world_model->ball().pos;
 
-  for (const auto & robot : world_model->theirs().getAvailableRobots()) {
+  for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
     auto result = getClosestPointAndDistance(robot->pose.pos, line);
     if (result.distance < min_enemy_dist) {
       min_enemy_dist = result.distance;

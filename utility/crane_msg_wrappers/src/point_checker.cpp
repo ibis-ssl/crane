@@ -205,7 +205,8 @@ auto PointChecker::addDistanceFromRobotsChecker(
 auto PointChecker::checkDistanceFromOurRobots(const Point & p, double threshold, Rule rule) const
   -> bool
 {
-  return checkDistanceFromRobots(p, world_model_->ours().getAvailableRobots(), threshold, rule);
+  return checkDistanceFromRobots(
+    p, world_model_->ours().robotsWhere().available().get(), threshold, rule);
 }
 
 auto PointChecker::addDistanceFromOurRobotsChecker(double threshold, Rule rule) -> void
@@ -218,7 +219,8 @@ auto PointChecker::addDistanceFromOurRobotsChecker(double threshold, Rule rule) 
 auto PointChecker::checkDistanceFromTheirRobots(const Point & p, double threshold, Rule rule) const
   -> bool
 {
-  return checkDistanceFromRobots(p, world_model_->theirs().getAvailableRobots(), threshold, rule);
+  return checkDistanceFromRobots(
+    p, world_model_->theirs().robotsWhere().available().get(), threshold, rule);
 }
 
 auto PointChecker::addDistanceFromTheirRobotsChecker(double threshold, Rule rule) -> void

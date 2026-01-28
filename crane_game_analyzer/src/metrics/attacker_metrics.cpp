@@ -21,7 +21,8 @@ AttackerCandidateMetric::AttackerCandidateMetric()
 auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
 {
   const auto & ball_pos = ctx.world_model->ball().pos;
-  const auto available_robots = ctx.world_model->ours().getAvailableRobots(255, true);
+  const auto available_robots =
+    ctx.world_model->ours().robotsWhere().available().excludeGoalie().get();
 
   if (available_robots.empty()) {
     ctx.analysis.recommended_attacker_id = -1;

@@ -315,7 +315,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   }
 
   // トラッキング済みロボット（敵）
-  for (const auto & robot : world_model->theirs().getAvailableRobots()) {
+  for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
     draw_robot(robot, false);
     draw_velocity_marker(robot);
   }

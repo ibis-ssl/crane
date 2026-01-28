@@ -29,8 +29,8 @@ auto KickEventDetector::update(
   }
 
   DetectedBots available_bots;
-  available_bots.friends = world_model.ours().getAvailableRobotIds();
-  available_bots.enemies = world_model.theirs().getAvailableRobotIds();
+  available_bots.friends = world_model.ours().robotsWhere().available().getIds();
+  available_bots.enemies = world_model.theirs().robotsWhere().available().getIds();
 
   auto detected_bots = filterByDistance(distance_threshold, available_bots, world_model);
   detected_bots = filterByVelocity(0.5, detected_bots, world_model);

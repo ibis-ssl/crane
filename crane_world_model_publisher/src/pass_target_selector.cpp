@@ -91,7 +91,7 @@ auto PassTargetSelector::calcScore(
     return slack_result.has_value() ? slack_result->slack_time : 1.0;
   };
 
-  auto enemies = world_model->theirs().getAvailableRobots();
+  auto enemies = world_model->theirs().robotsWhere().available().get();
   auto slack_times_view = enemies | ranges::views::filter([&](const auto & enemy) {
                             // パス起点から近すぎる敵はチップで飛び越せるので除外
                             return enemy->getDistance(pass_origin) >= 1.0;
@@ -139,7 +139,7 @@ auto PassTargetSelector::update(
   const Point pass_origin = computePassOrigin(world_model, ball_history, analysis_msg);
 
   // 候補のスコア算出
-  auto our_robots = world_model->ours().getAvailableRobots(true);
+  auto our_robots = world_model->ours().robotsWhere().available().excludeGoalie().get();
   auto score_with_bots =
     our_robots | ranges::views::filter([&](const auto & robot) {
       return robot->id != world_model->getOurGoalieId() &&

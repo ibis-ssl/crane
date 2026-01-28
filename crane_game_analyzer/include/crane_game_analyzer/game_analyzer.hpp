@@ -129,7 +129,7 @@ private:
     auto current_time = now();
 
     // 自チームのロボット位置を記録
-    for (const auto & robot : world_model->ours().getAvailableRobots()) {
+    for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
       RobotPositionStamped record;
       record.id = robot->id;
       record.is_ours = true;
@@ -140,7 +140,7 @@ private:
     }
 
     // 相手チームのロボット位置を記録
-    for (const auto & robot : world_model->theirs().getAvailableRobots()) {
+    for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
       RobotPositionStamped record;
       record.id = robot->id;
       record.is_ours = false;

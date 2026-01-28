@@ -44,7 +44,7 @@ auto ThreatEvaluator::calculateRobotThreats(
 {
   std::vector<RobotThreat> threats;
 
-  auto enemy_robots = world_model.theirs().getAvailableRobots();
+  auto enemy_robots = world_model.theirs().robotsWhere().available().get();
   Point ball_pos = ball_threat.source_position;
   Point goal_center = world_model.getOurGoalCenter();
 
@@ -326,7 +326,7 @@ auto ThreatEvaluator::determineBallThreatSource(const WorldModelWrapper & wm)
   }
 
   // ボールに最も近い敵ロボット
-  auto enemies = wm.theirs().getAvailableRobots();
+  auto enemies = wm.theirs().robotsWhere().available().get();
   if (!enemies.empty()) {
     auto closest =
       std::min_element(enemies.begin(), enemies.end(), [&](const auto & a, const auto & b) {
