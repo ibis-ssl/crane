@@ -1,0 +1,45 @@
+FROM ghcr.io/ibis-ssl/crane:base
+
+ENV ROS_OVERLAY=/root/ibis_ws
+WORKDIR $ROS_OVERLAY/src
+SHELL ["/bin/bash", "-c"]
+
+# Copy dependency repos files
+COPY ../../dependency_*.repos ./crane/
+
+# Import external dependencies
+RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
+
+# Install dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rosdep update && \
+    rosdep install -riy --from-paths .
+
+# Copy crane source code
+COPY ../.. crane
+
+# Install crane dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    rosdep install -riy --from-paths crane
+
+# Build crane packages
+RUN cd .. && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+
+# Keep build directory for symlink resolution
+# Do NOT remove build/ directory
+
+# Install additional runtime dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-diagnostic-aggregator \
+    ros-${ROS_DISTRO}-foxglove-bridge && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR $ROS_OVERLAY

@@ -32,7 +32,7 @@ services:
     restart: "no"
 
   crane:
-    image: ghcr.io/ibis-ssl/crane:scenario-${CRANE_SCENARIO_TAG:-latest}
+    image: ghcr.io/ibis-ssl/crane:match-de3cadf2a57f1d2ddb0a0cb119c3fc8cf79f204f
     container_name: match_crane
     network_mode: host
     command: |
