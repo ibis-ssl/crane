@@ -45,6 +45,9 @@ string planner_name
 # 遅延監視用チェックポイント情報
 crane_msgs/DelayCheckpoints delay_checkpoints
 
+# 速度計画トレース（上流から伝播）
+crane_msgs/VelocityPlanTrace[<=1] velocity_plan_trace
+
 LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode
 SimpleVelocityTargetMode[<=1] simple_velocity_target_mode
