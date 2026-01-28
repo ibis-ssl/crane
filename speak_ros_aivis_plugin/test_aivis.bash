@@ -46,5 +46,5 @@ echo "次のコマンドでspeak_rosノードを起動できます:"
 echo "  ros2 run speak_ros speak_ros_node --ros-args -p plugin_name:=aivis_plugin::AivisPlugin"
 echo ""
 echo "音声合成のテスト:"
-echo '  ros2 action send_goal /speak speak_ros_interfaces/action/Speak \'
+printf '  ros2 action send_goal /speak speak_ros_interfaces/action/Speak \\\n'
 echo "    \"{text: 'こんにちは、Aivisです。', speed_rate: 1.0}\""
