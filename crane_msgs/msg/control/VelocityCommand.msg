@@ -41,6 +41,3 @@ NamedString[] planning_factors
 string planner_name
 crane_msgs/DelayCheckpoints delay_checkpoints
 crane_msgs/LocalPlannerConfig local_planner_config
-
-# 速度計画トレース（LocalPlannerで更新）
-crane_msgs/VelocityPlanTrace[<=1] velocity_plan_trace

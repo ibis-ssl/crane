@@ -34,6 +34,3 @@ geometry_msgs/Pose2D current_velocity
 NamedString[] planning_factors
 string planner_name
 crane_msgs/DelayCheckpoints delay_checkpoints
-
-# 速度計画トレース（session_plannerから伝播）
-crane_msgs/VelocityPlanTrace[<=1] velocity_plan_trace

@@ -47,9 +47,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("field_boundary_offset", FIELD_BOUNDARY_OFFSET);
   FIELD_BOUNDARY_OFFSET = node.get_parameter("field_boundary_offset").as_double();
 
-  node.declare_parameter("enable_velocity_plan_trace", false);
-  enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
-
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -192,21 +189,6 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) 
     }
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
-
-    // 速度計画トレースに計画点を追加
-    if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
-      // 現在時刻から100ms後の予測位置・速度を記録
-      const int32_t target_time_us =
-        static_cast<int32_t>(lookahead_time * 1e6);  // 100ms = 100000us
-      Eigen::Vector2d predicted_pos = trajectory.getPosition(lookahead_time);
-      Eigen::Vector2d predicted_vel = next_vel;
-
-      VelocityPlanTracker::addPlanPoint(
-        command.velocity_plan_trace[0], "local_planner", predicted_pos, predicted_vel,
-        target_time_us,
-        0  // estimated_arrival_time_us（後で実装可能）
-      );
-    }
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {
@@ -245,22 +227,12 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     command.planner_name = original_command.planner_name;
     command.delay_checkpoints = original_command.delay_checkpoints;
     command.local_planner_config = original_command.local_planner_config;
-    command.velocity_plan_trace = original_command.velocity_plan_trace;
 
-    auto pref_vel = toPoint(rvo_sim->getAgentPrefVelocity(original_command.robot_id));
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
-
-    // 速度修正をトレースに記録（RVO2による修正）
-    if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
-      // RVO2による修正を記録
-      if ((vel - pref_vel).norm() > 0.01) {  // 1cm/s以上の差がある場合のみ記録
-        VelocityPlanTracker::addCorrection(command.velocity_plan_trace[0], "rvo2", pref_vel, vel);
-      }
-    }
 
     // 障害物回避を無効にする場合、目標速度をそのまま使う
     if (command.local_planner_config.disable_collision_avoidance) {
-      vel = pref_vel;
+      vel = toPoint(rvo_sim->getAgentPrefVelocity(original_command.robot_id));
       if (vel.norm() > rvo_sim->getAgentMaxSpeed(original_command.robot_id)) {
         vel = vel.normalized() * rvo_sim->getAgentMaxSpeed(original_command.robot_id);
       }

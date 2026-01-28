@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "delay_monitor_wrapper.hpp"
-#include "velocity_plan_tracker.hpp"
 #include "world_model_wrapper.hpp"
 
 namespace crane
@@ -445,60 +444,6 @@ public:
   {
     DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
   }
-
-  // ===== 速度計画トレース関連メソッド =====
-
-  /**
-   * @brief 速度計画トレースを有効化（新規トレースを作成）
-   */
-  auto enableVelocityPlanTrace() -> RobotCommandWrapper &
-  {
-    if (latest_msg.velocity_plan_trace.empty()) {
-      latest_msg.velocity_plan_trace.push_back(VelocityPlanTracker::createTrace());
-    }
-    return *this;
-  }
-
-  /**
-   * @brief 計画点を追加
-   * @param source 計画作成元 ("skill", "session", "local_planner", "sender")
-   * @param predicted_pos 予測位置（フィールド座標 m）
-   * @param predicted_vel 予測速度（フィールド座標 m/s）
-   * @param target_time_us 予測対象時刻（基準からの相対時間 us）
-   * @param estimated_arrival_time_us 目標到達予定時刻（us）
-   */
-  auto addVelocityPlanPoint(
-    const std::string & source, const Eigen::Vector2d & predicted_pos,
-    const Eigen::Vector2d & predicted_vel, int32_t target_time_us,
-    int32_t estimated_arrival_time_us = 0) -> void
-  {
-    if (!latest_msg.velocity_plan_trace.empty()) {
-      VelocityPlanTracker::addPlanPoint(
-        latest_msg.velocity_plan_trace[0], source, predicted_pos, predicted_vel, target_time_us,
-        estimated_arrival_time_us);
-    }
-  }
-
-  /**
-   * @brief 速度修正を記録
-   * @param source 修正元 ("rvo2", "sender_accel_limit", "feedback_control")
-   * @param before_vel 修正前の希望速度（m/s）
-   * @param after_vel 修正後の実際の速度（m/s）
-   */
-  auto addVelocityCorrection(
-    const std::string & source, const Eigen::Vector2d & before_vel,
-    const Eigen::Vector2d & after_vel) -> void
-  {
-    if (!latest_msg.velocity_plan_trace.empty()) {
-      VelocityPlanTracker::addCorrection(
-        latest_msg.velocity_plan_trace[0], source, before_vel, after_vel);
-    }
-  }
-
-  /**
-   * @brief 速度計画トレースが有効かどうかを確認
-   */
-  auto hasVelocityPlanTrace() const -> bool { return !latest_msg.velocity_plan_trace.empty(); }
 
   // ===== KickerModel管理メソッド =====
 
