@@ -11,12 +11,12 @@ import sys
 import socket
 import struct
 from typing import List, Tuple, Optional
+from importlib.util import find_spec
 
-try:
-    import requests
-except ImportError:
+if find_spec("requests") is None:
     print("requestsモジュールが必要です: pip install requests", file=sys.stderr)
     sys.exit(1)
+
 
 # Add proto directory to path
 sys.path.insert(0, "/app/proto")
@@ -66,7 +66,7 @@ class MatchController:
         """
         try:
             event_type = referee_pb2.GameEvent.Type.Name(event.type)
-        except:
+        except Exception:
             event_type = "UNKNOWN"
 
         # Team name helper
@@ -96,7 +96,7 @@ class MatchController:
                                 )
                                 break
                     break
-        except:
+        except Exception:
             pass
 
         return f"{event_type}{team_info}"
