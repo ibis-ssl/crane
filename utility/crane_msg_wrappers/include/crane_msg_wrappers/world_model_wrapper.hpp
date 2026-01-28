@@ -57,8 +57,6 @@ struct TeamInfo
 
   uint8_t goalie_id;
 
-  // ===== 新しいFluent Builder API =====
-
   /**
    * @brief ロボットリストをクエリ形式で絞り込むためのFluent Builder APIを開始
    * @return RobotsQueryインスタンス
@@ -68,50 +66,7 @@ struct TeamInfo
    * auto robots = team.robotsWhere().available().excludeGoalie().get();
    * @endcode
    */
-  [[nodiscard]] auto robotsWhere() const -> RobotsQuery
-  {
-    return RobotsQuery(robots, goalie_id);
-  }
-
-  // ===== 既存API（後方互換性のため維持） =====
-
-  [[nodiscard]] auto getAvailableRobotsView(uint8_t my_id = 255, bool except_goalie = false) const
-  {
-    const uint8_t excluded_id = my_id;
-    const uint8_t goalie = goalie_id;
-    return robots | ranges::views::filter([excluded_id, except_goalie, goalie](const auto & robot) {
-             if (except_goalie) {
-               return robot->available() && robot->id != excluded_id && robot->id != goalie;
-             }
-             return robot->available() && robot->id != excluded_id;
-           });
-  }
-
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
-    -> RobotList
-  {
-    auto query = robotsWhere().available();
-    if (my_id != 255) {
-      query.excludeId(my_id);
-    }
-    if (except_goalie) {
-      query.excludeGoalie();
-    }
-    return query.get();
-  }
-
-  [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255, bool except_goalie = false) const
-    -> std::vector<uint8_t>
-  {
-    auto query = robotsWhere().available();
-    if (my_id != 255) {
-      query.excludeId(my_id);
-    }
-    if (except_goalie) {
-      query.excludeGoalie();
-    }
-    return query.getIds();
-  }
+  [[nodiscard]] auto robotsWhere() const -> RobotsQuery { return RobotsQuery(robots, goalie_id); }
 };
 
 struct WorldModelWrapper
@@ -191,7 +146,7 @@ struct WorldModelWrapper
   [[nodiscard]] auto getNearestTheirRobotFromSegment(const Segment & segment) const
     -> std::optional<RobotWithDistance>
   {
-    return getNearestRobotWithDistanceFromSegment(segment, theirs_.getAvailableRobots());
+    return getNearestRobotWithDistanceFromSegment(segment, theirs_.robotsWhere().available().get());
   }
 
   [[nodiscard]] auto getDefenseWidth() const
@@ -275,12 +230,13 @@ struct WorldModelWrapper
   [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
   {
     return getLargestGoalAngleRangeFromPoint(
-      from, getTheirGoalPosts(), theirs_.getAvailableRobots());
+      from, getTheirGoalPosts(), theirs_.robotsWhere().available().get());
   }
 
   [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
   {
-    return getLargestGoalAngleRangeFromPoint(from, getOurGoalPosts(), ours_.getAvailableRobots());
+    return getLargestGoalAngleRangeFromPoint(
+      from, getOurGoalPosts(), ours_.robotsWhere().available().get());
   }
 
   struct SlackTimeResult

@@ -124,14 +124,18 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       robot_diagnostic_errors_.count(robot.id) == 0 || !robot_diagnostic_errors_[robot.id];
 
     // タイムスタンプの伝播（tracker）
-    if (robot.last_tracker_detection_stamp.sec > 0 || robot.last_tracker_detection_stamp.nanosec > 0) {
+    if (
+      robot.last_tracker_detection_stamp.sec > 0 ||
+      robot.last_tracker_detection_stamp.nanosec > 0) {
       info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
     } else {
       info->last_tracker_detection_stamp = std::nullopt;
     }
 
     // タイムスタンプの伝播（feedback）
-    if (robot.last_feedback_detection_stamp.sec > 0 || robot.last_feedback_detection_stamp.nanosec > 0) {
+    if (
+      robot.last_feedback_detection_stamp.sec > 0 ||
+      robot.last_feedback_detection_stamp.nanosec > 0) {
       info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
     } else {
       info->last_feedback_detection_stamp = std::nullopt;
@@ -177,14 +181,18 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available_feedback = true;  // 敵ロボットのフィードバックはないため常にtrue
 
     // タイムスタンプの伝播（tracker）
-    if (robot.last_tracker_detection_stamp.sec > 0 || robot.last_tracker_detection_stamp.nanosec > 0) {
+    if (
+      robot.last_tracker_detection_stamp.sec > 0 ||
+      robot.last_tracker_detection_stamp.nanosec > 0) {
       info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
     } else {
       info->last_tracker_detection_stamp = std::nullopt;
     }
 
     // タイムスタンプの伝播（feedback） - 敵ロボットには不要だが一貫性のため
-    if (robot.last_feedback_detection_stamp.sec > 0 || robot.last_feedback_detection_stamp.nanosec > 0) {
+    if (
+      robot.last_feedback_detection_stamp.sec > 0 ||
+      robot.last_feedback_detection_stamp.nanosec > 0) {
       info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
     } else {
       info->last_feedback_detection_stamp = std::nullopt;
@@ -433,7 +441,7 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
     ball_sequence.emplace_back(ball_origin, 0.0);
   }
 
-  auto their_robots = theirs_.getAvailableRobots();
+  auto their_robots = theirs_.robotsWhere().available().get();
 
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
@@ -524,8 +532,12 @@ auto BallOwnerCalculator::update() -> void
 
 auto BallOwnerCalculator::updateScore(bool our_team) -> void
 {
-  auto robots = our_team ? world_model_->ours().getAvailableRobots(world_model_->getOurGoalieId())
-                         : world_model_->theirs().getAvailableRobots();
+  auto robots = our_team ? world_model_->ours()
+                             .robotsWhere()
+                             .available()
+                             .excludeId(world_model_->getOurGoalieId())
+                             .get()
+                         : world_model_->theirs().robotsWhere().available().get();
 
   // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
