@@ -45,6 +45,9 @@ set(msg_files
   "msg/analysis/DelayCheckpoints.msg"
   "msg/analysis/RonarEvent.msg"
   "msg/analysis/HumanAnnotation.msg"
+  "msg/analysis/BallPredictionPoint.msg"
+  "msg/analysis/BallPredictionActual.msg"
+  "msg/analysis/BallPredictionTrace.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"

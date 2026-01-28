@@ -20,3 +20,6 @@ uint8 state
 
 # 物理モデル設定 (BallPhysicsModel対応)
 BallPhysicsConfig physics_config
+
+# ボール予測トレース（予実管理用）
+crane_msgs/BallPredictionTrace[<=1] ball_prediction_trace
