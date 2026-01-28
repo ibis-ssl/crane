@@ -111,8 +111,7 @@ std::vector<speak_ros::Parameter> aivis_plugin::AivisPlugin::getParametersDefaul
       {"prePhonemeLength", "[number] pre phoneme length [sec]", 0.1},
       {"postPhonemeLength", "[number] post phoneme length [sec]", 0.1},
       {"outputSamplingRate", "[number] output sampling rate [Hz]", 44100},
-      {"outputStereo", "[bool] output stereo", "false"}
-    // clang-format on
+      {"outputStereo", "[bool] output stereo", "false"}  // clang-format on
   };
 }
 

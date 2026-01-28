@@ -8,7 +8,7 @@ echo ""
 
 # 1. Aivisエンジンの起動確認
 echo "1. Aivisエンジンの起動を確認中..."
-if curl -s http://localhost:10101/speakers > /dev/null 2>&1; then
+if curl -s http://localhost:10101/speakers >/dev/null 2>&1; then
     echo "   ✓ Aivisエンジンは起動しています"
 else
     echo "   ✗ Aivisエンジンが起動していません"
@@ -46,5 +46,5 @@ echo "次のコマンドでspeak_rosノードを起動できます:"
 echo "  ros2 run speak_ros speak_ros_node --ros-args -p plugin_name:=aivis_plugin::AivisPlugin"
 echo ""
 echo "音声合成のテスト:"
-echo "  ros2 action send_goal /speak speak_ros_interfaces/action/Speak \\"
+echo '  ros2 action send_goal /speak speak_ros_interfaces/action/Speak \'
 echo "    \"{text: 'こんにちは、Aivisです。', speed_rate: 1.0}\""

@@ -2,8 +2,8 @@
 //
 // Licensed under the MIT License.
 
-#ifndef SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP
-#define SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP
+#ifndef SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP_
+#define SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP_
 
 #include <speak_ros/speak_ros_plugin_base.hpp>
 
@@ -44,4 +44,4 @@ public:
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(aivis_plugin::AivisPlugin, speak_ros::SpeakROSPluginBase)
 
-#endif  // SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP
+#endif  // SPEAK_ROS_AIVIS_PLUGIN__AIVIS_PLUGIN_HPP_
