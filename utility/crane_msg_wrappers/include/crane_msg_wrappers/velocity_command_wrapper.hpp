@@ -301,7 +301,7 @@ public:
   auto setVelocityPlanTrace(const std::vector<crane_msgs::msg::VelocityPlanTrace> & trace)
     -> VelocityCommandWrapper &
   {
-    latest_msg.velocity_plan_trace = trace;
+    latest_msg.velocity_plan_trace.assign(trace.begin(), trace.end());
     return *this;
   }
 
