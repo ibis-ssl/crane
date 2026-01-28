@@ -10,6 +10,7 @@
 #include <rvo2_vendor/RVO/RVO.h>
 
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_msg_wrappers/velocity_plan_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/position_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -81,6 +82,9 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
+
+  // 速度計画トレース有効化フラグ
+  bool enable_velocity_plan_trace = false;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_

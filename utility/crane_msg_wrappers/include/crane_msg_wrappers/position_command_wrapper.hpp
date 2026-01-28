@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "delay_monitor_wrapper.hpp"
+#include "velocity_plan_tracker.hpp"
 #include "world_model_wrapper.hpp"
 
 namespace crane
@@ -396,6 +397,62 @@ public:
   }
 
   auto getKickerModel() const -> std::shared_ptr<KickerModel> { return kicker_model; }
+
+  // ===== 速度計画トレース関連メソッド =====
+
+  /**
+   * @brief 速度計画トレースを有効化（新規トレースを作成）
+   */
+  auto enableVelocityPlanTrace() -> PositionCommandWrapper &
+  {
+    if (latest_msg.velocity_plan_trace.empty()) {
+      latest_msg.velocity_plan_trace.push_back(VelocityPlanTracker::createTrace());
+    }
+    return *this;
+  }
+
+  /**
+   * @brief 計画点を追加
+   */
+  auto addVelocityPlanPoint(
+    const std::string & source, const Eigen::Vector2d & predicted_pos,
+    const Eigen::Vector2d & predicted_vel, int32_t target_time_us,
+    int32_t estimated_arrival_time_us = 0) -> void
+  {
+    if (!latest_msg.velocity_plan_trace.empty()) {
+      VelocityPlanTracker::addPlanPoint(
+        latest_msg.velocity_plan_trace[0], source, predicted_pos, predicted_vel, target_time_us,
+        estimated_arrival_time_us);
+    }
+  }
+
+  /**
+   * @brief 速度修正を記録
+   */
+  auto addVelocityCorrection(
+    const std::string & source, const Eigen::Vector2d & before_vel,
+    const Eigen::Vector2d & after_vel) -> void
+  {
+    if (!latest_msg.velocity_plan_trace.empty()) {
+      VelocityPlanTracker::addCorrection(
+        latest_msg.velocity_plan_trace[0], source, before_vel, after_vel);
+    }
+  }
+
+  /**
+   * @brief 速度計画トレースが有効かどうかを確認
+   */
+  auto hasVelocityPlanTrace() const -> bool { return !latest_msg.velocity_plan_trace.empty(); }
+
+  /**
+   * @brief 速度計画トレースをコピー（RobotCommandからPositionCommandへの伝播用）
+   */
+  auto setVelocityPlanTrace(const std::vector<crane_msgs::msg::VelocityPlanTrace> & trace)
+    -> PositionCommandWrapper &
+  {
+    latest_msg.velocity_plan_trace = trace;
+    return *this;
+  }
 
   // ===== 位置指令固有の関数 =====
 
