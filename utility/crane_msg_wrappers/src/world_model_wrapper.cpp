@@ -118,11 +118,34 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     auto & info = ours_.robots.at(robot.id);
 
     info->available_vision = robot.available_vision;
-    info->available_tracker = robot.available_tracker;
     info->available_feedback = robot.available_feedback && !robot.has_error;
     // ハードウェア診断結果を反映（診断エラーがある場合のみfalse、それ以外はtrue）
     info->available_hardware =
       robot_diagnostic_errors_.count(robot.id) == 0 || !robot_diagnostic_errors_[robot.id];
+
+    // タイムスタンプの伝播（tracker）
+    if (robot.last_tracker_detection_stamp.sec > 0 || robot.last_tracker_detection_stamp.nanosec > 0) {
+      info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
+    } else {
+      info->last_tracker_detection_stamp = std::nullopt;
+    }
+
+    // タイムスタンプの伝播（feedback）
+    if (robot.last_feedback_detection_stamp.sec > 0 || robot.last_feedback_detection_stamp.nanosec > 0) {
+      info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
+    } else {
+      info->last_feedback_detection_stamp = std::nullopt;
+    }
+
+    // タイムアウト判定（0.1秒）
+    constexpr double TRACKER_TIMEOUT_SEC = 0.1;
+    auto now = rclcpp::Time(world_model.header.stamp);
+    if (info->last_tracker_detection_stamp.has_value()) {
+      auto elapsed = (now - *info->last_tracker_detection_stamp).seconds();
+      info->available_tracker = (elapsed < TRACKER_TIMEOUT_SEC);
+    } else {
+      info->available_tracker = false;
+    }
 
     if (info->available()) {
       info->id = robot.id;
@@ -150,9 +173,32 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
     // 敵ロボットはビジョン検出のみで判定（診断情報なし）
     info->available_vision = robot.available_vision;
-    info->available_tracker = robot.available_tracker;
     info->available_hardware = true;  // 敵ロボットの診断情報はないため常にtrue
     info->available_feedback = true;  // 敵ロボットのフィードバックはないため常にtrue
+
+    // タイムスタンプの伝播（tracker）
+    if (robot.last_tracker_detection_stamp.sec > 0 || robot.last_tracker_detection_stamp.nanosec > 0) {
+      info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
+    } else {
+      info->last_tracker_detection_stamp = std::nullopt;
+    }
+
+    // タイムスタンプの伝播（feedback） - 敵ロボットには不要だが一貫性のため
+    if (robot.last_feedback_detection_stamp.sec > 0 || robot.last_feedback_detection_stamp.nanosec > 0) {
+      info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
+    } else {
+      info->last_feedback_detection_stamp = std::nullopt;
+    }
+
+    // タイムアウト判定（0.1秒）
+    constexpr double TRACKER_TIMEOUT_SEC = 0.1;
+    auto now = rclcpp::Time(world_model.header.stamp);
+    if (info->last_tracker_detection_stamp.has_value()) {
+      auto elapsed = (now - *info->last_tracker_detection_stamp).seconds();
+      info->available_tracker = (elapsed < TRACKER_TIMEOUT_SEC);
+    } else {
+      info->available_tracker = false;
+    }
 
     if (info->available()) {
       info->id = robot.id;

@@ -28,6 +28,7 @@
 #include "delay_monitor_wrapper.hpp"
 #include "play_situation_wrapper.hpp"
 #include "point_checker.hpp"
+#include "robots_query.hpp"
 
 namespace crane
 {
@@ -56,8 +57,25 @@ struct TeamInfo
 
   uint8_t goalie_id;
 
+  // ===== 新しいFluent Builder API =====
+
+  /**
+   * @brief ロボットリストをクエリ形式で絞り込むためのFluent Builder APIを開始
+   * @return RobotsQueryインスタンス
+   *
+   * 使用例:
+   * @code
+   * auto robots = team.robotsWhere().available().excludeGoalie().get();
+   * @endcode
+   */
+  [[nodiscard]] auto robotsWhere() const -> RobotsQuery
+  {
+    return RobotsQuery(robots, goalie_id);
+  }
+
+  // ===== 既存API（後方互換性のため維持） =====
+
   [[nodiscard]] auto getAvailableRobotsView(uint8_t my_id = 255, bool except_goalie = false) const
-    -> decltype(auto)
   {
     const uint8_t excluded_id = my_id;
     const uint8_t goalie = goalie_id;
@@ -72,21 +90,27 @@ struct TeamInfo
   [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
     -> RobotList
   {
-    return getAvailableRobotsView(my_id, except_goalie) | ranges::to<std::vector>();
+    auto query = robotsWhere().available();
+    if (my_id != 255) {
+      query.excludeId(my_id);
+    }
+    if (except_goalie) {
+      query.excludeGoalie();
+    }
+    return query.get();
   }
 
   [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255, bool except_goalie = false) const
     -> std::vector<uint8_t>
   {
-    return robots | ranges::views::filter([&](const auto & robot) {
-             if (except_goalie) {
-               return robot->available() && robot->id != my_id && robot->id != goalie_id;
-             } else {
-               return robot->available() && robot->id != my_id;
-             }
-           }) |
-           ranges::views::transform([](const auto & robot) { return robot->id; }) |
-           ranges::to<std::vector>();
+    auto query = robotsWhere().available();
+    if (my_id != 255) {
+      query.excludeId(my_id);
+    }
+    if (except_goalie) {
+      query.excludeGoalie();
+    }
+    return query.getIds();
   }
 };
 
