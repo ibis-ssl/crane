@@ -44,7 +44,7 @@ Status Receive::update()
   }();
 
   // Base interception point before offset (also draws candidate visuals inside)
-  Point base_interception_point = getInterceptionPoint();
+  Point base_interception_point = getInterceptionPointWithEnemyAvoidance();
   Point interception_point = base_interception_point + offset;
 
   // Minimal HUD near robot: policy only
@@ -238,5 +238,65 @@ Point Receive::getInterceptionPoint() const
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
   }
+}
+
+bool Receive::isEnemyBlockingPassLine(const Point & interception_point) const
+{
+  Segment pass_line{world_model()->ball().pos, interception_point};
+  auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
+
+  if (auto nearest_enemy =
+        world_model()->getNearestRobotWithDistanceFromSegment(pass_line, enemy_robots);
+      nearest_enemy.has_value()) {
+    constexpr double BLOCKING_THRESHOLD = 0.3;  // 敵がパスラインから0.3m以内
+    return nearest_enemy->distance < BLOCKING_THRESHOLD;
+  }
+  return false;
+}
+
+Point Receive::getInterceptionPointWithEnemyAvoidance() const
+{
+  Point base_point = getInterceptionPoint();
+
+  if (!isEnemyBlockingPassLine(base_point)) {
+    return base_point;  // 敵がいなければそのまま
+  }
+
+  // 敵が割り込んでいる場合、Slack Timeベースで代替位置を探す
+  auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray({robot()});
+
+  // 有効なNaN値チェックと敵ブロックチェック
+  auto isValidPoint = [](const Point & p) -> bool {
+    return std::isfinite(p.x()) && std::isfinite(p.y());
+  };
+
+  std::vector<WorldModelWrapper::SlackTimeResult> valid_points;
+  for (const auto & slack : slack_times) {
+    if (
+      slack.slack_time > 0 && isValidPoint(slack.intercept_point) &&
+      !isEnemyBlockingPassLine(slack.intercept_point)) {
+      valid_points.push_back(slack);
+    }
+  }
+
+  if (valid_points.empty()) {
+    command->addPlanningFactor("Receive", "敵割り込み: 有効な代替位置なし");
+    return base_point;  // 代替がなければ元の位置を維持
+  }
+
+  // 最もSlack Timeが大きい位置を選択
+  auto best = std::max_element(
+    valid_points.begin(), valid_points.end(),
+    [](const auto & a, const auto & b) { return a.slack_time < b.slack_time; });
+
+  command->addPlanningFactor("Receive", "敵割り込み: 代替位置に移動");
+
+  // 可視化: 敵割り込み警告マーカー
+  if (getParameter<bool>("viz_enemy_block")) {
+    visualizer->drawCircle(base_point, 0.08, "red", 0.7, 8);
+    visualizer->drawCircle(best->intercept_point, 0.08, "lime", 0.7, 8);
+  }
+
+  return best->intercept_point;
 }
 }  // namespace crane::skills
