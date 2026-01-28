@@ -32,16 +32,11 @@ services:
     restart: "no"
 
   crane:
-    image: ghcr.io/ibis-ssl/crane:base
+    image: ghcr.io/ibis-ssl/crane:scenario-${CRANE_SCENARIO_TAG:-latest}
     container_name: match_crane
     network_mode: host
-    volumes:
-      - /home/hans/workspace/ibis_ws/src:/root/ibis_ws/src:rw
-      - /home/hans/workspace/ibis_ws/build:/root/ibis_ws/build:rw
-      - /home/hans/workspace/ibis_ws/install:/root/ibis_ws/install:rw
     command: |
       bash -c "
-      apt-get update -qq && apt-get install -y -qq ros-jazzy-diagnostic-aggregator ros-jazzy-foxglove-bridge &&
       source /root/ibis_ws/install/setup.bash &&
       ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=Yellow
       "
