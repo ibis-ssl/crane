@@ -72,3 +72,8 @@ services:
     # image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021
+
+  aivis-speech:
+    image: ghcr.io/aivis-project/aivisspeech-engine:cpu-latest
+    ports:
+      - 127.0.0.1:10101:10101

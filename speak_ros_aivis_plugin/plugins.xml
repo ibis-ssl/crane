@@ -1,0 +1,5 @@
+<library path="speak_ros_aivis_plugin">
+	<class type="aivis_plugin::AivisPlugin" base_class_type="speak_ros::SpeakROSPluginBase">
+		<description>Aivis Speech Engine plugin for speak_ros</description>
+	</class>
+</library>
