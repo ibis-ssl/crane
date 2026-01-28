@@ -32,9 +32,11 @@ services:
     restart: "no"
 
   crane:
-    image: ghcr.io/ibis-ssl/crane:${CRANE_TAG:-latest}
+    image: ghcr.io/ibis-ssl/crane:base
     container_name: match_crane
     network_mode: host
+    volumes:
+      - /home/hans/workspace/ibis_ws:/root/ibis_ws:rw
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
@@ -64,25 +66,25 @@ services:
       - simulation_protocol
     restart: "no"
 
-  tigers-yellow:
-    image: tigersmannheim/sumatra:latest
-    container_name: match_tigers_yellow
-    network_mode: host
-    extra_hosts:
-      - "match_grsim:127.0.0.1"
-    volumes:
-      - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
-    command:
-      - --headless
-      - --aiYellow
-      - --visionAddress
-      - 224.5.23.2:10020
-      - --refereeAddress
-      - 224.5.23.1:11003
-      - --matchStats
-      - --moduli
-      - simulation_protocol
-    restart: "no"
+  # tigers-yellow:
+  #   image: tigersmannheim/sumatra:latest
+  #   container_name: match_tigers_yellow
+  #   network_mode: host
+  #   extra_hosts:
+  #     - "match_grsim:127.0.0.1"
+  #   volumes:
+  #     - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
+  #   command:
+  #     - --headless
+  #     - --aiYellow
+  #     - --visionAddress
+  #     - 224.5.23.2:10020
+  #     - --refereeAddress
+  #     - 224.5.23.1:11003
+  #     - --matchStats
+  #     - --moduli
+  #     - simulation_protocol
+  #   restart: "no"
 
   match-controller:
     image: python:3.12-slim
