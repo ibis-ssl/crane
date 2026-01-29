@@ -10,77 +10,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
-# find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-set(msg_files
-  "msg/world_model/BallInfo.msg"
-  "msg/world_model/BallPhysicsConfig.msg"
-  "msg/world_model/BallContact.msg"
-  "msg/world_model/PenaltyArea.msg"
-  "msg/world_model/Pose2DStamped.msg"
-  "msg/world_model/FieldSize.msg"
-  "msg/world_model/RobotInfo.msg"
-  "msg/world_model/WorldModel.msg"
-  "msg/world_model/Vector3Stamped.msg"
-
-  "msg/analysis/ThreatInfo.msg"
-  "msg/analysis/ThreatAssignment.msg"
-  "msg/analysis/GameAnalysis.msg"
-  "msg/analysis/PingStatus.msg"
-  "msg/analysis/PingStatusArray.msg"
-  "msg/analysis/PlaySituation.msg"
-  "msg/analysis/NamedBool.msg"
-  "msg/analysis/NamedFloat.msg"
-  "msg/analysis/NamedInt.msg"
-  "msg/analysis/NamedPosition.msg"
-  "msg/analysis/NamedString.msg"
-  "msg/analysis/NamedValueArray.msg"
-  "msg/analysis/Kick.msg"
-  "msg/analysis/Slack.msg"
-  "msg/analysis/SlackWithPoint.msg"
-  "msg/analysis/FloatWithID.msg"
-  "msg/analysis/DelayCheckpoint.msg"
-  "msg/analysis/DelayCheckpoints.msg"
-  "msg/analysis/RonarEvent.msg"
-  "msg/analysis/HumanAnnotation.msg"
-  "msg/analysis/BallPredictionPoint.msg"
-  "msg/analysis/BallPredictionActual.msg"
-  "msg/analysis/BallPredictionTrace.msg"
-  "msg/analysis/VelocityPlanPoint.msg"
-  "msg/analysis/VelocityCorrection.msg"
-  "msg/analysis/VelocityPlanActual.msg"
-  "msg/analysis/VelocityPlanTrace.msg"
-
-  "msg/control/LocalPlannerConfig.msg"
-  "msg/control/RobotCommand.msg"
-  "msg/control/RobotCommands.msg"
-  "msg/control/RobotFeedback.msg"
-  "msg/control/RobotFeedbackArray.msg"
-  "msg/control/RobotSelectResult.msg"
-  "msg/control/RobotSelectResults.msg"
-
-  "msg/control/LocalCameraMode.msg"
-  "msg/control/PositionTargetMode.msg"
-  "msg/control/SimpleVelocityTargetMode.msg"
-  "msg/control/PolarVelocityTargetMode.msg"
-
-  "msg/control/PositionCommand.msg"
-  "msg/control/VelocityCommand.msg"
-  "msg/control/PositionCommands.msg"
-  "msg/control/VelocityCommands.msg"
-)
-
-set(action_files
-  "action/SkillExecution.action"
-)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
-  ${action_files}
-  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs robocup_ssl_msgs
-)
+rosidl_auto_generate_interfaces()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
