@@ -1,17 +1,19 @@
 FROM ghcr.io/ibis-ssl/crane:base
 
-ENV ROS_OVERLAY /root/ibis_ws
-ENV PATH $PATH:/usr/local/go/bin
+ENV ROS_OVERLAY=/root/ibis_ws
+ENV PATH=$PATH:/usr/local/go/bin
 WORKDIR $ROS_OVERLAY/src
 SHELL ["/bin/bash", "-c"]
 
 # cspell:ignore MAXSIZE
-ENV PATH="/usr/lib/ccache:${PATH}"
-ENV CC="/usr/lib/ccache/gcc"
-ENV CXX="/usr/lib/ccache/g++"
-ENV CCACHE_DIR=/root/.ccache
-ENV CCACHE_MAXSIZE=10G
-ENV USE_CCACHE=1
+ENV PATH="/usr/lib/ccache:${PATH}" \
+    CC="/usr/lib/ccache/gcc" \
+    CXX="/usr/lib/ccache/g++" \
+    CCACHE_DIR=/root/.ccache \
+    CCACHE_MAXSIZE=10G \
+    CCACHE_COMPRESS=1 \
+    CCACHE_COMPRESSLEVEL=6 \
+    USE_CCACHE=1
 
 COPY dependency_*.repos crane/
 
