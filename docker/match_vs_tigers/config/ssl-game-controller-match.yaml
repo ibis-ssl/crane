@@ -96,6 +96,8 @@ server:
   remote-control:
     address: :10011
     trusted-keys-dir: /tmp/trusted_keys/remote-control
+  ui:
+    address: :8082
 
 time-acquisition-mode: system
 

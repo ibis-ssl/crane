@@ -1,18 +1,40 @@
 services:
-  ssl-game-controller:
-    image: robocupssl/ssl-game-controller:latest
-    container_name: match_gc
+  grsim:
+    image: robocupssl/grsim:latest
+    container_name: match_grsim
     network_mode: host
+    environment:
+      - DISPLAY=:99
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - ./config/grsim_config.xml:/root/.grsim/config.xml:ro
     entrypoint: /bin/sh
     command:
       - -c
       - |
-        cp /config/state-store-initial.json.stream /tmp/state-store.json.stream
-        exec /app -visionAddress 224.5.23.2:10020 -publishAddress 224.5.23.1:11003 -address :8082 -timeAcquisitionMode system
+        Xvfb :99 -screen 0 1024x768x24 &
+        sleep 2
+        exec grSim -H
+    restart: "no"
+
+  ssl-game-controller:
+    image: robocupssl/ssl-game-controller:latest
+    container_name: match_gc
+    network_mode: host
+    working_dir: /tmp
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        mkdir -p config
+        cp /mounted/ssl-game-controller-match.yaml config/ssl-game-controller.yaml
+        cp /mounted/engine.yaml config/engine.yaml
+        cp /mounted/state-store-initial.json.stream state-store.json.stream
+        exec /app -address localhost:8082 -verbose
     volumes:
-      - ./config/ssl-game-controller-match.yaml:/config/ssl-game-controller.yaml:ro
-      - ./config/engine.yaml:/config/engine.yaml:ro
-      - ./config/state-store-initial.json.stream:/config/state-store-initial.json.stream:ro
+      - ./config/ssl-game-controller-match.yaml:/mounted/ssl-game-controller-match.yaml:ro
+      - ./config/engine.yaml:/mounted/engine.yaml:ro
+      - ./config/state-store-initial.json.stream:/mounted/state-store-initial.json.stream:ro
     tmpfs:
       - /tmp
     restart: "no"
@@ -85,7 +107,7 @@ services:
   #   restart: "no"
 
   match-controller:
-    image: python:3.12-slim
+    image: python:3.12
     container_name: match_controller
     network_mode: host
     volumes:
