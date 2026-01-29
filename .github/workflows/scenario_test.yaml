@@ -128,7 +128,11 @@ jobs:
         run: |
           python -m venv env
           source env/bin/activate
-          python -m pip list
+          python -m pip install --upgrade pip
+          sudo apt update
+          sudo apt install -y protobuf-compiler
+          pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
+          pip install pytest
 
       - name: Start Docker Compose services
         run: |
