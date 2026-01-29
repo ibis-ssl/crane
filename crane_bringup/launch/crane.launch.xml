@@ -198,11 +198,8 @@ limitations under the License.
 
   <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen"/>
 
-  <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true"/>
-
-  <node pkg="crane_robot_receiver" exec="grsim_robot_status_node" if="$(var sim)">
-    <param name="blue_port" value="30011"/>
-    <param name="yellow_port" value="30012"/>
+  <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true">
+    <param name="sim_mode" value="$(var sim)"/>
   </node>
 
   <!-- 可視化情報の集約 -->
