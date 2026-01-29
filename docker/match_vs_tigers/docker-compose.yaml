@@ -7,14 +7,10 @@ services:
       - DISPLAY=:99
       - QT_X11_NO_MITSHM=1
     volumes:
-      - ./config/grsim_config.xml:/root/.grsim/config.xml:ro
+      - ./config/grsim_config.xml:/tmp/grsim_config.xml:ro
+      - ./scripts/start_grsim.sh:/tmp/start_grsim.sh:ro
     entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        Xvfb :99 -screen 0 1024x768x24 &
-        sleep 2
-        exec grSim -H
+    command: ["/tmp/start_grsim.sh"]
     restart: "no"
 
   ssl-game-controller:
@@ -60,7 +56,7 @@ services:
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=Yellow
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=ibis
       "
     tty: true
     stdin_open: true
@@ -119,7 +115,7 @@ services:
       PYTHONUNBUFFERED: "1"
     command: >
       sh -c "
-      pip install -q protobuf grpcio-tools websockets &&
+      pip install --timeout=300 --retries=5 -q protobuf grpcio-tools websockets &&
       cd proto &&
       python -m grpc_tools.protoc --python_out=. --proto_path=. api/ssl_gc_api.proto state/*.proto statemachine/*.proto engine/*.proto geom/*.proto &&
       cd .. &&
