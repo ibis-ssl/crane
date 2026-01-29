@@ -170,7 +170,7 @@ class MatchController:
             return None
 
     def start_match_sequence(self) -> bool:
-        """試合開始シーケンスを実行（Engine自動実行に任せる）"""
+        """試合開始シーケンスを実行（Engine自動実行 + 必要に応じて強制開始）"""
         print("試合開始前の状態確認...")
 
         initial_stage = self.check_current_stage()
@@ -183,10 +183,70 @@ class MatchController:
         # Engineが処理するまで十分な時間待機
         time.sleep(10.0)
 
-        # 最終ステージを確認
-        final_stage = self.check_current_stage()
-        if final_stage:
-            print(f"  現在のステージ: {final_stage}")
+        # 最終ステージと現在のコマンドを確認
+        sock = self.create_referee_socket()
+        force_start_needed = False
+
+        if sock:
+            try:
+                sock.settimeout(3.0)
+                data, _ = sock.recvfrom(65536)
+                referee_msg = referee_pb2.Referee()
+                referee_msg.ParseFromString(data)
+
+                current_stage = referee_pb2.Referee.Stage.Name(referee_msg.stage)
+                current_command = referee_pb2.Referee.Command.Name(referee_msg.command)
+
+                print(f"  現在のステージ: {current_stage}")
+                print(f"  現在のコマンド: {current_command}")
+
+                # STOPまたはHALT状態の場合、強制開始が必要
+                if current_command in ["STOP", "HALT"]:
+                    force_start_needed = True
+                    print(
+                        "\n⚠  自動開始が動作していないため、WebSocket API経由で試合を強制開始します"
+                    )
+
+                sock.close()
+
+            except Exception as e:
+                print(f"⚠  状態確認エラー: {e}")
+                sock.close()
+
+        # 強制開始が必要な場合、WebSocket API経由でコマンドを送信
+        if force_start_needed:
+            try:
+                print("  Step 1: KICKOFF for YELLOW")
+                input_msg = ssl_gc_api_pb2.Input()
+                input_msg.change.new_command.type = (
+                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.KICKOFF
+                )
+                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.YELLOW
+                asyncio.run(self.send_ws_command(input_msg, "KICKOFF for YELLOW"))
+                time.sleep(2)
+
+                print("  Step 2: NORMAL_START")
+                input_msg = ssl_gc_api_pb2.Input()
+                input_msg.change.new_command.type = (
+                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.NORMAL_START
+                )
+                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.UNKNOWN
+                asyncio.run(self.send_ws_command(input_msg, "NORMAL_START"))
+                time.sleep(2)
+
+                print("  Step 3: FORCE_START")
+                input_msg = ssl_gc_api_pb2.Input()
+                input_msg.change.new_command.type = (
+                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.FORCE_START
+                )
+                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.UNKNOWN
+                asyncio.run(self.send_ws_command(input_msg, "FORCE_START"))
+                time.sleep(2)
+
+                print("✓ 強制開始コマンド送信完了")
+
+            except Exception as e:
+                print(f"✗ 強制開始エラー: {e}", file=sys.stderr)
 
         print("✓ 試合開始シーケンス完了")
         return True

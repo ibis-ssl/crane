@@ -30,7 +30,7 @@ except ImportError:
 class MatchController:
     def __init__(self):
         self.gc_host = "match_gc"
-        self.gc_port = 8081
+        self.gc_port = 8082
         self.gc_api_base = f"http://{self.gc_host}:{self.gc_port}/api"
 
         self.yellow_name = "ibis"
@@ -141,10 +141,89 @@ class MatchController:
             print(f"✗ マルチキャストソケット作成エラー: {e}", file=sys.stderr)
             return None
 
+    def send_ci_command(self, command_type: str, for_team: str = "UNKNOWN") -> bool:
+        """
+        CI API経由でコマンドを送信
+
+        Args:
+            command_type: コマンドタイプ（例: "normalStart", "forceStart", "kickoff"）
+            for_team: 対象チーム（"YELLOW", "BLUE", "UNKNOWN"）
+
+        Returns:
+            成功した場合True
+        """
+        import requests
+
+        try:
+            payload = {"forTeam": for_team, "type": command_type}
+            url = f"{self.gc_api_base}/control"
+            response = requests.post(url, json=payload, timeout=5)
+
+            if response.status_code == 200:
+                print(f"✓ CI APIコマンド送信成功: {command_type} (forTeam: {for_team})")
+                return True
+            else:
+                print(
+                    f"⚠  CI APIコマンド送信失敗: {response.status_code} - {response.text}"
+                )
+                return False
+
+        except Exception as e:
+            print(f"✗ CI APIエラー: {e}", file=sys.stderr)
+            return False
+
     def start_match_sequence(self) -> bool:
-        """試合開始シーケンスを実行（自動開始を前提）"""
-        print("試合の自動開始を待機中...")
-        print("（ssl-game-controllerの設定により自動的に試合が開始されます）")
+        """試合開始シーケンスを実行（CI API経由で強制開始）"""
+        print("試合開始シーケンスを開始...")
+
+        # Engine auto-executionを待つ
+        print("\nEngine自動実行を待機中...")
+        print("（autoContinue: trueによりEngineが自動的に試合を進行させます）")
+
+        # 初期状態を確認するために少し待機
+        time.sleep(5)
+
+        # レフェリーメッセージを受信して現在の状態を確認
+        sock = self.create_referee_socket()
+        if sock:
+            try:
+                sock.settimeout(3.0)
+                data, _ = sock.recvfrom(65536)
+                referee_msg = referee_pb2.Referee()
+                referee_msg.ParseFromString(data)
+
+                current_stage = referee_pb2.Referee.Stage.Name(referee_msg.stage)
+                current_command = referee_pb2.Referee.Command.Name(referee_msg.command)
+
+                print(f"  現在のステージ: {current_stage}")
+                print(f"  現在のコマンド: {current_command}")
+
+                sock.close()
+
+                # STOPまたはHALT状態の場合、CI API経由で強制的に試合を開始
+                if current_command in ["STOP", "HALT"]:
+                    print(
+                        "\n⚠  自動開始が動作していないため、CI API経由で試合を強制開始します"
+                    )
+                    print("  Step 1: KICKOFF for YELLOW")
+                    if self.send_ci_command("kickoff", "YELLOW"):
+                        time.sleep(2)
+
+                    print("  Step 2: NORMAL_START")
+                    if self.send_ci_command("normalStart", "UNKNOWN"):
+                        time.sleep(2)
+
+                    print("  Step 3: FORCE_START")
+                    self.send_ci_command("forceStart", "UNKNOWN")
+                    time.sleep(2)
+                else:
+                    print("✓ 試合は既に進行中です")
+
+            except Exception as e:
+                print(f"⚠  状態確認エラー: {e}")
+                sock.close()
+
+        print("✓ 試合開始シーケンス完了")
         self.start_time = time.time()
         return True
 
