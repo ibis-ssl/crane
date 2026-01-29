@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_physics/kicker_model.hpp>
 
 namespace crane
 {
@@ -69,12 +70,38 @@ auto KickEventDetector::update(
 
   // 進行中キックの更新
   if (kick_event_origin.has_value()) {
+    // 新しいキックが検出された場合
+    if (
+      !ongoing_kick_origin.has_value() || ongoing_kick_origin->robot != kick_event_origin->robot ||
+      (kick_event_origin->position - ongoing_kick_origin->position).norm() > 0.5) {
+      // 新規キックイベント: トレースを作成
+      ongoing_kick_trace_ = KickPredictionTracker::createTrace();
+      kick_origin_pos_ = world_model.ball().pos;
+    }
     ongoing_kick_origin = kick_event_origin.value();
   } else {
     if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
-      // キック中断判定
+      // キック中断判定 - ボール停止時に実績を記録
+      if (ongoing_kick_trace_.has_value() && !ongoing_kick_trace_->prediction_point.empty()) {
+        // 実際の停止距離を計算
+        double actual_stop_distance = (world_model.ball().pos - kick_origin_pos_).norm();
+        // 実際のボール初速度（キック直後の速度記録から推定、ここでは最大速度を使用）
+        double actual_ball_speed = 0.0;
+        for (const auto & record : records) {
+          double speed = record.velocity.norm();
+          if (speed > actual_ball_speed) {
+            actual_ball_speed = speed;
+          }
+        }
+
+        // 実績を記録
+        KickPredictionTracker::recordActual(
+          *ongoing_kick_trace_, actual_ball_speed, actual_stop_distance);
+      }
+
       kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball().pos);
       ongoing_kick_origin = std::nullopt;
+      ongoing_kick_trace_ = std::nullopt;
     }
   }
 
@@ -98,6 +125,61 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
     kick.direction = atan2(
       records.back().position.y() - ongoing_kick_origin->position.y(),
       records.back().position.x() - ongoing_kick_origin->position.x());
+
+    // 味方ロボットの場合、コマンドからキック力を取得
+    if (kick.is_kicker_friend) {
+      auto latest_command = getLatestCommandForRobot(kick.kicker_id);
+      if (latest_command.has_value()) {
+        kick.commanded_kick_power = latest_command->kick_power;
+        kick.commanded_chip_kick = latest_command->chip_enable;
+      }
+    }
+
+    // キック予測トレースを追加
+    if (
+      kicker_model_ && ongoing_kick_trace_.has_value() &&
+      ongoing_kick_trace_->prediction_point.empty()) {
+      // 初回のみ予測を記録
+      try {
+        double kick_power = 0.5;  // デフォルト値
+        bool is_chip_kick = false;
+
+        // 味方ロボットの場合はコマンドから取得、それ以外は速度から推定
+        if (kick.is_kicker_friend && kick.commanded_kick_power > 0.0f) {
+          kick_power = kick.commanded_kick_power;
+          is_chip_kick = kick.commanded_chip_kick;
+        } else {
+          // 検出された速度から逆算
+          double observed_speed = records.back().velocity.norm();
+          try {
+            kick_power = kicker_model_->calculateStraightKickPower(observed_speed);
+          } catch (...) {
+            // 逆算に失敗した場合はデフォルト値を使用
+          }
+        }
+
+        // 予測値を計算
+        double predicted_speed =
+          is_chip_kick ? 0.0 : kicker_model_->predictStraightKickSpeed(kick_power);
+        double predicted_distance = is_chip_kick
+                                      ? kicker_model_->predictChipKickTotalDistance(kick_power)
+                                      : kicker_model_->predictStopDistance(kick_power);
+
+        // トレースに予測を記録
+        Eigen::Vector2d kick_pos(kick.origin_x, kick.origin_y);
+        KickPredictionTracker::recordPrediction(
+          *ongoing_kick_trace_, "kick_event_detector", kick_power, is_chip_kick, predicted_speed,
+          predicted_distance, kick_pos);
+      } catch (const std::exception & e) {
+        // KickerModelの取得に失敗した場合は予測トレースをスキップ
+      }
+    }
+
+    // トレースを添付
+    if (ongoing_kick_trace_.has_value()) {
+      kick.kick_prediction_trace.push_back(*ongoing_kick_trace_);
+    }
+
     return kick;
   } else {
     return std::nullopt;
@@ -250,5 +332,36 @@ auto KickEventDetector::filterByDistanceIncrease(
   }
 
   return detected_bots;
+}
+
+auto KickEventDetector::setKickerModel(std::shared_ptr<KickerModel> kicker_model) -> void
+{
+  kicker_model_ = kicker_model;
+}
+
+auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void
+{
+  RobotCommandRecord record;
+  record.commands = commands;
+  record.timestamp = ros_clock.now();
+  robot_command_records_.emplace_back(record);
+
+  if (robot_command_records_.size() > COMMAND_QUEUE_SIZE) {
+    robot_command_records_.pop_front();
+  }
+}
+
+auto KickEventDetector::getLatestCommandForRobot(uint8_t robot_id) const
+  -> std::optional<crane_msgs::msg::RobotCommand>
+{
+  // 新しい順に検索
+  for (auto it = robot_command_records_.rbegin(); it != robot_command_records_.rend(); ++it) {
+    for (const auto & cmd : it->commands.robot_commands) {
+      if (cmd.robot_id == robot_id) {
+        return cmd;
+      }
+    }
+  }
+  return std::nullopt;
 }
 }  // namespace crane
