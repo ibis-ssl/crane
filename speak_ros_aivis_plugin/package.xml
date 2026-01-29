@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>speak_ros_aivis_plugin</name>
-  <version>1.0.121</version>
+  <version>1.0.126</version>
   <description>Aivis Speech Engine plugin for speak_ros</description>
 
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>

@@ -43,6 +43,7 @@ ament_python_install_package(crane_debug_tools)
 # Install scripts
 install(PROGRAMS
   scripts/mcap_analyzer.py
+  scripts/svg_video_generator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

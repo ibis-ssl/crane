@@ -6,7 +6,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 
-# Collect interface files
+# Collect interface files automatically
 file(GLOB msg_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "msg/*.msg")
 
 rosidl_generate_interfaces(${PROJECT_NAME}
