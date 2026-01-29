@@ -9,7 +9,9 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/ball_physics_model.hpp>
+#include <crane_physics/kicker_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
 #include <crane_world_model_publisher/pass_target_selector.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
@@ -81,6 +83,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   get_parameter("ball_physics_config_path", ball_physics_config_path);
 
   // ボール物理モデル初期化
+  std::shared_ptr<BallPhysicsModel> ball_physics_model;
   if (!ball_physics_config_path.empty()) {
     // ファイル名だけの場合はconfigディレクトリと結合
     std::string full_config_path = ball_physics_config_path;
@@ -98,7 +101,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     }
 
     try {
-      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      ball_physics_model = BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
       RCLCPP_INFO(
         this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
     } catch (const std::exception & e) {
@@ -107,12 +110,62 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
         full_config_path.c_str(), e.what());
       // エラー時はデフォルトファクトリーインスタンスを作成
-      BallPhysicsModelFactory::getInstance();
+      ball_physics_model = BallPhysicsModelFactory::getInstance();
     }
   } else {
     RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
-    BallPhysicsModelFactory::getInstance();
+    ball_physics_model = BallPhysicsModelFactory::getInstance();
   }
+
+  // キッカーモデル初期化
+  declare_parameter("kicker_physics_config_path", std::string(""));
+  std::string kicker_physics_config_path;
+  get_parameter("kicker_physics_config_path", kicker_physics_config_path);
+
+  std::shared_ptr<KickerModel> kicker_model;
+  if (!kicker_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_kicker_config_path = kicker_physics_config_path;
+    if (!std::filesystem::path(kicker_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_kicker_config_path =
+          std::filesystem::path(package_share_dir) / "config" / kicker_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    try {
+      kicker_model = createIntegratedKickerModel(full_kicker_config_path, ball_physics_model);
+      RCLCPP_INFO(
+        this->get_logger(), "キッカー物理設定を読み込みました: %s",
+        full_kicker_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "キッカー物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        full_kicker_config_path.c_str(), e.what());
+      kicker_model = std::make_shared<KickerModel>();
+      kicker_model->setBallPhysicsModel(ball_physics_model);
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "キッカー物理設定: デフォルト値を使用");
+    kicker_model = std::make_shared<KickerModel>();
+    kicker_model->setBallPhysicsModel(ball_physics_model);
+  }
+
+  // KickEventDetectorにKickerModelを設定
+  kick_event_detector_->setKickerModel(kicker_model);
+
+  // robot_commandsをsubscribeしてKickEventDetectorに渡す
+  sub_robot_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
+    "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
+      kick_event_detector_->updateRobotCommands(*msg);
+    });
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 

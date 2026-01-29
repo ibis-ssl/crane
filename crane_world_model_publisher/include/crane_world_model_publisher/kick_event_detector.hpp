@@ -8,12 +8,18 @@
 #define CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/kick_prediction_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
+#include <crane_msgs/msg/kick_prediction_trace.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <memory>
 #include <queue>
 
 namespace crane
 {
+class KickerModel;
+
 struct DetectedBots
 {
   std::vector<uint8_t> friends;
@@ -43,6 +49,10 @@ public:
 
   auto hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const -> bool;
 
+  auto setKickerModel(std::shared_ptr<KickerModel> kicker_model) -> void;
+
+  auto updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void;
+
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
   auto filterByDistance(
@@ -67,6 +77,12 @@ public:
     rclcpp::Time timestamp;
   };
 
+  struct RobotCommandRecord
+  {
+    crane_msgs::msg::RobotCommands commands;
+    rclcpp::Time timestamp;
+  };
+
 private:
   std::deque<Record> records;
 
@@ -81,6 +97,19 @@ private:
   rclcpp::Clock ros_clock;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
+
+  // キック予測トレース管理
+  std::optional<crane_msgs::msg::KickPredictionTrace> ongoing_kick_trace_ = std::nullopt;
+  Point kick_origin_pos_;                      // キック開始位置を記録
+  std::shared_ptr<KickerModel> kicker_model_;  // キック予測用モデル
+
+  // RobotCommandsリングバッファ
+  std::deque<RobotCommandRecord> robot_command_records_;
+  static constexpr int COMMAND_QUEUE_SIZE = 30;  // 約1秒分（30Hz想定）
+
+  // 指定ロボットIDの最新コマンドを取得
+  auto getLatestCommandForRobot(uint8_t robot_id) const
+    -> std::optional<crane_msgs::msg::RobotCommand>;
 };
 }  // namespace crane
 
