@@ -48,6 +48,10 @@ set(msg_files
   "msg/analysis/BallPredictionPoint.msg"
   "msg/analysis/BallPredictionActual.msg"
   "msg/analysis/BallPredictionTrace.msg"
+  "msg/analysis/VelocityPlanPoint.msg"
+  "msg/analysis/VelocityCorrection.msg"
+  "msg/analysis/VelocityPlanActual.msg"
+  "msg/analysis/VelocityPlanTrace.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"
