@@ -6,7 +6,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -25,7 +25,7 @@ class RobotFeedbackReceiver
 public:
   RobotFeedbackReceiver(const std::string & host, const int port)
   : robot_id(port - 50100),
-    receiver_(std::make_unique<crane::MulticastReceiver>(host, port)),
+    receiver_(std::make_unique<crane::UdpReceiver>(host, port)),
     buffer_(protocol::BUFFER_SIZE),
     clock(RCL_ROS_TIME)
   {
@@ -137,7 +137,7 @@ public:
   const int robot_id;
 
 private:
-  std::unique_ptr<crane::MulticastReceiver> receiver_;
+  std::unique_ptr<crane::UdpReceiver> receiver_;
 
   std::vector<char> buffer_;
 
@@ -160,14 +160,24 @@ public:
 
     // パラメータの宣言と取得
     int max_robot_id = declare_parameter("max_robot_id", 15);
+    bool sim_mode = declare_parameter("sim_mode", false);
     std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
     int port_base = declare_parameter("port_base", 50100);
     int ip_offset = declare_parameter("ip_octet_offset", 100);
 
-    RCLCPP_INFO(get_logger(), "Listening for robot feedbacks (max_robot_id: %d)", max_robot_id);
+    RCLCPP_INFO(
+      get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,
+      sim_mode ? "true" : "false");
 
     for (int i = 0; i <= max_robot_id; i++) {
-      std::string ip = std::format("{}.{}", ip_base, i + ip_offset);
+      std::string ip;
+      if (sim_mode) {
+        // シミュレータモード: 127.0.0.1 (固定)
+        ip = "127.0.0.1";
+      } else {
+        // 実機モード: 224.5.20.{100+robot_id}
+        ip = std::format("{}.{}", ip_base, i + ip_offset);
+      }
       int port = port_base + i;
       receivers.push_back(std::make_shared<RobotFeedbackReceiver>(ip, port));
     }
