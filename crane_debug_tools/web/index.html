@@ -1,19 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crane Robot Skills Debugger</title>
+    <title>Crane Debug Tools Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .skill-card {
-            cursor: pointer;
-            transition: all 0.2s ease;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
         }
-        .skill-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        .portal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .portal-header {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .status-indicator {
             width: 12px;
@@ -24,201 +32,270 @@
         }
         .connected { background-color: #28a745; }
         .disconnected { background-color: #dc3545; }
-        .command-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-            background-color: #6c757d;
-            transition: all 0.2s ease;
-        }
-        .command-indicator.active {
-            background-color: #ffc107;
-            box-shadow: 0 0 10px #ffc107;
-            animation: pulse 0.2s ease;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        .field-visualization {
-            width: 100%;
-            aspect-ratio: 12 / 9; /* SSL field dimensions: 12m x 9m */
-            background: linear-gradient(45deg, #1e5a2f, #2a7a3f);
-            border: 2px solid #fff;
-            position: relative;
-            overflow: hidden;
-        }
-        .field-line {
-            position: absolute;
-            background-color: white;
-            z-index: 1;
-        }
-        .field-line-horizontal {
-            height: 2px;
-            width: 100%;
-        }
-        .field-line-vertical {
-            width: 2px;
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
             height: 100%;
-        }
-        .field-center-circle {
-            position: absolute;
-            border: 2px solid white;
-            border-radius: 50%;
-            background: transparent;
-            z-index: 1;
-        }
-        .field-goal-area {
-            position: absolute;
-            border: 2px solid white;
-            background: transparent;
-            z-index: 1;
-        }
-        .field-penalty-area {
-            position: absolute;
-            border: 2px solid white;
-            background: transparent;
-            z-index: 1;
-        }
-        .robot {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #007bff;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            transform: translate(-50%, -50%);
             transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .ball {
+        .tool-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            color: inherit;
+        }
+        .tool-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .tool-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .tool-description {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+        .tool-features {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        .tool-features li {
+            margin-bottom: 0.25rem;
+        }
+        .tool-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .tool-card .badge {
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #ffc107;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.3s ease;
+            top: 1rem;
+            right: 1rem;
         }
-        .log-container {
-            height: 300px;
-            overflow-y: auto;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 0.375rem;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 2px 0;
-        }
-        .log-info { color: #6c757d; }
-        .log-success { color: #28a745; }
-        .log-warning { color: #ffc107; }
-        .log-error { color: #dc3545; }
-
-        .robot-status-card {
-            transition: all 0.2s ease;
-        }
-        .robot-status-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            background-color: #f8f9fa;
+        .section-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            margin-top: 2rem;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">
-                <i class="fas fa-robot"></i> Crane Robot Skills Debugger
-            </span>
-            <div class="d-flex align-items-center">
-                <span class="status-indicator" id="connectionStatus"></span>
-                <span id="connectionText" class="text-light">Disconnected</span>
-                <span class="ms-3">
-                    <span class="command-indicator" id="commandIndicator"></span>
-                    <span id="commandText" class="text-light">Waiting...</span>
-                </span>
-                <a href="svg_viewer.html" class="btn btn-outline-light btn-sm ms-3">
-                    <i class="fas fa-vector-square me-1"></i>SVG可視化ツール
+    <div class="portal-container">
+        <!-- ヘッダー -->
+        <div class="portal-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-robot"></i> Crane Debug Tools Portal
+                    </h1>
+                    <p class="text-muted mb-0">RoboCup SSL ロボット制御デバッグツール統合ポータル</p>
+                </div>
+                <div class="text-end">
+                    <div id="connection-status">
+                        <span class="status-indicator disconnected"></span>
+                        <span id="status-text">接続確認中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crane Debug Tools -->
+        <h2 class="section-title">Crane Debug Tools</h2>
+        <div class="row g-4">
+            <!-- メインデバッガー -->
+            <div class="col-md-6">
+                <a href="/debugger.html" class="tool-card">
+                    <div class="tool-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="tool-title">メインデバッガー</div>
+                    <div class="tool-description">
+                        リアルタイムでロボットの状態を監視し、スキルをインタラクティブに制御
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> フィールド可視化とロボット位置表示</li>
+                        <li><i class="fas fa-check text-success"></i> スキル状態のリアルタイム監視</li>
+                        <li><i class="fas fa-check text-success"></i> WebSocket経由のコマンド送信</li>
+                        <li><i class="fas fa-check text-success"></i> ログメッセージの表示</li>
+                    </ul>
+                </a>
+            </div>
+
+            <!-- SVG可視化ツール -->
+            <div class="col-md-6">
+                <a href="/svg_viewer.html" class="tool-card">
+                    <div class="tool-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="tool-title">SVG可視化ツール</div>
+                    <div class="tool-description">
+                        SVGレイヤーの表示制御と詳細なフィールドビジュアライゼーション
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> レイヤー別の表示/非表示切り替え</li>
+                        <li><i class="fas fa-check text-success"></i> 高精度なSVGレンダリング</li>
+                        <li><i class="fas fa-check text-success"></i> ズーム・パン操作対応</li>
+                        <li><i class="fas fa-check text-success"></i> デバッグ情報のビジュアル表示</li>
+                    </ul>
+                </a>
+            </div>
+
+            <!-- スタンドアローン -->
+            <div class="col-md-6">
+                <a href="/standalone.html" class="tool-card">
+                    <div class="tool-icon">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div class="tool-title">スタンドアローンツール</div>
+                    <div class="tool-description">
+                        オフラインでCLIコマンドを試験・実行できる軽量ツール
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> WebSocket接続不要</li>
+                        <li><i class="fas fa-check text-success"></i> コマンド構文の検証</li>
+                        <li><i class="fas fa-check text-success"></i> シンプルなインターフェース</li>
+                        <li><i class="fas fa-check text-success"></i> 開発・テスト用途に最適</li>
+                    </ul>
+                </a>
+            </div>
+
+            <!-- アノテーションツール -->
+            <div class="col-md-6">
+                <a href="/annotation/index.html" class="tool-card">
+                    <div class="tool-icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <div class="tool-title">アノテーションツール</div>
+                    <div class="tool-description">
+                        試合中のメモ記録とタイムスタンプ付きアノテーション（PWA対応）
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> リアルタイムメモ記録</li>
+                        <li><i class="fas fa-check text-success"></i> タイムスタンプ自動付与</li>
+                        <li><i class="fas fa-check text-success"></i> PWAでオフライン利用可能</li>
+                        <li><i class="fas fa-check text-success"></i> 試合分析・振り返りに活用</li>
+                    </ul>
                 </a>
             </div>
         </div>
-    </nav>
 
-
-    <div class="container-fluid mt-3">
-        <div class="row">
-            <!-- Center Panel: Field Visualization -->
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-futbol"></i> Field Visualization</h5>
+        <!-- External Tools -->
+        <h2 class="section-title">External Tools</h2>
+        <div class="row g-4">
+            <!-- SSL Game Controller -->
+            <div class="col-md-6">
+                <a href="http://localhost:8081" target="_blank" class="tool-card" id="game-controller-card">
+                    <span class="badge bg-secondary" id="game-controller-status">確認中...</span>
+                    <div class="tool-icon">
+                        <i class="fas fa-flag"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="field-visualization" id="fieldViz">
-                            <!-- Field elements will be drawn here -->
-                        </div>
+                    <div class="tool-title">SSL Game Controller</div>
+                    <div class="tool-description">
+                        RoboCup SSL公式のゲームコントローラー（審判システム）
                     </div>
-                </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> 試合進行の管理</li>
+                        <li><i class="fas fa-check text-success"></i> レフェリーコマンド発行</li>
+                        <li><i class="fas fa-check text-success"></i> スコア・時間管理</li>
+                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8081</li>
+                    </ul>
+                </a>
             </div>
 
-            <!-- Right Panel: Status and Logs -->
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-info-circle"></i> Robot Status</h5>
+            <!-- SSL Vision Client -->
+            <div class="col-md-6">
+                <a href="http://localhost:8082" target="_blank" class="tool-card" id="vision-client-card">
+                    <span class="badge bg-secondary" id="vision-client-status">確認中...</span>
+                    <div class="tool-icon">
+                        <i class="fas fa-video"></i>
                     </div>
-                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
-                        <div id="robotStatus">
-                            <p class="text-muted">No robot data available</p>
-                        </div>
+                    <div class="tool-title">SSL Vision Client</div>
+                    <div class="tool-description">
+                        SSL-Visionからのビジョンデータを可視化・監視
                     </div>
-                </div>
-
-                <div class="card mt-3">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5><i class="fas fa-terminal"></i> Execution Log</h5>
-                        <button class="btn btn-sm btn-outline-secondary" id="clearLogBtn">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="log-container" id="logContainer">
-                            <!-- Log entries will appear here -->
-                        </div>
-                    </div>
-                </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> ビジョンデータのリアルタイム表示</li>
+                        <li><i class="fas fa-check text-success"></i> カメラ別データの確認</li>
+                        <li><i class="fas fa-check text-success"></i> ロボット・ボール位置の監視</li>
+                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8082</li>
+                    </ul>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Robot Detail Modal -->
-    <div class="modal fade" id="robotDetailModal" tabindex="-1" aria-labelledby="robotDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="robotDetailModalLabel">Robot Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="robotDetailContent">
-                        <!-- Robot details will be populated here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        // WebSocket接続チェック
+        function checkConnection() {
+            const ws = new WebSocket('ws://localhost:8765');
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            ws.onopen = () => {
+                statusIndicator.classList.remove('disconnected');
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'WebSocket接続済み (localhost:8765)';
+                ws.close();
+            };
+
+            ws.onerror = () => {
+                statusIndicator.classList.remove('connected');
+                statusIndicator.classList.add('disconnected');
+                statusText.textContent = 'WebSocket未接続 (一部ツールはオフラインでも利用可能)';
+            };
+        }
+
+        // 外部ツールの可用性チェック
+        async function checkExternalTool(url, cardId, statusId) {
+            const card = document.getElementById(cardId);
+            const statusBadge = document.getElementById(statusId);
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+                const response = await fetch(url, {
+                    mode: 'no-cors',
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                // no-corsモードでは常にopaque responseが返るため、
+                // エラーが出なければ接続可能と判断
+                statusBadge.textContent = '利用可能';
+                statusBadge.classList.remove('bg-secondary', 'bg-danger');
+                statusBadge.classList.add('bg-success');
+            } catch (error) {
+                // タイムアウトまたはネットワークエラー
+                statusBadge.textContent = '利用不可';
+                statusBadge.classList.remove('bg-secondary', 'bg-success');
+                statusBadge.classList.add('bg-danger');
+                card.classList.add('disabled');
+            }
+        }
+
+        // ページロード時に接続チェック
+        checkConnection();
+
+        // 外部ツールの可用性チェック
+        checkExternalTool('http://localhost:8081', 'game-controller-card', 'game-controller-status');
+        checkExternalTool('http://localhost:8082', 'vision-client-card', 'vision-client-status');
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="ignored"></script>
 </body>
 </html>
