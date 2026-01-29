@@ -45,6 +45,10 @@ set(msg_files
   "msg/analysis/DelayCheckpoints.msg"
   "msg/analysis/RonarEvent.msg"
   "msg/analysis/HumanAnnotation.msg"
+  "msg/analysis/VelocityPlanPoint.msg"
+  "msg/analysis/VelocityCorrection.msg"
+  "msg/analysis/VelocityPlanActual.msg"
+  "msg/analysis/VelocityPlanTrace.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"

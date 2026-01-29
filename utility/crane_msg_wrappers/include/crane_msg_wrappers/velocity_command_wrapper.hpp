@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "delay_monitor_wrapper.hpp"
+#include "velocity_plan_tracker.hpp"
 
 namespace crane
 {
@@ -248,6 +249,62 @@ public:
     return *this;
   }
 
+  // ===== 速度計画トレース関連メソッド =====
+
+  /**
+   * @brief 速度計画トレースを有効化（新規トレースを作成）
+   */
+  auto enableVelocityPlanTrace() -> VelocityCommandWrapper &
+  {
+    if (latest_msg.velocity_plan_trace.empty()) {
+      latest_msg.velocity_plan_trace.push_back(VelocityPlanTracker::createTrace());
+    }
+    return *this;
+  }
+
+  /**
+   * @brief 計画点を追加
+   */
+  auto addVelocityPlanPoint(
+    const std::string & source, const Eigen::Vector2d & predicted_pos,
+    const Eigen::Vector2d & predicted_vel, int32_t target_time_us,
+    int32_t estimated_arrival_time_us = 0) -> void
+  {
+    if (!latest_msg.velocity_plan_trace.empty()) {
+      VelocityPlanTracker::addPlanPoint(
+        latest_msg.velocity_plan_trace[0], source, predicted_pos, predicted_vel, target_time_us,
+        estimated_arrival_time_us);
+    }
+  }
+
+  /**
+   * @brief 速度修正を記録
+   */
+  auto addVelocityCorrection(
+    const std::string & source, const Eigen::Vector2d & before_vel,
+    const Eigen::Vector2d & after_vel) -> void
+  {
+    if (!latest_msg.velocity_plan_trace.empty()) {
+      VelocityPlanTracker::addCorrection(
+        latest_msg.velocity_plan_trace[0], source, before_vel, after_vel);
+    }
+  }
+
+  /**
+   * @brief 速度計画トレースが有効かどうかを確認
+   */
+  auto hasVelocityPlanTrace() const -> bool { return !latest_msg.velocity_plan_trace.empty(); }
+
+  /**
+   * @brief 速度計画トレースをコピー（RobotCommandからVelocityCommandへの伝播用）
+   */
+  auto setVelocityPlanTrace(const std::vector<crane_msgs::msg::VelocityPlanTrace> & trace)
+    -> VelocityCommandWrapper &
+  {
+    latest_msg.velocity_plan_trace.assign(trace.begin(), trace.end());
+    return *this;
+  }
+
   // ===== PositionCommand -> VelocityCommand 変換ユーティリティ =====
   static auto fromPositionCommand(
     const crane_msgs::msg::PositionCommand & pos_cmd, double velocity_r, double velocity_theta)
@@ -269,6 +326,7 @@ public:
     vel_cmd.planner_name = pos_cmd.planner_name;
     vel_cmd.delay_checkpoints = pos_cmd.delay_checkpoints;
     vel_cmd.local_planner_config = pos_cmd.local_planner_config;
+    vel_cmd.velocity_plan_trace = pos_cmd.velocity_plan_trace;
     return vel_cmd;
   }
 };
