@@ -19,6 +19,10 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
+      - name: free disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -96,6 +100,10 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: free disk
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -120,7 +128,11 @@ jobs:
         run: |
           python -m venv env
           source env/bin/activate
-          python -m pip list
+          python -m pip install --upgrade pip
+          sudo apt update
+          sudo apt install -y protobuf-compiler
+          pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
+          pip install pytest
 
       - name: Start Docker Compose services
         run: |
