@@ -19,10 +19,29 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
+      - name: Check disk space before cleanup
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          echo "=== Largest directories ==="
+          du -h / 2>/dev/null | sort -rh | head -20 || true
+
       - name: free disk
         uses: jlumbroso/free-disk-space@main
         with:
+          # コンテナを使用するため docker-images は false に設定
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
           tool-cache: false
+
+      - name: Check disk space after cleanup
+        run: |
+          echo "=== Disk space after cleanup ==="
+          df -h
 
       - name: suppress warnings
         run: |
