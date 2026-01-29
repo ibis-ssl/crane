@@ -13,7 +13,15 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-rosidl_auto_generate_interfaces()
+# Collect interface files automatically
+file(GLOB msg_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "msg/*.msg")
+file(GLOB action_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "action/*.action")
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+  ${action_files}
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs robocup_ssl_msgs
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
