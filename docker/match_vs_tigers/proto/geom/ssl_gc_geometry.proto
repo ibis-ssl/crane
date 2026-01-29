@@ -1,8 +1,5 @@
 syntax = "proto2";
 
-package robocup_ssl;
-option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/geom";
-
 // A vector with two dimensions
 message Vector2 {
     required float x = 1;
