@@ -216,30 +216,40 @@ class MatchController:
         # 強制開始が必要な場合、WebSocket API経由でコマンドを送信
         if force_start_needed:
             try:
+                # Import state protobuf for Command types
+                from state import ssl_gc_state_pb2 as state_pb2
+                from state import ssl_gc_common_pb2 as common_pb2
+
                 print("  Step 1: KICKOFF for YELLOW")
                 input_msg = ssl_gc_api_pb2.Input()
-                input_msg.change.new_command.type = (
-                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.KICKOFF
+                input_msg.change.new_command_change.command.type = (
+                    state_pb2.Command.Type.KICKOFF
                 )
-                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.YELLOW
+                input_msg.change.new_command_change.command.for_team = (
+                    common_pb2.Team.YELLOW
+                )
                 asyncio.run(self.send_ws_command(input_msg, "KICKOFF for YELLOW"))
                 time.sleep(2)
 
                 print("  Step 2: NORMAL_START")
                 input_msg = ssl_gc_api_pb2.Input()
-                input_msg.change.new_command.type = (
-                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.NORMAL_START
+                input_msg.change.new_command_change.command.type = (
+                    state_pb2.Command.Type.NORMAL_START
                 )
-                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.UNKNOWN
+                input_msg.change.new_command_change.command.for_team = (
+                    common_pb2.Team.UNKNOWN
+                )
                 asyncio.run(self.send_ws_command(input_msg, "NORMAL_START"))
                 time.sleep(2)
 
                 print("  Step 3: FORCE_START")
                 input_msg = ssl_gc_api_pb2.Input()
-                input_msg.change.new_command.type = (
-                    ssl_gc_api_pb2.Input.Change.NewCommand.Type.FORCE_START
+                input_msg.change.new_command_change.command.type = (
+                    state_pb2.Command.Type.FORCE_START
                 )
-                input_msg.change.new_command.for_team = ssl_gc_api_pb2.Team.UNKNOWN
+                input_msg.change.new_command_change.command.for_team = (
+                    common_pb2.Team.UNKNOWN
+                )
                 asyncio.run(self.send_ws_command(input_msg, "FORCE_START"))
                 time.sleep(2)
 
