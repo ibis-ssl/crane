@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grsim>
+  <geometry>
+    <FieldLength>12.0</FieldLength>
+    <FieldWidth>9.0</FieldWidth>
+    <FieldCenterCircleRadius>0.5</FieldCenterCircleRadius>
+    <FieldDefenseAreaDepth>1.8</FieldDefenseAreaDepth>
+    <FieldDefenseAreaWidth>3.6</FieldDefenseAreaWidth>
+    <FieldGoalDepth>0.18</FieldGoalDepth>
+    <FieldGoalWidth>1.8</FieldGoalWidth>
+    <FieldPenaltySpot>8.0</FieldPenaltySpot>
+    <BallRadius>0.0215</BallRadius>
+  </geometry>
+
+  <teams>
+    <blue>
+      <robot id="0" x="-4.0" y="0.0" orientation="0.0"/>
+      <robot id="1" x="-3.0" y="1.0" orientation="0.0"/>
+      <robot id="2" x="-3.0" y="-1.0" orientation="0.0"/>
+      <robot id="3" x="-2.0" y="2.0" orientation="0.0"/>
+      <robot id="4" x="-2.0" y="-2.0" orientation="0.0"/>
+      <robot id="5" x="-1.0" y="3.0" orientation="0.0"/>
+    </blue>
+    <yellow>
+      <robot id="0" x="4.0" y="0.0" orientation="3.14159"/>
+      <robot id="1" x="3.0" y="1.0" orientation="3.14159"/>
+      <robot id="2" x="3.0" y="-1.0" orientation="3.14159"/>
+      <robot id="3" x="2.0" y="2.0" orientation="3.14159"/>
+      <robot id="4" x="2.0" y="-2.0" orientation="3.14159"/>
+      <robot id="5" x="1.0" y="3.0" orientation="3.14159"/>
+    </yellow>
+  </teams>
+
+  <ball x="0.0" y="0.0"/>
+
+  <network>
+    <VisionMulticastAddr>224.5.23.2</VisionMulticastAddr>
+    <VisionMulticastPort>10020</VisionMulticastPort>
+    <CommandListenPort>20011</CommandListenPort>
+    <BlueStatusSendPort>30011</BlueStatusSendPort>
+    <YellowStatusSendPort>30012</YellowStatusSendPort>
+  </network>
+</grsim>

@@ -34,11 +34,16 @@ public:
     setParameter("viz_candidates", true);
     setParameter("viz_offset_arrow", true);
     setParameter("viz_redirect_preview", true);
+    setParameter("viz_enemy_block", true);
   }
 
   Status update() override;
 
   Point getInterceptionPoint() const;
+
+  // 敵割り込み検出・回避関数
+  bool isEnemyBlockingPassLine(const Point & interception_point) const;
+  Point getInterceptionPointWithEnemyAvoidance() const;
 };
 
 }  // namespace crane::skills
