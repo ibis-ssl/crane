@@ -1,18 +1,26 @@
 """Video generator using ffmpeg.
 
-このモジュールは、PNGフレームストリームをffmpegでMP4動画に変換します。
+このモジュールは、PNGフレームストリームまたはRAWフレームストリームをffmpegでMP4動画に変換します。
 """
 
 import logging
 import subprocess
+from enum import Enum
 from pathlib import Path
 from typing import Iterator
 
 logger = logging.getLogger(__name__)
 
 
+class InputFormat(Enum):
+    """ffmpeg入力フォーマット."""
+
+    PNG = "png"
+    RAW_RGBA = "raw_rgba"
+
+
 class VideoGenerator:
-    """ffmpegを使用してPNGフレームから動画を生成."""
+    """ffmpegを使用してPNGフレームまたはRAWフレームから動画を生成."""
 
     def __init__(
         self,
@@ -21,6 +29,9 @@ class VideoGenerator:
         crf: int = 23,
         pixel_format: str = "yuv420p",
         preset: str = "medium",
+        input_format: InputFormat = InputFormat.PNG,
+        width: int = 1920,
+        height: int = 1080,
     ):
         """
         初期化.
@@ -31,12 +42,18 @@ class VideoGenerator:
             crf: 品質設定（0-51、低いほど高品質）
             pixel_format: ピクセルフォーマット
             preset: エンコーディングプリセット（ultrafast, fast, medium, slow, veryslow）
+            input_format: 入力フォーマット（PNG or RAW_RGBA）
+            width: RAW入力の場合の画像幅（PNG入力では無視される）
+            height: RAW入力の場合の画像高さ（PNG入力では無視される）
         """
         self.fps = fps
         self.codec = codec
         self.crf = crf
         self.pixel_format = pixel_format
         self.preset = preset
+        self.input_format = input_format
+        self.width = width
+        self.height = height
 
         # ffmpegの存在確認
         try:
@@ -51,15 +68,15 @@ class VideoGenerator:
 
     def generate(
         self,
-        png_frames: Iterator[bytes],
+        frames: Iterator[bytes],
         output_path: str | Path,
         verbose: bool = False,
     ) -> None:
         """
-        PNGフレームストリームから動画を生成.
+        フレームストリームから動画を生成.
 
         Args:
-            png_frames: PNGバイト列のイテレータ
+            frames: フレームバイト列のイテレータ（PNG or RAW RGBA）
             output_path: 出力動画ファイルパス
             verbose: 詳細ログを表示
         """
@@ -67,27 +84,54 @@ class VideoGenerator:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # ffmpegコマンド構築
-        cmd = [
-            "ffmpeg",
-            "-y",  # 出力ファイルを上書き
-            "-f",
-            "image2pipe",  # パイプ入力
-            "-vcodec",
-            "png",  # 入力コーデック
-            "-r",
-            str(self.fps),  # フレームレート
-            "-i",
-            "-",  # 標準入力から読み込み
-            "-c:v",
-            self.codec,  # 出力コーデック
-            "-crf",
-            str(self.crf),  # 品質
-            "-pix_fmt",
-            self.pixel_format,  # ピクセルフォーマット
-            "-preset",
-            self.preset,  # プリセット
-            str(output_path),
-        ]
+        if self.input_format == InputFormat.RAW_RGBA:
+            # RAW RGBA入力の場合
+            cmd = [
+                "ffmpeg",
+                "-y",  # 出力ファイルを上書き
+                "-f",
+                "rawvideo",  # RAW入力
+                "-pix_fmt",
+                "rgba",  # 入力ピクセルフォーマット
+                "-s",
+                f"{self.width}x{self.height}",  # 入力サイズ
+                "-r",
+                str(self.fps),  # フレームレート
+                "-i",
+                "-",  # 標準入力から読み込み
+                "-c:v",
+                self.codec,  # 出力コーデック
+                "-crf",
+                str(self.crf),  # 品質
+                "-pix_fmt",
+                self.pixel_format,  # 出力ピクセルフォーマット
+                "-preset",
+                self.preset,  # プリセット
+                str(output_path),
+            ]
+        else:
+            # PNG入力の場合（従来の方法）
+            cmd = [
+                "ffmpeg",
+                "-y",  # 出力ファイルを上書き
+                "-f",
+                "image2pipe",  # パイプ入力
+                "-vcodec",
+                "png",  # 入力コーデック
+                "-r",
+                str(self.fps),  # フレームレート
+                "-i",
+                "-",  # 標準入力から読み込み
+                "-c:v",
+                self.codec,  # 出力コーデック
+                "-crf",
+                str(self.crf),  # 品質
+                "-pix_fmt",
+                self.pixel_format,  # ピクセルフォーマット
+                "-preset",
+                self.preset,  # プリセット
+                str(output_path),
+            ]
 
         if verbose:
             logger.info(f"Running ffmpeg: {' '.join(cmd)}")
@@ -103,9 +147,9 @@ class VideoGenerator:
 
         try:
             frame_count = 0
-            for png_bytes in png_frames:
+            for frame_bytes in frames:
                 if process.stdin:
-                    process.stdin.write(png_bytes)
+                    process.stdin.write(frame_bytes)
                     frame_count += 1
 
                     if frame_count % 100 == 0:

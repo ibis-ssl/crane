@@ -94,9 +94,13 @@ class SvgExtractor:
         try:
             from rosbag2_py import ConverterOptions, SequentialReader, StorageOptions
 
-            storage_options = StorageOptions(
-                uri=str(mcap_path.parent), storage_id="mcap"
-            )
+            # MCAPファイルの場合は親ディレクトリ、ディレクトリの場合はそのまま使用
+            if mcap_path.is_file() and mcap_path.suffix == ".mcap":
+                storage_uri = str(mcap_path.parent)
+            else:
+                storage_uri = str(mcap_path)
+
+            storage_options = StorageOptions(uri=storage_uri, storage_id="mcap")
             converter_options = ConverterOptions(
                 input_serialization_format="cdr", output_serialization_format="cdr"
             )
