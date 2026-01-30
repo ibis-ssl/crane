@@ -59,6 +59,14 @@ jobs:
             http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
             | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
+          # PowerShellのインストール（一部のパッケージで必要）
+          sudo apt-get install -y wget apt-transport-https
+          wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+          sudo dpkg -i packages-microsoft-prod.deb
+          rm packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+
           # ROS 2パッケージのインストール
           sudo apt-get update
           sudo apt-get install -y \
