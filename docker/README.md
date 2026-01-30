@@ -6,15 +6,10 @@
 
 ### 開発・テスト環境
 
-- **`sim/`** - シミュレーション開発環境
-  - grSimやGame Controllerを含む開発用環境
-  - 日常的な開発・デバッグ作業で使用
-  - 詳細: [sim/README.md](sim/README.md)
-
-- **`real/`** - 実機環境
-  - 実機ロボットとの接続設定
-  - フィールドでの動作確認用
-  - 詳細: [real/README.md](real/README.md)
+- **`dev/`** - 統合開発環境
+  - シミュレーション(sim)と実機(real)を統合
+  - 簡単なコマンドで環境を切り替え可能
+  - 詳細: [dev/README.md](dev/README.md)
 
 ### 自動テスト環境
 
@@ -52,13 +47,18 @@
 ### 開発環境の起動
 
 ```bash
-# シミュレーション環境
-cd docker/sim
-docker compose up
+# シミュレーション環境（デフォルト）
+./scripts/docker-dev.sh
 
 # 実機環境
-cd docker/real
-docker compose up
+./scripts/docker-dev.sh real
+
+# バックグラウンド起動
+./scripts/docker-dev.sh -d
+./scripts/docker-dev.sh real -d
+
+# 停止
+./scripts/docker-dev.sh down
 ```
 
 ### テスト実行
