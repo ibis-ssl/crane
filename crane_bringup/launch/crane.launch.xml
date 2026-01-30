@@ -50,11 +50,6 @@ limitations under the License.
   <log message="[crane.launch.xml] sim=$(var sim) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
 
   <!-- ============================================================ -->
-  <!-- デバッグツール設定 -->
-  <!-- ============================================================ -->
-  <arg name="debug_tools" default="true" description="デバッグツールの起動フラグ"/>
-
-  <!-- ============================================================ -->
   <!-- ロボット性能パラメータ -->
   <!-- ============================================================ -->
   <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
@@ -116,15 +111,6 @@ limitations under the License.
     <param name="slack.distance_horizon" value="$(var slack.distance_horizon)"/>
     <param name="slack.velocity_epsilon" value="$(var slack.velocity_epsilon)"/>
     <param name="emplace_robot.use_voice_announcement" value="$(var emplace_robot_voice_announcement)"/>
-  </node>
-
-  <!-- ============================================================ -->
-  <!-- 可視化/デバッグ系 -->
-  <!-- ============================================================ -->
-  <!-- WebSocketサーバー -->
-  <node pkg="crane_debug_tools" exec="crane_websocket_server" name="crane_websocket_server" output="screen" if="$(var debug_tools)">
-    <param name="port" value="8090"/>
-    <param name="websocket_port" value="8091"/>
   </node>
 
   <!-- ============================================================ -->
