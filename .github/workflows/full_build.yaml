@@ -9,9 +9,13 @@ on:
 jobs:
   job:
     name: FullBuild
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
+          && fromJSON('[ "self-hosted"]')
+          || fromJSON('[ "ubuntu-latest" ]')
+      }}
     timeout-minutes: 30
-    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -29,12 +33,12 @@ jobs:
       - name: free disk
         uses: jlumbroso/free-disk-space@main
         with:
-          # コンテナを使用するため docker-images は false に設定
+          # ホストで直接ビルドするため、すべてのクリーンアップを有効化
           android: true
           dotnet: true
           haskell: true
           large-packages: true
-          docker-images: false
+          docker-images: true
           swap-storage: true
           tool-cache: false
 
@@ -55,6 +59,27 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ env.PR_FETCH_DEPTH }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.rosdistro }}
+
+      - name: Install additional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            wget \
+            ccache \
+            python3-pip \
+            ffmpeg \
+            ca-certificates
+        shell: bash
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.4'
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::.github/matchers/gcc.json"
@@ -77,7 +102,7 @@ jobs:
         run: |
           sudo apt-get -yqq update
           rosdep update
-          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
       - name: Build
