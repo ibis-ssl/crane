@@ -11,11 +11,18 @@ setup(
         package_name,
         f"{package_name}.mcap_analysis",
         f"{package_name}.svg_video",
+        f"{package_name}.svg_video.renderers",
     ],
     install_requires=[
         "setuptools",
-        "cairosvg>=2.5.0",  # SVG to PNG conversion
+        "cairosvg>=2.5.0",  # SVG to PNG conversion (fallback renderer)
     ],
+    extras_require={
+        "fast": [
+            "resvg-py>=0.4.0",  # Rust-based high-performance renderer (推奨)
+            "Pillow>=10.0.0",  # resvg-pyのPNG出力に必要
+        ],
+    },
     zip_safe=True,
     maintainer="ibis ssl",
     maintainer_email="ibis.ssl.team@gmail.com",

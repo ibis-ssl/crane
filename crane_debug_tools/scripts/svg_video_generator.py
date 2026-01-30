@@ -14,9 +14,12 @@ from pathlib import Path
 from crane_debug_tools.svg_video import (
     SvgAssembler,
     SvgExtractor,
-    SvgRenderer,
     VideoGenerator,
+    create_renderer,
+    list_available_backends,
 )
+from crane_debug_tools.svg_video.renderers import OutputFormat
+from crane_debug_tools.svg_video.video_generator import InputFormat
 
 
 def setup_logging(verbose: bool) -> None:
@@ -36,6 +39,18 @@ def parse_layer_list(layer_str: str | None) -> set[str] | None:
     return set(layer.strip() for layer in layer_str.split(",") if layer.strip())
 
 
+# グローバル変数でレンダラー設定を保持
+_renderer_backend = None
+_renderer_output_format = None
+
+
+def init_worker(backend: str | None, output_format: OutputFormat):
+    """ワーカープロセスの初期化関数."""
+    global _renderer_backend, _renderer_output_format
+    _renderer_backend = backend
+    _renderer_output_format = output_format
+
+
 def render_frame_worker(args: tuple[str, int, int, int]) -> bytes:
     """
     ワーカープロセスで実行されるフレームレンダリング関数.
@@ -44,18 +59,20 @@ def render_frame_worker(args: tuple[str, int, int, int]) -> bytes:
         args: (svg_string, width, height, dpi)のタプル
 
     Returns:
-        PNGバイト列
+        画像バイト列
     """
     svg_string, width, height, dpi = args
-    import cairosvg
 
-    png_bytes = cairosvg.svg2png(
-        bytestring=svg_string.encode("utf-8"),
-        output_width=width,
-        output_height=height,
+    # ワーカープロセス内でレンダラーを作成
+    renderer = create_renderer(
+        backend=_renderer_backend,
+        width=width,
+        height=height,
         dpi=dpi,
+        output_format=_renderer_output_format,
     )
-    return png_bytes
+
+    return renderer.render(svg_string)
 
 
 def main() -> int:
@@ -176,6 +193,22 @@ Examples:
         default=0,
         help="Number of parallel workers (0=auto, 1=disable parallelization, default: 0)",
     )
+    parser.add_argument(
+        "--backend",
+        choices=["auto", "resvg", "rsvg", "cairosvg"],
+        default="auto",
+        help="SVG rendering backend (default: auto - use fastest available)",
+    )
+    parser.add_argument(
+        "--list-backends",
+        action="store_true",
+        help="List available rendering backends and exit",
+    )
+    parser.add_argument(
+        "--raw-frames",
+        action="store_true",
+        help="Use RAW RGBA frames instead of PNG (faster but uses more memory)",
+    )
 
     # デバッグ設定
     parser.add_argument(
@@ -185,7 +218,20 @@ Examples:
         "-v", "--verbose", action="store_true", help="Enable verbose logging"
     )
 
-    args = parser.parse_args()
+    # バックエンド一覧表示（早期チェック）
+    if "--list-backends" in sys.argv:
+        args = parser.parse_args(["dummy_path", "--list-backends"])
+    else:
+        args = parser.parse_args()
+
+    if args.list_backends:
+        print("Available SVG rendering backends:")
+        print()
+        for name, available, description in list_available_backends():
+            status = "✓ Available" if available else "✗ Not installed"
+            print(f"  {name:12} {status:15} - {description}")
+        print()
+        return 0
 
     # ロギング設定
     setup_logging(args.verbose)
@@ -226,14 +272,37 @@ Examples:
         visible_layers = parse_layer_list(args.layers)
         exclude_layers = parse_layer_list(args.exclude_layers)
 
+        # 出力フォーマットの決定
+        if args.raw_frames:
+            output_format = OutputFormat.RAW_RGBA
+            input_format = InputFormat.RAW_RGBA
+            logger.info("Using RAW RGBA frames (higher memory usage, faster)")
+        else:
+            output_format = OutputFormat.PNG
+            input_format = InputFormat.PNG
+            logger.info("Using PNG frames (lower memory usage)")
+
         # コンポーネント初期化
         logger.info("Initializing components...")
         extractor = SvgExtractor(
             snapshot_topic=args.snapshot_topic, update_topic=args.update_topic
         )
         assembler = SvgAssembler()
-        renderer = SvgRenderer(width=width, height=height)
-        video_gen = VideoGenerator(fps=args.fps, crf=args.crf, preset=args.preset)
+
+        # レンダラー作成（バックエンド指定）
+        backend = args.backend if args.backend != "auto" else None
+        renderer = create_renderer(
+            backend=backend, width=width, height=height, output_format=output_format
+        )
+
+        video_gen = VideoGenerator(
+            fps=args.fps,
+            crf=args.crf,
+            preset=args.preset,
+            input_format=input_format,
+            width=width,
+            height=height,
+        )
 
         # フレーム生成
         logger.info("Extracting SVG frames from MCAP...")
@@ -448,8 +517,12 @@ Examples:
 
             logger.info("SVG strings prepared. Starting parallel rendering...")
 
-            # 並列レンダリング
-            with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            # 並列レンダリング（初期化関数でバックエンドを指定）
+            with ProcessPoolExecutor(
+                max_workers=num_workers,
+                initializer=init_worker,
+                initargs=(backend, output_format),
+            ) as executor:
                 batch_args = []
                 batch_indices = []
                 result_index = 0
@@ -505,6 +578,14 @@ Examples:
 
         # 動画生成
         if args.save_frames:
+            # RAWフレームモードではフレーム保存は非対応
+            if args.raw_frames:
+                logger.error(
+                    "--save-frames is not compatible with --raw-frames. "
+                    "Use PNG mode to save frames."
+                )
+                return 1
+
             # フレーム保存モード: ジェネレータを実行してフレームを保存
             logger.info(f"Saving frames to: {args.save_frames}")
             list(generate_png_frames())  # ジェネレータを実行
@@ -520,7 +601,7 @@ Examples:
             # ストリーミングモード: メモリ効率重視
             logger.info(f"Generating video: {args.output}")
             video_gen.generate(
-                png_frames=generate_png_frames(),
+                frames=generate_png_frames(),
                 output_path=args.output,
                 verbose=args.verbose,
             )
