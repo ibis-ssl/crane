@@ -35,6 +35,23 @@ public:
   std::vector<uint8_t> receive();
   void setNonBlocking(bool non_blocking);
 };
+
+// PR #1121: ユニキャスト/マルチキャスト両対応の統合レシーバー
+class UdpReceiver {
+public:
+  // ユニキャストモード
+  UdpReceiver(const std::string& listen_address, uint16_t port);
+
+  // マルチキャストモード
+  UdpReceiver(const std::string& listen_address, uint16_t port,
+              const std::string& multicast_group);
+
+  std::vector<uint8_t> receive();
+  void setNonBlocking(bool non_blocking);
+
+  // SO_REUSEPORTオプション対応（複数プロセスでの同一ポート受信）
+  void enableReusePort(bool enable = true);
+};
 ```
 
 ### 診断機能付きパブリッシャー
@@ -213,6 +230,11 @@ class DiagnosedPublisher {
 詳細は[診断システムドキュメント](../diagnostics.md#diagnosedpublishercrane_comm)を参照してください。
 
 ## 最近の開発状況
+
+- **2026年1月（PR #1121）**: UdpReceiverクラス追加
+  - ユニキャスト/マルチキャスト両対応の統合レシーバー
+  - SO_REUSEPORTオプション対応（複数プロセスでの同一ポート受信）
+  - 既存のMulticastReceiverと互換性を保ちつつ機能拡張
 
 🟡 **中活動**: crane_basicsからの分離後、診断機能の強化、マルチキャスト通信の最適化が進められています。特にネットワーク状態の監視機能が充実し、通信品質の可視化が改善されました。
 
