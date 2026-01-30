@@ -43,7 +43,7 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   declare_parameter<std::string>("session_config_file_name", "unified_session_config.yaml");
   auto session_config_file_name = get_parameter("session_config_file_name").as_string();
   config_manager_ = std::make_shared<ConfigurationManager>(
-    ament_index_cpp::get_package_share_directory("crane_tactic_coordinator"),
+    ament_index_cpp::get_package_share_directory("crane_session_coordinator"),
     session_config_file_name, get_logger());
 
   // プランナー管理の初期化
