@@ -303,8 +303,8 @@ void SingleBallPlacement::initialize()
 
   // GO_OVER_BALL中にボールが壁際に移動した場合、壁際処理に戻る
   addTransition(
-    SingleBallPlacementStates::GO_OVER_BALL,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
+    SingleBallPlacementStates::GO_OVER_BALL, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() {
       // ボールがフィールド境界外に出た場合、壁際処理に戻る
       return !world_model()->point_checker.isFieldInside(
         world_model()->ball().pos, getParameter<double>("コート端判定のオフセット"));

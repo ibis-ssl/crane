@@ -5,6 +5,7 @@
 1. ボールがフィールド境界外(壁際)にある場合、正しく壁際処理が行われるか
 2. 回り込みスペースが不足している場合、ロボットがスタックせずに動作するか
 """
+
 import math
 import time
 from rcst.communication import Communication
@@ -58,8 +59,9 @@ def test_ball_placement_near_wall_x_boundary(rcst_comm: Communication):
     print(f"Distance to target: {dist_to_target:.3f}m")
 
     # ルール上は15cm以内だが、マージンとして20cm以内を許容
-    assert dist_to_target < 0.20, \
+    assert dist_to_target < 0.20, (
         f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.20m)"
+    )
 
 
 def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
@@ -105,8 +107,9 @@ def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
     print(f"Distance to target: {dist_to_target:.3f}m")
 
     # ルール上は15cm以内だが、マージンとして20cm以内を許容
-    assert dist_to_target < 0.20, \
+    assert dist_to_target < 0.20, (
         f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.20m)"
+    )
 
 
 def test_ball_placement_tight_space(rcst_comm: Communication):
@@ -154,7 +157,9 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
     robot = rcst_comm.observer.get_world().get_yellow_robot(0)
     final_robot_x = robot.x
     final_robot_y = robot.y
-    robot_moved = distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y) > 0.1
+    robot_moved = (
+        distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y) > 0.1
+    )
 
     # ボールが配置目標に近づいたか確認
     final_ball_x = rcst_comm.observer.get_world().get_ball().x
@@ -165,14 +170,17 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
     print(f"Final ball position: ({final_ball_x}, {final_ball_y})")
     print(f"Target position: ({target_x}, {target_y})")
     print(f"Distance to target: {dist_to_target:.3f}m")
-    print(f"Robot moved: {robot_moved} (distance: {distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y):.3f}m)")
+    print(
+        f"Robot moved: {robot_moved} (distance: {distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y):.3f}m)"
+    )
 
     # ロボットが動作していることを確認
     assert robot_moved, "Robot appears to be stuck (did not move)"
 
     # スペース不足のため精度は緩和するが、ある程度は近づいているはず
-    assert dist_to_target < 0.30, \
+    assert dist_to_target < 0.30, (
         f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.30m)"
+    )
 
 
 if __name__ == "__main__":
