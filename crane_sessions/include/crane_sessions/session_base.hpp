@@ -174,11 +174,7 @@ public:
    * @return ロボット適性評価関数
    */
   virtual auto getRobotSuitabilityFunc() const
-    -> std::function<double(const std::shared_ptr<RobotInfo> &)>
-  {
-    // デフォルト実装: すべてのロボットを等価とみなす（コスト0）
-    return [](const std::shared_ptr<RobotInfo> &) { return 0.0; };
-  }
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> = 0;
 
   /**
    * @brief ハード制約Tacticかどうかを返す
