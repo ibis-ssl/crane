@@ -16,6 +16,7 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -33,13 +34,12 @@ jobs:
       - name: free disk
         uses: jlumbroso/free-disk-space@main
         with:
-          # ホストで直接ビルドするため、クリーンアップを有効化
-          # large-packagesはPowerShellを削除する可能性があるため無効化
+          # コンテナを使用するため、docker-imagesとlarge-packagesは無効化
           android: true
           dotnet: true
           haskell: true
           large-packages: false
-          docker-images: true
+          docker-images: false
           swap-storage: true
           tool-cache: false
 
@@ -61,38 +61,6 @@ jobs:
           fetch-depth: ${{ env.PR_FETCH_DEPTH }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup ROS 2 repository
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y software-properties-common curl
-          sudo add-apt-repository universe
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-        shell: bash
-
-      - name: Install ROS 2 and dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            ros-${{ matrix.rosdistro }}-desktop \
-            ros-dev-tools \
-            python3-colcon-common-extensions \
-            python3-rosdep \
-            python3-vcstool \
-            wget \
-            ccache \
-            python3-pip \
-            ffmpeg \
-            ca-certificates
-          sudo rosdep init || true
-          rosdep update
-        shell: bash
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22.4'
-
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::.github/matchers/gcc.json"
 
@@ -103,14 +71,6 @@ jobs:
         uses: autowarefoundation/autoware-github-actions/set-git-config@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check PowerShell availability
-        run: |
-          echo "=== Checking PowerShell ==="
-          which pwsh || echo "pwsh not found"
-          which powershell || echo "powershell not found"
-          ls -la /usr/bin/ | grep -i pwsh || echo "No pwsh in /usr/bin"
-        shell: bash
 
       - name: Clone dependency packages
         run: |
@@ -128,7 +88,11 @@ jobs:
       - name: Build
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+          # ディスク容量節約のため、並列数を制限し、dependency_wsを除外
+          colcon build --symlink-install \
+            --base-paths . \
+            --parallel-workers 2 \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
       - name: Test
