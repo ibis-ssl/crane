@@ -33,11 +33,12 @@ jobs:
       - name: free disk
         uses: jlumbroso/free-disk-space@main
         with:
-          # ホストで直接ビルドするため、すべてのクリーンアップを有効化
+          # ホストで直接ビルドするため、クリーンアップを有効化
+          # large-packagesはPowerShellを削除する可能性があるため無効化
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false
           docker-images: true
           swap-storage: true
           tool-cache: false
@@ -102,6 +103,14 @@ jobs:
         uses: autowarefoundation/autoware-github-actions/set-git-config@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check PowerShell availability
+        run: |
+          echo "=== Checking PowerShell ==="
+          which pwsh || echo "pwsh not found"
+          which powershell || echo "powershell not found"
+          ls -la /usr/bin/ | grep -i pwsh || echo "No pwsh in /usr/bin"
+        shell: bash
 
       - name: Clone dependency packages
         run: |
