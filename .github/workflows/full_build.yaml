@@ -60,20 +60,31 @@ jobs:
           fetch-depth: ${{ env.PR_FETCH_DEPTH }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: ${{ matrix.rosdistro }}
+      - name: Setup ROS 2 repository
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common curl
+          sudo add-apt-repository universe
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+        shell: bash
 
-      - name: Install additional dependencies
+      - name: Install ROS 2 and dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
+            ros-${{ matrix.rosdistro }}-ros-base \
+            ros-dev-tools \
+            python3-colcon-common-extensions \
+            python3-rosdep \
+            python3-vcstool \
             wget \
             ccache \
             python3-pip \
             ffmpeg \
             ca-certificates
+          sudo rosdep init || true
+          rosdep update
         shell: bash
 
       - name: Install Go
