@@ -80,12 +80,36 @@ Web UIとROS 2を接続するブリッジノード。
 
 ### Webインターフェース
 
+#### 推奨: Docker環境での自動起動
+
 ```bash
-# Webサーバー有効化で起動
-ros2 launch crane_debug_tools debug_tools.launch.py enable_web:=true
+# Docker起動時にWebSocketサーバーが自動起動されます
+./scripts/docker-dev.sh -d
 
 # ブラウザでアクセス
-http://localhost:8080/standalone.html
+http://localhost:8090/standalone.html
+```
+
+WebSocketサーバー(crane_websocket_server)はDocker起動スクリプト(`./scripts/docker-dev.sh`)により自動的に起動されます。
+
+#### 手動起動(オプション)
+
+```bash
+# WebSocketサーバーを手動で起動
+./scripts/start-debug-tools.sh
+
+# 停止
+./scripts/stop-debug-tools.sh
+```
+
+#### その他のデバッグツール
+
+```bash
+# CLI/Webインターフェースを起動
+ros2 launch crane_debug_tools debug_tools.launch.py enable_web:=true
+
+# CLIツールのみ
+ros2 launch crane_debug_tools debug_tools.launch.py enable_cli:=true
 ```
 
 ### SVG動画生成

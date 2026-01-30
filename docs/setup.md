@@ -143,9 +143,6 @@ ros2 launch crane_bringup crane.launch.xml sim:=false
 
 # カスタムポート設定での起動
 ros2 launch crane_bringup crane.launch.xml sim:=true vision_port:=12345
-
-# デバッグツールなしで起動
-ros2 launch crane_bringup crane.launch.xml debug_tools:=false
 ```
 
 **ポート設定について:**

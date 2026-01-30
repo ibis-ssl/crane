@@ -33,11 +33,11 @@
 
 - **`config/`** - 環境間で共有される設定ファイル
   - `engine.yaml` - Game Controllerエンジン設定
-  - `state-store.json.stream` - GC初期状態（自動生成、gitignore対象）
+  - `state-store.json.stream` - GC初期状態(自動生成、gitignore対象)
 
 ## ディレクトリ命名規則
 
-- すべてのディレクトリ名は **ケバブケース（kebab-case）** で統一されています
+- すべてのディレクトリ名は **ケバブケース(kebab-case)** で統一されています
   - 例: `match-vs-tigers`, `ssl-game-controller`
 
 ## 使い方
@@ -47,28 +47,33 @@
 ### 開発環境の起動
 
 ```bash
-# シミュレーション環境（デフォルト）
+# シミュレーション環境(デフォルト) + debug_tools自動起動
 ./scripts/docker-dev.sh
 
-# 実機環境
+# 実機環境 + debug_tools自動起動
 ./scripts/docker-dev.sh real
 
-# バックグラウンド起動
+# バックグラウンド起動 + debug_tools自動起動
 ./scripts/docker-dev.sh -d
 ./scripts/docker-dev.sh real -d
 
-# 停止
+# debug_toolsなしで起動
+./scripts/docker-dev.sh --no-debug
+
+# 停止(debug_toolsも自動停止)
 ./scripts/docker-dev.sh down
 ```
+
+詳細は [dev/README.md](dev/README.md) を参照してください。
 
 ### テスト実行
 
 ```bash
-# シナリオテスト（CI互換）
+# シナリオテスト(CI互換)
 cd docker/scenario
 docker compose up
 
-# TIGERs対戦テスト（ローカル実行）
+# TIGERs対戦テスト(ローカル実行)
 ./scripts/match-vs-tigers/run_local.sh
 ```
 
