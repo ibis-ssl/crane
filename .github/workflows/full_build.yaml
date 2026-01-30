@@ -95,7 +95,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           colcon build --symlink-install \
-            --base-paths . \
+            --base-paths . dependency_ws \
             --parallel-workers 2 \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
