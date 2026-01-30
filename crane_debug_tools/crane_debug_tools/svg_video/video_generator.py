@@ -93,11 +93,12 @@ class VideoGenerator:
             logger.info(f"Running ffmpeg: {' '.join(cmd)}")
 
         # ffmpegプロセスを起動
+        # DEVNULL を使用してデッドロックを防ぐ
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE if not verbose else None,
-            stderr=subprocess.PIPE if not verbose else None,
+            stdout=subprocess.DEVNULL if not verbose else None,
+            stderr=subprocess.DEVNULL if not verbose else None,
         )
 
         try:
@@ -115,11 +116,13 @@ class VideoGenerator:
                 process.stdin.close()
 
             # プロセスの完了を待機
-            stdout, stderr = process.communicate()
+            process.wait()
 
             if process.returncode != 0:
-                error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
-                raise RuntimeError(f"ffmpeg failed: {error_msg}")
+                raise RuntimeError(
+                    f"ffmpeg failed with return code {process.returncode}. "
+                    "Run with --verbose for details."
+                )
 
             logger.info(
                 f"Video generation completed: {output_path} ({frame_count} frames)"
@@ -175,12 +178,14 @@ class VideoGenerator:
         try:
             subprocess.run(
                 cmd,
-                stdout=subprocess.PIPE if not verbose else None,
-                stderr=subprocess.PIPE if not verbose else None,
+                stdout=subprocess.DEVNULL if not verbose else None,
+                stderr=subprocess.DEVNULL if not verbose else None,
                 check=True,
             )
             logger.info(f"Video generation completed: {output_path}")
 
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.decode("utf-8") if e.stderr else "Unknown error"
-            raise RuntimeError(f"ffmpeg failed: {error_msg}") from e
+            raise RuntimeError(
+                f"ffmpeg failed with return code {e.returncode}. "
+                "Run with --verbose for details."
+            ) from e
