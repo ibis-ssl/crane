@@ -91,11 +91,21 @@ jobs:
           rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
-      - name: Build
+      - name: Build dependencies
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           colcon build --symlink-install \
-            --base-paths . dependency_ws \
+            --base-paths dependency_ws \
+            --parallel-workers 2 \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+
+      - name: Build crane packages
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          source install/setup.bash
+          colcon build --symlink-install \
+            --base-paths . \
             --parallel-workers 2 \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
