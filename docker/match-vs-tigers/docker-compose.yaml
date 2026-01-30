@@ -29,7 +29,7 @@ services:
         exec /app -address localhost:8082 -verbose
     volumes:
       - ./config/ssl-game-controller-match.yaml:/mounted/ssl-game-controller-match.yaml:ro
-      - ./config/engine.yaml:/mounted/engine.yaml:ro
+      - ../config/engine.yaml:/mounted/engine.yaml:ro
       - ./config/state-store-initial.json.stream:/mounted/state-store-initial.json.stream:ro
     tmpfs:
       - /tmp

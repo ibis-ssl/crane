@@ -3,7 +3,7 @@
 # TIGERs対戦ローカル実行スクリプト
 #
 # 使用方法:
-#   ./scripts/match_vs_tigers/run_local.sh
+#   ./scripts/match-vs-tigers/run_local.sh
 #
 # 注意:
 #   - Dockerブリッジネットワークを使用するため、ホスト環境に影響しません
@@ -13,7 +13,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-COMPOSE_DIR="${PROJECT_ROOT}/docker/match_vs_tigers"
+COMPOSE_DIR="${PROJECT_ROOT}/docker/match-vs-tigers"
 
 echo "========================================="
 echo "  TIGERs対戦ローカル実行"
