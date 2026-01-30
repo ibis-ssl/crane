@@ -200,7 +200,11 @@ Examples:
             )
 
             # 固定フレームレートでサンプリング
+            # キャッシュ変数（同一フレームの重複レンダリングを防止）
             frame_idx = 0
+            last_frame_idx = -1
+            cached_png = None
+
             for i in range(target_frame_count):
                 target_time_ns = start_time_ns + i * frame_interval_ns
 
@@ -211,6 +215,25 @@ Examples:
                 ):
                     frame_idx += 1
 
+                # 同じフレームならキャッシュを再利用
+                if frame_idx == last_frame_idx and cached_png is not None:
+                    # フレーム保存（デバッグ用）
+                    if args.save_frames:
+                        frames_dir = Path(args.save_frames)
+                        frames_dir.mkdir(parents=True, exist_ok=True)
+                        frame_path = frames_dir / f"frame_{i:06d}.png"
+                        frame_path.write_bytes(cached_png)
+
+                    yield cached_png
+
+                    if (i + 1) % 100 == 0:
+                        progress = (i + 1) / target_frame_count * 100
+                        logger.info(
+                            f"Generated {i + 1}/{target_frame_count} frames ({progress:.1f}%)"
+                        )
+                    continue
+
+                # 新しいフレームの処理
                 svg_frame = all_frames[frame_idx]
 
                 # レイヤーフィルタリング
@@ -228,16 +251,17 @@ Examples:
                 )
 
                 # PNG変換
-                current_png = renderer.render(svg_string)
+                cached_png = renderer.render(svg_string)
+                last_frame_idx = frame_idx
 
                 # フレーム保存（デバッグ用）
                 if args.save_frames:
                     frames_dir = Path(args.save_frames)
                     frames_dir.mkdir(parents=True, exist_ok=True)
                     frame_path = frames_dir / f"frame_{i:06d}.png"
-                    frame_path.write_bytes(current_png)
+                    frame_path.write_bytes(cached_png)
 
-                yield current_png
+                yield cached_png
 
                 if (i + 1) % 100 == 0:
                     progress = (i + 1) / target_frame_count * 100
