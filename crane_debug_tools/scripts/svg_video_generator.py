@@ -165,28 +165,53 @@ Examples:
         logger.info("Extracting SVG frames from MCAP...")
 
         def generate_png_frames():
-            """PNGフレームを生成（ジェネレータ）."""
-            frame_count = 0
-            last_timestamp_ns = None
-            last_png = None
-            frame_duration_ns = int(1e9 / args.fps / args.speed)
+            """PNGフレームを生成（固定フレームレート）."""
+            # 全フレーム状態を収集
+            logger.info("Loading all SVG states from MCAP...")
+            all_frames = list(
+                extractor.extract_from_mcap(
+                    mcap_path,
+                    start_time_sec=args.start_time,
+                    end_time_sec=args.end_time,
+                )
+            )
 
-            for svg_frame in extractor.extract_from_mcap(
-                mcap_path, start_time_sec=args.start_time, end_time_sec=args.end_time
-            ):
-                # フレーム間引き/補間（speedに応じて）
-                if last_timestamp_ns is not None and last_png is not None:
-                    elapsed_ns = svg_frame.timestamp_ns - last_timestamp_ns
-                    frames_to_generate = max(1, int(elapsed_ns / frame_duration_ns))
+            if not all_frames:
+                logger.warning("No frames found in MCAP")
+                return
 
-                    # 同じフレームを複数回出力（フレームレートが高い場合）
-                    for _ in range(frames_to_generate - 1):
-                        yield last_png
-                        frame_count += 1
-                else:
-                    frames_to_generate = 1
+            # 時刻範囲を取得
+            start_time_ns = all_frames[0].timestamp_ns
+            end_time_ns = all_frames[-1].timestamp_ns
+            duration_sec = (end_time_ns - start_time_ns) / 1e9
 
-                last_timestamp_ns = svg_frame.timestamp_ns
+            # 目標フレーム数を計算（固定フレームレート）
+            target_frame_count = int(duration_sec * args.fps / args.speed)
+
+            if target_frame_count == 0:
+                logger.warning("Duration too short or invalid fps/speed")
+                return
+
+            frame_interval_ns = int((end_time_ns - start_time_ns) / target_frame_count)
+
+            logger.info(
+                f"Duration: {duration_sec:.2f}s, Target frames: {target_frame_count} "
+                f"(from {len(all_frames)} SVG states)"
+            )
+
+            # 固定フレームレートでサンプリング
+            frame_idx = 0
+            for i in range(target_frame_count):
+                target_time_ns = start_time_ns + i * frame_interval_ns
+
+                # target_time_ns以下で最も近いフレームを見つける
+                while (
+                    frame_idx < len(all_frames) - 1
+                    and all_frames[frame_idx + 1].timestamp_ns <= target_time_ns
+                ):
+                    frame_idx += 1
+
+                svg_frame = all_frames[frame_idx]
 
                 # レイヤーフィルタリング
                 layers_to_render = svg_frame.layers
@@ -204,25 +229,23 @@ Examples:
 
                 # PNG変換
                 current_png = renderer.render(svg_string)
-                last_png = current_png
 
                 # フレーム保存（デバッグ用）
                 if args.save_frames:
                     frames_dir = Path(args.save_frames)
                     frames_dir.mkdir(parents=True, exist_ok=True)
-                    frame_path = frames_dir / f"frame_{frame_count:06d}.png"
+                    frame_path = frames_dir / f"frame_{i:06d}.png"
                     frame_path.write_bytes(current_png)
 
                 yield current_png
-                frame_count += 1
 
-                if frame_count % 100 == 0:
+                if (i + 1) % 100 == 0:
+                    progress = (i + 1) / target_frame_count * 100
                     logger.info(
-                        f"Generated {frame_count} frames "
-                        f"(epoch={svg_frame.epoch}, seq={svg_frame.seq})"
+                        f"Generated {i + 1}/{target_frame_count} frames ({progress:.1f}%)"
                     )
 
-            logger.info(f"Total frames generated: {frame_count}")
+            logger.info(f"Total frames generated: {target_frame_count}")
 
         # 動画生成
         if args.save_frames:
