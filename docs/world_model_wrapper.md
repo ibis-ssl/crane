@@ -57,6 +57,70 @@ auto available_bots = world_model->ours().getAvailableRobots(my_id, true);
 const auto& their_robots = world_model->theirs().robots;
 ```
 
+#### RobotsQuery Fluent Builder API
+
+より柔軟なロボット選択のための新しいAPIが追加されました。メソッドチェーンで条件を組み合わせることができます。
+
+```cpp
+// 基本的な使用方法
+auto robots = world_model->ours().robotsWhere().available().get();
+
+// 複数条件の組み合わせ
+auto robots = world_model->ours().robotsWhere()
+    .available()
+    .excludeGoalie()
+    .excludeId(my_id)
+    .get();
+
+// カスタム条件の追加
+auto nearby_robots = world_model->ours().robotsWhere()
+    .available()
+    .where([&](const auto& robot) {
+        return robot->getDistance(ball_pos) < 1.0;
+    })
+    .get();
+
+// IDリストのみ取得
+auto ids = world_model->ours().robotsWhere()
+    .available()
+    .excludeGoalie()
+    .getIds();
+
+// 数を取得
+size_t count = world_model->ours().robotsWhere()
+    .availableStrict()
+    .count();
+
+// 空かどうかを判定
+bool has_robots = !world_model->ours().robotsWhere()
+    .available()
+    .empty();
+```
+
+**可用性条件**（相互排他）:
+
+- `available()`: 標準判定（(available_vision || available_tracker) && available_hardware）
+- `availableStrict()`: 厳密判定（available_vision && available_hardware && available_feedback）
+- `availableLoose()`: 緩和判定（available_vision || available_tracker）
+
+**除外条件**:
+
+- `excludeId(uint8_t id)`: 特定IDを除外
+- `excludeIds(const std::vector<uint8_t>& ids)`: 複数IDを除外
+- `excludeGoalie()`: ゴーリーを除外
+
+**カスタム条件**:
+
+- `where(Predicate pred)`: ラムダ式で自由な条件を追加
+
+**終端操作**:
+
+- `get()`: フィルタリングされたロボットリスト取得
+- `getIds()`: ロボットIDリスト取得
+- `getView()`: Rangeビュー取得
+- `count()`: ロボット数取得
+- `empty()`: 空判定
+
 ### 2. ボール情報
 
 `crane::Ball` クラスを通じて物理モデルに基づいた高度な情報にアクセスできます。

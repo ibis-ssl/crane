@@ -86,6 +86,18 @@ RobotCommand generateFeasibleCommand(
 - **衝突判定**: 予測軌道での衝突可能性評価
 - **動的調整**: 予測結果に基づく速度調整
 
+### 速度計画予実管理機能
+
+速度計画の予測と実績を比較し、計画精度の評価を行う機能が追加されています（VelocityPlanTraceメッセージ連携）。
+
+**主要機能**:
+
+- 計画速度と実際の速度の記録
+- RVO2などの速度修正の追跡（VelocityCorrection）
+- 計画精度の可視化・デバッグ支援
+
+詳細: `crane_msg_wrappers/include/crane_msg_wrappers/velocity_plan_tracker.hpp`
+
 ## 依存関係
 
 ### アルゴリズム依存
