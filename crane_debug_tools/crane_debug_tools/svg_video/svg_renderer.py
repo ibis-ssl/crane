@@ -24,9 +24,11 @@ class SvgRenderer:
         self.height = height
         self.dpi = dpi
 
-        # cairosvgのインポート確認
+        # cairosvgのインポートと保存（毎フレームのインポート回避）
         try:
-            import cairosvg  # noqa: F401
+            import cairosvg
+
+            self._cairosvg = cairosvg
         except ImportError as e:
             raise ImportError(
                 "cairosvg is required. Install with: pip install cairosvg"
@@ -42,10 +44,8 @@ class SvgRenderer:
         Returns:
             PNGバイト列
         """
-        import cairosvg
-
         try:
-            png_bytes = cairosvg.svg2png(
+            png_bytes = self._cairosvg.svg2png(
                 bytestring=svg_string.encode("utf-8"),
                 output_width=self.width,
                 output_height=self.height,
