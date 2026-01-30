@@ -70,7 +70,7 @@ jobs:
 
       - name: Start Docker Compose services
         run: |
-          docker compose -f docker/match_vs_tigers/docker-compose.yaml up -d
+          docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
           CRANE_TAG: match-${{ github.sha }}
 
@@ -109,11 +109,11 @@ jobs:
         if: always()
         run: |
           echo "=== Docker Compose Logs ===" >> match_logs.txt
-          docker compose -f docker/match_vs_tigers/docker-compose.yaml logs >> match_logs.txt 2>&1
+          docker compose -f docker/match-vs-tigers/docker-compose.yaml logs >> match_logs.txt 2>&1
 
       - name: Clean up Docker Compose services
         if: always()
-        run: docker compose -f docker/match_vs_tigers/docker-compose.yaml down -v
+        run: docker compose -f docker/match-vs-tigers/docker-compose.yaml down -v
 
       - name: Upload match result
         if: env.RESULT_EXISTS == 'true'

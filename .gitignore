@@ -55,7 +55,6 @@ __pycache__/
 # Docker config
 docker/config/state-store.json.stream
 docker/config/*-UTC_state-store.json.stream
-docker/sim_match/config/
 
 # Node.js
 node_modules/
@@ -80,10 +79,10 @@ ssl-go-tools/
 *.avi
 
 # Match vs TIGERs results
-docker/match_vs_tigers/results/
+docker/match-vs-tigers/results/
 
 # Protocol Buffers generated files
-docker/match_vs_tigers/proto/**/*_pb2.py
+docker/match-vs-tigers/proto/**/*_pb2.py
 
 # Test scripts
-docker/match_vs_tigers/scripts/test_*.py
+docker/match-vs-tigers/scripts/test_*.py

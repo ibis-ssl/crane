@@ -3,7 +3,7 @@ services:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
       - -visionAddress
-      - 224.5.23.2:10006
+      - 224.5.23.2:${VISION_PORT:-10020}
       - -trackerAddress
       - 224.5.23.2:11010 # not yet overridable by autoRefs
       - -publishAddress
@@ -15,6 +15,7 @@ services:
     network_mode: host
     ports:
       - 8081:8081/tcp
+
   ssl-vision-client:
     image: ghcr.io/ibis-ssl/ssl-vision-client:develop
     command:
@@ -26,13 +27,26 @@ services:
     ports:
       - 8082:8082/tcp
 
+  ssl-status-board:
+    image: robocupssl/ssl-status-board:2.12.3
+    command:
+      - -address
+      - :8083
+      - --refereeAddress
+      - 224.5.23.1:11003
+    network_mode: host
+    ports:
+      - 8083:8083/tcp
+    profiles:
+      - sim
+
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0
     command:
       - --active # active mode (connect to GC)
       - --headless
       - --visionAddress
-      - 224.5.23.2:10006
+      - 224.5.23.2:${VISION_PORT:-10020}
       - --refereeAddress
       - 224.5.23.1:11003
       - --trackerAddress
@@ -41,7 +55,7 @@ services:
 
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
-#    image: voicevox/voicevox_engine:nvidia-latest
+    # image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021
 
