@@ -9,14 +9,8 @@ on:
 jobs:
   job:
     name: FullBuild
-    runs-on: >-
-      ${{
-        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
-          && fromJSON('[ "self-hosted"]')
-          || fromJSON('[ "ubuntu-latest" ]')
-      }}
-    timeout-minutes: 30
-    container: ghcr.io/ibis-ssl/crane:base
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -34,43 +28,48 @@ jobs:
       - name: free disk
         uses: jlumbroso/free-disk-space@main
         with:
-          # コンテナを使用するため、docker-imagesとlarge-packagesは無効化
           android: true
           dotnet: true
           haskell: true
-          large-packages: false
-          docker-images: false
+          large-packages: true
+          docker-images: true
           swap-storage: true
           tool-cache: false
 
       - name: Check disk space after cleanup
-        run: |
-          echo "=== Disk space after cleanup ==="
-          df -h
-
-      - name: suppress warnings
-        run: |
-          git config --global --add safe.directory '*'
-
-      - name: Set PR fetch depth
-        run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
+        run: df -h
 
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: ${{ env.PR_FETCH_DEPTH }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::.github/matchers/gcc.json"
+      - name: Install ROS 2 Jazzy
+        run: |
+          # ロケール設定
+          sudo apt-get update
+          sudo apt-get install -y locales
+          sudo locale-gen en_US en_US.UTF-8
+          export LANG=en_US.UTF-8
 
-      - name: Setup Problem Matchers for clang-format
-        run: echo "::add-matcher::.github/matchers/clang-format.json"
+          # ROS 2リポジトリの追加
+          sudo apt-get install -y software-properties-common curl
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+            -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+            http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+            | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
-      - name: Set git config
-        uses: autowarefoundation/autoware-github-actions/set-git-config@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # ROS 2パッケージのインストール
+          sudo apt-get update
+          sudo apt-get install -y \
+            ros-${{ matrix.rosdistro }}-ros-base \
+            ros-dev-tools \
+            python3-colcon-common-extensions \
+            python3-rosdep
+
+          # rosdep初期化
+          sudo rosdep init || true
+        shell: bash
 
       - name: Clone dependency packages
         run: |
@@ -80,28 +79,23 @@ jobs:
 
       - name: Run rosdep install
         run: |
-          sudo apt-get -yqq update
           rosdep update
-          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          rosdep install -yqq --from-paths . dependency_ws --ignore-src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
       - name: Build
         run: |
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          # ディスク容量節約のため、並列数を1に制限、Debugビルド、dependency_wsを除外
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           colcon build --symlink-install \
             --base-paths . \
-            --parallel-workers 1 \
-            --cmake-args -DCMAKE_BUILD_TYPE=Debug
-          # ビルド中間ファイルを削除してディスク容量を確保
-          find build -name "*.o" -delete
-          find build -name "*.a" -delete
+            --parallel-workers 2 \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
-      # Testステップは一時的に無効化（ディスク容量不足のため）
-      # - name: Test
-      #   id: test
-      #   uses: autowarefoundation/autoware-github-actions/colcon-test@v1
-      #   with:
-      #     rosdistro: ${{ matrix.rosdistro }}
-      #     build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
+      - name: Test
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          source install/setup.bash
+          colcon test --base-paths .
+          colcon test-result --verbose
+        shell: bash
