@@ -234,10 +234,10 @@ auto VisualizerMessageBuilder::drawGoal(
 {
   // U字型のゴールを描画（奥の壁と左右の壁）
   double half_width = width / 2.0;
-  Point top_left = back_center + Vector2(-half_width, depth);
-  Point top_right = back_center + Vector2(half_width, depth);
-  Point bottom_left = back_center + Vector2(-half_width, 0.0);
-  Point bottom_right = back_center + Vector2(half_width, 0.0);
+  Point top_left = back_center + Vector2(depth, -half_width);
+  Point top_right = back_center + Vector2(depth, half_width);
+  Point bottom_left = back_center + Vector2(0.0, -half_width);
+  Point bottom_right = back_center + Vector2(0.0, half_width);
 
   // 3本の線で描画（奥、左、右）
   line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
