@@ -17,7 +17,7 @@ Craneシステムの**メッセージ基盤層**として、全コンポーネ�
 
 ## メッセージ定義
 
-### 分析系メッセージ (analysis/)
+### 分析系メッセージ
 
 - **BallAnalysis.msg**: ボール状態の分析結果
 - **FieldAnalysis.msg**: フィールド状況の分析
@@ -27,7 +27,7 @@ Craneシステムの**メッセージ基盤層**として、全コンポーネ�
 - **Slack.msg**: 余裕度の評価
 - **NamedValue系**: 名前付き値の汎用型（Bool/Float/Int/Position/String）
 
-### 制御系メッセージ (control/)
+### 制御系メッセージ
 
 - **RobotCommand.msg**: 個別ロボットへの制御コマンド
 - **RobotCommands.msg**: 複数ロボットへのコマンド配列
@@ -35,6 +35,38 @@ Craneシステムの**メッセージ基盤層**として、全コンポーネ�
 - **RobotSelectResults.msg**: ロボット選択結果
 - **TargetMode系**: 位置・速度・極座標での目標値指定
 - **LocalCameraMode.msg**: ローカルカメラ制御
+- **PositionCommand.msg / PositionCommands.msg**: 位置指令コマンド
+- **VelocityCommand.msg / VelocityCommands.msg**: 速度指令コマンド
+
+### 予測予実管理系メッセージ（PR #1105-1107）
+
+ボールやキックの予測精度を評価するための予実比較メッセージ群。
+
+**ボール予測**:
+
+- **BallPredictionActual.msg**: 過去の予測と実際の位置・速度の比較データ
+- **BallPredictionPoint.msg**: 予測軌道上の単一点（位置・速度・状態）
+- **BallPredictionTrace.msg**: 予測軌道全体（複数Pointの配列）
+
+**キック予測**:
+
+- **KickPredictionActual.msg**: キック後のボール軌道の予測vs実績
+- **KickPredictionPoint.msg**: キック予測軌道上の単一点
+- **KickPredictionTrace.msg**: キック予測軌道全体
+
+**速度計画**:
+
+- **VelocityCorrection.msg**: 速度修正の詳細（RVO2等による修正内容）
+- **VelocityPlanActual.msg**: 速度計画の予実比較
+- **VelocityPlanPoint.msg**: 速度計画上の単一点
+- **VelocityPlanTrace.msg**: 速度計画の軌道全体
+
+### デバッグ・アノテーション系メッセージ
+
+- **HumanAnnotation.msg** (PR #1103): リアルタイムアノテーション用
+  - カテゴリ: ISSUE/OBSERVATION/QUESTION/POSITIVE/STRATEGY/TIMING/CUSTOM
+  - 優先度: LOW/MEDIUM/HIGH/CRITICAL
+  - 位置情報、ロボットコンテキスト、タイムスタンプ含む
 
 ## サービス・アクション定義
 
@@ -102,6 +134,19 @@ cmd.target_x = 1.0
 
 ## 最近の開発状況
 
+### 2026年の主要変更
+
+- **予測予実管理メッセージ群追加** (PR #1105-1107, 2026年1月):
+  - ボール/キック予測の精度評価用メッセージ（9種追加）
+  - 速度計画の予実比較メッセージ
+  - デバッグツールとの連携強化
+- **HumanAnnotationメッセージ追加** (PR #1103, 2026年1月):
+  - リアルタイムアノテーション用のメッセージ定義
+  - カテゴリ・優先度・コンテキスト情報を含む構造化メッセージ
+- **メッセージ構造フラット化** (PR #1118, 2026年1月):
+  - `analysis/`、`control/`サブディレクトリの廃止
+  - 全メッセージを`msg/`直下に統一配置
+
 ### 2025年の主要変更
 
 - **Vision/Tracker統合**: WorldModel向けにトラッカー観測の確信度フィールドを追加（2025年2月）
@@ -110,13 +155,14 @@ cmd.target_x = 1.0
 
 ### 開発活発度
 
-🟢 **安定**: 基盤メッセージとして成熟しており、主要な変更は少ないが継続的にメンテナンスされている。新機能追加時には関連メッセージが追加される。
+🟡 **活発**: 2026年1月に予測予実管理機能の追加により大幅な拡張。基盤メッセージとして成熟しているが、新機能追加に伴い継続的に拡張されている。
 
 ### 今後の展望
 
 - SSL規格変更への対応
 - より高精度な状態表現の導入
 - パフォーマンス最適化の継続
+- 予測精度評価の可視化強化
 
 ---
 
