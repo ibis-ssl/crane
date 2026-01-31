@@ -55,6 +55,8 @@ public:
     world_model(world_model),
     visualizer(std::make_shared<VisualizerMessageBuilder>("session_coordinator/" + name))
   {
+    // セッション用ビジュアライザのデフォルトduration: 0.5秒
+    visualizer->withDuration(0.5);
   }
 
   virtual ~SessionBase() { visualizer->clearBuffer(); }
