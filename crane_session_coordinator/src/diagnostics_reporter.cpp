@@ -10,10 +10,10 @@ namespace crane
 {
 
 DiagnosticsReporter::DiagnosticsReporter(
-  rclcpp::Clock::SharedPtr clock, std::shared_ptr<SessionRegistry> tactic_registry,
+  rclcpp::Clock::SharedPtr clock, std::shared_ptr<SessionRegistry> session_registry,
   rclcpp::Logger logger)
 : clock_(clock),
-  tactic_registry_(tactic_registry),
+  session_registry_(session_registry),
   logger_(logger),
   last_planning_time_(clock_->now())
 {
@@ -52,7 +52,7 @@ auto DiagnosticsReporter::updateDiagnostics(
 
   stat.add("time_since_last_planning", time_since_last_planning);
   stat.add("planning_count", planning_count_);
-  stat.add("active_planners", static_cast<int>(tactic_registry_->getAllPlanners().size()));
+  stat.add("active_planners", static_cast<int>(session_registry_->getAllPlanners().size()));
   stat.add(
     "available_robots",
     static_cast<int>(world_model->ours().robotsWhere().available().getIds().size()));

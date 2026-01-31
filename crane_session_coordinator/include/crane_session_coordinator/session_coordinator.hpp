@@ -57,7 +57,7 @@ private:
 
   std::shared_ptr<ConfigurationManager> config_manager_;
 
-  std::shared_ptr<SessionRegistry> tactic_registry_;
+  std::shared_ptr<SessionRegistry> session_registry_;
 
   std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
 

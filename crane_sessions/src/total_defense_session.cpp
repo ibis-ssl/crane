@@ -69,7 +69,7 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
 
   // ディフェンダー数を決定（パラメータで制御可能、残りはMarkerへ）
   const size_t max_defense_line_robots =
-    static_cast<size_t>(getTacticParameter<int>("max_defense_line_robots", 3));
+    static_cast<size_t>(getSessionParameter<int>("max_defense_line_robots", 3));
   size_t num_defense_line_robots = std::min(defender_robots.size(), max_defense_line_robots);
 
   std::vector<Point> defense_points;
@@ -118,7 +118,7 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
 
   // SecondThreatDefender用に1台確保
   const bool enable_second_threat_defender =
-    getTacticParameter<bool>("enable_second_threat_defender", true);
+    getSessionParameter<bool>("enable_second_threat_defender", true);
   constexpr double SECOND_THREAT_DEFENDER_OFFSET = 0.3;
 
   if (enable_second_threat_defender && not marker_robot_ids.empty()) {

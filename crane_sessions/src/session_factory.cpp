@@ -38,7 +38,7 @@
 
 namespace crane
 {
-using TacticFactory =
+using SessionFactory =
   std::function<SessionBase::SharedPtr(WorldModelWrapper::SharedPtr &, rclcpp::Node &)>;
 
 namespace
@@ -48,9 +48,9 @@ namespace
 #define PLANNER_ENTRY(name, PlannerClass) \
   {name, [](auto & wm, auto & node) { return std::make_shared<PlannerClass>(wm, node); }}
 
-auto getTacticFactoryMap() -> const std::unordered_map<std::string, TacticFactory> &
+auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFactory> &
 {
-  static const std::unordered_map<std::string, TacticFactory> factory_map{
+  static const std::unordered_map<std::string, SessionFactory> factory_map{
     PLANNER_ENTRY("attacker_skill", AttackerSkillSession),
     PLANNER_ENTRY("ball_nearby_positioner_skill", BallNearByPositionerSkillSession),
     PLANNER_ENTRY(
@@ -89,17 +89,17 @@ auto generatePlanner(
   const std::string & tactic_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   -> SessionBase::SharedPtr
 {
-  const auto & factory_map = getTacticFactoryMap();
+  const auto & factory_map = getSessionFactoryMap();
   auto it = factory_map.find(tactic_name);
   if (it != factory_map.end()) {
     return it->second(world_model, node);
   }
-  throw std::runtime_error("Unknown tactic name: " + tactic_name);
+  throw std::runtime_error("Unknown session name: " + tactic_name);
 }
 
 auto getAvailablePlannerNames() -> std::vector<std::string>
 {
-  const auto & factory_map = getTacticFactoryMap();
+  const auto & factory_map = getSessionFactoryMap();
   std::vector<std::string> names;
   names.reserve(factory_map.size());
   for (const auto & [name, _] : factory_map) {

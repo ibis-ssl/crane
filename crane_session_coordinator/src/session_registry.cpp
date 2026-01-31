@@ -13,35 +13,35 @@
 namespace crane
 {
 auto SessionRegistry::getOrCreatePlanner(
-  const std::string & tactic_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
+  const std::string & session_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
   const std::vector<SessionBase::SharedPtr> & prev_planners,
   const std::unordered_map<std::string, SessionParameterType> & params) -> SessionBase::SharedPtr
 {
   // 前回のプランナーリストから名前で探す（新規生成を回避）
   auto matched_planner = std::ranges::find_if(
-    prev_planners, [&tactic_name](const auto & planner) { return planner->name == tactic_name; });
+    prev_planners, [&session_name](const auto & planner) { return planner->name == session_name; });
 
   // 見つかれば再利用、見つからなければ新規生成
   SessionBase::SharedPtr result_planner;
   if (matched_planner != prev_planners.end()) {
     RCLCPP_DEBUG(
-      rclcpp::get_logger("SessionRegistry"), "タクティクス再利用: %s", tactic_name.c_str());
+      rclcpp::get_logger("SessionRegistry"), "セッション再利用: %s", session_name.c_str());
     result_planner = *matched_planner;
   } else {
     RCLCPP_DEBUG(
-      rclcpp::get_logger("SessionRegistry"), "タクティクス新規生成: %s (prev_planners.size=%zu)",
-      tactic_name.c_str(), prev_planners.size());
-    result_planner = generatePlanner(tactic_name, world_model, node);
+      rclcpp::get_logger("SessionRegistry"), "セッション新規生成: %s (prev_planners.size=%zu)",
+      session_name.c_str(), prev_planners.size());
+    result_planner = generatePlanner(session_name, world_model, node);
   }
 
   // パラメータを設定（新規・再利用どちらでも）
   if (!params.empty()) {
     // SessionParameterType から SessionParameterType への変換
-    std::unordered_map<std::string, SessionParameterType> tactic_params;
+    std::unordered_map<std::string, SessionParameterType> session_params;
     for (const auto & [key, value] : params) {
-      std::visit([&tactic_params, &key](const auto & v) { tactic_params[key] = v; }, value);
+      std::visit([&session_params, &key](const auto & v) { session_params[key] = v; }, value);
     }
-    result_planner->setTacticParameters(tactic_params);
+    result_planner->setSessionParameters(session_params);
   }
 
   return result_planner;
@@ -49,19 +49,19 @@ auto SessionRegistry::getOrCreatePlanner(
 
 auto SessionRegistry::getAllPlanners() const -> const std::vector<SessionBase::SharedPtr> &
 {
-  return active_tactics_;
+  return active_sessions_;
 }
 
-auto SessionRegistry::addPlanner(const SessionBase::SharedPtr & tactic) -> void
+auto SessionRegistry::addPlanner(const SessionBase::SharedPtr & session) -> void
 {
-  active_tactics_.push_back(tactic);
+  active_sessions_.push_back(session);
 }
 
-auto SessionRegistry::clear() -> void { active_tactics_.clear(); }
+auto SessionRegistry::clear() -> void { active_sessions_.clear(); }
 
-auto SessionRegistry::setPlanners(const std::vector<SessionBase::SharedPtr> & tactics) -> void
+auto SessionRegistry::setPlanners(const std::vector<SessionBase::SharedPtr> & sessions) -> void
 {
-  active_tactics_ = tactics;
+  active_sessions_ = sessions;
 }
 
 }  // namespace crane

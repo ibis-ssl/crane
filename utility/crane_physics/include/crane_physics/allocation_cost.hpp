@@ -30,14 +30,14 @@ struct AllocationCostConfig
   // 例: 0.5 なら、1秒で0.5mの距離に相当
   double travel_time_weight = 0.5;
 
-  // ヒステリシスボーナス（同一Tactic継続時のコスト減少）[m]
+  // ヒステリシスボーナス（同一Session継続時のコスト減少）[m]
   double hysteresis_bonus = 0.5;
 
   // 速度ベースヒステリシス係数（高速移動中の再割当抑制）
   // 例: 0.2 なら、速度1m/sで0.2mのペナルティ
   double velocity_hysteresis_factor = 0.2;
 
-  // Tactic優先度によるコスト調整（優先度差1あたりのコスト増加）[m]
+  // Session優先度によるコスト調整（優先度差1あたりのコスト増加）[m]
   double priority_cost_multiplier = 10.0;
 
   // 最大加速度 [m/s^2]（到達時間計算用）
@@ -55,14 +55,14 @@ struct AllocationCostConfig
  */
 struct AssignmentContext
 {
-  // 前回同じTacticに割り当てられていたか
-  bool was_assigned_to_same_tactic = false;
+  // 前回同じSessionに割り当てられていたか
+  bool was_assigned_to_same_session = false;
 
   // 前回のターゲット位置（ヒステリシス計算用）
   std::optional<Point> prev_target_position;
 
-  // Tactic優先度（数値が小さいほど優先度が高い）
-  int tactic_priority = 100;
+  // Session優先度（数値が小さいほど優先度が高い）
+  int session_priority = 100;
 
   // デフォルトコンストラクタ
   AssignmentContext() = default;
@@ -105,22 +105,22 @@ inline double calculateAllocationCost(
     time_cost = travel_time * config.travel_time_weight;
   }
 
-  // ヒステリシスボーナス（同じTacticに継続割当の場合コスト減少）
+  // ヒステリシスボーナス（同じSessionに継続割当の場合コスト減少）
   double hysteresis_bonus = 0.0;
-  if (context.was_assigned_to_same_tactic) {
+  if (context.was_assigned_to_same_session) {
     hysteresis_bonus = config.hysteresis_bonus;
   }
 
   // 速度ベースヒステリシス（Sumatra参考）
   // 高速移動中のロボットの再割当にペナルティを課す
   double velocity_hysteresis = 0.0;
-  if (context.was_assigned_to_same_tactic) {
+  if (context.was_assigned_to_same_session) {
     double robot_speed = robot.vel.linear.norm();
     velocity_hysteresis = robot_speed * config.velocity_hysteresis_factor;
   }
 
-  // 優先度コスト（優先度の低いTacticへの割当はコスト増加）
-  double priority_cost = context.tactic_priority * config.priority_cost_multiplier;
+  // 優先度コスト（優先度の低いSessionへの割当はコスト増加）
+  double priority_cost = context.session_priority * config.priority_cost_multiplier;
 
   // 総合コスト
   // ボーナスは負の値として減算される
