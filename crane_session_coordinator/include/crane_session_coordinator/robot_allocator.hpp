@@ -31,7 +31,7 @@ class RobotAllocator
 public:
   explicit RobotAllocator(
     std::shared_ptr<ConfigurationManager> config_manager,
-    std::shared_ptr<SessionRegistry> tactic_registry, rclcpp::Logger logger);
+    std::shared_ptr<SessionRegistry> session_registry, rclcpp::Logger logger);
 
   /**
    * @brief セッション名と利用可能ロボットから割当を実行
@@ -79,7 +79,7 @@ public:
 
 private:
   std::shared_ptr<ConfigurationManager> config_manager_;
-  std::shared_ptr<SessionRegistry> tactic_registry_;
+  std::shared_ptr<SessionRegistry> session_registry_;
   rclcpp::Logger logger_;
 
   std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;

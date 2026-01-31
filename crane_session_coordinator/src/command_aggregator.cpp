@@ -12,8 +12,8 @@
 namespace crane
 {
 
-CommandAggregator::CommandAggregator(std::shared_ptr<SessionRegistry> tactic_registry)
-: tactic_registry_(tactic_registry)
+CommandAggregator::CommandAggregator(std::shared_ptr<SessionRegistry> session_registry)
+: session_registry_(session_registry)
 {
 }
 
@@ -27,31 +27,31 @@ auto CommandAggregator::collectCommands(
   setMessageMetadata(msg, world_model, current_time);
 
   // 全プランナーからコマンドを収集
-  for (const auto & tactic : tactic_registry_->getAllPlanners()) {
-    // 各Tacticにgame_analysisを設定
-    tactic->setGameAnalysis(game_analysis);
+  for (const auto & session : session_registry_->getAllPlanners()) {
+    // 各Sessionにgame_analysisを設定
+    session->setGameAnalysis(game_analysis);
 
-    auto robot_count = tactic->getRobots().size();
-    auto commands_msg = tactic->getPositionCommands();
+    auto robot_count = session->getRobots().size();
+    auto commands_msg = session->getPositionCommands();
     auto command_count = commands_msg.robot_commands.size();
 
     if (robot_count > 0 && command_count == 0) {
       // ロボットは割り当てられているがコマンドが生成されていない
-      std::cerr << "[CommandAggregator] 警告: Tactic「" << tactic->name << "」にロボット "
+      std::cerr << "[CommandAggregator] 警告: Session「" << session->name << "」にロボット "
                 << robot_count << " 台が割り当てられていますが、"
                 << "コマンドが0件生成されました" << std::endl;
     }
 
-    // Note: tactic_name フィールドはメッセージ定義にないためコメントアウト
+    // Note: session_name フィールドはメッセージ定義にないためコメントアウト
     // ranges::for_each(
     //   commands_msg.robot_commands, [&](crane_msgs::msg::PositionCommand & position_command) {
-    //     position_command.tactic_name = tactic->name;
+    //     position_command.session_name = session->name;
     //   });
     msg.robot_commands.insert(
       msg.robot_commands.end(), commands_msg.robot_commands.begin(),
       commands_msg.robot_commands.end());
 
-    if (tactic->getStatus() != SessionBase::Status::RUNNING) {
+    if (session->getStatus() != SessionBase::Status::RUNNING) {
       // TODO(HansRobo): プランナが成功・失敗した場合の処理
     }
   }
@@ -75,7 +75,7 @@ auto CommandAggregator::setMessageMetadata(
 
   msg.header.stamp = current_time;
 
-  // 遅延監視: TacticCoordinator処理完了、PositionCommands送信
+  // 遅延監視: SessionCoordinator処理完了、PositionCommands送信
   DelayMonitorWrapper::addDelayCheckpoint(
     msg.delay_checkpoints, "session_controller_end", "strategy_computed");
 }

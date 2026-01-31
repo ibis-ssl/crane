@@ -32,7 +32,7 @@ using SessionParameterType = std::variant<double, bool, int, std::string>;
 
 struct RobotRole
 {
-  std::string tactic_name;
+  std::string session_name;
   std::string role_name;
   double score = 0.;
 };
@@ -53,7 +53,7 @@ public:
   explicit SessionBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_shared<VisualizerMessageBuilder>("tactic_coordinator/" + name))
+    visualizer(std::make_shared<VisualizerMessageBuilder>("session_coordinator/" + name))
   {
   }
 
@@ -99,7 +99,7 @@ public:
     if (not wrong_ids.empty()) {
       RCLCPP_ERROR_STREAM(
         rclcpp::get_logger("SessionBase"),
-        "PositionCommands from " << name << " tactic includes wrong robot_id : " << wrong_ids);
+        "PositionCommands from " << name << " session includes wrong robot_id : " << wrong_ids);
     }
     status = latest_status;
     crane_msgs::msg::PositionCommands msg;
@@ -119,22 +119,22 @@ public:
     return msg;
   }
 
-  bool isSameConfiguration(SessionBase * other_tactic)
+  bool isSameConfiguration(SessionBase * other_session)
   {
     // 名前が異なる場合は別の設定
-    if (name != other_tactic->name) {
+    if (name != other_session->name) {
       return false;
     }
 
     // どちらかのrobotsが空の場合は、名前のみで判定（ロボット割り当て前の比較用）
-    if (robots.empty() || other_tactic->robots.empty()) {
+    if (robots.empty() || other_session->robots.empty()) {
       return true;
     }
 
     // 両方ともrobotsが設定されている場合は、ロボット構成も比較
-    return robots.size() == other_tactic->robots.size() && [&]() {
+    return robots.size() == other_session->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
-      std::vector<RobotIdentifier> others = other_tactic->robots;
+      std::vector<RobotIdentifier> others = other_session->robots;
       std::ranges::sort(ours, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
       std::ranges::sort(others, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
       return ours == others;
@@ -148,16 +148,16 @@ public:
   const std::string name;
 
   // セッションパラメータ管理
-  void setTacticParameters(const std::unordered_map<std::string, SessionParameterType> & params)
+  void setSessionParameters(const std::unordered_map<std::string, SessionParameterType> & params)
   {
-    tactic_params_ = params;
+    session_params_ = params;
   }
 
   template <typename T>
-  T getTacticParameter(const std::string & key, const T & default_value) const
+  T getSessionParameter(const std::string & key, const T & default_value) const
   {
-    auto it = tactic_params_.find(key);
-    if (it != tactic_params_.end()) {
+    auto it = session_params_.find(key);
+    if (it != session_params_.end()) {
       if (auto * val = std::get_if<T>(&it->second)) {
         return *val;
       }
@@ -168,7 +168,7 @@ public:
   /**
    * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
    *
-   * 各Tacticに適したロボットを評価するための関数を返す。
+   * 各Sessionに適したロボットを評価するための関数を返す。
    * 返される関数は、ロボット情報を受け取り、適性コスト（小さいほど適している）を返す。
    *
    * @return ロボット適性評価関数
@@ -177,9 +177,9 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> = 0;
 
   /**
-   * @brief ハード制約Tacticかどうかを返す
+   * @brief ハード制約Sessionかどうかを返す
    *
-   * trueを返すTacticは優先的にロボットが割り当てられる（キーパーなど）。
+   * trueを返すSessionは優先的にロボットが割り当てられる（キーパーなど）。
    *
    * @return ハード制約の場合true
    */
@@ -188,7 +188,7 @@ public:
   /**
    * @brief 現在の状況に基づく推奨ロボット数を返す（動的ロボット割当用）
    *
-   * Tacticが状況に応じて必要なロボット数を動的に決定するためのメソッド。
+   * Sessionが状況に応じて必要なロボット数を動的に決定するためのメソッド。
    * 返される値は呼び出し側でmin_robots〜max_robotsの範囲にクランプされる。
    *
    * @param min_robots YAML設定の最小ロボット数
@@ -200,7 +200,7 @@ public:
   /**
    * @brief GameAnalysisメッセージを設定する
    *
-   * TacticCoordinatorから呼ばれ、game_analyzerが計算した分析結果を受け取る。
+   * SessionCoordinatorから呼ばれ、game_analyzerが計算した分析結果を受け取る。
    *
    * @param game_analysis GameAnalysisメッセージ
    */
@@ -270,7 +270,7 @@ protected:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  std::unordered_map<std::string, SessionParameterType> tactic_params_;
+  std::unordered_map<std::string, SessionParameterType> session_params_;
 
   virtual std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) = 0;

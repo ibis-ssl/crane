@@ -16,7 +16,7 @@ namespace crane
 {
 
 auto GlobalRobotAllocator::allocate(
-  const std::vector<TacticRequirement> & requirements,
+  const std::vector<SessionRequirement> & requirements,
   const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
   const AllocationState & prev_state, const AllocationCostConfig & config)
   -> std::unordered_map<std::string, std::vector<uint8_t>>
@@ -29,8 +29,8 @@ auto GlobalRobotAllocator::allocate(
   }
 
   // ハード制約とソフト制約に分類
-  std::vector<TacticRequirement> hard_requirements;
-  std::vector<TacticRequirement> soft_requirements;
+  std::vector<SessionRequirement> hard_requirements;
+  std::vector<SessionRequirement> soft_requirements;
 
   for (const auto & req : requirements) {
     if (req.is_hard_constraint) {
@@ -50,11 +50,11 @@ auto GlobalRobotAllocator::allocate(
 
   auto remaining_robots = available_robots;
 
-  // Phase 1: ハード制約Tacticを先に処理
+  // Phase 1: ハード制約Sessionを先に処理
   allocateHardConstraints(
     hard_requirements, remaining_robots, world_model, prev_state, config, result);
 
-  // Phase 2: 残りのロボットでソフト制約Tacticをハンガリアン法で処理
+  // Phase 2: 残りのロボットでソフト制約Sessionをハンガリアン法で処理
   allocateSoftConstraints(
     soft_requirements, remaining_robots, world_model, prev_state, config, result);
 
@@ -62,15 +62,15 @@ auto GlobalRobotAllocator::allocate(
 }
 
 auto GlobalRobotAllocator::allocateHardConstraints(
-  const std::vector<TacticRequirement> & hard_requirements, std::vector<uint8_t> & remaining_robots,
-  WorldModelWrapper::SharedPtr & world_model, const AllocationState & prev_state,
-  const AllocationCostConfig & config,
+  const std::vector<SessionRequirement> & hard_requirements,
+  std::vector<uint8_t> & remaining_robots, WorldModelWrapper::SharedPtr & world_model,
+  const AllocationState & prev_state, const AllocationCostConfig & config,
   std::unordered_map<std::string, std::vector<uint8_t>> & result) -> void
 {
   for (const auto & req : hard_requirements) {
     if (remaining_robots.empty()) {
       RCLCPP_WARN(
-        logger_, "ハード制約Tactic「%s」に割り当てるロボットが不足しています", req.name.c_str());
+        logger_, "ハード制約Session「%s」に割り当てるロボットが不足しています", req.name.c_str());
       break;
     }
 
@@ -106,13 +106,13 @@ auto GlobalRobotAllocator::allocateHardConstraints(
     }
 
     RCLCPP_DEBUG_STREAM(
-      logger_, "ハード制約Tactic「" << req.name << "」に" << assigned_robots.size()
-                                    << "ロボットを割り当て: " << assigned_robots);
+      logger_, "ハード制約Session「" << req.name << "」に" << assigned_robots.size()
+                                     << "ロボットを割り当て: " << assigned_robots);
   }
 }
 
 auto GlobalRobotAllocator::allocateSoftConstraints(
-  const std::vector<TacticRequirement> & soft_requirements,
+  const std::vector<SessionRequirement> & soft_requirements,
   const std::vector<uint8_t> & remaining_robots, WorldModelWrapper::SharedPtr & world_model,
   const AllocationState & prev_state, const AllocationCostConfig & config,
   std::unordered_map<std::string, std::vector<uint8_t>> & result) -> void
@@ -121,7 +121,7 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
     return;
   }
 
-  // 仮想ターゲットを生成（各Tacticが必要とするロボット数分）
+  // 仮想ターゲットを生成（各Sessionが必要とするロボット数分）
   std::vector<VirtualTarget> virtual_targets;
   for (const auto & req : soft_requirements) {
     int num_targets = std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
@@ -223,7 +223,7 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
   }
 
   // 割当結果を集計
-  std::unordered_map<std::string, std::vector<uint8_t>> tactic_assignments;
+  std::unordered_map<std::string, std::vector<uint8_t>> session_assignments;
 
   if (needs_transpose) {
     // 転置モード: assignment[target_idx] = robot_idx
@@ -235,7 +235,7 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
 
       const auto & target = virtual_targets[target_idx];
       uint8_t robot_id = remaining_robots[robot_idx];
-      tactic_assignments[target.tactic_name].push_back(robot_id);
+      session_assignments[target.session_name].push_back(robot_id);
     }
   } else {
     // 通常モード: assignment[robot_idx] = target_idx
@@ -247,32 +247,32 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
 
       const auto & target = virtual_targets[target_idx];
       uint8_t robot_id = remaining_robots[robot_idx];
-      tactic_assignments[target.tactic_name].push_back(robot_id);
+      session_assignments[target.session_name].push_back(robot_id);
     }
   }
 
   // min_robotsの制約を満たしているか確認
   for (const auto & req : soft_requirements) {
-    auto it = tactic_assignments.find(req.name);
-    if (it != tactic_assignments.end()) {
+    auto it = session_assignments.find(req.name);
+    if (it != session_assignments.end()) {
       if (it->second.size() < req.min_robots) {
         RCLCPP_WARN(
-          logger_, "Tactic「%s」の最小ロボット数(%d)を満たせませんでした（実際: %lu）",
+          logger_, "Session「%s」の最小ロボット数(%d)を満たせませんでした（実際: %lu）",
           req.name.c_str(), req.min_robots, it->second.size());
       }
     } else if (req.min_robots > 0) {
       RCLCPP_WARN(
-        logger_, "Tactic「%s」にロボットを割り当てられませんでした（最小要求: %d）",
+        logger_, "Session「%s」にロボットを割り当てられませんでした（最小要求: %d）",
         req.name.c_str(), req.min_robots);
     }
   }
 
   // 結果をマージ
-  for (const auto & [tactic_name, robots] : tactic_assignments) {
-    result[tactic_name] = robots;
+  for (const auto & [session_name, robots] : session_assignments) {
+    result[session_name] = robots;
     RCLCPP_DEBUG_STREAM(
-      logger_, "ソフト制約Tactic「" << tactic_name << "」に" << robots.size()
-                                    << "ロボットを割り当て: " << robots);
+      logger_, "ソフト制約Session「" << session_name << "」に" << robots.size()
+                                     << "ロボットを割り当て: " << robots);
   }
 }
 
@@ -307,15 +307,15 @@ auto GlobalRobotAllocator::buildCostMatrix(
 
     // ヒステリシスコンテキストを構築
     AssignmentContext context;
-    context.was_assigned_to_same_tactic = state_copy.wasAssignedTo(robot_id, target.tactic_name);
-    context.tactic_priority = target.tactic_priority;
+    context.was_assigned_to_same_session = state_copy.wasAssignedTo(robot_id, target.session_name);
+    context.session_priority = target.session_priority;
 
     // 総コスト計算
-    double priority_cost = context.tactic_priority * config_copy.priority_cost_multiplier;
+    double priority_cost = context.session_priority * config_copy.priority_cost_multiplier;
     double hysteresis_bonus =
-      context.was_assigned_to_same_tactic ? config_copy.hysteresis_bonus : 0.0;
+      context.was_assigned_to_same_session ? config_copy.hysteresis_bonus : 0.0;
     double velocity_hysteresis = 0.0;
-    if (context.was_assigned_to_same_tactic) {
+    if (context.was_assigned_to_same_session) {
       velocity_hysteresis = robot->vel.linear.norm() * config_copy.velocity_hysteresis_factor;
     }
 

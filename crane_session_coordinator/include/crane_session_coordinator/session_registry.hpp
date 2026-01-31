@@ -55,9 +55,9 @@ public:
 
   /**
    * @brief プランナーを追加
-   * @param tactic 追加するプランナー
+   * @param session 追加するプランナー
    */
-  auto addPlanner(const SessionBase::SharedPtr & tactic) -> void;
+  auto addPlanner(const SessionBase::SharedPtr & session) -> void;
 
   /**
    * @brief 全プランナーをクリア
@@ -72,7 +72,7 @@ public:
 
 private:
   // 現在アクティブなプランナーのリスト
-  std::vector<SessionBase::SharedPtr> active_tactics_;
+  std::vector<SessionBase::SharedPtr> active_sessions_;
 };
 
 }  // namespace crane
