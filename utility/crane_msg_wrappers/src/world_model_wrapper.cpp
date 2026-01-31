@@ -10,6 +10,12 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/travel_time.hpp>
 #include <iostream>
+#include <range/v3/algorithm/max.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/take_while.hpp>
+#include <range/v3/view/transform.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane
