@@ -115,6 +115,7 @@ jobs:
             --base-paths . \
             --merge-install \
             --parallel-workers 2 \
+            --packages-skip proto2ros \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
