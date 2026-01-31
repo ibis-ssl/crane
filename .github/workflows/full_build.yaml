@@ -99,6 +99,7 @@ jobs:
           export PYTHONPATH=/opt/ros/${{ matrix.rosdistro }}/lib/python3.12/site-packages:$PYTHONPATH
           colcon build \
             --base-paths dependency_ws \
+            --merge-install \
             --parallel-workers 1 \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
