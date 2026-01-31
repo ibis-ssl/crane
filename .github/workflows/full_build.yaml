@@ -95,6 +95,8 @@ jobs:
       - name: Build dependencies
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          # PYTHONPATHにROS 2のsite-packagesを追加
+          export PYTHONPATH=/opt/ros/${{ matrix.rosdistro }}/lib/python3.12/site-packages:$PYTHONPATH
           colcon build --symlink-install \
             --base-paths dependency_ws \
             --parallel-workers 2 \
@@ -105,6 +107,8 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           source install/setup.bash
+          # PYTHONPATHにROS 2のsite-packagesを追加
+          export PYTHONPATH=/opt/ros/${{ matrix.rosdistro }}/lib/python3.12/site-packages:$PYTHONPATH
           colcon build --symlink-install \
             --base-paths . \
             --parallel-workers 2 \
