@@ -101,6 +101,7 @@ jobs:
             --base-paths dependency_ws \
             --merge-install \
             --parallel-workers 1 \
+            --packages-skip proto2ros_tests speak_ros_voicevox_plugin \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
