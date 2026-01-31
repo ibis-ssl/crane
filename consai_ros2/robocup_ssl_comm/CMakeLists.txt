@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(robocup_ssl_comm)
 
+
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
@@ -48,14 +54,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(game_controller_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
 
-target_precompile_headers(game_controller_component
-  PRIVATE
-    "<rclcpp/rclcpp.hpp>"
-    "<vector>"
-    "<string>"
-    "<memory>"
-)
-
 ament_auto_add_executable(game_controller_node
   src/game_controller_node.cpp
 )
@@ -73,8 +71,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(grsim_component PROPERTIES UNITY_BUILD ON)
   set_target_properties(grsim_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
-
-target_precompile_headers(grsim_component REUSE_FROM game_controller_component)
 
 ament_auto_add_executable(grsim_node
   src/grsim_node.cpp
@@ -94,8 +90,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(tracker_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
 
-target_precompile_headers(tracker_component REUSE_FROM game_controller_component)
-
 ament_auto_add_executable(tracker_node
   src/tracker_node.cpp
 )
@@ -113,8 +107,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(vision_component PROPERTIES UNITY_BUILD ON)
   set_target_properties(vision_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
-
-target_precompile_headers(vision_component REUSE_FROM game_controller_component)
 
 ament_auto_add_executable(vision_node
   src/vision_node.cpp

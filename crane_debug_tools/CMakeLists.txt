@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_debug_tools)
 
+
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -22,20 +28,10 @@ ament_auto_add_executable(crane_web_server
   src/simple_web_server.cpp
 )
 
-target_precompile_headers(crane_web_server
-  PRIVATE
-    "<rclcpp/rclcpp.hpp>"
-    "<vector>"
-    "<string>"
-    "<memory>"
-)
-
 # WebSocket Debug Server
 ament_auto_add_executable(crane_websocket_server
   src/websocket_server.cpp
 )
-
-target_precompile_headers(crane_websocket_server REUSE_FROM crane_web_server)
 
 # Find dependencies for WebSocket server
 find_package(OpenSSL REQUIRED)

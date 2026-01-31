@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_play_switcher)
 
+
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -21,21 +27,11 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(play_switcher SHARED src/play_switcher.cpp)
 
-target_precompile_headers(play_switcher
-  PRIVATE
-    "<rclcpp/rclcpp.hpp>"
-    "<vector>"
-    "<string>"
-    "<memory>"
-)
-
 rclcpp_components_register_nodes(play_switcher "crane::PlaySwitcher")
 
 ament_auto_add_executable(play_switcher_node
   src/play_switcher_node.cpp
 )
-
-target_precompile_headers(play_switcher_node REUSE_FROM play_switcher)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

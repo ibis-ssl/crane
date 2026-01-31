@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(rvo2_vendor)
 
+
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
     set(CMAKE_C_STANDARD 99)

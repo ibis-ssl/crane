@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_robot_receiver)
 
+
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -27,21 +33,11 @@ ament_auto_add_executable(robot_receiver_node
 )
 add_backward(robot_receiver_node)
 
-target_precompile_headers(robot_receiver_node
-  PRIVATE
-    "<rclcpp/rclcpp.hpp>"
-    "<vector>"
-    "<string>"
-    "<memory>"
-)
-
 ament_auto_add_executable(ping_status_node
         src/ping_status_node.cpp
 )
 target_link_libraries(robot_receiver_node atomic)
 add_backward(robot_receiver_node)
-
-target_precompile_headers(ping_status_node REUSE_FROM robot_receiver_node)
 
 ament_auto_add_executable(diagnostic_publisher_node
         src/diagnostic_publisher.cpp
@@ -49,8 +45,6 @@ ament_auto_add_executable(diagnostic_publisher_node
 )
 target_link_libraries(diagnostic_publisher_node fmt)
 add_backward(diagnostic_publisher_node)
-
-target_precompile_headers(diagnostic_publisher_node REUSE_FROM robot_receiver_node)
 
 ament_auto_add_executable(grsim_robot_status_node
         src/grsim_robot_status_node.cpp
@@ -60,8 +54,6 @@ target_link_libraries(grsim_robot_status_node
         ${robocup_ssl_msgs_LIBRARIES}
         robocup_ssl_msgs::robocup_ssl_msgs_proto)
 add_backward(grsim_robot_status_node)
-
-target_precompile_headers(grsim_robot_status_node REUSE_FROM robot_receiver_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
