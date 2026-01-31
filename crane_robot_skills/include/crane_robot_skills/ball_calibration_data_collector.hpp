@@ -28,18 +28,28 @@ enum class BallCalibrationState {
  * ボール停止確認後に段階的に位置取りを行い、
  * 様々なパワーでキックを実行してデータ収集を行う
  */
-class BallCalibrationDataCollector : public SkillBaseWithState<BallCalibrationState>
+class BallCalibrationDataCollector : public SkillBaseWithState
 {
+private:
+  static std::string getStateName(int s);
+
 public:
   template <typename... Args>
   explicit BallCalibrationDataCollector(Args &&... args)
-  : SkillBaseWithState<BallCalibrationState>(
-      "BallCalibrationDataCollector", std::forward<Args>(args)...)
+  : SkillBaseWithState(
+      static_cast<int>(BallCalibrationState::ENTRY_POINT),
+      &BallCalibrationDataCollector::getStateName, "BallCalibrationDataCollector",
+      std::forward<Args>(args)...)
   {
     initialize();
   }
 
   void initialize();
+
+  BallCalibrationState getCurrentState() const
+  {
+    return static_cast<BallCalibrationState>(SkillBaseWithState::getCurrentState());
+  }
 
 private:
   /**

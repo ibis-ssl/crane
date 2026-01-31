@@ -32,9 +32,11 @@ enum class SingleBallPlacementStates {
   LEAVE_BALL,
 };
 
-class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
+class SingleBallPlacement : public SkillBaseWithState
 {
 private:
+  static std::string getStateName(int s);
+
   std::shared_ptr<Receive> receive;
 
   std::shared_ptr<Sleep> sleep = nullptr;
@@ -48,13 +50,19 @@ private:
 public:
   template <typename... Args>
   explicit SingleBallPlacement(Args &&... args)
-  : SkillBaseWithState<SingleBallPlacementStates>(
+  : SkillBaseWithState(
+      static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), &SingleBallPlacement::getStateName,
       "SingleBallPlacement", std::forward<Args>(args)...)
   {
     initialize();
   }
 
   void initialize();
+
+  SingleBallPlacementStates getCurrentState() const
+  {
+    return static_cast<SingleBallPlacementStates>(SkillBaseWithState::getCurrentState());
+  }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_

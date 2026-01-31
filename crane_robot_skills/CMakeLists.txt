@@ -23,11 +23,14 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(magic_enum REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   DIRECTORY src include
 )
+
+target_link_libraries(${PROJECT_NAME}_component magic_enum::magic_enum)
 
 # Enable Unity Build for faster compilation
 option(CRANE_UNITY_BUILD "Enable unity build" ON)
@@ -74,4 +77,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(magic_enum)
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

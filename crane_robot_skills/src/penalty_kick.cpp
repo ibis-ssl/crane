@@ -6,15 +6,21 @@
 
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/penalty_kick.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace crane::skills
 {
+std::string PenaltyKick::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<PenaltyKickState>(s)));
+}
+
 void PenaltyKick::initialize()
 {
   // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);
   setParameter("prepare_margin", 0.6);
-  addStateFunction(PenaltyKickState::PREPARE, [this]() -> Status {
+  addStateFunction(static_cast<int>(PenaltyKickState::PREPARE), [this]() -> Status {
     Point target = world_model()->ball().pos;
     auto margin = getParameter<double>("prepare_margin");
     target.x() += world_model()->getOurGoalCenter().x() > 0 ? margin : -margin;
@@ -24,15 +30,17 @@ void PenaltyKick::initialize()
     return Status::RUNNING;
   });
 
-  addTransition(PenaltyKickState::PREPARE, PenaltyKickState::KICK, [this]() {
-    if (getParameter<bool>("start_from_kick")) {
-      return true;
-    } else {
-      return world_model()->getMsg().play_situation.command.value ==
-             crane_msgs::msg::PlaySituation::OUR_PENALTY_START;
-    }
-  });
-  addStateFunction(PenaltyKickState::KICK, [this]() -> Status {
+  addTransition(
+    static_cast<int>(PenaltyKickState::PREPARE), static_cast<int>(PenaltyKickState::KICK),
+    [this]() {
+      if (getParameter<bool>("start_from_kick")) {
+        return true;
+      } else {
+        return world_model()->getMsg().play_situation.command.value ==
+               crane_msgs::msg::PlaySituation::OUR_PENALTY_START;
+      }
+    });
+  addStateFunction(static_cast<int>(PenaltyKickState::KICK), [this]() -> Status {
     if (not start_ball_point) {
       start_ball_point = world_model()->ball().pos;
     }
@@ -57,11 +65,11 @@ void PenaltyKick::initialize()
     return Status::RUNNING;
   });
 
-  addTransition(PenaltyKickState::KICK, PenaltyKickState::DONE, [this]() {
-    return world_model()->point_checker.isPenaltyArea(world_model()->ball().pos);
-  });
+  addTransition(
+    static_cast<int>(PenaltyKickState::KICK), static_cast<int>(PenaltyKickState::DONE),
+    [this]() { return world_model()->point_checker.isPenaltyArea(world_model()->ball().pos); });
 
-  addStateFunction(PenaltyKickState::DONE, [this]() -> Status {
+  addStateFunction(static_cast<int>(PenaltyKickState::DONE), [this]() -> Status {
     command->stopHere();
     return Status::RUNNING;
   });

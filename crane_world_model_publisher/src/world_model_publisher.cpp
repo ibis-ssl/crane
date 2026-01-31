@@ -19,6 +19,10 @@
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <filesystem>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/range/operations.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 

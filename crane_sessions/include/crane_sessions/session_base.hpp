@@ -19,6 +19,9 @@
 #include <crane_utils/stream.hpp>
 #include <functional>
 #include <memory>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>

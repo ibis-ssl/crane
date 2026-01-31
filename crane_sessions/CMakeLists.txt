@@ -27,6 +27,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(magic_enum REQUIRED)
 ament_auto_find_build_dependencies()
 
 # for matplotlib
@@ -39,7 +40,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
 
-target_link_libraries(${PROJECT_NAME} ${YAML_CPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${YAML_CPP_LIBRARIES} magic_enum::magic_enum)
 
 # Enable Unity Build for faster compilation
 option(CRANE_UNITY_BUILD "Enable unity build" ON)
