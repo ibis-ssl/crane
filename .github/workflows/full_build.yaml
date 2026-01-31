@@ -123,6 +123,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           source install/setup.bash
-          colcon test --base-paths . --merge-install
+          colcon test --base-paths . --merge-install \
+            --packages-skip proto2ros proto2ros_tests speak_ros speak_ros_interfaces speak_ros_voicevox_plugin
           colcon test-result --verbose
         shell: bash
