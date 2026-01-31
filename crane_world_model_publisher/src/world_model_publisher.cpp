@@ -13,7 +13,6 @@
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/kicker_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
-#include <crane_world_model_publisher/pass_target_selector.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
@@ -53,7 +52,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   // VisualizationManager初期化（統合された可視化システム）
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
   kick_event_detector_ = std::make_unique<KickEventDetector>();
-  pass_target_selector_ = std::make_unique<PassTargetSelector>();
 
   // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider_->setVisualizationCallbacks(
@@ -72,14 +70,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
-
-  // パス先スイッチ抑制のパラメータ
-  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
-  declare_parameter("pass_target.min_improvement_margin", 0.2);
-  double min_hold = 0.5, min_improve = 0.2;
-  get_parameter("pass_target.min_hold_duration_sec", min_hold);
-  get_parameter("pass_target.min_improvement_margin", min_improve);
-  pass_target_selector_->setHysteresisParams(min_hold, min_improve);
 
   // ボール物理設定ファイルパス
   declare_parameter("ball_physics_config_path", std::string(""));
@@ -399,11 +389,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     game_analysis_msg.their_slack.push_back(slack_msg);
   }
 
-  // パススコア算出とパス先選定（専用クラスへ委譲）
-  visualization_manager_->pass_score_builder->flush();
-  pass_target_selector_->update(
-    world_model, ball_info_history, visualization_manager_->pass_score_builder, game_analysis_msg);
-
+  // パススコア算出とパス先選定はgame analyzerに移動済み
   world_model->update(game_analysis_msg);
 }
 

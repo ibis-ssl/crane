@@ -14,6 +14,7 @@
 #include "crane_game_analyzer/game_analyzer.hpp"
 #include "crane_game_analyzer/metrics/attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/ball_horizon_metric.hpp"
+#include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
 #include "crane_game_analyzer/metrics/sub_attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/threat_metrics.hpp"
@@ -121,6 +122,17 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
   auto sub_attacker_position_metric = std::make_shared<metrics::SubAttackerPositionMetric>();
   metric_engine_->registerMetric(sub_attacker_position_metric);
+
+  // パスターゲット選定メトリクス
+  auto pass_target_metric = std::make_shared<metrics::PassTargetMetric>();
+  // パラメータ設定
+  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
+  declare_parameter("pass_target.min_improvement_margin", 0.2);
+  double min_hold = 0.5, min_improve = 0.2;
+  get_parameter("pass_target.min_hold_duration_sec", min_hold);
+  get_parameter("pass_target.min_improvement_margin", min_improve);
+  pass_target_metric->setHysteresisParams(min_hold, min_improve);
+  metric_engine_->registerMetric(pass_target_metric);
 
   // メトリクスエンジン初期化（トポロジカルソート・循環依存検出）
   if (!metric_engine_->initialize()) {

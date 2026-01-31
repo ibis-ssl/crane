@@ -36,6 +36,9 @@ enum class MetricId {
   // 役割決定（新規）
   ATTACKER_CANDIDATE,     ///< 推奨アタッカー
   SUB_ATTACKER_POSITION,  ///< SubAttacker推奨位置
+
+  // パス評価
+  PASS_TARGET,  ///< パスターゲット選定
 };
 
 /**

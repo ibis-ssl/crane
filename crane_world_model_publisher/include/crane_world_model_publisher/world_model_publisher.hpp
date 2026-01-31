@@ -68,7 +68,6 @@ enum class Color : uint8_t {
 class WorldModelDataProvider;
 class VisualizationManager;
 class KickEventDetector;
-class PassTargetSelector;
 class WorldModelWrapper;
 
 class WorldModelPublisherComponent : public rclcpp::Node
@@ -125,8 +124,6 @@ private:
   WorldModelWrapperPtr wrapper_;
 
   std::unique_ptr<KickEventDetector> kick_event_detector_;
-
-  std::unique_ptr<PassTargetSelector> pass_target_selector_;
 
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
 };

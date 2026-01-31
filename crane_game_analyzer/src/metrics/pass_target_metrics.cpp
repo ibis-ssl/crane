@@ -4,26 +4,25 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_world_model_publisher/pass_target_selector.hpp"
+#include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 
+#include <crane_physics/pass_evaluation.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/functional/comparisons.hpp>
 #include <range/v3/range/conversion.hpp>
-#include <range/v3/range/operations.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
-namespace crane
+namespace crane::metrics
 {
 
-auto PassTargetSelector::computePassOrigin(
-  const WorldModelWrapper::SharedPtr & world_model,
-  const std::deque<crane_msgs::msg::BallInfo> & ball_history,
-  const crane_msgs::msg::GameAnalysis & analysis_msg) const -> Point
+PassTargetMetric::PassTargetMetric() : MetricBase(MetricId::PASS_TARGET, "PassTarget") {}
+
+auto PassTargetMetric::computePassOrigin(MetricContext & ctx) const -> Point
 {
-  const auto & ball = world_model->ball();
+  const auto & ball = ctx.world_model->ball();
   // 検出かつ停止
   if (ball.isStopped() && ball.detected) {
     return ball.pos;
@@ -33,45 +32,47 @@ auto PassTargetSelector::computePassOrigin(
     return ball.getPredictedPosition(std::min(ball.getStopTime(), 1.0));
   }
   // 履歴から直近検出
-  for (auto it = ball_history.rbegin(); it != ball_history.rend(); ++it) {
+  for (auto it = ctx.ball_history->rbegin(); it != ctx.ball_history->rend(); ++it) {
     if (it->detected) {
       return Point(it->position.x, it->position.y);
     }
   }
   // キック起点
-  if (not analysis_msg.ongoing_kick.empty()) {
-    const auto & k = analysis_msg.ongoing_kick.front();
+  if (not ctx.analysis.ongoing_kick.empty()) {
+    const auto & k = ctx.analysis.ongoing_kick.front();
     return Point(k.origin_x, k.origin_y);
   }
   // フォールバック
   return ball.pos;
 }
 
-auto PassTargetSelector::calcScore(
-  const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin,
-  const Point & p) const -> double
+auto PassTargetMetric::calcScore(
+  MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double
 {
   double score = 1.0;
+
   // 距離（0〜4mで上昇）
   const double pass_distance = (p - pass_origin).norm();
   score += std::clamp(pass_distance * 0.5, 0.0, 2.0);
 
   // ゴール角度（敵ゴールに対する見通し）
   {
-    auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
+    auto [best_angle, goal_angle_width] = ctx.world_model->getLargestGoalAngleRangeFromPoint(p);
     score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
   }
+
   // 自ゴールに対する危険度（大きいほど減点）
   {
     auto [best_angle, goal_angle_width] =
-      world_model->getLargestGoalAngleRangeFromPoint(p, world_model->getOurGoalPosts(), {});
+      ctx.world_model->getLargestGoalAngleRangeFromPoint(p, ctx.world_model->getOurGoalPosts(), {});
     score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
   }
+
   // 敵ゴールへの接近
   {
-    double normed_distance_to_their_goal =
-      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->fieldSize().x() * 0.5)) /
-      (world_model->fieldSize().x() * 0.5);
+    double normed_distance_to_their_goal = ((p - ctx.world_model->getTheirGoalCenter()).norm() -
+                                            (ctx.world_model->fieldSize().x() * 0.5)) /
+                                           (ctx.world_model->fieldSize().x() * 0.5);
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
 
@@ -85,13 +86,13 @@ auto PassTargetSelector::calcScore(
     const auto closest = getClosestPointAndDistance(enemy->pose.pos, pass_line);
     const double ball_time = (closest.closest_point - pass_origin).norm() / KICK_SPEED;
 
-    auto slack_result = world_model->getBallSlackTime(
+    auto slack_result = ctx.world_model->getBallSlackTime(
       pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
 
     return slack_result.has_value() ? slack_result->slack_time : 1.0;
   };
 
-  auto enemies = world_model->theirs().robotsWhere().available().get();
+  auto enemies = ctx.world_model->theirs().robotsWhere().available().get();
   auto slack_times_view = enemies | ranges::views::filter([&](const auto & enemy) {
                             // パス起点から近すぎる敵はチップで飛び越せるので除外
                             return enemy->getDistance(pass_origin) >= 1.0;
@@ -107,64 +108,50 @@ auto PassTargetSelector::calcScore(
 
   score *= intercept_score;
 
+  // シャドウ評価: パスライン上の敵による遮蔽効果
+  const double shadow_score = evaluatePassShadow(pass_origin, p, enemies);
+  score *= shadow_score;
+
   // ペナルティエリア内は無効
-  if (world_model->point_checker.isPenaltyArea(p)) {
+  if (ctx.world_model->point_checker.isPenaltyArea(p)) {
     score = 0.0;
   }
+
   return score;
 }
 
-auto PassTargetSelector::visualize(
-  const WorldModelWrapper::SharedPtr & world_model, const Point & pass_origin, uint8_t target_id,
-  const VisualizerMessageBuilder::SharedPtr & pass_builder) -> void
-{
-  auto receiver = world_model->getOurRobot(target_id);
-  if (world_model->point_checker.isFieldInside(pass_origin)) {
-    pass_builder->drawLine(pass_origin, receiver->pose.pos, "lime", 40, 0.8);
-    pass_builder->drawCircle(pass_origin, 0.12, "lime", 10);
-  }
-  pass_builder->drawStyledCircle(receiver->pose.pos, 0.5, "lime", 0.15, "lime", 1.0, 18);
-  pass_builder->drawText(
-    Point(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35),
-    std::string("PASS TARGET #") + std::to_string(receiver->id), "lime", 110.0, "middle");
-}
-
-auto PassTargetSelector::update(
-  const WorldModelWrapper::SharedPtr & world_model,
-  const std::deque<crane_msgs::msg::BallInfo> & ball_history,
-  const VisualizerMessageBuilder::SharedPtr & pass_builder,
-  crane_msgs::msg::GameAnalysis & analysis_msg) -> void
+auto PassTargetMetric::compute(MetricContext & ctx) -> void
 {
   // パス起点の決定
-  const Point pass_origin = computePassOrigin(world_model, ball_history, analysis_msg);
+  const Point pass_origin = computePassOrigin(ctx);
 
   // 候補のスコア算出
-  auto our_robots = world_model->ours().robotsWhere().available().excludeGoalie().get();
+  auto our_robots = ctx.world_model->ours().robotsWhere().available().excludeGoalie().get();
   auto score_with_bots =
     our_robots | ranges::views::filter([&](const auto & robot) {
-      return robot->id != world_model->getOurGoalieId() &&
-             robot->pose.pos.x() * world_model->getOurSideSign() <= 0.0 &&
-             !world_model->point_checker.isPenaltyArea(robot->pose.pos);
+      return robot->id != ctx.world_model->getOurGoalieId() &&
+             robot->pose.pos.x() * ctx.world_model->getOurSideSign() <= 0.0 &&
+             !ctx.world_model->point_checker.isPenaltyArea(robot->pose.pos);
     }) |
     ranges::views::transform([&](const auto & robot) {
-      return std::make_pair(robot, calcScore(world_model, pass_origin, robot->pose.pos));
+      return std::make_pair(robot, calcScore(ctx, pass_origin, robot->pose.pos));
     }) |
     ranges::to<std::vector>();
 
   ranges::sort(score_with_bots, ranges::greater{}, [](const auto & p) { return p.second; });
 
-  analysis_msg.pass_scores.clear();
-  analysis_msg.pass_scores.reserve(score_with_bots.size());
+  ctx.analysis.pass_scores.clear();
+  ctx.analysis.pass_scores.reserve(score_with_bots.size());
   for (const auto & [robot, score] : score_with_bots) {
     crane_msgs::msg::FloatWithID msg;
     msg.set__id(robot->id).set__value(score);
-    analysis_msg.pass_scores.push_back(msg);
+    ctx.analysis.pass_scores.push_back(msg);
   }
 
   // ヒステリシスによるターゲット選定
-  analysis_msg.pass_target_id = -1;
-  if (!analysis_msg.pass_scores.empty()) {
-    const auto & best = analysis_msg.pass_scores.front();
+  ctx.analysis.pass_target_id = -1;
+  if (!ctx.analysis.pass_scores.empty()) {
+    const auto & best = ctx.analysis.pass_scores.front();
     const int best_id = static_cast<int>(best.id);
     const double best_score = static_cast<double>(best.value);
 
@@ -174,10 +161,10 @@ auto PassTargetSelector::update(
     double prev_score = -1.0;
     if (last_pass_target_id_.has_value()) {
       auto it =
-        ranges::find_if(analysis_msg.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
+        ranges::find_if(ctx.analysis.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
           return s.id == last_pass_target_id_.value();
         });
-      if (it != ranges::end(analysis_msg.pass_scores)) prev_score = it->value;
+      if (it != ranges::end(ctx.analysis.pass_scores)) prev_score = it->value;
     }
 
     bool should_switch = true;
@@ -201,14 +188,28 @@ auto PassTargetSelector::update(
       last_switch_time_ = now_time;
     }
 
-    analysis_msg.pass_target_id = last_pass_target_id_.value();
-
-    // 可視化
-    if (pass_builder) {
-      visualize(
-        world_model, pass_origin, static_cast<uint8_t>(analysis_msg.pass_target_id), pass_builder);
-    }
+    ctx.analysis.pass_target_id = last_pass_target_id_.value();
   }
 }
 
-}  // namespace crane
+auto PassTargetMetric::visualize(
+  MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer) -> void
+{
+  if (ctx.analysis.pass_target_id < 0) {
+    return;
+  }
+
+  const Point pass_origin = computePassOrigin(ctx);
+  auto receiver = ctx.world_model->getOurRobot(static_cast<uint8_t>(ctx.analysis.pass_target_id));
+
+  if (ctx.world_model->point_checker.isFieldInside(pass_origin)) {
+    visualizer->drawLine(pass_origin, receiver->pose.pos, "lime", 40, 0.8);
+    visualizer->drawCircle(pass_origin, 0.12, "lime", 10);
+  }
+  visualizer->drawStyledCircle(receiver->pose.pos, 0.5, "lime", 0.15, "lime", 1.0, 18);
+  visualizer->drawText(
+    Point(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35),
+    std::string("PASS TARGET #") + std::to_string(receiver->id), "lime", 110.0, "middle");
+}
+
+}  // namespace crane::metrics

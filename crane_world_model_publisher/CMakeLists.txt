@@ -29,7 +29,6 @@ set(WORLD_MODEL_PUBLISHER_SRCS
   src/world_model_data_provider.cpp
   src/visualization_manager.cpp
   src/kick_event_detector.cpp
-  src/pass_target_selector.cpp
 )
 
 if(CRANE_WMP_BUILD_CALIBRATION)

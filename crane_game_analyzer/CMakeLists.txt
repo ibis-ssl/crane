@@ -33,6 +33,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/metrics/slack_metrics.cpp
   src/metrics/attacker_metrics.cpp
   src/metrics/sub_attacker_metrics.cpp
+  src/metrics/pass_target_metrics.cpp
 )
 
 option(CRANE_UNITY_BUILD "Enable unity build" ON)
