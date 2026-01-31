@@ -7,7 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -24,11 +27,21 @@ ament_auto_add_executable(robot_receiver_node
 )
 add_backward(robot_receiver_node)
 
+target_precompile_headers(robot_receiver_node
+  PRIVATE
+    "<rclcpp/rclcpp.hpp>"
+    "<vector>"
+    "<string>"
+    "<memory>"
+)
+
 ament_auto_add_executable(ping_status_node
         src/ping_status_node.cpp
 )
 target_link_libraries(robot_receiver_node atomic)
 add_backward(robot_receiver_node)
+
+target_precompile_headers(ping_status_node REUSE_FROM robot_receiver_node)
 
 ament_auto_add_executable(diagnostic_publisher_node
         src/diagnostic_publisher.cpp
@@ -36,6 +49,8 @@ ament_auto_add_executable(diagnostic_publisher_node
 )
 target_link_libraries(diagnostic_publisher_node fmt)
 add_backward(diagnostic_publisher_node)
+
+target_precompile_headers(diagnostic_publisher_node REUSE_FROM robot_receiver_node)
 
 ament_auto_add_executable(grsim_robot_status_node
         src/grsim_robot_status_node.cpp
@@ -45,6 +60,8 @@ target_link_libraries(grsim_robot_status_node
         ${robocup_ssl_msgs_LIBRARIES}
         robocup_ssl_msgs::robocup_ssl_msgs_proto)
 add_backward(grsim_robot_status_node)
+
+target_precompile_headers(grsim_robot_status_node REUSE_FROM robot_receiver_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

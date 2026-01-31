@@ -7,7 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif()
 
 # find dependencies
@@ -16,7 +19,17 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(joystick_component SHARED src/joystick_component.cpp)
 
+target_precompile_headers(joystick_component
+  PRIVATE
+    "<rclcpp/rclcpp.hpp>"
+    "<vector>"
+    "<string>"
+    "<memory>"
+)
+
 ament_auto_add_executable(teleop_node src/teleop_node.cpp)
+
+target_precompile_headers(teleop_node REUSE_FROM joystick_component)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

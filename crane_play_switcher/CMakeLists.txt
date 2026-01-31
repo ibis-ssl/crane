@@ -7,7 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -18,11 +21,21 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(play_switcher SHARED src/play_switcher.cpp)
 
+target_precompile_headers(play_switcher
+  PRIVATE
+    "<rclcpp/rclcpp.hpp>"
+    "<vector>"
+    "<string>"
+    "<memory>"
+)
+
 rclcpp_components_register_nodes(play_switcher "crane::PlaySwitcher")
 
 ament_auto_add_executable(play_switcher_node
   src/play_switcher_node.cpp
 )
+
+target_precompile_headers(play_switcher_node REUSE_FROM play_switcher)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

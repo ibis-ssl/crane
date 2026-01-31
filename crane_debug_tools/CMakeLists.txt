@@ -7,7 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif()
 
 find_package(ament_cmake_auto REQUIRED)
@@ -19,10 +22,20 @@ ament_auto_add_executable(crane_web_server
   src/simple_web_server.cpp
 )
 
+target_precompile_headers(crane_web_server
+  PRIVATE
+    "<rclcpp/rclcpp.hpp>"
+    "<vector>"
+    "<string>"
+    "<memory>"
+)
+
 # WebSocket Debug Server
 ament_auto_add_executable(crane_websocket_server
   src/websocket_server.cpp
 )
+
+target_precompile_headers(crane_websocket_server REUSE_FROM crane_web_server)
 
 # Find dependencies for WebSocket server
 find_package(OpenSSL REQUIRED)

@@ -7,7 +7,10 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
