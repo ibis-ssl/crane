@@ -7,7 +7,7 @@
 """Intent tracking for self-commentary mode."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from enum import Enum
 
 
@@ -55,7 +55,7 @@ class IntentChange:
     robot_id: int
     old_value: str
     new_value: str
-    context: Dict[str, any] = field(default_factory=dict)
+    context: Dict[str, Any] = field(default_factory=dict)
 
     def priority(self) -> int:
         """Get priority of this change (higher = more important)."""
@@ -93,7 +93,7 @@ class IntentTracker:
         # Session mapping (robot_id -> session_name)
         self._robot_to_session: Dict[int, str] = {}
 
-    def update_from_robot_select_results(self, msg: any) -> None:
+    def update_from_robot_select_results(self, msg: Any) -> None:
         """Update session information from RobotSelectResults message.
 
         Args:
@@ -108,7 +108,7 @@ class IntentTracker:
             for robot_id in result.selected_robots:
                 self._robot_to_session[robot_id] = session_name
 
-    def update_from_control_targets(self, msg: any) -> None:
+    def update_from_control_targets(self, msg: Any) -> None:
         """Update intent information from PositionCommands message.
 
         Args:

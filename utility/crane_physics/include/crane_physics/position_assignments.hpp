@@ -224,19 +224,37 @@ inline auto getOptimalAssignments(
     return {0};
   }
 
-  // make cost
-  auto cost = robot_positions | ranges::views::transform([&](const auto & robot_pos) {
-                return targets | ranges::views::transform([&](const auto & target) {
-                         return bg::distance(robot_pos, target);
-                       }) |
-                       ranges::to<std::vector>();
-              }) |
-              ranges::to<std::vector>();
+  // Hungarianアルゴリズムは行数 >= 列数を要求するため、
+  // ターゲット数の方が多い場合はダミーロボットを追加してコスト行列を正方行列にする
+  size_t num_robots = robot_positions.size();
+  size_t num_targets = targets.size();
+  size_t matrix_size = std::max(num_robots, num_targets);
+
+  // make cost matrix (square matrix)
+  std::vector<std::vector<double>> cost(matrix_size, std::vector<double>(matrix_size, 0.0));
+
+  for (size_t i = 0; i < num_robots; ++i) {
+    for (size_t j = 0; j < num_targets; ++j) {
+      cost[i][j] = bg::distance(robot_positions[i], targets[j]);
+    }
+    // ダミーターゲットへのコストは大きな値に設定
+    for (size_t j = num_targets; j < matrix_size; ++j) {
+      cost[i][j] = 1e9;
+    }
+  }
+
+  // ダミーロボットのコストは0に設定（実際には使用されない）
+  for (size_t i = num_robots; i < matrix_size; ++i) {
+    for (size_t j = 0; j < matrix_size; ++j) {
+      cost[i][j] = 1e9;
+    }
+  }
 
   math::Hungarian<double> hungarian_solver(cost);
   const auto [solution_cost, solution_index] = hungarian_solver.solve();
 
-  return solution_index;
+  // 実際のロボット分のみ返す
+  return std::vector<int>(solution_index.begin(), solution_index.begin() + num_robots);
 }
 
 /**
@@ -262,18 +280,34 @@ inline auto getOptimalAssignmentsWithCost(
     return {0};
   }
 
-  // コスト行列を構築
-  std::vector<std::vector<double>> cost(num_robots, std::vector<double>(num_targets));
+  // Hungarianアルゴリズムは行数 >= 列数を要求するため、
+  // ターゲット数の方が多い場合はダミーロボットを追加してコスト行列を正方行列にする
+  size_t matrix_size = std::max(num_robots, num_targets);
+
+  // コスト行列を構築（正方行列）
+  std::vector<std::vector<double>> cost(matrix_size, std::vector<double>(matrix_size, 0.0));
   for (size_t i = 0; i < num_robots; ++i) {
     for (size_t j = 0; j < num_targets; ++j) {
       cost[i][j] = cost_func(i, j);
+    }
+    // ダミーターゲットへのコストは大きな値に設定
+    for (size_t j = num_targets; j < matrix_size; ++j) {
+      cost[i][j] = 1e9;
+    }
+  }
+
+  // ダミーロボットのコストは大きな値に設定（実際には使用されない）
+  for (size_t i = num_robots; i < matrix_size; ++i) {
+    for (size_t j = 0; j < matrix_size; ++j) {
+      cost[i][j] = 1e9;
     }
   }
 
   math::Hungarian<double> hungarian_solver(cost);
   const auto [solution_cost, solution_index] = hungarian_solver.solve();
 
-  return solution_index;
+  // 実際のロボット分のみ返す
+  return std::vector<int>(solution_index.begin(), solution_index.begin() + num_robots);
 }
 
 }  // namespace crane
