@@ -15,6 +15,7 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <functional>
+#include <magic_enum/magic_enum.hpp>
 #include <memory>
 #include <range/v3/algorithm/contains.hpp>
 #include <rclcpp/rclcpp.hpp>

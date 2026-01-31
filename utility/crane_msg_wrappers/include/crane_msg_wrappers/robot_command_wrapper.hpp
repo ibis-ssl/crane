@@ -7,12 +7,12 @@
 #ifndef CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_physics/kicker_model.hpp>
 #include <memory>
-#include <range/v3/algorithm/find_if.hpp>
 #include <vector>
 
 #include "delay_monitor_wrapper.hpp"
@@ -400,8 +400,8 @@ public:
   auto addPlanningFactor(const std::string & name, const std::string & state) -> void
   {
     // 同じnameのものが存在しなければ追加。存在すれば、更新
-    if (auto planning_factor = ranges::find_if(
-          latest_msg.planning_factors,
+    if (auto planning_factor = std::find_if(
+          latest_msg.planning_factors.begin(), latest_msg.planning_factors.end(),
           [name](const auto & planning_factor) { return planning_factor.name == name; });
         planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
       crane_msgs::msg::NamedString msg;

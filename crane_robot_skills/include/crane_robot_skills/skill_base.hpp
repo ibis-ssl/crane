@@ -7,7 +7,6 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
-#include <../magic_enum.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -22,20 +21,21 @@
 
 namespace crane::skills
 {
-template <typename StatesType>
 class StateMachine
 {
 public:
   struct Transition
   {
-    StatesType to;
+    int to;
     std::function<bool()> condition;
   };
 
-  explicit StateMachine(StatesType init_state) : current_state_(init_state) {}
+  explicit StateMachine(int init_state, std::function<std::string(int)> name_resolver)
+  : current_state_(init_state), state_name_resolver_(std::move(name_resolver))
+  {
+  }
 
-  void addTransition(
-    const StatesType & from, const StatesType & to, std::function<bool()> condition)
+  void addTransition(int from, int to, std::function<bool()> condition)
   {
     transitions_[from].push_back({to, std::move(condition)});
   }
@@ -50,7 +50,7 @@ public:
         current_state_ = trans.to;
         // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。
         // state functionの実行は行われない
-        if (magic_enum::enum_name(current_state_) == "ENTRY_POINT") {
+        if (getCurrentStateName() == "ENTRY_POINT") {
           // 再帰的に評価を行うので、無限ループに注意！！！
           update();
         }
@@ -59,11 +59,18 @@ public:
     }
   }
 
-  StatesType getCurrentState() const { return current_state_; }
+  int getCurrentState() const { return current_state_; }
+
+  std::string getCurrentStateName() const
+  {
+    return state_name_resolver_ ? state_name_resolver_(current_state_)
+                                : std::to_string(current_state_);
+  }
 
 private:
-  StatesType current_state_;
-  std::unordered_map<StatesType, std::vector<Transition>> transitions_;
+  int current_state_;
+  std::unordered_map<int, std::vector<Transition>> transitions_;
+  std::function<std::string(int)> state_name_resolver_;
 };
 
 enum class Status {
@@ -71,6 +78,20 @@ enum class Status {
   FAILURE,
   RUNNING,
 };
+
+inline std::string statusToString(Status status)
+{
+  switch (status) {
+    case Status::SUCCESS:
+      return "SUCCESS";
+    case Status::FAILURE:
+      return "FAILURE";
+    case Status::RUNNING:
+      return "RUNNING";
+    default:
+      return "UNKNOWN";
+  }
+}
 
 using ParameterType = std::variant<double, bool, int, std::string, Point>;
 
@@ -164,7 +185,7 @@ protected:
 
   void finalizeFrame(Status status)
   {
-    command->addPlanningFactor(name, std::string(magic_enum::enum_name(status)));
+    command->addPlanningFactor(name, statusToString(status));
     visualizer->flush();
   }
 };
@@ -198,15 +219,16 @@ public:
   auto & commander() { return command; }
 };
 
-template <typename StatesType>
 class SkillBaseWithState : public SkillInterface
 {
 public:
   using StateFunctionType = std::function<Status()>;
 
   template <typename... Args>
-  explicit SkillBaseWithState(Args &&... args)
-  : SkillInterface(std::forward<Args>(args)...), state_machine_(static_cast<StatesType>(0))
+  explicit SkillBaseWithState(
+    int init_state, std::function<std::string(int)> name_resolver, Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...),
+    state_machine_(init_state, std::move(name_resolver))
   {
   }
 
@@ -227,12 +249,12 @@ public:
 
     onPostUpdate();
 
-    auto state_name = magic_enum::enum_name(current_state);
-    command->addPlanningFactor(name, std::string(state_name));
+    auto state_name = state_machine_.getCurrentStateName();
+    command->addPlanningFactor(name, state_name);
 
     visualizer->text()
       .position(robot()->pose.pos)
-      .text(std::string(state_name))
+      .text(state_name)
       .fontSize(50)
       .fill("white")
       .build();
@@ -245,7 +267,7 @@ public:
 
   auto & commander() { return command; }
 
-  void addStateFunction(const StatesType & state, StateFunctionType function)
+  void addStateFunction(int state, StateFunctionType function)
   {
     if (state_functions_.find(state) != state_functions_.end()) {
       RCLCPP_WARN(
@@ -256,26 +278,25 @@ public:
   }
 
   void addTransitions(
-    const StatesType & from,
-    std::vector<std::pair<StatesType, std::function<bool()>>> transition_targets)
+    int from, std::vector<std::pair<int, std::function<bool()>>> transition_targets)
   {
     for (const auto & transition_target : transition_targets) {
       state_machine_.addTransition(from, transition_target.first, transition_target.second);
     }
   }
 
-  void addTransition(const StatesType from, const StatesType to, std::function<bool()> condition)
+  void addTransition(int from, int to, std::function<bool()> condition)
   {
     state_machine_.addTransition(from, to, condition);
   }
 
-  StatesType getCurrentState() const { return state_machine_.getCurrentState(); }
+  int getCurrentState() const { return state_machine_.getCurrentState(); }
 
 protected:
   virtual void onPostUpdate() {}
 
-  StateMachine<StatesType> state_machine_;
-  std::unordered_map<StatesType, StateFunctionType> state_functions_;
+  StateMachine state_machine_;
+  std::unordered_map<int, StateFunctionType> state_functions_;
 };
 }  // namespace crane::skills
 

@@ -6,10 +6,15 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane::skills
 {
+std::string CenterStopKick::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<CenterStopKickState>(s)));
+}
 
 void CenterStopKick::initialize()
 {
@@ -28,7 +33,7 @@ void CenterStopKick::initialize()
   // 物理モデルの初期化
   initializePhysicsModels();
 
-  addStateFunction(CenterStopKickState::ENTRY_POINT, [this]() -> Status {
+  addStateFunction(static_cast<int>(CenterStopKickState::ENTRY_POINT), [this]() -> Status {
     command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
 
@@ -38,7 +43,7 @@ void CenterStopKick::initialize()
     return Status::RUNNING;
   });
 
-  addStateFunction(CenterStopKickState::WAIT_BALL_STOP, [this]() -> Status {
+  addStateFunction(static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> Status {
     command->stopHere();
 
     // 目標停止距離を再計算（ボール位置が変わった場合）
@@ -47,7 +52,7 @@ void CenterStopKick::initialize()
     return Status::RUNNING;
   });
 
-  addStateFunction(CenterStopKickState::POSITION_BEHIND_BALL, [this]() -> Status {
+  addStateFunction(static_cast<int>(CenterStopKickState::POSITION_BEHIND_BALL), [this]() -> Status {
     Point current_ball_pos = world_model()->ball().pos;
 
     // ボール位置変化検出（テレポート対応）
@@ -86,7 +91,7 @@ void CenterStopKick::initialize()
     return Status::RUNNING;
   });
 
-  addStateFunction(CenterStopKickState::KICK_EXECUTE, [this]() -> Status {
+  addStateFunction(static_cast<int>(CenterStopKickState::KICK_EXECUTE), [this]() -> Status {
     // 目標停止距離を再計算
     double current_target_distance = calculateTargetStopDistance();
 
@@ -109,7 +114,7 @@ void CenterStopKick::initialize()
     return Status::RUNNING;
   });
 
-  addStateFunction(CenterStopKickState::KICK_COMPLETE, [this]() -> Status {
+  addStateFunction(static_cast<int>(CenterStopKickState::KICK_COMPLETE), [this]() -> Status {
     command->stopHere();
 
     auto now = rclcpp::Clock().now();
@@ -158,13 +163,13 @@ void CenterStopKick::initialize()
 
   // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
   addTransition(
-    CenterStopKickState::ENTRY_POINT, CenterStopKickState::WAIT_BALL_STOP,
-    [this]() -> bool { return true; });
+    static_cast<int>(CenterStopKickState::ENTRY_POINT),
+    static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> bool { return true; });
 
   // WAIT_BALL_STOP -> POSITION_BEHIND_BALL（ボール停止確認）
   addTransition(
-    CenterStopKickState::WAIT_BALL_STOP, CenterStopKickState::POSITION_BEHIND_BALL,
-    [this]() -> bool {
+    static_cast<int>(CenterStopKickState::WAIT_BALL_STOP),
+    static_cast<int>(CenterStopKickState::POSITION_BEHIND_BALL), [this]() -> bool {
       auto now = rclcpp::Clock().now();
 
       if (not world_model()->ball().isStopped(ball_stop_threshold_)) {
@@ -184,7 +189,8 @@ void CenterStopKick::initialize()
 
   // POSITION_BEHIND_BALL -> KICK_EXECUTE（位置・速度の条件のみ）
   addTransition(
-    CenterStopKickState::POSITION_BEHIND_BALL, CenterStopKickState::KICK_EXECUTE, [this]() -> bool {
+    static_cast<int>(CenterStopKickState::POSITION_BEHIND_BALL),
+    static_cast<int>(CenterStopKickState::KICK_EXECUTE), [this]() -> bool {
       auto kick_position = getKickPosition();
 
       bool position_ok = robot()->getDistance(kick_position) < position_tolerance_;
@@ -195,12 +201,14 @@ void CenterStopKick::initialize()
 
   // KICK_EXECUTE -> KICK_COMPLETE（キック完了確認）
   addTransition(
-    CenterStopKickState::KICK_EXECUTE, CenterStopKickState::KICK_COMPLETE,
+    static_cast<int>(CenterStopKickState::KICK_EXECUTE),
+    static_cast<int>(CenterStopKickState::KICK_COMPLETE),
     [this]() -> bool { return isKickCompleted(); });
 
   // KICK_COMPLETE -> WAIT_BALL_STOP（リトライ遷移）
   addTransition(
-    CenterStopKickState::KICK_COMPLETE, CenterStopKickState::WAIT_BALL_STOP, [this]() -> bool {
+    static_cast<int>(CenterStopKickState::KICK_COMPLETE),
+    static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> bool {
       // result_check_start_が設定されている場合のみリトライ判定
       if (result_check_start_.seconds() == 0) {
         return false;

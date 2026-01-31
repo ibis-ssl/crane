@@ -18,12 +18,12 @@ jobs:
     container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
-#      # ccache configuration
-#      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-#      CC: /usr/lib/ccache/gcc
-#      CXX: /usr/lib/ccache/g++
-#      CCACHE_MAXSIZE: 10G
-#      USE_CCACHE: 1
+      # ccache configuration
+      PATH: /usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      CC: /usr/lib/ccache/gcc
+      CXX: /usr/lib/ccache/g++
+      CCACHE_MAXSIZE: 10G
+      USE_CCACHE: 1
     strategy:
       fail-fast: false
       matrix:
@@ -88,11 +88,11 @@ jobs:
 #            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-develop-
 #            build-${{ matrix.rosdistro }}-${{ runner.os }}-${{ runner.arch }}-
 
-#      - name: Setup ccache
-#        uses: hendrikmuhs/ccache-action@v1
-#        with:
-#          key: ${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.head_ref || github.ref_name }}
-#          max-size: 10G
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.rosdistro }}-${{ runner.os }}-${{ github.head_ref || github.ref_name }}
+          max-size: 10G
 
       - name: Run rosdep install
         run: |

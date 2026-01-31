@@ -6,10 +6,15 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/ball_calibration_data_collector.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane::skills
 {
+std::string BallCalibrationDataCollector::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<BallCalibrationState>(s)));
+}
 
 void BallCalibrationDataCollector::initialize()
 {
@@ -19,56 +24,57 @@ void BallCalibrationDataCollector::initialize()
   has_started_positioning_ = false;
   last_ball_position_ = Point::Zero();
 
-  addStateFunction(BallCalibrationState::ENTRY_POINT, [this]() -> Status {
+  addStateFunction(static_cast<int>(BallCalibrationState::ENTRY_POINT), [this]() -> Status {
     command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
     return Status::RUNNING;
   });
 
-  addStateFunction(BallCalibrationState::WAIT_BALL_STOP, [this]() -> Status {
+  addStateFunction(static_cast<int>(BallCalibrationState::WAIT_BALL_STOP), [this]() -> Status {
     command->stopHere();
     return Status::RUNNING;
   });
 
-  addStateFunction(BallCalibrationState::POSITION_BEHIND_BALL, [this]() -> Status {
-    Point current_ball_pos = world_model()->ball().pos;
+  addStateFunction(
+    static_cast<int>(BallCalibrationState::POSITION_BEHIND_BALL), [this]() -> Status {
+      Point current_ball_pos = world_model()->ball().pos;
 
-    // ボール位置変化検出（テレポート対応）
-    if (has_started_positioning_) {
-      double ball_position_change = (current_ball_pos - last_ball_position_).norm();
-      const double teleport_threshold = 0.2;  // 0.2m以上の変化でテレポートと判定
+      // ボール位置変化検出（テレポート対応）
+      if (has_started_positioning_) {
+        double ball_position_change = (current_ball_pos - last_ball_position_).norm();
+        const double teleport_threshold = 0.2;  // 0.2m以上の変化でテレポートと判定
 
-      if (ball_position_change > teleport_threshold) {
-        RCLCPP_WARN(
-          rclcpp::get_logger("BallCalibrationDataCollector"),
-          "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
+        if (ball_position_change > teleport_threshold) {
+          RCLCPP_WARN(
+            rclcpp::get_logger("BallCalibrationDataCollector"),
+            "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
 
-        // 位置取り状態をリセットして再計算を強制
-        has_started_positioning_ = false;
+          // 位置取り状態をリセットして再計算を強制
+          has_started_positioning_ = false;
+        }
       }
-    }
 
-    // 初回実行時または位置変化検出時：内部状態を初期化
-    if (not has_started_positioning_) {
-      has_started_positioning_ = true;
-      last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
-    }
+      // 初回実行時または位置変化検出時：内部状態を初期化
+      if (not has_started_positioning_) {
+        has_started_positioning_ = true;
+        last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
+      }
 
-    // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
-    Point approach_target = computeAroundBallApproachTargetDynamic(
-      current_ball_pos, kick_target_, robot()->pose.pos, approach_distance_, approach_distance_);
+      // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
+      Point approach_target = computeAroundBallApproachTargetDynamic(
+        current_ball_pos, kick_target_, robot()->pose.pos, approach_distance_, approach_distance_);
 
-    command->setTargetPosition(approach_target)
-      .lookAtFrom(kick_target_, world_model()->ball().pos)
-      .setOmegaLimit(10.0)
-      .disableBallAvoidance()
-      .disableGoalAreaAvoidance()
-      .setMaxVelocity("BallCalibrationState::POSITION_BEHIND_BALL", 3.0);
+      command->setTargetPosition(approach_target)
+        .lookAtFrom(kick_target_, world_model()->ball().pos)
+        .setOmegaLimit(10.0)
+        .disableBallAvoidance()
+        .disableGoalAreaAvoidance()
+        .setMaxVelocity("BallCalibrationState::POSITION_BEHIND_BALL", 3.0);
 
-    return Status::RUNNING;
-  });
+      return Status::RUNNING;
+    });
 
-  addStateFunction(BallCalibrationState::KICK_EXECUTE, [this]() -> Status {
+  addStateFunction(static_cast<int>(BallCalibrationState::KICK_EXECUTE), [this]() -> Status {
     command->setTargetPosition(world_model()->ball().pos)
       .lookAtBall()
       .setOmegaLimit(10.0)
@@ -82,13 +88,13 @@ void BallCalibrationDataCollector::initialize()
 
   // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
   addTransition(
-    BallCalibrationState::ENTRY_POINT, BallCalibrationState::WAIT_BALL_STOP,
-    [this]() -> bool { return true; });
+    static_cast<int>(BallCalibrationState::ENTRY_POINT),
+    static_cast<int>(BallCalibrationState::WAIT_BALL_STOP), [this]() -> bool { return true; });
 
   // WAIT_BALL_STOP -> POSITION_BEHIND_BALL（ボール停止確認）
   addTransition(
-    BallCalibrationState::WAIT_BALL_STOP, BallCalibrationState::POSITION_BEHIND_BALL,
-    [this]() -> bool {
+    static_cast<int>(BallCalibrationState::WAIT_BALL_STOP),
+    static_cast<int>(BallCalibrationState::POSITION_BEHIND_BALL), [this]() -> bool {
       auto now = rclcpp::Clock().now();
 
       if (not world_model()->ball().isStopped(ball_stop_threshold_)) {
@@ -108,8 +114,8 @@ void BallCalibrationDataCollector::initialize()
 
   // POSITION_BEHIND_BALL -> KICK_EXECUTE（位置・速度の条件のみ）
   addTransition(
-    BallCalibrationState::POSITION_BEHIND_BALL, BallCalibrationState::KICK_EXECUTE,
-    [this]() -> bool {
+    static_cast<int>(BallCalibrationState::POSITION_BEHIND_BALL),
+    static_cast<int>(BallCalibrationState::KICK_EXECUTE), [this]() -> bool {
       auto kick_position = getKickPosition();
 
       bool position_ok = robot()->getDistance(kick_position) < position_tolerance_;
@@ -120,7 +126,8 @@ void BallCalibrationDataCollector::initialize()
 
   // KICK_EXECUTE -> WAIT_BALL_STOP（キック完了・次サイクル）
   addTransition(
-    BallCalibrationState::KICK_EXECUTE, BallCalibrationState::WAIT_BALL_STOP, [this]() -> bool {
+    static_cast<int>(BallCalibrationState::KICK_EXECUTE),
+    static_cast<int>(BallCalibrationState::WAIT_BALL_STOP), [this]() -> bool {
       if (world_model()->ball().vel.norm() > ball_motion_velocity_threshold_) {
         // キック完了、次のパワーインデックスに進む
         advanceKickPowerIndex();

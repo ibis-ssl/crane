@@ -27,12 +27,17 @@ enum class AttackerState {
   FINAL_GUARD,
 };
 
-class Attacker : public SkillBaseWithState<AttackerState>
+class Attacker : public SkillBaseWithState
 {
+private:
+  static std::string getStateName(int s);
+
 public:
   template <typename... Args>
   explicit Attacker(Args &&... args)
-  : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
+  : SkillBaseWithState(
+      static_cast<int>(AttackerState::ENTRY_POINT), &Attacker::getStateName, "Attacker",
+      std::forward<Args>(args)...),
     kick_skill(command),
     goal_kick_skill(command),
     receive_skill(command)
@@ -41,6 +46,11 @@ public:
   }
 
   void initialize();
+
+  AttackerState getCurrentState() const
+  {
+    return static_cast<AttackerState>(SkillBaseWithState::getCurrentState());
+  }
 
   void printTextOnRobot(std::string s)
   {

@@ -7,10 +7,16 @@
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <memory>
 
 namespace crane::skills
 {
+std::string SingleBallPlacement::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<SingleBallPlacementStates>(s)));
+}
+
 void SingleBallPlacement::initialize()
 {
   setParameter("placement_x", 0.);
@@ -20,19 +26,21 @@ void SingleBallPlacement::initialize()
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
 
-  addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
     command->stopHere();
     return Status::RUNNING;
   });
 
   addTransition(
-    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       pull_back_target = std::nullopt;
       return false;
     });
 
   addTransition(
-    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::RECEIVE_BALL, [this]() {
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    static_cast<int>(SingleBallPlacementStates::RECEIVE_BALL), [this]() {
       if (not getParameter<bool>("pass_enable")) {
         return false;
       }
@@ -41,7 +49,7 @@ void SingleBallPlacement::initialize()
              world_model()->ball().isMovingTowards(robot()->pose.pos);
     });
 
-  addStateFunction(SingleBallPlacementStates::RECEIVE_BALL, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::RECEIVE_BALL), [this]() {
     if (not receive) {
       receive = std::make_shared<skills::Receive>(command);
       receive->setParameter("enable_software_bumper", false);
@@ -54,7 +62,8 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
-    SingleBallPlacementStates::RECEIVE_BALL, SingleBallPlacementStates::SLEEP, [this]() {
+    static_cast<int>(SingleBallPlacementStates::RECEIVE_BALL),
+    static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
       // 近くで停止したらSLEEP後にゆっくり離れる
       if (
         world_model()->ball().isStopped(0.1) &&
@@ -69,8 +78,8 @@ void SingleBallPlacement::initialize()
     });
 
   addTransition(
-    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this]() {
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE), [this]() {
       auto placement_target = world_model()->getBallPlacementTarget();
       if (
         placement_target &&
@@ -84,38 +93,39 @@ void SingleBallPlacement::initialize()
     });
 
   // 端にある場合、コート側からアプローチする
-  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
-    pull_back_target = world_model()->ball().pos;
-    const auto offset = getParameter<double>("コート端判定のオフセット");
-    const auto threshold_x = world_model()->fieldSize().x() * 0.5 + offset;
-    const auto threshold_y = world_model()->fieldSize().y() * 0.5 + offset;
-    if (std::abs(pull_back_target->x()) > threshold_x) {
-      pull_back_target->x() = std::copysign(threshold_x - 0.2, pull_back_target->x());
-    }
-    if (std::abs(pull_back_target->y()) > threshold_y) {
-      pull_back_target->y() = std::copysign(threshold_y - 0.2, pull_back_target->y());
-    }
+  addStateFunction(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE), [this]() {
+      pull_back_target = world_model()->ball().pos;
+      const auto offset = getParameter<double>("コート端判定のオフセット");
+      const auto threshold_x = world_model()->fieldSize().x() * 0.5 + offset;
+      const auto threshold_y = world_model()->fieldSize().y() * 0.5 + offset;
+      if (std::abs(pull_back_target->x()) > threshold_x) {
+        pull_back_target->x() = std::copysign(threshold_x - 0.2, pull_back_target->x());
+      }
+      if (std::abs(pull_back_target->y()) > threshold_y) {
+        pull_back_target->y() = std::copysign(threshold_y - 0.2, pull_back_target->y());
+      }
 
-    command->setTargetPosition(pull_back_target.value());
-    command->lookAtBallFrom(pull_back_target.value());
-    command->disableAnyAreaAvoidance();
-    double max_vel = std::min(1.5, robot()->getDistance(pull_back_target.value()) + 0.1);
-    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE", max_vel);
-    return Status::RUNNING;
-  });
+      command->setTargetPosition(pull_back_target.value());
+      command->lookAtBallFrom(pull_back_target.value());
+      command->disableAnyAreaAvoidance();
+      double max_vel = std::min(1.5, robot()->getDistance(pull_back_target.value()) + 0.1);
+      command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE", max_vel);
+      return Status::RUNNING;
+    });
 
   // 必要ない場合はコート端処理をスキップ
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, SingleBallPlacementStates::GO_OVER_BALL,
-    [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE),
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
       return world_model()->point_checker.isFieldInside(
         world_model()->ball().pos, getParameter<double>("コート端判定のオフセット") - 0.05);
     });
 
   // pull_back_targetに到達したら次のステートへ
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH), [this]() {
       if (not pull_back_target) {
         return false;
       } else {
@@ -125,21 +135,22 @@ void SingleBallPlacement::initialize()
     });
 
   // PULL_BACK_FROM_EDGE_TOUCH
-  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, [this]() {
-    command->disableAnyAreaAvoidance();
-    command->setTargetPosition(world_model()->ball().pos);
-    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH", 0.5);
+  addStateFunction(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH), [this]() {
+      command->disableAnyAreaAvoidance();
+      command->setTargetPosition(world_model()->ball().pos);
+      command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH", 0.5);
 
-    // 引っ張る
-    command->dribble(0.5);
+      // 引っ張る
+      command->dribble(0.5);
 
-    return skill_status;
-  });
+      return skill_status;
+    });
 
   // ボールを逃したらやり直し
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::ENTRY_POINT,
-    [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       using boost::math::constants::degree;
       return getAngleDiff(
                robot()->pose.theta, getAngle(world_model()->ball().pos - robot()->pose.pos)) >
@@ -147,15 +158,15 @@ void SingleBallPlacement::initialize()
     });
 
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
-    [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
       return world_model()->point_checker.isFieldInside(
         world_model()->ball().pos, getParameter<double>("コート端判定のオフセット"));
     });
 
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL), [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
       // ボールセンサーが利用可能な場合はその反応も確認する
@@ -171,12 +182,12 @@ void SingleBallPlacement::initialize()
 
   // 失敗の場合は最初に戻る
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE),
     [this]() { return skill_status == Status::FAILURE; });
 
   // PULL_BACK_FROM_EDGE_PULL
-  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL), [this]() {
     command->setDribblerTargetPosition(pull_back_target.value());
     // 角度はそのまま引っ張りたいので指定はしない
     command->dribble(0.6);
@@ -187,8 +198,8 @@ void SingleBallPlacement::initialize()
 
   // pull_back_targetに到着したら一旦離れる（Visionからボールが見える状況にする）
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP, [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP), [this]() {
       if ((robot()->kicker_center() - pull_back_target.value()).norm() < 0.03) {
         if (sleep) {
           sleep.reset();
@@ -199,49 +210,51 @@ void SingleBallPlacement::initialize()
       }
     });
 
-  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP, [this]() {
-    if (not sleep) {
-      sleep = std::make_shared<Sleep>(command);
-      sleep->setParameter("duration", 2.0);
-    }
-    skill_status = sleep->run();
-    command->stopHere();
-    command->disableAnyAreaAvoidance();
-    command->setOmegaLimit(0.0);
-    if (robot()->vel.linear.norm() < 0.05 && world_model()->ball().isStopped(0.05)) {
-      command->dribble(0.0);
-    } else {
-      command->dribble(0.3);
-    }
-    return Status::RUNNING;
-  });
+  addStateFunction(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP), [this]() {
+      if (not sleep) {
+        sleep = std::make_shared<Sleep>(command);
+        sleep->setParameter("duration", 2.0);
+      }
+      skill_status = sleep->run();
+      command->stopHere();
+      command->disableAnyAreaAvoidance();
+      command->setOmegaLimit(0.0);
+      if (robot()->vel.linear.norm() < 0.05 && world_model()->ball().isStopped(0.05)) {
+        command->dribble(0.0);
+      } else {
+        command->dribble(0.3);
+      }
+      return Status::RUNNING;
+    });
 
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE, [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE), [this]() {
       pull_back_angle = robot()->pose.theta;
       // sleepが終わったら成功
       return skill_status == Status::SUCCESS;
     });
 
-  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE, [this]() {
-    // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
-    Vector2 diff = (robot()->pose.pos - pull_back_target.value());
-    diff.normalize();
-    diff = diff * 0.8;
-    auto leave_pos = pull_back_target.value() + diff;
+  addStateFunction(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE), [this]() {
+      // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
+      Vector2 diff = (robot()->pose.pos - pull_back_target.value());
+      diff.normalize();
+      diff = diff * 0.8;
+      auto leave_pos = pull_back_target.value() + diff;
 
-    command->setTargetTheta(pull_back_angle);
-    command->setTargetPosition(leave_pos);
-    command->setOmegaLimit(0.0);
-    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE", 1.0);
-    command->disableAnyAreaAvoidance();
-    return skill_status;
-  });
+      command->setTargetTheta(pull_back_angle);
+      command->setTargetPosition(leave_pos);
+      command->setOmegaLimit(0.0);
+      command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE", 1.0);
+      command->disableAnyAreaAvoidance();
+      return skill_status;
+    });
 
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE,
-    SingleBallPlacementStates::ENTRY_POINT, [this]() {
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       // pull_back_targetからはなれたらENTRY_POINTへ移動
@@ -255,7 +268,7 @@ void SingleBallPlacement::initialize()
   //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
   //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
 
-  addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
     command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
@@ -281,7 +294,8 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
-    SingleBallPlacementStates::GO_OVER_BALL, SingleBallPlacementStates::PASS_TO_TARGET, [this]() {
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),
+    static_cast<int>(SingleBallPlacementStates::PASS_TO_TARGET), [this]() {
       if (not getParameter<bool>("pass_enable")) {
         return false;
       }
@@ -290,7 +304,7 @@ void SingleBallPlacement::initialize()
       return (placement_target - world_model()->ball().pos).norm() > 2.0;
     });
 
-  addStateFunction(SingleBallPlacementStates::PASS_TO_TARGET, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::PASS_TO_TARGET), [this]() {
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::PASS_TO_TARGET", 0.2);
@@ -308,10 +322,11 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
-    SingleBallPlacementStates::GO_OVER_BALL, SingleBallPlacementStates::CONTACT_BALL,
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),
+    static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
     [this]() { return skill_status == Status::SUCCESS; });
 
-  addStateFunction(SingleBallPlacementStates::CONTACT_BALL, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::CONTACT_BALL), [this]() {
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::CONTACT_BALL", 0.2);
@@ -325,7 +340,8 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
-    SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
+    static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
+    static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
       static int count = 0;
 
@@ -352,7 +368,8 @@ void SingleBallPlacement::initialize()
     });
 
   addTransition(
-    SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+    static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       // ロボットの向きがボールの方を向いていなかったらやり直し
       using boost::math::constants::degree;
       return std::abs(getAngleDiff(
@@ -360,11 +377,11 @@ void SingleBallPlacement::initialize()
              45 * degree<double>();
     });
 
-  addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
 
-    Point ball_pos = [&]() -> Point {
+    [[maybe_unused]] Point ball_pos = [&]() -> Point {
       if (robot()->ball_sensor) {
         return robot()->pose.pos + getNormVec(robot()->pose.theta) * 0.09;
       } else {
@@ -406,7 +423,8 @@ void SingleBallPlacement::initialize()
   //   });
 
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP, [this]() {
+    static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
+    static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
       if (sleep) {
         sleep.reset();
       }
@@ -424,7 +442,8 @@ void SingleBallPlacement::initialize()
       }
     });
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+    static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
       bool flag = robot()->ball_sensor_stamp.has_value() &&
                   now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
@@ -446,7 +465,7 @@ void SingleBallPlacement::initialize()
   //   SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
   //   [this]() { return skill_status == Status::FAILURE; });
 
-  addStateFunction(SingleBallPlacementStates::SLEEP, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
     if (not sleep) {
       sleep = std::make_shared<Sleep>(command);
       sleep->setParameter("duration", 2.0);
@@ -467,12 +486,14 @@ void SingleBallPlacement::initialize()
   //   return (world_model()->ball().pos - placement_target).norm() > 0.15;
   // });
 
-  addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL, [this]() {
-    pull_back_angle = robot()->pose.theta;
-    return skill_status == Status::SUCCESS;
-  });
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::SLEEP),
+    static_cast<int>(SingleBallPlacementStates::LEAVE_BALL), [this]() {
+      pull_back_angle = robot()->pose.theta;
+      return skill_status == Status::SUCCESS;
+    });
 
-  addStateFunction(SingleBallPlacementStates::LEAVE_BALL, [this]() {
+  addStateFunction(static_cast<int>(SingleBallPlacementStates::LEAVE_BALL), [this]() {
     // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
     // ボール判定15cm + ロボット判定50cm + ロボット半径10cm + マージン5com = 80cm
     Vector2 diff = -getNormVec(robot()->pose.theta) * 0.8;
@@ -494,7 +515,8 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
-    SingleBallPlacementStates::LEAVE_BALL, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+    static_cast<int>(SingleBallPlacementStates::LEAVE_BALL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動

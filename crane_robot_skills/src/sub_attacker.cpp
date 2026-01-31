@@ -7,6 +7,8 @@
 #include <crane_geometry/ddps.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
 
 namespace crane::skills
 {

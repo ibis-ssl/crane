@@ -12,7 +12,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+  if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g)
+  endif()
 endif()
 
 # find dependencies
@@ -38,6 +41,13 @@ target_link_libraries(game_controller_component
   robocup_ssl_msgs::robocup_ssl_msgs_proto
 )
 
+# Enable Unity Build
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(game_controller_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(game_controller_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
+endif()
+
 ament_auto_add_executable(game_controller_node
   src/game_controller_node.cpp
 )
@@ -50,6 +60,11 @@ ament_auto_add_library(grsim_component SHARED
   src/grsim_component.cpp
 )
 target_link_libraries(grsim_component ${robocup_ssl_msgs_LIBRARIES})
+
+if(CRANE_UNITY_BUILD)
+  set_target_properties(grsim_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(grsim_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
+endif()
 
 ament_auto_add_executable(grsim_node
   src/grsim_node.cpp
@@ -64,6 +79,11 @@ ament_auto_add_library(tracker_component SHARED
 )
 target_link_libraries(tracker_component ${robocup_ssl_msgs_LIBRARIES})
 
+if(CRANE_UNITY_BUILD)
+  set_target_properties(tracker_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(tracker_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
+endif()
+
 ament_auto_add_executable(tracker_node
   src/tracker_node.cpp
 )
@@ -76,6 +96,11 @@ ament_auto_add_library(vision_component SHARED
   src/vision_component.cpp
 )
 target_link_libraries(vision_component ${robocup_ssl_msgs_LIBRARIES})
+
+if(CRANE_UNITY_BUILD)
+  set_target_properties(vision_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(vision_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
+endif()
 
 ament_auto_add_executable(vision_node
   src/vision_node.cpp

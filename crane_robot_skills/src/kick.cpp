@@ -6,11 +6,16 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/kick.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "../include/crane_robot_skills/single_ball_placement.hpp"
 
 namespace crane::skills
 {
+std::string Kick::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<KickState>(s)));
+}
 
 void Kick::initialize()
 {
@@ -37,14 +42,16 @@ void Kick::initialize()
   receive_skill.setParameter("redirect_target", Point(0, 0));
   receive_skill.setParameter("redirect_kick_power", 0.3);
 
-  addStateFunction(KickState::ENTRY_POINT, [this]() {
+  addStateFunction(static_cast<int>(KickState::ENTRY_POINT), [this]() {
     visualizer->drawDebugLabel(robot()->pose.pos, "Kick::ENTRY_POINT");
     return Status::RUNNING;
   });
 
-  addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL_AND_KICK, [this]() { return true; });
+  addTransition(
+    static_cast<int>(KickState::ENTRY_POINT), static_cast<int>(KickState::AROUND_BALL_AND_KICK),
+    [this]() { return true; });
 
-  addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
+  addStateFunction(static_cast<int>(KickState::POSITIVE_REDIRECT_KICK), [this]() {
     visualizer->drawDebugLabel(robot()->pose.pos, "Kick::POSITIVE_REDIRECT_KICK");
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
     const auto & ball_pos = world_model()->ball().pos;
@@ -75,12 +82,14 @@ void Kick::initialize()
     return Status::RUNNING;
   });
 
-  addTransition(KickState::POSITIVE_REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
-    return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) or
-           !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
-  });
+  addTransition(
+    static_cast<int>(KickState::POSITIVE_REDIRECT_KICK), static_cast<int>(KickState::ENTRY_POINT),
+    [this]() {
+      return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) or
+             !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
+    });
 
-  addStateFunction(KickState::REDIRECT_KICK, [this]() {
+  addStateFunction(static_cast<int>(KickState::REDIRECT_KICK), [this]() {
     visualizer->drawDebugLabel(robot()->pose.pos, "Kick::REDIRECT_KICK");
     receive_skill.setParameter("target", getParameter<Point>("target"));
     if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
@@ -92,18 +101,21 @@ void Kick::initialize()
     return receive_skill.update();
   });
 
-  addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL_AND_KICK, [this]() {
-    // ボールが止まったら回り込みへ
-    return not world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
-  });
+  addTransition(
+    static_cast<int>(KickState::REDIRECT_KICK), static_cast<int>(KickState::AROUND_BALL_AND_KICK),
+    [this]() {
+      // ボールが止まったら回り込みへ
+      return not world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
+    });
 
-  addTransition(KickState::REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
-    // 素早く遠ざかっていったら終了
-    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
-  });
+  addTransition(
+    static_cast<int>(KickState::REDIRECT_KICK), static_cast<int>(KickState::ENTRY_POINT), [this]() {
+      // 素早く遠ざかっていったら終了
+      return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+             world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
+    });
 
-  addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
+  addStateFunction(static_cast<int>(KickState::AROUND_BALL_AND_KICK), [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball().pos;
     // 視認性の高いキック方向の可視化: 太い矢印 + 角度しきい値の扇
@@ -173,11 +185,13 @@ void Kick::initialize()
     return Status::RUNNING;
   });
 
-  addTransition(KickState::AROUND_BALL_AND_KICK, KickState::ENTRY_POINT, [this]() {
-    // 素早く遠ざかっていったら終了
-    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
-  });
+  addTransition(
+    static_cast<int>(KickState::AROUND_BALL_AND_KICK), static_cast<int>(KickState::ENTRY_POINT),
+    [this]() {
+      // 素早く遠ざかっていったら終了
+      return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+             world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
+    });
 }
 
 auto Kick::getBallExitPointFromField(const double offset) -> Point

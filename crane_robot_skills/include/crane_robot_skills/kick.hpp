@@ -21,17 +21,27 @@ enum class KickState {
   POSITIVE_REDIRECT_KICK,
 };
 
-class Kick : public SkillBaseWithState<KickState>
+class Kick : public SkillBaseWithState
 {
 private:
+  static std::string getStateName(int s);
+
   Receive receive_skill;
 
 public:
   template <typename... Args>
   explicit Kick(Args &&... args)
-  : SkillBaseWithState<KickState>("Kick", std::forward<Args>(args)...), receive_skill(command)
+  : SkillBaseWithState(
+      static_cast<int>(KickState::ENTRY_POINT), &Kick::getStateName, "Kick",
+      std::forward<Args>(args)...),
+    receive_skill(command)
   {
     initialize();
+  }
+
+  KickState getCurrentState() const
+  {
+    return static_cast<KickState>(SkillBaseWithState::getCurrentState());
   }
 
   /**

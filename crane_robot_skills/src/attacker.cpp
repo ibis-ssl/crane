@@ -7,10 +7,16 @@
 #include <crane_geometry/ddps.hpp>
 #include <crane_physics/pass.hpp>
 #include <crane_robot_skills/attacker.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane::skills
 {
+std::string Attacker::getStateName(int s)
+{
+  return std::string(magic_enum::enum_name(static_cast<AttackerState>(s)));
+}
+
 namespace
 {
 constexpr double GOAL_ANGLE_THRESHOLD_DEG = 3.0;
@@ -27,7 +33,7 @@ void Attacker::initialize()
   setParameter("moving_ball_velocity", MOVING_BALL_VELOCITY);
 
   receive_skill.setParameter("policy", std::string("closest"));
-  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
+  addStateFunction(static_cast<int>(AttackerState::ENTRY_POINT), [this]() -> Status {
     command->setTargetPosition(world_model()->ball().pos);
     pass_receiver_id = std::nullopt;
     visualizer->circle()
@@ -41,40 +47,44 @@ void Attacker::initialize()
 
   // "ENTRY_POINT"のstate functionは実行されない（skill_base.hppのStateMachine::update参照）
   // ので自分への遷移関数で初期化処理を実装
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
-    pass_receiver_id = std::nullopt;
-    receive_skill.clearVisualizer();
-    kick_skill.clearVisualizer();
-    goal_kick_skill.clearVisualizer();
-    return false;
-  });
+  addTransition(
+    static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::ENTRY_POINT),
+    [this]() -> bool {
+      pass_receiver_id = std::nullopt;
+      receive_skill.clearVisualizer();
+      kick_skill.clearVisualizer();
+      goal_kick_skill.clearVisualizer();
+      return false;
+    });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
-    // セットプレイのときは強制パス
-    auto game_command = world_model()->getMsg().play_situation.command.value;
-    // ボールの停止条件は、INPLAY切り替わりの遅延対策
-    if (
-      (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
-       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
-      world_model()->ball().isStopped()) {
-      // 上位層のパス先が未選択なら強制パスに入らない
-      if (world_model()->getMsg().game_analysis.pass_target_id < 0) {
+  addTransition(
+    static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::FORCED_PASS),
+    [this]() -> bool {
+      // セットプレイのときは強制パス
+      auto game_command = world_model()->getMsg().play_situation.command.value;
+      // ボールの停止条件は、INPLAY切り替わりの遅延対策
+      if (
+        (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
+         game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
+        world_model()->ball().isStopped()) {
+        // 上位層のパス先が未選択なら強制パスに入らない
+        if (world_model()->getMsg().game_analysis.pass_target_id < 0) {
+          return false;
+        }
+        forced_pass_receiver_id =
+          static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
+        pass_receiver_id = forced_pass_receiver_id;
+        auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
+        kick_skill.setParameter("target", receiver->pose.pos);
+        return true;
+      } else {
         return false;
       }
-      forced_pass_receiver_id =
-        static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
-      pass_receiver_id = forced_pass_receiver_id;
-      auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
-      kick_skill.setParameter("target", receiver->pose.pos);
-      return true;
-    } else {
-      return false;
-    }
-  });
+    });
 
   // ----- ダブルタッチ防止の為、FORCED_PASS -> ENTRY_POINT の状態遷移は設けない ------- //
 
-  addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
+  addStateFunction(static_cast<int>(AttackerState::FORCED_PASS), [this]() -> Status {
     // パス
     command->disableBallAvoidance();
     command->setMaxVelocity("AttackerState::FORCED_PASS", 2.0);
@@ -98,35 +108,39 @@ void Attacker::initialize()
     return Status::RUNNING;
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE, [this]() -> bool {
-    // ボールが遠くにいる/動いている/自分に向かってきている
-    if (
-      robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-      world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
-      world_model()->ball().isMovingTowards(robot()->pose.pos)) {
-      return true;
-    } else {
-      return false;
-    }
-  });
+  addTransition(
+    static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::RECEIVE),
+    [this]() -> bool {
+      // ボールが遠くにいる/動いている/自分に向かってきている
+      if (
+        robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
+        world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
+        world_model()->ball().isMovingTowards(robot()->pose.pos)) {
+        return true;
+      } else {
+        return false;
+      }
+    });
 
-  addTransition(AttackerState::RECEIVE, AttackerState::ENTRY_POINT, [this]() -> bool {
-    using std::chrono_literals::operator""s;
-    if (world_model()->ball().isStopped(MOVING_BALL_VELOCITY)) {
-      // ボールが止まっている
-      return true;
-    } else if (world_model()->ball().isMovingAwayFrom(robot()->pose.pos)) {
-      // ボールが自分から離れていっている（多分受取に失敗した）
-      return true;
-    } else if (robot()->ball_contact.getContactDuration() > 0.2s) {
-      // 受取に成功してドリブラで触れている
-      return true;
-    } else {
-      return false;
-    }
-  });
+  addTransition(
+    static_cast<int>(AttackerState::RECEIVE), static_cast<int>(AttackerState::ENTRY_POINT),
+    [this]() -> bool {
+      using std::chrono_literals::operator""s;
+      if (world_model()->ball().isStopped(MOVING_BALL_VELOCITY)) {
+        // ボールが止まっている
+        return true;
+      } else if (world_model()->ball().isMovingAwayFrom(robot()->pose.pos)) {
+        // ボールが自分から離れていっている（多分受取に失敗した）
+        return true;
+      } else if (robot()->ball_contact.getContactDuration() > 0.2s) {
+        // 受取に成功してドリブラで触れている
+        return true;
+      } else {
+        return false;
+      }
+    });
 
-  addStateFunction(AttackerState::RECEIVE, [this]() -> Status {
+  addStateFunction(static_cast<int>(AttackerState::RECEIVE), [this]() -> Status {
     auto redirect_target = [&]() -> Point {
       double angle = GoalKick::getBestAngleToShootFromPoint(
         10.0 * M_PI / 180., robot()->pose.pos, world_model(), visualizer);
@@ -169,13 +183,15 @@ void Attacker::initialize()
     return receive_skill.run();
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK, [this]() -> bool { return true; });
+  addTransition(
+    static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::KICK),
+    [this]() -> bool { return true; });
 
-  addTransition(AttackerState::KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->ball().isMoving(MOVING_BALL_VELOCITY);
-  });
+  addTransition(
+    static_cast<int>(AttackerState::KICK), static_cast<int>(AttackerState::ENTRY_POINT),
+    [this]() -> bool { return world_model()->ball().isMoving(MOVING_BALL_VELOCITY); });
 
-  addStateFunction(AttackerState::KICK, [this]() -> Status {
+  addStateFunction(static_cast<int>(AttackerState::KICK), [this]() -> Status {
     double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
 
     // パスは pass_target_id がある場合のみ検討

@@ -31,17 +31,27 @@ enum class CenterStopKickState {
  * ボールをフィールド中心(0,0)で正確に停止させるストレートキックを実行する。
  * KickerModelとBallPhysicsModelを統合して高精度な停止距離計算を行う。
  */
-class CenterStopKick : public SkillBaseWithState<CenterStopKickState>
+class CenterStopKick : public SkillBaseWithState
 {
+private:
+  static std::string getStateName(int s);
+
 public:
   template <typename... Args>
   explicit CenterStopKick(Args &&... args)
-  : SkillBaseWithState<CenterStopKickState>("CenterStopKick", std::forward<Args>(args)...)
+  : SkillBaseWithState(
+      static_cast<int>(CenterStopKickState::ENTRY_POINT), &CenterStopKick::getStateName,
+      "CenterStopKick", std::forward<Args>(args)...)
   {
     initialize();
   }
 
   void initialize();
+
+  CenterStopKickState getCurrentState() const
+  {
+    return static_cast<CenterStopKickState>(SkillBaseWithState::getCurrentState());
+  }
 
 private:
   /**

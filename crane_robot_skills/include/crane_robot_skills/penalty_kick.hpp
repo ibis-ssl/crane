@@ -22,18 +22,28 @@ enum class PenaltyKickState {
   DONE,
 };
 
-class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
+class PenaltyKick : public SkillBaseWithState
 {
+private:
+  static std::string getStateName(int s);
+
 public:
   template <typename... Args>
   explicit PenaltyKick(Args &&... args)
-  : SkillBaseWithState<PenaltyKickState>("PenaltyKick", std::forward<Args>(args)...),
+  : SkillBaseWithState(
+      static_cast<int>(PenaltyKickState::PREPARE), &PenaltyKick::getStateName, "PenaltyKick",
+      std::forward<Args>(args)...),
     kick_skill(command)
   {
     initialize();
   }
 
   void initialize();
+
+  PenaltyKickState getCurrentState() const
+  {
+    return static_cast<PenaltyKickState>(SkillBaseWithState::getCurrentState());
+  }
 
   Kick kick_skill;
 
