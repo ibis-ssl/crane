@@ -123,6 +123,6 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           source install/setup.bash
-          colcon test --base-paths .
+          colcon test --base-paths . --merge-install
           colcon test-result --verbose
         shell: bash
