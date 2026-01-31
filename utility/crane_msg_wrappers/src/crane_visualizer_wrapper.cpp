@@ -15,6 +15,7 @@ auto VisualizerMessageBuilder::flush() -> void
     update_msg.layer = layer;
     update_msg.operation = operation;
     update_msg.svg_primitives = message_buffer;
+    update_msg.duration = duration;
     CraneVisualizerBuffer::buffer->message_buffer.updates.push_back(update_msg);
     message_buffer.clear();
   }

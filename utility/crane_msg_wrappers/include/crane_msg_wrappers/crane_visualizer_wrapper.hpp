@@ -55,6 +55,7 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   std::string layer;
   std::string operation = "replace";  // default operation
+  double duration = 0.0;              // 有効期限（秒）。0 = 無限（デフォルト）
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
@@ -82,6 +83,13 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   [[nodiscard]] auto asClear() -> VisualizerMessageBuilder &
   {
     operation = "clear";
+    return *this;
+  }
+
+  // Duration modifier
+  [[nodiscard]] auto withDuration(double seconds) -> VisualizerMessageBuilder &
+  {
+    duration = seconds;
     return *this;
   }
 

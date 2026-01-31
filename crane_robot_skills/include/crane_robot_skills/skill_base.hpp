@@ -93,12 +93,16 @@ public:
   : command(std::make_shared<PositionCommandWrapper>(name, id, wm)),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name))
   {
+    // スキル用ビジュアライザのデフォルトduration: 0.5秒
+    visualizer->withDuration(0.5);
   }
 
   explicit SkillInterface(std::shared_ptr<PositionCommandWrapper> & command)
   : command(command),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name))
   {
+    // スキル用ビジュアライザのデフォルトduration: 0.5秒
+    visualizer->withDuration(0.5);
   }
 
   virtual ~SkillInterface() { visualizer->clearBuffer(); }
