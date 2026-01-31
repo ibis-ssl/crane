@@ -24,7 +24,22 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_local_planner.cpp
 )
 
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 2)
+endif()
+
 target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb Eigen3::Eigen)
+
+target_precompile_headers(${PROJECT_NAME}_component
+  PRIVATE
+    "<Eigen/Core>"
+    "<Eigen/Geometry>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+)
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 

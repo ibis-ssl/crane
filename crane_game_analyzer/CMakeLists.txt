@@ -32,6 +32,12 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/metrics/sub_attacker_metrics.cpp
 )
 
+option(CRANE_UNITY_BUILD "Enable unity build" ON)
+if(CRANE_UNITY_BUILD)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
+endif()
+
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
     "<crane_geometry/boost_geometry.hpp>"
