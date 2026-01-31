@@ -24,7 +24,7 @@ class DiagnosticsReporter
 {
 public:
   explicit DiagnosticsReporter(
-    rclcpp::Clock::SharedPtr clock, std::shared_ptr<SessionRegistry> tactic_registry,
+    rclcpp::Clock::SharedPtr clock, std::shared_ptr<SessionRegistry> session_registry,
     rclcpp::Logger logger);
 
   /**
@@ -41,7 +41,7 @@ public:
 
 private:
   rclcpp::Clock::SharedPtr clock_;
-  std::shared_ptr<SessionRegistry> tactic_registry_;
+  std::shared_ptr<SessionRegistry> session_registry_;
   rclcpp::Logger logger_;
 
   rclcpp::Time last_planning_time_;

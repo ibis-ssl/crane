@@ -14,7 +14,7 @@ from enum import Enum
 class ChangeType(Enum):
     """Type of intent change."""
 
-    TACTIC_CHANGED = "tactic_changed"
+    SESSION_CHANGED = "session_changed"
     SKILL_CHANGED = "skill_changed"
     STATE_CHANGED = "state_changed"
     ROBOT_ASSIGNED = "robot_assigned"
@@ -27,7 +27,7 @@ class RobotIntent:
     """Represents a robot's current intent."""
 
     robot_id: int
-    tactic_name: str = ""
+    session_name: str = ""
     skill_name: str = ""  # planning_factors[0].name
     skill_state: str = ""  # planning_factors[0].value
     nested_skills: List[Dict[str, str]] = field(
@@ -41,7 +41,7 @@ class RobotIntent:
             return NotImplemented
         return (
             self.robot_id == other.robot_id
-            and self.tactic_name == other.tactic_name
+            and self.session_name == other.session_name
             and self.skill_name == other.skill_name
             and self.skill_state == other.skill_state
         )
@@ -62,7 +62,7 @@ class IntentChange:
         priority_map = {
             ChangeType.SKILL_COMPLETED: 3,
             ChangeType.SKILL_FAILED: 3,
-            ChangeType.TACTIC_CHANGED: 2,
+            ChangeType.SESSION_CHANGED: 2,
             ChangeType.SKILL_CHANGED: 2,
             ChangeType.ROBOT_ASSIGNED: 2,
             ChangeType.STATE_CHANGED: 1,
@@ -90,23 +90,23 @@ class IntentTracker:
         self._current_intents: Dict[int, RobotIntent] = {}
         # Previous intent state
         self._previous_intents: Dict[int, RobotIntent] = {}
-        # Tactic mapping (robot_id -> tactic_name)
-        self._robot_to_tactic: Dict[int, str] = {}
+        # Session mapping (robot_id -> session_name)
+        self._robot_to_session: Dict[int, str] = {}
 
     def update_from_robot_select_results(self, msg: any) -> None:
-        """Update tactic information from RobotSelectResults message.
+        """Update session information from RobotSelectResults message.
 
         Args:
             msg: RobotSelectResults message
         """
         # Clear old mapping
-        self._robot_to_tactic.clear()
+        self._robot_to_session.clear()
 
         # Build new mapping
         for result in msg.results:
-            tactic_name = result.name
+            session_name = result.name
             for robot_id in result.selected_robots:
-                self._robot_to_tactic[robot_id] = tactic_name
+                self._robot_to_session[robot_id] = session_name
 
     def update_from_control_targets(self, msg: any) -> None:
         """Update intent information from PositionCommands message.
@@ -121,7 +121,7 @@ class IntentTracker:
         new_intents = {}
         for cmd in msg.robot_commands:
             robot_id = cmd.robot_id
-            tactic_name = self._robot_to_tactic.get(robot_id, "Unknown")
+            session_name = self._robot_to_session.get(robot_id, "Unknown")
 
             # Extract skill and state from planning_factors
             skill_name = ""
@@ -147,7 +147,7 @@ class IntentTracker:
 
             new_intents[robot_id] = RobotIntent(
                 robot_id=robot_id,
-                tactic_name=tactic_name,
+                session_name=session_name,
                 skill_name=skill_name,
                 skill_state=skill_state,
                 nested_skills=nested_skills,
@@ -167,13 +167,13 @@ class IntentTracker:
         # No previous state -> initial assignment
         if not self._previous_intents:
             for robot_id, intent in self._current_intents.items():
-                if intent.tactic_name and intent.tactic_name != "Unknown":
+                if intent.session_name and intent.session_name != "Unknown":
                     changes.append(
                         IntentChange(
                             change_type=ChangeType.ROBOT_ASSIGNED,
                             robot_id=robot_id,
                             old_value="",
-                            new_value=intent.tactic_name,
+                            new_value=intent.session_name,
                             context={
                                 "skill": intent.skill_name,
                                 "state": intent.skill_state,
@@ -188,13 +188,13 @@ class IntentTracker:
 
             # New robot assignment
             if not previous:
-                if current.tactic_name and current.tactic_name != "Unknown":
+                if current.session_name and current.session_name != "Unknown":
                     changes.append(
                         IntentChange(
                             change_type=ChangeType.ROBOT_ASSIGNED,
                             robot_id=robot_id,
                             old_value="",
-                            new_value=current.tactic_name,
+                            new_value=current.session_name,
                             context={
                                 "skill": current.skill_name,
                                 "state": current.skill_state,
@@ -203,14 +203,14 @@ class IntentTracker:
                     )
                 continue
 
-            # Tactic change
-            if previous.tactic_name != current.tactic_name:
+            # Session change
+            if previous.session_name != current.session_name:
                 changes.append(
                     IntentChange(
-                        change_type=ChangeType.TACTIC_CHANGED,
+                        change_type=ChangeType.SESSION_CHANGED,
                         robot_id=robot_id,
-                        old_value=previous.tactic_name,
-                        new_value=current.tactic_name,
+                        old_value=previous.session_name,
+                        new_value=current.session_name,
                         context={
                             "skill": current.skill_name,
                             "state": current.skill_state,

@@ -21,7 +21,7 @@ RobotAllocator::RobotAllocator(
   std::shared_ptr<ConfigurationManager> config_manager,
   std::shared_ptr<SessionRegistry> tactic_registry, rclcpp::Logger logger)
 : config_manager_(config_manager),
-  tactic_registry_(tactic_registry),
+  session_registry_(tactic_registry),
   logger_(logger),
   global_allocator_(std::make_unique<GlobalRobotAllocator>(logger))
 {
@@ -45,11 +45,11 @@ auto RobotAllocator::allocate(
   const auto & session_capacities = session_capacities_opt.value();
 
   // 前回のプランナーリストを保存し、新しいリストをクリア
-  auto prev_available_planners = tactic_registry_->getAllPlanners();
-  tactic_registry_->clear();
+  auto prev_available_planners = session_registry_->getAllPlanners();
+  session_registry_->clear();
 
-  // TacticRequirementリストを構築
-  std::vector<TacticRequirement> requirements;
+  // SessionRequirementリストを構築
+  std::vector<SessionRequirement> requirements;
   int priority = 0;
   for (const auto & session_capacity : session_capacities) {
     if (session_capacity.max_robots <= 0) {
@@ -57,17 +57,17 @@ auto RobotAllocator::allocate(
     }
 
     // プランナー生成
-    auto tactic = tactic_registry_->getOrCreatePlanner(
+    auto session = session_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
     // 適性関数とハード制約フラグを取得
-    auto suitability_func = tactic->getRobotSuitabilityFunc();
-    bool is_hard = tactic->isHardConstraint();
+    auto suitability_func = session->getRobotSuitabilityFunc();
+    bool is_hard = session->isHardConstraint();
 
     // 動的ロボット数を取得してクランプ
     int desired =
-      tactic->getDesiredRobotNumber(session_capacity.min_robots, session_capacity.max_robots);
+      session->getDesiredRobotNumber(session_capacity.min_robots, session_capacity.max_robots);
     int effective_max =
       std::clamp(desired, session_capacity.min_robots, session_capacity.max_robots);
 
@@ -84,54 +84,54 @@ auto RobotAllocator::allocate(
 
   // 割当結果を適用
   crane_msgs::msg::RobotSelectResults results;
-  for (const auto & [tactic_name, robot_ids] : allocation) {
-    // Tacticを取得または再生成
-    auto tactic_it = std::find_if(
-      tactic_registry_->getAllPlanners().begin(), tactic_registry_->getAllPlanners().end(),
-      [&tactic_name](const auto & t) { return t->name == tactic_name; });
+  for (const auto & [session_name, robot_ids] : allocation) {
+    // Sessionを取得または再生成
+    auto session_it = std::find_if(
+      session_registry_->getAllPlanners().begin(), session_registry_->getAllPlanners().end(),
+      [&session_name](const auto & t) { return t->name == session_name; });
 
-    SessionBase::SharedPtr tactic;
-    if (tactic_it != tactic_registry_->getAllPlanners().end()) {
-      tactic = *tactic_it;
+    SessionBase::SharedPtr session;
+    if (session_it != session_registry_->getAllPlanners().end()) {
+      session = *session_it;
     } else {
       // 見つからない場合は新規生成（通常はここには来ない）
-      auto session_it = std::find_if(
+      auto capacity_it = std::find_if(
         session_capacities.begin(), session_capacities.end(),
-        [&tactic_name](const auto & s) { return s.session_name == tactic_name; });
-      if (session_it != session_capacities.end()) {
-        tactic = tactic_registry_->getOrCreatePlanner(
-          tactic_name, world_model, node, prev_available_planners, session_it->params);
+        [&session_name](const auto & s) { return s.session_name == session_name; });
+      if (capacity_it != session_capacities.end()) {
+        session = session_registry_->getOrCreatePlanner(
+          session_name, world_model, node, prev_available_planners, capacity_it->params);
       }
     }
 
-    if (tactic) {
-      // ロボット割当をTacticに反映
+    if (session) {
+      // ロボット割当をSessionに反映
       // GlobalRobotAllocatorが選択したロボットを直接設定（getSelectedRobotsをバイパス）
-      tactic->setAllocatedRobots(robot_ids);
+      session->setAllocatedRobots(robot_ids);
 
       // レジストリに追加
-      if (tactic_it == tactic_registry_->getAllPlanners().end()) {
-        tactic_registry_->addPlanner(tactic);
+      if (session_it == session_registry_->getAllPlanners().end()) {
+        session_registry_->addPlanner(session);
       }
 
       // AllocationStateを更新（ターゲット位置は現時点では不明なのでロボット位置を使用）
       for (auto id : robot_ids) {
         auto robot = world_model->getOurRobot(id);
-        allocation_state_.updateAssignment(id, tactic_name, robot->pose.pos);
-        prev_robot_roles_.insert_or_assign(id, RobotRole{tactic_name, ""});
+        allocation_state_.updateAssignment(id, session_name, robot->pose.pos);
+        prev_robot_roles_.insert_or_assign(id, RobotRole{session_name, ""});
       }
 
       // RobotSelectResult を構築
       crane_msgs::msg::RobotSelectResult result;
-      result.name = tactic_name;
+      result.name = session_name;
 
       // session_capacities から min/max を取得
-      auto session_it = std::find_if(
+      auto capacity_it = std::find_if(
         session_capacities.begin(), session_capacities.end(),
-        [&tactic_name](const auto & s) { return s.session_name == tactic_name; });
-      if (session_it != session_capacities.end()) {
-        result.min_robots_num = static_cast<uint8_t>(session_it->min_robots);
-        result.max_robots_num = static_cast<uint8_t>(session_it->max_robots);
+        [&session_name](const auto & s) { return s.session_name == session_name; });
+      if (capacity_it != session_capacities.end()) {
+        result.min_robots_num = static_cast<uint8_t>(capacity_it->min_robots);
+        result.max_robots_num = static_cast<uint8_t>(capacity_it->max_robots);
       }
 
       result.selectable_robots_num = static_cast<uint8_t>(selectable_robot_ids.size());
@@ -169,8 +169,8 @@ auto RobotAllocator::detectRobotChange(const std::vector<uint8_t> & observed_rob
 auto RobotAllocator::getAssignedRobotIds() const -> std::vector<uint8_t>
 {
   auto assigned_robot_ids =
-    tactic_registry_->getAllPlanners() |
-    ranges::views::transform([](const auto & tactic) { return tactic->getRobots(); }) |
+    session_registry_->getAllPlanners() |
+    ranges::views::transform([](const auto & session) { return session->getRobots(); }) |
     ranges::views::join | ranges::views::transform([](const auto & robot) { return robot.id; }) |
     ranges::to<std::vector>() | ranges::actions::sort;
   return assigned_robot_ids;
@@ -180,13 +180,13 @@ auto RobotAllocator::buildAssignmentLog() const -> std::string
 {
   std::stringstream assignment_log;
   bool first = true;
-  for (const auto & tactic : tactic_registry_->getAllPlanners()) {
+  for (const auto & session : session_registry_->getAllPlanners()) {
     if (!first) {
       assignment_log << ", ";
     }
     first = false;
-    assignment_log << tactic->name << ":[";
-    const auto & robots = tactic->getRobots();
+    assignment_log << session->name << ":[";
+    const auto & robots = session->getRobots();
     for (size_t i = 0; i < robots.size(); ++i) {
       if (i > 0) {
         assignment_log << ",";

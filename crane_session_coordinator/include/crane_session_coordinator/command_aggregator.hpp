@@ -24,7 +24,7 @@ namespace crane
 class CommandAggregator
 {
 public:
-  explicit CommandAggregator(std::shared_ptr<SessionRegistry> tactic_registry);
+  explicit CommandAggregator(std::shared_ptr<SessionRegistry> session_registry);
 
   /**
    * @brief 全プランナーからコマンドを収集してメッセージを構築
@@ -50,7 +50,7 @@ private:
    */
   auto assignPriorities(crane_msgs::msg::PositionCommands & msg) -> void;
 
-  std::shared_ptr<SessionRegistry> tactic_registry_;
+  std::shared_ptr<SessionRegistry> session_registry_;
 };
 
 }  // namespace crane

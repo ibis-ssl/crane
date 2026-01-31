@@ -23,11 +23,11 @@ namespace crane
 {
 
 /**
- * @brief Tacticのロボット要求情報
+ * @brief Sessionのロボット要求情報
  */
-struct TacticRequirement
+struct SessionRequirement
 {
-  // Tactic名
+  // Session名
   std::string name;
 
   // 優先度（数値が小さいほど優先度が高い、0が最高優先度）
@@ -45,7 +45,7 @@ struct TacticRequirement
   // ハード制約フラグ（trueの場合、優先的に確保される）
   bool is_hard_constraint = false;
 
-  TacticRequirement(
+  SessionRequirement(
     std::string n, int p, int min_r, int max_r,
     std::function<double(const std::shared_ptr<RobotInfo> &)> func, bool hard = false)
   : name(std::move(n)),
@@ -61,7 +61,7 @@ struct TacticRequirement
 /**
  * @brief 全体最適化ロボット割当クラス
  *
- * 複数のTacticからの要求を統一的に処理し、ハンガリアン法で全体最適な割当を行う。
+ * 複数のSessionからの要求を統一的に処理し、ハンガリアン法で全体最適な割当を行う。
  */
 class GlobalRobotAllocator
 {
@@ -71,15 +71,15 @@ public:
   /**
    * @brief 全体最適化によるロボット割当
    *
-   * @param requirements Tacticごとの要求リスト
+   * @param requirements Sessionごとの要求リスト
    * @param available_robots 利用可能なロボットIDリスト
    * @param world_model ワールドモデル
    * @param prev_state 前フレームの割当状態
    * @param config コスト計算設定
-   * @return Tactic名→割り当てられたロボットIDリストのマップ
+   * @return Session名→割り当てられたロボットIDリストのマップ
    */
   auto allocate(
-    const std::vector<TacticRequirement> & requirements,
+    const std::vector<SessionRequirement> & requirements,
     const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
     const AllocationState & prev_state, const AllocationCostConfig & config)
     -> std::unordered_map<std::string, std::vector<uint8_t>>;
@@ -88,30 +88,30 @@ private:
   rclcpp::Logger logger_;
 
   /**
-   * @brief ハード制約Tacticを先に処理
+   * @brief ハード制約Sessionを先に処理
    */
   auto allocateHardConstraints(
-    const std::vector<TacticRequirement> & hard_requirements,
+    const std::vector<SessionRequirement> & hard_requirements,
     std::vector<uint8_t> & remaining_robots, WorldModelWrapper::SharedPtr & world_model,
     const AllocationState & prev_state, const AllocationCostConfig & config,
     std::unordered_map<std::string, std::vector<uint8_t>> & result) -> void;
 
   /**
-   * @brief ソフト制約Tacticをハンガリアン法で処理
+   * @brief ソフト制約Sessionをハンガリアン法で処理
    */
   auto allocateSoftConstraints(
-    const std::vector<TacticRequirement> & soft_requirements,
+    const std::vector<SessionRequirement> & soft_requirements,
     const std::vector<uint8_t> & remaining_robots, WorldModelWrapper::SharedPtr & world_model,
     const AllocationState & prev_state, const AllocationCostConfig & config,
     std::unordered_map<std::string, std::vector<uint8_t>> & result) -> void;
 
   /**
-   * @brief 仮想ターゲット（Tactic-Robot ペア）を生成
+   * @brief 仮想ターゲット（Session-Robot ペア）を生成
    */
   struct VirtualTarget
   {
-    std::string tactic_name;
-    int tactic_priority;
+    std::string session_name;
+    int session_priority;
     size_t robot_index;
     std::shared_ptr<std::function<double(const std::shared_ptr<RobotInfo> &)>> suitability_func;
   };

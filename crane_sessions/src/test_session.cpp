@@ -17,7 +17,7 @@ TestSession::TestSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
 : SessionBase("test", world_model), topics_interface(node.get_node_topics_interface())
 {
   config_file_path =
-    (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_tactics")) /
+    (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_sessions")) /
      "config" / "test_planner.yaml")
       .string();
   if (not loadConfigFromFile(config_file_path)) {

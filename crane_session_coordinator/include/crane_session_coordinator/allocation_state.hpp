@@ -25,15 +25,15 @@ public:
   AllocationState() = default;
 
   /**
-   * @brief 前フレームで指定のロボットが指定のTacticに割り当てられていたかを確認
+   * @brief 前フレームで指定のロボットが指定のSessionに割り当てられていたかを確認
    * @param robot_id ロボットID
-   * @param tactic_name Tactic名
+   * @param session_name Session名
    * @return 割り当てられていた場合true
    */
-  [[nodiscard]] auto wasAssignedTo(uint8_t robot_id, const std::string & tactic_name) const -> bool
+  [[nodiscard]] auto wasAssignedTo(uint8_t robot_id, const std::string & session_name) const -> bool
   {
-    auto it = robot_to_tactic_.find(robot_id);
-    return it != robot_to_tactic_.end() && it->second == tactic_name;
+    auto it = robot_to_session_.find(robot_id);
+    return it != robot_to_session_.end() && it->second == session_name;
   }
 
   /**
@@ -64,15 +64,15 @@ public:
   /**
    * @brief 割当状態を更新
    * @param robot_id ロボットID
-   * @param tactic_name 割り当てられたTactic名
+   * @param session_name 割り当てられたSession名
    * @param target_position ターゲット位置
    */
   void updateAssignment(
-    uint8_t robot_id, const std::string & tactic_name, const Point & target_position)
+    uint8_t robot_id, const std::string & session_name, const Point & target_position)
   {
-    // Tactic割当を更新
-    bool same_tactic = wasAssignedTo(robot_id, tactic_name);
-    robot_to_tactic_[robot_id] = tactic_name;
+    // Session割当を更新
+    bool same_tactic = wasAssignedTo(robot_id, session_name);
+    robot_to_session_[robot_id] = session_name;
     robot_to_position_[robot_id] = target_position;
 
     // 継続フレーム数を更新
@@ -89,7 +89,7 @@ public:
    */
   void clearAssignment(uint8_t robot_id)
   {
-    robot_to_tactic_.erase(robot_id);
+    robot_to_session_.erase(robot_id);
     robot_to_position_.erase(robot_id);
     assignment_duration_.erase(robot_id);
   }
@@ -99,7 +99,7 @@ public:
    */
   void clearAll()
   {
-    robot_to_tactic_.clear();
+    robot_to_session_.clear();
     robot_to_position_.clear();
     assignment_duration_.clear();
   }
@@ -111,24 +111,24 @@ public:
   [[nodiscard]] auto getAllAssignedRobots() const -> std::vector<uint8_t>
   {
     std::vector<uint8_t> robots;
-    robots.reserve(robot_to_tactic_.size());
-    for (const auto & [robot_id, _] : robot_to_tactic_) {
+    robots.reserve(robot_to_session_.size());
+    for (const auto & [robot_id, _] : robot_to_session_) {
       robots.push_back(robot_id);
     }
     return robots;
   }
 
   /**
-   * @brief 指定のTacticに割り当てられているロボットIDの一覧を取得
-   * @param tactic_name Tactic名
+   * @brief 指定のSessionに割り当てられているロボットIDの一覧を取得
+   * @param session_name Session名
    * @return ロボットIDのベクター
    */
-  [[nodiscard]] auto getRobotsAssignedTo(const std::string & tactic_name) const
+  [[nodiscard]] auto getRobotsAssignedTo(const std::string & session_name) const
     -> std::vector<uint8_t>
   {
     std::vector<uint8_t> robots;
-    for (const auto & [robot_id, assigned_tactic] : robot_to_tactic_) {
-      if (assigned_tactic == tactic_name) {
+    for (const auto & [robot_id, assigned_tactic] : robot_to_session_) {
+      if (assigned_tactic == session_name) {
         robots.push_back(robot_id);
       }
     }
@@ -143,8 +143,8 @@ public:
   {
     std::stringstream ss;
     ss << "AllocationState: ";
-    for (const auto & [robot_id, tactic_name] : robot_to_tactic_) {
-      ss << "[" << static_cast<int>(robot_id) << "->" << tactic_name << "("
+    for (const auto & [robot_id, session_name] : robot_to_session_) {
+      ss << "[" << static_cast<int>(robot_id) << "->" << session_name << "("
          << getAssignmentDuration(robot_id) << ")] ";
     }
     return ss.str();
@@ -152,8 +152,8 @@ public:
 
 private:
   // 前フレームの割当情報
-  std::unordered_map<uint8_t, std::string> robot_to_tactic_;  // robot_id -> tactic_name
-  std::unordered_map<uint8_t, Point> robot_to_position_;      // robot_id -> target_position
+  std::unordered_map<uint8_t, std::string> robot_to_session_;  // robot_id -> session_name
+  std::unordered_map<uint8_t, Point> robot_to_position_;       // robot_id -> target_position
 
   // 割当継続フレーム数
   std::unordered_map<uint8_t, int> assignment_duration_;  // robot_id -> frames

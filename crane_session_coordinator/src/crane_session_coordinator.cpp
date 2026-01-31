@@ -47,18 +47,18 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
     session_config_file_name, get_logger());
 
   // プランナー管理の初期化
-  tactic_registry_ = std::make_shared<SessionRegistry>();
+  session_registry_ = std::make_shared<SessionRegistry>();
 
   // 診断レポーターの初期化
   diagnostics_reporter_ =
-    std::make_unique<DiagnosticsReporter>(get_clock(), tactic_registry_, get_logger());
+    std::make_unique<DiagnosticsReporter>(get_clock(), session_registry_, get_logger());
 
   // コマンドアグリゲーターの初期化
-  command_aggregator_ = std::make_unique<CommandAggregator>(tactic_registry_);
+  command_aggregator_ = std::make_unique<CommandAggregator>(session_registry_);
 
   // ロボット割当マネージャーの初期化
   robot_allocator_ =
-    std::make_unique<RobotAllocator>(config_manager_, tactic_registry_, get_logger());
+    std::make_unique<RobotAllocator>(config_manager_, session_registry_, get_logger());
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {

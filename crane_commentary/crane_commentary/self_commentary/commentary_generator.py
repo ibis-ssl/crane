@@ -75,8 +75,8 @@ class CommentaryGenerator:
         """
         robot_id = change.robot_id
 
-        if change.change_type == ChangeType.TACTIC_CHANGED:
-            return f"ロボット{robot_id}のタクティクスを{change.old_value}から{change.new_value}に切り替えました"
+        if change.change_type == ChangeType.SESSION_CHANGED:
+            return f"ロボット{robot_id}のセッションを{change.old_value}から{change.new_value}に切り替えました"
 
         elif change.change_type == ChangeType.SKILL_CHANGED:
             return f"ロボット{robot_id}のスキルを{change.old_value}から{change.new_value}に移行しました"
@@ -104,27 +104,27 @@ class CommentaryGenerator:
         """
         intents = self._tracker.get_current_intents()
 
-        # Group robots by tactic
-        tactics_map: Dict[str, List[int]] = {}
+        # Group robots by session
+        sessions_map: Dict[str, List[int]] = {}
         for robot_id, intent in intents.items():
-            tactic = intent.tactic_name
-            if tactic and tactic != "Unknown":
-                if tactic not in tactics_map:
-                    tactics_map[tactic] = []
-                tactics_map[tactic].append(robot_id)
+            session = intent.session_name
+            if session and session != "Unknown":
+                if session not in sessions_map:
+                    sessions_map[session] = []
+                sessions_map[session].append(robot_id)
 
         # Build robot details
         robots_detail = {}
         for robot_id, intent in intents.items():
             robots_detail[str(robot_id)] = {
-                "tactic": intent.tactic_name,
+                "session": intent.session_name,
                 "skill": intent.skill_name,
                 "state": intent.skill_state,
             }
 
         return {
-            "active_tactics": list(tactics_map.keys()),
+            "active_sessions": list(sessions_map.keys()),
             "robot_count": len(intents),
-            "tactics_assignment": tactics_map,
+            "sessions_assignment": sessions_map,
             "robots": robots_detail,
         }

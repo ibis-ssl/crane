@@ -52,8 +52,8 @@ OurDirectFreeKickSession::calculatePositionCommand(
                               return true;  // roleが見つからない場合は含める
                             }
                             // defenderとキーパー以外を選択
-                            return role->second.tactic_name != "defender" &&
-                                   role->second.tactic_name.find("goalie") == std::string::npos;
+                            return role->second.session_name != "defender" &&
+                                   role->second.session_name.find("goalie") == std::string::npos;
                           }) |
                           ranges::to<std::vector>();
 

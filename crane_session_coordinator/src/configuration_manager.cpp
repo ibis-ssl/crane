@@ -37,7 +37,7 @@ auto ConfigurationManager::getSessionNameForEvent(const std::string & event_name
 }
 
 auto ConfigurationManager::getSessionCapacitiesForSituation(
-  const std::string & situation_name) const -> std::optional<std::vector<TacticSlot>>
+  const std::string & situation_name) const -> std::optional<std::vector<SessionSlot>>
 {
   auto it = robot_selection_priority_map_.find(situation_name);
   if (it != robot_selection_priority_map_.end()) {
@@ -68,14 +68,14 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       const std::string situation_name = situation_entry.first.as<std::string>();
       const auto & situation_data = situation_entry.second;
 
-      std::vector<TacticSlot> session_capacity_list;
+      std::vector<SessionSlot> session_capacity_list;
       std::stringstream ss;
       ss << "SITUATION : " << situation_name << "\n";
       ss << "DESCRIPTION : " << situation_data["description"] << "\n";
       ss << "SESSIONS : " << "\n";
 
       for (const auto & session_node : situation_data["sessions"]) {
-        TacticSlot session_capacity;
+        SessionSlot session_capacity;
         session_capacity.session_name = session_node["name"].as<std::string>();
 
         // min_robotsの読み込みとデフォルト値設定
