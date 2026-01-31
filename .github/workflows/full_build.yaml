@@ -115,7 +115,7 @@ jobs:
             --base-paths . \
             --merge-install \
             --parallel-workers 2 \
-            --packages-skip proto2ros \
+            --packages-skip proto2ros proto2ros_tests speak_ros speak_ros_interfaces speak_ros_voicevox_plugin \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
