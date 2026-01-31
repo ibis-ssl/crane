@@ -97,9 +97,9 @@ jobs:
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           # PYTHONPATHにROS 2のsite-packagesを追加
           export PYTHONPATH=/opt/ros/${{ matrix.rosdistro }}/lib/python3.12/site-packages:$PYTHONPATH
-          colcon build --symlink-install \
+          colcon build \
             --base-paths dependency_ws \
-            --parallel-workers 2 \
+            --parallel-workers 1 \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
