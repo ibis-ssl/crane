@@ -43,41 +43,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install ROS 2 Jazzy
+      - name: Setup ROS 2 Jazzy
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+
+      - name: Install PowerShell
         run: |
-          # ロケール設定
-          sudo apt-get update
-          sudo apt-get install -y locales
-          sudo locale-gen en_US en_US.UTF-8
-          export LANG=en_US.UTF-8
-
-          # ROS 2リポジトリの追加
-          sudo apt-get install -y software-properties-common curl
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-            -o /usr/share/keyrings/ros-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-            http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
-            | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
-          # PowerShellのインストール（一部のパッケージで必要）
           sudo apt-get install -y wget apt-transport-https
           wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
           sudo dpkg -i packages-microsoft-prod.deb
           rm packages-microsoft-prod.deb
           sudo apt-get update
           sudo apt-get install -y powershell
+        shell: bash
 
-          # ROS 2パッケージのインストール
-          sudo apt-get update
-          sudo apt-get install -y \
-            ros-${{ matrix.rosdistro }}-desktop \
-            ros-${{ matrix.rosdistro }}-ament-package \
-            ros-dev-tools \
-            python3-colcon-common-extensions \
-            python3-rosdep
-
-          # rosdep初期化
-          sudo rosdep init || true
+      - name: Initialize rosdep
+        run: sudo rosdep init || true
         shell: bash
 
       - name: Clone dependency packages
