@@ -30,6 +30,18 @@ public:
   COMPOSITION_PUBLIC explicit TestSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
 
+  auto getRobotSuitabilityFunc() const
+    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
+  {
+    uint8_t target_id = target_robot_id;
+    return [target_id](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == target_id) {
+        return 0.0;
+      }
+      return 1000.0;
+    };
+  }
+
   std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
