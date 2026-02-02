@@ -1,4 +1,16 @@
 services:
+  grsim:
+    image: ghcr.io/ibis-ssl/grsim:latest
+    container_name: grsim
+    network_mode: host
+    command: |
+      grSim --headless -platform offscreen
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles:
+      - sim
+
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
