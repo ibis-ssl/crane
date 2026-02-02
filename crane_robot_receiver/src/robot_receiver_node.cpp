@@ -257,7 +257,7 @@ public:
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer =
-    std::make_unique<crane::VisualizerMessageBuilder>("robot_receiver");
+    std::make_shared<crane::VisualizerMessageBuilder>("robot_receiver");
 
   rclcpp::Clock clock;
 };
