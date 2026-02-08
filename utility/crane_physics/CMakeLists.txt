@@ -34,7 +34,7 @@ target_link_libraries(${PROJECT_NAME}
 
 # プリコンパイル済みヘッダでビルド時間を短縮
 target_precompile_headers(${PROJECT_NAME}
-  PUBLIC
+  PRIVATE
     "<crane_geometry/boost_geometry.hpp>"
     "<crane_geometry/geometry_operations.hpp>"
     "<Eigen/Core>"
