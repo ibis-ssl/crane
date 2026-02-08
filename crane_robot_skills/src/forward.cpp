@@ -4,6 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
+#include <cmath>
 #include <crane_robot_skills/forward.hpp>
 #include <range/v3/algorithm/max_element.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -14,14 +16,24 @@ namespace crane::skills
 {
 auto Forward::update() -> Status
 {
-  auto their_robots = world_model()->theirs().robotsWhere().available().get();
   Point front_point = getParameter<Point>("front_point");
   Point back_point = getParameter<Point>("back_point");
   auto max_ball_distance = getParameter<double>("max_ball_distance");
   auto max_vel = getParameter<double>("max_vel");
   auto & ball = world_model()->ball();
+
+  const double line_length = (back_point - front_point).norm();
+  if (!std::isfinite(line_length)) {
+    command->stopHere();
+    return Status::RUNNING;
+  }
+
+  max_ball_distance = std::max(max_ball_distance, 0.1);
+
   // front_point -> back_pointの0.1mごとのポイントを生成
-  int num_points = static_cast<int>(std::ceil((back_point - front_point).norm() / 0.1));
+  constexpr int MAX_SAMPLING_POINTS = 200;
+  int num_points =
+    std::clamp(static_cast<int>(std::ceil(line_length / 0.1)), 1, MAX_SAMPLING_POINTS);
 
   std::vector<std::pair<Point, double>> points_with_score =
     ranges::views::iota(0, num_points) | ranges::views::transform([&](int i) -> Point {
