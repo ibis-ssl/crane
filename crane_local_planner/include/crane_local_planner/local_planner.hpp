@@ -18,6 +18,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <string>
 
 #include "rvo2_planner.hpp"
 #include "visibility_control.h"
@@ -160,6 +161,11 @@ private:
   KickPowerCalculator kick_power_calculator;
 
   diagnostic_updater::Updater diagnostic_updater_;
+
+  size_t dropped_command_count_last_cycle_ = 0;
+  size_t dropped_command_count_total_ = 0;
+  size_t planner_exception_count_last_cycle_ = 0;
+  size_t planner_exception_count_total_ = 0;
 
   auto aggregateStates(const std::vector<crane_msgs::msg::NamedString> & planning_factors) const
     -> std::string;
