@@ -53,31 +53,63 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
 auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
   -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
 {
+  if (robots.empty()) {
+    forward_skills.clear();
+    return {SessionBase::Status::RUNNING, {}};
+  }
+
   // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
   if (forward_skills.size() != robots.size()) {
     forward_skills.clear();
 
     auto forward_lines = createForwardLines();
-    if (forward_lines.size() > robots.size()) {
-      forward_lines.resize(robots.size());
-    }
 
-    std::vector<Point> robot_positions =
-      robots | ranges::views::transform([this](const auto & robot_id) -> Point {
-        return world_model->getRobot(robot_id)->pose.pos;
-      }) |
-      ranges::to<std::vector>;
+    if (forward_lines.empty()) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("ForwardSession"),
+        "Forward lines are empty. Falling back to stop-like commands.");
 
-    auto solution = getOptimalAssignments(robot_positions, forward_lines);
+      for (const auto & robot_id : robots) {
+        auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);
+        const auto robot_pos = world_model->getRobot(robot_id)->pose.pos;
+        skill->setParameter("front_point", robot_pos);
+        skill->setParameter("back_point", robot_pos);
+        skill->setParameter("max_vel", 1.5);
+        skill->planner_visualizer = visualizer;
+        forward_skills.emplace_back(skill);
+      }
+    } else {
+      if (forward_lines.size() > robots.size()) {
+        forward_lines.resize(robots.size());
+      }
 
-    for (const auto & [index, robot_id] : robots | ranges::views::enumerate) {
-      auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);
-      auto line = forward_lines[solution[index]];
-      skill->setParameter("front_point", line.second);
-      skill->setParameter("back_point", line.first);
-      skill->setParameter("max_vel", 1.5);
-      skill->planner_visualizer = visualizer;
-      forward_skills.emplace_back(skill);
+      std::vector<Point> robot_positions =
+        robots | ranges::views::transform([this](const auto & robot_id) -> Point {
+          return world_model->getRobot(robot_id)->pose.pos;
+        }) |
+        ranges::to<std::vector>;
+
+      auto solution = getOptimalAssignments(robot_positions, forward_lines);
+
+      for (const auto & [index, robot_id] : robots | ranges::views::enumerate) {
+        auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);
+
+        int line_index = solution[index];
+        if (line_index < 0 || static_cast<size_t>(line_index) >= forward_lines.size()) {
+          line_index = static_cast<int>(index % forward_lines.size());
+          RCLCPP_WARN(
+            rclcpp::get_logger("ForwardSession"),
+            "Invalid assignment index (%d). Using fallback line index (%d).", solution[index],
+            line_index);
+        }
+
+        const auto & line = forward_lines[line_index];
+        skill->setParameter("front_point", line.second);
+        skill->setParameter("back_point", line.first);
+        skill->setParameter("max_vel", 1.5);
+        skill->planner_visualizer = visualizer;
+        forward_skills.emplace_back(skill);
+      }
     }
   }
 

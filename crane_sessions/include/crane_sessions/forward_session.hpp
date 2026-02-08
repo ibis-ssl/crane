@@ -7,6 +7,7 @@
 #ifndef CRANE_SESSIONS__FORWARD_SESSION_HPP_
 #define CRANE_SESSIONS__FORWARD_SESSION_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/forward.hpp>
@@ -44,6 +45,12 @@ public:
       // 敵ゴール位置に近いほど適している
       return robot->getDistance(wm->getTheirGoalCenter());
     };
+  }
+
+  int getDesiredRobotNumber(int /* min_robots */, int max_robots) const override
+  {
+    // Forwardは生成可能なライン数以上のロボットを扱えないため、動的に上限を調整する
+    return std::min<int>(static_cast<int>(createForwardLines().size()), max_robots);
   }
 
 protected:
