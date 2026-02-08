@@ -6,6 +6,7 @@
 
 #include "crane_teleop/joystick_component.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <memory>
@@ -34,7 +35,7 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
     publish_robot_commands(msg);
   };
 
-  pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+  pub_commands = create_publisher<crane_msgs::msg::VelocityCommands>("/robot_commands", 10);
   sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
 }
 
@@ -131,17 +132,22 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     }
   }
 
-  crane_msgs::msg::RobotCommand command;
+  crane_msgs::msg::VelocityCommand command;
 
   command.robot_id = robot_id;
-  command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-  command.simple_velocity_target_mode.emplace_back();
+  constexpr double TELEOP_DT = 1.0 / 60.0;
+  const double target_vx = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
+  const double target_vy = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
+  const double target_omega = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
 
-  // run
-  command.simple_velocity_target_mode.front().target_vx = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
-  command.simple_velocity_target_mode.front().target_vy = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
-  command.omega_limit = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
-  //  command.target_theta =
+  command.target_velocity_r = std::hypot(target_vx, target_vy);
+  command.target_velocity_theta = std::atan2(target_vy, target_vx);
+  theta += target_omega * TELEOP_DT;
+  theta = std::atan2(std::sin(theta), std::cos(theta));
+  command.target_theta = theta;
+  command.omega_limit = MAX_VEL_ANGULAR;
+  command.max_velocity = std::max(std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY), MAX_VEL_SURGE);
+  command.max_acceleration = 2.5;
 
   // dribble
   if (is_dribble_enable) {
@@ -159,17 +165,16 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   RCLCPP_INFO(
     get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
-    command.robot_id, command.simple_velocity_target_mode.front().target_vx,
-    command.simple_velocity_target_mode.front().target_vy, command.omega_limit,
-    is_kick_enable ? "ON" : "OFF", kick_power, is_dribble_enable ? "ON" : "OFF", dribble_power,
-    command.chip_enable ? "ON" : "OFF");
+    command.robot_id, target_vx, target_vy, target_omega, is_kick_enable ? "ON" : "OFF", kick_power,
+    is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
-    crane_msgs::msg::RobotCommand empty_command;
+    crane_msgs::msg::VelocityCommand empty_command;
     command = empty_command;
   }
 
-  crane_msgs::msg::RobotCommands robot_commands;
+  crane_msgs::msg::VelocityCommands robot_commands;
+  robot_commands.header.stamp = this->get_clock()->now();
 
   robot_commands.robot_commands.emplace_back(command);
 
