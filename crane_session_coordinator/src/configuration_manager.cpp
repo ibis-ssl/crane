@@ -82,7 +82,7 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         if (session_node["min_robots"]) {
           session_capacity.min_robots = session_node["min_robots"].as<int>();
         } else {
-          session_capacity.min_robots = 1;  // デフォルト: 1
+          session_capacity.min_robots = 0;  // デフォルト: 0
         }
 
         // max_robotsの読み込みとデフォルト値設定
