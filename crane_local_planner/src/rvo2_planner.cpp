@@ -11,7 +11,6 @@
 #include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-#include <sstream>
 
 #include "crane_physics/bang_bang_trajectory.hpp"
 
@@ -494,13 +493,15 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
         } else if (isInBox(penalty_area, closest_point_2, PENALTY_AREA_OFFSET)) {
           target_pos = around_corner_2;
         } else {
-          std::stringstream what;
-          what << "Failed to find a target position outside the penalty area.";
-          what << " current_pos: " << current_pos.x() << ", " << current_pos.y();
-          what << " target_pos: " << target_pos.x() << ", " << target_pos.y();
-          what << " closest_point_1: " << closest_point_1.x() << ", " << closest_point_1.y();
-          what << " closest_point_2: " << closest_point_2.x() << ", " << closest_point_2.y();
-          throw std::runtime_error(what.str());
+          static rclcpp::Clock steady_clock(RCL_STEADY_TIME);
+          RCLCPP_WARN_THROTTLE(
+            rclcpp::get_logger("rvo2_local_planner"), steady_clock, 1000,
+            "Failed to find a target position outside the penalty area. Fallback to current "
+            "position. current_pos:(%.3f, %.3f) target_pos:(%.3f, %.3f) "
+            "closest_point_1:(%.3f, %.3f) closest_point_2:(%.3f, %.3f)",
+            current_pos.x(), current_pos.y(), target_pos.x(), target_pos.y(), closest_point_1.x(),
+            closest_point_1.y(), closest_point_2.x(), closest_point_2.y());
+          target_pos = current_pos;
         }
       }
     };
