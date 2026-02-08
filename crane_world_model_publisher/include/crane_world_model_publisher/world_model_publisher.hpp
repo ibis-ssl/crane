@@ -49,8 +49,8 @@ extern "C" {
 #include <array>
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
@@ -128,7 +128,7 @@ private:
 
   std::unique_ptr<PassTargetSelector> pass_target_selector_;
 
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
+  rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr sub_robot_commands_;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

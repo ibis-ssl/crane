@@ -339,7 +339,8 @@ auto KickEventDetector::setKickerModel(std::shared_ptr<KickerModel> kicker_model
   kicker_model_ = kicker_model;
 }
 
-auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void
+auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::VelocityCommands & commands)
+  -> void
 {
   RobotCommandRecord record;
   record.commands = commands;
@@ -352,7 +353,7 @@ auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::RobotCommands
 }
 
 auto KickEventDetector::getLatestCommandForRobot(uint8_t robot_id) const
-  -> std::optional<crane_msgs::msg::RobotCommand>
+  -> std::optional<crane_msgs::msg::VelocityCommand>
 {
   // 新しい順に検索
   for (auto it = robot_command_records_.rbegin(); it != robot_command_records_.rend(); ++it) {
