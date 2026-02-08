@@ -199,10 +199,8 @@ auto GlobalRobotAllocator::allocateSoftConstraints(
 
   // Hungarian法は非負のコスト行列を要求するため、負の値がある場合はオフセットを追加
   if (min_cost < 0.0) {
-    RCLCPP_WARN(
-      logger_, "[allocateSoftConstraints] 負のコスト値を検出: %f。オフセットを追加します",
-      min_cost);
-    double offset = -min_cost + 1.0;
+    // 最小値がちょうど0になるように平行移動し、相対的なコスト差を保つ
+    double offset = -min_cost;
     for (size_t i = 0; i < matrix_rows; ++i) {
       for (size_t j = 0; j < matrix_cols; ++j) {
         cost_matrix[i][j] += offset;

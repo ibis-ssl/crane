@@ -22,7 +22,7 @@ using SessionParameterType = std::variant<double, bool, int, std::string>;
 struct SessionSlot
 {
   std::string session_name;
-  int min_robots = 1;
+  int min_robots = 0;
   int max_robots;
   std::unordered_map<std::string, SessionParameterType> params;
 };
