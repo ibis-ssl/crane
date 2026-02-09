@@ -105,7 +105,7 @@ public:
     }
 
     // サブスクライバー作成
-    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::VelocityCommands>(
+    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10,
       std::bind(&StateHistoryLogger::robotCommandsCallback, this, std::placeholders::_1));
 

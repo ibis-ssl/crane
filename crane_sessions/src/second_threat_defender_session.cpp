@@ -11,7 +11,7 @@ namespace crane
 {
 auto SecondThreatDefenderSession::calculatePositionCommand(
   const std::vector<RobotIdentifier> & robots)
-  -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (robots.empty()) {
     return {SessionBase::Status::RUNNING, {}};

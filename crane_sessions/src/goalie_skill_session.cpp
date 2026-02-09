@@ -9,7 +9,7 @@
 namespace crane
 {
 auto GoalieSkillSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-  -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
   if (robots.empty()) {

@@ -14,7 +14,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
 #include <functional>
@@ -88,7 +88,7 @@ public:
     }
   }
 
-  auto getPositionCommands() -> crane_msgs::msg::PositionCommands
+  auto getPositionCommands() -> crane_msgs::msg::RobotCommands
   {
     auto [latest_status, position_commands] = calculatePositionCommand(robots);
     auto wrong_ids =
@@ -104,10 +104,10 @@ public:
     if (not wrong_ids.empty()) {
       RCLCPP_ERROR_STREAM(
         rclcpp::get_logger("SessionBase"),
-        "PositionCommands from " << name << " session includes wrong robot_id : " << wrong_ids);
+        "RobotCommands from " << name << " session includes wrong robot_id : " << wrong_ids);
     }
     status = latest_status;
-    crane_msgs::msg::PositionCommands msg;
+    crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
     for (auto command : position_commands) {
@@ -235,7 +235,7 @@ protected:
     const std::string & command_name, const Point & look_at_point,
     const std::function<void(std::shared_ptr<PositionCommandWrapper> &)> & customize_command =
       [](std::shared_ptr<PositionCommandWrapper> &) {})
-    -> std::vector<crane_msgs::msg::PositionCommand>
+    -> std::vector<crane_msgs::msg::RobotCommand>
   {
     if (robots.empty() || target_points.empty()) {
       return {};
@@ -251,7 +251,7 @@ protected:
     auto solution = getOptimalAssignments(robot_points, target_points);
 
     // 各ロボットに位置コマンドを生成
-    std::vector<crane_msgs::msg::PositionCommand> position_commands;
+    std::vector<crane_msgs::msg::RobotCommand> position_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = target_points[solution[index]];
@@ -277,7 +277,7 @@ protected:
 
   std::unordered_map<std::string, SessionParameterType> session_params_;
 
-  virtual std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
+  virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
   Status status = Status::RUNNING;

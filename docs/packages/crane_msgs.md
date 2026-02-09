@@ -35,8 +35,7 @@ Craneシステムの**メッセージ基盤層**として、全コンポーネ�
 - **RobotSelectResults.msg**: ロボット選択結果
 - **TargetMode系**: 位置・速度・極座標での目標値指定
 - **LocalCameraMode.msg**: ローカルカメラ制御
-- **PositionCommand.msg / PositionCommands.msg**: 位置指令コマンド
-- **VelocityCommand.msg / VelocityCommands.msg**: 速度指令コマンド
+- **RobotCommand.msg / RobotCommands.msg**: 統一ロボット制御コマンド（位置/速度両モード）
 
 ### 予測予実管理系メッセージ（PR #1105-1107）
 
@@ -113,8 +112,10 @@ position.z/velocity.z フィールドを活用してボールの3D軌道を表�
 // ロボットコマンド作成
 crane_msgs::msg::RobotCommand cmd;
 cmd.robot_id = 0;
-cmd.target_x = 1.0;
-cmd.target_y = 0.5;
+cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+cmd.position_target_mode.emplace_back();
+cmd.position_target_mode.front().target_x = 1.0;
+cmd.position_target_mode.front().target_y = 0.5;
 
 // ワールドモデル購読
 auto subscription = create_subscription<crane_msgs::msg::WorldModel>(
@@ -124,12 +125,13 @@ auto subscription = create_subscription<crane_msgs::msg::WorldModel>(
 ### Pythonでの使用例
 
 ```python
-from crane_msgs.msg import RobotCommand, WorldModel
+from crane_msgs.msg import PositionTargetMode, RobotCommand, WorldModel
 
 # メッセージ作成
 cmd = RobotCommand()
 cmd.robot_id = 0
-cmd.target_x = 1.0
+cmd.control_mode = RobotCommand.POSITION_TARGET_MODE
+cmd.position_target_mode = [PositionTargetMode(target_x=1.0, target_y=0.5)]
 ```
 
 ## 最近の開発状況

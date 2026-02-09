@@ -39,7 +39,7 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成

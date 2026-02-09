@@ -12,9 +12,8 @@
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_msg_wrappers/velocity_plan_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
 #include <crane_physics/pid_controller.hpp>
 #include <memory>
 
@@ -28,37 +27,37 @@ class RVO2Planner : public LocalPlannerBase
 public:
   explicit RVO2Planner(rclcpp::Node & node);
 
-  auto reflectWorldToRVOSim(crane_msgs::msg::PositionCommands & msg) -> void;
+  auto reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void;
 
   auto extractVelocityCommandsFromRVOSim(
-    const crane_msgs::msg::PositionCommands & msg, double theta_offset)
-    -> crane_msgs::msg::VelocityCommands;
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands;
 
-  auto calculateRobotCommand(const crane_msgs::msg::PositionCommands & msg, double theta_offset)
-    -> crane_msgs::msg::VelocityCommands override;
+  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands override;
 
-  auto overrideTargetPosition(crane_msgs::msg::PositionCommands & msg) -> void;
+  auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
 
 private:
   auto adjustForPenaltyAreaAvoidance(
     Point & target_pos, const Point & current_pos,
-    const crane_msgs::msg::PositionCommand & command) const -> void;
+    const crane_msgs::msg::RobotCommand & command) const -> void;
 
   auto adjustForBallAvoidance(
     Point & target_pos, const Point & current_pos,
-    const crane_msgs::msg::PositionCommand & command) const -> void;
+    const crane_msgs::msg::RobotCommand & command) const -> void;
 
   auto adjustForPlacementAvoidance(
     Point & target_pos, const Point & current_pos,
-    const crane_msgs::msg::PositionCommand & command) const -> void;
+    const crane_msgs::msg::RobotCommand & command) const -> void;
 
   auto adjustForFieldBoundary(
     Point & target_pos, const Point & current_pos,
-    const crane_msgs::msg::PositionCommand & command) const -> void;
+    const crane_msgs::msg::RobotCommand & command) const -> void;
 
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
-  crane_msgs::msg::PositionCommands pre_commands;
+  crane_msgs::msg::RobotCommands pre_commands;
 
   auto toRVO(const Point & point) -> RVO::Vector2 { return RVO::Vector2(point.x(), point.y()); }
 

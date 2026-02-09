@@ -109,10 +109,10 @@ class IntentTracker:
                 self._robot_to_session[robot_id] = session_name
 
     def update_from_control_targets(self, msg: Any) -> None:
-        """Update intent information from PositionCommands message.
+        """Update intent information from RobotCommands message.
 
         Args:
-            msg: PositionCommands message
+            msg: RobotCommands message
         """
         # Store previous state
         self._previous_intents = self._current_intents.copy()

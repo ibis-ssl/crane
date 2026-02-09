@@ -9,7 +9,7 @@
 
 namespace crane
 {
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
@@ -58,7 +58,7 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
       });
     return {SessionBase::Status::RUNNING, robot_commands};
   } else {
-    std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (const auto & [index, robot_id] : ranges::views::enumerate(robots)) {
       [[maybe_unused]] Point target_point = [&]() {
         if (not defense_points.empty()) {

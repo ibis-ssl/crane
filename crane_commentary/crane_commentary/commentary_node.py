@@ -26,7 +26,7 @@ from crane_msgs.msg import (
     RonarEvent,
     WorldModel,
     RobotSelectResults,
-    PositionCommands,
+    RobotCommands,
 )
 
 from crane_commentary.data import (
@@ -186,7 +186,7 @@ class CommentaryNode(Node):
                 qos,
             )
             self._control_targets_sub = self.create_subscription(
-                PositionCommands,
+                RobotCommands,
                 "/control_targets",
                 self._on_control_targets,
                 qos,
@@ -573,8 +573,8 @@ class CommentaryNode(Node):
 
         self._intent_tracker.update_from_robot_select_results(msg)
 
-    def _on_control_targets(self, msg: PositionCommands) -> None:
-        """Handle incoming PositionCommands messages (self-commentary mode)."""
+    def _on_control_targets(self, msg: RobotCommands) -> None:
+        """Handle incoming RobotCommands messages (self-commentary mode)."""
         if self._mode != "self_commentary":
             return
 
