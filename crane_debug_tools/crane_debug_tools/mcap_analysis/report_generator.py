@@ -98,9 +98,11 @@ class ReportGenerator:
         lines.append("### 重要度別")
         for priority, count in sorted(
             priority_counts.items(),
-            key=lambda x: ["CRITICAL", "HIGH", "MEDIUM", "LOW"].index(x[0])
-            if x[0] in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
-            else 999,
+            key=lambda x: (
+                ["CRITICAL", "HIGH", "MEDIUM", "LOW"].index(x[0])
+                if x[0] in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+                else 999
+            ),
         ):
             lines.append(f"- **{priority}**: {count}件")
 
