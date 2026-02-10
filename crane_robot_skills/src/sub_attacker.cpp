@@ -89,7 +89,11 @@ Status SubAttacker::update()
   }
 
   // ゴールとボールの中間方向を向く
-  Point target_pos{command->getMsg().target_x, command->getMsg().target_y};
+  Point target_pos = robot()->pose.pos;
+  if (!command->getMsg().position_target_mode.empty()) {
+    target_pos << command->getMsg().position_target_mode.front().target_x,
+      command->getMsg().position_target_mode.front().target_y;
+  }
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball().pos - target_pos).normalized();

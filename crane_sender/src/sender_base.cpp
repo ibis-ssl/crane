@@ -50,6 +50,12 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
   VelocityCommandsMsg preprocessed_msg = msg;
 
   for (auto & command : preprocessed_msg.robot_commands) {
+    if (command.control_mode == crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
+      if (command.polar_velocity_target_mode.empty()) {
+        command.polar_velocity_target_mode.emplace_back();
+      }
+    }
+
     command.latency_ms = current_latency_ms;
     command.kick_power = std::clamp(command.kick_power, 0.f, [this, command]() -> float {
       return command.chip_enable ? kick_power_limit_chip : kick_power_limit_straight;
@@ -78,8 +84,11 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
   if (no_movement) {
     for (auto & command : preprocessed_msg.robot_commands) {
-      command.target_velocity_r = 0.0f;
-      command.target_velocity_theta = 0.0f;
+      if (command.polar_velocity_target_mode.empty()) {
+        command.polar_velocity_target_mode.emplace_back();
+      }
+      command.polar_velocity_target_mode.front().target_velocity_r = 0.0f;
+      command.polar_velocity_target_mode.front().target_velocity_theta = 0.0f;
       command.omega_limit = 0.0f;
       command.chip_enable = false;
       command.dribble_power = 0.0;

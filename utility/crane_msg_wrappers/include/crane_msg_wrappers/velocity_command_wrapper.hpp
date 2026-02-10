@@ -7,9 +7,11 @@
 #ifndef CRANE_MSG_WRAPPERS__VELOCITY_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__VELOCITY_COMMAND_WRAPPER_HPP_
 
+#include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
-#include <crane_msgs/msg/velocity_command.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
+#include <limits>
 #include <memory>
 #include <range/v3/algorithm/find_if.hpp>
 #include <vector>
@@ -28,7 +30,7 @@ public:
   using SharedPtr = std::shared_ptr<VelocityCommandWrapper>;
 
 private:
-  crane_msgs::msg::VelocityCommand latest_msg;
+  crane_msgs::msg::RobotCommand latest_msg;
 
 public:
   VelocityCommandWrapper() = default;
@@ -36,9 +38,9 @@ public:
   explicit VelocityCommandWrapper(uint8_t robot_id) { latest_msg.robot_id = robot_id; }
 
   // メッセージを取得
-  auto getMsg() const -> const crane_msgs::msg::VelocityCommand & { return latest_msg; }
+  auto getMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
 
-  auto getEditableMsg() -> crane_msgs::msg::VelocityCommand & { return latest_msg; }
+  auto getEditableMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
 
   // ===== 速度指令固有の関数 =====
 
@@ -51,13 +53,21 @@ public:
 
   auto setVelocityNorm(double r) -> VelocityCommandWrapper &
   {
-    latest_msg.target_velocity_r = r;
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (latest_msg.polar_velocity_target_mode.empty()) {
+      latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
     return *this;
   }
 
   auto setVelocityAngle(double theta) -> VelocityCommandWrapper &
   {
-    latest_msg.target_velocity_theta = theta;
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (latest_msg.polar_velocity_target_mode.empty()) {
+      latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
     return *this;
   }
 
@@ -65,10 +75,11 @@ public:
 
   auto setTargetPosition(double x, double y) -> VelocityCommandWrapper &
   {
-    latest_msg.target_x.clear();
-    latest_msg.target_y.clear();
-    latest_msg.target_x.push_back(x);
-    latest_msg.target_y.push_back(y);
+    if (latest_msg.position_target_mode.empty()) {
+      latest_msg.position_target_mode.emplace_back();
+    }
+    latest_msg.position_target_mode.front().target_x = x;
+    latest_msg.position_target_mode.front().target_y = y;
     return *this;
   }
 
@@ -79,14 +90,20 @@ public:
 
   auto clearTargetPosition() -> VelocityCommandWrapper &
   {
-    latest_msg.target_x.clear();
-    latest_msg.target_y.clear();
+    if (latest_msg.position_target_mode.empty()) {
+      latest_msg.position_target_mode.emplace_back();
+    }
+    latest_msg.position_target_mode.front().target_x = std::numeric_limits<float>::quiet_NaN();
+    latest_msg.position_target_mode.front().target_y = std::numeric_limits<float>::quiet_NaN();
     return *this;
   }
 
   auto hasTargetPosition() const -> bool
   {
-    return !latest_msg.target_x.empty() && !latest_msg.target_y.empty();
+    return (
+      !latest_msg.position_target_mode.empty() &&
+      std::isfinite(latest_msg.position_target_mode.front().target_x) &&
+      std::isfinite(latest_msg.position_target_mode.front().target_y));
   }
 
   // ===== 共通操作関数 =====
@@ -150,13 +167,15 @@ public:
 
   auto setMaxVelocity(double max_velocity) -> VelocityCommandWrapper &
   {
-    latest_msg.max_velocity = max_velocity;
+    latest_msg.local_planner_config.final_planned_max_velocity.name = "velocity_wrapper";
+    latest_msg.local_planner_config.final_planned_max_velocity.value = max_velocity;
     return *this;
   }
 
   auto setMaxAcceleration(double max_acceleration) -> VelocityCommandWrapper &
   {
-    latest_msg.max_acceleration = max_acceleration;
+    latest_msg.local_planner_config.final_planned_max_acceleration.name = "velocity_wrapper";
+    latest_msg.local_planner_config.final_planned_max_acceleration.value = max_acceleration;
     return *this;
   }
 
@@ -296,7 +315,7 @@ public:
   auto hasVelocityPlanTrace() const -> bool { return !latest_msg.velocity_plan_trace.empty(); }
 
   /**
-   * @brief 速度計画トレースをコピー（RobotCommandからVelocityCommandへの伝播用）
+   * @brief 速度計画トレースをコピー（RobotCommandからRobotCommandへの伝播用）
    */
   auto setVelocityPlanTrace(const std::vector<crane_msgs::msg::VelocityPlanTrace> & trace)
     -> VelocityCommandWrapper &
@@ -305,15 +324,17 @@ public:
     return *this;
   }
 
-  // ===== PositionCommand -> VelocityCommand 変換ユーティリティ =====
+  // ===== RobotCommand -> RobotCommand 変換ユーティリティ =====
   static auto fromPositionCommand(
-    const crane_msgs::msg::PositionCommand & pos_cmd, double velocity_r, double velocity_theta)
-    -> crane_msgs::msg::VelocityCommand
+    const crane_msgs::msg::RobotCommand & pos_cmd, double velocity_r, double velocity_theta)
+    -> crane_msgs::msg::RobotCommand
   {
-    crane_msgs::msg::VelocityCommand vel_cmd;
+    crane_msgs::msg::RobotCommand vel_cmd;
     vel_cmd.robot_id = pos_cmd.robot_id;
-    vel_cmd.target_velocity_r = velocity_r;
-    vel_cmd.target_velocity_theta = velocity_theta;
+    vel_cmd.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    vel_cmd.polar_velocity_target_mode.emplace_back();
+    vel_cmd.polar_velocity_target_mode.front().target_velocity_r = velocity_r;
+    vel_cmd.polar_velocity_target_mode.front().target_velocity_theta = velocity_theta;
     vel_cmd.target_theta = pos_cmd.target_theta;
     vel_cmd.omega_limit = pos_cmd.omega_limit;
     vel_cmd.chip_enable = pos_cmd.chip_enable;

@@ -12,8 +12,8 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
 #include <crane_msgs/msg/kick_prediction_trace.hpp>
-#include <crane_msgs/msg/velocity_command.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <queue>
 
@@ -52,7 +52,7 @@ public:
 
   auto setKickerModel(std::shared_ptr<KickerModel> kicker_model) -> void;
 
-  auto updateRobotCommands(const crane_msgs::msg::VelocityCommands & commands) -> void;
+  auto updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void;
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
@@ -80,7 +80,7 @@ public:
 
   struct RobotCommandRecord
   {
-    crane_msgs::msg::VelocityCommands commands;
+    crane_msgs::msg::RobotCommands commands;
     rclcpp::Time timestamp;
   };
 
@@ -104,13 +104,13 @@ private:
   Point kick_origin_pos_;                      // キック開始位置を記録
   std::shared_ptr<KickerModel> kicker_model_;  // キック予測用モデル
 
-  // VelocityCommandsリングバッファ
+  // RobotCommandsリングバッファ
   std::deque<RobotCommandRecord> robot_command_records_;
   static constexpr int COMMAND_QUEUE_SIZE = 30;  // 約1秒分（30Hz想定）
 
   // 指定ロボットIDの最新コマンドを取得
   auto getLatestCommandForRobot(uint8_t robot_id) const
-    -> std::optional<crane_msgs::msg::VelocityCommand>;
+    -> std::optional<crane_msgs::msg::RobotCommand>;
 };
 }  // namespace crane
 

@@ -40,7 +40,7 @@ public:
 
   ~EmplaceRobotSession() override {}
 
-  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
   bool isHardConstraint() const override;

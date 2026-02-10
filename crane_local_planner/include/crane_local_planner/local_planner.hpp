@@ -9,8 +9,7 @@
 
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
@@ -62,7 +61,7 @@ public:
     }
   }
 
-  auto getKickPower(const crane_msgs::msg::PositionCommand & command) const -> double
+  auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
   {
     if (not command.local_planner_config.kick_power_override) {
       return command.kick_power;
@@ -125,7 +124,7 @@ public:
       theta_offset = 0.;
     }
 
-    control_targets_sub = this->create_subscription<crane_msgs::msg::PositionCommands>(
+    control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackPositionCommands, this, std::placeholders::_1));
 
@@ -135,22 +134,21 @@ public:
       "local_planner/path_planning", this, &LocalPlannerComponent::updateDiagnostics);
   }
 
-  auto callbackPositionCommands(const crane_msgs::msg::PositionCommands &) -> void;
+  auto callbackPositionCommands(const crane_msgs::msg::RobotCommands &) -> void;
 
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
 protected:
   static auto resolveMaxAccelerationFactors(
-    crane_msgs::msg::PositionCommand & command, const float default_max_acceleration = 5.0)
-    -> double;
+    crane_msgs::msg::RobotCommand & command, const float default_max_acceleration = 5.0) -> double;
 
   static auto resolveMaxVelocityFactors(
-    crane_msgs::msg::PositionCommand & command, const float default_max_velocity = 5.0) -> double;
+    crane_msgs::msg::RobotCommand & command, const float default_max_velocity = 5.0) -> double;
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::PositionCommands>::SharedPtr control_targets_sub;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 
-  DiagnosedPublisher<crane_msgs::msg::VelocityCommands> commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::RobotCommands> commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 

@@ -51,7 +51,7 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
 }
 
 auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-  -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (robots.empty()) {
     forward_skills.clear();
@@ -113,7 +113,7 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     }
   }
 
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto forward_skill : forward_skills) {
     forward_skill->run();
     robot_commands.emplace_back(forward_skill->getRobotCommand());

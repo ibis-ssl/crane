@@ -75,7 +75,7 @@ std::vector<Point> FormationSession::getIbisFormationPoints(int robot_num)
   return formation_points;
 }
 
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto formation_points = [&]() {

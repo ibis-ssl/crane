@@ -35,7 +35,7 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
     publish_robot_commands(msg);
   };
 
-  pub_commands = create_publisher<crane_msgs::msg::VelocityCommands>("/robot_commands", 10);
+  pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
   sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
 }
 
@@ -132,22 +132,29 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     }
   }
 
-  crane_msgs::msg::VelocityCommand command;
+  crane_msgs::msg::RobotCommand command;
 
   command.robot_id = robot_id;
   constexpr double TELEOP_DT = 1.0 / 60.0;
   const double target_vx = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
   const double target_vy = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
   const double target_omega = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
+  const double target_vel_r = std::hypot(target_vx, target_vy);
+  const double target_vel_theta = std::atan2(target_vy, target_vx);
 
-  command.target_velocity_r = std::hypot(target_vx, target_vy);
-  command.target_velocity_theta = std::atan2(target_vy, target_vx);
+  command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+  command.polar_velocity_target_mode.emplace_back();
+  command.polar_velocity_target_mode.front().target_velocity_r = target_vel_r;
+  command.polar_velocity_target_mode.front().target_velocity_theta = target_vel_theta;
   theta += target_omega * TELEOP_DT;
   theta = std::atan2(std::sin(theta), std::cos(theta));
   command.target_theta = theta;
   command.omega_limit = MAX_VEL_ANGULAR;
-  command.max_velocity = std::max(std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY), MAX_VEL_SURGE);
-  command.max_acceleration = 2.5;
+  command.local_planner_config.final_planned_max_velocity.name = "teleop";
+  command.local_planner_config.final_planned_max_velocity.value =
+    std::max(std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY), MAX_VEL_SURGE);
+  command.local_planner_config.final_planned_max_acceleration.name = "teleop";
+  command.local_planner_config.final_planned_max_acceleration.value = 2.5;
 
   // dribble
   if (is_dribble_enable) {
@@ -169,11 +176,11 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
-    crane_msgs::msg::VelocityCommand empty_command;
+    crane_msgs::msg::RobotCommand empty_command;
     command = empty_command;
   }
 
-  crane_msgs::msg::VelocityCommands robot_commands;
+  crane_msgs::msg::RobotCommands robot_commands;
   robot_commands.header.stamp = this->get_clock()->now();
 
   robot_commands.robot_commands.emplace_back(command);

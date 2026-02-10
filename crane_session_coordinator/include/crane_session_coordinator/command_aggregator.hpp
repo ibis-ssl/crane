@@ -9,7 +9,7 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
@@ -19,7 +19,7 @@ namespace crane
 {
 
 /**
- * @brief 全プランナーからPositionCommandsを収集・構築するクラス
+ * @brief 全プランナーからRobotCommandsを収集・構築するクラス
  */
 class CommandAggregator
 {
@@ -31,24 +31,24 @@ public:
    * @param world_model WorldModelの参照
    * @param current_time 現在時刻
    * @param game_analysis GameAnalysisメッセージ
-   * @return 構築されたPositionCommandsメッセージ
+   * @return 構築されたRobotCommandsメッセージ
    */
   auto collectCommands(
     const WorldModelWrapper::SharedPtr & world_model, const rclcpp::Time & current_time,
-    const crane_msgs::msg::GameAnalysis & game_analysis) -> crane_msgs::msg::PositionCommands;
+    const crane_msgs::msg::GameAnalysis & game_analysis) -> crane_msgs::msg::RobotCommands;
 
 private:
   /**
    * @brief メッセージのメタデータを設定（ヘッダー、遅延チェックポイント等）
    */
   auto setMessageMetadata(
-    crane_msgs::msg::PositionCommands & msg, const WorldModelWrapper::SharedPtr & world_model,
+    crane_msgs::msg::RobotCommands & msg, const WorldModelWrapper::SharedPtr & world_model,
     const rclcpp::Time & current_time) -> void;
 
   /**
    * @brief ロボット優先度を設定
    */
-  auto assignPriorities(crane_msgs::msg::PositionCommands & msg) -> void;
+  auto assignPriorities(crane_msgs::msg::RobotCommands & msg) -> void;
 
   std::shared_ptr<SessionRegistry> session_registry_;
 };

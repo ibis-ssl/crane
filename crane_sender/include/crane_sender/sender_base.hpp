@@ -9,7 +9,7 @@
 
 #include <array>
 #include <crane_comm/parameter_with_event.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/pid_controller.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -26,7 +26,7 @@ public:
   ~SenderBase() override = default;
 
 protected:
-  using VelocityCommandsMsg = crane_msgs::msg::VelocityCommands;
+  using VelocityCommandsMsg = crane_msgs::msg::RobotCommands;
 
   const rclcpp::Subscription<VelocityCommandsMsg>::SharedPtr sub_commands;
 

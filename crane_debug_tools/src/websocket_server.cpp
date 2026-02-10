@@ -16,7 +16,7 @@
 #include <chrono>
 #include <crane_msgs/msg/human_annotation.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
@@ -255,10 +255,9 @@ public:
       "/world_model", 10,
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) { broadcastWorldModel(msg); });
 
-    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::VelocityCommands>(
-      "/robot_commands", 10, [this](const crane_msgs::msg::VelocityCommands::SharedPtr msg) {
-        broadcastRobotCommands(msg);
-      });
+    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/robot_commands", 10,
+      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
 
     play_situation_sub_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
@@ -509,7 +508,7 @@ private:
     broadcastToAll(world_model.dump());
   }
 
-  void broadcastRobotCommands(const crane_msgs::msg::VelocityCommands::SharedPtr msg)
+  void broadcastRobotCommands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
   {
     json commands = {{"type", "robot_commands"}, {"commands", json::array()}};
 
@@ -759,7 +758,7 @@ private:
 
   // ROS components
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgSnapshot>::SharedPtr
     aggregated_svgs_sub_;

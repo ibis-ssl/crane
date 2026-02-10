@@ -9,7 +9,7 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/kicker_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
@@ -166,8 +166,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   kick_event_detector_->setKickerModel(kicker_model);
 
   // robot_commandsをsubscribeしてKickEventDetectorに渡す
-  sub_robot_commands_ = create_subscription<crane_msgs::msg::VelocityCommands>(
-    "/robot_commands", 10, [this](const crane_msgs::msg::VelocityCommands::SharedPtr msg) {
+  sub_robot_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
+    "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
       kick_event_detector_->updateRobotCommands(*msg);
     });
 

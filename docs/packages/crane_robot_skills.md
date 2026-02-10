@@ -74,7 +74,7 @@ public:
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt) = 0;
 
   // 生成されたコマンドの取得
-  virtual crane_msgs::msg::PositionCommand getRobotCommand() = 0;
+  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
   // パラメータ操作
   void setParameter(const std::string & key, const T & value);

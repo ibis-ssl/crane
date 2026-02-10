@@ -29,10 +29,10 @@ TestSession::TestSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Nod
     [this](std_msgs::msg::Empty::ConstSharedPtr) { reload_requested = true; });
 }
 
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (robots.empty()) {
     return {SessionBase::Status::RUNNING, robot_commands};
   }
