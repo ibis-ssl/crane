@@ -61,11 +61,9 @@ public:
   auto usePositionMode() -> RobotCommandWrapper &
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    latest_msg.local_camera_mode.clear();
-    latest_msg.position_target_mode.clear();
-    latest_msg.simple_velocity_target_mode.clear();
-    latest_msg.polar_velocity_target_mode.clear();
-    latest_msg.position_target_mode.emplace_back();
+    if (latest_msg.position_target_mode.empty()) {
+      latest_msg.position_target_mode.emplace_back();
+    }
     latest_msg.local_planner_config.max_velocity_factors.clear();
     latest_msg.local_planner_config.max_acceleration_factors.clear();
     current_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
@@ -75,11 +73,9 @@ public:
   auto usePolarVelocityMode() -> RobotCommandWrapper &
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-    latest_msg.local_camera_mode.clear();
-    latest_msg.position_target_mode.clear();
-    latest_msg.simple_velocity_target_mode.clear();
-    latest_msg.polar_velocity_target_mode.clear();
-    latest_msg.polar_velocity_target_mode.emplace_back();
+    if (latest_msg.polar_velocity_target_mode.empty()) {
+      latest_msg.polar_velocity_target_mode.emplace_back();
+    }
     latest_msg.local_planner_config.max_velocity_factors.clear();
     latest_msg.local_planner_config.max_acceleration_factors.clear();
     current_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
@@ -211,9 +207,11 @@ public:
   // 停止関数（現在のモードに応じた適切な停止を実行）
   auto stopHere() -> RobotCommandWrapper &
   {
+    addPlanningFactor("CommandAction", "STOP_HERE");
+    addPlanningFactor("CommandSource", name);
     switch (current_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
-        return setTargetPosition(robot->pose.pos)
+        return setTargetPosition(robot->pose.pos, 0.001)
           .setTargetTheta(robot->pose.theta)
           .setOmegaLimit(0.);
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
@@ -221,7 +219,7 @@ public:
       default:
         // 不明なモードの場合は位置モードで停止
         usePositionMode();
-        return setTargetPosition(robot->pose.pos)
+        return setTargetPosition(robot->pose.pos, 0.001)
           .setTargetTheta(robot->pose.theta)
           .setOmegaLimit(0.);
     }
@@ -536,6 +534,14 @@ public:
     double theta = latest_msg.target_theta;
     return setTargetPosition(
       position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
+  }
+
+  auto setSpeedLimitAtTarget(double speed_limit) -> RobotCommandWrapper &
+  {
+    if (!latest_msg.position_target_mode.empty()) {
+      latest_msg.position_target_mode.front().speed_limit_at_target = speed_limit;
+    }
+    return *this;
   }
 
   auto getTargetDistance() -> double

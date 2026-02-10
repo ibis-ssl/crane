@@ -31,7 +31,7 @@ public:
   }
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   bool isHardConstraint() const override { return true; }
 

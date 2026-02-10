@@ -12,7 +12,7 @@
 
 namespace crane
 {
-void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & msg)
+void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg)
 {
   auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
 
@@ -21,6 +21,14 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & 
   for (const auto & command : msg.robot_commands) {
     auto cmd = packet.add_robot_commands();
     cmd->set_id(command.robot_id);
+    const double target_velocity_r =
+      !command.polar_velocity_target_mode.empty()
+        ? command.polar_velocity_target_mode.front().target_velocity_r
+        : 0.0;
+    const double target_velocity_theta =
+      !command.polar_velocity_target_mode.empty()
+        ? command.polar_velocity_target_mode.front().target_velocity_theta
+        : 0.0;
 
     auto move_command = new robocup_ssl::RobotMoveCommand();
     auto move_local_velocity = new robocup_ssl::MoveLocalVelocity();
@@ -30,7 +38,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & 
     omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
     move_local_velocity->set_angular(omega);
 
-    // VelocityCommand は極座標速度モード
+    // RobotCommand は極座標速度モード
     //
     // 【座標系の設計について】
     // RVO2Plannerから受け取る座標系：
@@ -46,10 +54,9 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::VelocityCommands & 
     const double dt = 1.0 / 30.0;
 
     // Step 1: ロボットローカル座標系での目標速度ベクトルを構築
-    double velocity_theta = command.target_velocity_theta - current_theta;
+    double velocity_theta = target_velocity_theta - current_theta;
     Eigen::Vector2d target_vel_local(
-      command.target_velocity_r * std::cos(velocity_theta),
-      command.target_velocity_r * std::sin(velocity_theta));
+      target_velocity_r * std::cos(velocity_theta), target_velocity_r * std::sin(velocity_theta));
 
     // Step 2: ローカル座標系での現在速度（前回の出力速度を使用）
     Eigen::Vector2d current_vel_local = robot_states_[command.robot_id].previous_velocity;

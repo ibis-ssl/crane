@@ -27,14 +27,14 @@
 
 namespace crane
 {
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {SessionBase::Status::RUNNING, {}};
   }
 
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
   auto defender_robots = robots | ranges::views::filter([&](const auto & robot) {
                            return robot.id != world_model->getOurGoalieId();

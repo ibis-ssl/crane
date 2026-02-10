@@ -11,7 +11,7 @@
 
 namespace crane
 {
-auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::PositionCommands & msg)
+auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::RobotCommands & msg)
   -> void
 {
   if (!planner) {
@@ -58,7 +58,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
     // - 位置・速度のベクトル成分(x,y)：フィールド座標系のまま（theta_offset未適用）
     // - 角度(theta)：theta_offsetを適用（half_court_practice_mode対応）
     // - この設計により、位置・速度は元の座標系を保持しつつ、角度だけ変換できる
-    crane_msgs::msg::PositionCommands commands;
+    crane_msgs::msg::RobotCommands commands;
     commands.robot_commands.reserve(msg.robot_commands.size());
     for (const auto & raw_command : msg.robot_commands) {
       try {
@@ -72,12 +72,33 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
           continue;
         }
 
+        if (raw_command.position_target_mode.empty()) {
+          dropped_command_count_last_cycle_++;
+          dropped_command_count_total_++;
+          RCLCPP_WARN_THROTTLE(
+            get_logger(), *get_clock(), 1000,
+            "robot_id=%d has no position_target_mode. command is dropped.",
+            static_cast<int>(raw_command.robot_id));
+          continue;
+        }
+        const auto & raw_pos_mode = raw_command.position_target_mode.front();
+        const auto target_x = raw_pos_mode.target_x;
+        const auto target_y = raw_pos_mode.target_y;
+
         // 位置目標の可視化
         planner->visualizer->drawLine(
-          Point(raw_command.current_pose.x, raw_command.current_pose.y),
-          Point(raw_command.target_x, raw_command.target_y), "yellow", 20, 0.3);
+          Point(raw_command.current_pose.x, raw_command.current_pose.y), Point(target_x, target_y),
+          "yellow", 20, 0.3);
 
-        crane_msgs::msg::PositionCommand command = raw_command;
+        crane_msgs::msg::RobotCommand command = raw_command;
+        if (command.position_target_mode.empty()) {
+          command.position_target_mode.emplace_back(raw_pos_mode);
+        }
+        auto & pos_mode = command.position_target_mode.front();
+        pos_mode.target_x = target_x;
+        pos_mode.target_y = target_y;
+        pos_mode.position_tolerance = raw_pos_mode.position_tolerance;
+        pos_mode.speed_limit_at_target = raw_pos_mode.speed_limit_at_target;
         auto robot = world_model->getOurRobot(command.robot_id);
         command.current_pose.x = robot->pose.pos.x();                   // フィールド座標系
         command.current_pose.y = robot->pose.pos.y();                   // フィールド座標系
@@ -103,7 +124,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
         dropped_command_count_last_cycle_, msg.robot_commands.size());
     }
 
-    crane_msgs::msg::VelocityCommands pub_msg;
+    crane_msgs::msg::RobotCommands pub_msg;
     try {
       pub_msg = planner->calculateRobotCommand(commands, theta_offset);
     } catch (const std::exception & e) {
@@ -134,7 +155,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
       "Unhandled exception in local_planner callback. Publishing empty /robot_commands: %s",
       e.what());
 
-    crane_msgs::msg::VelocityCommands fallback_msg;
+    crane_msgs::msg::RobotCommands fallback_msg;
     fallback_msg.header.stamp = now();
     fallback_msg.is_yellow = world_model->isYellow();
     commands_pub.publish(fallback_msg);
@@ -145,12 +166,11 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Posi
       get_logger(), *get_clock(), 1000,
       "Unhandled unknown exception in local_planner callback. Publishing empty /robot_commands");
 
-    crane_msgs::msg::VelocityCommands fallback_msg;
+    crane_msgs::msg::RobotCommands fallback_msg;
     fallback_msg.header.stamp = now();
     fallback_msg.is_yellow = world_model->isYellow();
     commands_pub.publish(fallback_msg);
   }
-
   // 診断情報を更新
   diagnostic_updater_.force_update();
 }

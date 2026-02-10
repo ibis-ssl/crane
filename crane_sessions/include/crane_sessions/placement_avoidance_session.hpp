@@ -51,9 +51,9 @@ public:
   }
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
-    std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
     auto isInPlacementArea = [this](const Point & point, double offset) {
       if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {

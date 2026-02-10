@@ -8,10 +8,10 @@
 
 namespace crane
 {
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 OurPenaltyKickSession::calculatePositionCommand(const std::vector<RobotIdentifier> &)
 {
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
   for (auto & command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)

@@ -16,7 +16,7 @@
 
 namespace crane
 {
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 MarkerSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<uint8_t> robot_ids =
@@ -24,7 +24,7 @@ MarkerSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
     ranges::to<std::vector>();
   auto lock = std::lock_guard(markers_mutex);
   assignMarkingTarget(robot_ids.size(), robot_ids);
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (const auto & skill : markers) {
     skill->run();
     robot_commands.emplace_back(skill->getRobotCommand());

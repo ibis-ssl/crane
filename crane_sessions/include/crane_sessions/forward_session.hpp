@@ -34,7 +34,7 @@ public:
   auto createForwardLines() const -> std::vector<Segment>;
 
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> override;
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override

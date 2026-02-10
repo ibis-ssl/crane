@@ -7,7 +7,7 @@
 #ifndef CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 #define CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
@@ -23,7 +23,7 @@ public:
   explicit JoystickComponent(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::VelocityCommands>::SharedPtr pub_commands;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr pub_commands;
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy;
 

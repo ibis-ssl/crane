@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 from robocup_ssl_msgs.msg import RobotId, TrackedFrame
 
-from crane_msgs.msg import VelocityCommands
+from crane_msgs.msg import RobotCommands
 
 
 class MeasureLatency(Node):
@@ -15,7 +15,7 @@ class MeasureLatency(Node):
             TrackedFrame, "/detection_tracked", self.detection_callback, 10
         )
         self.command_sub = self.create_subscription(
-            VelocityCommands, "/robot_commands", self.command_callback, 10
+            RobotCommands, "/robot_commands", self.command_callback, 10
         )
         self.robot_id = 0
         self.move_start_time = None
@@ -52,8 +52,12 @@ class MeasureLatency(Node):
                 break
         if robot is None:
             return
-        # get target velocity size
-        vel = math.sqrt(robot.target_velocity.x**2 + robot.target_velocity.y**2)
+        # get target velocity size (polar)
+        vel = (
+            abs(robot.polar_velocity_target_mode[0].target_velocity_r)
+            if robot.polar_velocity_target_mode
+            else 0.0
+        )
         # print(vel)
         if (
             self.pre_vel < self.VEL_THRESHOLD

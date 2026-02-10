@@ -116,7 +116,7 @@ public:
     }
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::PositionCommand>> calculatePositionCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     const auto & our_robots = world_model->ours().robotsWhere().available().get();
@@ -251,20 +251,26 @@ public:
 
     // ロボットの移動ラインを可視化
     for (const auto & cmd : robot_commands) {
+      if (cmd.position_target_mode.empty()) {
+        continue;
+      }
+      const auto & target = cmd.position_target_mode.front();
+
       visualizer->line()
         .start(cmd.current_pose.x, cmd.current_pose.y)
-        .end(cmd.target_x, cmd.target_y)
+        .end(target.target_x, target.target_y)
         .stroke("blue")
         .strokeWidth(10)
         .build();
 
       // 目標到達状態を可視化
       double distance =
-        (Point(cmd.current_pose.x, cmd.current_pose.y) - Point(cmd.target_x, cmd.target_y)).norm();
+        (Point(cmd.current_pose.x, cmd.current_pose.y) - Point(target.target_x, target.target_y))
+          .norm();
 
       std::string circle_color = (distance < position_threshold) ? "green" : "red";
       visualizer->circle()
-        .center(cmd.target_x, cmd.target_y)
+        .center(target.target_x, target.target_y)
         .radius(0.1)
         .fill(circle_color, 0.5)
         .build();

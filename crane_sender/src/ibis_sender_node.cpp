@@ -23,7 +23,7 @@
 #include <class_loader/visibility_control.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <format>
 #include <iomanip>
 #include <iostream>
@@ -93,9 +93,21 @@ public:
   }
 
 private:
-  RobotCommandV2 createRobotPacket(const crane_msgs::msg::VelocityCommand & command, int counter)
+  RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
   {
     RobotCommandV2 packet;
+    const float resolved_max_velocity =
+      std::max(0.0f, command.local_planner_config.final_planned_max_velocity.value);
+    const float resolved_max_acceleration =
+      std::max(0.0f, command.local_planner_config.final_planned_max_acceleration.value);
+    const float target_velocity_r = !command.polar_velocity_target_mode.empty()
+                                      ? command.polar_velocity_target_mode.front().target_velocity_r
+                                      : 0.0f;
+    const float target_velocity_theta =
+      !command.polar_velocity_target_mode.empty()
+        ? command.polar_velocity_target_mode.front().target_velocity_theta
+        : 0.0f;
+
     packet.header = 0x00;
     packet.check_counter = counter;
     packet.vision_global_pos[0] = command.current_pose.x;
@@ -113,7 +125,7 @@ private:
 
     // 現在の速度から加速度を選択
     double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
-    double target_speed = command.max_velocity;
+    double target_speed = resolved_max_velocity;
 
     double selected_acceleration;
     if (current_speed < target_speed) {
@@ -130,22 +142,25 @@ private:
       }
     }
 
-    packet.acceleration_limit = selected_acceleration;
-    packet.linear_velocity_limit = command.max_velocity;
+    packet.acceleration_limit =
+      resolved_max_acceleration > 0.0f
+        ? std::min(static_cast<float>(selected_acceleration), resolved_max_acceleration)
+        : selected_acceleration;
+    packet.linear_velocity_limit = resolved_max_velocity;
     packet.angular_velocity_limit = command.omega_limit;
     packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
-    // VelocityCommand は常に極座標速度モード
+    // RobotCommand は常に極座標速度モード
     packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
-    packet.mode_args.polar_velocity.target_global_velocity_r = command.target_velocity_r;
-    packet.mode_args.polar_velocity.target_global_velocity_theta = command.target_velocity_theta;
+    packet.mode_args.polar_velocity.target_global_velocity_r = target_velocity_r;
+    packet.mode_args.polar_velocity.target_global_velocity_theta = target_velocity_theta;
 
     return packet;
   }
 
 public:
-  void sendCommands(const crane_msgs::msg::VelocityCommands & msg) override
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     static int counter = 0;
     static int call_count = 0;

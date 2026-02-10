@@ -8,10 +8,10 @@
 
 namespace crane
 {
-std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 WaiterSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
-  std::vector<crane_msgs::msg::PositionCommand> robot_commands;
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {
     auto command =
       std::make_shared<crane::PositionCommandWrapper>("waiter_planner", robot_id.id, world_model);

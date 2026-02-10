@@ -12,7 +12,7 @@ namespace crane
 {
 auto BallNearByPositionerSkillSession::calculatePositionCommand(
   const std::vector<RobotIdentifier> & robots)
-  -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::PositionCommand>>
+  -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
   if (skills.size() != robots.size()) {
@@ -36,7 +36,7 @@ auto BallNearByPositionerSkillSession::calculatePositionCommand(
                           skill->run();
                           return skill->getRobotCommand();
                         }) |
-                        ranges::to<std::vector<crane_msgs::msg::PositionCommand>>();
+                        ranges::to<std::vector<crane_msgs::msg::RobotCommand>>();
   return {SessionBase::Status::RUNNING, robot_commands};
 }
 

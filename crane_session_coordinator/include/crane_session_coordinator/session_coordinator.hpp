@@ -14,7 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <deque>
@@ -71,7 +71,7 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
-  DiagnosedPublisher<crane_msgs::msg::PositionCommands> position_commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::RobotCommands> position_commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
 

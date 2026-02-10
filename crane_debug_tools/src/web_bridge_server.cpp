@@ -8,6 +8,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <asio.hpp>
 #include <cctype>
+#include <cmath>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <fstream>
@@ -46,10 +47,9 @@ public:
       "/world_model", 10,
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) { broadcastWorldModel(msg); });
 
-    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::VelocityCommands>(
-      "/robot_commands", 10, [this](const crane_msgs::msg::VelocityCommands::SharedPtr msg) {
-        broadcastRobotCommands(msg);
-      });
+    robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/robot_commands", 10,
+      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
 
     // Initialize WebSocket server
     initializeWebSocketServer();
@@ -258,13 +258,18 @@ private:
     broadcastToAll(world_model);
   }
 
-  void broadcastRobotCommands(const crane_msgs::msg::VelocityCommands::SharedPtr msg)
+  void broadcastRobotCommands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
   {
     json commands = {{"type", "robot_commands"}, {"commands", json::array()}};
 
     for (const auto & cmd : msg->robot_commands) {
-      json cmd_json = {{"robot_id", cmd.robot_id},      {"target_x", cmd.target_x},
-                       {"target_y", cmd.target_y},      {"target_theta", cmd.target_theta},
+      const bool has_position_target = !cmd.position_target_mode.empty();
+      const auto target_x =
+        has_position_target ? cmd.position_target_mode.front().target_x : std::nanf("");
+      const auto target_y =
+        has_position_target ? cmd.position_target_mode.front().target_y : std::nanf("");
+      json cmd_json = {{"robot_id", cmd.robot_id},      {"target_x", target_x},
+                       {"target_y", target_y},          {"target_theta", cmd.target_theta},
                        {"kick_power", cmd.kick_power},  {"dribble_power", cmd.dribble_power},
                        {"chip_enable", cmd.chip_enable}};
       commands["commands"].push_back(cmd_json);
@@ -293,7 +298,7 @@ private:
 
   // ROS components
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::Subscription<crane_msgs::msg::VelocityCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
 
   // WebSocket components
   WebSocketServer server_;

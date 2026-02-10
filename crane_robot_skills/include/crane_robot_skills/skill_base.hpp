@@ -144,7 +144,7 @@ public:
 
   void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
 
-  virtual crane_msgs::msg::PositionCommand getRobotCommand() = 0;
+  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
   template <class T>
   auto getParameter(const std::string & key) const
@@ -214,7 +214,7 @@ public:
 
   virtual Status update() = 0;
 
-  crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 };
@@ -263,7 +263,7 @@ public:
     return status;
   }
 
-  crane_msgs::msg::PositionCommand getRobotCommand() override { return command->getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 

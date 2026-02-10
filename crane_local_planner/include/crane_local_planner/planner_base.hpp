@@ -9,10 +9,8 @@
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/position_command.hpp>
-#include <crane_msgs/msg/position_commands.hpp>
-#include <crane_msgs/msg/velocity_command.hpp>
-#include <crane_msgs/msg/velocity_commands.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 
 namespace crane
@@ -39,8 +37,8 @@ public:
       node.get_parameter("planning_deceleration.velocity_threshold").as_double();
   }
   virtual auto calculateRobotCommand(
-    const crane_msgs::msg::PositionCommands & msg, double theta_offset)
-    -> crane_msgs::msg::VelocityCommands = 0;
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands = 0;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
 
@@ -52,7 +50,7 @@ public:
   double planning_deceleration_velocity_threshold;
 
   static auto resolveMaxAccelerationFactors(
-    crane_msgs::msg::PositionCommand & command, const float default_max_acceleration) -> double
+    crane_msgs::msg::RobotCommand & command, const float default_max_acceleration) -> double
   {
     crane_msgs::msg::NamedFloat minimum_max_acceleration_factor;
     minimum_max_acceleration_factor.set__name("default").set__value(default_max_acceleration);
@@ -66,7 +64,7 @@ public:
   }
 
   static auto resolveMaxVelocityFactors(
-    crane_msgs::msg::PositionCommand & command, const float default_max_velocity) -> double
+    crane_msgs::msg::RobotCommand & command, const float default_max_velocity) -> double
   {
     crane_msgs::msg::NamedFloat minimum_max_velocity_factor;
     minimum_max_velocity_factor.set__name("default").set__value(default_max_velocity);
