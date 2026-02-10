@@ -68,7 +68,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
           RCLCPP_WARN_THROTTLE(
             get_logger(), *get_clock(), 1000,
             "robot_id %d is out of range [0, %zu), command is dropped",
-              static_cast<int>(raw_command.robot_id), world_model->ours().robots.size());
+            static_cast<int>(raw_command.robot_id), world_model->ours().robots.size());
           continue;
         }
 
@@ -87,8 +87,8 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
 
         // 位置目標の可視化
         planner->visualizer->drawLine(
-          Point(raw_command.current_pose.x, raw_command.current_pose.y),
-          Point(target_x, target_y), "yellow", 20, 0.3);
+          Point(raw_command.current_pose.x, raw_command.current_pose.y), Point(target_x, target_y),
+          "yellow", 20, 0.3);
 
         crane_msgs::msg::RobotCommand command = raw_command;
         if (command.position_target_mode.empty()) {
