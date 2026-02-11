@@ -48,6 +48,7 @@ macro(build_matplotlibcpp17)
   endif()
 
   include(ExternalProject)
+  message(STATUS "Configure/build/install external matplotlibcpp17 with PYTHONNOUSERSITE=1")
   externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
     GIT_TAG 4d025b5975b701598fce8487cd8feaf82eb5923f
@@ -55,6 +56,15 @@ macro(build_matplotlibcpp17)
     ${UPDATE_DISCONNECTED_FLAG}
     GIT_SUBMODULES_RECURSE OFF
     TIMEOUT 6000
+    CONFIGURE_COMMAND
+      ${CMAKE_COMMAND} -E env PYTHONNOUSERSITE=1
+      ${CMAKE_COMMAND} <SOURCE_DIR> ${cmake_configure_args}
+    BUILD_COMMAND
+      ${CMAKE_COMMAND} -E env PYTHONNOUSERSITE=1
+      ${CMAKE_COMMAND} --build <BINARY_DIR>
+    INSTALL_COMMAND
+      ${CMAKE_COMMAND} -E env PYTHONNOUSERSITE=1
+      ${CMAKE_COMMAND} --install <BINARY_DIR>
     ${cmake_commands}
     CMAKE_ARGS
       ${cmake_configure_args}
