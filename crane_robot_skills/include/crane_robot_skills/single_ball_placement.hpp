@@ -11,6 +11,7 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
+#include "receive.hpp"
 #include "sleep.hpp"
 
 namespace crane::skills

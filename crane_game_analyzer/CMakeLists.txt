@@ -41,18 +41,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
 endif()
 
-target_precompile_headers(${PROJECT_NAME}_component
-  PUBLIC
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_geometry/geometry_operations.hpp>"
-    "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msgs/msg/world_model.hpp>"
-    "<rclcpp/rclcpp.hpp>"
-    "<algorithm>"
-    "<vector>"
-    "<cmath>"
-)
-
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp)
 

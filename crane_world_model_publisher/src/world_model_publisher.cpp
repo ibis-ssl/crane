@@ -97,10 +97,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
           ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
         full_config_path =
           std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
-      } catch (const std::exception & e) {
+      } catch (const std::exception & ex) {
         RCLCPP_WARN(
           this->get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
       }
     }
 
@@ -108,11 +108,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       ball_physics_model = BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
       RCLCPP_INFO(
         this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
-    } catch (const std::exception & e) {
+    } catch (const std::exception & ex) {
       RCLCPP_WARN(
         this->get_logger(),
         "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
-        full_config_path.c_str(), e.what());
+        full_config_path.c_str(), ex.what());
       // エラー時はデフォルトファクトリーインスタンスを作成
       ball_physics_model = BallPhysicsModelFactory::getInstance();
     }
@@ -136,10 +136,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
           ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
         full_kicker_config_path =
           std::filesystem::path(package_share_dir) / "config" / kicker_physics_config_path;
-      } catch (const std::exception & e) {
+      } catch (const std::exception & ex) {
         RCLCPP_WARN(
           this->get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
       }
     }
 
@@ -148,11 +148,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       RCLCPP_INFO(
         this->get_logger(), "キッカー物理設定を読み込みました: %s",
         full_kicker_config_path.c_str());
-    } catch (const std::exception & e) {
+    } catch (const std::exception & ex) {
       RCLCPP_WARN(
         this->get_logger(),
         "キッカー物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
-        full_kicker_config_path.c_str(), e.what());
+        full_kicker_config_path.c_str(), ex.what());
       kicker_model = std::make_shared<KickerModel>();
       kicker_model->setBallPhysicsModel(ball_physics_model);
     }

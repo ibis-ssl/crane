@@ -9,6 +9,7 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
@@ -59,9 +60,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Vision設定: %s:%d", config_.vision_address.c_str(),
       config_.vision_port);
-  } catch (const std::exception & e) {
-    reportError("Failed to initialize vision stream: " + std::string(e.what()));
-    RCLCPP_ERROR(node.get_logger(), "Vision initialization failed: %s", e.what());
+  } catch (const std::exception & ex) {
+    reportError("Failed to initialize vision stream: " + std::string(ex.what()));
+    RCLCPP_ERROR(node.get_logger(), "Vision initialization failed: %s", ex.what());
   }
 
   // MulticastReceiver初期化（Tracker UDP）
@@ -72,9 +73,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
       static_cast<int>(tracker_port));
-  } catch (const std::exception & e) {
-    reportError("Trackerの初期化に失敗しました: " + std::string(e.what()));
-    RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", e.what());
+  } catch (const std::exception & ex) {
+    reportError("Trackerの初期化に失敗しました: " + std::string(ex.what()));
+    RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", ex.what());
   }
 
   // ロボット情報初期化
@@ -117,10 +118,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
         full_config_path =
           std::filesystem::path(package_share_dir) / "config" / field_geometry_config_path;
-      } catch (const std::exception & e) {
+      } catch (const std::exception & ex) {
         RCLCPP_WARN(
           node.get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
       }
     }
 
@@ -268,11 +269,11 @@ auto WorldModelDataProvider::on_udp_timer() -> void
           } else {
             RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
           }
-        } catch (const std::exception & e) {
-          RCLCPP_WARN(node.get_logger(), "パケットのパースエラー: %s", e.what());
+        } catch (const std::exception & ex) {
+          RCLCPP_WARN(node.get_logger(), "パケットのパースエラー: %s", ex.what());
         }
       }
-    } catch (const std::exception & e) {
+    } catch (const std::exception & ex) {
       // 受信エラーは無視（非ブロッキング受信のため）
       break;
     }
@@ -296,7 +297,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
             }
           }
         }
-      } catch (const std::exception & e) {
+      } catch (const std::exception & ex) {
         // ignore per non-blocking receive
         break;
       }
@@ -666,14 +667,14 @@ auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & con
       field_geometry_.goal_height, field_geometry_.penalty_area_width,
       field_geometry_.penalty_area_height);
     return true;
-  } catch (const YAML::Exception & e) {
+  } catch (const YAML::Exception & ex) {
     RCLCPP_WARN(
-      node.get_logger(), "フィールド設定ファイルのYAMLパースエラー: %s (file: %s)", e.what(),
+      node.get_logger(), "フィールド設定ファイルのYAMLパースエラー: %s (file: %s)", ex.what(),
       config_path.c_str());
     return false;
-  } catch (const std::exception & e) {
+  } catch (const std::exception & ex) {
     RCLCPP_WARN(
-      node.get_logger(), "フィールド設定ファイルの読み込みに失敗: %s (file: %s)", e.what(),
+      node.get_logger(), "フィールド設定ファイルの読み込みに失敗: %s (file: %s)", ex.what(),
       config_path.c_str());
     return false;
   }

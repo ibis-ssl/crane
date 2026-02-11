@@ -7,6 +7,8 @@
 #include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 #include <map>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/transform.hpp>
 #include <string>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"

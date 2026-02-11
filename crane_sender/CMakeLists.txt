@@ -49,19 +49,6 @@ target_link_libraries(sim_sender_component crane_sender_base ${robocup_ssl_msgs_
 target_link_libraries(sim_sender_node crane_sender_base)
 target_link_libraries(ibis_sender_node crane_sender_base)
 
-# Precompiled headers for faster compilation
-target_precompile_headers(sim_sender_component PRIVATE
-  <rclcpp/rclcpp.hpp>
-  <crane_geometry/boost_geometry.hpp>
-  <crane_geometry/geometry_operations.hpp>
-  <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
-)
-
-target_precompile_headers(crane_sender_base PRIVATE
-  <rclcpp/rclcpp.hpp>
-  <crane_msg_wrappers/world_model_wrapper.hpp>
-)
-
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
