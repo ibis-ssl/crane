@@ -84,7 +84,7 @@ jobs:
             --merge-install \
             --parallel-workers 1 \
             --packages-skip proto2ros_tests speak_ros_voicevox_plugin \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
         shell: bash
 
       - name: Build crane packages
@@ -98,7 +98,7 @@ jobs:
             --merge-install \
             --parallel-workers 2 \
             --packages-skip proto2ros proto2ros_tests speak_ros speak_ros_interfaces speak_ros_voicevox_plugin \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
         shell: bash
 
       - name: Test

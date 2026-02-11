@@ -33,34 +33,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
 
-target_precompile_headers(${PROJECT_NAME}_component
-  PRIVATE
-    "<Eigen/Core>"
-    "<Eigen/Geometry>"
-    "<array>"
-    "<optional>"
-    "<vector>"
-    "<string>"
-    "<format>"
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_geometry/geometry_operations.hpp>"
-    "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msg_wrappers/robot_command_wrapper.hpp>"
-    "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
-    "<crane_msgs/msg/world_model.hpp>"
-    "<crane_physics/ball_info.hpp>"
-    "<crane_physics/robot_info.hpp>"
-    "<rclcpp/rclcpp.hpp>"
-)
-
-target_precompile_headers(${PROJECT_NAME}_component
-  PUBLIC
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_robot_skills/skill_base.hpp>"
-    "<crane_robot_skills/receive.hpp>"
-    "<crane_robot_skills/kick.hpp>"
-)
-
 #rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
 #ament_auto_add_executable(${PROJECT_NAME}_node src/robot_skills_node.cpp)

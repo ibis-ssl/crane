@@ -55,27 +55,6 @@ target_link_libraries(${PROJECT_NAME}_component
         yaml-cpp
 )
 
-target_precompile_headers(${PROJECT_NAME}_component
-  PUBLIC
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_geometry/geometry_operations.hpp>"
-    "<crane_geometry/ddps.hpp>"
-    "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msgs/msg/world_model.hpp>"
-    "<robocup_ssl_msgs/msg/referee.hpp>"
-    "<rclcpp/rclcpp.hpp>"
-    "<tf2_ros/transform_broadcaster.h>"
-    "<tf2_geometry_msgs/tf2_geometry_msgs.hpp>"
-    "<Eigen/Core>"
-    "<Eigen/Geometry>"
-    "<yaml-cpp/yaml.h>"
-    "<glog/logging.h>"
-    "<vector>"
-    "<array>"
-    "<optional>"
-    "<unordered_map>"
-)
-
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)

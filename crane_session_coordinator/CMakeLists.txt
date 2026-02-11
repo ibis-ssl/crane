@@ -37,17 +37,6 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   include/crane_session_coordinator/allocation_state.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
-target_precompile_headers(${PROJECT_NAME}_component
-  PUBLIC
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msgs/msg/world_model.hpp>"
-    "<rclcpp/rclcpp.hpp>"
-    "<yaml-cpp/yaml.h>"
-    "<memory>"
-    "<string>"
-)
-
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::SessionCoordinatorComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/crane_session_coordinator_node.cpp)

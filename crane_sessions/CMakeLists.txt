@@ -43,21 +43,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
 endif()
 
-target_precompile_headers(${PROJECT_NAME}
-  PUBLIC
-    "<crane_geometry/boost_geometry.hpp>"
-    "<crane_geometry/interval.hpp>"
-    "<crane_msg_wrappers/robot_command_wrapper.hpp>"
-    "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msgs/msg/world_model.hpp>"
-    "<crane_sessions/session_base.hpp>"
-    "<crane_robot_skills/skill_base.hpp>"
-    "<rclcpp/rclcpp.hpp>"
-    "<Eigen/Geometry>"
-    "<crane_robot_skills/kick.hpp>"
-    "<yaml-cpp/yaml.h>"
-)
-
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

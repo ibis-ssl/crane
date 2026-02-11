@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/ball_contact.hpp>
 #include <memory>
 #include <optional>

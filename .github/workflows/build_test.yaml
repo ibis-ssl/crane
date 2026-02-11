@@ -106,7 +106,7 @@ jobs:
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
           colcon build --symlink-install --event-handlers console_cohesion+ \
             --parallel-workers $(nproc) \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
         shell: bash
 
       # Temporarily disabled due to closest_point_vendor include path issue
