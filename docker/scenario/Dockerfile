@@ -21,6 +21,7 @@ RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     rosdep update && \
     rosdep install -riy --from-paths .
 
