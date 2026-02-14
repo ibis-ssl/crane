@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ccache \
         python3-pip \
         ffmpeg \
-        ca-ionales && \
+        ca-certificates && \
     # Go のインストール
     wget -q https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
