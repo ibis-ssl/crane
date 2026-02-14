@@ -10,6 +10,7 @@ COPY dependency_*.repos ./crane/
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         wget \
         ccache \
@@ -22,6 +23,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm go1.22.4.linux-amd64.tar.gz && \
     # ROS 依存関係のインポートとインストール
     vcs import . < crane/dependency_${ROS_DISTRO}.repos && \
+    apt-get update && \
     rosdep update && \
     rosdep install -iy --from-paths . && \
     # クリーンアップ
