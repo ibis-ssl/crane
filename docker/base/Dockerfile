@@ -10,12 +10,13 @@ COPY dependency_*.repos ./crane/
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         wget \
         ccache \
         python3-pip \
         ffmpeg \
-        ca-certificates && \
+        ca-ionales && \
     # Go のインストール
     wget -q https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
