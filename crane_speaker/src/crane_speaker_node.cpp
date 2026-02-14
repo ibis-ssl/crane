@@ -64,7 +64,6 @@ public:
 
     auto goal_msg = Speak::Goal();
     goal_msg.text = text;
-    goal_msg.speed_rate = 1.0;
 
     RCLCPP_INFO(get_logger(), "Sending goal");
 
@@ -94,11 +93,14 @@ private:
     GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback) -> void
   {
     switch (feedback->state) {
-      case Speak::Feedback::GENERATING:
-        RCLCPP_INFO(get_logger(), "Generating sound file...");
+      case Speak::Feedback::SYNTHESIZING:
+        RCLCPP_INFO(get_logger(), "Synthesizing audio...");
+        break;
+      case Speak::Feedback::BUFFERING:
+        RCLCPP_INFO(get_logger(), "Buffering audio...");
         break;
       case Speak::Feedback::PLAYING:
-        RCLCPP_INFO(get_logger(), "Playing sound file...");
+        RCLCPP_INFO(get_logger(), "Playing audio...");
         break;
       default:
         RCLCPP_INFO(get_logger(), "Unknown state");

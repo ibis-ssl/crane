@@ -42,7 +42,6 @@ auto EmplaceRobotSession::sendSpeakGoal(const std::string & text) -> void
 
   auto goal_msg = Speak::Goal();
   goal_msg.text = text;
-  goal_msg.speed_rate = 1.0;
 
   // ゴールを非同期送信（結果を待たない）
   speak_client_->async_send_goal(goal_msg);
