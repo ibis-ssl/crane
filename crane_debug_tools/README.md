@@ -21,7 +21,7 @@ source install/local_setup.bash
 crane_skill list
 
 # スキルを実行(パラメータはkey:value形式)
-crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
+crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:0.5
 
 # 複数ロボットで実行
 crane_skill multi Attacker 0,1,2
@@ -78,7 +78,7 @@ ros2 launch crane_debug_tools debug_tools.launch.py enable_cli:=true
     {
       "name": "Kick",
       "robot_id": 0,
-      "parameters": {"target_x": 3.0, "target_y": 1.0, "kick_power": 5.0}
+      "parameters": {"target_x": 3.0, "target_y": 1.0, "kick_power": 0.5}
     }
   ]
 }
