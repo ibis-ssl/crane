@@ -28,7 +28,7 @@
       "parameters": {
         "target_x": 3.0,
         "target_y": 0.0,
-        "kick_power": 3.0
+        "kick_power": 0.8
       },
       "delay": 2,
       "description": "Kick ball toward goal"

@@ -31,16 +31,7 @@ void Kick::initialize()
   setParameter("angle_threshold_deg", 15.0f);
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
-  setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
-
-  receive_skill.setParameter("dribble_power", 0.3);
-  receive_skill.setParameter("enable_software_bumper", false);
-  receive_skill.setParameter("policy", std::string("min_slack"));
-  receive_skill.setParameter("enable_active_receive", true);
-  receive_skill.setParameter("enable_redirect", true);
-  receive_skill.setParameter("redirect_target", Point(0, 0));
-  receive_skill.setParameter("redirect_kick_power", 0.3);
 
   addStateFunction(static_cast<int>(KickState::ENTRY_POINT), [this]() {
     visualizer->drawDebugLabel(robot()->pose.pos, "Kick::ENTRY_POINT");
@@ -51,76 +42,27 @@ void Kick::initialize()
     static_cast<int>(KickState::ENTRY_POINT), static_cast<int>(KickState::AROUND_BALL_AND_KICK),
     [this]() { return true; });
 
-  addStateFunction(static_cast<int>(KickState::POSITIVE_REDIRECT_KICK), [this]() {
-    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::POSITIVE_REDIRECT_KICK");
-    // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
-    const auto & ball_pos = world_model()->ball().pos;
-    command->lookAtFrom(getParameter<Point>("target"), ball_pos);
-
-    const auto & ball_vel_normed = world_model()->ball().vel.normalized();
-    Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.);
-    auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
-    if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
-      // 通り過ぎていれば追いかけて蹴る
-      auto target_pos = [&]() -> Point {
-        if (distance < 0.1) {
-          return ball_pos + ball_vel_normed;
-        } else {
-          return closest_point + ball_vel_normed * distance;
-        }
-      }();
-      command->setDribblerTargetPosition(target_pos);
-      // TODO(HansRobo): 速度指定対応
-      command->kickStraight(0.3);
-      command->disableBallAvoidance();
-    } else {
-      // まだだったら避ける
-      command->setTargetPosition(
-        closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
-    }
-
-    return Status::RUNNING;
-  });
-
-  addTransition(
-    static_cast<int>(KickState::POSITIVE_REDIRECT_KICK), static_cast<int>(KickState::ENTRY_POINT),
-    [this]() {
-      return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) or
-             !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
-    });
-
-  addStateFunction(static_cast<int>(KickState::REDIRECT_KICK), [this]() {
-    visualizer->drawDebugLabel(robot()->pose.pos, "Kick::REDIRECT_KICK");
-    receive_skill.setParameter("target", getParameter<Point>("target"));
-    if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
-      receive_skill.setParameter("policy", std::string("closest"));
-    } else {
-      receive_skill.setParameter("policy", std::string("min_slack"));
-    }
-    command->disableBallAvoidance();
-    return receive_skill.update();
-  });
-
-  addTransition(
-    static_cast<int>(KickState::REDIRECT_KICK), static_cast<int>(KickState::AROUND_BALL_AND_KICK),
-    [this]() {
-      // ボールが止まったら回り込みへ
-      return not world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
-    });
-
-  addTransition(
-    static_cast<int>(KickState::REDIRECT_KICK), static_cast<int>(KickState::ENTRY_POINT), [this]() {
-      // 素早く遠ざかっていったら終了
-      return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
-             world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
-    });
-
   addStateFunction(static_cast<int>(KickState::AROUND_BALL_AND_KICK), [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball().pos;
+    const double interval = std::max(getParameter<double>("around_interval"), 0.01);
+    const bool go_around_ball = getParameter<bool>("go_around_ball");
+    const auto kick_vec = [&]() -> Vector2 {
+      auto target_vec = target - ball_pos;
+      if (target_vec.norm() > 1e-6) {
+        return target_vec.normalized();
+      }
+      auto fallback = robot()->pose.pos - ball_pos;
+      if (fallback.norm() > 1e-6) {
+        return fallback.normalized();
+      }
+      return Vector2(1.0, 0.0);
+    }();
+    Point safe_target = ball_pos + kick_vec;
+
     // 視認性の高いキック方向の可視化: 太い矢印 + 角度しきい値の扇
     {
-      Vector2 dir = (target - ball_pos).normalized();
+      Vector2 dir = kick_vec;
       // 長めの矢印（フィールド半分+余裕）
       double arrow_len = world_model()->fieldSize().x() * 0.5 + 0.5;
 
@@ -143,15 +85,18 @@ void Kick::initialize()
         ball_pos, arc_radius, base_theta - half_angle, base_theta + half_angle, "white", 10, 16);
     }
     visualizer->drawDebugLabel(robot()->pose.pos, "Kick::AROUND_BALL");
-    // 改良回り込み: 固定中間点ではなく、ロボット→基準点の線分に対するボール最近傍方向へ回り込み
-    constexpr double INTERVAL = 0.15;
-    constexpr double MAX_INTERVAL = 0.3;  // 大回り上限
-    Point approach = computeAroundBallApproachTargetDynamic(
-      ball_pos, target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
+    Point approach = [&]() -> Point {
+      if (!go_around_ball) {
+        return ball_pos - kick_vec * interval;
+      }
+      // 改良回り込み: ロボット->目標線分に対するボール最近傍方向へ回り込み
+      double max_interval = std::max(interval, interval * 2.0);
+      return computeAroundBallApproachTargetDynamic(
+        ball_pos, safe_target, robot()->pose.pos, interval, max_interval);
+    }();
 
-    Vector2 kick_vec = (target - ball_pos).normalized();
     double kick_vec_gain = [&]() {
-      Segment ball_kick_zone{ball_pos, ball_pos - kick_vec * INTERVAL};
+      Segment ball_kick_zone{ball_pos, ball_pos - kick_vec * interval};
       if (bg::distance(ball_kick_zone, robot()->pose.pos) < 0.1) {
         command->disableCollisionAvoidance();
         return 0.5;
@@ -160,13 +105,14 @@ void Kick::initialize()
       }
     }();
 
-    command->lookAtFrom(target, ball_pos)
+    command->lookAtFrom(safe_target, ball_pos)
       .setDribblerTargetPosition(approach + kick_vec * kick_vec_gain);
     command->disableBallAvoidance();
     using boost::math::constants::degree;
+    const double angle_threshold = getParameter<double>("angle_threshold_deg") * degree<double>();
     if (
-      std::abs(getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
-      20. * degree<double>()) {
+      std::abs(getAngleDiff(getAngle(kick_vec), getAngle(ball_pos - robot()->pose.pos))) <
+      angle_threshold) {
       if (getParameter<bool>("chip_kick")) {
         kickWithChip();
       } else {

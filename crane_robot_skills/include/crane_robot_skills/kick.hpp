@@ -8,7 +8,6 @@
 #define CRANE_ROBOT_SKILLS__KICK_HPP_
 
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
@@ -17,8 +16,6 @@ namespace crane::skills
 enum class KickState {
   ENTRY_POINT,
   AROUND_BALL_AND_KICK,
-  REDIRECT_KICK,
-  POSITIVE_REDIRECT_KICK,
 };
 
 class Kick : public SkillBaseWithState
@@ -26,15 +23,12 @@ class Kick : public SkillBaseWithState
 private:
   static std::string getStateName(int s);
 
-  Receive receive_skill;
-
 public:
   template <typename... Args>
   explicit Kick(Args &&... args)
   : SkillBaseWithState(
       static_cast<int>(KickState::ENTRY_POINT), &Kick::getStateName, "Kick",
-      std::forward<Args>(args)...),
-    receive_skill(command)
+      std::forward<Args>(args)...)
   {
     initialize();
   }
