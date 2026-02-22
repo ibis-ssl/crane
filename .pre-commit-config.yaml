@@ -34,7 +34,7 @@ repos:
       - id: yamllint
 
   - repo: https://github.com/tier4/pre-commit-hooks-ros
-    rev: v0.10.0
+    rev: v0.10.1
     hooks:
       #      - id: flake8-ros
       - id: prettier-xacro
@@ -60,7 +60,7 @@ repos:
 #      - id: isort
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.0
+    rev: v0.15.1
     hooks:
       - id: ruff
         args: [--fix]
