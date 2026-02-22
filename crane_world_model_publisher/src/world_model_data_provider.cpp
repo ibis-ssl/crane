@@ -311,9 +311,8 @@ auto WorldModelDataProvider::on_udp_timer() -> void
     last_debug_log = now;
   }
 
-  if (!geometry_initialized) {
-    updateGeometryIfNeeded();
-  }
+  // 設定ファイルで初期化済みでも、Vision geometry受信後の更新を反映するため毎周期評価する
+  updateGeometryIfNeeded();
 }
 
 auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
