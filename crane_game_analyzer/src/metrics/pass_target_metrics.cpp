@@ -32,7 +32,7 @@ auto PassTargetMetric::computePassOrigin(MetricContext & ctx) const -> Point
     return ball.getPredictedPosition(std::min(ball.getStopTime(), 1.0));
   }
   // 履歴から直近検出
-  for (auto it = ctx.ball_history->rbegin(); it != ctx.ball_history->rend(); ++it) {
+  for (auto it = ctx.ball_history->begin(); it != ctx.ball_history->end(); ++it) {
     if (it->detected) {
       return Point(it->position.x, it->position.y);
     }

@@ -161,6 +161,16 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       kick_event_detector_->updateRobotCommands(*msg);
     });
 
+  // game_analysisを購読して、world_modelに引き継ぐ
+  latest_game_analysis_msg_.pass_target_id = -1;
+  latest_game_analysis_msg_.recommended_attacker_id = -1;
+  latest_game_analysis_msg_.recommended_pass_receiver_id = -1;
+  sub_game_analysis_ = create_subscription<crane_msgs::msg::GameAnalysis>(
+    "/game_analysis", 10, [this](const crane_msgs::msg::GameAnalysis::SharedPtr msg) {
+      std::scoped_lock lock(latest_game_analysis_msg_mutex_);
+      latest_game_analysis_msg_ = *msg;
+    });
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -298,6 +308,12 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 {
   kick_event_detector_->update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
+  {
+    std::scoped_lock lock(latest_game_analysis_msg_mutex_);
+    game_analysis_msg = latest_game_analysis_msg_;
+  }
+
+  game_analysis_msg.ongoing_kick.clear();
   if (auto kick = kick_event_detector_->getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
@@ -321,6 +337,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();
 
+  game_analysis_msg.our_slack.clear();
   for (const auto & robot : wrapper_->ours().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
@@ -370,6 +387,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
     game_analysis_msg.our_slack.push_back(slack_msg);
   }
 
+  game_analysis_msg.their_slack.clear();
   for (const auto & robot : wrapper_->theirs().robotsWhere().available().get()) {
     RobotList single_robot{robot};
     auto [min_slack, max_slack] =
@@ -390,6 +408,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
   }
 
   // パススコア算出とパス先選定はgame analyzerに移動済み
+  // game_analysisの最新受信値に、world_model_publisher側の計算値を統合する
   world_model->update(game_analysis_msg);
 }
 
