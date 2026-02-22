@@ -9,10 +9,10 @@
 リポジトリルートから以下のコマンドを実行します。
 
 ```bash
-# シミュレーション環境(デフォルト) + debug_tools自動起動
+# シミュレーション環境(デフォルト) + ssl-log-recorder自動起動
 ./scripts/docker-dev.sh
 
-# 実機環境 + debug_tools自動起動
+# 実機環境 + ssl-log-recorder自動起動
 ./scripts/docker-dev.sh real
 
 # バックグラウンド起動 + debug_tools自動起動
@@ -22,11 +22,19 @@
 # debug_toolsなしで起動
 ./scripts/docker-dev.sh --no-debug
 
-# 停止(debug_toolsも自動停止)
+# 停止(debug_toolsとssl-log-recorderも自動停止)
 ./scripts/docker-dev.sh down
 ```
 
-**注**: バックグラウンド起動(`-d`)時、debug_tools (crane_websocket_server) が自動的に起動します。
+**注1**: `up` 実行時（フォアグラウンド/バックグラウンドの両方）に
+`ssl-log-recorder` (`robocupssl/ssl-log-recorder:latest`) が自動的に起動し、
+ログはリポジトリルートに保存されます。
+
+**注2**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
+`up` を Ctrl+C で終了した場合は recorder は継続起動します。
+
+**注3**: バックグラウンド起動(`-d`)時、debug_tools
+(crane_websocket_server) が自動的に起動します。
 
 - HTTP Server: <http://localhost:8090>
 - WebSocket: ws://localhost:8091
