@@ -25,14 +25,17 @@ message(${closest_point_vendor_DIR})
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_game_analyzer.cpp
   src/evaluations.cpp
+  src/kick_event_detector.cpp
   src/threat_evaluator.cpp
   src/ronar_event_detector.cpp
   src/metrics/metric_engine.cpp
   src/metrics/threat_metrics.cpp
   src/metrics/ball_horizon_metric.cpp
+  src/metrics/ongoing_kick_metric.cpp
   src/metrics/slack_metrics.cpp
   src/metrics/attacker_metrics.cpp
   src/metrics/sub_attacker_metrics.cpp
+  src/metrics/pass_target_metrics.cpp
 )
 
 option(CRANE_UNITY_BUILD "Enable unity build" ON)

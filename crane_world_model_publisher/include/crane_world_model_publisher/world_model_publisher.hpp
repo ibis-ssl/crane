@@ -49,12 +49,13 @@ extern "C" {
 #include <array>
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
@@ -67,8 +68,6 @@ enum class Color : uint8_t {
 
 class WorldModelDataProvider;
 class VisualizationManager;
-class KickEventDetector;
-class PassTargetSelector;
 class WorldModelWrapper;
 
 class WorldModelPublisherComponent : public rclcpp::Node
@@ -123,12 +122,9 @@ private:
   } last_ball_event = BallEvent::NONE;
 
   WorldModelWrapperPtr wrapper_;
-
-  std::unique_ptr<KickEventDetector> kick_event_detector_;
-
-  std::unique_ptr<PassTargetSelector> pass_target_selector_;
-
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis_;
+  crane_msgs::msg::GameAnalysis latest_game_analysis_msg_;
+  std::mutex latest_game_analysis_msg_mutex_;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

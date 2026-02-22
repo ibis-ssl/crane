@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
-#define CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
+#ifndef CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
+#define CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/kick_prediction_tracker.hpp>
@@ -114,4 +114,4 @@ private:
 };
 }  // namespace crane
 
-#endif  // CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
+#endif  // CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_

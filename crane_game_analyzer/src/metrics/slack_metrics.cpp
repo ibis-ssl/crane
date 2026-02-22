@@ -6,6 +6,8 @@
 
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
 
+#include <string>
+
 namespace crane::metrics
 {
 
@@ -36,6 +38,50 @@ auto OurSlackMetric::compute(MetricContext & ctx) -> void
     }
 
     ctx.analysis.our_slack.push_back(slack_msg);
+  }
+}
+
+auto OurSlackMetric::visualize(
+  MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer) -> void
+{
+  if (!visualizer) {
+    return;
+  }
+
+  for (const auto & robot : ctx.world_model->ours().robotsWhere().available().get()) {
+    RobotList single_robot{robot};
+    auto [min_slack, max_slack] =
+      ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
+
+    if (min_slack) {
+      visualizer->text()
+        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .fill("white")
+        .fontSize(100)
+        .build();
+      visualizer->line()
+        .start(robot->pose.pos)
+        .end(min_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5)
+        .build();
+    }
+
+    if (max_slack && max_slack->slack_time > 0.0) {
+      visualizer->text()
+        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+        .text("max slack: " + std::to_string(max_slack->slack_time))
+        .fill("white")
+        .fontSize(100)
+        .build();
+      visualizer->line()
+        .start(robot->pose.pos)
+        .end(max_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5)
+        .build();
+    }
   }
 }
 
