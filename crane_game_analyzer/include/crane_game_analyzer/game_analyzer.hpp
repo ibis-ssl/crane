@@ -25,7 +25,6 @@
 #include "crane_game_analyzer/event_memory.hpp"
 #include "crane_game_analyzer/metrics/metric_engine.hpp"
 #include "crane_game_analyzer/ronar_event_detector.hpp"
-#include "crane_game_analyzer/threat_evaluator.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -245,11 +244,9 @@ private:
   // ロボット位置の履歴
   std::deque<RobotPositionStamped> robot_records_;
 
-  // 脅威評価システム（旧）
-  ThreatEvaluator threat_evaluator_;
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
 
-  // メトリクス計算エンジン（新）
+  // メトリクス計算エンジン
   std::unique_ptr<metrics::MetricEngine> metric_engine_;
   std::deque<crane_msgs::msg::BallInfo> ball_history_;
 
@@ -272,7 +269,6 @@ private:
   std::string our_team_name_;
   std::string their_team_name_;
 
-  auto evaluateThreats() -> crane_msgs::msg::GameAnalysis;
   auto detectAndPublishRonarEvents() -> void;
 
   // PlaySituation イベント処理
