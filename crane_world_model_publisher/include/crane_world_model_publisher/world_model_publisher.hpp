@@ -50,7 +50,6 @@ extern "C" {
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
@@ -69,7 +68,6 @@ enum class Color : uint8_t {
 
 class WorldModelDataProvider;
 class VisualizationManager;
-class KickEventDetector;
 class WorldModelWrapper;
 
 class WorldModelPublisherComponent : public rclcpp::Node
@@ -124,10 +122,6 @@ private:
   } last_ball_event = BallEvent::NONE;
 
   WorldModelWrapperPtr wrapper_;
-
-  std::unique_ptr<KickEventDetector> kick_event_detector_;
-
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis_;
   crane_msgs::msg::GameAnalysis latest_game_analysis_msg_;
   std::mutex latest_game_analysis_msg_mutex_;

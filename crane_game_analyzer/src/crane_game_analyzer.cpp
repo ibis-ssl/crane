@@ -4,6 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_physics/ball_physics_model.hpp>
+#include <crane_physics/kicker_model.hpp>
+#include <filesystem>
 #include <format>
 #include <rclcpp/rclcpp.hpp>
 
@@ -32,6 +36,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   declare_parameter("robot_collision.time_window", 0.5);
   declare_parameter("our_team_name", "ibis");
   declare_parameter("their_team_name", "opponent");
+  declare_parameter("ball_physics_config_path", std::string(""));
+  declare_parameter("kicker_physics_config_path", std::string(""));
 
   // パラメータの読み込み
   config.ball_idle.threshold_duration =
@@ -55,6 +61,68 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   CraneVisualizerBuffer::activate(*this);
 
   world_model = std::make_unique<WorldModelWrapper>(*this);
+  kick_event_detector_ = std::make_unique<KickEventDetector>();
+
+  auto resolveConfigPath = [this](const std::string & config_path) -> std::string {
+    if (config_path.empty() || std::filesystem::path(config_path).is_absolute()) {
+      return config_path;
+    }
+    try {
+      std::string package_share_dir =
+        ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+      return (std::filesystem::path(package_share_dir) / "config" / config_path).string();
+    } catch (const std::exception & ex) {
+      RCLCPP_WARN(
+        get_logger(), "パッケージディレクトリ取得に失敗したため相対パスとして扱います: %s",
+        ex.what());
+      return config_path;
+    }
+  };
+
+  // キック予測モデル初期化（ongoing_kickの予測トレース生成に使用）
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+  std::shared_ptr<BallPhysicsModel> ball_physics_model;
+  if (!ball_physics_config_path.empty()) {
+    auto full_config_path = resolveConfigPath(ball_physics_config_path);
+    try {
+      ball_physics_model = BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      RCLCPP_INFO(get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & ex) {
+      RCLCPP_WARN(
+        get_logger(), "ボール物理設定の読み込みに失敗 (%s): %s。デフォルト設定を使用します",
+        full_config_path.c_str(), ex.what());
+      ball_physics_model = BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    ball_physics_model = BallPhysicsModelFactory::getInstance();
+  }
+
+  std::string kicker_physics_config_path;
+  get_parameter("kicker_physics_config_path", kicker_physics_config_path);
+  std::shared_ptr<KickerModel> kicker_model;
+  if (!kicker_physics_config_path.empty()) {
+    auto full_config_path = resolveConfigPath(kicker_physics_config_path);
+    try {
+      kicker_model = createIntegratedKickerModel(full_config_path, ball_physics_model);
+      RCLCPP_INFO(get_logger(), "キッカー物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & ex) {
+      RCLCPP_WARN(
+        get_logger(), "キッカー物理設定の読み込みに失敗 (%s): %s。デフォルト設定を使用します",
+        full_config_path.c_str(), ex.what());
+      kicker_model = std::make_shared<KickerModel>();
+      kicker_model->setBallPhysicsModel(ball_physics_model);
+    }
+  } else {
+    kicker_model = std::make_shared<KickerModel>();
+    kicker_model->setBallPhysicsModel(ball_physics_model);
+  }
+
+  kick_event_detector_->setKickerModel(kicker_model);
+  sub_robot_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
+    "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
+      kick_event_detector_->updateRobotCommands(*msg);
+    });
 
   // 脅威評価結果のパブリッシャー
   game_analysis_pub_ = create_publisher<crane_msgs::msg::GameAnalysis>("game_analysis", 10);
@@ -144,6 +212,12 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       .ball_history = &ball_history_,
       .clock = get_clock(),
       .analysis = analysis};
+
+    // ongoing_kickはメトリクス前に更新し、PassTarget等で参照可能にする
+    kick_event_detector_->update(*world_model, visualizer);
+    if (auto kick = kick_event_detector_->getOnGoingKick(); kick.has_value()) {
+      analysis.ongoing_kick.push_back(*kick);
+    }
 
     metric_engine_->computeAll(ctx);
     metric_engine_->visualizeAll(ctx, visualizer);

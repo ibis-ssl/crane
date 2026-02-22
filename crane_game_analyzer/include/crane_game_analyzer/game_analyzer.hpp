@@ -12,6 +12,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <optional>
@@ -23,6 +24,7 @@
 #include <vector>
 
 #include "crane_game_analyzer/event_memory.hpp"
+#include "crane_game_analyzer/kick_event_detector.hpp"
 #include "crane_game_analyzer/metrics/metric_engine.hpp"
 #include "crane_game_analyzer/ronar_event_detector.hpp"
 #include "visibility_control.h"
@@ -253,6 +255,10 @@ private:
   // RONARイベント検出システム
   std::unique_ptr<RonarEventDetector> ronar_event_detector_;
   rclcpp::Publisher<crane_msgs::msg::RonarEvent>::SharedPtr ronar_events_pub_;
+
+  // キックイベント検出システム
+  std::unique_ptr<KickEventDetector> kick_event_detector_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
 
   // イベントメモリシステム
   std::unique_ptr<EventMemory> event_memory_;

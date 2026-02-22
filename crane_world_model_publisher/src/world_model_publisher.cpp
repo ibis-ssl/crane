@@ -4,26 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_geometry/ddps.hpp>
-#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
-#include <crane_physics/ball_physics_model.hpp>
-#include <crane_physics/kicker_model.hpp>
-#include <crane_world_model_publisher/kick_event_detector.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
-#include <filesystem>
-#include <range/v3/algorithm/min.hpp>
-#include <range/v3/range/operations.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
+#include <sstream>
 
 namespace crane
 {
@@ -44,14 +34,13 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider_(std::make_unique<WorldModelDataProvider>(*this)),
-  pub_world_model(this, "/world_model", 1, 50., 70.),
-  diagnostic_updater_(this)
+  diagnostic_updater_(this),
+  pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
 
   // VisualizationManager初期化（統合された可視化システム）
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
-  kick_event_detector_ = std::make_unique<KickEventDetector>();
 
   // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider_->setVisualizationCallbacks(
@@ -70,96 +59,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
-
-  // ボール物理設定ファイルパス
-  declare_parameter("ball_physics_config_path", std::string(""));
-  std::string ball_physics_config_path;
-  get_parameter("ball_physics_config_path", ball_physics_config_path);
-
-  // ボール物理モデル初期化
-  std::shared_ptr<BallPhysicsModel> ball_physics_model;
-  if (!ball_physics_config_path.empty()) {
-    // ファイル名だけの場合はconfigディレクトリと結合
-    std::string full_config_path = ball_physics_config_path;
-    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
-      try {
-        std::string package_share_dir =
-          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-        full_config_path =
-          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
-      } catch (const std::exception & ex) {
-        RCLCPP_WARN(
-          this->get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
-      }
-    }
-
-    try {
-      ball_physics_model = BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
-      RCLCPP_INFO(
-        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
-    } catch (const std::exception & ex) {
-      RCLCPP_WARN(
-        this->get_logger(),
-        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
-        full_config_path.c_str(), ex.what());
-      // エラー時はデフォルトファクトリーインスタンスを作成
-      ball_physics_model = BallPhysicsModelFactory::getInstance();
-    }
-  } else {
-    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
-    ball_physics_model = BallPhysicsModelFactory::getInstance();
-  }
-
-  // キッカーモデル初期化
-  declare_parameter("kicker_physics_config_path", std::string(""));
-  std::string kicker_physics_config_path;
-  get_parameter("kicker_physics_config_path", kicker_physics_config_path);
-
-  std::shared_ptr<KickerModel> kicker_model;
-  if (!kicker_physics_config_path.empty()) {
-    // ファイル名だけの場合はconfigディレクトリと結合
-    std::string full_kicker_config_path = kicker_physics_config_path;
-    if (!std::filesystem::path(kicker_physics_config_path).is_absolute()) {
-      try {
-        std::string package_share_dir =
-          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-        full_kicker_config_path =
-          std::filesystem::path(package_share_dir) / "config" / kicker_physics_config_path;
-      } catch (const std::exception & ex) {
-        RCLCPP_WARN(
-          this->get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
-      }
-    }
-
-    try {
-      kicker_model = createIntegratedKickerModel(full_kicker_config_path, ball_physics_model);
-      RCLCPP_INFO(
-        this->get_logger(), "キッカー物理設定を読み込みました: %s",
-        full_kicker_config_path.c_str());
-    } catch (const std::exception & ex) {
-      RCLCPP_WARN(
-        this->get_logger(),
-        "キッカー物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
-        full_kicker_config_path.c_str(), ex.what());
-      kicker_model = std::make_shared<KickerModel>();
-      kicker_model->setBallPhysicsModel(ball_physics_model);
-    }
-  } else {
-    RCLCPP_INFO(this->get_logger(), "キッカー物理設定: デフォルト値を使用");
-    kicker_model = std::make_shared<KickerModel>();
-    kicker_model->setBallPhysicsModel(ball_physics_model);
-  }
-
-  // KickEventDetectorにKickerModelを設定
-  kick_event_detector_->setKickerModel(kicker_model);
-
-  // robot_commandsをsubscribeしてKickEventDetectorに渡す
-  sub_robot_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
-    "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
-      kick_event_detector_->updateRobotCommands(*msg);
-    });
 
   // game_analysisを購読して、world_modelに引き継ぐ
   latest_game_analysis_msg_.pass_target_id = -1;
@@ -306,109 +205,11 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr wor
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model) -> void
 {
-  kick_event_detector_->update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   {
     std::scoped_lock lock(latest_game_analysis_msg_mutex_);
     game_analysis_msg = latest_game_analysis_msg_;
   }
-
-  game_analysis_msg.ongoing_kick.clear();
-  if (auto kick = kick_event_detector_->getOnGoingKick(); kick.has_value()) {
-    game_analysis_msg.ongoing_kick.push_back(*kick);
-  }
-
-  const auto & ball = world_model->ball();
-
-  // ボールラインの長さを計算
-  game_analysis_msg.ball_horizon = [&]() {
-    Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
-    auto robots = world_model->theirs().robotsWhere().available().get();
-    auto ball_line_lengths =
-      robots |
-      ranges::views::transform(
-        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
-      // 距離が0.5m以下のものを抽出
-      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
-      // ball.posとの距離を計算
-      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-          return (pair.closest_point - ball.pos).norm();
-        });
-    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
-  }();
-
-  game_analysis_msg.our_slack.clear();
-  for (const auto & robot : wrapper_->ours().robotsWhere().available().get()) {
-    RobotList single_robot{robot};
-    auto [min_slack, max_slack] =
-      world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
-    crane_msgs::msg::Slack slack_msg;
-    slack_msg.id = robot->id;
-    if (min_slack) {
-      slack_msg.min.slack_time = min_slack->slack_time;
-      slack_msg.min.x = min_slack->intercept_point.x();
-      slack_msg.min.y = min_slack->intercept_point.y();
-
-      auto slack_builder = visualization_manager_->slack_builder;
-      slack_builder->text()
-        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
-        .text("min slack: " + std::to_string(min_slack->slack_time))
-        .fill("white")
-        .fontSize(100)
-        .build();
-      slack_builder->line()
-        .start(robot->pose.pos)
-        .end(min_slack->intercept_point)
-        .stroke("red", 0.5)
-        .strokeWidth(5)
-        .build();
-    }
-    if (max_slack) {
-      slack_msg.max.slack_time = max_slack->slack_time;
-      slack_msg.max.x = max_slack->intercept_point.x();
-      slack_msg.max.y = max_slack->intercept_point.y();
-
-      if (max_slack->slack_time > 0.) {
-        auto slack_builder = visualization_manager_->slack_builder;
-        slack_builder->text()
-          .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
-          .text("max slack: " + std::to_string(max_slack->slack_time))
-          .fill("white")
-          .fontSize(100)
-          .build();
-        slack_builder->line()
-          .start(robot->pose.pos)
-          .end(max_slack->intercept_point)
-          .stroke("red", 0.5)
-          .strokeWidth(5)
-          .build();
-      }
-    }
-    game_analysis_msg.our_slack.push_back(slack_msg);
-  }
-
-  game_analysis_msg.their_slack.clear();
-  for (const auto & robot : wrapper_->theirs().robotsWhere().available().get()) {
-    RobotList single_robot{robot};
-    auto [min_slack, max_slack] =
-      world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
-    crane_msgs::msg::Slack slack_msg;
-    slack_msg.id = robot->id;
-    if (min_slack) {
-      slack_msg.min.slack_time = min_slack->slack_time;
-      slack_msg.min.x = min_slack->intercept_point.x();
-      slack_msg.min.y = min_slack->intercept_point.y();
-    }
-    if (max_slack) {
-      slack_msg.max.slack_time = max_slack->slack_time;
-      slack_msg.max.x = max_slack->intercept_point.x();
-      slack_msg.max.y = max_slack->intercept_point.y();
-    }
-    game_analysis_msg.their_slack.push_back(slack_msg);
-  }
-
-  // パススコア算出とパス先選定はgame analyzerに移動済み
-  // game_analysisの最新受信値に、world_model_publisher側の計算値を統合する
   world_model->update(game_analysis_msg);
 }
 
