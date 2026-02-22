@@ -278,6 +278,14 @@ void SingleBallPlacement::initialize()
     constexpr double MAX_INTERVAL = 0.6;  // 初期は大きめ、上限あり
     Point approach = computeAroundBallApproachTargetDynamic(
       ball_pos, placement_target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
+
+    // フィールド境界内にクランプ（壁際での回り込みスタックを防ぐ）
+    constexpr double field_margin = 0.05;  // 5cmマージン
+    const double max_x = world_model()->fieldSize().x() * 0.5 - field_margin;
+    const double max_y = world_model()->fieldSize().y() * 0.5 - field_margin;
+    approach.x() = std::clamp(approach.x(), -max_x, max_x);
+    approach.y() = std::clamp(approach.y(), -max_y, max_y);
+
     command->setTargetPosition(approach);
     command->lookAtFrom(placement_target, ball_pos);
     command->disablePlacementAvoidance();
@@ -292,6 +300,15 @@ void SingleBallPlacement::initialize()
     }
     return Status::RUNNING;
   });
+
+  // GO_OVER_BALL中にボールが壁際に移動した場合、壁際処理に戻る
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE), [this]() {
+      // ボールがフィールド境界外に出た場合、壁際処理に戻る
+      return !world_model()->point_checker.isFieldInside(
+        world_model()->ball().pos, getParameter<double>("コート端判定のオフセット"));
+    });
 
   addTransition(
     static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),

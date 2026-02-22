@@ -97,6 +97,7 @@ jobs:
           # - TEST: STOP_AVOID_BALL
           - TEST: STOP_ROBOT_SPEED
           - TEST: emit_from_penalty_01
+          - TEST: BALL_PLACEMENT_NEAR_WALL
 
     runs-on: ubuntu-latest
     steps:

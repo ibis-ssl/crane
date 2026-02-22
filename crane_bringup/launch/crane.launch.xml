@@ -182,7 +182,9 @@ limitations under the License.
   <!-- ============================================================ -->
   <node pkg="crane_robot_receiver" exec="ping_status_node"/>
 
-  <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen"/>
+  <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen">
+    <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
+  </node>
 
   <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true">
     <param name="sim_mode" value="$(var sim)"/>
@@ -207,7 +209,6 @@ limitations under the License.
     <param name="slack.slack_time_offset" value="$(var slack.slack_time_offset)"/>
     <param name="slack.distance_horizon" value="$(var slack.distance_horizon)"/>
     <param name="slack.velocity_epsilon" value="$(var slack.velocity_epsilon)"/>
-    <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
     <param name="field_geometry_config_path" value="$(var field_geometry_config_path)"/>
   </node>
 

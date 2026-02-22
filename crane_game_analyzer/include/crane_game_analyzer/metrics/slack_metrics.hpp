@@ -27,6 +27,9 @@ public:
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override { return {}; }
 
   auto compute(MetricContext & ctx) -> void override;
+
+  auto visualize(MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer)
+    -> void override;
 };
 
 /**

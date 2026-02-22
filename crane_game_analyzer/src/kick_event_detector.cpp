@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_world_model_publisher/kick_event_detector.hpp"
+#include "crane_game_analyzer/kick_event_detector.hpp"
 
 #include <algorithm>
 #include <cmath>
