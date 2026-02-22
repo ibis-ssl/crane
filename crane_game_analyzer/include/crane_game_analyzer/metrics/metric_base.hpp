@@ -37,6 +37,9 @@ enum class MetricId {
   ATTACKER_CANDIDATE,     ///< 推奨アタッカー
   SUB_ATTACKER_POSITION,  ///< SubAttacker推奨位置
 
+  // キック検出
+  ONGOING_KICK,  ///< 進行中キック検出
+
   // パス評価
   PASS_TARGET,  ///< パスターゲット選定
 };

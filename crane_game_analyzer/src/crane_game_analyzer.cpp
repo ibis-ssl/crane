@@ -14,6 +14,7 @@
 #include "crane_game_analyzer/game_analyzer.hpp"
 #include "crane_game_analyzer/metrics/attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/ball_horizon_metric.hpp"
+#include "crane_game_analyzer/metrics/ongoing_kick_metric.hpp"
 #include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
 #include "crane_game_analyzer/metrics/sub_attacker_metrics.hpp"
@@ -150,6 +151,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   metric_engine_->registerMetric(std::make_shared<metrics::BallHorizonMetric>());
   metric_engine_->registerMetric(std::make_shared<metrics::OurSlackMetric>());
   metric_engine_->registerMetric(std::make_shared<metrics::TheirSlackMetric>());
+  metric_engine_->registerMetric(std::make_shared<metrics::OngoingKickMetric>());
 
   // 脅威評価メトリクス
   auto ball_threat_metric = std::make_shared<metrics::BallThreatMetric>();
@@ -211,13 +213,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       .world_model = world_model.get(),
       .ball_history = &ball_history_,
       .clock = get_clock(),
+      .kick_event_detector = kick_event_detector_.get(),
       .analysis = analysis};
-
-    // ongoing_kickはメトリクス前に更新し、PassTarget等で参照可能にする
-    kick_event_detector_->update(*world_model, visualizer);
-    if (auto kick = kick_event_detector_->getOnGoingKick(); kick.has_value()) {
-      analysis.ongoing_kick.push_back(*kick);
-    }
 
     metric_engine_->computeAll(ctx);
     metric_engine_->visualizeAll(ctx, visualizer);

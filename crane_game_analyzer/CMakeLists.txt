@@ -31,6 +31,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/metrics/metric_engine.cpp
   src/metrics/threat_metrics.cpp
   src/metrics/ball_horizon_metric.cpp
+  src/metrics/ongoing_kick_metric.cpp
   src/metrics/slack_metrics.cpp
   src/metrics/attacker_metrics.cpp
   src/metrics/sub_attacker_metrics.cpp

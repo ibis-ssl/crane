@@ -13,6 +13,11 @@
 #include <deque>
 #include <rclcpp/rclcpp.hpp>
 
+namespace crane
+{
+class KickEventDetector;
+}
+
 namespace crane::metrics
 {
 
@@ -32,6 +37,9 @@ struct MetricContext
 
   /// ROS2クロック（時刻取得用）
   rclcpp::Clock::SharedPtr clock;
+
+  /// 進行中キック検出器
+  ::crane::KickEventDetector * kick_event_detector;
 
   /// 計算済みメトリクス結果の出力先
   /// 各メトリクスはこのメッセージの該当フィールドに結果を書き込む

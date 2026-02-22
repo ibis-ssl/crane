@@ -27,8 +27,7 @@ public:
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
-    // 依存なし（基礎メトリクス）
-    return {};
+    return {MetricId::ONGOING_KICK};
   }
 
   auto compute(MetricContext & ctx) -> void override;
