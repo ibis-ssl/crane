@@ -398,10 +398,11 @@ public:
   auto addPlanningFactor(const std::string & name, const std::string & state) -> void
   {
     // 同じnameのものが存在しなければ追加。存在すれば、更新
-    if (auto planning_factor = std::find_if(
-          latest_msg.planning_factors.begin(), latest_msg.planning_factors.end(),
-          [name](const auto & planning_factor) { return planning_factor.name == name; });
-        planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
+    if (
+      auto planning_factor = std::find_if(
+        latest_msg.planning_factors.begin(), latest_msg.planning_factors.end(),
+        [name](const auto & planning_factor) { return planning_factor.name == name; });
+      planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
       crane_msgs::msg::NamedString msg;
       msg.name = name;
       msg.value = state;

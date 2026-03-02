@@ -209,10 +209,11 @@ public:
 
   auto addPlanningFactor(const std::string & name, const std::string & state) -> void
   {
-    if (auto planning_factor = ranges::find_if(
-          latest_msg.planning_factors,
-          [name](const auto & planning_factor) { return planning_factor.name == name; });
-        planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
+    if (
+      auto planning_factor = ranges::find_if(
+        latest_msg.planning_factors,
+        [name](const auto & planning_factor) { return planning_factor.name == name; });
+      planning_factor == latest_msg.planning_factors.end() || planning_factor->value != state) {
       crane_msgs::msg::NamedString msg;
       msg.name = name;
       msg.value = state;

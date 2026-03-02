@@ -57,9 +57,10 @@ OurDirectFreeKickSession::calculatePositionCommand(
                           }) |
                           ranges::to<std::vector>();
 
-        if (auto nearest_robot = world_model->getNearestRobotWithDistanceFromPoint(
-              world_model->ball().pos, our_robots);
-            nearest_robot.has_value()) {
+        if (
+          auto nearest_robot =
+            world_model->getNearestRobotWithDistanceFromPoint(world_model->ball().pos, our_robots);
+          nearest_robot.has_value()) {
           best_pass_target = nearest_robot->robot->pose.pos;
         }
         //      if((world_model->ball().pos - world_model->getOurGoalCenter()).norm()

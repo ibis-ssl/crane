@@ -133,10 +133,10 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
     // feedback情報があればそちらの現在位置を参照する
     Point current_position = [&]() -> Point {
-      if (auto feedback = ranges::find_if(
-            latest_feedback.feedback,
-            [&](const auto & f) { return f.robot_id == command.robot_id; });
-          feedback != latest_feedback.feedback.end()) {
+      if (
+        auto feedback = ranges::find_if(
+          latest_feedback.feedback, [&](const auto & f) { return f.robot_id == command.robot_id; });
+        feedback != latest_feedback.feedback.end()) {
         return Point(feedback->odom[0], feedback->odom[1]);
       } else {
         return Point(command.current_pose.x, command.current_pose.y);
@@ -149,10 +149,11 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       pos_mode.target_y - current_position.y();
 
     double pre_vel = [&]() {
-      if (auto it = ranges::find_if(
-            pre_commands.robot_commands,
-            [&](const auto & c) { return c.robot_id == command.robot_id; });
-          it != ranges::end(pre_commands.robot_commands)) {
+      if (
+        auto it = ranges::find_if(
+          pre_commands.robot_commands,
+          [&](const auto & c) { return c.robot_id == command.robot_id; });
+        it != ranges::end(pre_commands.robot_commands)) {
         if (it->position_target_mode.empty()) {
           return 0.0;
         }
@@ -656,8 +657,9 @@ auto RVO2Planner::adjustForPlacementAvoidance(
         // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
         target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
 
-        if (auto segment = world_model->getBallPlacementArea().value().segment;
-            (closest_point == segment.first || closest_point == segment.second)) {
+        if (
+          auto segment = world_model->getBallPlacementArea().value().segment;
+          (closest_point == segment.first || closest_point == segment.second)) {
           // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
           // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
           std::vector<Point> target_candidates;
@@ -666,14 +668,15 @@ auto RVO2Planner::adjustForPlacementAvoidance(
           target_candidates.push_back(closest_point + vertical_vec);
           target_candidates.push_back(closest_point - vertical_vec);
 
-          if (auto target = std::ranges::find_if(
-                target_candidates,
-                [&](const auto & target_candidate) {
-                  return (
-                    not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                    not isInPlacementArea(target_candidate, 0.1));
-                });
-              target != target_candidates.end()) {
+          if (
+            auto target = std::ranges::find_if(
+              target_candidates,
+              [&](const auto & target_candidate) {
+                return (
+                  not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                  not isInPlacementArea(target_candidate, 0.1));
+              });
+            target != target_candidates.end()) {
             target_pos = *target;
           } else {
             // どの候補もだめな場合は移動しない
