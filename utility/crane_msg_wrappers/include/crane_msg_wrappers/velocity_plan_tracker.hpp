@@ -10,6 +10,9 @@
 #include <Eigen/Dense>
 #include <crane_msgs/msg/velocity_plan_trace.hpp>
 #include <string>
+#include <vector>
+
+#include "tracker_base.hpp"
 
 namespace crane
 {
@@ -21,14 +24,9 @@ namespace crane
  * 計画された速度と実際の速度を比較・検証できるようにする。
  */
 class VelocityPlanTracker
+: public TrackerBase<VelocityPlanTracker, crane_msgs::msg::VelocityPlanTrace>
 {
 public:
-  /**
-   * @brief 新しいトレースを作成
-   * @return 初期化されたVelocityPlanTrace
-   */
-  static auto createTrace() -> crane_msgs::msg::VelocityPlanTrace;
-
   /**
    * @brief 計画点を追加
    * @param trace トレースデータ
@@ -68,11 +66,55 @@ public:
     const Eigen::Vector2d & actual_vel);
 
 private:
-  // トレースID生成用のカウンター
-  static uint32_t trace_id_counter_;
-
   // リングバッファの最大サイズ
   static constexpr size_t MAX_ACTUALS = 10;
+};
+
+/**
+ * @brief 速度計画トレース関連メソッドを提供する CRTP ミックスイン
+ * @tparam Derived 派生クラス
+ *
+ * 派生クラスは以下のメソッドを提供する必要がある（friend宣言推奨）:
+ *   std::vector<crane_msgs::msg::VelocityPlanTrace> & getVelocityPlanTrace()
+ *   const std::vector<crane_msgs::msg::VelocityPlanTrace> & getVelocityPlanTrace() const
+ */
+template <typename Derived>
+class VelocityPlanTraceMixin
+{
+  auto & trace() { return static_cast<Derived &>(*this).getVelocityPlanTrace(); }
+  const auto & trace() const { return static_cast<const Derived &>(*this).getVelocityPlanTrace(); }
+
+public:
+  auto enableVelocityPlanTrace() -> Derived &
+  {
+    if (trace().empty()) {
+      trace().push_back(VelocityPlanTracker::createTrace());
+    }
+    return static_cast<Derived &>(*this);
+  }
+
+  auto addVelocityPlanPoint(
+    const std::string & source, const Eigen::Vector2d & predicted_pos,
+    const Eigen::Vector2d & predicted_vel, int32_t target_time_us,
+    int32_t estimated_arrival_time_us = 0) -> void
+  {
+    if (!trace().empty()) {
+      VelocityPlanTracker::addPlanPoint(
+        trace()[0], source, predicted_pos, predicted_vel, target_time_us,
+        estimated_arrival_time_us);
+    }
+  }
+
+  auto addVelocityCorrection(
+    const std::string & source, const Eigen::Vector2d & before_vel,
+    const Eigen::Vector2d & after_vel) -> void
+  {
+    if (!trace().empty()) {
+      VelocityPlanTracker::addCorrection(trace()[0], source, before_vel, after_vel);
+    }
+  }
+
+  auto hasVelocityPlanTrace() const -> bool { return !trace().empty(); }
 };
 
 }  // namespace crane

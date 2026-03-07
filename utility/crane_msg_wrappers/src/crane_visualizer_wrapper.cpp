@@ -14,10 +14,9 @@ auto VisualizerMessageBuilder::flush() -> void
     SvgLayerUpdate update_msg;
     update_msg.layer = layer;
     update_msg.operation = operation;
-    update_msg.svg_primitives = message_buffer;
+    update_msg.svg_primitives = std::move(message_buffer);
     update_msg.duration = duration;
     CraneVisualizerBuffer::buffer->message_buffer.updates.push_back(update_msg);
-    message_buffer.clear();
   }
 }
 
@@ -219,14 +218,8 @@ auto VisualizerMessageBuilder::drawFieldRect(
   Point corner1, Point corner2, const std::string & color, double stroke_width) -> void
 {
   Point top_left(std::min(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
-  Point top_right(std::max(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
   Point bottom_right(std::max(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
-  Point bottom_left(std::min(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
-
-  line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
-  line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
-  line().start(bottom_right).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
-  line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
+  rectangle(top_left, bottom_right, color, stroke_width);
 }
 
 auto VisualizerMessageBuilder::drawGoal(

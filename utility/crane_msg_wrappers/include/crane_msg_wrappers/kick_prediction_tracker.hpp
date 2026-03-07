@@ -11,6 +11,8 @@
 #include <crane_msgs/msg/kick_prediction_trace.hpp>
 #include <string>
 
+#include "tracker_base.hpp"
+
 namespace crane
 {
 
@@ -21,14 +23,9 @@ namespace crane
  * 物理モデルのパラメータ調整やデバッグに活用する。
  */
 class KickPredictionTracker
+: public TrackerBase<KickPredictionTracker, crane_msgs::msg::KickPredictionTrace>
 {
 public:
-  /**
-   * @brief 新しいトレースを作成
-   * @return 初期化されたKickPredictionTrace
-   */
-  static auto createTrace() -> crane_msgs::msg::KickPredictionTrace;
-
   /**
    * @brief キック予測を記録
    * @param trace トレースデータ
@@ -55,10 +52,6 @@ public:
   static void recordActual(
     crane_msgs::msg::KickPredictionTrace & trace, double actual_ball_speed,
     double actual_stop_distance);
-
-private:
-  // トレースID生成用のカウンター
-  static uint32_t trace_id_counter_;
 };
 
 }  // namespace crane

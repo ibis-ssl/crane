@@ -6,29 +6,11 @@
 
 #include "crane_msg_wrappers/velocity_plan_tracker.hpp"
 
-#include <chrono>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 
 namespace crane
 {
-
-// トレースID生成用のカウンター初期化
-uint32_t VelocityPlanTracker::trace_id_counter_ = 0;
-
-auto VelocityPlanTracker::createTrace() -> crane_msgs::msg::VelocityPlanTrace
-{
-  crane_msgs::msg::VelocityPlanTrace trace;
-
-  // 基準タイムスタンプを設定（現在時刻のナノ秒）
-  auto now = std::chrono::system_clock::now();
-  trace.reference_timestamp_ns =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-
-  // トレースIDを割り当て
-  trace.trace_id = ++trace_id_counter_;
-
-  return trace;
-}
 
 void VelocityPlanTracker::addPlanPoint(
   crane_msgs::msg::VelocityPlanTrace & trace, const std::string & source,
@@ -67,11 +49,7 @@ void VelocityPlanTracker::addCorrection(
   // 方向変化を計算（度）
   double before_angle = std::atan2(before_vel.y(), before_vel.x());
   double after_angle = std::atan2(after_vel.y(), after_vel.x());
-  double angle_diff = after_angle - before_angle;
-
-  // -π ~ π の範囲に正規化
-  while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
-  while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+  double angle_diff = normalizeAngle(after_angle - before_angle);
 
   correction.direction_delta_deg = static_cast<float>(angle_diff * 180.0 / M_PI);
 

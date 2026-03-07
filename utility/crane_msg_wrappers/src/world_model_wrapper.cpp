@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/travel_time.hpp>
-#include <iostream>
 #include <range/v3/algorithm/max.hpp>
 #include <range/v3/algorithm/min.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -178,7 +177,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     }
   }
 
-  for (auto robot : world_model.robot_info_theirs) {
+  for (const auto & robot : world_model.robot_info_theirs) {
     auto & info = theirs_.robots.at(robot.id);
 
     // 敵ロボットはビジョン検出のみで判定（診断情報なし）
@@ -264,6 +263,9 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
   std::vector<Point> points;
+  const auto nx = static_cast<size_t>(fieldSize().x() / 2.f / grid_size) + 2;
+  const auto ny = static_cast<size_t>(fieldSize().y() / 2.f / grid_size) + 2;
+  points.reserve(nx * ny);
   for (float x = 0.f; x <= fieldSize().x() / 2.f; x += grid_size) {
     for (float y = 0.f; y <= fieldSize().y() / 2.f; y += grid_size) {
       points.emplace_back(x, y);

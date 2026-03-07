@@ -6,6 +6,7 @@
 
 #include "crane_msg_wrappers/point_checker.hpp"
 
+#include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 
 namespace crane
@@ -129,9 +130,9 @@ auto PointChecker::checkDistance(
   double distance = (p - target).norm();
   switch (rule) {
     case Rule::EQUAL_TO:
-      return distance == threshold;
+      return std::abs(distance - threshold) < 1e-9;
     case Rule::NOT_EQUAL_TO:
-      return distance != threshold;
+      return std::abs(distance - threshold) >= 1e-9;
     case Rule::LESS_THAN:
       return distance < threshold;
     case Rule::GREATER_THAN:

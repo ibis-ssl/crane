@@ -77,14 +77,6 @@ auto RobotsQuery::get() const -> RobotList
          ranges::to<std::vector>();
 }
 
-auto RobotsQuery::getIds() const -> std::vector<uint8_t>
-{
-  auto robots = get();
-  return robots |
-         ranges::views::transform([](const RobotInfo::SharedPtr & robot) { return robot->id; }) |
-         ranges::to<std::vector>();
-}
-
 auto RobotsQuery::getView() const -> decltype(auto)
 {
   return robots_ | ranges::views::filter([this](const RobotInfo::SharedPtr & robot) {
@@ -94,8 +86,23 @@ auto RobotsQuery::getView() const -> decltype(auto)
          });
 }
 
-auto RobotsQuery::count() const -> size_t { return get().size(); }
+auto RobotsQuery::getIds() const -> std::vector<uint8_t>
+{
+  return getView() |
+         ranges::views::transform([](const RobotInfo::SharedPtr & robot) { return robot->id; }) |
+         ranges::to<std::vector>();
+}
 
-auto RobotsQuery::empty() const -> bool { return count() == 0; }
+auto RobotsQuery::count() const -> size_t
+{
+  auto view = getView();
+  return static_cast<size_t>(std::distance(view.begin(), view.end()));
+}
+
+auto RobotsQuery::empty() const -> bool
+{
+  auto view = getView();
+  return view.begin() == view.end();
+}
 
 }  // namespace crane
