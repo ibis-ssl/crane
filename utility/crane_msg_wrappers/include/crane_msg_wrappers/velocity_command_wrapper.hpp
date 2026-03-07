@@ -10,12 +10,11 @@
 #include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
-#include <crane_msgs/msg/robot_command.hpp>
 #include <limits>
 #include <memory>
-#include <range/v3/algorithm/find_if.hpp>
 #include <vector>
 
+#include "command_wrapper_base.hpp"
 #include "delay_monitor_wrapper.hpp"
 #include "velocity_plan_tracker.hpp"
 
@@ -24,23 +23,43 @@ namespace crane
 /**
  * @brief local_planner → sender 用の速度指令ラッパー
  */
-class VelocityCommandWrapper
+class VelocityCommandWrapper : public CommandWrapperBase<VelocityCommandWrapper>,
+                               public DelayMonitorMixin<VelocityCommandWrapper>,
+                               public VelocityPlanTraceMixin<VelocityCommandWrapper>
 {
+  friend class CommandWrapperBase<VelocityCommandWrapper>;
+  friend class DelayMonitorMixin<VelocityCommandWrapper>;
+  friend class VelocityPlanTraceMixin<VelocityCommandWrapper>;
+
 public:
   using SharedPtr = std::shared_ptr<VelocityCommandWrapper>;
 
 private:
   crane_msgs::msg::RobotCommand latest_msg;
 
+  auto getLatestMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
+  auto getLatestMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
+  auto getDelayCheckpoints() -> crane_msgs::msg::DelayCheckpoints &
+  {
+    return latest_msg.delay_checkpoints;
+  }
+  auto getDelayCheckpoints() const -> const crane_msgs::msg::DelayCheckpoints &
+  {
+    return latest_msg.delay_checkpoints;
+  }
+  auto getVelocityPlanTrace() -> decltype(latest_msg.velocity_plan_trace) &
+  {
+    return latest_msg.velocity_plan_trace;
+  }
+  auto getVelocityPlanTrace() const -> const decltype(latest_msg.velocity_plan_trace) &
+  {
+    return latest_msg.velocity_plan_trace;
+  }
+
 public:
   VelocityCommandWrapper() = default;
 
   explicit VelocityCommandWrapper(uint8_t robot_id) { latest_msg.robot_id = robot_id; }
-
-  // メッセージを取得
-  auto getMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
-
-  auto getEditableMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
 
   // ===== 速度指令固有の関数 =====
 
@@ -128,19 +147,6 @@ public:
     return *this;
   }
 
-  auto dribble(double power) -> VelocityCommandWrapper &
-  {
-    latest_msg.dribble_power = power;
-    latest_msg.kick_power = 0.0;
-    return *this;
-  }
-
-  auto withDribble(double power) -> VelocityCommandWrapper &
-  {
-    latest_msg.dribble_power = power;
-    return *this;
-  }
-
   auto setTargetTheta(double theta) -> VelocityCommandWrapper &
   {
     latest_msg.target_theta = theta;
@@ -150,12 +156,6 @@ public:
   auto setOmegaLimit(double omega_limit) -> VelocityCommandWrapper &
   {
     latest_msg.omega_limit = omega_limit;
-    return *this;
-  }
-
-  auto stopEmergency(bool flag = true) -> VelocityCommandWrapper &
-  {
-    latest_msg.stop_flag = flag;
     return *this;
   }
 
@@ -207,59 +207,10 @@ public:
     return *this;
   }
 
-  auto addPlanningFactor(const std::string & name, const std::string & state) -> void
-  {
-    auto planning_factor = ranges::find_if(
-      latest_msg.planning_factors, [&name](const auto & pf) { return pf.name == name; });
-    if (planning_factor == latest_msg.planning_factors.end()) {
-      crane_msgs::msg::NamedString msg;
-      msg.name = name;
-      msg.value = state;
-      latest_msg.planning_factors.emplace_back(msg);
-    } else if (planning_factor->value != state) {
-      planning_factor->value = state;
-    }
-  }
-
-  auto clearPlanningFactors() -> void { latest_msg.planning_factors.clear(); }
-
   auto setPlannerName(const std::string & planner_name) -> VelocityCommandWrapper &
   {
     latest_msg.planner_name = planner_name;
     return *this;
-  }
-
-  // ===== 遅延監視関連メソッド =====
-
-  auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
-  {
-    DelayMonitorWrapper::addDelayCheckpoint(latest_msg.delay_checkpoints, name, value);
-  }
-
-  auto clearDelayCheckpoints() -> void
-  {
-    DelayMonitorWrapper::clearCheckpoints(latest_msg.delay_checkpoints);
-  }
-
-  auto calculateDelayMs(const std::string & start_name, const std::string & end_name) -> double
-  {
-    return DelayMonitorWrapper::calculateDelayMs(
-      latest_msg.delay_checkpoints, start_name, end_name);
-  }
-
-  auto calculateTotalDelayMs(const std::string & end_name) -> double
-  {
-    return DelayMonitorWrapper::calculateTotalDelayMs(latest_msg.delay_checkpoints, end_name);
-  }
-
-  auto getDelayCheckpointsString() -> std::string
-  {
-    return DelayMonitorWrapper::checkpointsToString(latest_msg.delay_checkpoints);
-  }
-
-  auto mergeDelayCheckpoints(const crane_msgs::msg::DelayCheckpoints & source_checkpoints) -> void
-  {
-    DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
   }
 
   auto setLocalPlannerConfig(const crane_msgs::msg::LocalPlannerConfig & config)
@@ -268,52 +219,6 @@ public:
     latest_msg.local_planner_config = config;
     return *this;
   }
-
-  // ===== 速度計画トレース関連メソッド =====
-
-  /**
-   * @brief 速度計画トレースを有効化（新規トレースを作成）
-   */
-  auto enableVelocityPlanTrace() -> VelocityCommandWrapper &
-  {
-    if (latest_msg.velocity_plan_trace.empty()) {
-      latest_msg.velocity_plan_trace.push_back(VelocityPlanTracker::createTrace());
-    }
-    return *this;
-  }
-
-  /**
-   * @brief 計画点を追加
-   */
-  auto addVelocityPlanPoint(
-    const std::string & source, const Eigen::Vector2d & predicted_pos,
-    const Eigen::Vector2d & predicted_vel, int32_t target_time_us,
-    int32_t estimated_arrival_time_us = 0) -> void
-  {
-    if (!latest_msg.velocity_plan_trace.empty()) {
-      VelocityPlanTracker::addPlanPoint(
-        latest_msg.velocity_plan_trace[0], source, predicted_pos, predicted_vel, target_time_us,
-        estimated_arrival_time_us);
-    }
-  }
-
-  /**
-   * @brief 速度修正を記録
-   */
-  auto addVelocityCorrection(
-    const std::string & source, const Eigen::Vector2d & before_vel,
-    const Eigen::Vector2d & after_vel) -> void
-  {
-    if (!latest_msg.velocity_plan_trace.empty()) {
-      VelocityPlanTracker::addCorrection(
-        latest_msg.velocity_plan_trace[0], source, before_vel, after_vel);
-    }
-  }
-
-  /**
-   * @brief 速度計画トレースが有効かどうかを確認
-   */
-  auto hasVelocityPlanTrace() const -> bool { return !latest_msg.velocity_plan_trace.empty(); }
 
   /**
    * @brief 速度計画トレースをコピー（RobotCommandからRobotCommandへの伝播用）

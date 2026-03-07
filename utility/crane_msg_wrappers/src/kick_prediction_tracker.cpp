@@ -12,24 +12,6 @@
 namespace crane
 {
 
-// トレースID生成用のカウンター初期化
-uint32_t KickPredictionTracker::trace_id_counter_ = 0;
-
-auto KickPredictionTracker::createTrace() -> crane_msgs::msg::KickPredictionTrace
-{
-  crane_msgs::msg::KickPredictionTrace trace;
-
-  // 基準タイムスタンプを設定（現在時刻のナノ秒）
-  auto now = std::chrono::system_clock::now();
-  trace.reference_timestamp_ns =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-
-  // トレースIDを割り当て
-  trace.trace_id = ++trace_id_counter_;
-
-  return trace;
-}
-
 void KickPredictionTracker::recordPrediction(
   crane_msgs::msg::KickPredictionTrace & trace, const std::string & source, double kick_power,
   bool is_chip_kick, double predicted_ball_speed, double predicted_stop_distance,

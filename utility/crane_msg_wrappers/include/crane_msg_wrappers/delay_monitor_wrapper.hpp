@@ -28,150 +28,7 @@ class DelayMonitorWrapper
 {
 public:
   using DelayCheckpointMsg = crane_msgs::msg::DelayCheckpoint;
-  using DelayCheckpointArray = std::vector<DelayCheckpointMsg>;
   using DelayCheckpointsMsg = crane_msgs::msg::DelayCheckpoints;
-
-  /**
-   * @brief チェックポイントを追加する
-   * @param name チェックポイント名（例: "vision_received", "ekf_updated"）
-   * @param value 追加情報（オプション、例: "30Hz", "robot_id:3"）
-   */
-  static void addDelayCheckpoint(
-    DelayCheckpointArray & checkpoints, const std::string & name, const std::string & value = "")
-  {
-    auto now = std::chrono::steady_clock::now();
-    auto timestamp_ns =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-
-    // 同じnameのチェックポイントが存在する場合は更新
-    auto existing = std::find_if(
-      checkpoints.begin(), checkpoints.end(),
-      [&name](const auto & checkpoint) { return checkpoint.name == name; });
-
-    // 注意: 旧API - 新しいDelayCheckpointsメッセージを使用することを推奨
-    if (existing != checkpoints.end()) {
-      existing->relative_time_us = static_cast<int32_t>(timestamp_ns / 1000);
-      existing->value = value;
-    } else {
-      DelayCheckpointMsg checkpoint;
-      checkpoint.name = name;
-      checkpoint.relative_time_us = static_cast<int32_t>(timestamp_ns / 1000);
-      checkpoint.value = value;
-      checkpoints.push_back(checkpoint);
-    }
-  }
-
-  /**
-   * @brief 指定したチェックポイント間の遅延を計算する（ミリ秒）
-   * @param checkpoints チェックポイント配列
-   * @param start_name 開始チェックポイント名
-   * @param end_name 終了チェックポイント名
-   * @return 遅延時間（ミリ秒）、チェックポイントが見つからない場合は-1
-   */
-  static double calculateDelayMs(
-    const DelayCheckpointArray & checkpoints, const std::string & start_name,
-    const std::string & end_name)
-  {
-    auto start_it = std::find_if(
-      checkpoints.begin(), checkpoints.end(),
-      [&start_name](const auto & cp) { return cp.name == start_name; });
-
-    auto end_it = std::find_if(
-      checkpoints.begin(), checkpoints.end(),
-      [&end_name](const auto & cp) { return cp.name == end_name; });
-
-    if (start_it == checkpoints.end() || end_it == checkpoints.end()) {
-      return -1.0;
-    }
-
-    auto delay_us = end_it->relative_time_us - start_it->relative_time_us;
-    return static_cast<double>(delay_us) / 1000.0;  // マイクロ秒をミリ秒に変換
-  }
-
-  /**
-   * @brief 最初のチェックポイントからの総遅延を計算する（ミリ秒）
-   * @param checkpoints チェックポイント配列
-   * @param end_name 終了チェックポイント名
-   * @return 総遅延時間（ミリ秒）、チェックポイントが見つからない場合は-1
-   */
-  static double calculateTotalDelayMs(
-    const DelayCheckpointArray & checkpoints, const std::string & end_name)
-  {
-    if (checkpoints.empty()) {
-      return -1.0;
-    }
-
-    auto end_it = std::find_if(
-      checkpoints.begin(), checkpoints.end(),
-      [&end_name](const auto & cp) { return cp.name == end_name; });
-
-    if (end_it == checkpoints.end()) {
-      return -1.0;
-    }
-
-    auto start_time = checkpoints.front().relative_time_us;
-    auto delay_us = end_it->relative_time_us - start_time;
-    return static_cast<double>(delay_us) / 1000.0;
-  }
-
-  /**
-   * @brief 直前のチェックポイントからの遅延を計算する（ミリ秒）
-   * @param checkpoints チェックポイント配列
-   * @param current_name 現在のチェックポイント名
-   * @return 直前からの遅延時間（ミリ秒）、適切なチェックポイントが見つからない場合は-1
-   */
-  static double calculateIncrementalDelayMs(
-    const DelayCheckpointArray & checkpoints, const std::string & current_name)
-  {
-    auto current_it = std::find_if(
-      checkpoints.begin(), checkpoints.end(),
-      [&current_name](const auto & cp) { return cp.name == current_name; });
-
-    if (current_it == checkpoints.end() || current_it == checkpoints.begin()) {
-      return -1.0;
-    }
-
-    auto prev_it = current_it - 1;
-    auto delay_us = current_it->relative_time_us - prev_it->relative_time_us;
-    return static_cast<double>(delay_us) / 1000.0;
-  }
-
-  /**
-   * @brief チェックポイント配列を文字列に変換（デバッグ用）
-   * @param checkpoints チェックポイント配列
-   * @return フォーマットされた文字列
-   */
-  static std::string checkpointsToString(const DelayCheckpointArray & checkpoints)
-  {
-    if (checkpoints.empty()) {
-      return "[]";
-    }
-
-    std::ostringstream oss;
-    oss << "[";
-    for (size_t i = 0; i < checkpoints.size(); ++i) {
-      const auto & cp = checkpoints[i];
-      oss << cp.name;
-      if (!cp.value.empty()) {
-        oss << "(" << cp.value << ")";
-      }
-      if (i > 0) {
-        auto delay_ms =
-          static_cast<double>(cp.relative_time_us - checkpoints[i - 1].relative_time_us) / 1000.0;
-        oss << ":" << delay_ms << "ms";
-      }
-      if (i < checkpoints.size() - 1) {
-        oss << ", ";
-      }
-    }
-    oss << "]";
-    return oss.str();
-  }
-
-  /**
-   * @brief チェックポイント配列をクリアする
-   */
-  static void clearCheckpoints(DelayCheckpointArray & checkpoints) { checkpoints.clear(); }
 
   // ===== Unix時刻変換用ユーティリティ =====
 
@@ -385,7 +242,7 @@ public:
     for (const auto & src_cp : source.checkpoints) {
       auto existing = std::find_if(
         target.checkpoints.begin(), target.checkpoints.end(),
-        [src_cp](const auto & cp) { return cp.name == src_cp.name; });
+        [&src_cp](const auto & cp) { return cp.name == src_cp.name; });
 
       DelayCheckpointMsg adjusted_cp = src_cp;
       adjusted_cp.relative_time_us += static_cast<int32_t>(source_offset_us);
@@ -400,26 +257,52 @@ public:
       }
     }
   }
+};
 
-  /**
-   * @brief 既存のチェックポイント配列に別の配列をマージする
-   * 同名のチェックポイントがある場合は、より新しいタイムスタンプのものを保持
-   */
-  static void mergeCheckpoints(DelayCheckpointArray & target, const DelayCheckpointArray & source)
+/**
+ * @brief 遅延監視関連メソッドを提供する CRTP ミックスイン
+ * @tparam Derived 派生クラス
+ *
+ * 派生クラスは以下のメソッドを提供する必要がある（friend宣言推奨）:
+ *   crane_msgs::msg::DelayCheckpoints & getDelayCheckpoints()
+ *   const crane_msgs::msg::DelayCheckpoints & getDelayCheckpoints() const
+ */
+template <typename Derived>
+class DelayMonitorMixin
+{
+  auto & checkpoints() { return static_cast<Derived &>(*this).getDelayCheckpoints(); }
+  const auto & checkpoints() const
   {
-    for (const auto & src_cp : source) {
-      auto existing = std::find_if(
-        target.begin(), target.end(), [src_cp](const auto & cp) { return cp.name == src_cp.name; });
+    return static_cast<const Derived &>(*this).getDelayCheckpoints();
+  }
 
-      if (existing != target.end()) {
-        // より新しいタイムスタンプのものを保持
-        if (src_cp.relative_time_us > existing->relative_time_us) {
-          *existing = src_cp;
-        }
-      } else {
-        target.push_back(src_cp);
-      }
-    }
+public:
+  auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
+  {
+    DelayMonitorWrapper::addDelayCheckpoint(checkpoints(), name, value);
+  }
+
+  auto clearDelayCheckpoints() -> void { DelayMonitorWrapper::clearCheckpoints(checkpoints()); }
+
+  auto calculateDelayMs(const std::string & start_name, const std::string & end_name) const
+    -> double
+  {
+    return DelayMonitorWrapper::calculateDelayMs(checkpoints(), start_name, end_name);
+  }
+
+  auto calculateTotalDelayMs(const std::string & end_name) const -> double
+  {
+    return DelayMonitorWrapper::calculateTotalDelayMs(checkpoints(), end_name);
+  }
+
+  auto getDelayCheckpointsString() const -> std::string
+  {
+    return DelayMonitorWrapper::checkpointsToString(checkpoints());
+  }
+
+  auto mergeDelayCheckpoints(const crane_msgs::msg::DelayCheckpoints & source) -> void
+  {
+    DelayMonitorWrapper::mergeCheckpoints(checkpoints(), source);
   }
 };
 

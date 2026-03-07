@@ -9,6 +9,9 @@
 
 #include <crane_msgs/msg/in_play_situation.hpp>
 
+namespace crane
+{
+
 struct InPlaySituationWrapper
 {
   struct NearestToBallRobotID
@@ -32,4 +35,6 @@ struct InPlaySituationWrapper
     ball_possession.theirs = msg.ball_possession_theirs;
   }
 };
+
+}  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_

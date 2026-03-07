@@ -6,29 +6,10 @@
 
 #include "crane_msg_wrappers/ball_prediction_tracker.hpp"
 
-#include <chrono>
 #include <cmath>
 
 namespace crane
 {
-
-// トレースID生成用のカウンター初期化
-uint32_t BallPredictionTracker::trace_id_counter_ = 0;
-
-auto BallPredictionTracker::createTrace() -> crane_msgs::msg::BallPredictionTrace
-{
-  crane_msgs::msg::BallPredictionTrace trace;
-
-  // 基準タイムスタンプを設定（現在時刻のナノ秒）
-  auto now = std::chrono::system_clock::now();
-  trace.reference_timestamp_ns =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-
-  // トレースIDを割り当て
-  trace.trace_id = ++trace_id_counter_;
-
-  return trace;
-}
 
 void BallPredictionTracker::addPredictionPoint(
   crane_msgs::msg::BallPredictionTrace & trace, const std::string & source,

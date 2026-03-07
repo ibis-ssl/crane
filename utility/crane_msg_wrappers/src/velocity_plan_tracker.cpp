@@ -6,30 +6,11 @@
 
 #include "crane_msg_wrappers/velocity_plan_tracker.hpp"
 
-#include <chrono>
 #include <cmath>
 #include <crane_geometry/geometry_operations.hpp>
 
 namespace crane
 {
-
-// トレースID生成用のカウンター初期化
-uint32_t VelocityPlanTracker::trace_id_counter_ = 0;
-
-auto VelocityPlanTracker::createTrace() -> crane_msgs::msg::VelocityPlanTrace
-{
-  crane_msgs::msg::VelocityPlanTrace trace;
-
-  // 基準タイムスタンプを設定（現在時刻のナノ秒）
-  auto now = std::chrono::system_clock::now();
-  trace.reference_timestamp_ns =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-
-  // トレースIDを割り当て
-  trace.trace_id = ++trace_id_counter_;
-
-  return trace;
-}
 
 void VelocityPlanTracker::addPlanPoint(
   crane_msgs::msg::VelocityPlanTrace & trace, const std::string & source,
