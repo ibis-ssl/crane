@@ -86,7 +86,11 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, HALF_TIME),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, POST_GAME)};
 
-auto getStageText(uint32_t id) -> std::string { return stage_map[id]; }
+auto getStageText(uint32_t id) -> std::string
+{
+  auto it = stage_map.find(id);
+  return it != stage_map.end() ? it->second : "UNKNOWN";
+}
 
 auto getStageNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {
@@ -102,7 +106,11 @@ auto getStageTextList() -> std::vector<std::string>
          ranges::to<std::vector>();
 }
 
-auto getRefereeCommandText(uint32_t id) -> std::string { return referee_command_map[id]; }
+auto getRefereeCommandText(uint32_t id) -> std::string
+{
+  auto it = referee_command_map.find(id);
+  return it != referee_command_map.end() ? it->second : "UNKNOWN";
+}
 
 auto getRefereeCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {
@@ -119,7 +127,11 @@ auto getRefereeCommandTextList() -> std::vector<std::string>
          ranges::to<std::vector>();
 }
 
-auto getSituationCommandText(uint32_t id) -> std::string { return situation_command_map[id]; }
+auto getSituationCommandText(uint32_t id) -> std::string
+{
+  auto it = situation_command_map.find(id);
+  return it != situation_command_map.end() ? it->second : "UNKNOWN";
+}
 
 auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {

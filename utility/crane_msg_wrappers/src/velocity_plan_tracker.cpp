@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 
 namespace crane
 {
@@ -67,11 +68,7 @@ void VelocityPlanTracker::addCorrection(
   // 方向変化を計算（度）
   double before_angle = std::atan2(before_vel.y(), before_vel.x());
   double after_angle = std::atan2(after_vel.y(), after_vel.x());
-  double angle_diff = after_angle - before_angle;
-
-  // -π ~ π の範囲に正規化
-  while (angle_diff > M_PI) angle_diff -= 2.0 * M_PI;
-  while (angle_diff < -M_PI) angle_diff += 2.0 * M_PI;
+  double angle_diff = normalizeAngle(after_angle - before_angle);
 
   correction.direction_delta_deg = static_cast<float>(angle_diff * 180.0 / M_PI);
 

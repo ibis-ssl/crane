@@ -40,7 +40,7 @@ struct BallOwnerScore
   double min_slack = 100.;
   double min_slack_pos_distance = 100.;
   double max_slack = -100.;
-  double score;
+  double score = 0.0;
 };
 
 struct TeamInfo

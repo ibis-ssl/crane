@@ -11,7 +11,9 @@
 #include <chrono>
 #include <crane_msgs/msg/delay_checkpoint.hpp>
 #include <crane_msgs/msg/delay_checkpoints.hpp>
+#include <format>
 #include <rclcpp/rclcpp.hpp>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -44,7 +46,7 @@ public:
     // 同じnameのチェックポイントが存在する場合は更新
     auto existing = std::find_if(
       checkpoints.begin(), checkpoints.end(),
-      [name](const auto & checkpoint) { return checkpoint.name == name; });
+      [&name](const auto & checkpoint) { return checkpoint.name == name; });
 
     // 注意: 旧API - 新しいDelayCheckpointsメッセージを使用することを推奨
     if (existing != checkpoints.end()) {
@@ -72,11 +74,11 @@ public:
   {
     auto start_it = std::find_if(
       checkpoints.begin(), checkpoints.end(),
-      [start_name](const auto & cp) { return cp.name == start_name; });
+      [&start_name](const auto & cp) { return cp.name == start_name; });
 
-    auto end_it = std::find_if(checkpoints.begin(), checkpoints.end(), [end_name](const auto & cp) {
-      return cp.name == end_name;
-    });
+    auto end_it = std::find_if(
+      checkpoints.begin(), checkpoints.end(),
+      [&end_name](const auto & cp) { return cp.name == end_name; });
 
     if (start_it == checkpoints.end() || end_it == checkpoints.end()) {
       return -1.0;
@@ -99,9 +101,9 @@ public:
       return -1.0;
     }
 
-    auto end_it = std::find_if(checkpoints.begin(), checkpoints.end(), [end_name](const auto & cp) {
-      return cp.name == end_name;
-    });
+    auto end_it = std::find_if(
+      checkpoints.begin(), checkpoints.end(),
+      [&end_name](const auto & cp) { return cp.name == end_name; });
 
     if (end_it == checkpoints.end()) {
       return -1.0;
@@ -123,7 +125,7 @@ public:
   {
     auto current_it = std::find_if(
       checkpoints.begin(), checkpoints.end(),
-      [current_name](const auto & cp) { return cp.name == current_name; });
+      [&current_name](const auto & cp) { return cp.name == current_name; });
 
     if (current_it == checkpoints.end() || current_it == checkpoints.begin()) {
       return -1.0;
@@ -145,27 +147,25 @@ public:
       return "[]";
     }
 
-    std::string result = "[";
+    std::ostringstream oss;
+    oss << "[";
     for (size_t i = 0; i < checkpoints.size(); ++i) {
       const auto & cp = checkpoints[i];
-      result += cp.name;
+      oss << cp.name;
       if (!cp.value.empty()) {
-        result += "(" + cp.value + ")";
+        oss << "(" << cp.value << ")";
       }
-
-      // 前のチェックポイントからの遅延を表示
       if (i > 0) {
-        auto delay_us = cp.relative_time_us - checkpoints[i - 1].relative_time_us;
-        auto delay_ms = static_cast<double>(delay_us) / 1000.0;
-        result += ":" + std::to_string(delay_ms) + "ms";
+        auto delay_ms =
+          static_cast<double>(cp.relative_time_us - checkpoints[i - 1].relative_time_us) / 1000.0;
+        oss << ":" << delay_ms << "ms";
       }
-
       if (i < checkpoints.size() - 1) {
-        result += ", ";
+        oss << ", ";
       }
     }
-    result += "]";
-    return result;
+    oss << "]";
+    return oss.str();
   }
 
   /**
@@ -185,12 +185,9 @@ public:
   static std::string formatVisionDelayInfo(
     double t_capture, double t_sent, [[maybe_unused]] const rclcpp::Time & ros_receive_time)
   {
-    // Vision内部処理時間
     double vision_processing_ms = (t_sent - t_capture) * 1000.0;
-
-    // Vision相対時刻の情報を文字列として返す
-    return "t_capture:" + std::to_string(t_capture) + "s, t_sent:" + std::to_string(t_sent) +
-           "s, vision_proc:" + std::to_string(vision_processing_ms) + "ms";
+    return std::format(
+      "t_capture:{}s, t_sent:{}s, vision_proc:{}ms", t_capture, t_sent, vision_processing_ms);
   }
 
   // ===== 新しいDelayCheckpointsメッセージ用API =====
@@ -216,7 +213,7 @@ public:
     // 同じnameのチェックポイントが存在する場合は更新
     auto existing = std::find_if(
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
-      [name](const auto & checkpoint) { return checkpoint.name == name; });
+      [&name](const auto & checkpoint) { return checkpoint.name == name; });
 
     // 基準からの相対時間をマイクロ秒で計算
     auto relative_time_us =
@@ -247,11 +244,11 @@ public:
   {
     auto start_it = std::find_if(
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
-      [start_name](const auto & cp) { return cp.name == start_name; });
+      [&start_name](const auto & cp) { return cp.name == start_name; });
 
     auto end_it = std::find_if(
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
-      [end_name](const auto & cp) { return cp.name == end_name; });
+      [&end_name](const auto & cp) { return cp.name == end_name; });
 
     if (start_it == checkpoints.checkpoints.end() || end_it == checkpoints.checkpoints.end()) {
       return -1.0;
@@ -276,7 +273,7 @@ public:
 
     auto end_it = std::find_if(
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
-      [end_name](const auto & cp) { return cp.name == end_name; });
+      [&end_name](const auto & cp) { return cp.name == end_name; });
 
     if (end_it == checkpoints.checkpoints.end()) {
       return -1.0;
@@ -296,7 +293,7 @@ public:
   {
     auto current_it = std::find_if(
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
-      [current_name](const auto & cp) { return cp.name == current_name; });
+      [&current_name](const auto & cp) { return cp.name == current_name; });
 
     if (
       current_it == checkpoints.checkpoints.end() ||
@@ -320,31 +317,28 @@ public:
       return "[]";
     }
 
-    std::string result = "[";
+    std::ostringstream oss;
+    oss << "[";
     for (size_t i = 0; i < checkpoints.checkpoints.size(); ++i) {
       const auto & cp = checkpoints.checkpoints[i];
-      result += cp.name;
+      oss << cp.name;
       if (!cp.value.empty()) {
-        result += "(" + cp.value + ")";
+        oss << "(" << cp.value << ")";
       }
-
-      // 前のチェックポイントからの遅延を表示
       if (i > 0) {
-        auto delay_us = cp.relative_time_us - checkpoints.checkpoints[i - 1].relative_time_us;
-        auto delay_ms = static_cast<double>(delay_us) / 1000.0;
-        result += ":" + std::to_string(delay_ms) + "ms";
+        auto delay_ms = static_cast<double>(
+                          cp.relative_time_us - checkpoints.checkpoints[i - 1].relative_time_us) /
+                        1000.0;
+        oss << ":" << delay_ms << "ms";
       } else {
-        // 最初のチェックポイントは基準からの時間を表示
-        auto delay_ms = static_cast<double>(cp.relative_time_us) / 1000.0;
-        result += ":" + std::to_string(delay_ms) + "ms";
+        oss << ":" << static_cast<double>(cp.relative_time_us) / 1000.0 << "ms";
       }
-
       if (i < checkpoints.checkpoints.size() - 1) {
-        result += ", ";
+        oss << ", ";
       }
     }
-    result += "]";
-    return result;
+    oss << "]";
+    return oss.str();
   }
 
   /**
