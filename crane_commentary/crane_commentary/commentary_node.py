@@ -148,6 +148,9 @@ class CommentaryNode(Node):
         # Set up function call handler for Gemini Function Calling
         self._gemini_client.set_function_call_handler(self._function_handler.handle)
 
+        # Set up disconnect callback for reconnection
+        self._gemini_client.set_disconnect_callback(self._on_gemini_disconnected)
+
         # Subscribers
         qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE)
 
@@ -211,11 +214,21 @@ class CommentaryNode(Node):
             self._analyst_check_callback,
         )
 
+        self._reconnect_timer = self.create_timer(
+            5.0,
+            self._reconnect_check_callback,
+        )
+
         # State
         self._last_event_time = self.get_clock().now()
         self._connected = False
         self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         self._loop_thread: Optional[threading.Thread] = None
+
+        # Reconnection state
+        self._reconnect_attempts = 0
+        self._max_reconnect_attempts = 10
+        self._next_reconnect_time = 0.0
 
         # Team information
         self._our_team_name: str = "ibis"
@@ -482,6 +495,76 @@ class CommentaryNode(Node):
             their_score=0,
             elapsed_seconds=0.0,
         )
+
+    def _on_gemini_disconnected(self) -> None:
+        """Called by GeminiLiveApiClient when the WebSocket connection is lost."""
+        self.get_logger().warning("Gemini API connection lost (callback received)")
+        self._connected = False
+
+    def _reconnect_check_callback(self) -> None:
+        """Periodic callback to monitor connection and attempt reconnection."""
+        # Detect state inconsistency: node thinks connected but client is not
+        if self._connected and not self._gemini_client.is_connected():
+            self.get_logger().warning(
+                "Gemini API connection lost, attempting reconnect..."
+            )
+            self._connected = False
+
+        if self._connected:
+            self._reconnect_attempts = 0
+            return
+
+        if not self._event_loop:
+            return  # Event loop not started yet
+
+        if self._reconnect_attempts >= self._max_reconnect_attempts:
+            if self._reconnect_attempts == self._max_reconnect_attempts:
+                self.get_logger().error(
+                    f"Max reconnect attempts ({self._max_reconnect_attempts}) reached. "
+                    "Giving up. Please restart the node."
+                )
+                self._reconnect_attempts += 1  # Prevent repeated log
+            return
+
+        current_time = time.time()
+        if current_time < self._next_reconnect_time:
+            return
+
+        backoff = min(5.0 * (2**self._reconnect_attempts), 300.0)
+        self._reconnect_attempts += 1
+
+        self.get_logger().info(
+            f"Reconnect attempt {self._reconnect_attempts}/{self._max_reconnect_attempts}"
+        )
+
+        success = self._try_reconnect()
+        if success:
+            self.get_logger().info("Reconnected to Gemini API")
+            self._reconnect_attempts = 0
+            self._initial_context_sent = False  # New session: re-send initial context
+        else:
+            self._next_reconnect_time = time.time() + backoff
+            self.get_logger().warning(
+                f"Reconnect failed, next attempt in {backoff:.0f}s"
+            )
+
+    def _try_reconnect(self) -> bool:
+        """Attempt to reconnect to Gemini API. Returns True on success."""
+        if not self._event_loop:
+            return False
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._gemini_client.connect(),
+            self._event_loop,
+        )
+        try:
+            success = future.result(timeout=10.0)
+            if success:
+                self._connected = True
+                return True
+        except Exception as e:
+            self.get_logger().error(f"Reconnect error: {e}")
+        return False
 
     def _analyst_check_callback(self) -> None:
         """Check if analyst mode should be activated."""

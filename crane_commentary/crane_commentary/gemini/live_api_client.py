@@ -64,6 +64,7 @@ class GeminiLiveApiClient:
             Callable[[str, Dict[str, Any]], Dict[str, Any]]
         ] = None
         self._receive_task: Optional[asyncio.Task] = None
+        self._on_disconnect_callback: Optional[Callable[[], None]] = None
 
         # Build WebSocket URL
         self._ws_url = (
@@ -72,10 +73,30 @@ class GeminiLiveApiClient:
             f"?key={self._config.api_key}"
         )
 
+    def set_disconnect_callback(self, callback: Callable[[], None]) -> None:
+        """Set callback invoked when WebSocket connection is lost."""
+        self._on_disconnect_callback = callback
+
     async def connect(self) -> bool:
         """Establish WebSocket connection to Gemini API."""
         if self._connected:
             return True
+
+        # Clean up any existing connection before reconnecting
+        if self._receive_task and not self._receive_task.done():
+            self._receive_task.cancel()
+            try:
+                await self._receive_task
+            except asyncio.CancelledError:
+                pass
+            self._receive_task = None
+
+        if self._ws:
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
+            self._ws = None
 
         if not self._config.api_key:
             logger.error("GEMINI_API_KEY not set")
@@ -202,9 +223,13 @@ class GeminiLiveApiClient:
         except websockets.exceptions.ConnectionClosed:
             logger.info("WebSocket connection closed")
             self._connected = False
+            if self._on_disconnect_callback:
+                self._on_disconnect_callback()
         except Exception as e:
             logger.error(f"Receive loop error: {e}")
             self._connected = False
+            if self._on_disconnect_callback:
+                self._on_disconnect_callback()
 
     def _handle_response(self, data: dict) -> None:
         """Handle response from Gemini API."""
