@@ -251,7 +251,7 @@ ros2 launch crane_bringup data.launch.py
 ### 主なディレクトリ
 
 - `session/` 上位制御と戦略
-- `utility/` 共有ユーティリティ（幾何など）
+- `utility/` 共有ユーティリティライブラリ（幾何・物理・通信・メッセージラッパー等）
 - `consai_ros2/` SSL通信
 - `crane_msgs/` メッセージ定義
 - `3rdparty/` 依存ライブラリ
