@@ -3,9 +3,9 @@
 <package format="3">
   <name>crane_teleop</name>
   <version>1.0.164</version>
-  <description>TODO: Package description</description>
+  <description>Joystick teleoperation node for crane robots</description>
   <maintainer email="macakasit@gmail.com">akshota</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
