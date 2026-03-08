@@ -542,6 +542,8 @@ class CommentaryNode(Node):
             self.get_logger().info("Reconnected to Gemini API")
             self._reconnect_attempts = 0
             self._initial_context_sent = False  # New session: re-send initial context
+            self._audio_output.start()  # idempotent: skips if already running
+            self.get_logger().info("Audio output started")
         else:
             self._next_reconnect_time = time.time() + backoff
             self.get_logger().warning(
