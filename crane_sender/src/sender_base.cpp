@@ -70,10 +70,11 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
       command.elapsed_time_ms_since_last_vision = 0;
     }
 
-    if (auto previous_command = std::ranges::find_if(
-          previous_commands.robot_commands,
-          [command](const auto & prev_cmd) { return command.robot_id == prev_cmd.robot_id; });
-        previous_command != previous_commands.robot_commands.end()) {
+    if (
+      auto previous_command = std::ranges::find_if(
+        previous_commands.robot_commands,
+        [command](const auto & prev_cmd) { return command.robot_id == prev_cmd.robot_id; });
+      previous_command != previous_commands.robot_commands.end()) {
       if (
         std::abs(command.target_theta - previous_command->target_theta) <
         command.local_planner_config.theta_tolerance) {

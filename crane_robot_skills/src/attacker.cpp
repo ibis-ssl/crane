@@ -150,8 +150,9 @@ void Attacker::initialize()
         -world_model()->fieldSize().y() * 0.5;
       goal_line.second << world_model()->getTheirGoalCenter().x(),
         world_model()->fieldSize().y() * 0.5;
-      if (auto intersection_points = getIntersections(shoot_line, goal_line);
-          intersection_points.empty()) {
+      if (
+        auto intersection_points = getIntersections(shoot_line, goal_line);
+        intersection_points.empty()) {
         return world_model()->getTheirGoalCenter();
       } else {
         return intersection_points.front();
@@ -305,9 +306,10 @@ void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
 bool Attacker::shouldUseChipKick(const Point & target)
 {
   Segment kick_line{world_model()->ball().pos, target};
-  if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        kick_line, world_model()->theirs().robotsWhere().available().get());
-      nearest_enemy.has_value()) {
+  if (
+    auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
+      kick_line, world_model()->theirs().robotsWhere().available().get());
+    nearest_enemy.has_value()) {
     return nearest_enemy->distance < PASS_OBSTACLE_DISTANCE &&
            nearest_enemy->robot->getDistance(world_model()->ball().pos) < ENEMY_NEAR_BALL_DISTANCE;
   }
@@ -325,9 +327,10 @@ bool Attacker::isPassBlocked(const Point & target)
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
 
-  if (auto nearest_enemy =
-        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-      nearest_enemy) {
+  if (
+    auto nearest_enemy =
+      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+    nearest_enemy) {
     return nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
            nearest_enemy->distance < PASS_OBSTACLE_DISTANCE;
   }
@@ -371,9 +374,10 @@ double Attacker::calculatePassScore(const Point & target)
   // パスラインに敵がいるときはスコアを下げる
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-  if (auto nearest_enemy =
-        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-      nearest_enemy) {
+  if (
+    auto nearest_enemy =
+      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+    nearest_enemy) {
     score *= std::clamp(nearest_enemy->distance / 2.0, 0.0, 1.0);
   }
 

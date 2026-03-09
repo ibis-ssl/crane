@@ -193,8 +193,9 @@ public:
         }
 
         // 古いデータは入れない(100msより古いデータはVisionより価値が薄い可能性が高い)
-        if (auto robot_feedback = receiver->getFeedback();
-            (now - robot_feedback.received_stamp) < 100ms) {
+        if (
+          auto robot_feedback = receiver->getFeedback();
+          (now - robot_feedback.received_stamp) < 100ms) {
           crane_msgs::msg::RobotFeedback robot_feedback_msg;
           robot_feedback_msg.received_stamp = robot_feedback.received_stamp;
           robot_feedback_msg.robot_id = receiver->robot_id;

@@ -86,8 +86,9 @@ public:
           // 一番近いフィールド外のポイントがだめなので逆方向に0.8m離れる
           target_position = closest_point + (closest_point - current_position).normalized() * 0.8;
 
-          if (auto segment = world_model->getBallPlacementArea().value().segment;
-              (closest_point == segment.first || closest_point == segment.second)) {
+          if (
+            auto segment = world_model->getBallPlacementArea().value().segment;
+            (closest_point == segment.first || closest_point == segment.second)) {
             // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
             // 垂直方向に0.8m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
             std::vector<Point> target_candidates;
@@ -96,14 +97,15 @@ public:
             target_candidates.push_back(closest_point + vertical_vec);
             target_candidates.push_back(closest_point - vertical_vec);
 
-            if (auto target = std::ranges::find_if(
-                  target_candidates,
-                  [&](const auto & target_candidate) {
-                    return (
-                      world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                      not isInPlacementArea(target_candidate, 0.1));
-                  });
-                target != target_candidates.end()) {
+            if (
+              auto target = std::ranges::find_if(
+                target_candidates,
+                [&](const auto & target_candidate) {
+                  return (
+                    world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                    not isInPlacementArea(target_candidate, 0.1));
+                });
+              target != target_candidates.end()) {
               target_position = *target;
             } else {
               // どの候補もだめな場合は移動しない
