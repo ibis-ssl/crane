@@ -46,17 +46,11 @@ public:
     const std::string & command_text) -> void;
   auto drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
-  // 軌跡履歴データ構造
-  struct TrajectoryHistoryData
-  {
-    std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
-    std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> enemy_history;
-    std::deque<crane_msgs::msg::BallInfo> ball_info_history;
-    bool is_yellow;
-  };
-
   // 軌跡履歴可視化
-  auto drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
+  auto drawTrajectoryHistory(
+    const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
+    const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
+    const std::deque<crane_msgs::msg::BallInfo> & ball_info_history) -> void;
 
   // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;

@@ -163,10 +163,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     [this](const crane_msgs::msg::PlaySituation msg) { latest_play_situation = msg; });
 
   sub_robot_feedback = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-      robot_feedback = *msg;
-      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-    });
+    "/robot_feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { robot_feedback = *msg; });
 
   node.declare_parameter("team_name", "ibis-ssl");
   game_data.team_name = node.get_parameter("team_name").as_string();
@@ -304,13 +302,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
     }
   }
 
-  // デバッグ用ログ出力（5秒間隔）
-  static rclcpp::Time last_debug_log = node.get_clock()->now();
-  auto now = node.get_clock()->now();
-  if ((now - last_debug_log).seconds() > 5.0) {
-    last_debug_log = now;
-  }
-
   // 設定ファイルで初期化済みでも、Vision geometry受信後の更新を反映するため毎周期評価する
   updateGeometryIfNeeded();
 }
@@ -444,9 +435,9 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     }
 
     if (team_idx == 0) {
-      team_0_robots = vision_robots;
+      team_0_robots = std::move(vision_robots);
     } else {
-      team_1_robots = vision_robots;
+      team_1_robots = std::move(vision_robots);
     }
   }
 
