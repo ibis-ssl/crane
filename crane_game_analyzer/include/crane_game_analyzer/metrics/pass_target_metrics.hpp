@@ -9,6 +9,7 @@
 
 #include <crane_physics/slack_time_config.hpp>
 
+#include "crane_game_analyzer/selection_hysteresis.hpp"
 #include "metric_base.hpp"
 
 namespace crane::metrics
@@ -37,12 +38,14 @@ public:
   /**
    * @brief ヒステリシスパラメータを設定
    * @param min_hold_sec ターゲット保持の最短秒数
-   * @param min_improvement 早期切替のための最小スコア改善幅
+   * @param min_improvement 保持期間後の切替に必要な最小改善率
    */
   auto setHysteresisParams(double min_hold_sec, double min_improvement) -> void
   {
-    min_hold_duration_sec_ = min_hold_sec;
-    min_improvement_margin_ = min_improvement;
+    pass_hysteresis_.setConfig({
+      .min_hold_duration_sec = min_hold_sec,
+      .min_improvement_ratio = min_improvement,
+    });
   }
 
   auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 0.5) -> void
@@ -59,14 +62,11 @@ private:
   [[nodiscard]] auto calcScore(
     MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double;
 
-  // ヒステリシス用の内部状態
-  std::optional<int> last_pass_target_id_{std::nullopt};
-  rclcpp::Time last_switch_time_{static_cast<int64_t>(0), RCL_ROS_TIME};
-  rclcpp::Clock ros_clock_{RCL_ROS_TIME};
-
-  // ヒステリシスパラメータ
-  double min_hold_duration_sec_ = 0.5;
-  double min_improvement_margin_ = 0.2;
+  // ヒステリシス管理
+  SelectionHysteresis<int> pass_hysteresis_{SelectionHysteresis<int>::Config{
+    .min_hold_duration_sec = 0.5,
+    .min_improvement_ratio = 0.2,
+  }};
 
   // 敵インターセプト評価用パラメータ
   SlackTimeConfig enemy_slack_config_{

@@ -155,40 +155,17 @@ auto PassTargetMetric::compute(MetricContext & ctx) -> void
     const int best_id = static_cast<int>(best.id);
     const double best_score = static_cast<double>(best.value);
 
-    const rclcpp::Time now_time = ros_clock_.now();
-    const bool hold_active = (now_time - last_switch_time_).seconds() < min_hold_duration_sec_;
-
-    double prev_score = -1.0;
-    if (last_pass_target_id_.has_value()) {
-      auto it =
-        ranges::find_if(ctx.analysis.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
-          return s.id == last_pass_target_id_.value();
-        });
+    double prev_score = 0.0;
+    const auto prev_id = pass_hysteresis_.currentId();
+    if (prev_id.has_value()) {
+      auto it = ranges::find_if(
+        ctx.analysis.pass_scores,
+        [&](const crane_msgs::msg::FloatWithID & s) { return s.id == prev_id.value(); });
       if (it != ranges::end(ctx.analysis.pass_scores)) prev_score = it->value;
     }
 
-    bool should_switch = true;
-    if (last_pass_target_id_.has_value()) {
-      if (best_id == last_pass_target_id_.value()) {
-        should_switch = false;  // 同一なら切替不要
-      } else if (hold_active) {
-        if (prev_score >= 0.0) {
-          should_switch = (best_score - prev_score) > min_improvement_margin_;
-        } else {
-          should_switch = false;  // 前回スコア不明
-        }
-      }
-    }
-
-    if (!last_pass_target_id_.has_value()) {
-      last_pass_target_id_ = best_id;
-      last_switch_time_ = now_time;
-    } else if (should_switch) {
-      last_pass_target_id_ = best_id;
-      last_switch_time_ = now_time;
-    }
-
-    ctx.analysis.pass_target_id = last_pass_target_id_.value();
+    pass_hysteresis_.shouldSwitch(best_id, best_score, prev_score);
+    ctx.analysis.pass_target_id = pass_hysteresis_.currentId().value_or(-1);
   }
 }
 
