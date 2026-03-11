@@ -19,6 +19,7 @@
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
 #include "crane_game_analyzer/metrics/sub_attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/threat_metrics.hpp"
+#include "crane_game_analyzer/threat_evaluator.hpp"
 
 namespace crane
 {
@@ -153,16 +154,19 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   metric_engine_->registerMetric(std::make_shared<metrics::TheirSlackMetric>());
   metric_engine_->registerMetric(std::make_shared<metrics::OngoingKickMetric>());
 
-  // 脅威評価メトリクス
-  auto ball_threat_metric = std::make_shared<metrics::BallThreatMetric>();
+  // 脅威評価メトリクス（共有ThreatEvaluatorインスタンス）
+  auto shared_threat_evaluator = std::make_shared<ThreatEvaluator>(ThreatEvaluatorConfig{});
+
+  auto ball_threat_metric = std::make_shared<metrics::BallThreatMetric>(shared_threat_evaluator);
   metric_engine_->registerMetric(ball_threat_metric);
 
-  auto robot_threats_metric = std::make_shared<metrics::RobotThreatsMetric>(ball_threat_metric);
+  auto robot_threats_metric =
+    std::make_shared<metrics::RobotThreatsMetric>(ball_threat_metric, shared_threat_evaluator);
   metric_engine_->registerMetric(robot_threats_metric);
 
   metric_engine_->registerMetric(
     std::make_shared<metrics::RecommendedDefendersMetric>(
-      ball_threat_metric, robot_threats_metric));
+      ball_threat_metric, robot_threats_metric, shared_threat_evaluator));
 
   // 役割決定メトリクス（新規）
   auto attacker_metric = std::make_shared<metrics::AttackerCandidateMetric>();
@@ -283,6 +287,15 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     their_team_name_ = msg.their_team_info.name;
   }
 
+  using PlaySituation = crane_msgs::msg::PlaySituation;
+  auto is_stop = [](uint8_t cmd) {
+    return cmd == PlaySituation::STOP || (cmd >= PlaySituation::STOP_PRE_OUR_PENALTY_PREPARATION &&
+                                          cmd <= PlaySituation::STOP_PRE_FORCE_START);
+  };
+  auto is_inplay = [](uint8_t cmd) {
+    return cmd >= PlaySituation::INPLAY && cmd <= PlaySituation::AMBIGUOUS_INPLAY;
+  };
+
   uint8_t current = static_cast<uint8_t>(msg.command.value);
 
   // 初回は状態を保存するのみ
@@ -300,34 +313,34 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
 
   std::optional<crane_msgs::msg::RonarEvent> event;
 
-  // HALT (0)
-  if (current == 0 && last != 0) {
+  if (current == PlaySituation::HALT && last != PlaySituation::HALT) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_HALT, msg);
     event->metadata_json =
       std::format(R"({{"previous_command": {}, "reason": "{}"}})", last, msg.reason_text);
-  } else if (  // STOP (1, 60-66)
-    (current == 1 || (current >= 60 && current <= 66)) &&
-    !(last == 1 || (last >= 60 && last <= 66))) {
+  } else if (is_stop(current) && !is_stop(last)) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_STOP, msg);
-    std::string stop_type = (current >= 60 && current <= 66) ? "STOP_PRE" : "STOP";
+    std::string stop_type = (current >= PlaySituation::STOP_PRE_OUR_PENALTY_PREPARATION &&
+                             current <= PlaySituation::STOP_PRE_FORCE_START)
+                              ? "STOP_PRE"
+                              : "STOP";
     int32_t next_cmd = msg.next_command_raw.empty() ? -1 : msg.next_command_raw[0].value;
     event->metadata_json = std::format(
       R"({{"stop_type": "{}", "command_value": {}, "next_command": {}, "reason": "{}"}})",
       stop_type, current, next_cmd, msg.reason_text);
-  } else if ((current >= 50 && current <= 53) && !(last >= 50 && last <= 53)) {  // INPLAY (50-53)
+  } else if (is_inplay(current) && !is_inplay(last)) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_INPLAY_START, msg);
     std::string inplay_type;
     switch (current) {
-      case 50:
+      case PlaySituation::INPLAY:
         inplay_type = "INPLAY";
         break;
-      case 51:
+      case PlaySituation::OUR_INPLAY:
         inplay_type = "OUR_INPLAY";
         break;
-      case 52:
+      case PlaySituation::THEIR_INPLAY:
         inplay_type = "THEIR_INPLAY";
         break;
-      case 53:
+      case PlaySituation::AMBIGUOUS_INPLAY:
         inplay_type = "AMBIGUOUS_INPLAY";
         break;
       default:
@@ -336,18 +349,20 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     }
     event->metadata_json =
       std::format(R"({{"inplay_type": "{}", "previous_command": {}}})", inplay_type, last);
-  } else if ((current == 17 || current == 27) && last != 17 && last != 27) {  // TIMEOUT (17, 27)
+  } else if (
+    (current == PlaySituation::OUR_TIMEOUT || current == PlaySituation::THEIR_TIMEOUT) &&
+    last != PlaySituation::OUR_TIMEOUT && last != PlaySituation::THEIR_TIMEOUT) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_TIMEOUT, msg);
-    bool is_ours = (current == 17);
+    bool is_ours = (current == PlaySituation::OUR_TIMEOUT);
     const auto & team_info = is_ours ? msg.our_team_info : msg.their_team_info;
     event->metadata_json = std::format(
       R"({{"team": "{}", "timeouts_left": {}}})", is_ours ? "ours" : "theirs", team_info.timeouts);
-  } else if (current == 100 && last != 100) {  // HALF_TIME (100)
+  } else if (current == PlaySituation::HALF_TIME && last != PlaySituation::HALF_TIME) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_HALF_TIME, msg);
     event->metadata_json = std::format(
       R"({{"our_score": {}, "their_score": {}, "stage": "{}"}})", msg.our_team_info.score,
       msg.their_team_info.score, msg.stage.name);
-  } else if (current == 101 && last != 101) {  // GAME_END (101)
+  } else if (current == PlaySituation::POST_GAME && last != PlaySituation::POST_GAME) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_GAME_END, msg);
     std::string result;
     if (msg.our_team_info.score > msg.their_team_info.score) {
