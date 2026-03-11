@@ -39,7 +39,7 @@ class PcmAudioOutput:
         self._channels = channels
         self._device_index = None  # TODO: device name to index conversion
 
-        self._audio_queue: queue.Queue = queue.Queue()
+        self._audio_queue: queue.Queue = queue.Queue(maxsize=100)
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._pyaudio: Optional[pyaudio.PyAudio] = None
@@ -122,7 +122,15 @@ class PcmAudioOutput:
         if not self._running or not self._stream:
             return
 
-        self._audio_queue.put(pcm_data)
+        try:
+            self._audio_queue.put_nowait(pcm_data)
+        except queue.Full:
+            # Discard oldest chunk to make room for new audio
+            try:
+                self._audio_queue.get_nowait()
+            except queue.Empty:
+                pass
+            self._audio_queue.put_nowait(pcm_data)
 
     def _playback_loop(self) -> None:
         """Background thread for audio playback."""

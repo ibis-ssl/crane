@@ -7,7 +7,7 @@
 """Intent tracking for self-commentary mode."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from enum import Enum
 
 
@@ -164,25 +164,7 @@ class IntentTracker:
         """
         changes = []
 
-        # No previous state -> initial assignment
-        if not self._previous_intents:
-            for robot_id, intent in self._current_intents.items():
-                if intent.session_name and intent.session_name != "Unknown":
-                    changes.append(
-                        IntentChange(
-                            change_type=ChangeType.ROBOT_ASSIGNED,
-                            robot_id=robot_id,
-                            old_value="",
-                            new_value=intent.session_name,
-                            context={
-                                "skill": intent.skill_name,
-                                "state": intent.skill_state,
-                            },
-                        )
-                    )
-            return sorted(changes, key=lambda c: c.priority(), reverse=True)
-
-        # Compare with previous state
+        # Compare with previous state (handles both empty and non-empty previous state)
         for robot_id, current in self._current_intents.items():
             previous = self._previous_intents.get(robot_id)
 
@@ -246,8 +228,8 @@ class IntentTracker:
                     )
                 )
 
-            # Skill change
-            if previous.skill_name != current.skill_name:
+            # Skill change (skip if completion/failure was already detected)
+            elif previous.skill_name != current.skill_name:
                 changes.append(
                     IntentChange(
                         change_type=ChangeType.SKILL_CHANGED,
@@ -288,14 +270,3 @@ class IntentTracker:
             Dictionary of robot_id -> RobotIntent
         """
         return self._current_intents.copy()
-
-    def get_intent(self, robot_id: int) -> Optional[RobotIntent]:
-        """Get intent for a specific robot.
-
-        Args:
-            robot_id: Robot ID
-
-        Returns:
-            RobotIntent or None if not found
-        """
-        return self._current_intents.get(robot_id)
