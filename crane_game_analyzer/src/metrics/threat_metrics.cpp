@@ -13,15 +13,15 @@ namespace crane::metrics
 
 // BallThreatMetric実装
 
-BallThreatMetric::BallThreatMetric()
-: MetricBase(MetricId::BALL_THREAT, "BallThreat"), evaluator_(ThreatEvaluatorConfig{})
+BallThreatMetric::BallThreatMetric(std::shared_ptr<ThreatEvaluator> evaluator)
+: MetricBase(MetricId::BALL_THREAT, "BallThreat"), evaluator_(std::move(evaluator))
 {
 }
 
 auto BallThreatMetric::compute(MetricContext & ctx) -> void
 {
-  last_ball_threat_ = evaluator_.calculateBallThreat(*ctx.world_model);
-  ctx.analysis.ball_threat = evaluator_.toThreatInfoMsg(last_ball_threat_);
+  last_ball_threat_ = evaluator_->calculateBallThreat(*ctx.world_model);
+  ctx.analysis.ball_threat = evaluator_->toThreatInfoMsg(last_ball_threat_);
 }
 
 auto BallThreatMetric::visualize(
@@ -54,21 +54,22 @@ auto BallThreatMetric::visualize(
 
 // RobotThreatsMetric実装
 
-RobotThreatsMetric::RobotThreatsMetric(std::shared_ptr<BallThreatMetric> ball_threat_metric)
+RobotThreatsMetric::RobotThreatsMetric(
+  std::shared_ptr<BallThreatMetric> ball_threat_metric, std::shared_ptr<ThreatEvaluator> evaluator)
 : MetricBase(MetricId::ROBOT_THREATS, "RobotThreats"),
   ball_threat_metric_(ball_threat_metric),
-  evaluator_(ThreatEvaluatorConfig{})
+  evaluator_(std::move(evaluator))
 {
 }
 
 auto RobotThreatsMetric::compute(MetricContext & ctx) -> void
 {
   const auto & ball_threat = ball_threat_metric_->getLastBallThreat();
-  last_robot_threats_ = evaluator_.calculateRobotThreats(*ctx.world_model, ball_threat);
+  last_robot_threats_ = evaluator_->calculateRobotThreats(*ctx.world_model, ball_threat);
 
   ctx.analysis.robot_threats.clear();
   for (const auto & threat : last_robot_threats_) {
-    ctx.analysis.robot_threats.push_back(evaluator_.toThreatInfoMsg(threat));
+    ctx.analysis.robot_threats.push_back(evaluator_->toThreatInfoMsg(threat));
   }
 }
 
@@ -160,11 +161,12 @@ auto RobotThreatsMetric::threatToColor(double threat_rating) -> std::string
 
 RecommendedDefendersMetric::RecommendedDefendersMetric(
   std::shared_ptr<BallThreatMetric> ball_threat_metric,
-  std::shared_ptr<RobotThreatsMetric> robot_threats_metric)
+  std::shared_ptr<RobotThreatsMetric> robot_threats_metric,
+  std::shared_ptr<ThreatEvaluator> evaluator)
 : MetricBase(MetricId::RECOMMENDED_DEFENDERS, "RecommendedDefenders"),
   ball_threat_metric_(ball_threat_metric),
   robot_threats_metric_(robot_threats_metric),
-  evaluator_(ThreatEvaluatorConfig{})
+  evaluator_(std::move(evaluator))
 {
 }
 
@@ -176,7 +178,7 @@ auto RecommendedDefendersMetric::compute(MetricContext & ctx) -> void
   int available_robots =
     static_cast<int>(ctx.world_model->ours().robotsWhere().available().get().size());
   ctx.analysis.recommended_num_defenders = static_cast<uint8_t>(
-    evaluator_.calculateRecommendedDefenders(ball_threat, robot_threats, available_robots));
+    evaluator_->calculateRecommendedDefenders(ball_threat, robot_threats, available_robots));
 }
 
 auto RecommendedDefendersMetric::visualize(
