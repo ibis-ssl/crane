@@ -53,6 +53,9 @@ public:
     RUNNING,
   };
 
+  /// ゴールキーパーをロボット選択から除外するためのコスト値
+  static constexpr double GOALIE_EXCLUSION_COST = 1e9;
+
   explicit SessionBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),

@@ -26,13 +26,14 @@ auto BallNearByPositionerSkillSession::calculatePositionCommand(
       skills.back()->setParameter("total_robot_number", static_cast<int>(robots.size()));
       skills.back()->setParameter("current_robot_index", index++);
       skills.back()->setParameter("line_policy", std::string("arc"));
-      skills.back()->setParameter("positioning_policy", std::string("auto"));
+      skills.back()->setParameter("positioning_policy", getPositioningPolicy());
       skills.back()->setParameter("robot_interval", 0.35);
       skills.back()->setParameter("margin_distance", 0.8);
     }
   }
 
   auto robot_commands = skills | ranges::views::transform([this](const auto & skill) {
+                          setupBeforeRun(skill);
                           skill->run();
                           return skill->getRobotCommand();
                         }) |

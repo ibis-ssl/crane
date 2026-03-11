@@ -7,43 +7,34 @@
 #ifndef CRANE_SESSIONS__PLACEMENT_TARGET_NEAR_BY_POSITIONER_SKILL_SESSION_HPP_
 #define CRANE_SESSIONS__PLACEMENT_TARGET_NEAR_BY_POSITIONER_SKILL_SESSION_HPP_
 
-#include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_robot_skills/ball_nearby_positioner.hpp>
-#include <crane_sessions/session_base.hpp>
-#include <memory>
+#include <crane_sessions/ball_near_by_positioner_skill_session.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <utility>
-#include <vector>
+#include <string>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-class PlacementTargetNearByPositionerSkillSession : public SessionBase
+class PlacementTargetNearByPositionerSkillSession : public BallNearByPositionerSkillSession
 {
 public:
-  std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
-
   COMPOSITION_PUBLIC explicit PlacementTargetNearByPositionerSkillSession(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("placement_target_nearby_positioner_skill", world_model)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  : BallNearByPositionerSkillSession(world_model, node, "placement_target_nearby_positioner_skill")
   {
-  }
-
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
-
-  auto getRobotSuitabilityFunc() const
-    -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
-  {
-    auto wm = world_model;
-    return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      return robot->getSquareDistance(wm->ball().pos);
-    };
   }
 
 protected:
-  void onRobotsChanged() override { skills.clear(); }
+  bool shouldExcludeGoalie() const override { return true; }
+
+  std::string getPositioningPolicy() const override { return "goal"; }
+
+  void setupBeforeRun(const std::shared_ptr<skills::BallNearByPositioner> & skill) override
+  {
+    auto target = world_model->getBallPlacementTarget().value_or(world_model->ball().pos);
+    skill->setParameter("alternative_target_mode", true);
+    skill->setParameter("alternative_target", target);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__PLACEMENT_TARGET_NEAR_BY_POSITIONER_SKILL_SESSION_HPP_

@@ -38,9 +38,8 @@ public:
   {
     auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      constexpr double kGoalieExclusionCost = 1e9;
       if (robot->id == wm->getOurGoalieId()) {
-        return kGoalieExclusionCost;  // ゴールキーパーは除外
+        return GOALIE_EXCLUSION_COST;  // ゴールキーパーは除外
       }
       // 「一番近いロボット」を直感通りに選ぶため線形距離を使用
       return robot->getDistance(wm->ball().pos);

@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_sessions/defender_session.hpp>
-#include <range/v3/view/enumerate.hpp>
 
 namespace crane
 {
@@ -24,9 +23,9 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
     Segment goal_line(goal_posts.first, goal_posts.second);
     auto intersections = getIntersections(ball_line, goal_line);
     if (intersections.empty()) {
-      // シュートがなければ通常の動き
-      ball_line.first = world_model->getOurGoalCenter();
-      ball_line.second = ball.pos;
+      // シュートがなければ通常の動き（TotalDefenseSessionと向きを統一）
+      ball_line.first = ball.pos;
+      ball_line.second = world_model->getOurGoalCenter();
     }
   }
 
@@ -59,22 +58,10 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
     return {SessionBase::Status::RUNNING, robot_commands};
   } else {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (const auto & [index, robot_id] : ranges::views::enumerate(robots)) {
-      [[maybe_unused]] Point target_point = [&]() {
-        if (not defense_points.empty()) {
-          return defense_points.at(index);
-        } else {
-          return Point(0, 0);
-        }
-      }();
-
+    for (const auto & robot_id : robots) {
       auto command = std::make_shared<crane::PositionCommandWrapper>(
         "defender_planner/stop", robot_id.id, world_model);
-
-      auto robot = world_model->getRobot(robot_id);
-
       command->stopHere();
-
       robot_commands.emplace_back(command->getMsg());
     }
     return {SessionBase::Status::RUNNING, robot_commands};

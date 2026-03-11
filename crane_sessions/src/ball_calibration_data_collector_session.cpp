@@ -43,22 +43,7 @@ BallCalibrationDataCollectorSession::calculatePositionCommand(
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   robot_commands.emplace_back(skill_->getRobotCommand());
 
-  // スキルステータスをプランナーステータスに変換
-  SessionBase::Status tactic_status = SessionBase::Status::RUNNING;
-  switch (skill_status) {
-    case skills::Status::SUCCESS:
-      tactic_status = SessionBase::Status::SUCCESS;
-      break;
-    case skills::Status::FAILURE:
-      tactic_status = SessionBase::Status::FAILURE;
-      break;
-    case skills::Status::RUNNING:
-    default:
-      tactic_status = SessionBase::Status::RUNNING;
-      break;
-  }
-
-  return {tactic_status, robot_commands};
+  return {static_cast<SessionBase::Status>(skill_status), robot_commands};
 }
 
 }  // namespace crane

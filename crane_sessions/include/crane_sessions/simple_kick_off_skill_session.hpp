@@ -9,29 +9,22 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
-#include <crane_sessions/session_base.hpp>
+#include <crane_sessions/single_skill_session.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <utility>
-#include <vector>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-class SimpleKickOffSkillSession : public SessionBase
+class SimpleKickOffSkillSession : public SingleSkillSession<skills::SimpleKickOff>
 {
 public:
-  std::shared_ptr<skills::SimpleKickOff> skill = nullptr;
-
   COMPOSITION_PUBLIC explicit SimpleKickOffSkillSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("simple_kickoff", world_model)
+  : SingleSkillSession("simple_kickoff", world_model)
   {
   }
-
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
@@ -43,7 +36,11 @@ public:
   }
 
 protected:
-  void onRobotsChanged() override { skill.reset(); }
+  auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::SimpleKickOff> override
+  {
+    return std::make_shared<skills::SimpleKickOff>(
+      "simple_kick_off_skill_planner", robot_id, world_model);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__SIMPLE_KICK_OFF_SKILL_SESSION_HPP_
