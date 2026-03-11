@@ -35,6 +35,7 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       pull_back_target = std::nullopt;
+      contact_count_ = 0;
       return false;
     });
 
@@ -255,8 +256,6 @@ void SingleBallPlacement::initialize()
   addTransition(
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
-      Point placement_target;
-      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       // pull_back_targetからはなれたらENTRY_POINTへ移動
       return robot()->getDistance(pull_back_target.value()) > 0.3;
     });
@@ -270,8 +269,7 @@ void SingleBallPlacement::initialize()
 
   addStateFunction(static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
     command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    auto placement_target = getPlacementTarget();
     const auto & ball_pos = world_model()->ball().pos;
 
     constexpr double INTERVAL = 0.15;
@@ -316,8 +314,7 @@ void SingleBallPlacement::initialize()
       if (not getParameter<bool>("pass_enable")) {
         return false;
       }
-      Point placement_target;
-      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      auto placement_target = getPlacementTarget();
       return (placement_target - world_model()->ball().pos).norm() > 2.0;
     });
 
@@ -326,13 +323,11 @@ void SingleBallPlacement::initialize()
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::PASS_TO_TARGET", 0.2);
     command->setMaxAcceleration("SingleBallPlacementStates::PASS_TO_TARGET", 1.0);
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    auto placement_target = getPlacementTarget();
     command->lookAtFrom(placement_target, robot()->pose.pos);
     command->setTargetPosition(
       world_model()->ball().pos +
       (placement_target - world_model()->ball().pos).normalized() * 0.3);
-    command->kickStraight(0.3);
     command->kickStraight(0.3);
 
     return Status::RUNNING;
@@ -348,8 +343,7 @@ void SingleBallPlacement::initialize()
     command->disableBallAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::CONTACT_BALL", 0.2);
     command->setMaxAcceleration("SingleBallPlacementStates::CONTACT_BALL", 1.0);
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    auto placement_target = getPlacementTarget();
     command->lookAtFrom(placement_target, world_model()->ball().pos);
     command->setTargetPosition(world_model()->ball().pos);
 
@@ -360,26 +354,25 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-      static int count = 0;
 
       // ボールセンサーが利用可能な場合は必ずセンサー反応を待つ
       if (robot()->getBallSensorAvailable(now, rclcpp::Duration::from_seconds(0.1))) {
         // センサーが反応している場合のみカウント
         if (robot()->ball_sensor) {
-          if (++count > 2) {
-            count = 0;
+          if (++contact_count_ > 2) {
+            contact_count_ = 0;
             return true;
           } else {
             return false;
           }
         } else {
           // センサーは利用可能だが反応していない → まだ接触していない
-          count = 0;
+          contact_count_ = 0;
           return false;
         }
       } else {
         // センサーが利用不可の場合のみ距離で判定（フォールバック）
-        count = 0;
+        contact_count_ = 0;
         return robot()->getDistance(world_model()->ball().pos) < 0.15;
       }
     });
@@ -395,8 +388,7 @@ void SingleBallPlacement::initialize()
     });
 
   addStateFunction(static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    auto placement_target = getPlacementTarget();
 
     [[maybe_unused]] Point ball_pos = [&]() -> Point {
       if (robot()->ball_sensor) {
@@ -445,8 +437,7 @@ void SingleBallPlacement::initialize()
       if (sleep) {
         sleep.reset();
       }
-      Point placement_target;
-      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      auto placement_target = getPlacementTarget();
       if (skill_status == Status::SUCCESS) {
         return true;
       } else if (
@@ -515,8 +506,7 @@ void SingleBallPlacement::initialize()
     // ボール判定15cm + ロボット判定50cm + ロボット半径10cm + マージン5com = 80cm
     Vector2 diff = -getNormVec(robot()->pose.theta) * 0.8;
     Point leave_pos = robot()->pose.pos + diff;
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    auto placement_target = getPlacementTarget();
 
     if ((robot()->pose.pos - placement_target).norm() > 0.8) {
       // 離れたならば、その場に留まる
@@ -534,8 +524,7 @@ void SingleBallPlacement::initialize()
   addTransition(
     static_cast<int>(SingleBallPlacementStates::LEAVE_BALL),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
-      Point placement_target;
-      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      auto placement_target = getPlacementTarget();
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
       // return (world_model()->ball().pos - placement_target).norm() > 0.15;
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
