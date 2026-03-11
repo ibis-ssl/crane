@@ -158,8 +158,8 @@ void Attacker::initialize()
       }
     }();
 
-    double goal_angle_width = evaluateGoalAngle(robot()->pose.pos);
-    auto [best_angle, _] = world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
+    auto [best_angle, goal_angle_width] =
+      world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
     double angle_diff_deg =
       std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
       180.0 / M_PI;
@@ -363,17 +363,17 @@ double Attacker::calculatePassScore(const Point & target)
                                          (world_model()->fieldSize().x() * 0.5);
   score *= (1.0 - normed_distance_to_their_goal);
 
-  // パスがブロックされている場合は諦める
-  if (isPassBlocked(target)) {
-    return 0.0;
-  }
-
-  // パスラインに敵がいるときはスコアを下げる
+  // パスがブロックされているかチェックし、ブロックされていたら諦め、近くにいるときはスコアを下げる
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
   if (auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
       nearest_enemy) {
+    if (
+      nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
+      nearest_enemy->distance < PASS_OBSTACLE_DISTANCE) {
+      return 0.0;  // パスがブロックされている
+    }
     score *= std::clamp(nearest_enemy->distance / 2.0, 0.0, 1.0);
   }
 

@@ -24,7 +24,6 @@ enum class AttackerState {
   FORCED_PASS,
   RECEIVE,
   KICK,
-  FINAL_GUARD,
 };
 
 class Attacker : public SkillBaseWithState
@@ -68,8 +67,6 @@ public:
   GoalKick goal_kick_skill;
 
   Receive receive_skill;
-
-  std::optional<Point> goal_front_dance_target = std::nullopt;
 
   struct OverDribbleInfo
   {
