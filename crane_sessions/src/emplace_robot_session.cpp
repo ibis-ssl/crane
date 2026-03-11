@@ -137,7 +137,7 @@ auto EmplaceRobotSession::getRobotSuitabilityFunc() const
   return [wm](const std::shared_ptr<RobotInfo> & robot) {
     // ゴールキーパーは退場させにくくする
     if (robot->id == wm->getOurGoalieId()) {
-      return 10000.0;
+      return GOALIE_EXCLUSION_COST;
     }
 
     // モーター温度の最大値を計算

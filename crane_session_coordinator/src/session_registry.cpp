@@ -36,12 +36,7 @@ auto SessionRegistry::getOrCreatePlanner(
 
   // パラメータを設定（新規・再利用どちらでも）
   if (!params.empty()) {
-    // SessionParameterType から SessionParameterType への変換
-    std::unordered_map<std::string, SessionParameterType> session_params;
-    for (const auto & [key, value] : params) {
-      std::visit([&session_params, &key](const auto & v) { session_params[key] = v; }, value);
-    }
-    result_planner->setSessionParameters(session_params);
+    result_planner->setSessionParameters(params);
   }
 
   return result_planner;

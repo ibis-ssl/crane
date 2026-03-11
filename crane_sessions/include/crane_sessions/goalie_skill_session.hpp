@@ -9,29 +9,22 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/goalie.hpp>
-#include <crane_sessions/session_base.hpp>
+#include <crane_sessions/single_skill_session.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <utility>
-#include <vector>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-class GoalieSkillSession : public SessionBase
+class GoalieSkillSession : public SingleSkillSession<skills::Goalie>
 {
 public:
-  std::shared_ptr<skills::Goalie> skill = nullptr;
-
   COMPOSITION_PUBLIC explicit GoalieSkillSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("goalie_skill", world_model)
+  : SingleSkillSession("goalie_skill", world_model)
   {
   }
-
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   bool isHardConstraint() const override { return true; }
 
@@ -46,12 +39,15 @@ public:
         return 0.0;
       }
       // その他のロボットは非常に高いコストを返して避ける
-      return 1000.0;
+      return GOALIE_EXCLUSION_COST;
     };
   }
 
 protected:
-  void onRobotsChanged() override { skill.reset(); }
+  auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::Goalie> override
+  {
+    return std::make_shared<skills::Goalie>("goalie", robot_id, world_model);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__GOALIE_SKILL_SESSION_HPP_

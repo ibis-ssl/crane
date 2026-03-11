@@ -44,24 +44,12 @@ CenterStopKickSession::calculatePositionCommand(const std::vector<RobotIdentifie
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   robot_commands.emplace_back(skill_->getRobotCommand());
 
-  // スキルステータスをプランナーステータスに変換
-  SessionBase::Status tactic_status = SessionBase::Status::RUNNING;
-  switch (skill_status) {
-    case skills::Status::SUCCESS:
-      tactic_status = SessionBase::Status::SUCCESS;
-      RCLCPP_INFO(rclcpp::get_logger("CenterStopKickSession"), "フィールド中心停止キック完了");
-      break;
-    case skills::Status::FAILURE:
-      tactic_status = SessionBase::Status::FAILURE;
-      RCLCPP_WARN(rclcpp::get_logger("CenterStopKickSession"), "フィールド中心停止キック失敗");
-      break;
-    case skills::Status::RUNNING:
-    default:
-      tactic_status = SessionBase::Status::RUNNING;
-      break;
+  if (skill_status == skills::Status::SUCCESS) {
+    RCLCPP_INFO(rclcpp::get_logger("CenterStopKickSession"), "フィールド中心停止キック完了");
+  } else if (skill_status == skills::Status::FAILURE) {
+    RCLCPP_WARN(rclcpp::get_logger("CenterStopKickSession"), "フィールド中心停止キック失敗");
   }
-
-  return {tactic_status, robot_commands};
+  return {static_cast<SessionBase::Status>(skill_status), robot_commands};
 }
 
 }  // namespace crane
