@@ -25,12 +25,6 @@
 namespace crane
 {
 
-struct Obstacle
-{
-  Point center;
-  float radius;
-};
-
 struct KickPowerCalculator
 {
 private:
@@ -112,11 +106,8 @@ public:
 
     // 練習用モードの設定
     bool half_court_practice_mode = false;
-    bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
     declare_parameter("half_court_practice_mode", half_court_practice_mode);
     get_parameter("half_court_practice_mode", half_court_practice_mode);
-    declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
-    get_parameter("half_court_is_positive_side", half_court_is_positive_side);
 
     if (half_court_practice_mode) {
       theta_offset = -M_PI / 2.;
@@ -137,13 +128,6 @@ public:
   auto callbackPositionCommands(const crane_msgs::msg::RobotCommands &) -> void;
 
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
-
-protected:
-  static auto resolveMaxAccelerationFactors(
-    crane_msgs::msg::RobotCommand & command, const float default_max_acceleration = 5.0) -> double;
-
-  static auto resolveMaxVelocityFactors(
-    crane_msgs::msg::RobotCommand & command, const float default_max_velocity = 5.0) -> double;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
@@ -167,11 +151,6 @@ private:
 
   auto aggregateStates(const std::vector<crane_msgs::msg::NamedString> & planning_factors) const
     -> std::string;
-
-  auto logValidationError(
-    uint8_t robot_id, const std::string & mode_name,
-    const std::vector<crane_msgs::msg::NamedString> & planning_factors,
-    const std::string & error_detail) const -> void;
 };
 
 }  // namespace crane

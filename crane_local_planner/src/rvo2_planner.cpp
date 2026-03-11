@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <boost/stacktrace.hpp>
 #include <crane_local_planner/visualization_helpers.hpp>
-#include <iomanip>
+#include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
@@ -22,30 +22,6 @@ namespace crane
 {
 namespace
 {
-auto formatPlanningDouble(double value, int precision = 3) -> std::string
-{
-  std::ostringstream oss;
-  oss << std::fixed << std::setprecision(precision) << value;
-  return oss.str();
-}
-
-template <typename CommandT>
-auto addOrUpdatePlanningFactor(
-  CommandT & command, const std::string & name, const std::string & value) -> void
-{
-  auto it = std::find_if(
-    command.planning_factors.begin(), command.planning_factors.end(),
-    [&](const auto & factor) { return factor.name == name; });
-  if (it == command.planning_factors.end()) {
-    crane_msgs::msg::NamedString factor;
-    factor.name = name;
-    factor.value = value;
-    command.planning_factors.emplace_back(factor);
-  } else {
-    it->value = value;
-  }
-}
-
 auto pointChanged(const Point & before, const Point & after, double epsilon = 1e-4) -> bool
 {
   return (before - after).norm() > epsilon;
@@ -100,9 +76,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
-  if (
-    world_model->getMsg().play_situation.referee_raw.command.value ==
-    robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
+  if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
     for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, STOP_STATE_MAX_VELOCITY);
     }
@@ -159,8 +134,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         return std::hypot(
                  it->position_target_mode.front().target_x - current_position.x(),
                  it->position_target_mode.front().target_y - current_position.y()) > 0.01
-                 ? static_cast<double>(
-                     std::hypot(command.current_velocity.x, command.current_velocity.y))
+                 ? vel
                  : 0.0;
       } else {
         return 0.0;
@@ -186,9 +160,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       crane_msgs::msg::NamedFloat()
         .set__name("RVO2Planner::max_vel from parameter")
         .set__value(MAX_VEL));
-    if (
-      world_model->getMsg().play_situation.referee_raw.command.value ==
-      robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+    if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
       command.local_planner_config.max_velocity_factors.emplace_back(
         crane_msgs::msg::NamedFloat()
           .set__name("RVO2Planner STOP制限")
@@ -315,23 +287,24 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     addOrUpdatePlanningFactor(command, "RVO2DistanceToTarget", formatPlanningDouble(distance));
     addOrUpdatePlanningFactor(
       command, "RVO2PositionTolerance", formatPlanningDouble(original_pos_mode.position_tolerance));
-    std::string zero_velocity_reason = "NONE";
+    ZeroVelocityReason zero_velocity_reason = ZeroVelocityReason::NONE;
     if (distance < original_pos_mode.position_tolerance) {
       vel = Velocity::Zero();
-      zero_velocity_reason = "POSITION_TOLERANCE";
+      zero_velocity_reason = ZeroVelocityReason::POSITION_TOLERANCE;
     } else if (
       original_command.local_planner_config.terminal_velocity == 0. &&
       original_pos_mode.position_tolerance == 0. && distance < 0.03) {
       // terminal_velocityが0のときはデフォルトで3cmのトレランス
       vel = Velocity::Zero();
-      zero_velocity_reason = "DEFAULT_3CM_TOLERANCE";
+      zero_velocity_reason = ZeroVelocityReason::DEFAULT_3CM_TOLERANCE;
     }
-    if (zero_velocity_reason == "NONE" && vel.norm() < 1e-4) {
-      zero_velocity_reason =
-        (pref_vel.norm() > 1e-3) ? "RVO_COLLISION_OR_CONSTRAINT" : "PREF_VELOCITY_ZERO";
+    if (zero_velocity_reason == ZeroVelocityReason::NONE && vel.norm() < 1e-4) {
+      zero_velocity_reason = (pref_vel.norm() > 1e-3)
+                               ? ZeroVelocityReason::RVO_COLLISION_OR_CONSTRAINT
+                               : ZeroVelocityReason::PREF_VELOCITY_ZERO;
     }
     addOrUpdatePlanningFactor(command, "RVO2OutputSpeed", formatPlanningDouble(vel.norm()));
-    addOrUpdatePlanningFactor(command, "RVO2ZeroVelocityReason", zero_velocity_reason);
+    addOrUpdatePlanningFactor(command, "RVO2ZeroVelocityReason", toString(zero_velocity_reason));
 
     // 座標系の設計について：
     // - target_velocity_thetaはtheta_offsetを含む（half_court_practice_mode対応）
@@ -376,9 +349,8 @@ auto RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  if (
-    world_model->getMsg().play_situation.referee_raw.command.value !=
-    robocup_ssl_msgs::msg::RefereeCommand::HALT) {
+  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
+  if (referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT) {
     overrideTargetPosition(commands);
   }
   reflectWorldToRVOSim(commands);
@@ -520,13 +492,16 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
     constexpr double PENALTY_AREA_OFFSET = 0.1;
 
     auto avoidPenaltyArea = [&](const Box & penalty_area, const Point & goal_pos) {
+      constexpr int MAX_ITERATIONS = 100;
       if (isInBox(penalty_area, current_pos, PENALTY_AREA_OFFSET)) {
         if (std::abs(current_pos.x()) > world_model->fieldSize().x() / 2.0) {
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
-        // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
-        while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
-               target_pos != current_pos) {
+        // 目標点をペナルティエリアの外に出るようにする (反復上限で無限ループ防止)
+        for (int iter = 0;
+             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) &&
+             target_pos != current_pos;
+             ++iter) {
           target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
         }
       } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
@@ -535,7 +510,10 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
         // 目標点をペナルティエリアの外に出るようにする
-        while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and target_pos != goal_pos) {
+        for (int iter = 0;
+             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) &&
+             target_pos != goal_pos;
+             ++iter) {
           target_pos += (target_pos - goal_pos).normalized() * 0.05;
         }
       }

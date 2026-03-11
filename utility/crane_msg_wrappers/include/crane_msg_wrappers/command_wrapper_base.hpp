@@ -9,10 +9,41 @@
 
 #include <algorithm>
 #include <crane_msgs/msg/robot_command.hpp>
+#include <cstdio>
 #include <string>
 
 namespace crane
 {
+
+/**
+ * @brief planning_factors の文字列フォーマット（snprintf ベース）
+ */
+inline auto formatPlanningDouble(double value, int precision = 3) -> std::string
+{
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "%.*f", precision, value);
+  return std::string(buf);
+}
+
+/**
+ * @brief raw RobotCommand の planning_factors を追加または更新するフリー関数
+ */
+inline auto addOrUpdatePlanningFactor(
+  crane_msgs::msg::RobotCommand & command, const std::string & name, const std::string & value)
+  -> void
+{
+  auto it = std::find_if(
+    command.planning_factors.begin(), command.planning_factors.end(),
+    [&name](const auto & factor) { return factor.name == name; });
+  if (it == command.planning_factors.end()) {
+    crane_msgs::msg::NamedString factor;
+    factor.name = name;
+    factor.value = value;
+    command.planning_factors.emplace_back(factor);
+  } else if (it->value != value) {
+    it->value = value;
+  }
+}
 
 /**
  * @brief RobotCommandWrapper と VelocityCommandWrapper の共通メソッドを提供する CRTP 基底クラス
@@ -54,17 +85,7 @@ public:
 
   auto addPlanningFactor(const std::string & name, const std::string & state) -> void
   {
-    auto it = std::find_if(
-      msg().planning_factors.begin(), msg().planning_factors.end(),
-      [&name](const auto & pf) { return pf.name == name; });
-    if (it == msg().planning_factors.end()) {
-      crane_msgs::msg::NamedString ns;
-      ns.name = name;
-      ns.value = state;
-      msg().planning_factors.emplace_back(ns);
-    } else if (it->value != state) {
-      it->value = state;
-    }
+    addOrUpdatePlanningFactor(msg(), name, state);
   }
 
   auto clearPlanningFactors() -> void { msg().planning_factors.clear(); }
