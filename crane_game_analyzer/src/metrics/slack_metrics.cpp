@@ -8,19 +8,16 @@
 
 #include <string>
 
-namespace crane::metrics
+namespace
 {
-
-// OurSlackMetric実装
-
-OurSlackMetric::OurSlackMetric() : MetricBase(MetricId::OUR_SLACK, "OurSlack") {}
-
-auto OurSlackMetric::compute(MetricContext & ctx) -> void
+void computeSlackForTeam(
+  const std::vector<std::shared_ptr<crane::RobotInfo>> & robots,
+  crane::WorldModelWrapper * world_model, std::vector<crane_msgs::msg::Slack> & output)
 {
-  for (const auto & robot : ctx.world_model->ours().robotsWhere().available().get()) {
-    RobotList single_robot{robot};
+  for (const auto & robot : robots) {
+    crane::RobotList single_robot{robot};
     auto [min_slack, max_slack] =
-      ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
+      world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
 
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
@@ -37,8 +34,23 @@ auto OurSlackMetric::compute(MetricContext & ctx) -> void
       slack_msg.max.y = max_slack->intercept_point.y();
     }
 
-    ctx.analysis.our_slack.push_back(slack_msg);
+    output.push_back(slack_msg);
   }
+}
+}  // namespace
+
+namespace crane::metrics
+{
+
+// OurSlackMetric実装
+
+OurSlackMetric::OurSlackMetric() : MetricBase(MetricId::OUR_SLACK, "OurSlack") {}
+
+auto OurSlackMetric::compute(MetricContext & ctx) -> void
+{
+  computeSlackForTeam(
+    ctx.world_model->ours().robotsWhere().available().get(), ctx.world_model,
+    ctx.analysis.our_slack);
 }
 
 auto OurSlackMetric::visualize(
@@ -49,35 +61,40 @@ auto OurSlackMetric::visualize(
   }
 
   for (const auto & robot : ctx.world_model->ours().robotsWhere().available().get()) {
-    RobotList single_robot{robot};
-    auto [min_slack, max_slack] =
-      ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
+    const crane_msgs::msg::Slack * slack_data = nullptr;
+    for (const auto & s : ctx.analysis.our_slack) {
+      if (s.id == robot->id) {
+        slack_data = &s;
+        break;
+      }
+    }
+    if (!slack_data) continue;
 
-    if (min_slack) {
+    if (slack_data->min.slack_time != 0.0) {
       visualizer->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
-        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .text("min slack: " + std::to_string(slack_data->min.slack_time))
         .fill("white")
         .fontSize(100)
         .build();
       visualizer->line()
         .start(robot->pose.pos)
-        .end(min_slack->intercept_point)
+        .end(Point(slack_data->min.x, slack_data->min.y))
         .stroke("red", 0.5)
         .strokeWidth(5)
         .build();
     }
 
-    if (max_slack && max_slack->slack_time > 0.0) {
+    if (slack_data->max.slack_time > 0.0) {
       visualizer->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
-        .text("max slack: " + std::to_string(max_slack->slack_time))
+        .text("max slack: " + std::to_string(slack_data->max.slack_time))
         .fill("white")
         .fontSize(100)
         .build();
       visualizer->line()
         .start(robot->pose.pos)
-        .end(max_slack->intercept_point)
+        .end(Point(slack_data->max.x, slack_data->max.y))
         .stroke("red", 0.5)
         .strokeWidth(5)
         .build();
@@ -91,28 +108,9 @@ TheirSlackMetric::TheirSlackMetric() : MetricBase(MetricId::THEIR_SLACK, "TheirS
 
 auto TheirSlackMetric::compute(MetricContext & ctx) -> void
 {
-  for (const auto & robot : ctx.world_model->theirs().robotsWhere().available().get()) {
-    RobotList single_robot{robot};
-    auto [min_slack, max_slack] =
-      ctx.world_model->getMinMaxSlackInterceptPointAndSlackTime(single_robot);
-
-    crane_msgs::msg::Slack slack_msg;
-    slack_msg.id = robot->id;
-
-    if (min_slack) {
-      slack_msg.min.slack_time = min_slack->slack_time;
-      slack_msg.min.x = min_slack->intercept_point.x();
-      slack_msg.min.y = min_slack->intercept_point.y();
-    }
-
-    if (max_slack) {
-      slack_msg.max.slack_time = max_slack->slack_time;
-      slack_msg.max.x = max_slack->intercept_point.x();
-      slack_msg.max.y = max_slack->intercept_point.y();
-    }
-
-    ctx.analysis.their_slack.push_back(slack_msg);
-  }
+  computeSlackForTeam(
+    ctx.world_model->theirs().robotsWhere().available().get(), ctx.world_model,
+    ctx.analysis.their_slack);
 }
 
 }  // namespace crane::metrics
