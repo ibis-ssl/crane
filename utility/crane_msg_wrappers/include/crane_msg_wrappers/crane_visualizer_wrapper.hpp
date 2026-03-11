@@ -136,7 +136,7 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto doubleCircle(
     Point center, double inner_radius, double outer_radius,
     const std::string & inner_color = "white", const std::string & outer_color = "#222",
-    double inner_stroke_width = 6.0, double outer_stroke_width = 8.0) -> void;
+    double outer_stroke_width = 8.0) -> void;
 
   auto rectangle(
     Point top_left, Point bottom_right, const std::string & color = "white",
