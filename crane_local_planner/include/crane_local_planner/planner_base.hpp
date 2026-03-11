@@ -40,14 +40,9 @@ public:
     const crane_msgs::msg::RobotCommands & msg, double theta_offset)
     -> crane_msgs::msg::RobotCommands = 0;
 
-  VisualizerMessageBuilder::SharedPtr visualizer;
+  auto getWorldModel() const -> WorldModelWrapper::SharedPtr { return world_model; }
 
-  WorldModelWrapper::SharedPtr world_model;
-
-  // 経路計画用の減速度パラメータ
-  double planning_deceleration_high_speed;
-  double planning_deceleration_low_speed;
-  double planning_deceleration_velocity_threshold;
+  auto getVisualizer() const -> VisualizerMessageBuilder::SharedPtr { return visualizer; }
 
   static auto resolveMaxAccelerationFactors(
     crane_msgs::msg::RobotCommand & command, const float default_max_acceleration) -> double
@@ -76,6 +71,16 @@ public:
     command.local_planner_config.final_planned_max_velocity = minimum_max_velocity_factor;
     return command.local_planner_config.final_planned_max_velocity.value;
   }
+
+protected:
+  VisualizerMessageBuilder::SharedPtr visualizer;
+
+  WorldModelWrapper::SharedPtr world_model;
+
+  // 経路計画用の減速度パラメータ
+  double planning_deceleration_high_speed;
+  double planning_deceleration_low_speed;
+  double planning_deceleration_velocity_threshold;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_

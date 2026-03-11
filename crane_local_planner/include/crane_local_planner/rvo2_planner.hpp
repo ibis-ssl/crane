@@ -22,6 +22,31 @@
 // cspell: ignore OBST
 namespace crane
 {
+
+enum class ZeroVelocityReason {
+  NONE,
+  POSITION_TOLERANCE,
+  DEFAULT_3CM_TOLERANCE,
+  RVO_COLLISION_OR_CONSTRAINT,
+  PREF_VELOCITY_ZERO,
+};
+
+inline auto toString(ZeroVelocityReason reason) -> std::string
+{
+  switch (reason) {
+    case ZeroVelocityReason::POSITION_TOLERANCE:
+      return "POSITION_TOLERANCE";
+    case ZeroVelocityReason::DEFAULT_3CM_TOLERANCE:
+      return "DEFAULT_3CM_TOLERANCE";
+    case ZeroVelocityReason::RVO_COLLISION_OR_CONSTRAINT:
+      return "RVO_COLLISION_OR_CONSTRAINT";
+    case ZeroVelocityReason::PREF_VELOCITY_ZERO:
+      return "PREF_VELOCITY_ZERO";
+    default:
+      return "NONE";
+  }
+}
+
 class RVO2Planner : public LocalPlannerBase
 {
 public:
@@ -72,7 +97,6 @@ private:
   float RVO_MAX_SPEED = 10.0f;
 
   double MAX_VEL = 5.0;
-  double ACCELERATION = 4.0;
   double STOP_STATE_MAX_VELOCITY = 1.0;
   double FIELD_BOUNDARY_OFFSET = 0.2;
   // 加速度は減速度の何倍にするかという係数
