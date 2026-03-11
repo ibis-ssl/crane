@@ -6,7 +6,6 @@
 
 """World Model Writer - Maintains game narrative in background."""
 
-import json
 import math
 import threading
 import time
@@ -71,7 +70,6 @@ class WorldModelWriter:
     def __init__(self):
         self._context = GameContext()
         self._highlights: List[HighlightEvent] = []
-        self._narrative_cache: str = ""
         self._lock = threading.Lock()
 
         # Configuration
@@ -112,9 +110,6 @@ class WorldModelWriter:
             # Update momentum based on recent events
             self._update_momentum()
 
-            # Rebuild narrative cache
-            self._rebuild_narrative()
-
     def add_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """Add a new event to recent history."""
         with self._lock:
@@ -136,11 +131,6 @@ class WorldModelWriter:
                     # Remove lowest score highlight
                     self._highlights.sort(key=lambda h: h.score, reverse=True)
                     self._highlights.pop()
-
-    def get_narrative(self) -> str:
-        """Get current game narrative as JSON string."""
-        with self._lock:
-            return self._narrative_cache
 
     def get_context(self) -> GameContext:
         """Get current game context."""
@@ -187,23 +177,6 @@ class WorldModelWriter:
             self._context.momentum = "THEIRS"
         else:
             self._context.momentum = "NEUTRAL"
-
-    def _rebuild_narrative(self) -> None:
-        """Rebuild the narrative cache."""
-        narrative = {
-            "game_state": {
-                "situation": self._context.play_situation,
-                "score": {
-                    "ours": self._context.our_score,
-                    "theirs": self._context.their_score,
-                },
-                "elapsed_minutes": self._context.elapsed_seconds / 60.0,
-                "momentum": self._context.momentum,
-            },
-            "recent_flow": self._context.recent_events[-5:],
-            "highlights_available": len([h for h in self._highlights if h.score >= 70]),
-        }
-        self._narrative_cache = json.dumps(narrative, ensure_ascii=False)
 
     def _calculate_highlight_score(
         self, event_type: str, data: Dict[str, Any]
@@ -293,46 +266,27 @@ class WorldModelWriter:
                     )
                 )
 
-            # Update our robots
+            # Update our robots (clear and rebuild to remove stale entries)
+            self._robot_snapshots_ours.clear()
             if hasattr(world_model_msg, "robot_info_ours"):
                 for robot in world_model_msg.robot_info_ours:
-                    self._robot_snapshots_ours[robot.id] = RobotSnapshot(
-                        robot_id=robot.id,
-                        is_ours=True,
-                        position=(robot.pose.x, robot.pose.y, robot.pose.theta),
-                        velocity=(
-                            math.hypot(robot.velocity.x, robot.velocity.y),
-                            robot.velocity.theta,
-                        ),
-                        is_available=(
-                            robot.available_vision
-                            or robot.available_feedback
-                            or robot.available_tracker
-                        ),
-                        has_ball_contact=getattr(robot, "ball_contact", False),
+                    self._robot_snapshots_ours[robot.id] = self._build_robot_snapshot(
+                        robot, True
                     )
 
-            # Update their robots
+            # Update their robots (clear and rebuild to remove stale entries)
+            self._robot_snapshots_theirs.clear()
             if hasattr(world_model_msg, "robot_info_theirs"):
                 for robot in world_model_msg.robot_info_theirs:
-                    self._robot_snapshots_theirs[robot.id] = RobotSnapshot(
-                        robot_id=robot.id,
-                        is_ours=False,
-                        position=(robot.pose.x, robot.pose.y, robot.pose.theta),
-                        velocity=(
-                            math.hypot(robot.velocity.x, robot.velocity.y),
-                            robot.velocity.theta,
-                        ),
-                        is_available=(
-                            robot.available_vision
-                            or robot.available_feedback
-                            or robot.available_tracker
-                        ),
-                        has_ball_contact=False,  # We don't track opponent ball contact
+                    self._robot_snapshots_theirs[robot.id] = self._build_robot_snapshot(
+                        robot, False
                     )
 
             # Determine ball possession
             self._ball_possession_team = self._determine_possession()
+
+            # Update momentum with fresh data
+            self._update_momentum()
 
     def get_game_state_data(self) -> Dict[str, Any]:
         """Get game state data for get_game_state function."""
@@ -523,6 +477,26 @@ class WorldModelWriter:
             "POST_GAME": "試合終了",
         }
         return details.get(self._play_situation_name, "不明")
+
+    def _build_robot_snapshot(self, robot: Any, is_ours: bool) -> RobotSnapshot:
+        """Build a RobotSnapshot from a robot message."""
+        return RobotSnapshot(
+            robot_id=robot.id,
+            is_ours=is_ours,
+            position=(robot.pose.x, robot.pose.y, robot.pose.theta),
+            velocity=(
+                math.hypot(robot.velocity.x, robot.velocity.y),
+                robot.velocity.theta,
+            ),
+            is_available=(
+                robot.available_vision
+                or robot.available_feedback
+                or robot.available_tracker
+            ),
+            has_ball_contact=getattr(robot, "ball_contact", False)
+            if is_ours
+            else False,
+        )
 
     def _determine_ball_state(self, speed: float) -> str:
         """Determine ball state based on speed."""
