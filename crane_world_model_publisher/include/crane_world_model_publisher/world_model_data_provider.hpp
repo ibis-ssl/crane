@@ -229,19 +229,6 @@ private:
 
   rclcpp::Time last_ball_detect_time;
 
-  struct BallAnalysis
-  {
-    bool is_our_ball;
-
-    bool is_their_ball;
-
-    bool ball_event_detected;
-
-    enum class BallEvent { NONE, OUR_BALL, THEIR_BALL };
-
-    BallEvent last_ball_event;
-  };
-
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
 
   crane_msgs::msg::PlaySituation latest_play_situation;

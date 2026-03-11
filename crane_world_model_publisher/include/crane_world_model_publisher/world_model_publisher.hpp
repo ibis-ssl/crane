@@ -57,15 +57,9 @@ extern "C" {
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/float32.hpp>
 
 namespace crane
 {
-enum class Color : uint8_t {
-  BLUE,
-  YELLOW,
-};
-
 class WorldModelDataProvider;
 class VisualizationManager;
 class WorldModelWrapper;
@@ -95,13 +89,9 @@ private:
 
   std::unique_ptr<WorldModelDataProvider> data_provider_;
 
-  static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
-
   diagnostic_updater::Updater diagnostic_updater_;
 
   DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
-
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -114,12 +104,6 @@ private:
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
   int history_size{};
-
-  enum class BallEvent {
-    NONE,
-    OUR_BALL,
-    THEIR_BALL,
-  } last_ball_event = BallEvent::NONE;
 
   WorldModelWrapperPtr wrapper_;
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis_;

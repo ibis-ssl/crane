@@ -27,88 +27,6 @@ inline std::string speedToColor(double s)
 namespace crane
 {
 
-struct SvgRobotBuilder
-{
-  SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
-
-  std::string getSvgString() const
-  {
-    std::ostringstream path;
-    path << "<path d=\"";
-    path << "M " << (robot_position.x() + botRightX(theta)) * 1000. << " "
-         << (robot_position.y() + botRightY(theta)) * -1000.;
-    path << " A " << radius * 1000. << " " << radius * 1000. << " 0 1 0 "
-         << (robot_position.x() + botLeftX(theta)) * 1000. << " "
-         << (robot_position.y() + botLeftY(theta)) * -1000.;
-    path << " Z";
-    path << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity;
-    path << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity;
-    path << "\" stroke-width=\"" << stroke_width << "\"/>";
-    return path.str();
-  }
-
-  SvgRobotBuilder & position(Point p, double theta)
-  {
-    this->robot_position = p;
-    this->theta = theta;
-    return *this;
-  }
-
-  SvgRobotBuilder & position(double x, double y, double theta)
-  {
-    return position(Point(x, y), theta);
-  }
-
-  SvgRobotBuilder & fill(const std::string & color, double opacity = 1.0)
-  {
-    fill_color = color;
-    fill_opacity = opacity;
-    return *this;
-  }
-
-  SvgRobotBuilder & stroke(const std::string & color, double opacity = 1.0)
-  {
-    stroke_color = color;
-    stroke_opacity = opacity;
-    return *this;
-  }
-
-  SvgRobotBuilder & strokeWidth(double width)
-  {
-    stroke_width = width;
-    return *this;
-  }
-
-private:
-  Point robot_position;
-  double theta = 0.0;
-  std::string fill_color = "none";
-  double fill_opacity = 1.0;
-  std::string stroke_color = "black";
-  double stroke_opacity = 1.0;
-  double stroke_width = 1.0;
-
-  double botRightX(double orientation) const
-  {
-    return radius * std::cos(orientation + corner_angle);
-  }
-  double botRightY(double orientation) const
-  {
-    return radius * std::sin(orientation + corner_angle);
-  }
-  double botLeftX(double orientation) const
-  {
-    return radius * std::cos(orientation - corner_angle);
-  }
-  double botLeftY(double orientation) const
-  {
-    return radius * std::sin(orientation - corner_angle);
-  }
-  const double radius = 0.085;
-  const double center_to_dribbler = 0.055;
-  const double corner_angle;
-};
-
 VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 {
   geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/geometry");
@@ -367,8 +285,10 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
   }
 }
 
-auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & trajectory_data)
-  -> void
+auto VisualizationManager::drawTrajectoryHistory(
+  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
+  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
+  const std::deque<crane_msgs::msg::BallInfo> & ball_info_history) -> void
 {
   static constexpr int SAMPLING_NUM = 4;
 
@@ -397,29 +317,26 @@ auto VisualizationManager::drawTrajectoryHistory(const TrajectoryHistoryData & t
   };
 
   // 味方・敵の履歴描画（共通処理）
-  draw_team_history(trajectory_data.friend_history, "green");
-  draw_team_history(trajectory_data.enemy_history, "red");
+  draw_team_history(friend_history, "green");
+  draw_team_history(enemy_history, "red");
 
   // ボール軌跡描画
-  if (trajectory_data.ball_info_history.size() > SAMPLING_NUM + 1) {
+  if (ball_info_history.size() > SAMPLING_NUM + 1) {
     for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * (i + 1));
+      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
+      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
 
       std::vector<Point> points;
       for (int index = start; index < end; index += SAMPLING_NUM) {
         points.emplace_back(
-          trajectory_data.ball_info_history.at(index).position.x,
-          trajectory_data.ball_info_history.at(index).position.y);
+          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
       }
       if (i != 9) {
         points.emplace_back(
-          trajectory_data.ball_info_history.at(end).position.x,
-          trajectory_data.ball_info_history.at(end).position.y);
+          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
       }
       trajectory_builder->drawPolyline(
-        points, "orange", start / static_cast<double>(trajectory_data.ball_info_history.size()),
-        30);
+        points, "orange", start / static_cast<double>(ball_info_history.size()), 30);
     }
   }
 
