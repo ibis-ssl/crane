@@ -7,39 +7,30 @@
 #ifndef CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_
 #define CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_
 
-#include <algorithm>
-#include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/second_threat_defender.hpp>
-#include <crane_sessions/session_base.hpp>
+#include <crane_sessions/single_skill_session.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-class SecondThreatDefenderSession : public SessionBase
+class SecondThreatDefenderSession : public SingleSkillSession<skills::SecondThreatDefender>
 {
 public:
   COMPOSITION_PUBLIC
   explicit SecondThreatDefenderSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("second_threat_defender", world_model)
+  : SingleSkillSession("second_threat_defender", world_model)
   {
   }
-
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     // セカンド脅威守備位置に近いロボットを優先
-    auto wm = world_model;  // shared_ptrをコピー
+    auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
       constexpr double offset = 0.3;
       auto target = skills::SecondThreatDefender::getDefaultPoint(wm, offset);
@@ -48,10 +39,10 @@ public:
   }
 
 protected:
-  void onRobotsChanged() override { skill.reset(); }
-
-private:
-  std::shared_ptr<skills::SecondThreatDefender> skill;
+  auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::SecondThreatDefender> override
+  {
+    return std::make_shared<skills::SecondThreatDefender>(robot_id, world_model);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_

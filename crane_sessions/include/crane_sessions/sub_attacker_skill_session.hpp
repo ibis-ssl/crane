@@ -9,29 +9,22 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
-#include <crane_sessions/session_base.hpp>
+#include <crane_sessions/single_skill_session.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <utility>
-#include <vector>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-class SubAttackerSkillSession : public SessionBase
+class SubAttackerSkillSession : public SingleSkillSession<skills::SubAttacker>
 {
 public:
-  std::shared_ptr<skills::SubAttacker> skill = nullptr;
-
   COMPOSITION_PUBLIC explicit SubAttackerSkillSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("sub_attacker_skill", world_model)
+  : SingleSkillSession("sub_attacker_skill", world_model)
   {
   }
-
-  auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
@@ -42,7 +35,7 @@ public:
 
       // 有効な推奨位置がない場合は高コスト
       if (!ga.has_sub_attacker_position) {
-        return 10000.0;
+        return GOALIE_EXCLUSION_COST;
       }
 
       // 推奨位置への距離をコストとして返す
@@ -53,7 +46,11 @@ public:
   }
 
 protected:
-  void onRobotsChanged() override { skill.reset(); }
+  auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::SubAttacker> override
+  {
+    return std::make_shared<skills::SubAttacker>(
+      "sub_attacker_skill_planner", robot_id, world_model);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__SUB_ATTACKER_SKILL_SESSION_HPP_

@@ -55,9 +55,8 @@ auto getDefenseLinePointParameter(
 {
   auto [p1, p2, p3, p4] = world_model->getPenaltyAreaCorners(DEFENSE_OFFSET_X, DEFENSE_OFFSET_Y);
 
-  const double threshold1 = world_model->penaltyAreaSize().x() + DEFENSE_OFFSET_X + 0.5;
-  // p2 -> p3: world_model->penaltyAreaSize().y() + DEFENSE_OFFSET_Y * 2
-  const double threshold2 = world_model->penaltyAreaSize().y() + DEFENSE_OFFSET_Y * 2 + threshold1;
+  const auto [threshold1, threshold2, threshold3_unused] =
+    getDefenseLinePointParameterThresholds(DEFENSE_OFFSET_X, DEFENSE_OFFSET_Y, world_model);
 
   if (auto intersections = getIntersections(Segment{p1, p2}, target_segment);
       not intersections.empty()) {
