@@ -264,7 +264,6 @@ auto VisualizerMessageBuilder::drawRobot(
   const std::string & stroke_color, double stroke_opacity, double stroke_width, double radius,
   double center_to_dribbler) -> void
 {
-  // ロボット形状の計算（SvgRobotBuilderと同じロジック）
   double corner_angle = std::acos(center_to_dribbler / radius);
   auto botRightX = [&](double orientation) {
     return radius * std::cos(orientation + corner_angle);
