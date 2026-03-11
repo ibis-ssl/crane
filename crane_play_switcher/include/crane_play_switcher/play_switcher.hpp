@@ -53,6 +53,15 @@ private:
 
     Point ball_position;
   } last_command_changed_state;
+
+  struct InplayCommandInfo
+  {
+    int raw_command = 0;
+    int command = 0;
+    std::string reason;
+  } inplay_command_info;
+
+  robocup_ssl_msgs::msg::Referee latest_raw_referee;
 };
 }  // namespace crane
 
