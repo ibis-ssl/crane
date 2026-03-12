@@ -95,9 +95,17 @@ void Kick::initialize()
         ball_pos, safe_target, robot()->pose.pos, interval, max_interval);
     }();
 
+    command->disableBallAvoidance();
+    using boost::math::constants::degree;
+    const double angle_threshold = getParameter<double>("angle_threshold_deg") * degree<double>();
+    const bool angle_ok =
+      std::abs(getAngleDiff(getAngle(kick_vec), getAngle(ball_pos - robot()->pose.pos))) <
+      angle_threshold;
+
     double kick_vec_gain = [&]() {
       Segment ball_kick_zone{ball_pos, ball_pos - kick_vec * interval};
-      if (bg::distance(ball_kick_zone, robot()->pose.pos) < 0.1) {
+      // 角度が合っている場合のみキックゾーンに入ったと判断し、ボールに向かって押し込む
+      if (angle_ok && bg::distance(ball_kick_zone, robot()->pose.pos) < 0.15) {
         command->disableCollisionAvoidance();
         return 0.5;
       } else {
@@ -107,12 +115,7 @@ void Kick::initialize()
 
     command->lookAtFrom(safe_target, ball_pos)
       .setDribblerTargetPosition(approach + kick_vec * kick_vec_gain);
-    command->disableBallAvoidance();
-    using boost::math::constants::degree;
-    const double angle_threshold = getParameter<double>("angle_threshold_deg") * degree<double>();
-    if (
-      std::abs(getAngleDiff(getAngle(kick_vec), getAngle(ball_pos - robot()->pose.pos))) <
-      angle_threshold) {
+    if (angle_ok) {
       if (getParameter<bool>("chip_kick")) {
         kickWithChip();
       } else {
@@ -125,8 +128,13 @@ void Kick::initialize()
     if (getParameter<bool>("with_dribble")) {
       command->withDribble(getParameter<double>("dribble_power"));
     } else {
-      // ドリブラーを止める
-      command->withDribble(0.0);
+      // ボール近傍では予防的にドリブラーを弱く起動し、接触時の弾きを防止
+      double ball_dist = (ball_pos - robot()->pose.pos).norm();
+      if (ball_dist < 0.3) {
+        command->withDribble(0.3);
+      } else {
+        command->withDribble(0.0);
+      }
     }
     return Status::RUNNING;
   });
