@@ -38,10 +38,6 @@ public:
   {
     auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      // ゴールキーパーは除外
-      if (robot->id == wm->getOurGoalieId()) {
-        return GOALIE_EXCLUSION_COST;
-      }
       // ボール配置エリアへの距離（近いほど優先）
       if (auto placement_area = wm->getBallPlacementArea(); placement_area) {
         return bg::distance(robot->pose.pos, placement_area.value());
