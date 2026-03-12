@@ -36,6 +36,8 @@ public:
 
   Kick kick_skill;
 
+  std::optional<Point> prev_wait_point;
+
 private:
   void initialize();
 

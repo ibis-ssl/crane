@@ -105,6 +105,7 @@ void Goalie::inplay(bool enable_emit)
   if (not intersections.empty() && world_model()->ball().vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
+    prev_wait_point = std::nullopt;
     auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
     auto target = [&]() -> Point {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
@@ -116,15 +117,31 @@ void Goalie::inplay(bool enable_emit)
 
     command->setTargetPosition(target).lookAtBallFrom(target);
   } else {
-    if (
-      world_model()->ball().isStopped(0.2) &&
-      world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
-      // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
+    // 改善C: 敵が近くにいる場合は排出せず待ち受け
+    bool ball_in_penalty = world_model()->ball().isStopped(0.2) &&
+                           world_model()->point_checker.isFriendPenaltyArea(ball.pos) &&
+                           enable_emit;
+    bool should_emit = ball_in_penalty;
+    if (ball_in_penalty) {
+      auto enemies = world_model()->theirs().robotsWhere().available().get();
+      bool enemy_near = std::any_of(enemies.begin(), enemies.end(), [&](const auto & e) {
+        return e->getDistance(ball.pos) < 2.0;
+      });
+      if (enemy_near) {
+        should_emit = false;
+        phase = "排出危険→待ち受け";
+      }
+    }
+
+    if (should_emit) {
+      // ボールが止まっていて，味方ペナルティエリア内にあり，敵が近くにいないときは排出
       phase = "ボール排出";
       emitBallFromPenaltyArea();
     } else {
       const double BLOCK_DIST = getParameter<double>("block_distance");
-      phase += "ボールを待ち受ける";
+      if (phase.empty()) {
+        phase += "ボールを待ち受ける";
+      }
       // デフォルト位置設定
       command->setTargetPosition(goal_center * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
@@ -152,15 +169,19 @@ void Goalie::inplay(bool enable_emit)
             candidates, ranges::less{}, [](const auto & p) { return p.second; });
         }();
 
-        Point goal_center_adjusted = goal_center;
-        goal_center_adjusted << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
+        Point threat_point;
 
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
-          // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
-          phase += "(範囲外なので正面に構える)";
-          command->setTargetPosition(goal_center_adjusted, 0.1).lookAt(Point(0, 0));
+          // 改善A: フィールド外ボールはY座標をゴール幅内にクランプし
+          // ゴールライン上の点を脅威点として通常フローに合流させる
+          phase += "(範囲外→ボール方向を警戒)";
+          double clamped_y = std::clamp(
+            static_cast<double>(ball.pos.y()),
+            static_cast<double>(std::min(goals.first.y(), goals.second.y())),
+            static_cast<double>(std::max(goals.first.y(), goals.second.y())));
+          threat_point = Point(goal_center.x(), clamped_y);
         } else {
-          Point threat_point = world_model()->ball().pos;
+          threat_point = world_model()->ball().pos;
 
           if (distance < 2.0) {
             phase += "(敵のパス先警戒モード)";
@@ -208,52 +229,58 @@ void Goalie::inplay(bool enable_emit)
             phase += "(とりあえず0.5s先を警戒モード)";
             threat_point = ball.getPredictedPosition(0.5);
           }
-
-          auto [weak_point, dist] = [&]() {
-            if (auto other_robots = world_model()
-                                      ->ours()
-                                      .robotsWhere()
-                                      .available()
-                                      .excludeId(world_model()->getOurGoalieId())
-                                      .get();
-                not other_robots.empty()) {
-              auto goal = world_model()->getLargestGoalAngleRangeFromPoint(
-                threat_point, world_model()->getOurGoalPosts(), other_robots);
-              Segment expected_ball_line(
-                threat_point, threat_point + getNormVec(goal.center_angle) * 10);
-              Segment goal_line(goals.first, goals.second);
-              auto intersect_to_goal_line = getIntersections(expected_ball_line, goal_line);
-              if (intersect_to_goal_line.empty()) {
-                return std::make_pair(goal_center, BLOCK_DIST);
-              } else {
-                auto intersect_to_penalty_area =
-                  world_model()->getIntersectionOurPenaltyArea(expected_ball_line, -0.8, -0.8);
-                auto ratio = world_model()->getForwardDefenseRatio(expected_ball_line);
-                if (not intersect_to_penalty_area || not ratio) {
-                  return std::make_pair(goal_center, BLOCK_DIST);
-                }
-                // ペナルティエリアライン上にボールがあるときにペナルティエリア上まで前進すると
-                // シュートをずらして打たれて決められてしまう?
-                double dist =
-                  bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) *
-                  (*ratio);
-                visualizer->drawLine(
-                  intersect_to_goal_line.front(), *intersect_to_penalty_area, "red", 1.0);
-                phase += "(前進守備量可変)";
-                command->addPlanningFactor("goalie", "dist:" + std::to_string(dist));
-                return std::make_pair(intersect_to_goal_line.front(), dist);
-              }
-            } else {
-              return std::make_pair(goal_center, BLOCK_DIST);
-            }
-          }();
-          Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
-
-          // ゴール侵入防止: ゴールラインより前方にあることを保証
-          wait_point = clampXToGoalLine(wait_point, 0.1);
-
-          command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
         }
+
+        auto [weak_point, dist] = [&]() {
+          if (auto other_robots = world_model()
+                                    ->ours()
+                                    .robotsWhere()
+                                    .available()
+                                    .excludeId(world_model()->getOurGoalieId())
+                                    .get();
+              not other_robots.empty()) {
+            auto goal = world_model()->getLargestGoalAngleRangeFromPoint(
+              threat_point, world_model()->getOurGoalPosts(), other_robots);
+            Segment expected_ball_line(
+              threat_point, threat_point + getNormVec(goal.center_angle) * 10);
+            Segment goal_line(goals.first, goals.second);
+            auto intersect_to_goal_line = getIntersections(expected_ball_line, goal_line);
+            if (intersect_to_goal_line.empty()) {
+              return std::make_pair(goal_center, BLOCK_DIST);
+            } else {
+              auto intersect_to_penalty_area =
+                world_model()->getIntersectionOurPenaltyArea(expected_ball_line, -0.8, -0.8);
+              auto ratio = world_model()->getForwardDefenseRatio(expected_ball_line);
+              if (not intersect_to_penalty_area || not ratio) {
+                return std::make_pair(goal_center, BLOCK_DIST);
+              }
+              // ペナルティエリアライン上にボールがあるときにペナルティエリア上まで前進すると
+              // シュートをずらして打たれて決められてしまう?
+              double dist =
+                bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) * (*ratio);
+              visualizer->drawLine(
+                intersect_to_goal_line.front(), *intersect_to_penalty_area, "red", 1.0);
+              phase += "(前進守備量可変)";
+              command->addPlanningFactor("goalie", "dist:" + std::to_string(dist));
+              return std::make_pair(intersect_to_goal_line.front(), dist);
+            }
+          } else {
+            return std::make_pair(goal_center, BLOCK_DIST);
+          }
+        }();
+        Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
+
+        // 改善B: ローパスフィルタでターゲット振動を抑制
+        constexpr double SMOOTHING_ALPHA = 0.7;
+        if (prev_wait_point) {
+          wait_point = *prev_wait_point * SMOOTHING_ALPHA + wait_point * (1.0 - SMOOTHING_ALPHA);
+        }
+        prev_wait_point = wait_point;
+
+        // ゴール侵入防止: ゴールラインより前方にあることを保証
+        wait_point = clampXToGoalLine(wait_point, 0.1);
+
+        command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
       }
     }
   }
