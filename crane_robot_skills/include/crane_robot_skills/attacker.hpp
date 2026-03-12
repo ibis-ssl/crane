@@ -87,8 +87,6 @@ private:
 
   double evaluateGoalAngle(const Point & position);
 
-  bool isPassBlocked(const Point & target);
-
   double calculatePassScore(const Point & target);
 };
 }  // namespace crane::skills

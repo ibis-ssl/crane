@@ -9,10 +9,9 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
-#include <crane_sessions/session_base.hpp>
+#include <crane_sessions/single_skill_session.hpp>
 #include <memory>
-#include <unordered_map>
-#include <vector>
+#include <rclcpp/rclcpp.hpp>
 
 #include "visibility_control.h"
 
@@ -26,14 +25,14 @@ namespace crane
  * ボールをフィールド中心(0,0)で正確に停止させるストレートキックを行う。
  * 実際のロジックはスキル側で実装されている。
  */
-class CenterStopKickSession : public SessionBase
+class CenterStopKickSession : public SingleSkillSession<skills::CenterStopKick>
 {
 public:
   COMPOSITION_PUBLIC explicit CenterStopKickSession(
-    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &);
-
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
-    const std::vector<RobotIdentifier> & robots) override;
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
+  : SingleSkillSession("center_stop_kick", world_model)
+  {
+  }
 
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
@@ -43,12 +42,22 @@ public:
     };
   }
 
-private:
-  // スキルインスタンス
-  std::shared_ptr<skills::CenterStopKick> skill_;
+protected:
+  auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::CenterStopKick> override
+  {
+    auto skill = std::make_shared<skills::CenterStopKick>(robot_id, world_model);
 
-  // 最後に選択されたロボットID
-  std::optional<uint8_t> current_robot_id_;
+    // デフォルトパラメータの設定
+    skill->setParameter("target_position", Point(0.0, 0.0));  // フィールド中心にキック
+    skill->setParameter("kick_power_tolerance", 0.01);        // キック力計算精度
+    skill->setParameter("stop_distance_tolerance", 0.05);     // 停止距離許容誤差5cm
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("CenterStopKickSession"), "CenterStopKickスキル初期化: robot_id=%d",
+      robot_id);
+
+    return skill;
+  }
 };
 
 }  // namespace crane
