@@ -14,8 +14,15 @@ auto BallNearByPositionerSkillSession::calculatePositionCommand(
   const std::vector<RobotIdentifier> & robots)
   -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
-  // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
-  if (skills.size() != robots.size()) {
+  // GlobalRobotAllocator対応: ロボット数またはIDが変更されたらスキルを再生成
+  auto ids_changed = [&] {
+    if (skills.size() != robots.size()) return true;
+    for (size_t i = 0; i < robots.size(); ++i) {
+      if (skills[i]->getID() != robots[i].id) return true;
+    }
+    return false;
+  };
+  if (ids_changed()) {
     skills.clear();
 
     int index = 0;
