@@ -35,7 +35,7 @@ public:
 
       // 有効な推奨位置がない場合は高コスト
       if (!ga.has_sub_attacker_position) {
-        return GOALIE_EXCLUSION_COST;
+        return NO_SUITABLE_POSITION_COST;
       }
 
       // 推奨位置への距離をコストとして返す

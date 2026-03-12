@@ -320,20 +320,6 @@ double Attacker::evaluateGoalAngle(const Point & position)
   return goal_angle_width;
 }
 
-bool Attacker::isPassBlocked(const Point & target)
-{
-  Segment ball_to_target{world_model()->ball().pos, target};
-  const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-
-  if (auto nearest_enemy =
-        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-      nearest_enemy) {
-    return nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-           nearest_enemy->distance < PASS_OBSTACLE_DISTANCE;
-  }
-  return false;
-}
-
 double Attacker::calculatePassScore(const Point & target)
 {
   double score = 1.0;

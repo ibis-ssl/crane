@@ -56,6 +56,9 @@ public:
   /// ゴールキーパーをロボット選択から除外するためのコスト値
   static constexpr double GOALIE_EXCLUSION_COST = 1e9;
 
+  /// 推奨位置が存在しない場合の高コスト値
+  static constexpr double NO_SUITABLE_POSITION_COST = 1e9;
+
   explicit SessionBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
