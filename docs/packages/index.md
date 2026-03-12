@@ -16,15 +16,16 @@
 
 ### 最近の開発活動
 
-- **2025年6月**: JapanOpen2025での実戦運用完了・全32パッケージの整備確認
-- **2025年前半期**: システム統合・安定性向上・ルール違反対策の仕上げ
-- **開発状況**: 安定運用フェーズ（大会検証済み）
+- **2026年1-3月**: コード品質改善キャンペーン（#1129-#1172）。全パッケージを対象にリファクタリング・バグ修正・効率化を実施
+- **2026年1月**: Gemini AI実況システム（crane_commentary）の信頼性向上（自動再接続等）
+- **2025年6月**: JapanOpen2025での実戦運用完了
+- **開発状況**: リファクタリングフェーズ（品質・保守性向上）
 
 ---
 
 ## 📦 パッケージ一覧・作業状況
 
-### 🔥 Core系パッケージ群 (13/13) - 高優先度
+### 🔥 Core系パッケージ群 (16/16) - 高優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
@@ -41,6 +42,9 @@
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_speaker](./crane_speaker.md) | 音声出力システム | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_commentary](./crane_commentary.md) | Gemini AI リアルタイム実況 | 🔴 高活動 | ✅ 新規作成 | 2026-01 |
+| [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 | 🟢 安定 | ✅ 作成済み | 完了 |
+| [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ✅ 作成済み | 完了 |
+| [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ✅ 作成済み | 完了 |
 
 ### 🎯 Session系パッケージ群 (2/2) - 高優先度
 
@@ -49,7 +53,7 @@
 | [crane_session_coordinator](./crane_session_coordinator.md) | 試合統括・ゲーム状態管理 | 🟡 中活動 | ✅ 作成済み | Session 1 |
 | [crane_sessions](./crane_sessions.md) | 戦略タクティックプラグイン | 🔴 高活動 | ✅ 作成済み | 完了 |
 
-### 🔧 Utility系パッケージ群 (10/10) - 中優先度
+### 🔧 Utility系パッケージ群 (7/7) - 中優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
@@ -57,10 +61,7 @@
 | [crane_physics](./crane_physics.md) | 物理計算・ボールモデル | 🔴 高活動 | ✅ 作成済み | 完了 |
 | [crane_comm](./crane_comm.md) | 通信ユーティリティ | 🟡 中活動 | ✅ 作成済み | 完了 |
 | [crane_msg_wrappers](./crane_msg_wrappers.md) | メッセージラッパー | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_lint_common](./crane_lint_common.md) | 共通リント設定 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_utils](./crane_utils.md) | 共通ユーティリティ関数 | 🟢 安定 | ✅ 作成済み | 完了 |
 
 ### 📡 SSL通信系パッケージ群 (2/2) - 中優先度
@@ -134,23 +135,23 @@
 ## 📊 進捗サマリー
 
 - **全体進捗**: 33/33 パッケージ (100%) ✅ **完了**
-- **Core系**: 14/14 完了 (100%) ✅
+- **Core系**: 16/16 完了 (100%) ✅
 - **Session系**: 2/2 完了 (100%) ✅
-- **Utility系**: 10/10 完了 (100%) ✅
+- **Utility系**: 7/7 完了 (100%) ✅
 - **SSL通信系**: 2/2 完了 (100%) ✅
 - **3rdparty系**: 4/4 完了 (100%) ✅
 - **開発ツール系**: 2/2 完了 (100%) ✅
 
-**最終更新**: 2026-01-31
+**最終更新**: 2026-03-12
 
 ---
 
 ## 🔗 関連リンク
 
 - [メインドキュメント](../index.md)
-- [アーキテクチャ概要](../README.md)
+- [アーキテクチャ概要](../../README.md)
 - [開発ログ](../logs/)
-- [Claude Code開発ドキュメント](../CLAUDE.md)
+- [Claude Code開発ドキュメント](../../CLAUDE.md)
 
 ---
 
