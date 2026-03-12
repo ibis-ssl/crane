@@ -57,8 +57,8 @@ protected:
   auto on_timer() -> void
   {
     auto process = [this](auto & receiver, auto & msg) {
+      std::vector<char> buf(2048);
       while (receiver->available()) {
-        std::vector<char> buf(2048);
         const size_t size = receiver->receive(buf);
 
         if (size > 0) {

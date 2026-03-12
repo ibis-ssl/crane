@@ -27,7 +27,7 @@ auto RobotData::updateErrorMap(
   const rclcpp::Time & timestamp) -> bool
 {
   // エラーが既存または変更された場合のみ更新
-  bool is_new = (error_map.count(error_type) == 0) || (error_map[error_type].level != level) ||
+  bool is_new = !error_map.contains(error_type) || (error_map[error_type].level != level) ||
                 (error_map[error_type].message != message);
 
   if (is_new) {
@@ -45,10 +45,23 @@ auto RobotData::updateErrorMap(
 
 auto RobotData::removeError(const std::string & error_type) -> bool
 {
-  if (error_map.count(error_type) > 0) {
+  if (error_map.contains(error_type)) {
     error_map.erase(error_type);
     has_error_changed = true;
     return true;
+  }
+  return false;
+}
+
+auto RobotData::isRobotDetected(const WorldModelWrapper & world_model, bool require_feedback) const
+  -> bool
+{
+  for (const auto & robot_info : world_model.getMsg().robot_info_ours) {
+    if (robot_info.id == robot_id) {
+      return require_feedback ? (robot_info.available_vision || robot_info.available_feedback ||
+                                 robot_info.available_tracker)
+                              : (robot_info.available_vision || robot_info.available_tracker);
+    }
   }
   return false;
 }
@@ -68,17 +81,7 @@ auto RobotData::initializeDiagnostics(
   updater->add(
     diagnostic_prefix + "communication", [this, node, world_model, sim_mode, latest_ping_msg](
                                            diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      const auto & msg = world_model->getMsg();
-      bool detected = false;
-      for (const auto & robot_info : msg.robot_info_ours) {
-        if (robot_info.id == robot_id) {
-          detected = robot_info.available_vision || robot_info.available_tracker;
-          break;
-        }
-      }
-
-      if (!detected) {
-        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
+      if (!isRobotDetected(*world_model)) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("communication");
         return;
@@ -87,23 +90,11 @@ auto RobotData::initializeDiagnostics(
     });
 
   // バッテリー状態の診断
+  // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
   updater->add(
     diagnostic_prefix + "battery", [this, node, world_model, sim_mode, latest_feedback_msg](
                                      diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      // 【循環参照回避】WorldModelからビジョン検出状態のみをチェック
-      // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
-      const auto & msg = world_model->getMsg();
-      bool detected = false;
-      for (const auto & robot_info : msg.robot_info_ours) {
-        if (robot_info.id == robot_id) {
-          detected = robot_info.available_vision || robot_info.available_feedback ||
-                     robot_info.available_tracker;
-          break;
-        }
-      }
-
-      if (!detected) {
-        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
+      if (!isRobotDetected(*world_model, true)) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("battery");
         return;
@@ -112,23 +103,11 @@ auto RobotData::initializeDiagnostics(
     });
 
   // ロボットエラーの診断
+  // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
   updater->add(
     diagnostic_prefix + "robot_error", [this, node, world_model, sim_mode, latest_feedback_msg](
                                          diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      // WorldModelからビジョン検出状態のみをチェック
-      // available_vision/feedback/trackerは診断結果に依存しないため、循環参照を回避できる
-      const auto & msg = world_model->getMsg();
-      bool detected = false;
-      for (const auto & robot_info : msg.robot_info_ours) {
-        if (robot_info.id == robot_id) {
-          detected = robot_info.available_vision || robot_info.available_feedback ||
-                     robot_info.available_tracker;
-          break;
-        }
-      }
-
-      if (!detected) {
-        // 検出されていない場合はOKとして扱う（診断エラーをクリア）
+      if (!isRobotDetected(*world_model, true)) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("robot_error");
         return;
@@ -410,7 +389,7 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
       uint8_t robot_id = robot_data->robot_id;
 
       // ロボット位置が有効な場合のみ表示
-      if (robot_positions.count(robot_id) > 0 && robot_positions[robot_id].valid) {
+      if (robot_positions.contains(robot_id) && robot_positions[robot_id].valid) {
         // 最初のエラーでマーカー円を表示
         if (text_offset == 0.0) {
           // エラーレベルに応じた色を設定
@@ -429,7 +408,6 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
 
         // エラーメッセージを表示
         std::string color = utils::getColorForErrorLevel(error_info.level);
-        constexpr double opacity = 0.8;
 
         visualizer_error->drawCenteredLabel(
           Point(
