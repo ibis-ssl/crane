@@ -445,6 +445,9 @@ auto RVO2Planner::adjustForFieldBoundary(
   Point & target_pos, const Point & current_pos,
   const crane_msgs::msg::RobotCommand & command) const -> void
 {
+  if (command.local_planner_config.disable_field_boundary) {
+    return;
+  }
   const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
   const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
 
