@@ -39,6 +39,15 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     double score;
   };
 
+  // 敵チームの中で最も有利なslack（ループ外で1回だけ計算）
+  constexpr double ENEMY_SLACK_SCORE_THRESHOLD = 0.2;  // スコア減算用: 敵がこの秒数以上早いと不利
+  double best_enemy_slack = -100.0;
+  for (const auto & ts : ctx.analysis.their_slack) {
+    if (ts.min.slack_time > best_enemy_slack) {
+      best_enemy_slack = ts.min.slack_time;
+    }
+  }
+
   std::vector<RobotScore> robot_scores;
 
   for (const auto & robot : available_robots) {
@@ -47,6 +56,7 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // Slack情報を取得
     double metric_distance = distance;
     bool has_valid_intercept = false;
+    double my_slack = -100.0;
 
     for (const auto & slack : ctx.analysis.our_slack) {
       if (slack.id == robot->id) {
@@ -57,6 +67,7 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
           metric_distance = (robot->pose.pos - intercept_pos).norm();
           has_valid_intercept = true;
         }
+        my_slack = slack.min.slack_time;
         break;
       }
     }
@@ -68,6 +79,11 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
     // インターセプト計算ができなかった（ボールに追いつけない等）場合はスコアを大幅に下げる
     if (!has_valid_intercept) {
       score *= 0.3;  // 0.5 -> 0.3に強化（インターセプト不可能なロボットの優先度を下げる）
+    }
+
+    // 敵slackとの比較: 敵が先にボールに到達できる場合はスコアを大幅に下げる
+    if (best_enemy_slack > my_slack + ENEMY_SLACK_SCORE_THRESHOLD) {
+      score *= 0.2;
     }
 
     double total_score = score;
@@ -138,8 +154,17 @@ auto AttackerCandidateMetric::compute(MetricContext & ctx) -> void
   ctx.analysis.recommended_attacker_id = attacker_hysteresis_.currentId().value_or(-1);
   ctx.analysis.attacker_suitability_score = best_score;
 
-  // recommended_pass_receiver_idは未使用（-1固定）
+  // recommended_pass_receiver_id: Attacker以外で最もスコアの高いロボットを推薦
   ctx.analysis.recommended_pass_receiver_id = -1;
+  {
+    int selected_attacker = ctx.analysis.recommended_attacker_id;
+    for (const auto & rs : robot_scores) {
+      if (static_cast<int>(rs.id) != selected_attacker) {
+        ctx.analysis.recommended_pass_receiver_id = rs.id;
+        break;
+      }
+    }
+  }
 }
 
 }  // namespace crane::metrics

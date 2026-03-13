@@ -51,9 +51,19 @@ auto PassTargetMetric::calcScore(
 {
   double score = 1.0;
 
-  // 距離（0〜4mで上昇）
+  // 距離評価（山型：1.5〜4.0mが最適ゾーン）
   const double pass_distance = (p - pass_origin).norm();
-  score += std::clamp(pass_distance * 0.5, 0.0, 2.0);
+  {
+    double distance_factor;
+    if (pass_distance < 1.5) {
+      distance_factor = pass_distance / 1.5;  // 0m→0.0, 1.5m→1.0
+    } else if (pass_distance <= 4.0) {
+      distance_factor = 1.0;  // 最適ゾーン
+    } else {
+      distance_factor = std::max(0.2, 1.0 - (pass_distance - 4.0) * 0.15);  // 漸減
+    }
+    score *= distance_factor;
+  }
 
   // ゴール角度（敵ゴールに対する見通し）
   {
@@ -76,15 +86,16 @@ auto PassTargetMetric::calcScore(
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
 
-  constexpr double KICK_SPEED = 3.0;
+  // 実際のキック速度に合わせて距離依存（attacker.cpp の configurePassKick と同じ式）
+  const double kick_speed = std::clamp(pass_distance, 2.0, 4.0);
   const Segment pass_line{pass_origin, p};
   const Vector2 pass_dir = p - pass_origin;
   const Vector2 ball_velocity =
-    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * KICK_SPEED) : Vector2::Zero();
+    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * kick_speed) : Vector2::Zero();
 
   auto calc_slack_time = [&](const auto & enemy) -> double {
     const auto closest = getClosestPointAndDistance(enemy->pose.pos, pass_line);
-    const double ball_time = (closest.closest_point - pass_origin).norm() / KICK_SPEED;
+    const double ball_time = (closest.closest_point - pass_origin).norm() / kick_speed;
 
     auto slack_result = ctx.world_model->getBallSlackTime(
       pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
@@ -154,6 +165,12 @@ auto PassTargetMetric::compute(MetricContext & ctx) -> void
     const auto & best = ctx.analysis.pass_scores.front();
     const int best_id = static_cast<int>(best.id);
     const double best_score = static_cast<double>(best.value);
+
+    // 最低スコア閾値チェック: パス品質が低すぎる場合はパス不可
+    if (best_score < min_pass_score_) {
+      pass_hysteresis_.reset();
+      return;
+    }
 
     double prev_score = 0.0;
     const auto prev_id = pass_hysteresis_.currentId();

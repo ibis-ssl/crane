@@ -37,7 +37,7 @@ namespace crane
 inline auto evaluatePassShadow(
   const Point & ball_pos, const Point & target_pos,
   const std::vector<std::shared_ptr<RobotInfo>> & enemies, const double robot_radius = 0.09,
-  const double shadow_threshold = 0.3) -> double
+  const double shadow_threshold = 0.5) -> double
 {
   const Segment pass_line{ball_pos, target_pos};
   const Vector2 pass_dir = (target_pos - ball_pos).normalized();
@@ -70,6 +70,12 @@ inline auto evaluatePassShadow(
       continue;
     }
 
+    // パスライン上にロボット半径以内の敵は完全遮蔽
+    if (result.distance <= robot_radius) {
+      penalty_factor *= 0.0;
+      continue;
+    }
+
     // 遮蔽角度: atan2(robot_radius, dist_to_ball)
     const double shadow_angle = std::atan2(robot_radius, dist_to_ball);
 
@@ -81,7 +87,7 @@ inline auto evaluatePassShadow(
       // 遮蔽度に応じてペナルティを適用
       // 完全遮蔽(角度0)で0.0、遮蔽角度の境界で1.0
       const double shadow_ratio = 1.0 - (angle_to_target / shadow_angle);
-      const double shadow_penalty = 1.0 - shadow_ratio * 0.8;  // 最大80%減
+      const double shadow_penalty = 1.0 - shadow_ratio * 0.95;  // 最大95%減
       penalty_factor *= shadow_penalty;
     }
   }

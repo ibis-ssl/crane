@@ -26,7 +26,7 @@ public:
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
-    return {MetricId::OUR_SLACK, MetricId::BALL_THREAT};
+    return {MetricId::OUR_SLACK, MetricId::THEIR_SLACK, MetricId::BALL_THREAT};
   }
 
   auto compute(MetricContext & ctx) -> void override;

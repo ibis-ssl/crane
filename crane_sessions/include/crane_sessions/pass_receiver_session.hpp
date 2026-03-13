@@ -79,9 +79,16 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // PassReceiverはgame_analysisのpass_target_idで指定されるため
-    // 適性関数でのフィルタリングは不要（デフォルトコスト0.0を返す）
-    return [](const std::shared_ptr<RobotInfo> &) { return 0.0; };
+    auto game_analysis = getGameAnalysis();
+    return [game_analysis](const std::shared_ptr<RobotInfo> & robot) {
+      // recommended_pass_receiver_id が設定されている場合そのロボットを最優先
+      if (
+        game_analysis.recommended_pass_receiver_id >= 0 &&
+        robot->id == static_cast<uint8_t>(game_analysis.recommended_pass_receiver_id)) {
+        return 0.0;
+      }
+      return 10.0;  // その他は低優先
+    };
   }
 
 protected:
