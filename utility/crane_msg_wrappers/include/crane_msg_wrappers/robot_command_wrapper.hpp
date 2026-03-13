@@ -279,6 +279,18 @@ public:
     return *this;
   }
 
+  auto disableFieldBoundary() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.disable_field_boundary = true;
+    return *this;
+  }
+
+  auto enableFieldBoundary() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.disable_field_boundary = false;
+    return *this;
+  }
+
   auto enableRotationStopOnAccel() -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.enable_rotation_stop_on_accel = true;
@@ -293,12 +305,18 @@ public:
 
   auto disableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
-    return disableGoalAreaAvoidance().disableBallAvoidance().disablePlacementAvoidance();
+    return disableGoalAreaAvoidance()
+      .disableBallAvoidance()
+      .disablePlacementAvoidance()
+      .disableFieldBoundary();
   }
 
   auto enableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
-    return enableGoalAreaAvoidance().enableBallAvoidance().enablePlacementAvoidance();
+    return enableGoalAreaAvoidance()
+      .enableBallAvoidance()
+      .enablePlacementAvoidance()
+      .enableFieldBoundary();
   }
 
   auto disableBasicAvoidances() -> RobotCommandWrapper &
