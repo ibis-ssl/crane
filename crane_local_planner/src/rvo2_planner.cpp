@@ -56,6 +56,24 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("field_boundary_offset", FIELD_BOUNDARY_OFFSET);
   FIELD_BOUNDARY_OFFSET = node.get_parameter("field_boundary_offset").as_double();
 
+  node.declare_parameter("crash_speed_limit", CRASH_SPEED_LIMIT);
+  CRASH_SPEED_LIMIT = node.get_parameter("crash_speed_limit").as_double();
+  node.declare_parameter("crash_safety_margin", CRASH_SAFETY_MARGIN);
+  CRASH_SAFETY_MARGIN = node.get_parameter("crash_safety_margin").as_double();
+  node.declare_parameter("crash_avoidance_distance", CRASH_AVOIDANCE_DISTANCE);
+  CRASH_AVOIDANCE_DISTANCE = node.get_parameter("crash_avoidance_distance").as_double();
+  node.declare_parameter("crash_avoidance_decel_distance", CRASH_AVOIDANCE_DECEL_DISTANCE);
+  CRASH_AVOIDANCE_DECEL_DISTANCE = node.get_parameter("crash_avoidance_decel_distance").as_double();
+  if (CRASH_AVOIDANCE_DISTANCE <= CRASH_AVOIDANCE_DECEL_DISTANCE) {
+    RCLCPP_ERROR(
+      node.get_logger(),
+      "crash_avoidance_distance (%.2f) must be > crash_avoidance_decel_distance (%.2f). "
+      "Resetting to defaults.",
+      CRASH_AVOIDANCE_DISTANCE, CRASH_AVOIDANCE_DECEL_DISTANCE);
+    CRASH_AVOIDANCE_DISTANCE = 1.0;
+    CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
+  }
+
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
 
@@ -213,6 +231,52 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     } else {
       target_vel << next_vel.x(), next_vel.y();
     }
+    // 衝突ファール (crashing) 回避:
+    // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
+    // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
+    if (!command.local_planner_config.disable_crash_avoidance) {
+      const Point our_pos(command.current_pose.x, command.current_pose.y);
+      for (const auto & enemy_robot : world_model->theirs().robotsWhere().available().get()) {
+        const Vector2 to_enemy = enemy_robot->pose.pos - our_pos;
+        const double dist = to_enemy.norm();
+
+        if (dist < CRASH_AVOIDANCE_DISTANCE && dist > 0.01) {
+          const Vector2 dir = to_enemy.normalized();
+
+          // 敵ロボットの自ロボットへの接近速度成分（敵が向かってくる方向を正）
+          const double enemy_approach = -enemy_robot->vel.linear.dot(dir);
+
+          // 安全な接近速度 = ルール閾値 - 敵の接近速度 - 安全マージン
+          double safe_approach =
+            CRASH_SPEED_LIMIT - std::max(0.0, enemy_approach) - CRASH_SAFETY_MARGIN;
+          safe_approach = std::max(safe_approach, 0.0);
+
+          // 距離に応じた線形補間: 近い(factor=1)ほど制限を強く適用
+          const double factor =
+            1.0 - std::clamp(
+                    (dist - CRASH_AVOIDANCE_DECEL_DISTANCE) /
+                      (CRASH_AVOIDANCE_DISTANCE - CRASH_AVOIDANCE_DECEL_DISTANCE),
+                    0.0, 1.0);
+
+          // target_velの敵方向への射影成分を取得
+          const double approach_component = target_vel.dot(dir);
+
+          // factor補間した制限値を計算（factor=0なら制限なし）
+          const double max_approach = approach_component * (1.0 - factor) + safe_approach * factor;
+
+          // 接近方向成分が制限を超えており、かつ敵に向かっている場合のみ制限
+          if (approach_component > max_approach && approach_component > 0.0) {
+            // 横方向成分を維持しながら接近方向成分のみを制限
+            const Vector2 lateral = target_vel - approach_component * dir;
+            target_vel = lateral + max_approach * dir;
+            addOrUpdatePlanningFactor(
+              command, "CrashAvoidance",
+              "robot" + std::to_string(enemy_robot->id) + ":" + formatPlanningDouble(max_approach));
+          }
+        }
+      }
+    }
+
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
 

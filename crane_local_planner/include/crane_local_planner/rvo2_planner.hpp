@@ -99,6 +99,14 @@ private:
   double MAX_VEL = 5.0;
   double STOP_STATE_MAX_VELOCITY = 1.0;
   double FIELD_BOUNDARY_OFFSET = 0.2;
+
+  // 衝突ファール (crashing) 回避パラメータ
+  // SSLルール: 衝突時の速度差射影 > 1.5 m/s でファール
+  double CRASH_SPEED_LIMIT = 1.5;
+  double CRASH_SAFETY_MARGIN = 0.3;
+  double CRASH_AVOIDANCE_DISTANCE = 1.0;
+  double CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
+
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 
