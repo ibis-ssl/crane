@@ -149,12 +149,14 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       deceleration_for_planning = planning_deceleration_low_speed;
     }
 
-    // 加速度（互換性のため）
+    // max_brk: 停止のための減速度（planning_decelerationの値を使用）
+    double max_brk = deceleration_for_planning;
+    // max_acc: 加速フェーズの加速度（planning_accelerationの値を使用、スキルによる制限も適用）
     command.local_planner_config.max_acceleration_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
         .set__name("RVO2Planner::max_acc from parameter")
-        .set__value(deceleration_for_planning));
-    double max_acc = resolveMaxAccelerationFactors(command, deceleration_for_planning);
+        .set__value(planning_acceleration));
+    double max_acc = resolveMaxAccelerationFactors(command, planning_acceleration);
 
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
@@ -173,11 +175,17 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     target_vel << (pos_mode.target_x - current_position.x()),
       pos_mode.target_y - current_position.y();
 
+    // 速度超過クランプ: Vision観測誤差でmax_velをわずかに超えた速度を正規化（Sumatra adaptVel相当）
+    constexpr double MAX_VEL_TOLERANCE = 0.2;
+    Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
+    if (vel > max_vel && vel < max_vel + MAX_VEL_TOLERANCE) {
+      v0 = v0 * (max_vel / vel);
+    }
+
     BangBangTrajectory2D trajectory;
     trajectory.generate(
       Eigen::Vector2d(current_position.x(), current_position.y()),
-      Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y),
-      Eigen::Vector2d(command.current_velocity.x, command.current_velocity.y), max_vel, max_acc);
+      Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y), v0, max_vel, max_acc, max_brk);
 
     // BangBangTrajectoryから速度を取得
     // Vision遅延（~100ms）を考慮してlookahead時間を設定
@@ -188,16 +196,14 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     double distance_to_target = std::hypot(
       pos_mode.target_x - current_position.x(), pos_mode.target_y - current_position.y());
 
-    // 疑似I項：低速かつ目標から離れている場合に補正
-    // terminal_velocity（0の場合はフォールバック値0.3 m/sを使用）
-    const double terminal_vel = command.local_planner_config.terminal_velocity > 0
-                                  ? command.local_planner_config.terminal_velocity
-                                  : 0.3;
+    // terminal_velocity: スキルが明示的に設定した場合のみ疑似I項として適用する
+    // 0（デフォルト・未指定）のときはBangBang軌道の出力に従い、目標で停止する
+    const double terminal_vel = command.local_planner_config.terminal_velocity;
     const double min_distance =
       std::max(static_cast<double>(pos_mode.position_tolerance) * 2, 0.03);  // 最低3cm
 
-    if (next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
-      // 低速かつ目標から離れている場合、目標方向への terminal_velocity を設定
+    if (terminal_vel > 0 && next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
+      // terminal_velocityが指定されており、低速かつ目標から離れている場合に補正
       Eigen::Vector2d direction =
         (Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y) - current_position).normalized();
       target_vel = direction * terminal_vel;

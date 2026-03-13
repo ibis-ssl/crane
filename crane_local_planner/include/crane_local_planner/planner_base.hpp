@@ -24,7 +24,7 @@ public:
     world_model = std::make_shared<WorldModelWrapper>(node);
 
     // 経路計画用の減速度パラメータを読み込み
-    node.declare_parameter("planning_deceleration.high_speed", 2.5);
+    node.declare_parameter("planning_deceleration.high_speed", 4.5);
     planning_deceleration_high_speed =
       node.get_parameter("planning_deceleration.high_speed").as_double();
 
@@ -35,6 +35,10 @@ public:
     node.declare_parameter("planning_deceleration.velocity_threshold", 1.5);
     planning_deceleration_velocity_threshold =
       node.get_parameter("planning_deceleration.velocity_threshold").as_double();
+
+    // 経路計画用の加速度パラメータを読み込み（減速度とは別に設定）
+    node.declare_parameter("planning_acceleration", 5.0);
+    planning_acceleration = node.get_parameter("planning_acceleration").as_double();
   }
   virtual auto calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, double theta_offset)
@@ -81,6 +85,8 @@ protected:
   double planning_deceleration_high_speed;
   double planning_deceleration_low_speed;
   double planning_deceleration_velocity_threshold;
+  // 経路計画用の加速度パラメータ（加速フェーズに使用）
+  double planning_acceleration;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_
