@@ -48,11 +48,13 @@ public:
     });
   }
 
-  auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 0.5) -> void
+  auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 1.0) -> void
   {
     enemy_slack_config_ = config;
     slack_scale_ = slack_scale;
   }
+
+  auto setMinPassScore(double min_score) -> void { min_pass_score_ = min_score; }
 
 private:
   // パス起点の計算
@@ -73,7 +75,8 @@ private:
     .robot_max_acceleration = 3.0,  // 敵は自チームより高め（安全マージン）
     .robot_max_velocity = 5.5       // 敵は自チームより高め（安全マージン）
   };
-  double slack_scale_ = 0.5;  // スコア正規化用
+  double slack_scale_ = 1.0;     // スコア正規化用（1.0s余裕で満点）
+  double min_pass_score_ = 0.5;  // この閾値未満のスコアはパス不可
 };
 
 }  // namespace crane::metrics
