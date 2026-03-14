@@ -61,7 +61,7 @@ auto assignMarkersToEnemies(
   const std::vector<uint8_t> & available_robot_ids,
   const WorldModelWrapper::SharedPtr & world_model,
   const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
-  bool assign_remaining) -> MarkingResult
+  bool assign_remaining, const std::string & mark_mode) -> MarkingResult
 {
   MarkingResult result;
 
@@ -81,19 +81,36 @@ auto assignMarkersToEnemies(
     ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
     ranges::to<std::vector>();
 
+  const bool is_save_goal = (mark_mode == "save_goal");
+  const Point reference = is_save_goal ? world_model->getOurGoalCenter() : world_model->ball().pos;
+
   for (const auto & [enemy_robot, score] : danger_enemies) {
     if (remaining_robots.empty()) {
       break;
     }
+
+    // マーキングセグメントを事前計算（割当コストと可視化で共用）
+    constexpr double mark_dist = 0.5;
+    constexpr double max_mark_dist = 1.5;
+    auto dir = (reference - enemy_robot->pose.pos).normalized();
+    Point near_end = enemy_robot->pose.pos + dir * mark_dist;
+    Point far_end = enemy_robot->pose.pos + dir * max_mark_dist;
+    if (is_save_goal) {
+      constexpr double penalty_offset = 0.15;
+      Segment enemy_to_goal{enemy_robot->pose.pos, world_model->getOurGoalCenter()};
+      auto intersection =
+        world_model->getIntersectionOurPenaltyArea(enemy_to_goal, penalty_offset, penalty_offset);
+      if (intersection) {
+        double dist_to_boundary = (intersection.value() - enemy_robot->pose.pos).norm();
+        double clamped_max = std::max(mark_dist, dist_to_boundary - 0.05);
+        far_end = enemy_robot->pose.pos + dir * std::min(max_mark_dist, clamped_max);
+        near_end = enemy_robot->pose.pos + dir * std::min(mark_dist, clamped_max);
+      }
+    }
+    Segment marking_segment{near_end, far_end};
+
     auto best_robot = ranges::min(remaining_robots, ranges::less{}, [&](const auto & robot) {
       // 割当コスト: 敵に対するマーキングセグメントへの距離（固定点ではなく線分ベース）
-      Point reference = world_model->ball().pos;
-      constexpr double mark_dist = 0.5;
-      constexpr double max_mark_dist = 1.5;
-      auto dir = (reference - enemy_robot->pose.pos).normalized();
-      Point near_end = enemy_robot->pose.pos + dir * mark_dist;
-      Point far_end = enemy_robot->pose.pos + dir * max_mark_dist;
-      Segment marking_segment{near_end, far_end};
       return getClosestPointAndDistance(robot->pose.pos, marking_segment).distance;
     });
 
@@ -105,17 +122,13 @@ auto assignMarkersToEnemies(
     auto marker = std::make_shared<skills::Marker>(
       command_name, static_cast<uint8_t>(best_robot->id), world_model);
     marker->setParameter("marking_robot_id", enemy_robot->id);
-    marker->setParameter("mark_mode", std::string("intercept_pass"));
+    marker->setParameter("mark_mode", mark_mode);
     marker->setParameter("mark_distance", 0.5);
     result.markers.push_back(marker);
 
     visualizer->drawCircle(enemy_robot->pose.pos, 0.3, "black", 10);
-    // マーキングセグメントを可視化
-    {
-      auto dir = (world_model->ball().pos - enemy_robot->pose.pos).normalized();
-      visualizer->drawLine(
-        enemy_robot->pose.pos + dir * 0.5, enemy_robot->pose.pos + dir * 1.5, "green", 10);
-    }
+    // マーキングセグメントを可視化（コスト計算と同一セグメント）
+    visualizer->drawLine(near_end, far_end, "green", 10);
     visualizer->drawLine(best_robot->pose.pos, enemy_robot->pose.pos, "black", 20);
   }
 

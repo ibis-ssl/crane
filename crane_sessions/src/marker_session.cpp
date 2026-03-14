@@ -19,7 +19,19 @@ MarkerSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
     ranges::to<std::vector>();
   auto lock = std::lock_guard(markers_mutex);
   visualizer->clearBuffer();
-  auto result = assignMarkersToEnemies(robot_ids, world_model, visualizer, "marker_planner", true);
+  // ボール停止中＋敵がボール近くにいる＝相手セットプレイ → save_goalモードでゴール前を守る
+  std::string mark_mode = "intercept_pass";
+  if (!world_model->ball().isMoving(0.5)) {
+    auto their_robots = world_model->theirs().robotsWhere().available().get();
+    bool enemy_near_ball = std::any_of(
+      their_robots.begin(), their_robots.end(),
+      [&](const auto & r) { return r->getDistance(world_model->ball().pos) < 1.0; });
+    if (enemy_near_ball) {
+      mark_mode = "save_goal";
+    }
+  }
+  auto result =
+    assignMarkersToEnemies(robot_ids, world_model, visualizer, "marker_planner", true, mark_mode);
   markers = std::move(result.markers);
 
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
