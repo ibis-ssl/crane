@@ -1,0 +1,44 @@
+// Copyright (c) 2025 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#pragma once
+
+#include <map>
+#include <string>
+#include <vector>
+
+#include "bag_reader.hpp"
+
+namespace crane::bag
+{
+
+struct Event
+{
+  int64_t timestamp_ns;
+  double t;
+  std::string event_type;
+  std::string description;
+};
+
+/// イベントタイプ定数
+constexpr const char * EVENT_GOAL = "goal";
+constexpr const char * EVENT_PLAY = "play";
+constexpr const char * EVENT_ROLE = "role";
+constexpr const char * EVENT_KICK = "kick";
+constexpr const char * EVENT_BALL_SPEED = "ball_speed";
+
+inline const std::vector<std::string> ALL_EVENT_TYPES = {
+  EVENT_GOAL, EVENT_PLAY, EVENT_ROLE, EVENT_KICK, EVENT_BALL_SPEED};
+
+std::vector<Event> detect_events(const BagData & data, const std::vector<std::string> & types = {});
+
+std::vector<Event> detect_play_transitions(const BagData & data);
+std::vector<Event> detect_role_changes(const BagData & data);
+std::vector<Event> detect_kick_events(const BagData & data);
+std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold = 3.0);
+std::vector<Event> detect_goals(const BagData & data);
+
+}  // namespace crane::bag

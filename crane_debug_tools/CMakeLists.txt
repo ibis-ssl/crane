@@ -17,6 +17,17 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 ament_auto_find_build_dependencies()
 
+# Bag Analysis CLI Tool
+ament_auto_add_executable(crane_bag
+  src/bag/crane_bag_main.cpp
+  src/bag/bag_reader.cpp
+  src/bag/bag_survey.cpp
+  src/bag/bag_events.cpp
+  src/bag/bag_tracking.cpp
+  src/bag/bag_control.cpp
+)
+target_include_directories(crane_bag PRIVATE src/bag)
+
 # Simple Web Server (temporary solution)
 ament_auto_add_executable(crane_web_server
   src/simple_web_server.cpp
@@ -47,6 +58,7 @@ ament_python_install_package(crane_debug_tools)
 install(PROGRAMS
   scripts/mcap_analyzer.py
   scripts/svg_video_generator.py
+  scripts/crane_bag
   DESTINATION lib/${PROJECT_NAME}
 )
 

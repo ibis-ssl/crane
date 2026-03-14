@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+"""crane_bag CLI エントリスクリプト."""
+
+from crane_debug_tools.bag_analysis.cli import main
+
+main()

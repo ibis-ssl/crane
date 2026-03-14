@@ -10,6 +10,7 @@ setup(
     packages=[
         package_name,
         f"{package_name}.mcap_analysis",
+        f"{package_name}.bag_analysis",
         f"{package_name}.svg_video",
         f"{package_name}.svg_video.renderers",
     ],
