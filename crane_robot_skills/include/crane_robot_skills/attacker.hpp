@@ -7,6 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 #define CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 
+#include <chrono>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
@@ -82,6 +83,10 @@ protected:
 
 private:
   void configurePassKick(const Point & target, Kick & kick_skill);
+
+  // KICK状態の進捗タイムアウト用
+  std::chrono::steady_clock::time_point kick_state_entry_time{};
+  bool in_kick_state = false;
 
   bool shouldUseChipKick(const Point & target);
 
