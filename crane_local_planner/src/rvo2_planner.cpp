@@ -74,6 +74,12 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
   }
 
+  node.declare_parameter("penalty_area_offset", PENALTY_AREA_OFFSET);
+  PENALTY_AREA_OFFSET = node.get_parameter("penalty_area_offset").as_double();
+  node.declare_parameter("penalty_area_time_horizon_obst", PENALTY_AREA_TIME_HORIZON_OBST);
+  PENALTY_AREA_TIME_HORIZON_OBST =
+    static_cast<float>(node.get_parameter("penalty_area_time_horizon_obst").as_double());
+
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
 
@@ -92,8 +98,41 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
+auto RVO2Planner::initializePenaltyAreaObstacles() -> void
+{
+  // ペナルティエリアをRVO2のポリゴン障害物として登録する。
+  // processObstacles()呼び出し後は変更不可なので、フィールド情報確定後に一度だけ呼ぶ。
+  // 頂点は反時計回り（RVO2の仕様）で指定する。
+  const Box our_area = world_model->getOurPenaltyArea();
+  const Box their_area = world_model->getTheirPenaltyArea();
+  auto addBoxObstacle = [&](const Box & box) {
+    const float xmin = static_cast<float>(box.min_corner().x());
+    const float xmax = static_cast<float>(box.max_corner().x());
+    const float ymin = static_cast<float>(box.min_corner().y());
+    const float ymax = static_cast<float>(box.max_corner().y());
+    // 反時計回り: 左下 → 右下 → 右上 → 左上
+    rvo_sim->addObstacle({{xmin, ymin}, {xmax, ymin}, {xmax, ymax}, {xmin, ymax}});
+  };
+  addBoxObstacle(our_area);
+  addBoxObstacle(their_area);
+  rvo_sim->processObstacles();
+  penalty_area_obstacles_initialized = true;
+  RCLCPP_INFO(
+    rclcpp::get_logger("rvo2_local_planner"),
+    "Penalty area obstacles initialized (our: [%.2f,%.2f]x[%.2f,%.2f], "
+    "their: [%.2f,%.2f]x[%.2f,%.2f])",
+    our_area.min_corner().x(), our_area.max_corner().x(), our_area.min_corner().y(),
+    our_area.max_corner().y(), their_area.min_corner().x(), their_area.max_corner().x(),
+    their_area.min_corner().y(), their_area.max_corner().y());
+}
+
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
+  // ペナルティエリアObstacleの遅延初期化（フィールド情報が確定してから一度だけ）
+  if (!penalty_area_obstacles_initialized && world_model->fieldSize().squaredNorm() > 0.01) {
+    initializePenaltyAreaObstacles();
+  }
+
   const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
   if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
     for (int i = 0; i < 40; i++) {
@@ -276,6 +315,56 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         }
       }
     }
+
+    // ペナルティエリア物理ブレーキング制約
+    // ORCA（速度空間制約）はコマンド速度を制限するが、ロボットの物理慣性は考慮できない。
+    // 境界までの距離に基づく「物理的に停止可能な最大接近速度」を計算してprefVelocityを制限する。
+    //   max_approach_vel = sqrt(2 * planning_deceleration_high_speed * dist_to_boundary)
+    if (!command.local_planner_config.disable_goal_area_avoidance) {
+      auto applyPhysicalBrakingConstraint = [&](const Box & area) {
+        const double xmin = area.min_corner().x() - PENALTY_AREA_OFFSET;
+        const double xmax = area.max_corner().x() + PENALTY_AREA_OFFSET;
+        const double ymin = area.min_corner().y() - PENALTY_AREA_OFFSET;
+        const double ymax = area.max_corner().y() + PENALTY_AREA_OFFSET;
+        // ロボットがエリア内にいる場合はグローバル回避に任せる
+        if (
+          current_position.x() >= xmin && current_position.x() <= xmax &&
+          current_position.y() >= ymin && current_position.y() <= ymax) {
+          return;
+        }
+
+        // 各境界面への距離を計算し、接近方向速度成分を物理制動距離内に制限する
+        // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
+        if (const double d = xmin - current_position.x(); d > 0.0 && target_vel.x() > 0.0) {
+          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
+          target_vel.x() = std::min(target_vel.x(), v_max);
+        }
+        // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
+        if (const double d = current_position.x() - xmax; d > 0.0 && target_vel.x() < 0.0) {
+          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
+          target_vel.x() = std::max(target_vel.x(), -v_max);
+        }
+        // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
+        if (const double d = ymin - current_position.y(); d > 0.0 && target_vel.y() > 0.0) {
+          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
+          target_vel.y() = std::min(target_vel.y(), v_max);
+        }
+        // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
+        if (const double d = current_position.y() - ymax; d > 0.0 && target_vel.y() < 0.0) {
+          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
+          target_vel.y() = std::max(target_vel.y(), -v_max);
+        }
+      };
+      applyPhysicalBrakingConstraint(world_model->getOurPenaltyArea());
+      applyPhysicalBrakingConstraint(world_model->getTheirPenaltyArea());
+    }
+
+    // ペナルティエリア障害物回避のtimeHorizonObstをフラグに応じて設定
+    // disable_goal_area_avoidance=trueのロボット（GKなど）は障害物回避を無効化
+    rvo_sim->setAgentTimeHorizonObst(
+      command.robot_id, command.local_planner_config.disable_goal_area_avoidance
+                          ? 0.0f
+                          : PENALTY_AREA_TIME_HORIZON_OBST);
 
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
@@ -562,7 +651,6 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
 {
   if (not command.local_planner_config.disable_goal_area_avoidance) {
     constexpr double SURROUNDING_OFFSET = 0.2;
-    constexpr double PENALTY_AREA_OFFSET = 0.1;
 
     auto avoidPenaltyArea = [&](const Box & penalty_area, const Point & goal_pos) {
       constexpr int MAX_ITERATIONS = 100;

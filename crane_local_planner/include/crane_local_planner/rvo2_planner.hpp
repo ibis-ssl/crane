@@ -80,6 +80,8 @@ private:
     Point & target_pos, const Point & current_pos,
     const crane_msgs::msg::RobotCommand & command) const -> void;
 
+  auto initializePenaltyAreaObstacles() -> void;
+
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   crane_msgs::msg::RobotCommands pre_commands;
@@ -106,6 +108,12 @@ private:
   double CRASH_SAFETY_MARGIN = 0.3;
   double CRASH_AVOIDANCE_DISTANCE = 1.0;
   double CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
+
+  // ペナルティエリア回避パラメータ
+  double PENALTY_AREA_OFFSET = 0.1;  // ペナルティエリア判定マージン [m]（グローバル回避用）
+  float PENALTY_AREA_TIME_HORIZON_OBST = 0.5f;  // RVO2障害物回避の時間ホライズン [s]
+
+  bool penalty_area_obstacles_initialized = false;
 
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
