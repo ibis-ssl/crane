@@ -119,6 +119,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
 
+  const auto now = rclcpp::Time(world_model.header.stamp);
+
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
 
@@ -128,33 +130,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available_hardware =
       robot_diagnostic_errors_.count(robot.id) == 0 || !robot_diagnostic_errors_[robot.id];
 
-    // タイムスタンプの伝播（tracker）
-    if (
-      robot.last_tracker_detection_stamp.sec > 0 ||
-      robot.last_tracker_detection_stamp.nanosec > 0) {
-      info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
-    } else {
-      info->last_tracker_detection_stamp = std::nullopt;
-    }
-
-    // タイムスタンプの伝播（feedback）
-    if (
-      robot.last_feedback_detection_stamp.sec > 0 ||
-      robot.last_feedback_detection_stamp.nanosec > 0) {
-      info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
-    } else {
-      info->last_feedback_detection_stamp = std::nullopt;
-    }
-
-    // タイムアウト判定（0.1秒）
-    constexpr double TRACKER_TIMEOUT_SEC = 0.1;
-    auto now = rclcpp::Time(world_model.header.stamp);
-    if (info->last_tracker_detection_stamp.has_value()) {
-      auto elapsed = (now - *info->last_tracker_detection_stamp).seconds();
-      info->available_tracker = (elapsed < TRACKER_TIMEOUT_SEC);
-    } else {
-      info->available_tracker = false;
-    }
+    updateRobotTimestamps(*info, robot, now);
 
     if (info->available()) {
       info->id = robot.id;
@@ -185,33 +161,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available_hardware = true;  // 敵ロボットの診断情報はないため常にtrue
     info->available_feedback = true;  // 敵ロボットのフィードバックはないため常にtrue
 
-    // タイムスタンプの伝播（tracker）
-    if (
-      robot.last_tracker_detection_stamp.sec > 0 ||
-      robot.last_tracker_detection_stamp.nanosec > 0) {
-      info->last_tracker_detection_stamp = rclcpp::Time(robot.last_tracker_detection_stamp);
-    } else {
-      info->last_tracker_detection_stamp = std::nullopt;
-    }
-
-    // タイムスタンプの伝播（feedback） - 敵ロボットには不要だが一貫性のため
-    if (
-      robot.last_feedback_detection_stamp.sec > 0 ||
-      robot.last_feedback_detection_stamp.nanosec > 0) {
-      info->last_feedback_detection_stamp = rclcpp::Time(robot.last_feedback_detection_stamp);
-    } else {
-      info->last_feedback_detection_stamp = std::nullopt;
-    }
-
-    // タイムアウト判定（0.1秒）
-    constexpr double TRACKER_TIMEOUT_SEC = 0.1;
-    auto now = rclcpp::Time(world_model.header.stamp);
-    if (info->last_tracker_detection_stamp.has_value()) {
-      auto elapsed = (now - *info->last_tracker_detection_stamp).seconds();
-      info->available_tracker = (elapsed < TRACKER_TIMEOUT_SEC);
-    } else {
-      info->available_tracker = false;
-    }
+    updateRobotTimestamps(*info, robot, now);
 
     if (info->available()) {
       info->id = robot.id;
@@ -727,6 +677,37 @@ auto WorldModelWrapper::diagnosticsCallback(
         // IDのパースに失敗した場合は無視
       }
     }
+  }
+}
+
+auto WorldModelWrapper::updateRobotTimestamps(
+  RobotInfo & info, const crane_msgs::msg::RobotInfo & robot_msg, const rclcpp::Time & now) -> void
+{
+  // タイムスタンプの伝播（tracker）
+  if (
+    robot_msg.last_tracker_detection_stamp.sec > 0 ||
+    robot_msg.last_tracker_detection_stamp.nanosec > 0) {
+    info.last_tracker_detection_stamp = rclcpp::Time(robot_msg.last_tracker_detection_stamp);
+  } else {
+    info.last_tracker_detection_stamp = std::nullopt;
+  }
+
+  // タイムスタンプの伝播（feedback）
+  if (
+    robot_msg.last_feedback_detection_stamp.sec > 0 ||
+    robot_msg.last_feedback_detection_stamp.nanosec > 0) {
+    info.last_feedback_detection_stamp = rclcpp::Time(robot_msg.last_feedback_detection_stamp);
+  } else {
+    info.last_feedback_detection_stamp = std::nullopt;
+  }
+
+  // タイムアウト判定（0.1秒）
+  constexpr double TRACKER_TIMEOUT_SEC = 0.1;
+  if (info.last_tracker_detection_stamp.has_value()) {
+    auto elapsed = (now - *info.last_tracker_detection_stamp).seconds();
+    info.available_tracker = (elapsed < TRACKER_TIMEOUT_SEC);
+  } else {
+    info.available_tracker = false;
   }
 }
 

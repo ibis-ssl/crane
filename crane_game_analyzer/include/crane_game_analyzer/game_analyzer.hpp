@@ -90,18 +90,17 @@ private:
     BallPositionStamped record;
     record.position = world_model->ball().pos;
     record.stamp = now();
-    static std::deque<BallPositionStamped> ball_records;
-    ball_records.push_front(record);
+    ball_records_.push_front(record);
 
-    auto latest_time = ball_records.front().stamp;
-    auto latest_position = ball_records.front().position;
+    auto latest_time = ball_records_.front().stamp;
+    auto latest_position = ball_records_.front().position;
     // 一定時間以上前の履歴を削除
-    std::erase_if(ball_records, [&](auto & ball_record) {
+    std::erase_if(ball_records_, [&](auto & ball_record) {
       return (latest_time - ball_record.stamp) > config.ball_idle.threshold_duration * 2;
     });
 
     // ボール履歴（新しいほど，indexが若い）のチェックして，ボールがストップしているかを確認
-    return not std::ranges::any_of(ball_records, [&](const auto & ball_record) {
+    return not std::ranges::any_of(ball_records_, [&](const auto & ball_record) {
       bool distance_cond = (latest_position - ball_record.position).norm() <
                            config.ball_idle.move_distance_threshold_meter;
       bool time_cond = (latest_time - ball_record.stamp) < config.ball_idle.threshold_duration;
@@ -242,6 +241,9 @@ private:
   GameAnalyzerConfig config;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
+
+  // ボール位置の履歴
+  std::deque<BallPositionStamped> ball_records_;
 
   // ロボット位置の履歴
   std::deque<RobotPositionStamped> robot_records_;

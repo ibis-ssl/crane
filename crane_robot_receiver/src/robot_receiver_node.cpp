@@ -47,9 +47,6 @@ public:
   auto updateFeedback() -> void
   {
     RobotFeedback feedback;
-    // 最新のデータでリセット
-    feedback = robot_feedback;
-
     // 受信タイムスタンプを更新
     feedback.received_stamp = clock.now();
 
@@ -202,46 +199,31 @@ public:
           robot_feedback_msg.packet_frequency_hz = receiver->getPacketFrequency();
           robot_feedback_msg.counter = robot_feedback.counter;
           robot_feedback_msg.kick_state = robot_feedback.kick_state;
-          for (auto temperature : robot_feedback.temperature) {
-            robot_feedback_msg.temperatures.push_back(temperature);
-          }
+          robot_feedback_msg.temperatures.assign(
+            std::begin(robot_feedback.temperature), std::end(robot_feedback.temperature));
 
           robot_feedback_msg.error_id = robot_feedback.error_id;
           robot_feedback_msg.error_info = robot_feedback.error_info;
-
           robot_feedback_msg.error_value = robot_feedback.error_value;
 
-          for (auto motor_current : robot_feedback.motor_current) {
-            robot_feedback_msg.motor_current.push_back(motor_current);
-          }
-          for (auto ball_detection : robot_feedback.ball_detection) {
-            robot_feedback_msg.ball_detection.push_back(ball_detection);
-          }
-          robot_feedback_msg.ball_sensor =
-            static_cast<bool>(robot_feedback_msg.ball_detection[0] == 1);
+          robot_feedback_msg.motor_current.assign(
+            std::begin(robot_feedback.motor_current), std::end(robot_feedback.motor_current));
+          robot_feedback_msg.ball_detection.assign(
+            std::begin(robot_feedback.ball_detection), std::end(robot_feedback.ball_detection));
+          robot_feedback_msg.ball_sensor = (robot_feedback_msg.ball_detection[0] == 1);
           robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
           robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
-          for (auto odom : robot_feedback.odom) {
-            robot_feedback_msg.odom.push_back(odom);
-          }
-          for (auto odom_speed : robot_feedback.odom_speed) {
-            robot_feedback_msg.odom_speed.push_back(odom_speed);
-          }
-          for (auto mouse_odom : robot_feedback.mouse_odom) {
-            robot_feedback_msg.mouse_odom.push_back(mouse_odom);
-          }
-
-          for (auto mouse_vel : robot_feedback.mouse_vel) {
-            robot_feedback_msg.mouse_vel.push_back(mouse_vel);
-          }
-          for (auto voltage : robot_feedback.voltage) {
-            robot_feedback_msg.voltage.push_back(voltage);
-          }
+          robot_feedback_msg.odom.assign(robot_feedback.odom.begin(), robot_feedback.odom.end());
+          robot_feedback_msg.odom_speed.assign(
+            robot_feedback.odom_speed.begin(), robot_feedback.odom_speed.end());
+          robot_feedback_msg.mouse_odom.assign(
+            robot_feedback.mouse_odom.begin(), robot_feedback.mouse_odom.end());
+          robot_feedback_msg.mouse_vel.assign(
+            robot_feedback.mouse_vel.begin(), robot_feedback.mouse_vel.end());
+          robot_feedback_msg.voltage.assign(
+            robot_feedback.voltage.begin(), robot_feedback.voltage.end());
           robot_feedback_msg.check_ver = robot_feedback.check_ver;
-
-          for (const auto & value : robot_feedback.values) {
-            robot_feedback_msg.values.push_back(value);
-          }
+          robot_feedback_msg.values = robot_feedback.values;
           msg.feedback.push_back(robot_feedback_msg);
         }
       }

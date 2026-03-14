@@ -22,6 +22,31 @@
 // cspell: ignore OBST
 namespace crane
 {
+
+enum class ZeroVelocityReason {
+  NONE,
+  POSITION_TOLERANCE,
+  DEFAULT_3CM_TOLERANCE,
+  RVO_COLLISION_OR_CONSTRAINT,
+  PREF_VELOCITY_ZERO,
+};
+
+inline auto toString(ZeroVelocityReason reason) -> std::string
+{
+  switch (reason) {
+    case ZeroVelocityReason::POSITION_TOLERANCE:
+      return "POSITION_TOLERANCE";
+    case ZeroVelocityReason::DEFAULT_3CM_TOLERANCE:
+      return "DEFAULT_3CM_TOLERANCE";
+    case ZeroVelocityReason::RVO_COLLISION_OR_CONSTRAINT:
+      return "RVO_COLLISION_OR_CONSTRAINT";
+    case ZeroVelocityReason::PREF_VELOCITY_ZERO:
+      return "PREF_VELOCITY_ZERO";
+    default:
+      return "NONE";
+  }
+}
+
 class RVO2Planner : public LocalPlannerBase
 {
 public:
@@ -55,6 +80,8 @@ private:
     Point & target_pos, const Point & current_pos,
     const crane_msgs::msg::RobotCommand & command) const -> void;
 
+  auto initializePenaltyAreaObstacles() -> void;
+
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   crane_msgs::msg::RobotCommands pre_commands;
@@ -72,9 +99,22 @@ private:
   float RVO_MAX_SPEED = 10.0f;
 
   double MAX_VEL = 5.0;
-  double ACCELERATION = 4.0;
   double STOP_STATE_MAX_VELOCITY = 1.0;
   double FIELD_BOUNDARY_OFFSET = 0.2;
+
+  // 衝突ファール (crashing) 回避パラメータ
+  // SSLルール: 衝突時の速度差射影 > 1.5 m/s でファール
+  double CRASH_SPEED_LIMIT = 1.5;
+  double CRASH_SAFETY_MARGIN = 0.3;
+  double CRASH_AVOIDANCE_DISTANCE = 1.0;
+  double CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
+
+  // ペナルティエリア回避パラメータ
+  double PENALTY_AREA_OFFSET = 0.1;  // ペナルティエリア判定マージン [m]（グローバル回避用）
+  float PENALTY_AREA_TIME_HORIZON_OBST = 0.5f;  // RVO2障害物回避の時間ホライズン [s]
+
+  bool penalty_area_obstacles_initialized = false;
+
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 

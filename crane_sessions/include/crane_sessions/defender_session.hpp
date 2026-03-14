@@ -37,12 +37,25 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
+  int getDesiredRobotNumber(int min_robots, int max_robots) const override
+  {
+    if (world_model->point_checker.isInOurHalf(world_model->ball().pos)) {
+      return max_robots;
+    }
+    return min_robots;
+  }
+
+  bool isHardConstraint() const override { return true; }
+
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     // 守備ライン位置に近いロボットを優先
     auto wm = world_model;  // shared_ptrをコピー
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == wm->getOurGoalieId()) {
+        return GOALIE_EXCLUSION_COST;
+      }
       Segment ball_line{wm->goal(), wm->ball().pos};
       auto parameter = getDefenseLinePointParameter(ball_line, wm);
       if (not parameter) {

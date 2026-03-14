@@ -121,15 +121,6 @@ public:
   {
     const auto & our_robots = world_model->ours().robotsWhere().available().get();
     const auto & their_robots = world_model->theirs().robotsWhere().available().get();
-    // update defense area info
-    for (auto & area_with_info : defense_areas) {
-      area_with_info.our_robot_count = std::ranges::count_if(our_robots, [&](const auto & robot) {
-        return isInBox(area_with_info.box, robot->pose.pos);
-      });
-      area_with_info.their_robot_count = std::ranges::count_if(
-        their_robots,
-        [&](const auto & robot) { return isInBox(area_with_info.box, robot->pose.pos); });
-    }
     auto areas_with_info =
       defense_areas | ranges::views::transform([&](const auto & area_with_info) {
         int our_count = std::ranges::count_if(our_robots, [&](const auto & robot) {

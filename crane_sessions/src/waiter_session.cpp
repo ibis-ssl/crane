@@ -16,9 +16,6 @@ WaiterSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
     auto command =
       std::make_shared<crane::PositionCommandWrapper>("waiter_planner", robot_id.id, world_model);
     command->stopHere();
-    if (command->getRobot()->vel.linear.norm() < 0.5) {
-      command->stopHere();
-    }
     robot_commands.emplace_back(command->getMsg());
   }
   return {SessionBase::Status::RUNNING, robot_commands};

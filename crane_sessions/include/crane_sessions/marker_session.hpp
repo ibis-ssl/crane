@@ -40,20 +40,22 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // 危険な敵ロボットの中心位置に近いロボットを優先
-    auto wm = world_model;  // shared_ptrをコピー
-    return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      auto danger_enemies = getDangerEnemies(wm);
-      if (danger_enemies.empty()) {
-        // 敵がいない場合はフィールド中央への距離を返す
-        return robot->getDistance(Point(0.0, 0.0));
-      }
-      // 危険な敵ロボットの平均位置を計算
-      Point center(0.0, 0.0);
+    // 危険な敵ロボットの平均位置を1回だけ計算してキャッシュ
+    auto danger_enemies = getDangerEnemies(world_model);
+    Point center(0.0, 0.0);
+    if (!danger_enemies.empty()) {
       for (const auto & [enemy, score] : danger_enemies) {
         center += enemy->pose.pos;
       }
       center /= static_cast<double>(danger_enemies.size());
+    }
+    bool has_enemies = !danger_enemies.empty();
+    return [center, has_enemies](const std::shared_ptr<RobotInfo> & robot) {
+      if (!has_enemies) {
+        // 敵がいない場合はフィールド中央への距離を返す
+        return robot->getDistance(Point(0.0, 0.0));
+      }
+      // 危険な敵ロボットの中心位置に近いロボットを優先
       return robot->getDistance(center);
     };
   }
@@ -66,10 +68,6 @@ public:
   }
 
 private:
-  auto assignMarkingTarget(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
-    -> std::vector<uint8_t>;
-
   std::vector<std::shared_ptr<skills::Marker>> markers;
 
   std::mutex markers_mutex;

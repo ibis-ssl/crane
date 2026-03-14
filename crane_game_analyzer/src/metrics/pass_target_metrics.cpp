@@ -51,9 +51,19 @@ auto PassTargetMetric::calcScore(
 {
   double score = 1.0;
 
-  // 距離（0〜4mで上昇）
+  // 距離評価（山型：1.5〜4.0mが最適ゾーン）
   const double pass_distance = (p - pass_origin).norm();
-  score += std::clamp(pass_distance * 0.5, 0.0, 2.0);
+  {
+    double distance_factor;
+    if (pass_distance < 1.5) {
+      distance_factor = pass_distance / 1.5;  // 0m→0.0, 1.5m→1.0
+    } else if (pass_distance <= 4.0) {
+      distance_factor = 1.0;  // 最適ゾーン
+    } else {
+      distance_factor = std::max(0.2, 1.0 - (pass_distance - 4.0) * 0.15);  // 漸減
+    }
+    score *= distance_factor;
+  }
 
   // ゴール角度（敵ゴールに対する見通し）
   {
@@ -76,15 +86,16 @@ auto PassTargetMetric::calcScore(
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
 
-  constexpr double KICK_SPEED = 3.0;
+  // 実際のキック速度に合わせて距離依存（attacker.cpp の configurePassKick と同じ式）
+  const double kick_speed = std::clamp(pass_distance, 2.0, 4.0);
   const Segment pass_line{pass_origin, p};
   const Vector2 pass_dir = p - pass_origin;
   const Vector2 ball_velocity =
-    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * KICK_SPEED) : Vector2::Zero();
+    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * kick_speed) : Vector2::Zero();
 
   auto calc_slack_time = [&](const auto & enemy) -> double {
     const auto closest = getClosestPointAndDistance(enemy->pose.pos, pass_line);
-    const double ball_time = (closest.closest_point - pass_origin).norm() / KICK_SPEED;
+    const double ball_time = (closest.closest_point - pass_origin).norm() / kick_speed;
 
     auto slack_result = ctx.world_model->getBallSlackTime(
       pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
@@ -155,40 +166,23 @@ auto PassTargetMetric::compute(MetricContext & ctx) -> void
     const int best_id = static_cast<int>(best.id);
     const double best_score = static_cast<double>(best.value);
 
-    const rclcpp::Time now_time = ros_clock_.now();
-    const bool hold_active = (now_time - last_switch_time_).seconds() < min_hold_duration_sec_;
+    // 最低スコア閾値チェック: パス品質が低すぎる場合はパス不可
+    if (best_score < min_pass_score_) {
+      pass_hysteresis_.reset();
+      return;
+    }
 
-    double prev_score = -1.0;
-    if (last_pass_target_id_.has_value()) {
-      auto it =
-        ranges::find_if(ctx.analysis.pass_scores, [&](const crane_msgs::msg::FloatWithID & s) {
-          return s.id == last_pass_target_id_.value();
-        });
+    double prev_score = 0.0;
+    const auto prev_id = pass_hysteresis_.currentId();
+    if (prev_id.has_value()) {
+      auto it = ranges::find_if(
+        ctx.analysis.pass_scores,
+        [&](const crane_msgs::msg::FloatWithID & s) { return s.id == prev_id.value(); });
       if (it != ranges::end(ctx.analysis.pass_scores)) prev_score = it->value;
     }
 
-    bool should_switch = true;
-    if (last_pass_target_id_.has_value()) {
-      if (best_id == last_pass_target_id_.value()) {
-        should_switch = false;  // 同一なら切替不要
-      } else if (hold_active) {
-        if (prev_score >= 0.0) {
-          should_switch = (best_score - prev_score) > min_improvement_margin_;
-        } else {
-          should_switch = false;  // 前回スコア不明
-        }
-      }
-    }
-
-    if (!last_pass_target_id_.has_value()) {
-      last_pass_target_id_ = best_id;
-      last_switch_time_ = now_time;
-    } else if (should_switch) {
-      last_pass_target_id_ = best_id;
-      last_switch_time_ = now_time;
-    }
-
-    ctx.analysis.pass_target_id = last_pass_target_id_.value();
+    pass_hysteresis_.shouldSwitch(best_id, best_score, prev_score);
+    ctx.analysis.pass_target_id = pass_hysteresis_.currentId().value_or(-1);
   }
 }
 

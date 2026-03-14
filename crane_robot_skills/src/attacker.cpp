@@ -27,6 +27,8 @@ constexpr double BALL_CONTROL_DISTANCE = 1.0;
 constexpr double CHIP_KICK_DISTANCE = 2.0;
 constexpr double MOVING_BALL_VELOCITY = 1.0;
 constexpr double ENEMY_NEAR_BALL_DISTANCE = 2.0;
+constexpr double ENEMY_SLACK_RECEIVE_THRESHOLD = 0.3;  // RECEIVE抑制: 敵がこの秒数以上早いと諦める
+constexpr double MIN_PASS_SCORE_ATTACKER = 0.2;        // パス品質の下限（二重チェック用）
 }  // namespace
 void Attacker::initialize()
 {
@@ -116,6 +118,22 @@ void Attacker::initialize()
         robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
         world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
         world_model()->ball().isMovingTowards(robot()->pose.pos)) {
+        // GameAnalysisの既存slackデータで敵との競合チェック（追加計算コストなし）
+        const auto & ga = world_model()->getMsg().game_analysis;
+        double my_min_slack = -100.0;
+        for (const auto & s : ga.our_slack) {
+          if (s.id == robot()->id) {
+            my_min_slack = s.min.slack_time;
+            break;
+          }
+        }
+        double best_enemy_slack = -100.0;
+        for (const auto & s : ga.their_slack) {
+          best_enemy_slack = std::max(best_enemy_slack, static_cast<double>(s.min.slack_time));
+        }
+        if (best_enemy_slack > my_min_slack + ENEMY_SLACK_RECEIVE_THRESHOLD) {
+          return false;
+        }
         return true;
       } else {
         return false;
@@ -136,6 +154,16 @@ void Attacker::initialize()
         // 受取に成功してドリブラで触れている
         return true;
       } else {
+        // 敵がボールに明らかに近い場合は諦めてENTRY_POINTへ（再割り当て待ち）
+        auto enemies = world_model()->theirs().robotsWhere().available().get();
+        auto nearest_enemy =
+          world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball().pos, enemies);
+        if (nearest_enemy.has_value()) {
+          double my_dist = robot()->getDistance(world_model()->ball().pos);
+          if (nearest_enemy->distance < my_dist * 0.7) {
+            return true;
+          }
+        }
         return false;
       }
     });
@@ -159,8 +187,8 @@ void Attacker::initialize()
       }
     }();
 
-    double goal_angle_width = evaluateGoalAngle(robot()->pose.pos);
-    auto [best_angle, _] = world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
+    auto [best_angle, goal_angle_width] =
+      world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
     double angle_diff_deg =
       std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
       180.0 / M_PI;
@@ -199,8 +227,21 @@ void Attacker::initialize()
     if (world_model()->getMsg().game_analysis.pass_target_id >= 0) {
       auto target_id = static_cast<uint8_t>(world_model()->getMsg().game_analysis.pass_target_id);
       if (target_id != robot()->id) {
-        pass_receiver_id = target_id;
-        kick_target = world_model()->getOurRobot(target_id)->pose.pos;
+        // pass_scores からスコアを参照して低品質パスを拒否
+        const auto & pass_scores = world_model()->getMsg().game_analysis.pass_scores;
+        double target_score = 0.0;
+        for (const auto & s : pass_scores) {
+          if (s.id == target_id) {
+            target_score = s.value;
+            break;
+          }
+        }
+        if (target_score >= MIN_PASS_SCORE_ATTACKER) {
+          pass_receiver_id = target_id;
+          kick_target = world_model()->getOurRobot(target_id)->pose.pos;
+        } else {
+          pass_receiver_id = std::nullopt;
+        }
       } else {
         pass_receiver_id = std::nullopt;
       }
@@ -244,9 +285,14 @@ void Attacker::initialize()
       command->disableBallAvoidance();
       return kick_skill.run();
     } else {
-      // FINAL_GUARD
+      // FINAL_GUARD: ゴール角度が不十分なのでチップキックで前方クリア
       printTextOnRobot("KICK::FINAL_GUARD");
-      return goal_kick_skill.run();
+      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+      kick_skill.setParameter("chip_kick", true);
+      kick_skill.setParameter("use_target_chip_distance", true);
+      kick_skill.setParameter("target_chip_distance", CHIP_KICK_DISTANCE);
+      command->disableBallAvoidance();
+      return kick_skill.run();
     }
   });
 }
@@ -322,21 +368,6 @@ double Attacker::evaluateGoalAngle(const Point & position)
   return goal_angle_width;
 }
 
-bool Attacker::isPassBlocked(const Point & target)
-{
-  Segment ball_to_target{world_model()->ball().pos, target};
-  const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-
-  if (
-    auto nearest_enemy =
-      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-    nearest_enemy) {
-    return nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-           nearest_enemy->distance < PASS_OBSTACLE_DISTANCE;
-  }
-  return false;
-}
-
 double Attacker::calculatePassScore(const Point & target)
 {
   double score = 1.0;
@@ -366,18 +397,17 @@ double Attacker::calculatePassScore(const Point & target)
                                          (world_model()->fieldSize().x() * 0.5);
   score *= (1.0 - normed_distance_to_their_goal);
 
-  // パスがブロックされている場合は諦める
-  if (isPassBlocked(target)) {
-    return 0.0;
-  }
-
-  // パスラインに敵がいるときはスコアを下げる
+  // パスがブロックされているかチェックし、ブロックされていたら諦め、近くにいるときはスコアを下げる
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-  if (
-    auto nearest_enemy =
-      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-    nearest_enemy) {
+  if (auto nearest_enemy =
+        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+      nearest_enemy) {
+    if (
+      nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
+      nearest_enemy->distance < PASS_OBSTACLE_DISTANCE) {
+      return 0.0;  // パスがブロックされている
+    }
     score *= std::clamp(nearest_enemy->distance / 2.0, 0.0, 1.0);
   }
 

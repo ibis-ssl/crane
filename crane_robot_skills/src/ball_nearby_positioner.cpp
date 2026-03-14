@@ -10,19 +10,7 @@ namespace crane::skills
 {
 auto BallNearByPositioner::update() -> Status
 {
-  auto situation = world_model()->getMsg().play_situation.command.value;
-  double distance_from_target = [&]() {
-    switch (situation) {
-      case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
-        return 0.5;
-      case crane_msgs::msg::PlaySituation::STOP:
-        return 0.5;
-      case crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT:
-        return 0.5;
-      default:
-        return 0.5;
-    }
-  }();
+  double distance_from_target = 0.5;
 
   distance_from_target += getParameter<double>("margin_distance");
   double normalized_offset =

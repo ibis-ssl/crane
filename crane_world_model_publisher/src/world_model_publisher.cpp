@@ -4,14 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_geometry/ddps.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
-#include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <sstream>
 
@@ -69,8 +67,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       std::scoped_lock lock(latest_game_analysis_msg_mutex_);
       latest_game_analysis_msg_ = *msg;
     });
-
-  pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
   wrapper_ = std::make_shared<WorldModelWrapper>(*this, false);
@@ -189,14 +185,8 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr wor
   // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
 
-  // 軌跡履歴データをVisualizationManagerに渡す
-  VisualizationManager::TrajectoryHistoryData trajectory_data;
-  trajectory_data.friend_history = friend_history;
-  trajectory_data.enemy_history = enemy_history;
-  trajectory_data.ball_info_history = ball_info_history;
-  trajectory_data.is_yellow = world_model->isYellow();
-
-  visualization_manager_->drawTrajectoryHistory(trajectory_data);
+  // 軌跡履歴データをVisualizationManagerに渡す（コピーなし）
+  visualization_manager_->drawTrajectoryHistory(friend_history, enemy_history, ball_info_history);
 
   visualization_manager_->drawBallPlacement(world_model);
 

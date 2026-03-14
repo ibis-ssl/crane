@@ -222,7 +222,7 @@ Point Receive::getInterceptionPoint() const
 
     // Emphasize selected point with double circle and small label
     if (getParameter<bool>("viz_candidates")) {
-      visualizer->doubleCircle(selected_point, 0.06, 0.09, "#ffffff", "#222", 0, 8);
+      visualizer->doubleCircle(selected_point, 0.06, 0.09, "#ffffff", "#222", 8);
       std::ostringstream ss;
       if (policy == "max_slack") ss << "max ";
       if (policy == "min_slack") ss << "min ";

@@ -102,17 +102,21 @@ inline auto readByte(const std::vector<uint8_t> & buffer, int offset) -> uint8_t
 // std::vector<char> 版のオーバーロード
 inline auto readFloat(const std::vector<char> & buffer, int offset) -> float
 {
-  return readFloat(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+  float value;
+  std::memcpy(&value, &buffer[offset], sizeof(float));
+  return value;
 }
 
 inline auto readUint16(const std::vector<char> & buffer, int offset) -> uint16_t
 {
-  return readUint16(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+  uint16_t value;
+  std::memcpy(&value, &buffer[offset], sizeof(uint16_t));
+  return value;
 }
 
 inline auto readByte(const std::vector<char> & buffer, int offset) -> uint8_t
 {
-  return readByte(reinterpret_cast<const std::vector<uint8_t> &>(buffer), offset);
+  return static_cast<uint8_t>(buffer[offset]);
 }
 }  // namespace protocol
 
@@ -138,19 +142,19 @@ struct RobotFeedback
 
   bool ball_sensor = false;
 
-  float_t yaw_angle = 0.0f;
+  float yaw_angle = 0.0f;
 
-  float_t diff_angle = 0.0f;
+  float diff_angle = 0.0f;
 
-  std::array<float_t, 2> odom = {0.0f, 0.0f};
+  std::array<float, 2> odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> odom_speed = {0.0f, 0.0f};
+  std::array<float, 2> odom_speed = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_odom = {0.0f, 0.0f};
+  std::array<float, 2> mouse_odom = {0.0f, 0.0f};
 
-  std::array<float_t, 2> mouse_vel = {0.0f, 0.0f};
+  std::array<float, 2> mouse_vel = {0.0f, 0.0f};
 
-  std::array<float_t, 2> voltage = {0.0f, 0.0f};
+  std::array<float, 2> voltage = {0.0f, 0.0f};
 
   uint8_t check_ver = 0;
 

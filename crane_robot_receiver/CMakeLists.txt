@@ -26,12 +26,11 @@ ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
 add_backward(robot_receiver_node)
+target_link_libraries(robot_receiver_node atomic)
 
 ament_auto_add_executable(ping_status_node
         src/ping_status_node.cpp
 )
-target_link_libraries(robot_receiver_node atomic)
-add_backward(robot_receiver_node)
 
 ament_auto_add_executable(diagnostic_publisher_node
         src/diagnostic_publisher.cpp

@@ -105,6 +105,7 @@ void Goalie::inplay(bool enable_emit)
   if (not intersections.empty() && world_model()->ball().vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
+    prev_wait_point = std::nullopt;
     auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
     auto target = [&]() -> Point {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
@@ -116,15 +117,34 @@ void Goalie::inplay(bool enable_emit)
 
     command->setTargetPosition(target).lookAtBallFrom(target);
   } else {
-    if (
-      world_model()->ball().isStopped(0.2) &&
-      world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
-      // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
+    // ボールがフィールド外かつ自陣側（ゴール内）かどうか
+    bool ball_in_our_goal = not world_model()->point_checker.isFieldInside(ball.pos) &&
+                            std::signbit(ball.pos.x()) == std::signbit(goal_center.x());
+    // 改善C: 敵が近くにいる場合は排出せず待ち受け（ゴール内ボールは敵チェックなし）
+    bool ball_in_penalty =
+      world_model()->ball().isStopped(0.2) && enable_emit &&
+      (world_model()->point_checker.isFriendPenaltyArea(ball.pos) || ball_in_our_goal);
+    bool should_emit = ball_in_penalty;
+    if (ball_in_penalty && not ball_in_our_goal) {
+      auto enemies = world_model()->theirs().robotsWhere().available().get();
+      bool enemy_near = std::any_of(enemies.begin(), enemies.end(), [&](const auto & e) {
+        return e->getDistance(ball.pos) < 2.0;
+      });
+      if (enemy_near) {
+        should_emit = false;
+        phase = "排出危険→待ち受け";
+      }
+    }
+
+    if (should_emit) {
+      // ボールが止まっていて，味方ペナルティエリア内にあり，敵が近くにいないときは排出
       phase = "ボール排出";
       emitBallFromPenaltyArea();
     } else {
       const double BLOCK_DIST = getParameter<double>("block_distance");
-      phase += "ボールを待ち受ける";
+      if (phase.empty()) {
+        phase += "ボールを待ち受ける";
+      }
       // デフォルト位置設定
       command->setTargetPosition(goal_center * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
@@ -152,13 +172,16 @@ void Goalie::inplay(bool enable_emit)
             candidates, ranges::less{}, [](const auto & p) { return p.second; });
         }();
 
-        Point goal_center_adjusted = goal_center;
-        goal_center_adjusted << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
-
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
-          // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
-          phase += "(範囲外なので正面に構える)";
-          command->setTargetPosition(goal_center_adjusted, 0.1).lookAt(Point(0, 0));
+          // 改善A: フィールド外ボールはゴール幅内にクランプして直接ポジション
+          phase += "(範囲外→ゴール直接守備)";
+          double clamped_y = std::clamp(
+            static_cast<double>(ball.pos.y()),
+            static_cast<double>(std::min(goals.first.y(), goals.second.y())),
+            static_cast<double>(std::max(goals.first.y(), goals.second.y())));
+          Point wait_point = clampXToGoalLine(Point(goal_center.x(), clamped_y), 0.1);
+          prev_wait_point = wait_point;
+          command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
         } else {
           Point threat_point = world_model()->ball().pos;
 
@@ -249,6 +272,18 @@ void Goalie::inplay(bool enable_emit)
             }
           }();
           Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
+
+          // 改善D: wait_pointのY座標をゴールポスト幅内にクランプ
+          double min_y = std::min(goals.first.y(), goals.second.y());
+          double max_y = std::max(goals.first.y(), goals.second.y());
+          wait_point.y() = std::clamp(wait_point.y(), min_y, max_y);
+
+          // 改善B: ローパスフィルタでターゲット振動を抑制
+          constexpr double SMOOTHING_ALPHA = 0.7;
+          if (prev_wait_point) {
+            wait_point = *prev_wait_point * SMOOTHING_ALPHA + wait_point * (1.0 - SMOOTHING_ALPHA);
+          }
+          prev_wait_point = wait_point;
 
           // ゴール侵入防止: ゴールラインより前方にあることを保証
           wait_point = clampXToGoalLine(wait_point, 0.1);

@@ -48,6 +48,15 @@ private:
 
   double pull_back_angle;
 
+  int contact_count_ = 0;
+
+  Point getPlacementTarget() const
+  {
+    Point p;
+    p << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    return p;
+  }
+
 public:
   template <typename... Args>
   explicit SingleBallPlacement(Args &&... args)

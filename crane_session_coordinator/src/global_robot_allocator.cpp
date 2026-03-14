@@ -74,11 +74,14 @@ auto GlobalRobotAllocator::allocateHardConstraints(
       break;
     }
 
-    // 適性評価でロボットをソート
+    // 適性評価でロボットをソート（ヒステリシスボーナスを適用して安定化）
     std::vector<std::pair<uint8_t, double>> robot_scores;
     for (const auto & robot_id : remaining_robots) {
       auto robot = world_model->getOurRobot(robot_id);
       double score = req.suitability_func(robot);
+      if (prev_state.wasAssignedTo(robot_id, req.name)) {
+        score -= config.hysteresis_bonus;
+      }
       robot_scores.emplace_back(robot_id, score);
     }
 

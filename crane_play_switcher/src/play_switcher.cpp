@@ -71,16 +71,12 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
 
-  static robocup_ssl_msgs::msg::Referee latest_raw_referee;
-
-  static struct InplayCommandInfo
-  {
-    int raw_command;
-    int command;
-    std::string reason;
-  } inplay_command_info;
+  constexpr double BALL_MOVE_THRESHOLD = 0.05;
+  constexpr double KICKOFF_TIMEOUT_SEC = 10.0;
+  constexpr double FREE_KICK_TIMEOUT_SEC = 12.0;
 
   inplay_command_info.raw_command = msg.command.value;
+  const bool is_yellow = msg.yellow.name == team_name;
 
   std::optional<int> next_play_situation = std::nullopt;
 
@@ -92,7 +88,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     play_situation_msg.next_command_raw.push_back(
       getRefereeCommandNamedInt(msg.next_command.value));
   }
-  if (bool is_yellow = msg.yellow.name == team_name; is_yellow) {
+  if (is_yellow) {
     play_situation_msg.our_team_info = msg.yellow;
     play_situation_msg.their_team_info = msg.blue;
   } else {
@@ -135,7 +131,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
         //-----------------------------------//
         // STOP
         //-----------------------------------//
-        static std::map<int, int> stop_command_map = [&]() {
+        std::map<int, int> stop_command_map = [&]() {
 #define NEXT_CMD_MAPPING(is_yellow, NEXT_RAW_CMD, CMD)                            \
   if (is_yellow) {                                                                \
     command_map[robocup_ssl_msgs::msg::RefereeCommand::NEXT_RAW_CMD##_YELLOW] = { \
@@ -149,7 +145,6 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
       PlaySituation::STOP_PRE_OUR_##CMD};                                         \
   }
           std::map<int, int> command_map;
-          bool is_yellow = msg.yellow.name == team_name;
           NEXT_CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION);
           NEXT_CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION);
           NEXT_CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE);
@@ -176,7 +171,6 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
         //-----------------------------------//
         // raw command -> crane command
         std::map<int, int> command_map;
-        bool is_yellow = msg.yellow.name == team_name;
 
         command_map[robocup_ssl_msgs::msg::RefereeCommand::HALT] = PlaySituation::HALT;
         command_map[robocup_ssl_msgs::msg::RefereeCommand::STOP] = PlaySituation::STOP;
@@ -216,13 +210,12 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
           // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
           // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
         ) {
-          if (0.05 <= (last_command_changed_state.ball_position - world_model->ball().pos).norm()) {
+          const double ball_movement =
+            (last_command_changed_state.ball_position - world_model->ball().pos).norm();
+          if (BALL_MOVE_THRESHOLD <= ball_movement) {
             next_play_situation = PlaySituation::INPLAY;
-            inplay_command_info.reason =
-              "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
-              std::to_string(
-                (last_command_changed_state.ball_position - world_model->ball().pos).norm()) +
-              "m)";
+            inplay_command_info.reason = "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
+                                         std::to_string(ball_movement) + "m)";
           }
         }
 
@@ -232,16 +225,15 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
         // キックオフから10秒経過
         if (
           play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START &&
-          10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+          KICKOFF_TIMEOUT_SEC <= (now() - last_command_changed_state.stamp).seconds()) {
           next_play_situation = PlaySituation::INPLAY;
           inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
         }
         // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
         if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
-          if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+          if (FREE_KICK_TIMEOUT_SEC <= (now() - last_command_changed_state.stamp).seconds()) {
             next_play_situation = PlaySituation::INPLAY;
-            inplay_command_info.reason =
-              "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+            inplay_command_info.reason = "INPLAY判定：敵フリーキックから12秒経過";
           }
         }
       }
@@ -280,12 +272,10 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   latest_raw_referee = msg;
 }
 
-template <typename RobotInfoT>
-auto calcDistanceFromBall(
-  const RobotInfoT & robot_info, const geometry_msgs::msg::Pose2D & ball_pose) -> double
-{
-  return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
-}
+#undef NORMAL_START_MAPPING
+#undef REDIRECT_MAPPING
+#undef CMD_MAPPING
+
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

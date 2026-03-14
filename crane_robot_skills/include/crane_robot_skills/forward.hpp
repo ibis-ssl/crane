@@ -11,8 +11,6 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "skill_base.hpp"
-
 namespace crane::skills
 {
 class Forward : public SkillBase

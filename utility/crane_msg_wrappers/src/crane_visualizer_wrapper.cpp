@@ -70,7 +70,7 @@ auto VisualizerMessageBuilder::arrow(
 auto VisualizerMessageBuilder::velocityArrow(
   Point pos, Vector2 velocity, const std::string & color, double scale, double stroke_width) -> void
 {
-  double speed = std::sqrt(velocity.x() * velocity.x() + velocity.y() * velocity.y());
+  double speed = velocity.norm();
   if (speed < 0.01) return;  // 速度がほぼゼロなら描画しない
 
   double length = speed * scale;
@@ -126,7 +126,7 @@ auto VisualizerMessageBuilder::arc(
 
 auto VisualizerMessageBuilder::doubleCircle(
   Point center, double inner_radius, double outer_radius, const std::string & inner_color,
-  const std::string & outer_color, double inner_stroke_width, double outer_stroke_width) -> void
+  const std::string & outer_color, double outer_stroke_width) -> void
 {
   // 外側の円（背景）
   circle()
@@ -136,8 +136,7 @@ auto VisualizerMessageBuilder::doubleCircle(
     .strokeWidth(outer_stroke_width)
     .build();
 
-  // 内側の円（inner_stroke_widthは内側の円には枠線がないため使用しない）
-  (void)inner_stroke_width;  // 未使用パラメータ警告を抑制（将来の拡張用に残す）
+  // 内側の円（塗りつぶし）
   circle().center(center).radius(inner_radius).fill(inner_color, 0.25).stroke("none").build();
 }
 
@@ -264,7 +263,6 @@ auto VisualizerMessageBuilder::drawRobot(
   const std::string & stroke_color, double stroke_opacity, double stroke_width, double radius,
   double center_to_dribbler) -> void
 {
-  // ロボット形状の計算（SvgRobotBuilderと同じロジック）
   double corner_angle = std::acos(center_to_dribbler / radius);
   auto botRightX = [&](double orientation) {
     return radius * std::cos(orientation + corner_angle);

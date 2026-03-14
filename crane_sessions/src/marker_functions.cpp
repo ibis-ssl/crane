@@ -6,6 +6,9 @@
 
 #include <boost/math/constants/constants.hpp>
 #include <crane_sessions/marker_functions.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/min.hpp>
+#include <range/v3/functional/comparisons.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -51,6 +54,70 @@ auto getDangerEnemies(const WorldModelWrapper::SharedPtr & world_model)
   // 高スコアが前
   std::ranges::sort(robots_and_scores, [](auto & a, auto & b) { return a.second > b.second; });
   return robots_and_scores;
+}
+
+auto assignMarkersToEnemies(
+  const std::vector<uint8_t> & available_robot_ids,
+  const WorldModelWrapper::SharedPtr & world_model,
+  const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
+  bool assign_remaining) -> MarkingResult
+{
+  MarkingResult result;
+
+  auto danger_enemies = getDangerEnemies(world_model);
+
+  for (const auto & [robot, score] : danger_enemies) {
+    visualizer->drawDebugLabel(
+      robot->pose.pos + Point(0., 0.2), "MarkerScore: " + std::to_string(score));
+  }
+
+  if (danger_enemies.size() > available_robot_ids.size()) {
+    danger_enemies.resize(available_robot_ids.size());
+  }
+
+  RobotList remaining_robots =
+    available_robot_ids |
+    ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
+    ranges::to<std::vector>();
+
+  for (const auto & [enemy_robot, score] : danger_enemies) {
+    if (remaining_robots.empty()) {
+      break;
+    }
+    auto best_robot = ranges::min(remaining_robots, ranges::less{}, [&](const auto & robot) {
+      return (robot->pose.pos - enemy_robot->pose.pos).norm();
+    });
+
+    result.selected_robot_ids.push_back(best_robot->id);
+    remaining_robots.erase(ranges::find_if(remaining_robots, [&](const auto & robot) {
+      return robot->id == best_robot->id;
+    }));
+
+    auto marker = std::make_shared<skills::Marker>(
+      command_name, static_cast<uint8_t>(best_robot->id), world_model);
+    marker->setParameter("marking_robot_id", enemy_robot->id);
+    marker->setParameter("mark_mode", std::string("intercept_pass"));
+    marker->setParameter("mark_distance", 0.5);
+    result.markers.push_back(marker);
+
+    visualizer->drawCircle(enemy_robot->pose.pos, 0.3, "black", 10);
+    visualizer->drawLine(
+      best_robot->pose.pos,
+      enemy_robot->pose.pos + (enemy_robot->pose.pos - best_robot->pose.pos).normalized() * 0.3,
+      "black", 20);
+  }
+
+  // assign_remaining=trueのとき、マーク対象のいない残余ロボットにもMarkerを生成
+  if (assign_remaining) {
+    for (const auto & robot : remaining_robots) {
+      result.markers.push_back(
+        std::make_shared<skills::Marker>(
+          command_name, static_cast<uint8_t>(robot->id), world_model));
+      result.selected_robot_ids.push_back(robot->id);
+    }
+  }
+
+  return result;
 }
 
 }  // namespace crane

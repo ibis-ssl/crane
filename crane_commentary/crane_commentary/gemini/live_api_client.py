@@ -203,11 +203,6 @@ class GeminiLiveApiClient:
             logger.error(f"Failed to send text: {e}")
             self._connected = False
 
-    async def send_json(self, data: dict) -> None:
-        """Send JSON data as text input."""
-        json_str = json.dumps(data, ensure_ascii=False)
-        await self.send_text(json_str)
-
     async def _receive_loop(self) -> None:
         """Background loop to receive audio data."""
         if not self._ws:
@@ -319,37 +314,3 @@ class GeminiLiveApiClient:
             logger.info(f"Sent function response for {fc_name}")
         except Exception as e:
             logger.error(f"Failed to send function response: {e}")
-
-
-# Synchronous wrapper for use in ROS callbacks
-class GeminiLiveApiClientSync:
-    """Synchronous wrapper for GeminiLiveApiClient."""
-
-    def __init__(self, config: Optional[GeminiConfig] = None):
-        self._async_client = GeminiLiveApiClient(config)
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._thread = None
-
-    def connect(self) -> bool:
-        """Connect to Gemini API (blocking)."""
-        return asyncio.get_event_loop().run_until_complete(self._async_client.connect())
-
-    def disconnect(self) -> None:
-        """Disconnect from Gemini API (blocking)."""
-        asyncio.get_event_loop().run_until_complete(self._async_client.disconnect())
-
-    def is_connected(self) -> bool:
-        """Check if connected."""
-        return self._async_client.is_connected()
-
-    def set_audio_callback(self, callback: Callable[[bytes], None]) -> None:
-        """Set audio callback."""
-        self._async_client.set_audio_callback(callback)
-
-    def send_text(self, text: str) -> None:
-        """Send text (blocking)."""
-        asyncio.get_event_loop().run_until_complete(self._async_client.send_text(text))
-
-    def send_json(self, data: dict) -> None:
-        """Send JSON (blocking)."""
-        asyncio.get_event_loop().run_until_complete(self._async_client.send_json(data))

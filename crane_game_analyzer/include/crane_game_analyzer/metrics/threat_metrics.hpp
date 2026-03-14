@@ -21,7 +21,7 @@ namespace crane::metrics
 class BallThreatMetric : public MetricBase
 {
 public:
-  BallThreatMetric();
+  explicit BallThreatMetric(std::shared_ptr<ThreatEvaluator> evaluator);
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override { return {}; }
 
@@ -34,7 +34,7 @@ public:
   [[nodiscard]] auto getLastBallThreat() const -> const BallThreat & { return last_ball_threat_; }
 
 private:
-  ThreatEvaluator evaluator_;
+  std::shared_ptr<ThreatEvaluator> evaluator_;
   BallThreat last_ball_threat_;
 };
 
@@ -47,7 +47,9 @@ private:
 class RobotThreatsMetric : public MetricBase
 {
 public:
-  explicit RobotThreatsMetric(std::shared_ptr<BallThreatMetric> ball_threat_metric);
+  RobotThreatsMetric(
+    std::shared_ptr<BallThreatMetric> ball_threat_metric,
+    std::shared_ptr<ThreatEvaluator> evaluator);
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
@@ -67,7 +69,7 @@ public:
 
 private:
   std::shared_ptr<BallThreatMetric> ball_threat_metric_;
-  ThreatEvaluator evaluator_;
+  std::shared_ptr<ThreatEvaluator> evaluator_;
   std::vector<RobotThreat> last_robot_threats_;
 
   /// 脅威度に応じた色を返すヘルパー
@@ -85,7 +87,8 @@ class RecommendedDefendersMetric : public MetricBase
 public:
   RecommendedDefendersMetric(
     std::shared_ptr<BallThreatMetric> ball_threat_metric,
-    std::shared_ptr<RobotThreatsMetric> robot_threats_metric);
+    std::shared_ptr<RobotThreatsMetric> robot_threats_metric,
+    std::shared_ptr<ThreatEvaluator> evaluator);
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
@@ -100,7 +103,7 @@ public:
 private:
   std::shared_ptr<BallThreatMetric> ball_threat_metric_;
   std::shared_ptr<RobotThreatsMetric> robot_threats_metric_;
-  ThreatEvaluator evaluator_;
+  std::shared_ptr<ThreatEvaluator> evaluator_;
 };
 
 }  // namespace crane::metrics

@@ -357,6 +357,10 @@ private:
   std::map<uint8_t, bool> robot_diagnostic_errors_;  // robot_id -> has_error
 
   auto diagnosticsCallback(const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void;
+
+  auto updateRobotTimestamps(
+    RobotInfo & info, const crane_msgs::msg::RobotInfo & robot_msg, const rclcpp::Time & now)
+    -> void;
 };
 }  // namespace crane
 

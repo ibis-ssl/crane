@@ -24,7 +24,6 @@ enum class AttackerState {
   FORCED_PASS,
   RECEIVE,
   KICK,
-  FINAL_GUARD,
 };
 
 class Attacker : public SkillBaseWithState
@@ -69,8 +68,6 @@ public:
 
   Receive receive_skill;
 
-  std::optional<Point> goal_front_dance_target = std::nullopt;
-
   struct OverDribbleInfo
   {
     bool detected = false;
@@ -89,8 +86,6 @@ private:
   bool shouldUseChipKick(const Point & target);
 
   double evaluateGoalAngle(const Point & position);
-
-  bool isPassBlocked(const Point & target);
 
   double calculatePassScore(const Point & target);
 };

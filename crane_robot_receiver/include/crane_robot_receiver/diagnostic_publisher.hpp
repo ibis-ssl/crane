@@ -49,6 +49,10 @@ public:
   // エラーマップからエラーを削除
   auto removeError(const std::string & error_type) -> bool;
 
+  // ロボットがVision/Trackerで検出されているか確認
+  auto isRobotDetected(const WorldModelWrapper & world_model, bool require_feedback = false) const
+    -> bool;
+
   uint8_t robot_id;
 
   RobotState state = RobotState::INACTIVE;

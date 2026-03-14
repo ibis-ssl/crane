@@ -45,8 +45,6 @@ class WorldModelReader:
     def __init__(self, writer: WorldModelWriter):
         self._writer = writer
         self._current_mode = CommentaryMode.REFLEX
-        self._last_commentary_time = 0.0
-        self._silence_threshold = 5.0  # Seconds of silence before analyst mode
 
         # Event type to Japanese commentary hints
         self._reflex_templates = {
@@ -80,9 +78,7 @@ class WorldModelReader:
 
         # Determine priority
         priority = 1
-        if event_type in ["GOAL"]:
-            priority = 2
-        elif event_type in ["FAST_SHOT", "SAVE"]:
+        if event_type in ["GOAL", "FAST_SHOT", "SAVE"]:
             priority = 2
         elif event_type in ["POSSESSION_CHANGE", "BALL_OUT"]:
             priority = 0

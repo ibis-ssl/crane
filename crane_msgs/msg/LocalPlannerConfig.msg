@@ -2,6 +2,8 @@ bool disable_collision_avoidance false
 bool disable_goal_area_avoidance false
 bool disable_placement_avoidance false
 bool disable_ball_avoidance false
+bool disable_field_boundary false
+bool disable_crash_avoidance false
 bool enable_rotation_stop_on_accel true
 
 NamedFloat[] max_velocity_factors

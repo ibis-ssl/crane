@@ -7,6 +7,7 @@
 #ifndef CRANE_GAME_ANALYZER__METRICS__ATTACKER_METRICS_HPP_
 #define CRANE_GAME_ANALYZER__METRICS__ATTACKER_METRICS_HPP_
 
+#include "crane_game_analyzer/selection_hysteresis.hpp"
 #include "metric_base.hpp"
 
 namespace crane::metrics
@@ -25,25 +26,25 @@ public:
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
-    return {MetricId::OUR_SLACK, MetricId::BALL_THREAT};
+    return {MetricId::OUR_SLACK, MetricId::THEIR_SLACK, MetricId::BALL_THREAT};
   }
 
   auto compute(MetricContext & ctx) -> void override;
 
 private:
-  // ヒステリシス用の内部状態
-  int last_attacker_id_ = -1;
-  rclcpp::Time last_switch_time_{static_cast<int64_t>(0), RCL_ROS_TIME};
-  rclcpp::Clock ros_clock_{RCL_ROS_TIME};
+  // ヒステリシス管理
+  SelectionHysteresis<int> attacker_hysteresis_{SelectionHysteresis<int>::Config{
+    .min_hold_duration_sec = 0.2,
+    .min_improvement_ratio = 0.01,
+    .emergency_switch_ratio = 1.03,
+    .force_switch_timeout = 3.0,
+    .absolute_threshold = 2.0}};
 
   // EMAスコア管理用マップ
   std::unordered_map<uint8_t, double> ema_scores_;
 
-  // ヒステリシスパラメータ
-  static constexpr double MIN_HOLD_DURATION_SEC = 0.2;    // 0.2秒に短縮（より素早い応答）
-  static constexpr double MIN_IMPROVEMENT_RATIO = 0.01;   // 1%改善で切り替え（より敏感に）
-  static constexpr double EMERGENCY_SWITCH_RATIO = 1.03;  // 3%良ければ即切り替え
-  static constexpr double EMA_ALPHA = 0.7;  // スムージング係数（新スコア70%、古いスコア30%）
+  // EMAスムージング係数
+  static constexpr double EMA_ALPHA = 0.7;  // 新スコア70%、古いスコア30%
 };
 
 }  // namespace crane::metrics

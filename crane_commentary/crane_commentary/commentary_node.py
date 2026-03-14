@@ -14,7 +14,7 @@ import threading
 import time
 import json
 import yaml  # Requires PyYAML
-from typing import Optional
+from typing import Any, Optional
 
 from ament_index_python.packages import get_package_share_directory
 import rclpy
@@ -52,6 +52,28 @@ class CommentaryNode(Node):
     using Gemini Multimodal Live API.
     """
 
+    EVENT_TYPES = {
+        RonarEvent.EVENT_POSSESSION_CHANGE: "POSSESSION_CHANGE",
+        RonarEvent.EVENT_PASS: "PASS",
+        RonarEvent.EVENT_SHOT: "SHOT",
+        RonarEvent.EVENT_FAST_SHOT: "FAST_SHOT",
+        RonarEvent.EVENT_GOAL: "GOAL",
+        RonarEvent.EVENT_SAVE: "SAVE",
+        RonarEvent.EVENT_INTERCEPTION: "INTERCEPTION",
+        RonarEvent.EVENT_BALL_OUT: "BALL_OUT",
+        RonarEvent.EVENT_SET_PLAY: "SET_PLAY",
+        RonarEvent.EVENT_COLLISION: "COLLISION",
+        # Play Switcher イベント
+        RonarEvent.EVENT_HALT: "HALT",
+        RonarEvent.EVENT_STOP: "STOP",
+        RonarEvent.EVENT_INPLAY_START: "INPLAY_START",
+        RonarEvent.EVENT_TIMEOUT: "TIMEOUT",
+        RonarEvent.EVENT_HALF_TIME: "HALF_TIME",
+        RonarEvent.EVENT_GAME_END: "GAME_END",
+        # Autoref イベント
+        RonarEvent.EVENT_FOUL: "FOUL",
+    }
+
     def __init__(self):
         super().__init__("commentary_node")
 
@@ -82,48 +104,32 @@ class CommentaryNode(Node):
         # Initialize Function Handler for Gemini Function Calling
         self._function_handler = FunctionHandler(self._writer)
 
+        # Initialize package share directory (fetched once)
+        try:
+            self._pkg_share = get_package_share_directory("crane_commentary")
+        except Exception as e:
+            self.get_logger().error(f"Failed to get package share directory: {e}")
+            self._pkg_share = ""
+
         # Load configuration files
         self._ssl_rules = {}
         self._team_profiles = {}
         self._load_config_files()
 
         # Load system instruction
-        system_instruction = ""
-        try:
-            pkg_share = get_package_share_directory("crane_commentary")
-            # Choose system instruction based on mode
-            if self._mode == "self_commentary":
-                instruction_filename = "system_instruction_self.md"
-            else:
-                instruction_filename = "system_instruction.md"
-
-            instruction_path = os.path.join(pkg_share, "config", instruction_filename)
-            if os.path.exists(instruction_path):
-                with open(instruction_path, "r", encoding="utf-8") as f:
-                    system_instruction = f.read()
-                self.get_logger().info(
-                    f"Loaded system instruction from {instruction_path} (mode: {self._mode})"
-                )
-            else:
-                self.get_logger().warning(
-                    f"System instruction file not found: {instruction_path}"
-                )
-        except Exception as e:
-            self.get_logger().error(f"Failed to load system instruction: {e}")
+        instruction_filename = (
+            "system_instruction_self.md"
+            if self._mode == "self_commentary"
+            else "system_instruction.md"
+        )
+        system_instruction = (
+            self._load_config_file(instruction_filename, lambda f: f.read()) or ""
+        )
 
         # Load tools configuration
-        tools_config = []
-        try:
-            pkg_share = get_package_share_directory("crane_commentary")
-            tools_path = os.path.join(pkg_share, "config", "function_declarations.json")
-            if os.path.exists(tools_path):
-                with open(tools_path, "r", encoding="utf-8") as f:
-                    tools_config = json.load(f)
-                self.get_logger().info(f"Loaded tools config from {tools_path}")
-            else:
-                self.get_logger().warning(f"Tools config file not found: {tools_path}")
-        except Exception as e:
-            self.get_logger().error(f"Failed to load tools config: {e}")
+        tools_config = (
+            self._load_config_file("function_declarations.json", json.load) or []
+        )
 
         # Initialize Gemini client
         gemini_config = GeminiConfig(
@@ -140,7 +146,7 @@ class CommentaryNode(Node):
             sample_rate=sample_rate,
             device=audio_device,
         )
-        self.get_logger().info("Audio output initialized (sounddevice)")
+        self.get_logger().info("Audio output initialized (PyAudio)")
 
         # Set up audio callback
         self._gemini_client.set_audio_callback(self._on_audio_received)
@@ -260,31 +266,28 @@ class CommentaryNode(Node):
 
     def _load_config_files(self) -> None:
         """Load SSL rules and team profiles from YAML configuration files."""
+        self._ssl_rules = self._load_config_file("ssl_rules.yaml", yaml.safe_load) or {}
+        self._team_profiles = (
+            self._load_config_file("team_profiles.yaml", yaml.safe_load) or {}
+        )
+
+    def _load_config_file(self, filename: str, loader) -> Any:
+        """Load a config file from the package share config directory."""
+        if not self._pkg_share:
+            return None
+        path = os.path.join(self._pkg_share, "config", filename)
         try:
-            pkg_share = get_package_share_directory("crane_commentary")
-
-            # Load SSL rules
-            rules_path = os.path.join(pkg_share, "config", "ssl_rules.yaml")
-            if os.path.exists(rules_path):
-                with open(rules_path, "r", encoding="utf-8") as f:
-                    self._ssl_rules = yaml.safe_load(f)
-                self.get_logger().info(f"Loaded SSL rules from {rules_path}")
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = loader(f)
+                self.get_logger().info(f"Loaded {filename}")
+                return data
             else:
-                self.get_logger().warning(f"SSL rules file not found: {rules_path}")
-
-            # Load team profiles
-            profiles_path = os.path.join(pkg_share, "config", "team_profiles.yaml")
-            if os.path.exists(profiles_path):
-                with open(profiles_path, "r", encoding="utf-8") as f:
-                    self._team_profiles = yaml.safe_load(f)
-                self.get_logger().info(f"Loaded team profiles from {profiles_path}")
-            else:
-                self.get_logger().warning(
-                    f"Team profiles file not found: {profiles_path}"
-                )
-
+                self.get_logger().warning(f"Config file not found: {path}")
+                return None
         except Exception as e:
-            self.get_logger().error(f"Failed to load config files: {e}")
+            self.get_logger().error(f"Failed to load {filename}: {e}")
+            return None
 
     def _run_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Run asyncio event loop in background thread."""
@@ -399,28 +402,7 @@ class CommentaryNode(Node):
         self._last_event_time = self.get_clock().now()
 
         # Map event type to string
-        event_types = {
-            RonarEvent.EVENT_POSSESSION_CHANGE: "POSSESSION_CHANGE",
-            RonarEvent.EVENT_PASS: "PASS",
-            RonarEvent.EVENT_SHOT: "SHOT",
-            RonarEvent.EVENT_FAST_SHOT: "FAST_SHOT",
-            RonarEvent.EVENT_GOAL: "GOAL",
-            RonarEvent.EVENT_SAVE: "SAVE",
-            RonarEvent.EVENT_INTERCEPTION: "INTERCEPTION",
-            RonarEvent.EVENT_BALL_OUT: "BALL_OUT",
-            RonarEvent.EVENT_SET_PLAY: "SET_PLAY",
-            RonarEvent.EVENT_COLLISION: "COLLISION",
-            # Play Switcher イベント
-            RonarEvent.EVENT_HALT: "HALT",
-            RonarEvent.EVENT_STOP: "STOP",
-            RonarEvent.EVENT_INPLAY_START: "INPLAY_START",
-            RonarEvent.EVENT_TIMEOUT: "TIMEOUT",
-            RonarEvent.EVENT_HALF_TIME: "HALF_TIME",
-            RonarEvent.EVENT_GAME_END: "GAME_END",
-            # Autoref イベント
-            RonarEvent.EVENT_FOUL: "FOUL",
-        }
-        event_type = event_types.get(msg.event_type, "UNKNOWN")
+        event_type = self.EVENT_TYPES.get(msg.event_type, "UNKNOWN")
 
         # Build event data
         event_data = {
@@ -487,14 +469,7 @@ class CommentaryNode(Node):
 
     def _writer_update_callback(self) -> None:
         """Periodic callback to update WorldModelWriter."""
-        # TODO: Get actual game state from WorldModel subscription
-        # For now, use placeholder values
-        self._writer.update(
-            play_situation=50,  # INPLAY
-            our_score=0,
-            their_score=0,
-            elapsed_seconds=0.0,
-        )
+        pass
 
     def _on_gemini_disconnected(self) -> None:
         """Called by GeminiLiveApiClient when the WebSocket connection is lost."""
@@ -632,14 +607,14 @@ class CommentaryNode(Node):
         update_json = json.dumps(update, ensure_ascii=False, indent=2)
         self._send_to_gemini(f"[TEAM UPDATE]\n{update_json}")
 
-    def _send_to_gemini(self, json_payload: str) -> None:
-        """Send payload to Gemini API."""
+    def _send_to_gemini(self, text: str) -> None:
+        """Send text to Gemini API."""
         if not self._connected or not self._event_loop:
             return
 
         try:
             asyncio.run_coroutine_threadsafe(
-                self._gemini_client.send_text(json_payload),
+                self._gemini_client.send_text(text),
                 self._event_loop,
             )
         except Exception as e:
