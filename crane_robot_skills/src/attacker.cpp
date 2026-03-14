@@ -400,9 +400,10 @@ double Attacker::calculatePassScore(const Point & target)
   // パスがブロックされているかチェックし、ブロックされていたら諦め、近くにいるときはスコアを下げる
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-  if (auto nearest_enemy =
-        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-      nearest_enemy) {
+  if (
+    auto nearest_enemy =
+      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+    nearest_enemy) {
     if (
       nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
       nearest_enemy->distance < PASS_OBSTACLE_DISTANCE) {
