@@ -316,7 +316,7 @@ auto GlobalRobotAllocator::buildCostMatrix(
     double hysteresis_bonus =
       context.was_assigned_to_same_session ? config_copy.hysteresis_bonus : 0.0;
     double velocity_hysteresis = 0.0;
-    if (context.was_assigned_to_same_session) {
+    if (!context.was_assigned_to_same_session) {
       velocity_hysteresis = robot->vel.linear.norm() * config_copy.velocity_hysteresis_factor;
     }
 
