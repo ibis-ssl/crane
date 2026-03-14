@@ -96,22 +96,42 @@ void Goalie::inplay(bool enable_emit)
   auto goals = world_model()->getOurGoalPosts();
   const auto goal_center = world_model()->getOurGoalCenter();
   const auto & ball = world_model()->ball();
+  const double ball_vel_norm = ball.vel.norm();
+  const double goal_min_y = std::min(goals.first.y(), goals.second.y());
+  const double goal_max_y = std::max(goals.first.y(), goals.second.y());
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line = ball.getTrajectorySegmentByDistance(10.0);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0).disableGoalAreaAvoidance().disableBallAvoidance();
 
-  if (not intersections.empty() && world_model()->ball().vel.norm() > 0.3f) {
+  // 改善1: ニアミス判定（ボール軌道がゴールラインと交差しなくても近い場合はブロック）
+  // intersections.empty()を先頭にして短絡評価でbg::distance計算を省略
+  bool near_miss_shot =
+    intersections.empty() && bg::distance(ball_line, goal_line) < 1.0 && ball_vel_norm > 0.5;
+
+  if ((not intersections.empty() || near_miss_shot) && ball_vel_norm > 0.3) {
     // シュートブロック
     phase = "シュートブロック";
     prev_wait_point = std::nullopt;
     auto result = ball.getClosestPointToTrajectory(command->getRobot()->pose.pos);
     auto target = [&]() -> Point {
-      if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
-        return clampXToGoalLine(intersections.front(), 0.15);
+      if (not intersections.empty()) {
+        if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
+          return clampXToGoalLine(intersections.front(), 0.15);
+        } else {
+          return result.closest_point;
+        }
       } else {
-        return result.closest_point;
+        // ニアミス: ボール速度ベクトルからゴールラインのX位置でのy座標を予測
+        double clamped_y;
+        if (std::abs(ball.vel.x()) > 0.01f) {
+          double t = (goal_center.x() - ball.pos.x()) / ball.vel.x();
+          clamped_y = std::clamp(ball.pos.y() + t * ball.vel.y(), goal_min_y, goal_max_y);
+        } else {
+          clamped_y = std::clamp(static_cast<double>(ball.pos.y()), goal_min_y, goal_max_y);
+        }
+        return clampXToGoalLine(Point(goal_center.x(), clamped_y), 0.15);
       }
     }();
 
@@ -140,6 +160,14 @@ void Goalie::inplay(bool enable_emit)
       // ボールが止まっていて，味方ペナルティエリア内にあり，敵が近くにいないときは排出
       phase = "ボール排出";
       emitBallFromPenaltyArea();
+    } else if (  // 改善2: 緊急接近ブロック（シュートブロック条件を満たさないゴール接近ボール）
+      ball.isMovingTowards(goal_center, 60.0) && ball_vel_norm > 1.0 &&
+      std::abs(goal_center.x() - ball.pos.x()) < 2.0) {
+      phase = "緊急接近ブロック";
+      prev_wait_point = std::nullopt;
+      double target_y = std::clamp(static_cast<double>(ball.pos.y()), goal_min_y, goal_max_y);
+      Point target = clampXToGoalLine(Point(goal_center.x(), target_y), 0.15);
+      command->setTargetPosition(target).lookAtBallFrom(target);
     } else {
       const double BLOCK_DIST = getParameter<double>("block_distance");
       if (phase.empty()) {
@@ -274,14 +302,15 @@ void Goalie::inplay(bool enable_emit)
           Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
 
           // 改善D: wait_pointのY座標をゴールポスト幅内にクランプ
-          double min_y = std::min(goals.first.y(), goals.second.y());
-          double max_y = std::max(goals.first.y(), goals.second.y());
-          wait_point.y() = std::clamp(wait_point.y(), min_y, max_y);
+          wait_point.y() = std::clamp(wait_point.y(), goal_min_y, goal_max_y);
 
-          // 改善B: ローパスフィルタでターゲット振動を抑制
-          constexpr double SMOOTHING_ALPHA = 0.7;
+          // 改善3: 適応的ローパスフィルタ（通常は強平滑化、ボール接近時は高応答）
+          double smoothing_alpha = 0.9;  // デフォルト: 振動抑制優先
+          if (ball.isMovingTowards(goal_center) && ball_vel_norm > 1.0) {
+            smoothing_alpha = 0.3;  // ボール接近中: 応答性優先
+          }
           if (prev_wait_point) {
-            wait_point = *prev_wait_point * SMOOTHING_ALPHA + wait_point * (1.0 - SMOOTHING_ALPHA);
+            wait_point = *prev_wait_point * smoothing_alpha + wait_point * (1.0 - smoothing_alpha);
           }
           prev_wait_point = wait_point;
 
