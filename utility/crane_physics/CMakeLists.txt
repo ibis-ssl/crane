@@ -77,6 +77,10 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_bang_bang_trajectory test/test_bang_bang_trajectory.cpp)
   target_include_directories(test_bang_bang_trajectory PUBLIC include)
   target_link_libraries(test_bang_bang_trajectory Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_penalty_aware_distance test/test_penalty_aware_distance.cpp)
+  target_include_directories(test_penalty_aware_distance PUBLIC include)
+  target_link_libraries(test_penalty_aware_distance Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

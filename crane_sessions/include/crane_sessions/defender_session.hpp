@@ -10,6 +10,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/penalty_aware_distance.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_sessions/defense_functions.hpp>
 #include <crane_sessions/session_base.hpp>
@@ -62,7 +63,9 @@ public:
         return 1000.0;  // パラメータが無効な場合は大きなコスト
       }
       const auto defense_point = getDefenseLinePoint(parameter.value(), wm);
-      return robot->getDistance(defense_point);
+      return estimatePenaltyAwareDistance(
+        robot->pose.pos, defense_point, wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+        wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
 };

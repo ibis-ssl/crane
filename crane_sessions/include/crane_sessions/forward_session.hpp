@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/penalty_aware_distance.hpp>
 #include <crane_robot_skills/forward.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <memory>
@@ -42,8 +43,10 @@ public:
     // フォワードライン（敵ゴール前）に近いロボットを優先
     auto wm = world_model;  // shared_ptrをコピー
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      // 敵ゴール位置に近いほど適している
-      return robot->getDistance(wm->getTheirGoalCenter());
+      // 敵ゴール位置に近いほど適している（敵陣ペナルティエリア迂回を考慮）
+      return estimatePenaltyAwareDistance(
+        robot->pose.pos, wm->getTheirGoalCenter(), wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+        wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
 

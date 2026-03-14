@@ -8,6 +8,7 @@
 #define CRANE_SESSIONS__SECOND_THREAT_DEFENDER_SESSION_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/penalty_aware_distance.hpp>
 #include <crane_robot_skills/second_threat_defender.hpp>
 #include <crane_sessions/single_skill_session.hpp>
 #include <memory>
@@ -34,7 +35,9 @@ public:
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
       constexpr double offset = 0.3;
       auto target = skills::SecondThreatDefender::getDefaultPoint(wm, offset);
-      return robot->getDistance(target);
+      return estimatePenaltyAwareDistance(
+        robot->pose.pos, target, wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+        wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
 

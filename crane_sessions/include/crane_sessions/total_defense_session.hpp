@@ -10,6 +10,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/penalty_aware_distance.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/marker.hpp>
 #include <crane_robot_skills/second_threat_defender.hpp>
@@ -66,10 +67,14 @@ public:
       auto parameter = getDefenseLinePointParameter(ball_line, wm);
       if (not parameter) {
         // パラメータが取得できない場合はゴール位置への距離を使用
-        return robot->getDistance(wm->getOurGoalCenter());
+        return estimatePenaltyAwareDistance(
+          robot->pose.pos, wm->getOurGoalCenter(), wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+          wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
       }
       const auto defense_point = getDefenseLinePoint(parameter.value(), wm);
-      return robot->getDistance(defense_point);
+      return estimatePenaltyAwareDistance(
+        robot->pose.pos, defense_point, wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+        wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
 };
