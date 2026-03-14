@@ -51,6 +51,9 @@ public:
     // 守備ライン位置に近いロボットを優先
     auto wm = world_model;  // shared_ptrをコピー
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == wm->getOurGoalieId()) {
+        return GOALIE_EXCLUSION_COST;
+      }
       Segment ball_line{wm->goal(), wm->ball().pos};
       auto parameter = getDefenseLinePointParameter(ball_line, wm);
       if (not parameter) {
