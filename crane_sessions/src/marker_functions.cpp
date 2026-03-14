@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <boost/math/constants/constants.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_sessions/marker_functions.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
@@ -85,7 +86,15 @@ auto assignMarkersToEnemies(
       break;
     }
     auto best_robot = ranges::min(remaining_robots, ranges::less{}, [&](const auto & robot) {
-      return (robot->pose.pos - enemy_robot->pose.pos).norm();
+      // 割当コスト: 敵に対するマーキングセグメントへの距離（固定点ではなく線分ベース）
+      Point reference = world_model->ball().pos;
+      constexpr double mark_dist = 0.5;
+      constexpr double max_mark_dist = 1.5;
+      auto dir = (reference - enemy_robot->pose.pos).normalized();
+      Point near_end = enemy_robot->pose.pos + dir * mark_dist;
+      Point far_end = enemy_robot->pose.pos + dir * max_mark_dist;
+      Segment marking_segment{near_end, far_end};
+      return getClosestPointAndDistance(robot->pose.pos, marking_segment).distance;
     });
 
     result.selected_robot_ids.push_back(best_robot->id);
@@ -101,10 +110,13 @@ auto assignMarkersToEnemies(
     result.markers.push_back(marker);
 
     visualizer->drawCircle(enemy_robot->pose.pos, 0.3, "black", 10);
-    visualizer->drawLine(
-      best_robot->pose.pos,
-      enemy_robot->pose.pos + (enemy_robot->pose.pos - best_robot->pose.pos).normalized() * 0.3,
-      "black", 20);
+    // マーキングセグメントを可視化
+    {
+      auto dir = (world_model->ball().pos - enemy_robot->pose.pos).normalized();
+      visualizer->drawLine(
+        enemy_robot->pose.pos + dir * 0.5, enemy_robot->pose.pos + dir * 1.5, "green", 10);
+    }
+    visualizer->drawLine(best_robot->pose.pos, enemy_robot->pose.pos, "black", 20);
   }
 
   // assign_remaining=trueのとき、マーク対象のいない残余ロボットにもMarkerを生成
