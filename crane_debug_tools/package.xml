@@ -21,6 +21,7 @@
   <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
+  <depend>rosbag2_cpp</depend>
   <depend>rosidl_runtime_cpp</depend>
   <depend>std_msgs</depend>
 

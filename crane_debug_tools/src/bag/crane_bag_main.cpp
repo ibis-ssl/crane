@@ -1,0 +1,244 @@
+// Copyright (c) 2025 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include <cstdio>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "bag_control.hpp"
+#include "bag_events.hpp"
+#include "bag_reader.hpp"
+#include "bag_survey.hpp"
+#include "bag_tracking.hpp"
+
+using crane::bag::analyze_control;
+using crane::bag::BagReader;
+using crane::bag::detect_events;
+using crane::bag::detect_factor_transitions;
+using crane::bag::format_factor_pairs;
+using crane::bag::run_survey;
+using crane::bag::track_robot;
+
+// ─── 軽量 argparse ──────────────────────────────────────────────────────────
+
+struct Args
+{
+  std::string command;
+  std::string bag_path;
+  int robot_id = -1;
+  bool enemy = false;
+  std::optional<std::pair<double, double>> time_range;
+  double interval = 0.5;
+  bool changes_only = false;
+  std::vector<std::string> event_types;
+};
+
+static std::optional<std::pair<double, double>> parse_time_range(const std::string & s)
+{
+  auto pos = s.find(':');
+  if (pos == std::string::npos) {
+    throw std::invalid_argument("時間範囲は 'start:end' 形式で指定してください: " + s);
+  }
+  double start = std::stod(s.substr(0, pos));
+  double end = std::stod(s.substr(pos + 1));
+  return std::make_pair(start, end);
+}
+
+static Args parse_args(int argc, char ** argv)
+{
+  if (argc < 3) {
+    std::fprintf(
+      stderr,
+      "使い方: crane_bag <command> <bag_path> [options]\n"
+      "コマンド: info, survey, track, events, control\n");
+    std::exit(1);
+  }
+
+  Args args;
+  args.command = argv[1];
+  args.bag_path = argv[2];
+
+  for (int i = 3; i < argc; ++i) {
+    std::string key = argv[i];
+    if (key == "--enemy") {
+      args.enemy = true;
+    } else if (key == "--changes-only") {
+      args.changes_only = true;
+    } else if (key == "--robot" && i + 1 < argc) {
+      args.robot_id = std::stoi(argv[++i]);
+    } else if (key == "--interval" && i + 1 < argc) {
+      args.interval = std::stod(argv[++i]);
+    } else if (key == "--time" && i + 1 < argc) {
+      args.time_range = parse_time_range(argv[++i]);
+    } else if (key == "--type") {
+      while (i + 1 < argc && argv[i + 1][0] != '-') {
+        args.event_types.push_back(argv[++i]);
+      }
+    }
+  }
+  return args;
+}
+
+// ─── コマンド実装 ──────────────────────────────────────────────────────────
+
+static void cmd_info(const Args & args)
+{
+  auto info = BagReader::read_info(args.bag_path);
+  std::printf("Path: %s\n", info.path.c_str());
+  std::printf("Duration: %.2fs\n", info.duration_sec);
+  std::printf("Topics (%zu):\n", info.topic_counts.size());
+  for (const auto & [topic, count] : info.topic_counts) {
+    auto it = info.topic_types.find(topic);
+    std::string type_name = (it != info.topic_types.end()) ? it->second : "unknown";
+    std::printf("  %-50s %6zu msgs  [%s]\n", topic.c_str(), count, type_name.c_str());
+  }
+}
+
+static void cmd_survey(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  auto data = BagReader::read(args.bag_path);
+  std::printf("%s\n", run_survey(data).c_str());
+}
+
+static void cmd_track(const Args & args)
+{
+  if (args.robot_id < 0) {
+    std::fprintf(stderr, "エラー: --robot <id> が必要です\n");
+    std::exit(1);
+  }
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  auto data = BagReader::read(args.bag_path, args.time_range);
+  bool is_ours = !args.enemy;
+  const char * side = is_ours ? "ours" : "enemy";
+
+  auto states = track_robot(data, args.robot_id, is_ours, args.interval);
+  if (states.empty()) {
+    std::printf("robot=%d (%s) のデータが見つかりません\n", args.robot_id, side);
+    return;
+  }
+
+  std::printf("=== ROBOT TRACKING: robot=%d (%s) ===\n", args.robot_id, side);
+  std::printf("%8s  %8s  %8s  %8s  %8s  %10s  det\n", "t", "x", "y", "theta", "speed", "dist_ball");
+  for (const auto & s : states) {
+    std::printf(
+      "%8.2f  %8.3f  %8.3f  %8.3f  %8.3f  %10.3f  %s\n", s.t, s.x, s.y, s.theta, s.speed,
+      s.dist_to_ball, s.detected ? "Y" : "N");
+  }
+}
+
+static void cmd_events(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  auto data = BagReader::read(args.bag_path);
+  auto events = detect_events(data, args.event_types);
+
+  if (events.empty()) {
+    std::printf("イベントが検出されませんでした\n");
+    return;
+  }
+
+  std::printf("=== EVENTS (%zu) ===\n", events.size());
+  for (const auto & e : events) {
+    std::printf("  t=%8.2f [%-15s] %s\n", e.t, e.event_type.c_str(), e.description.c_str());
+  }
+}
+
+static void cmd_control(const Args & args)
+{
+  if (args.robot_id < 0) {
+    std::fprintf(stderr, "エラー: --robot <id> が必要です\n");
+    std::exit(1);
+  }
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  auto data = BagReader::read(args.bag_path, args.time_range);
+
+  if (args.changes_only) {
+    auto transitions = detect_factor_transitions(data, args.robot_id);
+    if (transitions.empty()) {
+      std::printf("robot=%d の planning_factors 変化が検出されませんでした\n", args.robot_id);
+      return;
+    }
+    std::printf("=== PLANNING_FACTORS TRANSITIONS: robot=%d ===\n", args.robot_id);
+    for (const auto & tr : transitions) {
+      std::printf(
+        "  t=%.2f  robot=%d: [%s] -> [%s]\n", tr.t, tr.robot_id,
+        format_factor_pairs(tr.old_factors).c_str(), format_factor_pairs(tr.new_factors).c_str());
+    }
+  } else {
+    auto snapshots = analyze_control(data, args.robot_id);
+    if (snapshots.empty()) {
+      std::printf("robot=%d のcontrol_targetデータが見つかりません\n", args.robot_id);
+      return;
+    }
+    std::printf("=== CONTROL_TARGET: robot=%d ===\n", args.robot_id);
+    for (const auto & s : snapshots) {
+      std::string factors_str = format_factor_pairs(s.planning_factors);
+
+      std::string pos_str = "N/A";
+      if (s.target_x.has_value()) {
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "(%.3f,%.3f)", *s.target_x, *s.target_y);
+        pos_str = buf;
+      }
+      std::string vr_str = "N/A";
+      if (s.velocity_r.has_value()) {
+        char buf[16];
+        std::snprintf(buf, sizeof(buf), "%.3f", *s.velocity_r);
+        vr_str = buf;
+      }
+      std::printf(
+        "  t=%.2f  kick=%.2f  drb=%.2f  pos=%s  vr=%s  [%s]\n", s.t, s.kick_power, s.dribble_power,
+        pos_str.c_str(), vr_str.c_str(), factors_str.c_str());
+    }
+  }
+}
+
+// ─── main ──────────────────────────────────────────────────────────────────
+
+int main(int argc, char ** argv)
+{
+  if (argc < 2) {
+    std::fprintf(
+      stderr,
+      "使い方: crane_bag <command> <bag_path> [options]\n"
+      "コマンド:\n"
+      "  info    <path>                               Bag情報を表示\n"
+      "  survey  <path>                               概要サーベイを実行\n"
+      "  track   <path> --robot <id> [--enemy]        ロボット追跡\n"
+      "                 [--time start:end] [--interval 0.5]\n"
+      "  events  <path> [--type goal kick play role ball_speed]\n"
+      "  control <path> --robot <id> [--time start:end] [--changes-only]\n");
+    return 1;
+  }
+
+  try {
+    Args args = parse_args(argc, argv);
+
+    if (args.command == "info") {
+      cmd_info(args);
+    } else if (args.command == "survey") {
+      cmd_survey(args);
+    } else if (args.command == "track") {
+      cmd_track(args);
+    } else if (args.command == "events") {
+      cmd_events(args);
+    } else if (args.command == "control") {
+      cmd_control(args);
+    } else {
+      std::fprintf(stderr, "不明なコマンド: %s\n", args.command.c_str());
+      return 1;
+    }
+  } catch (const std::exception & e) {
+    std::fprintf(stderr, "エラー: %s\n", e.what());
+    return 1;
+  }
+
+  return 0;
+}
