@@ -233,13 +233,14 @@ void Goalie::inplay(bool enable_emit)
           }
 
           auto [weak_point, dist] = [&]() {
-            if (auto other_robots = world_model()
-                                      ->ours()
-                                      .robotsWhere()
-                                      .available()
-                                      .excludeId(world_model()->getOurGoalieId())
-                                      .get();
-                not other_robots.empty()) {
+            if (
+              auto other_robots = world_model()
+                                    ->ours()
+                                    .robotsWhere()
+                                    .available()
+                                    .excludeId(world_model()->getOurGoalieId())
+                                    .get();
+              not other_robots.empty()) {
               auto goal = world_model()->getLargestGoalAngleRangeFromPoint(
                 threat_point, world_model()->getOurGoalPosts(), other_robots);
               Segment expected_ball_line(

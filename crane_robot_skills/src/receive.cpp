@@ -245,9 +245,10 @@ bool Receive::isEnemyBlockingPassLine(const Point & interception_point) const
   Segment pass_line{world_model()->ball().pos, interception_point};
   auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
 
-  if (auto nearest_enemy =
-        world_model()->getNearestRobotWithDistanceFromSegment(pass_line, enemy_robots);
-      nearest_enemy.has_value()) {
+  if (
+    auto nearest_enemy =
+      world_model()->getNearestRobotWithDistanceFromSegment(pass_line, enemy_robots);
+    nearest_enemy.has_value()) {
     constexpr double BLOCKING_THRESHOLD = 0.3;  // 敵がパスラインから0.3m以内
     return nearest_enemy->distance < BLOCKING_THRESHOLD;
   }
