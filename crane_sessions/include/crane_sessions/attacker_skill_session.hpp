@@ -30,6 +30,9 @@ namespace crane
 {
 class AttackerSkillSession : public SessionBase
 {
+  // アロケータのhysteresis_bonus(1.5m)を確実に上回り、game_analyzer推奨の切替を保証するマージン
+  static constexpr double RECOMMENDED_ATTACKER_MARGIN = 2.0;
+
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
@@ -101,10 +104,13 @@ public:
 
       // それ以外はボール距離ベース
       double distance = robot->getDistance(wm->ball().pos);
+      // game_analyzerのSelectionHysteresisが安定性を担保済みのため、
+      // アロケータのhysteresis_bonus(1.5m)を確実に上回るマージンを付与して推奨切替を阻害しない
+      double cost = distance + RECOMMENDED_ATTACKER_MARGIN;
       RCLCPP_DEBUG(
-        rclcpp::get_logger("AttackerSkillSession"), "Robot %d cost: %.2f (ball distance)",
-        robot->id, distance);
-      return distance;
+        rclcpp::get_logger("AttackerSkillSession"), "Robot %d cost: %.2f (ball distance + margin)",
+        robot->id, cost);
+      return cost;
     };
   }
 

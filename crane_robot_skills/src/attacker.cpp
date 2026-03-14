@@ -29,6 +29,9 @@ constexpr double MOVING_BALL_VELOCITY = 1.0;
 constexpr double ENEMY_NEAR_BALL_DISTANCE = 2.0;
 constexpr double ENEMY_SLACK_RECEIVE_THRESHOLD = 0.3;  // RECEIVE抑制: 敵がこの秒数以上早いと諦める
 constexpr double MIN_PASS_SCORE_ATTACKER = 0.2;        // パス品質の下限（二重チェック用）
+constexpr double KICK_TIMEOUT_SEC = 3.0;               // KICK状態でボール無接触の場合のタイムアウト
+constexpr double KICK_NO_CONTACT_THRESHOLD_SEC = 0.1;  // ボール接触とみなす最小継続時間
+constexpr double KICK_BALL_STOPPED_VEL = 0.3;          // タイムアウト判定でのボール停止閾値
 }  // namespace
 void Attacker::initialize()
 {
@@ -52,6 +55,7 @@ void Attacker::initialize()
   addTransition(
     static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::ENTRY_POINT),
     [this]() -> bool {
+      in_kick_state = false;
       pass_receiver_id = std::nullopt;
       receive_skill.clearVisualizer();
       kick_skill.clearVisualizer();
@@ -230,7 +234,28 @@ void Attacker::initialize()
     static_cast<int>(AttackerState::KICK), static_cast<int>(AttackerState::ENTRY_POINT),
     [this]() -> bool { return world_model()->ball().isMoving(MOVING_BALL_VELOCITY); });
 
+  // KICK状態でボールに触れずKICK_TIMEOUT_SEC以上経過した場合、ENTRY_POINTへ戻って再割当を待つ
+  addTransition(
+    static_cast<int>(AttackerState::KICK), static_cast<int>(AttackerState::ENTRY_POINT),
+    [this]() -> bool {
+      using std::chrono_literals::operator""s;
+      if (!in_kick_state) return false;
+      // 安価な条件を先に評価して早期リターン
+      bool no_contact = robot()->ball_contact.getContactDuration() <
+                        std::chrono::duration<double>(KICK_NO_CONTACT_THRESHOLD_SEC);
+      if (!no_contact) return false;
+      bool ball_stopped = world_model()->ball().isStopped(KICK_BALL_STOPPED_VEL);
+      if (!ball_stopped) return false;
+      auto elapsed = std::chrono::steady_clock::now() - kick_state_entry_time;
+      return elapsed > std::chrono::duration<double>(KICK_TIMEOUT_SEC);
+    });
+
   addStateFunction(static_cast<int>(AttackerState::KICK), [this]() -> Status {
+    // KICK状態進入時にタイマー開始
+    if (!in_kick_state) {
+      kick_state_entry_time = std::chrono::steady_clock::now();
+      in_kick_state = true;
+    }
     double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
 
     // パスは pass_target_id がある場合のみ検討
