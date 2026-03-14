@@ -13,10 +13,11 @@ situations:
         max_robots: 1
       - name: attacker_skill
         max_robots: 1
+      - name: defender
+        min_robots: 2
+        max_robots: 3
       - name: pass_receive
         max_robots: 1
-      - name: defender
-        max_robots: 2
       - name: second_threat_defender
         max_robots: 1
       - name: sub_attacker_skill
