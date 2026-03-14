@@ -113,11 +113,13 @@ void Attacker::initialize()
   addTransition(
     static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::RECEIVE),
     [this]() -> bool {
-      // ボールが遠くにいる/動いている/自分に向かってきている
+      // ボールが遠くにいる/動いている/ボール軌道の近く(<2.0m)にいる
       if (
         robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-        world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
-        world_model()->ball().isMovingTowards(robot()->pose.pos)) {
+        world_model()->ball().isMoving(MOVING_BALL_VELOCITY) && [&]() {
+          auto result = world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0);
+          return (result.closest_point - robot()->pose.pos).norm() < 2.0;
+        }()) {
         // GameAnalysisの既存slackデータで敵との競合チェック（追加計算コストなし）
         const auto & ga = world_model()->getMsg().game_analysis;
         double my_min_slack = -100.0;
@@ -147,8 +149,16 @@ void Attacker::initialize()
       if (world_model()->ball().isStopped(MOVING_BALL_VELOCITY)) {
         // ボールが止まっている
         return true;
-      } else if (world_model()->ball().isMovingAwayFrom(robot()->pose.pos)) {
-        // ボールが自分から離れていっている（多分受取に失敗した）
+      } else if ([&]() {
+                   // ボール軌道の最近接点がボール現在位置より後方 = ボールが通り過ぎた
+                   if (!world_model()->ball().isMoving(MOVING_BALL_VELOCITY)) return false;
+                   auto result =
+                     world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 5.0);
+                   Vector2 ball_dir = world_model()->ball().vel.normalized();
+                   double proj = (result.closest_point - world_model()->ball().pos).dot(ball_dir);
+                   return proj < -0.1;
+                 }()) {
+        // ボールが通り過ぎた（受取に失敗した）
         return true;
       } else if (robot()->ball_contact.getContactDuration() > 0.2s) {
         // 受取に成功してドリブラで触れている
@@ -200,12 +210,12 @@ void Attacker::initialize()
       printTextOnRobot("RECEIVE::REDIRECT");
       receive_skill.setParameter("enable_redirect", true);
       receive_skill.setParameter("redirect_target", redirect_target);
-      receive_skill.setParameter("policy", std::string("closest"));
+      receive_skill.setParameter("policy", std::string("min_slack"));
       receive_skill.setParameter("redirect_kick_power", 0.4);
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
-      receive_skill.setParameter("policy", std::string("closest"));
+      receive_skill.setParameter("policy", std::string("min_slack"));
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
     }

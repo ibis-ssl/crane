@@ -64,7 +64,12 @@ public:
   {
     // 危険な敵の数に基づいてロボット数を決定
     auto danger_enemies = getDangerEnemies(world_model);
-    return static_cast<int>(danger_enemies.size());
+    int count = static_cast<int>(danger_enemies.size());
+    // ボールが高速移動中はマーキング需要を下げてパスカット要員を確保
+    if (world_model->ball().isMoving(1.0)) {
+      count = std::max(0, count - 2);
+    }
+    return count;
   }
 
 private:

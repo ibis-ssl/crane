@@ -31,11 +31,11 @@ struct AllocationCostConfig
   double travel_time_weight = 0.5;
 
   // ヒステリシスボーナス（同一Session継続時のコスト減少）[m]
-  double hysteresis_bonus = 0.5;
+  double hysteresis_bonus = 1.5;
 
   // 速度ベースヒステリシス係数（高速移動中の再割当抑制）
-  // 例: 0.2 なら、速度1m/sで0.2mのペナルティ
-  double velocity_hysteresis_factor = 0.2;
+  // 例: 0.5 なら、速度1m/sで0.5mのペナルティ
+  double velocity_hysteresis_factor = 0.5;
 
   // Session優先度によるコスト調整（優先度差1あたりのコスト増加）[m]
   double priority_cost_multiplier = 10.0;
@@ -112,9 +112,9 @@ inline double calculateAllocationCost(
   }
 
   // 速度ベースヒステリシス（Sumatra参考）
-  // 高速移動中のロボットの再割当にペナルティを課す
+  // 高速移動中のロボットの再割当にペナルティを課す（別Sessionに移る場合のコスト増）
   double velocity_hysteresis = 0.0;
-  if (context.was_assigned_to_same_session) {
+  if (!context.was_assigned_to_same_session) {
     double robot_speed = robot.vel.linear.norm();
     velocity_hysteresis = robot_speed * config.velocity_hysteresis_factor;
   }
