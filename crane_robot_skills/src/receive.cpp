@@ -135,7 +135,9 @@ Point Receive::getInterceptionPoint() const
   std::string policy = getParameter<std::string>("policy");
   command->addPlanningFactor("Receive::policy", policy);
 
-  if (policy.ends_with("slack")) {
+  if (
+    policy.ends_with("slack") &&
+    world_model()->ball().vel.norm() > world_model()->getSlackConfig().velocity_epsilon) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray({robot()});
     // Slack color mapper: [-0.5, 0, +0.5] -> red, yellow, green
     auto slackColor = [](double s) -> std::string {
