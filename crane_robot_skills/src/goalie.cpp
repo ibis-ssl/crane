@@ -21,6 +21,9 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
+  setParameter("emit_force_timeout", 3.0);
+  setParameter("emit_enemy_distance_threshold", 0.5);
+  setParameter("emit_ball_speed_threshold", 0.5);
 }
 
 Status Goalie::update()
@@ -140,25 +143,46 @@ void Goalie::inplay(bool enable_emit)
     // ボールがフィールド外かつ自陣側（ゴール内）かどうか
     bool ball_in_our_goal = not world_model()->point_checker.isFieldInside(ball.pos) &&
                             std::signbit(ball.pos.x()) == std::signbit(goal_center.x());
-    // 改善C: 敵が近くにいる場合は排出せず待ち受け（ゴール内ボールは敵チェックなし）
+    const double emit_ball_speed = getParameter<double>("emit_ball_speed_threshold");
+    const double emit_enemy_dist = getParameter<double>("emit_enemy_distance_threshold");
+    const double emit_timeout = getParameter<double>("emit_force_timeout");
+
+    // 敵が近くにいる場合は待ち受け（タイムアウト後は強制排出）
     bool ball_in_penalty =
-      world_model()->ball().isStopped(0.2) && enable_emit &&
+      world_model()->ball().isStopped(emit_ball_speed) && enable_emit &&
       (world_model()->point_checker.isFriendPenaltyArea(ball.pos) || ball_in_our_goal);
     bool should_emit = ball_in_penalty;
+
     if (ball_in_penalty && not ball_in_our_goal) {
+      // タイマー管理（ゴール内ボールは敵チェックなし・タイムアウト不要のため対象外）
+      auto now = std::chrono::steady_clock::now();
+      if (!ball_in_penalty_since_) {
+        ball_in_penalty_since_ = now;
+      }
+
       auto enemies = world_model()->theirs().robotsWhere().available().get();
       bool enemy_near = std::any_of(enemies.begin(), enemies.end(), [&](const auto & e) {
-        return e->getDistance(ball.pos) < 2.0;
+        return e->getDistance(ball.pos) < emit_enemy_dist;
       });
-      if (enemy_near) {
+
+      bool force_emit =
+        std::chrono::duration<double>(now - *ball_in_penalty_since_).count() > emit_timeout;
+
+      if (enemy_near && !force_emit) {
         should_emit = false;
         phase = "排出危険→待ち受け";
+      } else if (force_emit) {
+        phase = "排出強制(タイムアウト)";
       }
+    } else {
+      ball_in_penalty_since_ = std::nullopt;
     }
 
     if (should_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあり，敵が近くにいないときは排出
-      phase = "ボール排出";
+      if (phase.empty()) {
+        phase = "ボール排出";
+      }
       emitBallFromPenaltyArea();
     } else if (  // 改善2: 緊急接近ブロック（シュートブロック条件を満たさないゴール接近ボール）
       ball.isMovingTowards(goal_center, 60.0) && ball_vel_norm > 1.0 &&

@@ -7,6 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__GOALIE_HPP_
 #define CRANE_ROBOT_SKILLS__GOALIE_HPP_
 
+#include <chrono>
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
@@ -37,6 +38,8 @@ public:
   Kick kick_skill;
 
   std::optional<Point> prev_wait_point;
+
+  std::optional<std::chrono::steady_clock::time_point> ball_in_penalty_since_;
 
 private:
   void initialize();
