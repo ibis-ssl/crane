@@ -165,17 +165,30 @@ start_ssl_log_recorder() {
 
 stop_ssl_log_recorder() {
     local container_state
-    container_state=$(docker inspect -f '{{.State.Status}}' "$SSL_LOG_RECORDER_CONTAINER_NAME" 2>/dev/null || true)
+    local stop_timeout=30
+    local wait_timeout=35
 
+    container_state=$(docker inspect -f '{{.State.Status}}' "$SSL_LOG_RECORDER_CONTAINER_NAME" 2>/dev/null || true)
     if [[ -z $container_state ]]; then
         return 0
     fi
 
     echo "=== ssl-log-recorder を停止中 (container: $SSL_LOG_RECORDER_CONTAINER_NAME) ==="
-    docker rm -f "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
+
+    if [[ $container_state == "running" ]]; then
+        # ssl-log-recorder は SIGINT で正常終了処理に入る実装が多いため、先に SIGINT を試す
+        echo "SIGINT で graceful shutdown を試行します"
+        docker kill --signal=SIGINT "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
+
+        if ! timeout "$wait_timeout" docker wait "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1; then
+            echo "SIGINT で停止しなかったため docker stop へフォールバックします (timeout: ${stop_timeout}s)"
+            docker stop --time "$stop_timeout" "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
+        fi
+    fi
+
+    docker rm "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
     echo "ssl-log-recorder 停止完了"
 }
-
 COMPOSE_COMMAND="$(detect_compose_command)"
 
 # downコマンドの場合はdebug_toolsも停止
