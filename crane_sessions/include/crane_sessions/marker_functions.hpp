@@ -13,6 +13,7 @@
 #include <crane_robot_skills/marker.hpp>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -28,6 +29,8 @@ struct MarkingResult
 {
   std::vector<std::shared_ptr<skills::Marker>> markers;
   std::vector<uint8_t> selected_robot_ids;
+  // 割り当て結果マップ（ヒステリシス引き継ぎ用: enemy_id -> our_robot_id）
+  std::unordered_map<uint8_t, uint8_t> enemy_to_marker;
 };
 
 /// 危険な敵ロボットに対してマーカーを割り当てる共通関数
@@ -42,7 +45,8 @@ auto assignMarkersToEnemies(
   const std::vector<uint8_t> & available_robot_ids,
   const WorldModelWrapper::SharedPtr & world_model,
   const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
-  bool assign_remaining = false, const std::string & mark_mode = "intercept_pass") -> MarkingResult;
+  bool assign_remaining = false, const std::string & mark_mode = "intercept_pass",
+  const std::unordered_map<uint8_t, uint8_t> & prev_assignments = {}) -> MarkingResult;
 
 }  // namespace crane
 #endif  // CRANE_SESSIONS__MARKER_FUNCTIONS_HPP_

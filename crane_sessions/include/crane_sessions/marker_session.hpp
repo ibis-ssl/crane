@@ -76,6 +76,9 @@ private:
   std::vector<std::shared_ptr<skills::Marker>> markers;
 
   std::mutex markers_mutex;
+
+  // 前フレームのマーカー割り当て（ヒステリシス用: enemy_id -> our_robot_id）
+  std::unordered_map<uint8_t, uint8_t> prev_assignments_;
 };
 
 }  // namespace crane

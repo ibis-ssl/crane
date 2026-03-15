@@ -10,6 +10,7 @@
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
+#include <optional>
 
 namespace crane::skills
 {
@@ -44,6 +45,10 @@ public:
   // 敵割り込み検出・回避関数
   bool isEnemyBlockingPassLine(const Point & interception_point) const;
   Point getInterceptionPointWithEnemyAvoidance() const;
+
+private:
+  // 前フレームのインターセプト位置（ジッター抑制用、Sumatra BallInterceptor参考）
+  mutable std::optional<Point> prev_interception_point_;
 };
 
 }  // namespace crane::skills
