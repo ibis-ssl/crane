@@ -20,7 +20,6 @@ TheirPenaltyKickSession::calculatePositionCommand(
     target << (world_model->getTheirGoalCenter().x() + world_model->ball().pos.x()) / 2,
       command->getRobot()->pose.pos.y();
     command->setTargetPosition(target);
-    command->disableAnyAreaAvoidance();
     command->enableBallAvoidance();
     command->setMaxVelocity("TheirPenaltyKickSession for non goalie", 1.5);
     robot_commands.push_back(command->getMsg());
