@@ -72,9 +72,14 @@ auto VisualizationManager::drawFieldGeometry(
     double goal_width = field.goal_width() / 1000.0;
     double goal_depth = field.goal_depth() / 1000.0;
 
-    // ゴール描画（U字型構造）
-    geometry_builder->drawGoal(Point(-field_height / 2, 0), goal_width, -goal_depth);  // 左ゴール
-    geometry_builder->drawGoal(Point(field_height / 2, 0), goal_width, goal_depth);    // 右ゴール
+    // ゴール描画（U字型構造）: positive-half側が自チーム
+    const std::string left_goal_color = on_positive_half_ ? getTheirTeamColor() : getOurTeamColor();
+    const std::string right_goal_color =
+      on_positive_half_ ? getOurTeamColor() : getTheirTeamColor();
+    geometry_builder->drawGoal(
+      Point(-field_height / 2, 0), goal_width, -goal_depth, left_goal_color);  // 左ゴール
+    geometry_builder->drawGoal(
+      Point(field_height / 2, 0), goal_width, goal_depth, right_goal_color);  // 右ゴール
   }
 
   // ペナルティエリアの描画
@@ -110,12 +115,11 @@ auto VisualizationManager::drawVisionDetections(
     Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
 
-    // ロボット本体とID
     if (robot.has_robot_id()) {
       vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "white", 0.0, "white", 1.0, 20, 50, "white", 0.0, 0.15);
+        pos, theta, robot.robot_id(), "blue", 0.0, "blue", 1.0, 20, 50, "white", 0.0, 0.15);
     } else {
-      vision_builder->drawRobot(pos, theta, "white", 0.0, "white", 1.0, 20);
+      vision_builder->drawRobot(pos, theta, "blue", 0.0, "blue", 1.0, 20);
     }
   }
 
@@ -124,12 +128,11 @@ auto VisualizationManager::drawVisionDetections(
     Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
 
-    // ロボット本体とID
     if (robot.has_robot_id()) {
       vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "white", 0.0, "white", 1.0, 20, 50, "white", 0.0, 0.15);
+        pos, theta, robot.robot_id(), "yellow", 0.0, "yellow", 1.0, 20, 50, "black", 0.0, 0.15);
     } else {
-      vision_builder->drawRobot(pos, theta, "white", 0.0, "white", 1.0, 20);
+      vision_builder->drawRobot(pos, theta, "yellow", 0.0, "yellow", 1.0, 20);
     }
   }
 
@@ -208,7 +211,9 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     }
   };
 
-  auto draw_robot = [this](const std::shared_ptr<RobotInfo> & robot, bool is_friend) {
+  const bool team_is_yellow = world_model->isYellow();
+  auto draw_robot = [this, team_is_yellow](
+                      const std::shared_ptr<RobotInfo> & robot, bool is_friend) {
     // 味方のみ直近検出チェック（エラーでも表示はOK）
     if (is_friend) {
       const auto now = node_.now();
@@ -221,9 +226,13 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     const Point & pos = robot->pose.pos;
     const double theta = std::isfinite(robot->pose.theta) ? robot->pose.theta : 0.0;
 
-    // ロボット本体とID
+    // ロボット本体とID（world_modelから直接取得したチーム色を使用）
+    const std::string fill_color =
+      is_friend ? (team_is_yellow ? "yellow" : "blue") : (team_is_yellow ? "blue" : "yellow");
+    const std::string id_color =
+      is_friend ? (team_is_yellow ? "black" : "white") : (team_is_yellow ? "white" : "black");
     tracked_builder->drawRobotWithID(
-      pos, theta, robot->id, is_friend ? "green" : "red", 1.0, "black", 1.0, 10);
+      pos, theta, robot->id, fill_color, 1.0, "black", 1.0, 10, 150, id_color);
   };
 
   // トラッキング済みロボット（味方）: エラー有無に関わらず、直近検出があれば描画
@@ -264,18 +273,19 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
 {
   if (auto target = world_model->getBallPlacementTarget(); target) {
     const auto & ball = world_model->ball();
-    placement_builder->drawCircle(target.value(), 0.5, "white", 5);
+    const std::string placement_color = world_model->isYellow() ? "yellow" : "blue";
+    placement_builder->drawCircle(target.value(), 0.5, placement_color, 5);
     Vector2 vertical = getVerticalVec((ball.pos - target.value()).normalized()) * 0.5;
     placement_builder->line()
       .start(ball.pos + vertical)
       .end(target.value() + vertical)
-      .stroke("white")
+      .stroke(placement_color)
       .strokeWidth(5)
       .build();
     placement_builder->line()
       .start(ball.pos - vertical)
       .end(target.value() - vertical)
-      .stroke("white")
+      .stroke(placement_color)
       .strokeWidth(5)
       .build();
     placement_builder->flush();
@@ -288,7 +298,7 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
 auto VisualizationManager::drawTrajectoryHistory(
   const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
   const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
-  const std::deque<crane_msgs::msg::BallInfo> & ball_info_history) -> void
+  const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void
 {
   static constexpr int SAMPLING_NUM = 4;
 
@@ -317,8 +327,8 @@ auto VisualizationManager::drawTrajectoryHistory(
   };
 
   // 味方・敵の履歴描画（共通処理）
-  draw_team_history(friend_history, "green");
-  draw_team_history(enemy_history, "red");
+  draw_team_history(friend_history, is_yellow ? "yellow" : "blue");
+  draw_team_history(enemy_history, is_yellow ? "blue" : "yellow");
 
   // ボール軌跡描画
   if (ball_info_history.size() > SAMPLING_NUM + 1) {
