@@ -7,15 +7,19 @@
 #ifndef CRANE_ROBOT_SKILLS__KICK_HPP_
 #define CRANE_ROBOT_SKILLS__KICK_HPP_
 
+#include <chrono>
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
+#include <optional>
 
 namespace crane::skills
 {
 enum class KickState {
   ENTRY_POINT,
   AROUND_BALL_AND_KICK,
+  PIVOT_CAPTURE,
+  PIVOT_TURN,
 };
 
 class Kick : public SkillBaseWithState
@@ -51,6 +55,15 @@ private:
   void kickWithChip();
 
   void kickStraight();
+
+  /// @brief ターゲット方向のキックベクトルを計算（フォールバック付き）
+  Vector2 computeKickVec() const;
+
+  /// @brief キック方向の矢印と角度しきい値の扇を描画
+  void drawKickDirectionVisualization(const Point & ball_pos, const Vector2 & kick_vec);
+
+  /// @brief PIVOT_TURN に入った時刻（タイムアウト検出用）
+  std::optional<std::chrono::steady_clock::time_point> pivot_turn_entry_time_;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__KICK_HPP_
