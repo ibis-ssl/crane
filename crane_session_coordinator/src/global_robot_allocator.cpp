@@ -317,7 +317,29 @@ auto GlobalRobotAllocator::buildCostMatrix(
       context.was_assigned_to_same_session ? config_copy.hysteresis_bonus : 0.0;
     double velocity_hysteresis = 0.0;
     if (!context.was_assigned_to_same_session) {
-      velocity_hysteresis = robot->vel.linear.norm() * config_copy.velocity_hysteresis_factor;
+      constexpr double DIRECTION_SPEED_THRESHOLD = 0.3;    // 方向ボーナス適用の最低速度 [m/s]
+      constexpr double DIRECTION_DIST_THRESHOLD = 0.1;     // ターゲット距離の最小値 [m]
+      constexpr double DIRECTION_HYSTERESIS_WEIGHT = 0.3;  // 方向一致度への重み係数
+
+      double robot_speed = robot->vel.linear.norm();
+      // 基本ペナルティ: 速度が大きいほど再割り当てコスト増
+      velocity_hysteresis = robot_speed * config_copy.velocity_hysteresis_factor;
+
+      // 方向ボーナス: 前フレームのターゲット方向に移動中なら追加ペナルティ
+      // (Sumatra DesiredDefendersCalcUtil 参考)
+      auto prev_target = state_copy.getPrevTarget(robot_id);
+      if (prev_target && robot_speed > DIRECTION_SPEED_THRESHOLD) {
+        Vector2 to_prev_target = prev_target.value() - robot->pose.pos;
+        double dist_to_target = to_prev_target.norm();
+        if (dist_to_target > DIRECTION_DIST_THRESHOLD) {
+          // norm()の再計算を避けるため、既計算値で除算してunit vectorを作成
+          Vector2 vel_unit = robot->vel.linear / robot_speed;
+          Vector2 dir_unit = to_prev_target / dist_to_target;
+          double direction_alignment = std::max(0.0, vel_unit.dot(dir_unit));
+          // 方向一致度 * 速度 * 係数 を追加ペナルティとして加算
+          velocity_hysteresis += direction_alignment * robot_speed * DIRECTION_HYSTERESIS_WEIGHT;
+        }
+      }
     }
 
     return base_cost + priority_cost - hysteresis_bonus + velocity_hysteresis;

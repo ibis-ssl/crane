@@ -17,6 +17,23 @@ namespace crane::skills
 {
 Status Receive::update()
 {
+  // ボール方向が90度以上変わったら前フレームインターセプト位置をリセット
+  // (Sumatra BallInterceptor参考: 大きな方向変化は新規インターセプト位置を採用)
+  if (prev_interception_point_) {
+    constexpr double BALL_SPEED_RESET_THRESHOLD = 0.5;  // リセット判定の最低ボール速度 [m/s]
+    constexpr double PREV_DIST_RESET_THRESHOLD = 0.1;   // リセット判定の最低距離 [m]
+    auto ball_vel = world_model()->ball().vel;
+    double ball_speed = ball_vel.norm();
+    Vector2 to_prev = prev_interception_point_.value() - world_model()->ball().pos;
+    double prev_dist = to_prev.norm();
+    if (ball_speed > BALL_SPEED_RESET_THRESHOLD && prev_dist > PREV_DIST_RESET_THRESHOLD) {
+      double cos_angle = (ball_vel / ball_speed).dot(to_prev / prev_dist);
+      if (cos_angle < 0.0) {  // 90度以上の方向変化
+        prev_interception_point_ = std::nullopt;
+      }
+    }
+  }
+
   auto offset = [&]() -> Point {
     Point offset(0, 0);
     if (getParameter<bool>("enable_software_bumper")) {
@@ -221,6 +238,16 @@ Point Receive::getInterceptionPoint() const
       command->addPlanningFactor("Receive", message);
       return robot()->pose.pos;
     }
+
+    // 前フレーム位置の安定化ボーナス（Sumatra BallInterceptor参考）
+    if (prev_interception_point_) {
+      double dist_to_prev = (selected_point - prev_interception_point_.value()).norm();
+      constexpr double STABILITY_DISTANCE_THRESHOLD = 0.5;  // 0.5m以内なら前回位置を優先
+      if (dist_to_prev < STABILITY_DISTANCE_THRESHOLD) {
+        selected_point = prev_interception_point_.value();
+      }
+    }
+    prev_interception_point_ = selected_point;
 
     // Emphasize selected point with double circle and small label
     if (getParameter<bool>("viz_candidates")) {

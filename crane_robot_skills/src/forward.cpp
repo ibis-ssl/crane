@@ -24,7 +24,9 @@ auto Forward::update() -> Status
 
   const double line_length = (back_point - front_point).norm();
   if (!std::isfinite(line_length)) {
-    command->stopHere();
+    // stopHereの代わりに現在位置を維持してボールを注視
+    // (ForwardSessionのライン生成が一時的に不安定な場合のフォールバック)
+    command->setTargetPosition(robot()->pose.pos).lookAtBall();
     return Status::RUNNING;
   }
 
@@ -77,7 +79,9 @@ auto Forward::update() -> Status
       .lookAtBall()
       .setMaxVelocity("Forward::max_vel", max_vel);
   } else {
-    command->stopHere();
+    // stopHereの代わりにfront/back中点にフォールバック
+    Point midpoint = (front_point + back_point) * 0.5;
+    command->setTargetPosition(midpoint).lookAtBall().setMaxVelocity("Forward::fallback", max_vel);
   }
 
   if (planner_visualizer) {

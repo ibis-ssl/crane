@@ -61,7 +61,8 @@ auto assignMarkersToEnemies(
   const std::vector<uint8_t> & available_robot_ids,
   const WorldModelWrapper::SharedPtr & world_model,
   const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
-  bool assign_remaining, const std::string & mark_mode) -> MarkingResult
+  bool assign_remaining, const std::string & mark_mode,
+  const std::unordered_map<uint8_t, uint8_t> & prev_assignments) -> MarkingResult
 {
   MarkingResult result;
 
@@ -111,9 +112,18 @@ auto assignMarkersToEnemies(
 
     auto best_robot = ranges::min(remaining_robots, ranges::less{}, [&](const auto & robot) {
       // 割当コスト: 敵に対するマーキングセグメントへの距離（固定点ではなく線分ベース）
-      return getClosestPointAndDistance(robot->pose.pos, marking_segment).distance;
+      double dist = getClosestPointAndDistance(robot->pose.pos, marking_segment).distance;
+      // ヒステリシス: 前フレームで同じ敵をマークしていたロボットにボーナス
+      // (Sumatra DesiredDefendersCalcUtil 参考)
+      constexpr double MARKER_HYSTERESIS_BONUS = 0.5;  // 前フレーム割り当て継続ボーナス [m]
+      auto it = prev_assignments.find(enemy_robot->id);
+      if (it != prev_assignments.end() && it->second == robot->id) {
+        dist -= MARKER_HYSTERESIS_BONUS;
+      }
+      return dist;
     });
 
+    result.enemy_to_marker[enemy_robot->id] = best_robot->id;
     result.selected_robot_ids.push_back(best_robot->id);
     remaining_robots.erase(ranges::find_if(remaining_robots, [&](const auto & robot) {
       return robot->id == best_robot->id;

@@ -34,9 +34,9 @@ public:
 private:
   // ヒステリシス管理
   SelectionHysteresis<int> attacker_hysteresis_{SelectionHysteresis<int>::Config{
-    .min_hold_duration_sec = 0.2,
-    .min_improvement_ratio = 0.01,
-    .emergency_switch_ratio = 1.03,
+    .min_hold_duration_sec = 0.5,   // 200ms → 500ms: パスカットウィンドウ内の振動抑制
+    .min_improvement_ratio = 0.15,  // 1% → 15%: 僅差での無意味な切替を防止
+    .emergency_switch_ratio = 1.5,  // 3% → 50%: 明らかに優位な場合のみ即切替
     .force_switch_timeout = 3.0,
     .absolute_threshold = 2.0}};
 
@@ -44,7 +44,7 @@ private:
   std::unordered_map<uint8_t, double> ema_scores_;
 
   // EMAスムージング係数
-  static constexpr double EMA_ALPHA = 0.7;  // 新スコア70%、古いスコア30%
+  static constexpr double EMA_ALPHA = 0.3;  // 新スコア30%、旧70%でスコア安定化
 };
 
 }  // namespace crane::metrics
