@@ -50,7 +50,7 @@ public:
   auto drawTrajectoryHistory(
     const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
     const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
-    const std::deque<crane_msgs::msg::BallInfo> & ball_info_history) -> void;
+    const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void;
 
   // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
@@ -63,8 +63,22 @@ public:
   crane::VisualizerMessageBuilder::SharedPtr pass_score_builder;
   crane::VisualizerMessageBuilder::SharedPtr kick_event_builder;
 
+  // drawFieldGeometry はコールバック経由で呼ばれるため world_model を受け取れない。
+  // ゴール色描画のためにチーム情報をキャッシュする。
+  void updateTeamInfo(bool is_yellow, bool on_positive_half)
+  {
+    is_yellow_ = is_yellow;
+    on_positive_half_ = on_positive_half;
+  }
+
 private:
   rclcpp::Node & node_;
+  bool is_yellow_ = false;         // drawFieldGeometry 用
+  bool on_positive_half_ = false;  // drawFieldGeometry 用
+
+  // drawFieldGeometry 専用ヘルパー
+  std::string getOurTeamColor() const { return is_yellow_ ? "yellow" : "blue"; }
+  std::string getTheirTeamColor() const { return is_yellow_ ? "blue" : "yellow"; }
 };
 
 }  // namespace crane

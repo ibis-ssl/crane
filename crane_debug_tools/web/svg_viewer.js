@@ -300,7 +300,7 @@ class SvgViewer {
         svg.setAttribute('height', '100%');
         svg.setAttribute('viewBox', '-6000 -4500 12000 9000'); // SSL field dimensions in mm
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        svg.style.background = '#6c757d';
+        svg.style.background = 'green';
 
         // 座標グリッドを追加
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
@@ -313,7 +313,7 @@ class SvgViewer {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', 'M 1000 0 L 0 0 0 1000');
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', '#adb5bd');
+        path.setAttribute('stroke', '#2d8a2d');
         path.setAttribute('stroke-width', '20');
 
         pattern.appendChild(path);
@@ -326,7 +326,7 @@ class SvgViewer {
         fieldBackground.setAttribute('y', '-4500');
         fieldBackground.setAttribute('width', '12000');
         fieldBackground.setAttribute('height', '9000');
-        fieldBackground.setAttribute('fill', '#6c757d');
+        fieldBackground.setAttribute('fill', 'green');
         svg.appendChild(fieldBackground);
 
         // グリッドの背景を追加

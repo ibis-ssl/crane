@@ -182,11 +182,15 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
 {
+  // チーム色情報を更新
+  visualization_manager_->updateTeamInfo(world_model->isYellow(), world_model->onPositiveHalf());
+
   // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
 
   // 軌跡履歴データをVisualizationManagerに渡す（コピーなし）
-  visualization_manager_->drawTrajectoryHistory(friend_history, enemy_history, ball_info_history);
+  visualization_manager_->drawTrajectoryHistory(
+    friend_history, enemy_history, ball_info_history, world_model->isYellow());
 
   visualization_manager_->drawBallPlacement(world_model);
 
