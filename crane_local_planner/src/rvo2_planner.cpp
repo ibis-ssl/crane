@@ -778,18 +778,17 @@ auto RVO2Planner::adjustForPlacementAvoidance(
   if (
     not command.local_planner_config.disable_placement_avoidance &&
     world_model->getBallPlacementTarget().has_value()) {
-    auto isInPlacementArea = [this](const Point & point, double offset) {
-      if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
-        return bg::distance(point, placement_area.value()) <=
-               placement_area.value().radius + offset;
-      } else {
-        return false;
-      }
+    const auto placement_area_opt = world_model->getBallPlacementArea();
+    if (!placement_area_opt) return;
+    const auto & placement_area = placement_area_opt.value();
+
+    auto isInPlacementArea = [&placement_area](const Point & point, double offset) {
+      return bg::distance(point, placement_area) <= placement_area.radius + offset;
     };
 
     if (isInPlacementArea(current_pos, 0.2)) {
-      auto [distance, closest_point] = getClosestPointAndDistance(
-        world_model->getBallPlacementArea().value().segment, current_pos);
+      auto [distance, closest_point] =
+        getClosestPointAndDistance(placement_area.segment, current_pos);
       // 0.6m離れる
       Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
       if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
@@ -797,35 +796,55 @@ auto RVO2Planner::adjustForPlacementAvoidance(
         target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
 
         if (
-          auto segment = world_model->getBallPlacementArea().value().segment;
+          const auto & segment = placement_area.segment;
           (closest_point == segment.first || closest_point == segment.second)) {
           // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
-          // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
-          std::vector<Point> target_candidates;
+          // 垂直方向に0.6m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
           Vector2 vertical_vec =
             getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
-          target_candidates.push_back(closest_point + vertical_vec);
-          target_candidates.push_back(closest_point - vertical_vec);
+          std::array<Point, 2> target_candidates = {
+            closest_point + vertical_vec, closest_point - vertical_vec};
 
           if (
             auto target = std::ranges::find_if(
               target_candidates,
               [&](const auto & target_candidate) {
                 return (
-                  not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                  world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
                   not isInPlacementArea(target_candidate, 0.1));
               });
             target != target_candidates.end()) {
             target_pos = *target;
           } else {
-            // どの候補もだめな場合は移動しない
-            target_pos = current_pos;
+            // 垂直方向の2候補もだめな場合は放射状8方向で有効点を探索する
+            std::array<Point, 8> radial_candidates;
+            for (int i = 0; i < 8; i++) {
+              double angle = i * M_PI / 4.0;
+              radial_candidates[i] = closest_point + Point(std::cos(angle), std::sin(angle)) * 0.8;
+            }
+            auto valid = std::ranges::find_if(radial_candidates, [&](const auto & c) {
+              return world_model->point_checker.isFieldInside(c, 0.2) &&
+                     not isInPlacementArea(c, 0.1);
+            });
+            if (valid != radial_candidates.end()) {
+              target_pos = *valid;
+            } else {
+              // 最終フォールバック: 移動しない
+              target_pos = current_pos;
+            }
           }
         } else {
           target_pos = target_position;
         }
       } else {
         target_pos = target_position;
+      }
+      // 安全チェック: 結果がフィールド外にならないようにクランプ
+      if (not world_model->point_checker.isFieldInside(target_pos, 0.2)) {
+        const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
+        const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
+        target_pos.x() = std::clamp(target_pos.x(), -max_x, max_x);
+        target_pos.y() = std::clamp(target_pos.y(), -max_y, max_y);
       }
     }
   }
