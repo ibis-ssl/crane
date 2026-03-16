@@ -117,13 +117,12 @@ void Attacker::initialize()
   addTransition(
     static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::RECEIVE),
     [this]() -> bool {
-      // ボールが遠くにいる/動いている/ボール軌道の近く(<2.0m)にいる
+      // ボールが遠くにいて動いている場合にRECEIVEへ遷移する。
+      // 以前の「ボール軌道の2.0m以内」チェックは削除した。
+      // Attackerはボール取得が役割なので、転がるボールを積極的に追いかけるべきである。
       if (
         robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-        world_model()->ball().isMoving(MOVING_BALL_VELOCITY) && [&]() {
-          auto result = world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0);
-          return (result.closest_point - robot()->pose.pos).norm() < 2.0;
-        }()) {
+        world_model()->ball().isMoving(MOVING_BALL_VELOCITY)) {
         // GameAnalysisの既存slackデータで敵との競合チェック（追加計算コストなし）
         const auto & ga = world_model()->getMsg().game_analysis;
         double my_min_slack = -100.0;
@@ -232,7 +231,12 @@ void Attacker::initialize()
 
   addTransition(
     static_cast<int>(AttackerState::KICK), static_cast<int>(AttackerState::ENTRY_POINT),
-    [this]() -> bool { return world_model()->ball().isMoving(MOVING_BALL_VELOCITY); });
+    [this]() -> bool {
+      // ボールが動いていても、ロボットがボールに近い場合はKICKを継続する。
+      // ボールが動いているだけでKICKを抜けると、KICK→ENTRY_POINT→KICKの発振が起きるため。
+      return world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
+             robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE;
+    });
 
   // KICK状態でボールに触れずKICK_TIMEOUT_SEC以上経過した場合、ENTRY_POINTへ戻って再割当を待つ
   addTransition(

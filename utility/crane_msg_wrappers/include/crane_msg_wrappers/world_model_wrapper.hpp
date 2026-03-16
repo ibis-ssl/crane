@@ -252,6 +252,13 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
     const Point & ball_origin, const Vector2 & ball_velocity, double time, const RobotList & robots,
     const SlackTimeConfig & config) -> std::optional<SlackTimeResult>;
 
+  /// @brief 事前計算済みのインターセプト地点からスラックタイムを計算するオーバーロード
+  /// @details 減速モデルで生成したボールシーケンスと組み合わせて使用する。
+  ///          ボール位置の再計算を行わず、robot到達時間のみを計算する。
+  [[nodiscard]] auto getBallSlackTime(
+    const Point & intercept_point, double time, const RobotList & robots,
+    const SlackTimeConfig & config) -> std::optional<SlackTimeResult>;
+
   [[nodiscard]] auto getBallSlackTime(
     double time, const RobotList & robots, const SlackTimeConfig & config)
     -> std::optional<SlackTimeResult>;
