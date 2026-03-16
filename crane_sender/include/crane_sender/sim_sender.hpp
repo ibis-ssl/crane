@@ -56,88 +56,36 @@ public:
       }
     };
 
-    declare_parameter("i_saturation", I_SATURATION);
-    I_SATURATION = get_parameter("i_saturation").as_double();
+    declare_parameter("i_saturation", i_saturation_);
+    i_saturation_ = get_parameter("i_saturation").as_double();
 
     // 全ロボットの状態を初期化
     for (auto & state : robot_states_) {
       state.vx_controller.setGain(
-        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
+        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), i_saturation_);
       state.vy_controller.setGain(
-        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
+        p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), i_saturation_);
       state.theta_controller.setGain(
         theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       state.previous_velocity = Velocity::Zero();
     }
 
     // the parameters of the PID controller
-    theta_p_gain.callback = [this](double) {
+    auto update_theta_gains = [this](double) {
       for (auto & state : robot_states_) {
         state.theta_controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
-
-    theta_i_gain.callback = [this](double) {
-      for (auto & state : robot_states_) {
-        state.theta_controller.setGain(
-          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
-      }
-    };
-
-    theta_d_gain.callback = [this](double) {
-      for (auto & state : robot_states_) {
-        state.theta_controller.setGain(
-          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
-      }
-    };
-
-    // ロボット送信用の加速度パラメータを読み込み
-    declare_parameter("robot_acceleration.acceleration", 2.5);
-    get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
-
-    declare_parameter("robot_acceleration.deceleration_high", 3.0);
-    get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
-
-    declare_parameter("robot_acceleration.deceleration_low", 2.0);
-    get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
-
-    declare_parameter("robot_acceleration.velocity_threshold", 1.5);
-    get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+    theta_p_gain.callback = update_theta_gains;
+    theta_i_gain.callback = update_theta_gains;
+    theta_d_gain.callback = update_theta_gains;
 
     declare_parameter("chip_angle_deg", chip_angle_deg);
     chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override;
-
-  //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
-  //  {
-  //    bool is_nan = false;
-  //    for (const auto & command : msg.robot_commands) {
-  //      if (std::isnan(command.target_velocity.x)) {
-  //        std::cout << "id: " << command.robot_id << " target_velocity.x is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.y)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.y is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.theta)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.theta is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.kick_power)) {
-  //        std::cout << "id: " << command.robot_id << "kick_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.dribble_power)) {
-  //        std::cout << "id: " << command.robot_id << "dribble_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //    }
-  //    return is_nan;
-  //  }
 
   std::unique_ptr<UDPSender> yellow_sender;
   std::unique_ptr<UDPSender> blue_sender;
@@ -150,7 +98,7 @@ public:
   ParameterWithEvent<double> theta_i_gain;
   ParameterWithEvent<double> theta_d_gain;
 
-  double I_SATURATION = 0.0;
+  double i_saturation_ = 0.0;
 
   double chip_angle_deg = 30.0;
 
@@ -166,18 +114,6 @@ private:
 
   // 全ロボットの状態
   std::array<PerRobotState, 20> robot_states_;
-
-  // ロボット送信用の加速度パラメータ
-  double robot_acceleration_acceleration_;
-  double robot_acceleration_deceleration_high_;
-  double robot_acceleration_deceleration_low_;
-  double robot_acceleration_velocity_threshold_;
-
-  // 加速度制限を計算
-  double calculateAccelerationLimit(
-    double current_velocity, double target_velocity, double robot_acceleration_acceleration,
-    double robot_acceleration_deceleration_high, double robot_acceleration_deceleration_low,
-    double robot_acceleration_velocity_threshold);
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_

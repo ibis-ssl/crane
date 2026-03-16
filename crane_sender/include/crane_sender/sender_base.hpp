@@ -34,6 +34,8 @@ protected:
 
   virtual void sendCommands(const VelocityCommandsMsg & msg) = 0;
 
+  double calculateAccelerationLimit(double current_speed, double target_speed) const;
+
   double delay_s{};
 
   std::shared_ptr<WorldModelWrapper> world_model;
@@ -41,6 +43,11 @@ protected:
   rclcpp::Clock clock;
 
   bool no_movement{false};
+
+  double robot_acceleration_acceleration_{2.5};
+  double robot_acceleration_deceleration_high_{3.0};
+  double robot_acceleration_deceleration_low_{2.0};
+  double robot_acceleration_velocity_threshold_{1.5};
 
 private:
   void callback(const VelocityCommandsMsg & msg);
