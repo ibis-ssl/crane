@@ -20,7 +20,8 @@ MarkerSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
   auto lock = std::lock_guard(markers_mutex);
   visualizer->clearBuffer();
   // ボール停止中＋敵がボール近くにいる＝相手セットプレイ → save_goalモードでゴール前を守る
-  std::string mark_mode = "intercept_pass";
+  // それ以外は守備ライン上に配置するpenalty_areaモードを使用
+  std::string mark_mode = "penalty_area";
   if (!world_model->ball().isMoving(0.5)) {
     auto their_robots = world_model->theirs().robotsWhere().available().get();
     bool enemy_near_ball = std::any_of(

@@ -6,6 +6,7 @@
 
 #include <boost/math/constants/constants.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_sessions/defense_functions.hpp>
 #include <crane_sessions/marker_functions.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
@@ -83,6 +84,7 @@ auto assignMarkersToEnemies(
     ranges::to<std::vector>();
 
   const bool is_save_goal = (mark_mode == "save_goal");
+  const bool is_penalty_area = (mark_mode == "penalty_area");
   const Point reference = is_save_goal ? world_model->getOurGoalCenter() : world_model->ball().pos;
 
   for (const auto & [enemy_robot, score] : danger_enemies) {
@@ -93,19 +95,35 @@ auto assignMarkersToEnemies(
     // マーキングセグメントを事前計算（割当コストと可視化で共用）
     constexpr double mark_dist = 0.5;
     constexpr double max_mark_dist = 1.5;
-    auto dir = (reference - enemy_robot->pose.pos).normalized();
-    Point near_end = enemy_robot->pose.pos + dir * mark_dist;
-    Point far_end = enemy_robot->pose.pos + dir * max_mark_dist;
-    if (is_save_goal) {
-      constexpr double penalty_offset = 0.15;
+    Point near_end, far_end;
+    if (is_penalty_area) {
+      // 敵→ゴール線と守備ラインの交点をターゲットとする
       Segment enemy_to_goal{enemy_robot->pose.pos, world_model->getOurGoalCenter()};
-      auto intersection =
-        world_model->getIntersectionOurPenaltyArea(enemy_to_goal, penalty_offset, penalty_offset);
-      if (intersection) {
-        double dist_to_boundary = (intersection.value() - enemy_robot->pose.pos).norm();
-        double clamped_max = std::max(mark_dist, dist_to_boundary - 0.05);
-        far_end = enemy_robot->pose.pos + dir * std::min(max_mark_dist, clamped_max);
-        near_end = enemy_robot->pose.pos + dir * std::min(mark_dist, clamped_max);
+      auto param_opt = getDefenseLinePointParameter(enemy_to_goal, world_model);
+      if (param_opt) {
+        // near_end == far_endとすることで、コスト=ロボットから交点への直線距離として扱う
+        near_end = far_end = getDefenseLinePoint(param_opt.value(), world_model);
+      } else {
+        // フォールバック: save_goalと同じ方向計算
+        auto dir = (world_model->getOurGoalCenter() - enemy_robot->pose.pos).normalized();
+        near_end = enemy_robot->pose.pos + dir * mark_dist;
+        far_end = enemy_robot->pose.pos + dir * max_mark_dist;
+      }
+    } else {
+      auto dir = (reference - enemy_robot->pose.pos).normalized();
+      near_end = enemy_robot->pose.pos + dir * mark_dist;
+      far_end = enemy_robot->pose.pos + dir * max_mark_dist;
+      if (is_save_goal) {
+        constexpr double penalty_offset = 0.15;
+        Segment enemy_to_goal{enemy_robot->pose.pos, world_model->getOurGoalCenter()};
+        auto intersection =
+          world_model->getIntersectionOurPenaltyArea(enemy_to_goal, penalty_offset, penalty_offset);
+        if (intersection) {
+          double dist_to_boundary = (intersection.value() - enemy_robot->pose.pos).norm();
+          double clamped_max = std::max(mark_dist, dist_to_boundary - 0.05);
+          far_end = enemy_robot->pose.pos + dir * std::min(max_mark_dist, clamped_max);
+          near_end = enemy_robot->pose.pos + dir * std::min(mark_dist, clamped_max);
+        }
       }
     }
     Segment marking_segment{near_end, far_end};
