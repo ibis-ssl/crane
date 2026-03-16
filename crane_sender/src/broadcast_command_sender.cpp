@@ -61,7 +61,6 @@ void BroadcastCommandSender::sendBroadcastPackets(
   }
 
   // パケット送信
-  size_t total_size = sizeof(broadcast_buf);
   try {
     socket.send_to(boost::asio::buffer(broadcast_buf), endpoint);
   } catch (boost::system::system_error & e) {

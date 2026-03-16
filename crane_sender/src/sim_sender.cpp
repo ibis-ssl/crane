@@ -64,10 +64,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
     // Step 3: 加速度制限を選択（速度の大きさで加速/減速を判定）
     double current_speed = current_vel_local.norm();
     double target_speed = target_vel_local.norm();
-    double acceleration_limit = calculateAccelerationLimit(
-      current_speed, target_speed, robot_acceleration_acceleration_,
-      robot_acceleration_deceleration_high_, robot_acceleration_deceleration_low_,
-      robot_acceleration_velocity_threshold_);
+    double acceleration_limit = calculateAccelerationLimit(current_speed, target_speed);
 
     // Step 4: ローカル座標系で速度変化ベクトルの大きさを制限（方向は維持）
     Eigen::Vector2d delta_vel = target_vel_local - current_vel_local;
@@ -108,7 +105,7 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
       cmd->set_kick_speed(kick_speed * 0.5);
     } else {
       cmd->set_kick_angle(0.);
-      cmd->set_kick_speed(kick_speed * 1.0);
+      cmd->set_kick_speed(kick_speed);
     }
 
     // ドリブル(単位：rpm)
@@ -120,28 +117,6 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
   sender->send(output);
 }
 
-double SimSenderComponent::calculateAccelerationLimit(
-  double current_velocity, double target_velocity, double robot_acceleration_acceleration,
-  double robot_acceleration_deceleration_high, double robot_acceleration_deceleration_low,
-  double robot_acceleration_velocity_threshold)
-{
-  // ibis_sender_node.cppの行114-133と同じロジック
-  double selected_acceleration;
-  if (current_velocity < target_velocity) {
-    // 加速時
-    selected_acceleration = robot_acceleration_acceleration;
-  } else {
-    // 減速時：速度に応じて選択
-    if (current_velocity >= robot_acceleration_velocity_threshold) {
-      // 高速域
-      selected_acceleration = robot_acceleration_deceleration_high;
-    } else {
-      // 低速域
-      selected_acceleration = robot_acceleration_deceleration_low;
-    }
-  }
-  return selected_acceleration;
-}
 }  // namespace crane
 #include <rclcpp_components/register_node_macro.hpp>
 

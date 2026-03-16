@@ -36,6 +36,19 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
   declare_parameter<double>("latency_ms", current_latency_ms);
   get_parameter("latency_ms", current_latency_ms);
 
+  declare_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
+  get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
+
+  declare_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+  get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+
+  declare_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+  get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+
+  declare_parameter(
+    "robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+  get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+
   world_model = std::make_shared<WorldModelWrapper>(*this);
 }
 
@@ -57,9 +70,9 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
     }
 
     command.latency_ms = current_latency_ms;
-    command.kick_power = std::clamp(command.kick_power, 0.f, [this, command]() -> float {
-      return command.chip_enable ? kick_power_limit_chip : kick_power_limit_straight;
-    }());
+    command.kick_power = std::clamp(
+      command.kick_power, 0.f,
+      static_cast<float>(command.chip_enable ? kick_power_limit_chip : kick_power_limit_straight));
     command.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
 
     try {
@@ -99,6 +112,17 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
   previous_commands = preprocessed_msg;
   sendCommands(preprocessed_msg);
+}
+
+double SenderBase::calculateAccelerationLimit(double current_speed, double target_speed) const
+{
+  if (current_speed < target_speed) {
+    return robot_acceleration_acceleration_;
+  } else if (current_speed >= robot_acceleration_velocity_threshold_) {
+    return robot_acceleration_deceleration_high_;
+  } else {
+    return robot_acceleration_deceleration_low_;
+  }
 }
 
 }  // namespace crane
