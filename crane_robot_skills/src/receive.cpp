@@ -190,18 +190,26 @@ Point Receive::getInterceptionPoint() const
       slack_times.end());
 
     if (slack_times.empty()) {
-      std::string message = "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック";
       RCLCPP_WARN(
-        rclcpp::get_logger("Receive"), "slack_times is empty, falling back to closest point");
-      command->addPlanningFactor("Receive", message);
+        rclcpp::get_logger("Receive"), "slack_times is empty, falling back to ball stop position");
+      // ボール停止予測位置へ先回りする（減速モデル対応フォールバック）
+      Point stop_pos =
+        world_model()->ball().getPredictedPosition(world_model()->ball().getStopTime());
+      if (isValidPoint(stop_pos) && world_model()->point_checker.isFieldInside(stop_pos)) {
+        command->addPlanningFactor(
+          "Receive", "WARN: [Receive] slack_timesが空のため、ボール停止予測位置にフォールバック");
+        return stop_pos;
+      }
+      // フィールド外またはNaN値の場合は従来の closest point フォールバック
+      command->addPlanningFactor(
+        "Receive", "WARN: [Receive] 停止予測位置が無効のため、closest pointにフォールバック");
       Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
       if (!isValidPoint(fallback_point)) {
-        // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
-        std::string message = "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用";
+        command->addPlanningFactor(
+          "Receive", "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用");
         RCLCPP_WARN(
           rclcpp::get_logger("Receive"),
           "fallback_point is also NaN, falling back to robot position");
-        command->addPlanningFactor("Receive", message);
         return robot()->pose.pos;
       }
       return fallback_point;
