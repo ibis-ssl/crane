@@ -12,7 +12,7 @@ services:
       - sim
 
   ssl-game-controller:
-    image: robocupssl/ssl-game-controller:3.11.2
+    image: robocupssl/ssl-game-controller:latest
     command:
       - -visionAddress
       - 224.5.23.2:${VISION_PORT:-10020}
