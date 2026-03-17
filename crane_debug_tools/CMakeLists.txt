@@ -25,6 +25,7 @@ ament_auto_add_executable(crane_bag
   src/bag/bag_events.cpp
   src/bag/bag_tracking.cpp
   src/bag/bag_control.cpp
+  src/bag/bag_referee.cpp
 )
 target_include_directories(crane_bag PRIVATE src/bag)
 

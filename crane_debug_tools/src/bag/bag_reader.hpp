@@ -16,6 +16,7 @@
 #include <map>
 #include <optional>
 #include <rcl_interfaces/msg/log.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,6 +56,7 @@ struct BagData
   std::vector<TimestampedMsg<crane_msgs::msg::GameAnalysis>> game_analyses;
   std::vector<TimestampedMsg<crane_msgs::msg::RobotSelectResults>> robot_select_results;
   std::vector<TimestampedMsg<rcl_interfaces::msg::Log>> rosout;
+  std::vector<TimestampedMsg<robocup_ssl_msgs::msg::Referee>> referees;
 
   /// 指定間隔でサンプリングしたポインタ列を返す
   template <typename MsgT>
