@@ -34,6 +34,9 @@ public:
   Status update() override;
 
   Kick kick_skill;
+
+private:
+  bool kicked = false;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_KICKOFF_HPP_
