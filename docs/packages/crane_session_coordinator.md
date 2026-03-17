@@ -123,15 +123,19 @@ ros2 launch crane_bringup crane.launch.xml
 ### カスタム設定
 
 ```yaml
-# config/custom_situation.yaml
-situation: "CUSTOM_DEFENSE"
-robots:
-  - id: 0
-    role: "goalie"
-    tactic: "GoalieTactic"
-  - id: [1,2,3]
-    role: "defender"
-    tactic: "DefenseTactic"
+# config/custom_session_config.yaml
+situations:
+  CUSTOM_DEFENSE:
+    description: カスタム守備状況
+    sessions:
+      - name: goalie_skill
+        max_robots: 1
+      - name: defender
+        max_robots: 3
+
+events:
+  - name: CUSTOM_EVENT
+    situation: CUSTOM_DEFENSE
 ```
 
 ## 診断機能
@@ -182,7 +186,7 @@ robots:
 ### 管理容量
 
 - **同時管理ロボット**: 最大11台
-- **設定ファイル**: 25種類の状況対応
+- **設定ファイル**: 14種類の状況対応
 - **タクティック種類**: 20種類以上
 
 ## 将来展望
