@@ -210,8 +210,7 @@ std::string section_rosout(const BagData & data)
     if (tm.msg.level < WARN_LEVEL) continue;
     std::string key_msg = tm.msg.msg.substr(0, 80);
     auto key = std::make_pair(tm.msg.name, key_msg);
-    if (seen.find(key) == seen.end()) {
-      seen.insert(key);
+    if (seen.insert(key).second) {
       double t = tm.t(data.info.start_time_ns);
       std::string truncated = tm.msg.msg.size() > 200 ? tm.msg.msg.substr(0, 200) : tm.msg.msg;
       char buf[64];
