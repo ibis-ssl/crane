@@ -43,6 +43,18 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
+  int getDesiredRobotNumber(int /* min_robots */, int /* max_robots */) const override
+  {
+    int available_count =
+      static_cast<int>(world_model->ours().robotsWhere().available().getIds().size());
+    int max_allowed = static_cast<int>(world_model->getOurMaxAllowedBots());
+    // max_allowed_botsが0(未受信)の場合は退場不要と判断
+    if (max_allowed == 0) {
+      return 0;
+    }
+    return std::max(0, available_count - max_allowed);
+  }
+
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override;
 
