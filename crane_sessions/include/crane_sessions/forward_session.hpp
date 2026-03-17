@@ -57,10 +57,15 @@ public:
   }
 
 protected:
-  void onRobotsChanged() override { forward_skills.clear(); }
+  void onRobotsChanged() override
+  {
+    forward_skills.clear();
+    forward_line_assignments.clear();
+  }
 
 private:
   std::vector<std::shared_ptr<skills::Forward>> forward_skills;
+  std::vector<int> forward_line_assignments;
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__FORWARD_SESSION_HPP_
