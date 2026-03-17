@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_commentary</name>
-  <version>1.0.214</version>
+  <version>1.0.215</version>
   <description>SSL Commentary System using Gemini Multimodal Live API</description>
   <maintainer email="hans@ibis-ssl.com">Hans</maintainer>
   <license>MIT</license>
