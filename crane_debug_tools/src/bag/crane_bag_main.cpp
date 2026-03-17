@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <cstdio>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -13,7 +14,9 @@
 
 #include "bag_control.hpp"
 #include "bag_events.hpp"
+#include "bag_json.hpp"
 #include "bag_reader.hpp"
+#include "bag_referee.hpp"
 #include "bag_survey.hpp"
 #include "bag_tracking.hpp"
 
@@ -21,8 +24,12 @@ using crane::bag::analyze_control;
 using crane::bag::BagReader;
 using crane::bag::detect_events;
 using crane::bag::detect_factor_transitions;
+using crane::bag::extract_referee_transitions;
 using crane::bag::format_factor_pairs;
+using crane::bag::RefereeSnapshot;
 using crane::bag::run_survey;
+using crane::bag::sample_referee;
+using crane::bag::track_ball;
 using crane::bag::track_robot;
 
 // ─── 軽量 argparse ──────────────────────────────────────────────────────────
@@ -32,11 +39,13 @@ struct Args
   std::string command;
   std::string bag_path;
   int robot_id = -1;
+  bool ball = false;
   bool enemy = false;
   std::optional<std::pair<double, double>> time_range;
   double interval = 0.5;
   bool changes_only = false;
   std::vector<std::string> event_types;
+  std::string format = "text";  // "text" or "json"
 };
 
 static std::optional<std::pair<double, double>> parse_time_range(const std::string & s)
@@ -56,7 +65,7 @@ static Args parse_args(int argc, char ** argv)
     std::fprintf(
       stderr,
       "使い方: crane_bag <command> <bag_path> [options]\n"
-      "コマンド: info, survey, track, events, control\n");
+      "コマンド: info, survey, track, events, control, referee\n");
     std::exit(1);
   }
 
@@ -68,6 +77,8 @@ static Args parse_args(int argc, char ** argv)
     std::string key = argv[i];
     if (key == "--enemy") {
       args.enemy = true;
+    } else if (key == "--ball") {
+      args.ball = true;
     } else if (key == "--changes-only") {
       args.changes_only = true;
     } else if (key == "--robot" && i + 1 < argc) {
@@ -80,9 +91,36 @@ static Args parse_args(int argc, char ** argv)
       while (i + 1 < argc && argv[i + 1][0] != '-') {
         args.event_types.push_back(argv[++i]);
       }
+    } else if (key == "--format" && i + 1 < argc) {
+      args.format = argv[++i];
     }
   }
   return args;
+}
+
+// ─── ユーティリティ ─────────────────────────────────────────────────────────
+
+template <typename T>
+static bool print_json(const Args & args, const T & data)
+{
+  if (args.format != "json") return false;
+  nlohmann::json j = data;
+  std::printf("%s\n", j.dump(2).c_str());
+  return true;
+}
+
+static std::string format_designated_position(const RefereeSnapshot & s)
+{
+  if (!s.has_designated_position) return "";
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), " dp=(%.3f,%.3f)", s.designated_x, s.designated_y);
+  return buf;
+}
+
+static std::string format_next_command(const RefereeSnapshot & s)
+{
+  if (!s.has_next_command) return "";
+  return " next=" + s.next_command_name;
 }
 
 // ─── コマンド実装 ──────────────────────────────────────────────────────────
@@ -90,6 +128,9 @@ static Args parse_args(int argc, char ** argv)
 static void cmd_info(const Args & args)
 {
   auto info = BagReader::read_info(args.bag_path);
+
+  if (print_json(args, info)) return;
+
   std::printf("Path: %s\n", info.path.c_str());
   std::printf("Duration: %.2fs\n", info.duration_sec);
   std::printf("Topics (%zu):\n", info.topic_counts.size());
@@ -109,12 +150,28 @@ static void cmd_survey(const Args & args)
 
 static void cmd_track(const Args & args)
 {
-  if (args.robot_id < 0) {
-    std::fprintf(stderr, "エラー: --robot <id> が必要です\n");
+  if (!args.ball && args.robot_id < 0) {
+    std::fprintf(stderr, "エラー: --robot <id> または --ball が必要です\n");
     std::exit(1);
   }
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
   auto data = BagReader::read(args.bag_path, args.time_range);
+
+  if (args.ball) {
+    auto states = track_ball(data, args.interval);
+    if (states.empty()) {
+      std::printf("ボールのデータが見つかりません\n");
+      return;
+    }
+    if (print_json(args, states)) return;
+    std::printf("=== BALL TRACKING ===\n");
+    std::printf("%8s  %8s  %8s  %8s  %8s  %8s\n", "t", "x", "y", "vx", "vy", "speed");
+    for (const auto & s : states) {
+      std::printf("%8.2f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n", s.t, s.x, s.y, s.vx, s.vy, s.speed);
+    }
+    return;
+  }
+
   bool is_ours = !args.enemy;
   const char * side = is_ours ? "ours" : "enemy";
 
@@ -123,6 +180,8 @@ static void cmd_track(const Args & args)
     std::printf("robot=%d (%s) のデータが見つかりません\n", args.robot_id, side);
     return;
   }
+
+  if (print_json(args, states)) return;
 
   std::printf("=== ROBOT TRACKING: robot=%d (%s) ===\n", args.robot_id, side);
   std::printf("%8s  %8s  %8s  %8s  %8s  %10s  det\n", "t", "x", "y", "theta", "speed", "dist_ball");
@@ -138,6 +197,8 @@ static void cmd_events(const Args & args)
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
   auto data = BagReader::read(args.bag_path);
   auto events = detect_events(data, args.event_types);
+
+  if (print_json(args, events)) return;
 
   if (events.empty()) {
     std::printf("イベントが検出されませんでした\n");
@@ -161,6 +222,9 @@ static void cmd_control(const Args & args)
 
   if (args.changes_only) {
     auto transitions = detect_factor_transitions(data, args.robot_id);
+
+    if (print_json(args, transitions)) return;
+
     if (transitions.empty()) {
       std::printf("robot=%d の planning_factors 変化が検出されませんでした\n", args.robot_id);
       return;
@@ -173,6 +237,9 @@ static void cmd_control(const Args & args)
     }
   } else {
     auto snapshots = analyze_control(data, args.robot_id);
+
+    if (print_json(args, snapshots)) return;
+
     if (snapshots.empty()) {
       std::printf("robot=%d のcontrol_targetデータが見つかりません\n", args.robot_id);
       return;
@@ -200,6 +267,49 @@ static void cmd_control(const Args & args)
   }
 }
 
+static void cmd_referee(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  auto data = BagReader::read(args.bag_path, args.time_range);
+
+  if (data.referees.empty()) {
+    std::printf("/referee トピックが見つかりません\n");
+    return;
+  }
+
+  if (args.changes_only) {
+    auto transitions = extract_referee_transitions(data);
+
+    if (print_json(args, transitions)) return;
+
+    if (transitions.empty()) {
+      std::printf("Referee コマンド遷移が検出されませんでした\n");
+      return;
+    }
+    std::printf("=== REFEREE TRANSITIONS (%zu) ===\n", transitions.size());
+    for (const auto & s : transitions) {
+      std::printf(
+        "  t=%7.2f  %-28s  %-26s  yellow:%s(%u) yc=%u rc=%u  blue:%s(%u) yc=%u rc=%u%s%s\n", s.t,
+        s.command_name.c_str(), s.stage_name.c_str(), s.yellow.name.c_str(), s.yellow.score,
+        s.yellow.yellow_cards, s.yellow.red_cards, s.blue.name.c_str(), s.blue.score,
+        s.blue.yellow_cards, s.blue.red_cards, format_designated_position(s).c_str(),
+        format_next_command(s).c_str());
+    }
+  } else {
+    auto snaps = sample_referee(data, args.interval);
+
+    if (print_json(args, snaps)) return;
+
+    std::printf("=== REFEREE (sampled every %.1fs) ===\n", args.interval);
+    for (const auto & s : snaps) {
+      std::printf(
+        "  t=%7.2f  %-28s  %-26s  yellow:%s(%u)  blue:%s(%u)%s%s\n", s.t, s.command_name.c_str(),
+        s.stage_name.c_str(), s.yellow.name.c_str(), s.yellow.score, s.blue.name.c_str(),
+        s.blue.score, format_designated_position(s).c_str(), format_next_command(s).c_str());
+    }
+  }
+}
+
 // ─── main ──────────────────────────────────────────────────────────────────
 
 int main(int argc, char ** argv)
@@ -209,12 +319,15 @@ int main(int argc, char ** argv)
       stderr,
       "使い方: crane_bag <command> <bag_path> [options]\n"
       "コマンド:\n"
-      "  info    <path>                               Bag情報を表示\n"
-      "  survey  <path>                               概要サーベイを実行\n"
-      "  track   <path> --robot <id> [--enemy]        ロボット追跡\n"
-      "                 [--time start:end] [--interval 0.5]\n"
-      "  events  <path> [--type goal kick play role ball_speed]\n"
-      "  control <path> --robot <id> [--time start:end] [--changes-only]\n");
+      "  info     <path> [--format json|text]                       Bag情報を表示\n"
+      "  survey   <path>                                             概要サーベイを実行\n"
+      "  track    <path> --robot <id>|--ball [--enemy]              ロボット/ボール追跡\n"
+      "                  [--time start:end] [--interval 0.5] [--format json|text]\n"
+      "  events   <path> [--type goal kick play role ball_speed foul] [--format json|text]\n"
+      "  control  <path> --robot <id> [--time start:end] [--changes-only] [--format json|text]\n"
+      "  referee  <path> [--time start:end] [--changes-only] [--format json|text]\n"
+      "           デフォルト: 全メッセージをサンプリング (--interval で間隔指定)\n"
+      "           --changes-only: コマンド遷移のみ表示\n");
     return 1;
   }
 
@@ -231,6 +344,8 @@ int main(int argc, char ** argv)
       cmd_events(args);
     } else if (args.command == "control") {
       cmd_control(args);
+    } else if (args.command == "referee") {
+      cmd_referee(args);
     } else {
       std::fprintf(stderr, "不明なコマンド: %s\n", args.command.c_str());
       return 1;
