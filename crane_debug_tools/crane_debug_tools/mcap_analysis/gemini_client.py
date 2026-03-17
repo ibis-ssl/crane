@@ -308,7 +308,7 @@ class GeminiAnalysisClient:
         results: list[AnalysisResult] = []
         for i, item in enumerate(items):
             logger.info(f"Analyzing annotation {i + 1}/{total}...")
-            result = analyze_fn(*item) if isinstance(item, tuple) else analyze_fn(item)
+            result = analyze_fn(*item)
             results.append(result)
             if i < total - 1:
                 time.sleep(self.rate_limit_delay)
