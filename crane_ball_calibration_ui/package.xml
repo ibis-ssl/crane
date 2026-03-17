@@ -17,8 +17,8 @@
   <exec_depend>rclpy</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_pytest</test_depend>
   <test_depend>crane_lint_common</test_depend>
+  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
