@@ -74,7 +74,7 @@ colcon build --packages-select crane_world_model_publisher crane_sessions
 
 目安:
 
-- 最適化前: 約 7分18秒（33パッケージ）
+- 最適化前: 約 7分18秒（31パッケージ）
 - 最適化後: 目標 5分30秒（20–30% 削減）
 
 詳細: `docs/logs/portal/build_optimization_guide.md`
@@ -130,7 +130,7 @@ ros2 launch crane_bringup data.launch.py
 
 | プログラム | 実行環境 | 言語 | 主な役割 |
 |-----------|---------|------|---------|
-| **crane** | AI PC (Ubuntu 22.04/ROS 2 Jazzy) | C++ | 戦略立案・ビジョン処理・経路計画・意思決定 |
+| **crane** | AI PC (Ubuntu 24.04/ROS 2 Jazzy) | C++ | 戦略立案・ビジョン処理・経路計画・意思決定 |
 | **Orion_CM4** | Raspberry Pi CM4 (Linux) | C++/Python | UDP↔UART通信ブリッジ・ローカルカメラ処理 |
 | **G474_Orion_main** | STM32G474 MCU (ベアメタル) | C | 500Hz制御ループ・モーター駆動・センサー処理 |
 
@@ -250,7 +250,10 @@ ros2 launch crane_bringup data.launch.py
 
 ### 主なディレクトリ
 
-- `session/` 上位制御と戦略
+- `crane_session_coordinator/` 最上位制御・ゲーム状態管理
+- `crane_sessions/` 戦略タクティックプラグイン群
+- `crane_robot_skills/` 個別ロボットスキルライブラリ
+- `crane_local_planner/` 経路計画・衝突回避
 - `utility/` 共有ユーティリティライブラリ（幾何・物理・通信・メッセージラッパー等）
 - `consai_ros2/` SSL通信
 - `crane_msgs/` メッセージ定義
@@ -405,7 +408,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
 
 ### バージョン管理ポリシー
 
-- **全パッケージ統一**: 32個の全パッケージを同一バージョンで管理
+- **全パッケージ統一**: 31個の全パッケージを同一バージョンで管理
 - **セマンティックバージョニング**: メジャー.マイナー.パッチ形式
 - **Gitタグ**: 各バージョンにタグを付与（例: `1.0.0`）
 - **リリースノート**: GitHub Releaseで自動生成
