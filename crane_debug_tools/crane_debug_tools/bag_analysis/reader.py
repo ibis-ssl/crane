@@ -43,28 +43,22 @@ class BagReader:
         """Bagのメタデータのみを取得する."""
         mcap_file = self._resolve_mcap_path()
         reader = self._open_reader(mcap_file)
+        metadata = reader.get_metadata()
 
-        topic_types_list = reader.get_all_topics_and_types()
-        topic_types = {t.name: t.type for t in topic_types_list}
-
-        topic_counts: dict[str, int] = {}
-        start_ns = None
-        end_ns = None
-
-        while reader.has_next():
-            topic, _data, timestamp = reader.read_next()
-            topic_counts[topic] = topic_counts.get(topic, 0) + 1
-            if start_ns is None or timestamp < start_ns:
-                start_ns = timestamp
-            if end_ns is None or timestamp > end_ns:
-                end_ns = timestamp
-
-        start_ns = start_ns or 0
-        end_ns = end_ns or 0
+        start_ns = metadata.starting_time.nanoseconds
+        end_ns = start_ns + metadata.duration.nanoseconds
+        topic_counts = {
+            ti.topic_metadata.name: ti.message_count
+            for ti in metadata.topics_with_message_count
+        }
+        topic_types = {
+            ti.topic_metadata.name: ti.topic_metadata.type
+            for ti in metadata.topics_with_message_count
+        }
 
         return BagInfo(
             path=str(self.bag_path),
-            duration_sec=(end_ns - start_ns) / 1e9,
+            duration_sec=metadata.duration.nanoseconds / 1e9,
             start_time_ns=start_ns,
             end_time_ns=end_ns,
             topic_counts=topic_counts,
@@ -89,27 +83,18 @@ class BagReader:
         mcap_file = self._resolve_mcap_path()
         reader = self._open_reader(mcap_file)
 
-        topic_types_list = reader.get_all_topics_and_types()
-        topic_types = {t.name: t.type for t in topic_types_list}
-
-        # 最初にbag全体のstart/endを取得するため、1パスで処理
-        raw_messages: list[tuple[str, bytes, int]] = []
-        start_ns_all: int | None = None
-        end_ns_all: int | None = None
-        topic_counts_all: dict[str, int] = {}
-
-        while reader.has_next():
-            topic, data, timestamp = reader.read_next()
-            topic_counts_all[topic] = topic_counts_all.get(topic, 0) + 1
-            if start_ns_all is None or timestamp < start_ns_all:
-                start_ns_all = timestamp
-            if end_ns_all is None or timestamp > end_ns_all:
-                end_ns_all = timestamp
-            if topic in target_topics:
-                raw_messages.append((topic, data, timestamp))
-
-        start_ns = start_ns_all or 0
-        end_ns = end_ns_all or 0
+        # メタデータからbag全体のstart/end/topic情報を取得（メッセージ読み込み不要）
+        metadata = reader.get_metadata()
+        start_ns = metadata.starting_time.nanoseconds
+        end_ns = start_ns + metadata.duration.nanoseconds
+        topic_counts_all = {
+            ti.topic_metadata.name: ti.message_count
+            for ti in metadata.topics_with_message_count
+        }
+        topic_types = {
+            ti.topic_metadata.name: ti.topic_metadata.type
+            for ti in metadata.topics_with_message_count
+        }
 
         # 時間範囲フィルタ
         if time_range is not None:
@@ -119,10 +104,13 @@ class BagReader:
             range_start_ns = None
             range_end_ns = None
 
-        # デシリアライズ
+        # 1パスでフィルタ・デシリアライズ
         messages: dict[str, list[TimestampedMsg]] = {t: [] for t in target_topics}
 
-        for topic, data, timestamp in raw_messages:
+        while reader.has_next():
+            topic, data, timestamp = reader.read_next()
+            if topic not in target_topics:
+                continue
             if range_start_ns is not None and timestamp < range_start_ns:
                 continue
             if range_end_ns is not None and timestamp > range_end_ns:
@@ -139,7 +127,7 @@ class BagReader:
 
         bag_info = BagInfo(
             path=str(self.bag_path),
-            duration_sec=(end_ns - start_ns) / 1e9,
+            duration_sec=metadata.duration.nanoseconds / 1e9,
             start_time_ns=start_ns,
             end_time_ns=end_ns,
             topic_counts=topic_counts_all,

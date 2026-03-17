@@ -132,7 +132,7 @@ class MCAPToolsHandler:
 
         return {
             "trajectory": trajectory,
-            "total_distance": self._calculate_ball_trajectory_distance(trajectory),
+            "total_distance": self._calculate_trajectory_distance(trajectory),
             "max_speed": max(
                 (
                     math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
@@ -283,7 +283,12 @@ class MCAPToolsHandler:
             # 自チーム内
             for i, r1 in enumerate(snapshot.our_robots):
                 for r2 in snapshot.our_robots[i + 1 :]:
-                    distance = self._distance_2d(r1["position"], r2["position"])
+                    distance = distance_2d(
+                        r1["position"][0],
+                        r1["position"][1],
+                        r2["position"][0],
+                        r2["position"][1],
+                    )
                     if distance < threshold:
                         collisions.append(
                             {
@@ -298,7 +303,12 @@ class MCAPToolsHandler:
             # 自チームと相手チーム
             for r1 in snapshot.our_robots:
                 for r2 in snapshot.their_robots:
-                    distance = self._distance_2d(r1["position"], r2["position"])
+                    distance = distance_2d(
+                        r1["position"][0],
+                        r1["position"][1],
+                        r2["position"][0],
+                        r2["position"][1],
+                    )
                     if distance < threshold:
                         collisions.append(
                             {
@@ -329,18 +339,6 @@ class MCAPToolsHandler:
 
     def _calculate_trajectory_distance(self, trajectory: list[dict]) -> float:
         """軌跡の総移動距離を計算."""
-        if len(trajectory) < 2:
-            return 0.0
-
-        total = 0.0
-        for i in range(len(trajectory) - 1):
-            p1 = trajectory[i]["position"]
-            p2 = trajectory[i + 1]["position"]
-            total += distance_2d(p1[0], p1[1], p2[0], p2[1])
-        return total
-
-    def _calculate_ball_trajectory_distance(self, trajectory: list[dict]) -> float:
-        """ボール軌跡の総移動距離を計算."""
         if len(trajectory) < 2:
             return 0.0
 
