@@ -21,7 +21,8 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
   const double penalty_front_x = goal_line_x - world_model->penaltyAreaSize().y() * 0.5;
   const double penalty_side_y = world_model->penaltyAreaSize().y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
-  const double back_x = -1.;
+  const double ball_x_abs = world_model->ball().pos.x() * (-world_model->getOurSideSign());
+  const double back_x = std::clamp(ball_x_abs - 1.0, -goal_line_x + 1.0, goal_line_x - 3.0);
 
   auto push_line = [&](Point p1, Point p2) {
     Segment line{p1, p2};
@@ -91,6 +92,7 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
 
       auto solution = getOptimalAssignments(robot_positions, forward_lines);
 
+      forward_line_assignments.clear();
       for (const auto & [index, robot_id] : robots | ranges::views::enumerate) {
         auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);
 
@@ -109,6 +111,22 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
         skill->setParameter("max_vel", 1.5);
         skill->planner_visualizer = visualizer;
         forward_skills.emplace_back(skill);
+        forward_line_assignments.emplace_back(line_index);
+      }
+    }
+  }
+
+  // 毎フレームback_xを更新してラインパラメータを再設定
+  if (!forward_skills.empty() && forward_line_assignments.size() == forward_skills.size()) {
+    auto current_lines = createForwardLines();
+    if (!current_lines.empty()) {
+      for (size_t i = 0; i < forward_skills.size(); ++i) {
+        const int line_index = forward_line_assignments[i];
+        if (static_cast<size_t>(line_index) < current_lines.size()) {
+          const auto & line = current_lines[line_index];
+          forward_skills[i]->setParameter("front_point", line.second);
+          forward_skills[i]->setParameter("back_point", line.first);
+        }
       }
     }
   }

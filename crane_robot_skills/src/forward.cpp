@@ -37,6 +37,11 @@ auto Forward::update() -> Status
   int num_points =
     std::clamp(static_cast<int>(std::ceil(line_length / 0.1)), 1, MAX_SAMPLING_POINTS);
 
+  // ループ外で定数を取得（サンプル点ごとの重複呼び出しを回避）
+  const auto their_goal_center = world_model()->getTheirGoalCenter();
+  const auto available_our_robots = world_model()->ours().robotsWhere().available().get();
+  const auto available_enemy_robots = world_model()->theirs().robotsWhere().available().get();
+
   std::vector<std::pair<Point, double>> points_with_score =
     ranges::views::iota(0, num_points) | ranges::views::transform([&](int i) -> Point {
       return front_point + (back_point - front_point) * static_cast<double>(i) / num_points;
@@ -46,8 +51,8 @@ auto Forward::update() -> Status
       // ボールの受取やすさ
       Segment segment{
         p, ball.pos + (p - ball.vel).normalized() * 1.5};  // ボール近くはチップで無視可能
-      auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        segment, world_model()->theirs().robotsWhere().available().get());
+      auto nearest_enemy =
+        world_model()->getNearestRobotWithDistanceFromSegment(segment, available_enemy_robots);
       if (nearest_enemy) {
         // 0.0~1.0 : 遠いほど高スコア
         score *= std::clamp(nearest_enemy->distance, 0.2, 2.0) / 2.0;
@@ -62,6 +67,22 @@ auto Forward::update() -> Status
       }
       // ボールとの距離評価（近すぎず遠すぎず）
       score *= (std::clamp(1.0 - distance / max_ball_distance, 0.0, 1.0) * 0.5 + 0.5);
+
+      // 1-A: ゴールシュート角度評価
+      auto [goal_angle, goal_width] = world_model()->getLargestGoalAngleRangeFromPoint(p);
+      score *= (std::clamp(goal_width / 0.6, 0.0, 1.0) * 0.5 + 0.5);
+
+      // 1-B: ボール後方回避（攻撃方向の後ろ側はスコアを下げる）
+      double dot = (their_goal_center - ball.pos).normalized().dot((p - ball.pos).normalized());
+      score *= std::max((dot + 0.5), 0.0);
+
+      // 1-C: 味方との分散（1.5m以内の味方ロボットがいる場合は減点）
+      constexpr double MIN_TEAM_SPACING = 1.5;
+      for (const auto & our_robot : available_our_robots) {
+        if (our_robot->id == robot()->id) continue;
+        double d = (p - our_robot->pose.pos).norm();
+        if (d < MIN_TEAM_SPACING) score *= d / MIN_TEAM_SPACING;
+      }
 
       if (planner_visualizer) {
         planner_visualizer->drawCircle(p, score * 0.25, "lime", 5, 0.5);
