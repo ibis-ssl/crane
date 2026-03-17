@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from .extractor import AnnotationContext
@@ -25,6 +26,18 @@ class AnalysisResult:
     confidence: str
     raw_response: str = ""
     error: str | None = None
+
+    @staticmethod
+    def error_result(error: str, raw_response: str = "") -> "AnalysisResult":
+        """エラー結果を生成するファクトリメソッド."""
+        return AnalysisResult(
+            root_cause="",
+            tactical_analysis="",
+            improvements=[],
+            confidence="UNKNOWN",
+            raw_response=raw_response,
+            error=error,
+        )
 
 
 class GeminiAnalysisClient:
@@ -110,24 +123,14 @@ class GeminiAnalysisClient:
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            return AnalysisResult(
-                root_cause="",
-                tactical_analysis="",
-                improvements=[],
-                confidence="UNKNOWN",
-                raw_response=raw_response if "raw_response" in locals() else "",
-                error=f"JSON parse error: {e}",
+            return AnalysisResult.error_result(
+                f"JSON parse error: {e}",
+                raw_response if "raw_response" in locals() else "",
             )
 
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
-            return AnalysisResult(
-                root_cause="",
-                tactical_analysis="",
-                improvements=[],
-                confidence="UNKNOWN",
-                error=str(e),
-            )
+            return AnalysisResult.error_result(str(e))
 
     def analyze_annotation_with_tools(
         self,
@@ -280,34 +283,36 @@ class GeminiAnalysisClient:
 
             # 最大呼び出し回数に達した
             logger.warning(f"Reached max tool calls ({max_tool_calls})")
-            return AnalysisResult(
-                root_cause="",
-                tactical_analysis="",
-                improvements=[],
-                confidence="UNKNOWN",
-                error=f"Reached max tool calls ({max_tool_calls})",
+            return AnalysisResult.error_result(
+                f"Reached max tool calls ({max_tool_calls})"
             )
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            return AnalysisResult(
-                root_cause="",
-                tactical_analysis="",
-                improvements=[],
-                confidence="UNKNOWN",
-                raw_response=raw_response if "raw_response" in locals() else "",
-                error=f"JSON parse error: {e}",
+            return AnalysisResult.error_result(
+                f"JSON parse error: {e}",
+                raw_response if "raw_response" in locals() else "",
             )
 
         except Exception as e:
             logger.exception(f"Gemini API error: {e}")
-            return AnalysisResult(
-                root_cause="",
-                tactical_analysis="",
-                improvements=[],
-                confidence="UNKNOWN",
-                error=str(e),
-            )
+            return AnalysisResult.error_result(str(e))
+
+    def _run_batch(
+        self,
+        items: list,
+        analyze_fn: Callable[..., AnalysisResult],
+        total: int,
+    ) -> list[AnalysisResult]:
+        """バッチ処理の共通ループ（レート制限付き）."""
+        results: list[AnalysisResult] = []
+        for i, item in enumerate(items):
+            logger.info(f"Analyzing annotation {i + 1}/{total}...")
+            result = analyze_fn(*item) if isinstance(item, tuple) else analyze_fn(item)
+            results.append(result)
+            if i < total - 1:
+                time.sleep(self.rate_limit_delay)
+        return results
 
     def analyze_batch(self, prompts: list[tuple[str, str]]) -> list[AnalysisResult]:
         """
@@ -319,19 +324,7 @@ class GeminiAnalysisClient:
         Returns:
             解析結果のリスト
         """
-        results: list[AnalysisResult] = []
-
-        for i, (prompt, system_instruction) in enumerate(prompts):
-            logger.info(f"Analyzing annotation {i + 1}/{len(prompts)}...")
-
-            result = self.analyze_annotation(prompt, system_instruction)
-            results.append(result)
-
-            # レート制限対策
-            if i < len(prompts) - 1:
-                time.sleep(self.rate_limit_delay)
-
-        return results
+        return self._run_batch(prompts, self.analyze_annotation, len(prompts))
 
     def analyze_batch_with_tools(
         self,
@@ -350,20 +343,8 @@ class GeminiAnalysisClient:
         Returns:
             解析結果のリスト
         """
-        results: list[AnalysisResult] = []
-
-        for i, (annotation, (prompt, system_instruction)) in enumerate(
-            zip(annotations, prompts)
-        ):
-            logger.info(f"Analyzing annotation {i + 1}/{len(prompts)}...")
-
-            result = self.analyze_annotation_with_tools(
-                annotation, prompt, system_instruction, max_tool_calls
-            )
-            results.append(result)
-
-            # レート制限対策
-            if i < len(prompts) - 1:
-                time.sleep(self.rate_limit_delay)
-
-        return results
+        items = [
+            (annotation, prompt, system_instruction, max_tool_calls)
+            for annotation, (prompt, system_instruction) in zip(annotations, prompts)
+        ]
+        return self._run_batch(items, self.analyze_annotation_with_tools, len(items))
