@@ -50,7 +50,7 @@ services:
     restart: "no"
 
   crane:
-    image: ghcr.io/ibis-ssl/crane:match-local
+    image: ghcr.io/ibis-ssl/crane:${CRANE_TAG:-match-local}
     container_name: match_crane
     network_mode: host
     command: |
