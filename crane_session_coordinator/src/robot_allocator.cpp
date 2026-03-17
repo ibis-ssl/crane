@@ -65,15 +65,12 @@ auto RobotAllocator::allocate(
     auto suitability_func = session->getRobotSuitabilityFunc();
 
     // 動的ロボット数を取得してクランプ
-    int desired =
-      session->getDesiredRobotNumber(session_capacity.min_robots, session_capacity.max_robots);
-    int effective_max =
-      std::clamp(desired, session_capacity.min_robots, session_capacity.max_robots);
+    int desired = session->getDesiredRobotNumber(session_capacity.max_robots);
+    int effective_max = std::min(desired, session_capacity.max_robots);
 
     requirements.emplace_back(
       session_capacity.session_name, priority++,
-      session_capacity.min_robots,  // min_robots
-      effective_max,                // max_robots（動的に調整）
+      effective_max,  // max_robots（動的に調整）
       suitability_func);
   }
 
@@ -125,7 +122,6 @@ auto RobotAllocator::allocate(
       result.name = allocated_name;
 
       if (capacity_it != session_capacities.end()) {
-        result.min_robots_num = static_cast<uint8_t>(capacity_it->min_robots);
         result.max_robots_num = static_cast<uint8_t>(capacity_it->max_robots);
       }
 

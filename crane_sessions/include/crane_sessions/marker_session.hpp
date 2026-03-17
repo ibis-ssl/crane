@@ -60,7 +60,7 @@ public:
     };
   }
 
-  int getDesiredRobotNumber(int /* min_robots */, int /* max_robots */) const override
+  int getDesiredRobotNumber(int /* max_robots */) const override
   {
     // 危険な敵の数に基づいてロボット数を決定
     auto danger_enemies = getDangerEnemies(world_model);

@@ -62,12 +62,6 @@ auto GlobalRobotAllocator::allocate(
       assigned_robots.push_back(robot_scores[i].first);
     }
 
-    if (static_cast<int>(assigned_robots.size()) < req.min_robots) {
-      RCLCPP_WARN(
-        logger_, "Session「%s」の最小ロボット数(%d)を満たせませんでした（実際: %lu）",
-        req.name.c_str(), req.min_robots, assigned_robots.size());
-    }
-
     result[req.name] = assigned_robots;
 
     // 割り当てたロボットをremaining_robotsから削除

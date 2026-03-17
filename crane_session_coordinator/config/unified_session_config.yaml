@@ -14,8 +14,9 @@ situations:
       - name: attacker_skill
         max_robots: 1
       - name: defender
-        min_robots: 2
         max_robots: 3
+        params:
+          reduced_robots: 2
       - name: pass_receive
         max_robots: 1
       - name: second_threat_defender
