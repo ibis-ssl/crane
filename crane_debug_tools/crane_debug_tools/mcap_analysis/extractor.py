@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from rclpy.serialization import deserialize_message
-from rosidl_runtime_py.utilities import get_message
+
+from ..mcap_utils import get_message_type, open_sequential_reader, resolve_mcap_path
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +104,7 @@ class MCAPAnnotationExtractor:
 
     def _get_message_type(self, type_name: str) -> Any:
         """メッセージ型を取得（キャッシュあり）."""
-        if type_name not in self._msg_types:
-            self._msg_types[type_name] = get_message(type_name)
-        return self._msg_types[type_name]
+        return get_message_type(type_name, self._msg_types)
 
     def extract_from_mcap(self, mcap_path: str | Path) -> list[AnnotationContext]:
         """
@@ -117,100 +116,66 @@ class MCAPAnnotationExtractor:
         Returns:
             抽出されたアノテーションコンテキストのリスト
         """
-        mcap_path = Path(mcap_path)
-
-        # ディレクトリが指定された場合は.mcapファイルを探す
-        if mcap_path.is_dir():
-            mcap_files = list(mcap_path.glob("*.mcap"))
-            if not mcap_files:
-                raise FileNotFoundError(f"No .mcap file found in {mcap_path}")
-            if len(mcap_files) > 1:
-                logger.warning(f"Multiple .mcap files found, using {mcap_files[0]}")
-            mcap_path = mcap_files[0]
+        mcap_path = resolve_mcap_path(Path(mcap_path))
 
         logger.info(f"Reading MCAP file: {mcap_path}")
 
-        # rosbag2_pyを使用してMCAPを読み込み
-        try:
-            from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
+        reader = open_sequential_reader(mcap_path)
 
-            storage_options = StorageOptions(
-                uri=str(mcap_path.parent), storage_id="mcap"
+        # トピックフィルタリング
+        topic_types = reader.get_all_topics_and_types()
+        topics_map = {t.name: t.type for t in topic_types}
+
+        annotations_topic = "/human_annotations"
+        world_model_topic = "/world_model"
+
+        if annotations_topic not in topics_map:
+            raise ValueError(f"Topic {annotations_topic} not found in bag")
+        if world_model_topic not in topics_map:
+            raise ValueError(f"Topic {world_model_topic} not found in bag")
+
+        # 1パスでアノテーションとWorldModelを収集
+        logger.info("Collecting annotations and WorldModel messages...")
+        annotations_raw: list[tuple[int, Any]] = []
+        world_model_messages: list[tuple[int, Any]] = []
+
+        while reader.has_next():
+            topic, data, timestamp = reader.read_next()
+            if topic == annotations_topic:
+                msg_type = self._get_message_type(topics_map[topic])
+                msg = deserialize_message(data, msg_type)
+                annotations_raw.append((timestamp, msg))
+            elif topic == world_model_topic:
+                msg_type = self._get_message_type(topics_map[topic])
+                msg = deserialize_message(data, msg_type)
+                world_model_messages.append((timestamp, msg))
+
+        logger.info(
+            f"Found {len(annotations_raw)} annotations, "
+            f"{len(world_model_messages)} WorldModel messages"
+        )
+
+        # 各アノテーションに対してメモリ上でWorldModelコンテキストをフィルタリング
+        logger.info("Building annotation contexts...")
+        annotations_with_context = [
+            self._build_annotation_context(
+                annotation_msg, annotation_time, world_model_messages
             )
-            converter_options = ConverterOptions(
-                input_serialization_format="cdr", output_serialization_format="cdr"
-            )
+            for annotation_time, annotation_msg in annotations_raw
+        ]
 
-            reader = SequentialReader()
-            reader.open(storage_options, converter_options)
+        logger.info(
+            f"Extracted {len(annotations_with_context)} annotations with context"
+        )
+        return annotations_with_context
 
-            # トピックフィルタリング
-            topic_types = reader.get_all_topics_and_types()
-            topics_map = {t.name: t.type for t in topic_types}
-
-            annotations_topic = "/human_annotations"
-            world_model_topic = "/world_model"
-
-            if annotations_topic not in topics_map:
-                raise ValueError(f"Topic {annotations_topic} not found in bag")
-            if world_model_topic not in topics_map:
-                raise ValueError(f"Topic {world_model_topic} not found in bag")
-
-            # 1st pass: アノテーションを収集
-            logger.info("Collecting annotations...")
-            annotations_raw: list[tuple[int, Any]] = []
-
-            while reader.has_next():
-                topic, data, timestamp = reader.read_next()
-                if topic == annotations_topic:
-                    msg_type = self._get_message_type(topics_map[topic])
-                    msg = deserialize_message(data, msg_type)
-                    annotations_raw.append((timestamp, msg))
-
-            logger.info(f"Found {len(annotations_raw)} annotations")
-
-            # 2nd pass: 各アノテーションに対してWorldModelコンテキストを収集
-            logger.info("Collecting WorldModel context...")
-            annotations_with_context: list[AnnotationContext] = []
-
-            # リーダーをリセット
-            reader = SequentialReader()
-            reader.open(storage_options, converter_options)
-
-            for annotation_time, annotation_msg in annotations_raw:
-                context = self._extract_annotation_context(
-                    annotation_msg,
-                    annotation_time,
-                    reader,
-                    topics_map,
-                    world_model_topic,
-                )
-                annotations_with_context.append(context)
-
-                # 各アノテーション処理後、リーダーをリセット
-                reader = SequentialReader()
-                reader.open(storage_options, converter_options)
-
-            logger.info(
-                f"Extracted {len(annotations_with_context)} annotations with context"
-            )
-            return annotations_with_context
-
-        except ImportError as e:
-            raise ImportError(
-                "rosbag2_py is required. Install ROS 2 rosbag2 packages."
-            ) from e
-
-    def _extract_annotation_context(
+    def _build_annotation_context(
         self,
         annotation_msg: Any,
         annotation_time: int,
-        reader: Any,
-        topics_map: dict[str, str],
-        world_model_topic: str,
+        world_model_messages: list[tuple[int, Any]],
     ) -> AnnotationContext:
-        """個別アノテーションのコンテキストを抽出."""
-        # アノテーション基本情報を抽出
+        """メモリ上のWorldModelリストからアノテーションコンテキストを構築."""
         event_time_ns = annotation_msg.event_timestamp_ns
 
         # 位置情報
@@ -231,42 +196,29 @@ class MCAPAnnotationExtractor:
             else []
         )
 
-        # WorldModelコンテキストを収集
+        # WorldModelコンテキストをフィルタリング（時間範囲 + サンプリング）
         context_start = event_time_ns - self.context_before_ns
         context_end = event_time_ns + self.context_after_ns
 
         world_model_snapshots: list[WorldModelSnapshot] = []
         last_sampled_time = 0
 
-        msg_type = self._get_message_type(topics_map[world_model_topic])
-
-        while reader.has_next():
-            topic, data, timestamp = reader.read_next()
-
-            if topic != world_model_topic:
-                continue
-
-            # コンテキスト範囲外ならスキップ
+        for timestamp, world_msg in world_model_messages:
             if timestamp < context_start:
                 continue
             if timestamp > context_end:
-                break
-
-            # サンプリング間隔チェック
+                continue
             if timestamp - last_sampled_time < self.sampling_interval_ns:
                 continue
 
             last_sampled_time = timestamp
-
-            # WorldModelをデシリアライズ
-            world_msg = deserialize_message(data, msg_type)
-
-            # スナップショットを作成
-            snapshot = self._create_world_model_snapshot(timestamp, world_msg)
-            world_model_snapshots.append(snapshot)
+            world_model_snapshots.append(
+                self._create_world_model_snapshot(timestamp, world_msg)
+            )
 
         logger.debug(
-            f"Collected {len(world_model_snapshots)} WorldModel snapshots for annotation at {event_time_ns}"
+            f"Collected {len(world_model_snapshots)} WorldModel snapshots "
+            f"for annotation at {event_time_ns}"
         )
 
         return AnnotationContext(

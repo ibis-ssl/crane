@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from rclpy.serialization import deserialize_message
-from rosidl_runtime_py.utilities import get_message
 
+from ..mcap_utils import get_message_type, open_sequential_reader, resolve_mcap_path
 from .models import BagData, BagInfo, TimestampedMsg
 
 # 標準7トピック
@@ -29,36 +29,15 @@ class BagReader:
 
     def _get_message_type(self, type_name: str) -> Any:
         """メッセージ型を取得（キャッシュあり）."""
-        if type_name not in self._msg_types:
-            self._msg_types[type_name] = get_message(type_name)
-        return self._msg_types[type_name]
+        return get_message_type(type_name, self._msg_types)
 
     def _resolve_mcap_path(self) -> Path:
         """MCAPファイルのパスを解決する."""
-        p = self.bag_path
-        if p.is_dir():
-            mcap_files = list(p.glob("*.mcap"))
-            if not mcap_files:
-                raise FileNotFoundError(f".mcapファイルが見つかりません: {p}")
-            return mcap_files[0]
-        return p
+        return resolve_mcap_path(self.bag_path)
 
     def _open_reader(self, mcap_file: Path):
         """SequentialReaderを開く."""
-        try:
-            from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
-        except ImportError as e:
-            raise ImportError(
-                "rosbag2_py が必要です。ROS 2 rosbag2パッケージをインストールしてください。"
-            ) from e
-
-        storage_options = StorageOptions(uri=str(mcap_file.parent), storage_id="mcap")
-        converter_options = ConverterOptions(
-            input_serialization_format="cdr", output_serialization_format="cdr"
-        )
-        reader = SequentialReader()
-        reader.open(storage_options, converter_options)
-        return reader
+        return open_sequential_reader(mcap_file)
 
     def info(self) -> BagInfo:
         """Bagのメタデータのみを取得する."""

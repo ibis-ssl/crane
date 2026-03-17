@@ -429,6 +429,40 @@ private:
     }
   }
 
+  template <typename Checkpoints>
+  static json to_delay_checkpoints_json(const Checkpoints & checkpoints)
+  {
+    json result = json::array();
+    for (const auto & checkpoint : checkpoints) {
+      result.push_back(
+        {{"name", checkpoint.name},
+         {"relative_time_us", checkpoint.relative_time_us},
+         {"value", checkpoint.value}});
+    }
+    return result;
+  }
+
+  template <typename Checkpoints>
+  static json compute_delay_analysis_json(const Checkpoints & checkpoints)
+  {
+    json delay_analysis = {{"total_delay_ms", 0.0}, {"stage_delays", json::array()}};
+
+    for (size_t i = 1; i < checkpoints.size(); ++i) {
+      auto delay_us = checkpoints[i].relative_time_us - checkpoints[i - 1].relative_time_us;
+      auto delay_ms = static_cast<double>(delay_us) / 1000.0;
+
+      delay_analysis["stage_delays"].push_back(
+        {{"from", checkpoints[i - 1].name}, {"to", checkpoints[i].name}, {"delay_ms", delay_ms}});
+    }
+
+    if (checkpoints.size() > 1) {
+      auto total_delay_us = checkpoints.back().relative_time_us;
+      delay_analysis["total_delay_ms"] = static_cast<double>(total_delay_us) / 1000.0;
+    }
+
+    return delay_analysis;
+  }
+
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     json world_model = {
@@ -472,37 +506,14 @@ private:
     }
 
     // WorldModelの遅延監視情報を追加
-    json delay_checkpoints_json = json::array();
-    for (const auto & checkpoint : msg->delay_checkpoints.checkpoints) {
-      delay_checkpoints_json.push_back(
-        {{"name", checkpoint.name},
-         {"relative_time_us", checkpoint.relative_time_us},
-         {"value", checkpoint.value}});
-    }
-    world_model["delay_checkpoints"] = delay_checkpoints_json;
+    world_model["delay_checkpoints"] =
+      to_delay_checkpoints_json(msg->delay_checkpoints.checkpoints);
     world_model["delay_reference_timestamp_ns"] = msg->delay_checkpoints.reference_timestamp_ns;
 
     // WorldModel遅延分析情報
     if (!msg->delay_checkpoints.checkpoints.empty()) {
-      json delay_analysis = {{"total_delay_ms", 0.0}, {"stage_delays", json::array()}};
-
-      for (size_t i = 1; i < msg->delay_checkpoints.checkpoints.size(); ++i) {
-        auto delay_us = msg->delay_checkpoints.checkpoints[i].relative_time_us -
-                        msg->delay_checkpoints.checkpoints[i - 1].relative_time_us;
-        auto delay_ms = static_cast<double>(delay_us) / 1000.0;
-
-        delay_analysis["stage_delays"].push_back(
-          {{"from", msg->delay_checkpoints.checkpoints[i - 1].name},
-           {"to", msg->delay_checkpoints.checkpoints[i].name},
-           {"delay_ms", delay_ms}});
-      }
-
-      if (msg->delay_checkpoints.checkpoints.size() > 1) {
-        auto total_delay_us = msg->delay_checkpoints.checkpoints.back().relative_time_us;
-        delay_analysis["total_delay_ms"] = static_cast<double>(total_delay_us) / 1000.0;
-      }
-
-      world_model["delay_analysis"] = delay_analysis;
+      world_model["delay_analysis"] =
+        compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
     }
 
     broadcastToAll(world_model.dump());
@@ -513,37 +524,12 @@ private:
     json commands = {{"type", "robot_commands"}, {"commands", json::array()}};
 
     // 遅延監視情報をRobotCommands全体レベルで追加
-    json delay_checkpoints_json = json::array();
-    for (const auto & checkpoint : msg->delay_checkpoints.checkpoints) {
-      delay_checkpoints_json.push_back(
-        {{"name", checkpoint.name},
-         {"relative_time_us", checkpoint.relative_time_us},
-         {"value", checkpoint.value}});
-    }
-    commands["delay_checkpoints"] = delay_checkpoints_json;
+    commands["delay_checkpoints"] = to_delay_checkpoints_json(msg->delay_checkpoints.checkpoints);
     commands["delay_reference_timestamp_ns"] = msg->delay_checkpoints.reference_timestamp_ns;
 
     // 遅延分析情報を計算して追加
     if (!msg->delay_checkpoints.checkpoints.empty()) {
-      json delay_analysis = {{"total_delay_ms", 0.0}, {"stage_delays", json::array()}};
-
-      for (size_t i = 1; i < msg->delay_checkpoints.checkpoints.size(); ++i) {
-        auto delay_us = msg->delay_checkpoints.checkpoints[i].relative_time_us -
-                        msg->delay_checkpoints.checkpoints[i - 1].relative_time_us;
-        auto delay_ms = static_cast<double>(delay_us) / 1000.0;
-
-        delay_analysis["stage_delays"].push_back(
-          {{"from", msg->delay_checkpoints.checkpoints[i - 1].name},
-           {"to", msg->delay_checkpoints.checkpoints[i].name},
-           {"delay_ms", delay_ms}});
-      }
-
-      if (msg->delay_checkpoints.checkpoints.size() > 1) {
-        auto total_delay_us = msg->delay_checkpoints.checkpoints.back().relative_time_us;
-        delay_analysis["total_delay_ms"] = static_cast<double>(total_delay_us) / 1000.0;
-      }
-
-      commands["delay_analysis"] = delay_analysis;
+      commands["delay_analysis"] = compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
     }
 
     for (const auto & cmd : msg->robot_commands) {
@@ -552,20 +538,15 @@ private:
         planning_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
       }
 
-      // 個別ロボットコマンドの遅延チェックポイント
-      json cmd_delay_checkpoints_json = json::array();
-      for (const auto & checkpoint : cmd.delay_checkpoints.checkpoints) {
-        cmd_delay_checkpoints_json.push_back(
-          {{"name", checkpoint.name},
-           {"relative_time_us", checkpoint.relative_time_us},
-           {"value", checkpoint.value}});
-      }
-
       json cmd_json = {
-        {"robot_id", cmd.robot_id},           {"kick_power", cmd.kick_power},
-        {"dribble_power", cmd.dribble_power}, {"chip_enable", cmd.chip_enable},
-        {"target_theta", cmd.target_theta},   {"planning_factors", planning_factors_json},
-        {"planner_name", cmd.planner_name},   {"delay_checkpoints", cmd_delay_checkpoints_json}};
+        {"robot_id", cmd.robot_id},
+        {"kick_power", cmd.kick_power},
+        {"dribble_power", cmd.dribble_power},
+        {"chip_enable", cmd.chip_enable},
+        {"target_theta", cmd.target_theta},
+        {"planning_factors", planning_factors_json},
+        {"planner_name", cmd.planner_name},
+        {"delay_checkpoints", to_delay_checkpoints_json(cmd.delay_checkpoints.checkpoints)}};
       commands["commands"].push_back(cmd_json);
     }
 

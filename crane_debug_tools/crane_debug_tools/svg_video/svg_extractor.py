@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from rclpy.serialization import deserialize_message
-from rosidl_runtime_py.utilities import get_message
+
+from ..mcap_utils import get_message_type, open_sequential_reader, resolve_mcap_path
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,7 @@ class SvgExtractor:
 
     def _get_message_type(self, type_name: str) -> Any:
         """メッセージ型を取得（キャッシュあり）."""
-        if type_name not in self._msg_types:
-            self._msg_types[type_name] = get_message(type_name)
-        return self._msg_types[type_name]
+        return get_message_type(type_name, self._msg_types)
 
     def extract_from_mcap(
         self,
@@ -71,16 +70,7 @@ class SvgExtractor:
         Yields:
             抽出されたSVGフレーム（タイムスタンプ順）
         """
-        mcap_path = Path(mcap_path)
-
-        # ディレクトリが指定された場合は.mcapファイルを探す
-        if mcap_path.is_dir():
-            mcap_files = list(mcap_path.glob("*.mcap"))
-            if not mcap_files:
-                raise FileNotFoundError(f"No .mcap file found in {mcap_path}")
-            if len(mcap_files) > 1:
-                logger.warning(f"Multiple .mcap files found, using {mcap_files[0]}")
-            mcap_path = mcap_files[0]
+        mcap_path = resolve_mcap_path(Path(mcap_path))
 
         logger.info(f"Reading MCAP file: {mcap_path}")
 
@@ -92,21 +82,7 @@ class SvgExtractor:
 
         # rosbag2_pyを使用してMCAPを読み込み
         try:
-            from rosbag2_py import ConverterOptions, SequentialReader, StorageOptions
-
-            # MCAPファイルの場合は親ディレクトリ、ディレクトリの場合はそのまま使用
-            if mcap_path.is_file() and mcap_path.suffix == ".mcap":
-                storage_uri = str(mcap_path.parent)
-            else:
-                storage_uri = str(mcap_path)
-
-            storage_options = StorageOptions(uri=storage_uri, storage_id="mcap")
-            converter_options = ConverterOptions(
-                input_serialization_format="cdr", output_serialization_format="cdr"
-            )
-
-            reader = SequentialReader()
-            reader.open(storage_options, converter_options)
+            reader = open_sequential_reader(mcap_path)
 
             # トピックフィルタリング
             topic_types = reader.get_all_topics_and_types()

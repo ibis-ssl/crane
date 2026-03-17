@@ -188,7 +188,7 @@
                     <h5><i class="fas fa-terminal"></i> 生成されたコマンド</h5>
                     <div class="command-area">
                         <pre id="generatedCommand" class="small text-muted">コマンドがここに表示されます</pre>
-                        <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="copyCommand()">
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="copyCommand(event)">
                             <i class="fas fa-copy"></i> コピー
                         </button>
                     </div>
@@ -363,7 +363,7 @@
             return parameters;
         }
 
-        function copyCommand() {
+        function copyCommand(event) {
             const command = document.getElementById('generatedCommand').textContent;
             navigator.clipboard.writeText(command).then(() => {
                 // Show feedback
