@@ -66,7 +66,6 @@ def create_annotation_analysis_prompt(
     category: str,
     priority: str,
     event_timestamp_ns: int,
-    world_model_summary: str,
     position_info: str = "",
     robot_context: str = "",
 ) -> str:
@@ -79,7 +78,6 @@ def create_annotation_analysis_prompt(
         category: カテゴリ名（ISSUE, OBSERVATION, etc.）
         priority: 重要度（HIGH, MEDIUM, LOW, CRITICAL）
         event_timestamp_ns: イベント発生時刻（ナノ秒）
-        world_model_summary: WorldModelデータのサマリー
         position_info: 位置情報（オプション）
         robot_context: ロボットコンテキスト（オプション）
 

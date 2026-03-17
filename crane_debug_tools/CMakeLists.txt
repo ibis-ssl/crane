@@ -28,11 +28,6 @@ ament_auto_add_executable(crane_bag
 )
 target_include_directories(crane_bag PRIVATE src/bag)
 
-# Simple Web Server (temporary solution)
-ament_auto_add_executable(crane_web_server
-  src/simple_web_server.cpp
-)
-
 # WebSocket Debug Server
 ament_auto_add_executable(crane_websocket_server
   src/websocket_server.cpp
