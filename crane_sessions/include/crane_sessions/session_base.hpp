@@ -188,15 +188,6 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> = 0;
 
   /**
-   * @brief ハード制約Sessionかどうかを返す
-   *
-   * trueを返すSessionは優先的にロボットが割り当てられる（キーパーなど）。
-   *
-   * @return ハード制約の場合true
-   */
-  virtual bool isHardConstraint() const { return false; }
-
-  /**
    * @brief 現在の状況に基づく推奨ロボット数を返す（動的ロボット割当用）
    *
    * Sessionが状況に応じて必要なロボット数を動的に決定するためのメソッド。

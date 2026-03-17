@@ -41,18 +41,14 @@ struct SessionRequirement
   // ロボット適性評価関数（ロボット→コストを返す、小さいほど適している）
   std::function<double(const std::shared_ptr<RobotInfo> &)> suitability_func;
 
-  // ハード制約フラグ（trueの場合、優先的に確保される）
-  bool is_hard_constraint = false;
-
   SessionRequirement(
     std::string n, int p, int min_r, int max_r,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> func, bool hard = false)
+    std::function<double(const std::shared_ptr<RobotInfo> &)> func)
   : name(std::move(n)),
     priority(p),
     min_robots(min_r),
     max_robots(max_r),
-    suitability_func(std::move(func)),
-    is_hard_constraint(hard)
+    suitability_func(std::move(func))
   {
   }
 };
@@ -85,17 +81,6 @@ public:
 
 private:
   rclcpp::Logger logger_;
-
-  /**
-   * @brief グリーディ方式でSessionにロボットを割り当てる（ハード/ソフト共通実装）
-   * @param label ログ用ラベル
-   */
-  auto allocateGreedy(
-    const std::vector<SessionRequirement> & requirements, std::vector<uint8_t> & remaining_robots,
-    WorldModelWrapper::SharedPtr & world_model, const AllocationState & prev_state,
-    const AllocationCostConfig & config,
-    std::unordered_map<std::string, std::vector<uint8_t>> & result, const std::string & label)
-    -> void;
 };
 
 }  // namespace crane

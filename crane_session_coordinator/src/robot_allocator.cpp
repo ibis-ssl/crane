@@ -61,9 +61,8 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
-    // 適性関数とハード制約フラグを取得
+    // 適性関数を取得
     auto suitability_func = session->getRobotSuitabilityFunc();
-    bool is_hard = session->isHardConstraint();
 
     // 動的ロボット数を取得してクランプ
     int desired =
@@ -75,7 +74,7 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, priority++,
       session_capacity.min_robots,  // min_robots
       effective_max,                // max_robots（動的に調整）
-      suitability_func, is_hard);
+      suitability_func);
   }
 
   // GlobalRobotAllocatorで割当を実行
@@ -84,24 +83,24 @@ auto RobotAllocator::allocate(
 
   // 割当結果を適用
   crane_msgs::msg::RobotSelectResults results;
-  for (const auto & [session_name, robot_ids] : allocation) {
+  for (const auto & [allocated_name, robot_ids] : allocation) {
+    // session_capacitiesを1回だけ検索（フォールバック生成とmin/max取得の両方で使い回す）
+    auto capacity_it = std::find_if(
+      session_capacities.begin(), session_capacities.end(),
+      [&allocated_name](const auto & s) { return s.session_name == allocated_name; });
+
     // Sessionを取得または再生成
     auto session_it = std::find_if(
       session_registry_->getAllPlanners().begin(), session_registry_->getAllPlanners().end(),
-      [&session_name](const auto & t) { return t->name == session_name; });
+      [&allocated_name](const auto & t) { return t->name == allocated_name; });
 
     SessionBase::SharedPtr session;
     if (session_it != session_registry_->getAllPlanners().end()) {
       session = *session_it;
-    } else {
+    } else if (capacity_it != session_capacities.end()) {
       // 見つからない場合は新規生成（通常はここには来ない）
-      auto capacity_it = std::find_if(
-        session_capacities.begin(), session_capacities.end(),
-        [&session_name](const auto & s) { return s.session_name == session_name; });
-      if (capacity_it != session_capacities.end()) {
-        session = session_registry_->getOrCreatePlanner(
-          session_name, world_model, node, prev_available_planners, capacity_it->params);
-      }
+      session = session_registry_->getOrCreatePlanner(
+        allocated_name, world_model, node, prev_available_planners, capacity_it->params);
     }
 
     if (session) {
@@ -117,18 +116,14 @@ auto RobotAllocator::allocate(
       // AllocationStateを更新（ターゲット位置は現時点では不明なのでロボット位置を使用）
       for (auto id : robot_ids) {
         auto robot = world_model->getOurRobot(id);
-        allocation_state_.updateAssignment(id, session_name, robot->pose.pos);
-        prev_robot_roles_.insert_or_assign(id, RobotRole{session_name, ""});
+        allocation_state_.updateAssignment(id, allocated_name, robot->pose.pos);
+        prev_robot_roles_.insert_or_assign(id, RobotRole{allocated_name, ""});
       }
 
       // RobotSelectResult を構築
       crane_msgs::msg::RobotSelectResult result;
-      result.name = session_name;
+      result.name = allocated_name;
 
-      // session_capacities から min/max を取得
-      auto capacity_it = std::find_if(
-        session_capacities.begin(), session_capacities.end(),
-        [&session_name](const auto & s) { return s.session_name == session_name; });
       if (capacity_it != session_capacities.end()) {
         result.min_robots_num = static_cast<uint8_t>(capacity_it->min_robots);
         result.max_robots_num = static_cast<uint8_t>(capacity_it->max_robots);

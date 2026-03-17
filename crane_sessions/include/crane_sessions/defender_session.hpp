@@ -46,8 +46,6 @@ public:
     return min_robots;
   }
 
-  bool isHardConstraint() const override { return true; }
-
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {

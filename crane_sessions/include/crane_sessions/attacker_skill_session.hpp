@@ -114,13 +114,6 @@ public:
     };
   }
 
-  bool isHardConstraint() const override
-  {
-    // game_analysisでrecommended_attacker_idが設定されている場合はハード制約として扱う
-    const auto & game_analysis = getGameAnalysis();
-    return game_analysis.recommended_attacker_id >= 0;
-  }
-
 protected:
   void onRobotsChanged() override { skill.reset(); }
 };
