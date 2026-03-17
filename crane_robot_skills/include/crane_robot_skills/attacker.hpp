@@ -69,15 +69,6 @@ public:
 
   Receive receive_skill;
 
-  struct OverDribbleInfo
-  {
-    bool detected = false;
-    Point previous_position;
-    double distance = 0.0;
-
-    auto update(const Point & current_position, const Point & ball_position) -> void;
-  } over_dribble;
-
 protected:
   void onPostUpdate() override;
 
