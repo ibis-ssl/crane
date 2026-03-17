@@ -73,15 +73,14 @@ void Attacker::initialize()
         (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
          game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
         world_model()->ball().isStopped()) {
-        // 上位層のパス先が未選択なら強制パスに入らない
-        if (world_model()->getMsg().game_analysis.pass_target_id < 0) {
-          return false;
+        // pass_target_id が有効な場合のみパス先を設定（無い場合は FORCED_PASS で敵ゴールへキック）
+        if (world_model()->getMsg().game_analysis.pass_target_id >= 0) {
+          forced_pass_receiver_id =
+            static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
+          pass_receiver_id = forced_pass_receiver_id;
+          auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
+          kick_skill.setParameter("target", receiver->pose.pos);
         }
-        forced_pass_receiver_id =
-          static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
-        pass_receiver_id = forced_pass_receiver_id;
-        auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
-        kick_skill.setParameter("target", receiver->pose.pos);
         return true;
       } else {
         return false;
@@ -260,6 +259,12 @@ void Attacker::initialize()
       kick_state_entry_time = std::chrono::steady_clock::now();
       in_kick_state = true;
     }
+
+    // 相手ペナルティエリア近辺での速度制限（ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA防止）
+    if (world_model()->point_checker.isEnemyPenaltyArea(robot()->pose.pos, 0.5)) {
+      command->setMaxVelocity("near_their_penalty_area", 1.5);
+    }
+
     double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
 
     // パスは pass_target_id がある場合のみ検討
@@ -338,29 +343,10 @@ void Attacker::initialize()
 
 void Attacker::onPostUpdate()
 {
-  over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
-  if (over_dribble.distance > 0.5) {
+  if (over_dribble.distance > OVER_DRIBBLE_DISTANCE_THRESHOLD) {
     RCLCPP_INFO(rclcpp::get_logger("Attacker"), "オーバードリブル[m]: %f", over_dribble.distance);
-    command->stopHere();
   } else {
     command->setOmegaLimit(10.0);
-  }
-}
-
-auto Attacker::OverDribbleInfo::update(const Point & current_position, const Point & ball_position)
-  -> void
-{
-  if ((current_position - ball_position).norm() < 0.12) {
-    if (not detected) {
-      distance = 0.0;
-    } else {
-      distance += (current_position - previous_position).norm();
-    }
-    detected = true;
-    previous_position = current_position;
-  } else {
-    detected = false;
-    distance = 0.0;
   }
 }
 

@@ -8,6 +8,7 @@ import math
 from typing import Any
 
 from .extractor import AnnotationContext, WorldModelSnapshot
+from ..bag_analysis.metrics import distance_2d
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ class MCAPToolsHandler:
 
         return {
             "trajectory": trajectory,
-            "total_distance": self._calculate_ball_trajectory_distance(trajectory),
+            "total_distance": self._calculate_trajectory_distance(trajectory),
             "max_speed": max(
                 (
                     math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
@@ -155,11 +156,7 @@ class MCAPToolsHandler:
         if len(point1) < 2 or len(point2) < 2:
             return {"error": "Invalid points"}
 
-        dx = point1[0] - point2[0]
-        dy = point1[1] - point2[1]
-        distance = math.sqrt(dx**2 + dy**2)
-
-        return {"distance": distance}
+        return {"distance": distance_2d(point1[0], point1[1], point2[0], point2[1])}
 
     def _get_robot_speed_history(self, args: dict[str, Any]) -> dict[str, Any]:
         """
@@ -286,7 +283,12 @@ class MCAPToolsHandler:
             # 自チーム内
             for i, r1 in enumerate(snapshot.our_robots):
                 for r2 in snapshot.our_robots[i + 1 :]:
-                    distance = self._distance_2d(r1["position"], r2["position"])
+                    distance = distance_2d(
+                        r1["position"][0],
+                        r1["position"][1],
+                        r2["position"][0],
+                        r2["position"][1],
+                    )
                     if distance < threshold:
                         collisions.append(
                             {
@@ -301,7 +303,12 @@ class MCAPToolsHandler:
             # 自チームと相手チーム
             for r1 in snapshot.our_robots:
                 for r2 in snapshot.their_robots:
-                    distance = self._distance_2d(r1["position"], r2["position"])
+                    distance = distance_2d(
+                        r1["position"][0],
+                        r1["position"][1],
+                        r2["position"][0],
+                        r2["position"][1],
+                    )
                     if distance < threshold:
                         collisions.append(
                             {
@@ -339,28 +346,8 @@ class MCAPToolsHandler:
         for i in range(len(trajectory) - 1):
             p1 = trajectory[i]["position"]
             p2 = trajectory[i + 1]["position"]
-            total += self._distance_2d(p1, p2)
+            total += distance_2d(p1[0], p1[1], p2[0], p2[1])
         return total
-
-    def _calculate_ball_trajectory_distance(self, trajectory: list[dict]) -> float:
-        """ボール軌跡の総移動距離を計算."""
-        if len(trajectory) < 2:
-            return 0.0
-
-        total = 0.0
-        for i in range(len(trajectory) - 1):
-            p1 = trajectory[i]["position"]
-            p2 = trajectory[i + 1]["position"]
-            dx = p2[0] - p1[0]
-            dy = p2[1] - p1[1]
-            total += math.sqrt(dx**2 + dy**2)
-        return total
-
-    def _distance_2d(self, p1: tuple | list, p2: tuple | list) -> float:
-        """2点間の2D距離を計算."""
-        dx = p1[0] - p2[0]
-        dy = p1[1] - p2[1]
-        return math.sqrt(dx**2 + dy**2)
 
 
 # Gemini Function Calling用のツール定義スキーマ

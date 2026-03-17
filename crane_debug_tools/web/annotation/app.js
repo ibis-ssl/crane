@@ -40,7 +40,11 @@ class CraneAnnotationApp {
 
     this.setupSpeechRecognition();
     this.setupEventListeners();
-    await this.connect();
+    try {
+      await this.connect();
+    } catch (err) {
+      console.warn('Initial connection failed:', err);
+    }
     this.startTimeSyncLoop();
   }
 

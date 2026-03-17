@@ -224,6 +224,31 @@ class SkillBaseWithState : public SkillInterface
 public:
   using StateFunctionType = std::function<Status()>;
 
+  static constexpr double OVER_DRIBBLE_DISTANCE_THRESHOLD = 0.5;
+
+  struct OverDribbleInfo
+  {
+    bool detected = false;
+    Point previous_position = Point::Zero();
+    double distance = 0.0;
+
+    auto update(const Point & current_position, const Point & ball_position) -> void
+    {
+      if ((current_position - ball_position).norm() < 0.12) {
+        if (!detected) {
+          distance = 0.0;
+        } else {
+          distance += (current_position - previous_position).norm();
+        }
+        detected = true;
+        previous_position = current_position;
+      } else {
+        detected = false;
+        distance = 0.0;
+      }
+    }
+  };
+
   template <typename... Args>
   explicit SkillBaseWithState(
     int init_state, std::function<std::string(int)> name_resolver, Args &&... args)
@@ -246,6 +271,11 @@ public:
     auto current_state = state_machine_.getCurrentState();
     auto it = state_functions_.find(current_state);
     Status status = (it != state_functions_.end()) ? it->second() : Status::RUNNING;
+
+    over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
+    if (over_dribble.distance > OVER_DRIBBLE_DISTANCE_THRESHOLD) {
+      command->stopHere();
+    }
 
     onPostUpdate();
 
@@ -297,6 +327,7 @@ protected:
 
   StateMachine state_machine_;
   std::unordered_map<int, StateFunctionType> state_functions_;
+  OverDribbleInfo over_dribble;
 };
 }  // namespace crane::skills
 

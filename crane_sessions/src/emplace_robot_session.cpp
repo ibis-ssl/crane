@@ -4,8 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include <crane_sessions/emplace_robot_session.hpp>
-#include <cstdlib>
 #include <filesystem>
 
 namespace crane
@@ -84,8 +86,18 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
           beep_sound_path_ = findAvailableSoundFile();
         }
         if (!beep_sound_path_.empty()) {
-          std::string command = "paplay " + beep_sound_path_ + " &";
-          std::system(command.c_str());
+          // double forkでデタッチされた子プロセスとして起動（ゾンビ回避）
+          pid_t pid = fork();
+          if (pid == 0) {
+            if (fork() == 0) {
+              execlp("paplay", "paplay", beep_sound_path_.c_str(), nullptr);
+              _exit(1);
+            }
+            _exit(0);
+          }
+          if (pid > 0) {
+            waitpid(pid, nullptr, 0);
+          }
         }
       }
       last_announce_time_ = now;
@@ -120,14 +132,6 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     robot_commands.emplace_back(skill->getRobotCommand());
   }
   return {SessionBase::Status::RUNNING, robot_commands};
-}
-
-bool EmplaceRobotSession::isHardConstraint() const
-{
-  // 現在出ているロボット台数が出場可能台数を超えている場合はハード制約
-  auto available_robots = world_model->ours().robotsWhere().available().get();
-  auto max_allowed = world_model->getOurMaxAllowedBots();
-  return available_robots.size() > max_allowed;
 }
 
 auto EmplaceRobotSession::getRobotSuitabilityFunc() const

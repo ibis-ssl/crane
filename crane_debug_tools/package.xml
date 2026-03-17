@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_debug_tools</name>
-  <version>1.0.208</version>
+  <version>1.0.217</version>
   <description>Modern debugging tools for crane robot skills</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
@@ -21,6 +21,7 @@
   <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
+  <depend>robocup_ssl_msgs</depend>
   <depend>rosbag2_cpp</depend>
   <depend>rosidl_runtime_cpp</depend>
   <depend>std_msgs</depend>

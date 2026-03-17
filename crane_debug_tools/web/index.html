@@ -240,14 +240,14 @@
     <script>
         // WebSocket接続チェック
         function checkConnection() {
-            const ws = new WebSocket('ws://localhost:8765');
+            const ws = new WebSocket(`ws://${window.location.hostname}:8091`);
             const statusIndicator = document.querySelector('.status-indicator');
             const statusText = document.getElementById('status-text');
 
             ws.onopen = () => {
                 statusIndicator.classList.remove('disconnected');
                 statusIndicator.classList.add('connected');
-                statusText.textContent = 'WebSocket接続済み (localhost:8765)';
+                statusText.textContent = `WebSocket接続済み (${window.location.hostname}:8091)`;
                 ws.close();
             };
 

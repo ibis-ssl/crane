@@ -24,7 +24,6 @@ from crane_debug_tools.mcap_analysis import (
 from crane_debug_tools.mcap_analysis.prompts import (
     SYSTEM_INSTRUCTION,
     create_annotation_analysis_prompt,
-    summarize_world_model_context,
     format_position_info,
     format_robot_context,
 )
@@ -171,9 +170,6 @@ def main() -> int:
             # プロンプト生成
             prompts = []
             for ann in annotations:
-                world_model_summary = summarize_world_model_context(
-                    ann.world_model_context
-                )
                 position_info = (
                     format_position_info(ann.position)
                     if ann.has_position and ann.position
@@ -191,7 +187,6 @@ def main() -> int:
                     category=ann.get_category_name(),
                     priority=ann.get_priority_name(),
                     event_timestamp_ns=ann.event_timestamp_ns,
-                    world_model_summary=world_model_summary,
                     position_info=position_info,
                     robot_context=robot_context,
                 )

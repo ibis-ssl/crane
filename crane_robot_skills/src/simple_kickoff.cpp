@@ -17,6 +17,15 @@ void SimpleKickOff::initializeParameters()
 
 Status SimpleKickOff::update()
 {
+  if (!kicked && world_model()->ball().isMoving(0.5)) {
+    kicked = true;
+  }
+
+  if (kicked) {
+    command->stopHere();
+    return Status::RUNNING;
+  }
+
   kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
   return kick_skill.run();
 }

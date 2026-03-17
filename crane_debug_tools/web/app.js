@@ -872,8 +872,6 @@ class CraneDebugger {
             }
         } catch (error) {
             console.error('Error showing modal:', error);
-            // Fallback: try using jQuery-style modal if Bootstrap 5 fails
-            $('#robotDetailModal').modal('show');
         }
     }
 }
@@ -883,13 +881,3 @@ let craneDebugger;
 document.addEventListener('DOMContentLoaded', () => {
     craneDebugger = new CraneDebugger();
 });
-
-// Global function for testing
-function testShowRobotDetails(robotId) {
-    console.log('testShowRobotDetails called with:', robotId);
-    if (craneDebugger) {
-        craneDebugger.showRobotDetails(robotId);
-    } else {
-        console.error('craneDebugger not initialized');
-    }
-}

@@ -29,9 +29,10 @@ constexpr const char * EVENT_PLAY = "play";
 constexpr const char * EVENT_ROLE = "role";
 constexpr const char * EVENT_KICK = "kick";
 constexpr const char * EVENT_BALL_SPEED = "ball_speed";
+constexpr const char * EVENT_FOUL = "foul";
 
-inline const std::vector<std::string> ALL_EVENT_TYPES = {
-  EVENT_GOAL, EVENT_PLAY, EVENT_ROLE, EVENT_KICK, EVENT_BALL_SPEED};
+inline const std::vector<std::string> ALL_EVENT_TYPES = {EVENT_GOAL, EVENT_PLAY,       EVENT_ROLE,
+                                                         EVENT_KICK, EVENT_BALL_SPEED, EVENT_FOUL};
 
 std::vector<Event> detect_events(const BagData & data, const std::vector<std::string> & types = {});
 
@@ -40,5 +41,8 @@ std::vector<Event> detect_role_changes(const BagData & data);
 std::vector<Event> detect_kick_events(const BagData & data);
 std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold = 3.0);
 std::vector<Event> detect_goals(const BagData & data);
+std::vector<Event> detect_fouls(const BagData & data);
+
+std::string game_event_type_to_string(int32_t type_value);
 
 }  // namespace crane::bag

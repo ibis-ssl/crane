@@ -57,7 +57,7 @@ const std::unordered_set<std::string> & target_topics()
 {
   static const std::unordered_set<std::string> s = {
     "/play_situation", "/world_model",          "/control_targets", "/robot_commands",
-    "/game_analysis",  "/robot_select_results", "/rosout",
+    "/game_analysis",  "/robot_select_results", "/rosout",          "/referee",
   };
   return s;
 }
@@ -152,6 +152,8 @@ BagData BagReader::read(
       deserialize_and_push(bag_msg, data.robot_select_results);
     } else if (topic == "/rosout") {
       deserialize_and_push(bag_msg, data.rosout);
+    } else if (topic == "/referee") {
+      deserialize_and_push(bag_msg, data.referees);
     }
   }
 

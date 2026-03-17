@@ -43,8 +43,6 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
-  bool isHardConstraint() const override;
-
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override;
 

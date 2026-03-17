@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <crane_utils/stream.hpp>
+#include <unordered_set>
 
 namespace crane
 {
@@ -25,51 +26,17 @@ auto GlobalRobotAllocator::allocate(
     return result;
   }
 
-  // ハード制約とソフト制約に分類
-  std::vector<SessionRequirement> hard_requirements;
-  std::vector<SessionRequirement> soft_requirements;
-
-  for (const auto & req : requirements) {
-    if (req.is_hard_constraint) {
-      hard_requirements.push_back(req);
-    } else {
-      soft_requirements.push_back(req);
-    }
-  }
-
-  // ハード制約を優先度順にソート
+  // 全requirementsを優先度順にソートして1回で割当
+  auto sorted_requirements = requirements;
   std::ranges::sort(
-    hard_requirements, [](const auto & a, const auto & b) { return a.priority < b.priority; });
-
-  // ソフト制約も優先度順にソート
-  std::ranges::sort(
-    soft_requirements, [](const auto & a, const auto & b) { return a.priority < b.priority; });
+    sorted_requirements, [](const auto & a, const auto & b) { return a.priority < b.priority; });
 
   auto remaining_robots = available_robots;
 
-  // Phase 1: ハード制約Sessionを先に処理
-  allocateGreedy(
-    hard_requirements, remaining_robots, world_model, prev_state, config, result, "ハード制約");
-
-  // Phase 2: 残りのロボットでソフト制約Sessionをグリーディに処理
-  allocateGreedy(
-    soft_requirements, remaining_robots, world_model, prev_state, config, result, "ソフト制約");
-
-  return result;
-}
-
-auto GlobalRobotAllocator::allocateGreedy(
-  const std::vector<SessionRequirement> & requirements, std::vector<uint8_t> & remaining_robots,
-  WorldModelWrapper::SharedPtr & world_model, const AllocationState & prev_state,
-  const AllocationCostConfig & config,
-  std::unordered_map<std::string, std::vector<uint8_t>> & result, const std::string & label) -> void
-{
-  for (const auto & req : requirements) {
+  for (const auto & req : sorted_requirements) {
     if (remaining_robots.empty()) {
-      RCLCPP_WARN(
-        logger_, "%sSession「%s」に割り当てるロボットが不足しています", label.c_str(),
-        req.name.c_str());
-      continue;
+      RCLCPP_WARN(logger_, "Session「%s」に割り当てるロボットが不足しています", req.name.c_str());
+      break;
     }
 
     // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
@@ -97,21 +64,23 @@ auto GlobalRobotAllocator::allocateGreedy(
 
     if (static_cast<int>(assigned_robots.size()) < req.min_robots) {
       RCLCPP_WARN(
-        logger_, "%sSession「%s」の最小ロボット数(%d)を満たせませんでした（実際: %lu）",
-        label.c_str(), req.name.c_str(), req.min_robots, assigned_robots.size());
+        logger_, "Session「%s」の最小ロボット数(%d)を満たせませんでした（実際: %lu）",
+        req.name.c_str(), req.min_robots, assigned_robots.size());
     }
 
     result[req.name] = assigned_robots;
 
     // 割り当てたロボットをremaining_robotsから削除
-    std::erase_if(remaining_robots, [&assigned_robots](uint8_t id) {
-      return std::find(assigned_robots.begin(), assigned_robots.end(), id) != assigned_robots.end();
-    });
+    const std::unordered_set<uint8_t> assigned_set(assigned_robots.begin(), assigned_robots.end());
+    std::erase_if(
+      remaining_robots, [&assigned_set](uint8_t id) { return assigned_set.count(id) > 0; });
 
     RCLCPP_DEBUG_STREAM(
-      logger_, label << "Session「" << req.name << "」に" << assigned_robots.size()
-                     << "ロボットを割り当て: " << assigned_robots);
+      logger_, "Session「" << req.name << "」に" << assigned_robots.size()
+                           << "ロボットを割り当て: " << assigned_robots);
   }
+
+  return result;
 }
 
 }  // namespace crane
