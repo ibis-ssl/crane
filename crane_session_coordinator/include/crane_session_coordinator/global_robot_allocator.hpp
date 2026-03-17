@@ -32,9 +32,6 @@ struct SessionRequirement
   // 優先度（数値が小さいほど優先度が高い、0が最高優先度）
   int priority;
 
-  // 必要最小ロボット数
-  int min_robots;
-
   // 必要最大ロボット数
   int max_robots;
 
@@ -42,13 +39,8 @@ struct SessionRequirement
   std::function<double(const std::shared_ptr<RobotInfo> &)> suitability_func;
 
   SessionRequirement(
-    std::string n, int p, int min_r, int max_r,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> func)
-  : name(std::move(n)),
-    priority(p),
-    min_robots(min_r),
-    max_robots(max_r),
-    suitability_func(std::move(func))
+    std::string n, int p, int max_r, std::function<double(const std::shared_ptr<RobotInfo> &)> func)
+  : name(std::move(n)), priority(p), max_robots(max_r), suitability_func(std::move(func))
   {
   }
 };

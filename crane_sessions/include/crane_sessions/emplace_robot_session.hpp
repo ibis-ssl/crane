@@ -43,7 +43,7 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
-  int getDesiredRobotNumber(int /* min_robots */, int /* max_robots */) const override
+  int getDesiredRobotNumber(int /* max_robots */) const override
   {
     int available_count =
       static_cast<int>(world_model->ours().robotsWhere().available().getIds().size());

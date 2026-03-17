@@ -50,7 +50,7 @@ public:
     };
   }
 
-  int getDesiredRobotNumber(int /* min_robots */, int max_robots) const override
+  int getDesiredRobotNumber(int max_robots) const override
   {
     // Forwardは生成可能なライン数以上のロボットを扱えないため、動的に上限を調整する
     return std::min<int>(static_cast<int>(createForwardLines().size()), max_robots);

@@ -38,12 +38,12 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
-  int getDesiredRobotNumber(int min_robots, int max_robots) const override
+  int getDesiredRobotNumber(int max_robots) const override
   {
     if (world_model->point_checker.isInOurHalf(world_model->ball().pos)) {
       return max_robots;
     }
-    return min_robots;
+    return getSessionParameter<int>("reduced_robots", max_robots);
   }
 
   auto getRobotSuitabilityFunc() const
