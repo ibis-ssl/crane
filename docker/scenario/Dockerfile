@@ -22,6 +22,7 @@ RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
+    apt-get install -y ros-${ROS_DISTRO}-rosidl-cmake ros-${ROS_DISTRO}-rosidl-default-generators && \
     rosdep update && \
     rosdep install -riy --from-paths .
 
@@ -37,7 +38,7 @@ RUN ccache -sv
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     cd .. && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+    colcon build --cmake-args '-DCMAKE_BUILD_TYPE=Release'
 
 RUN ccache -sv
 

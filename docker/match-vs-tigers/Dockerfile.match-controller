@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install required Python packages at build time (avoids runtime network dependency)
+RUN pip install --no-cache-dir protobuf grpcio-tools websockets
+
+# Copy and compile proto files
+COPY proto/ /app/proto/
+RUN cd /app/proto && \
+    python -m grpc_tools.protoc --python_out=. --proto_path=. \
+        api/ssl_gc_api.proto \
+        state/*.proto \
+        statemachine/*.proto \
+        engine/*.proto \
+        geom/*.proto \
+        grsim/*.proto
+
+CMD ["python", "-u", "/app/match_controller.py"]
