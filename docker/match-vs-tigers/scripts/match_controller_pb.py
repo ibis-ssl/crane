@@ -144,9 +144,10 @@ class MatchController:
             self.teleport_ball_to_position(PENALTY_SPOT_OFFSET, 0.0)
         elif command in ("BALL_PLACEMENT_YELLOW", "BALL_PLACEMENT_BLUE"):
             if referee_msg.HasField("designated_position"):
+                # SSL referee protobufはミリメートル単位、grSimはメートル単位
                 self.teleport_ball_to_position(
-                    referee_msg.designated_position.x,
-                    referee_msg.designated_position.y,
+                    referee_msg.designated_position.x / 1000.0,
+                    referee_msg.designated_position.y / 1000.0,
                 )
 
     def wait_for_gc_ready(self, timeout: int = 60) -> bool:
