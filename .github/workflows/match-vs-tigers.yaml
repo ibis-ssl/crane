@@ -146,9 +146,12 @@ jobs:
       - name: Get SSL log file
         if: always()
         run: |
+          echo "ssl-logsディレクトリの内容:"
+          ls -la docker/match-vs-tigers/ssl-logs/ || echo "ディレクトリが見つかりません"
           mkdir -p ssl-logs-artifact
           # docker-compose down後にコピー（ssl-log-recorderがファイルを閉じてから取得）
-          cp docker/match-vs-tigers/ssl-logs/*.log.gz ssl-logs-artifact/ 2>/dev/null || echo "SSLログファイルが見つかりません"
+          # .log.gz以外のファイルも含めてすべてコピー
+          cp docker/match-vs-tigers/ssl-logs/* ssl-logs-artifact/ 2>/dev/null || echo "SSLログファイルが見つかりません"
           ls -la ssl-logs-artifact/ || true
 
       - name: Upload match result
