@@ -280,6 +280,18 @@ class MatchController:
         current_command = self.get_current_command()
         print(f"  現在のコマンド: {current_command}")
 
+        # 試合がすでに実行中の場合はスキップ（NEXT_COMMANDを送るとGCがクラッシュする）
+        running_commands = (
+            "NORMAL_START",
+            "FORCE_START",
+            "DIRECT_FREE_YELLOW",
+            "DIRECT_FREE_BLUE",
+        )
+        if current_command in running_commands:
+            print(f"  試合はすでに開始済み ({current_command})、シーケンスをスキップ")
+            print("✓ 試合開始シーケンス完了")
+            return True
+
         # NEXT_COMMAND でキックオフ準備を開始
         print("  NEXT_COMMAND を送信...")
         asyncio.run(self.send_continue_action(engine_pb2.ContinueAction.NEXT_COMMAND))
