@@ -2,6 +2,11 @@ name: TIGERs対戦CI
 
 on:
   workflow_dispatch:
+    inputs:
+      crane_image_tag:
+        description: '既存のcraneイメージタグ（例: match-abc1234）。指定しない場合は現在のコミットからビルド'
+        required: false
+        default: ''
   schedule:
     # 毎週月曜日 9:00 (JST) に実行
     - cron: '0 0 * * 1'
@@ -12,6 +17,8 @@ env:
 jobs:
   build_crane_image:
     name: craneイメージのビルド
+    # crane_image_tagが指定されている場合はビルドをスキップ
+    if: inputs.crane_image_tag == ''
     runs-on: ubuntu-latest
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -54,7 +61,9 @@ jobs:
           cache-to: type=gha,mode=max,scope=match-${{ github.ref_name }}
 
   match_vs_tigers:
-    needs: build_crane_image
+    needs: [build_crane_image]
+    # ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
+    if: always() && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
     name: TIGERs Sumatra AIとの対戦
     runs-on: ubuntu-latest
     steps:
@@ -68,13 +77,30 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine crane image tag
+        run: |
+          if [ -n "${{ inputs.crane_image_tag }}" ]; then
+            echo "CRANE_TAG=${{ inputs.crane_image_tag }}" >> $GITHUB_ENV
+            echo "使用するイメージ: ${{ inputs.crane_image_tag }} (既存イメージ)"
+          else
+            echo "CRANE_TAG=match-${{ github.sha }}" >> $GITHUB_ENV
+            echo "使用するイメージ: match-${{ github.sha }} (新規ビルド)"
+          fi
+
       - name: Start Docker Compose services
         run: |
           mkdir -p docker/match-vs-tigers/ssl-logs
           chmod 777 docker/match-vs-tigers/ssl-logs
           docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
-          CRANE_TAG: match-${{ github.sha }}
+          CRANE_TAG: ${{ env.CRANE_TAG }}
 
       - name: Wait for match to complete
         timeout-minutes: 5
