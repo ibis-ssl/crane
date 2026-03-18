@@ -111,6 +111,14 @@ jobs:
           echo "=== Docker Compose Logs ===" >> match_logs.txt
           docker compose -f docker/match-vs-tigers/docker-compose.yaml logs >> match_logs.txt 2>&1
 
+      - name: Get SSL log file
+        if: always()
+        run: |
+          mkdir -p ssl-logs-artifact
+          # ssl-log-recorderが出力した.log.gzファイルをコピー
+          cp docker/match-vs-tigers/ssl-logs/*.log.gz ssl-logs-artifact/ 2>/dev/null || echo "SSLログファイルが見つかりません"
+          ls -la ssl-logs-artifact/ || true
+
       - name: Clean up Docker Compose services
         if: always()
         run: docker compose -f docker/match-vs-tigers/docker-compose.yaml down -v
@@ -128,6 +136,14 @@ jobs:
         with:
           name: match-logs-${{ github.sha }}
           path: match_logs.txt
+
+      - name: Upload SSL log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: match-ssl-log-${{ github.sha }}
+          path: ssl-logs-artifact/
+          if-no-files-found: warn
 
       - name: Check match result (fail if crane lost)
         if: env.RESULT_EXISTS == 'true'

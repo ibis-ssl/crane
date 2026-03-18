@@ -103,6 +103,23 @@ services:
   #     - simulation_protocol
   #   restart: "no"
 
+  ssl-log-recorder:
+    image: robocupssl/ssl-log-recorder:latest
+    container_name: match_log_recorder
+    network_mode: host
+    volumes:
+      - ./ssl-logs:/logs:rw
+    working_dir: /logs
+    command:
+      - -referee-address
+      - "224.5.23.1:11003"
+      - -vision-address
+      - "224.5.23.2:10020"
+      - -vision-tracker-address
+      - "224.5.23.2:11010"
+      - -vision-legacy-enabled=false
+    restart: "no"
+
   match-controller:
     build:
       context: .

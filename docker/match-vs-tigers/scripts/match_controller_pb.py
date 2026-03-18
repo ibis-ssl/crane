@@ -69,6 +69,15 @@ class MatchController:
         self.start_time: Optional[float] = None
         self.match_duration = 0.0
 
+        # ファウル・カード追跡
+        self.yellow_cards = {"YELLOW": 0, "BLUE": 0}
+        self.foul_counters = {"YELLOW": 0, "BLUE": 0}
+        self.max_allowed_bots = {"YELLOW": 0, "BLUE": 0}
+        # (elapsed_sec, team_name, event_type) のリスト
+        self.foul_event_log: List[Tuple[float, str, str]] = []
+        # event_type -> count per team
+        self.foul_event_counts: dict = {"YELLOW": {}, "BLUE": {}}
+
         # Referee message parameters
         self.referee_address = "224.5.23.1"
         self.referee_port = 11003
@@ -149,6 +158,19 @@ class MatchController:
                     referee_msg.designated_position.x / 1000.0,
                     referee_msg.designated_position.y / 1000.0,
                 )
+
+    def _extract_event_team(self, ev) -> Optional[str]:
+        """ゲームイベントからチーム名を抽出する"""
+        field_name = ev.WhichOneof("event")
+        if not field_name:
+            return None
+        try:
+            sub = getattr(ev, field_name)
+            if sub.HasField("by_team"):
+                return common_pb2.Team.Name(sub.by_team)
+        except Exception:
+            pass
+        return None
 
     def wait_for_gc_ready(self, timeout: int = 60) -> bool:
         """GCのWebSocket接続が利用可能になるまでポーリング"""
@@ -346,6 +368,16 @@ class MatchController:
                     self.yellow_score = referee_msg.yellow.score
                     self.blue_score = referee_msg.blue.score
 
+                    # イエローカード・ファウルカウント更新
+                    self.yellow_cards["YELLOW"] = referee_msg.yellow.yellow_cards
+                    self.yellow_cards["BLUE"] = referee_msg.blue.yellow_cards
+                    self.foul_counters["YELLOW"] = referee_msg.yellow.foul_counter
+                    self.foul_counters["BLUE"] = referee_msg.blue.foul_counter
+                    self.max_allowed_bots["YELLOW"] = (
+                        referee_msg.yellow.max_allowed_bots
+                    )
+                    self.max_allowed_bots["BLUE"] = referee_msg.blue.max_allowed_bots
+
                     # ゴール検知 → ボールをセンターへ移動
                     if (
                         self.yellow_score != prev_yellow_score
@@ -372,11 +404,19 @@ class MatchController:
                         new_event_types = []
                         for ev in referee_msg.game_events[last_event_count:]:
                             try:
-                                new_event_types.append(
-                                    game_event_pb2.GameEvent.Type.Name(ev.type)
-                                )
+                                ev_type = game_event_pb2.GameEvent.Type.Name(ev.type)
                             except Exception:
-                                new_event_types.append(str(ev.type))
+                                ev_type = str(ev.type)
+                            new_event_types.append(ev_type)
+
+                            # ファウルイベントのチームと種別を記録
+                            team_str = self._extract_event_team(ev)
+                            if team_str and self.start_time:
+                                t = time.time() - self.start_time
+                                self.foul_event_log.append((t, team_str, ev_type))
+                                counts = self.foul_event_counts.setdefault(team_str, {})
+                                counts[ev_type] = counts.get(ev_type, 0) + 1
+
                         print(
                             f"  [イベント] {', '.join(new_event_types)} (Score: {self.yellow_score}-{self.blue_score})"
                         )
@@ -512,6 +552,30 @@ class MatchController:
                     f.write("\n=== イベント履歴 ===\n")
                     for timestamp, event_desc in self.events:
                         f.write(f"[{timestamp:6.1f}s] {event_desc}\n")
+
+                # ファウル・カード詳細
+                f.write("\n=== ファウル・カード詳細 ===\n")
+                for team_key, team_display in [
+                    ("YELLOW", self.yellow_name),
+                    ("BLUE", self.blue_name),
+                ]:
+                    yc = self.yellow_cards.get(team_key, 0)
+                    fc = self.foul_counters.get(team_key, 0)
+                    mb = self.max_allowed_bots.get(team_key, 0)
+                    f.write(f"\n{team_key} ({team_display}):\n")
+                    f.write(f"  イエローカード: {yc}枚\n")
+                    f.write(f"  ファウルカウント: {fc}\n")
+                    f.write(f"  最終出場可能台数: {mb}\n")
+                    counts = self.foul_event_counts.get(team_key, {})
+                    if counts:
+                        f.write("  ファウル内訳:\n")
+                        for ev_type, cnt in sorted(counts.items(), key=lambda x: -x[1]):
+                            f.write(f"    {ev_type}: {cnt}回\n")
+
+                if self.foul_event_log:
+                    f.write("\n=== ファウル時系列 ===\n")
+                    for t, team, ev_type in self.foul_event_log:
+                        f.write(f"[{t:6.1f}s] {team}: {ev_type}\n")
 
             print(f"✓ 試合結果を保存: {filename}")
             print(f"  結果: {result_str}")
