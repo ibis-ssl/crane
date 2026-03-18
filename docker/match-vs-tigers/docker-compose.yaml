@@ -40,6 +40,7 @@ services:
     container_name: match_autoref
     network_mode: host
     command:
+      - --active
       - --headless
       - --visionAddress
       - 224.5.23.2:10020
@@ -103,22 +104,15 @@ services:
   #   restart: "no"
 
   match-controller:
-    image: python:3.12
+    build:
+      context: .
+      dockerfile: Dockerfile.match-controller
     container_name: match_controller
     network_mode: host
     volumes:
       - ./scripts/match_controller_pb.py:/app/match_controller.py:ro
-      - ./proto:/app/proto:rw
       - ./results:/app/results:rw
     working_dir: /app
     environment:
       PYTHONUNBUFFERED: "1"
-    command: >
-      sh -c "
-      pip install --timeout=300 --retries=5 -q protobuf grpcio-tools websockets &&
-      cd proto &&
-      python -m grpc_tools.protoc --python_out=. --proto_path=. api/ssl_gc_api.proto state/*.proto statemachine/*.proto engine/*.proto geom/*.proto &&
-      cd .. &&
-      python -u match_controller.py
-      "
     restart: "no"
