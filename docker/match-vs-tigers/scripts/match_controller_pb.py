@@ -302,15 +302,14 @@ class MatchController:
         current_command = self.get_current_command()
         print(f"  現在のコマンド: {current_command}")
 
-        # 試合がすでに実行中の場合はスキップ（NEXT_COMMANDを送るとGCがクラッシュする）
-        running_commands = (
-            "NORMAL_START",
-            "FORCE_START",
-            "DIRECT_FREE_YELLOW",
-            "DIRECT_FREE_BLUE",
-        )
-        if current_command in running_commands:
-            print(f"  試合はすでに開始済み ({current_command})、シーケンスをスキップ")
+        # HALT/STOP以外の状態はすべてスキップ
+        # GCは continue-from-halt: true により自動遷移するため、
+        # PREPARE_KICKOFF等にある場合もNEXT_COMMANDを送らない
+        # （NORMAL_START状態でNEXT_COMMANDを送るとGCがnilポインタpanicする）
+        if current_command not in ("HALT", "STOP", None):
+            print(
+                f"  試合はすでに開始済みまたは開始中 ({current_command})、シーケンスをスキップ"
+            )
             print("✓ 試合開始シーケンス完了")
             return True
 
