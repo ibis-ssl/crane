@@ -71,6 +71,7 @@ jobs:
       - name: Start Docker Compose services
         run: |
           mkdir -p docker/match-vs-tigers/ssl-logs
+          chmod 777 docker/match-vs-tigers/ssl-logs
           docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
           CRANE_TAG: match-${{ github.sha }}
