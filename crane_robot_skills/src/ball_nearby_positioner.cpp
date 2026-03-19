@@ -48,11 +48,13 @@ auto BallNearByPositioner::update() -> Status
           std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot->robot->id; });
           auto second_nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(target, theirs);
-          return (second_nearest_robot->robot->pose.pos - target).normalized();
-        } else {
-          // 敵ロボットが2台未満の場合：ゴール方向をフォールバック
-          return (world_model()->getOurGoalCenter() - target).normalized();
+          Vector2 dir = second_nearest_robot->robot->pose.pos - target;
+          if (dir.squaredNorm() > 1e-6) {
+            return dir.normalized();
+          }
         }
+        // 敵ロボットが2台未満、または方向ベクトルが無効な場合：ゴール方向をフォールバック
+        return (world_model()->getOurGoalCenter() - target).normalized();
       } else {
         throw std::runtime_error(
           "[BallNearByPositioner] "
