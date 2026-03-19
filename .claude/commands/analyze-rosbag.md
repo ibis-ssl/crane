@@ -42,6 +42,8 @@ ros2 run crane_bag crane_bag survey <rosbag_path>
 
 出力される7セクション（PLAY SITUATIONS / ROLE ASSIGNMENTS / WORLD MODEL / CONTROL_TARGETS / ROBOT VELOCITY STATUS / GAME ANALYSIS / ROSOUT WARN/ERROR）を確認し、異常箇所を特定する。
 
+**重要**: WORLD MODEL セクションのヘッダーに `[OUR_TEAM=YELLOW]` または `[OUR_TEAM=BLUE]` が表示される。これを確認し、以降の分析レポートでは必ず「味方=○色」「敵=○色」を明記すること。`our[ID]` ラベルは crane（自チーム）のロボット、`theirs` は相手チームを指す。
+
 ### Step 3: 深掘り分析
 
 Step 2の結果とユーザーの質問に合わせて追加調査を行う。

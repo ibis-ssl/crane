@@ -80,7 +80,10 @@ std::string section_world_model(const BagData & data, double interval)
 {
   std::ostringstream oss;
   char buf[128];
-  std::snprintf(buf, sizeof(buf), "=== WORLD MODEL (every %.0fs) ===\n", interval);
+  const char * team_color =
+    (!data.world_models.empty() && data.world_models.front().msg.is_yellow) ? "YELLOW" : "BLUE";
+  std::snprintf(
+    buf, sizeof(buf), "=== WORLD MODEL (every %.0fs) [OUR_TEAM=%s] ===\n", interval, team_color);
   oss << buf;
 
   for (const auto * tm : BagData::sample(data.world_models, interval)) {
