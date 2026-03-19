@@ -148,9 +148,10 @@ jobs:
         run: |
           echo "ssl-logsディレクトリの内容:"
           ls -la docker/match-vs-tigers/ssl-logs/ || echo "ディレクトリが見つかりません"
+          # ssl-log-recorderコンテナが作成したファイルはpacker:root所有で600パーミッション
+          # runnerユーザーが読めるように権限を変更
+          sudo chmod -R a+r docker/match-vs-tigers/ssl-logs/ 2>/dev/null || true
           mkdir -p ssl-logs-artifact
-          # docker-compose down後にコピー（ssl-log-recorderがファイルを閉じてから取得）
-          # .log.gz以外のファイルも含めてすべてコピー
           cp docker/match-vs-tigers/ssl-logs/* ssl-logs-artifact/ 2>/dev/null || echo "SSLログファイルが見つかりません"
           ls -la ssl-logs-artifact/ || true
 
