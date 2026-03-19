@@ -12,7 +12,7 @@ crane ROS 2 rosbag（MCAP形式）を解析して、試合状況・ロボット�
 ```bash
 cd /home/hans/workspace/ibis_ws && source install/setup.bash 2>/dev/null
 # crane_bag <subcommand> ...  は以下の意味:
-# ros2 run crane_debug_tools crane_bag <subcommand> ...
+# ros2 run crane_bag crane_bag <subcommand> ...
 ```
 
 ## 引数
@@ -29,7 +29,7 @@ $ARGUMENTS
 ### Step 1: Bag情報の確認
 
 ```bash
-ros2 run crane_debug_tools crane_bag info <rosbag_path>
+ros2 run crane_bag crane_bag info <rosbag_path>
 ```
 
 収録時間（Duration）と主要トピックのメッセージ数（`/world_model`, `/robot_commands`, `/play_situation` 等）を確認する。
@@ -37,7 +37,7 @@ ros2 run crane_debug_tools crane_bag info <rosbag_path>
 ### Step 2: 概要サーベイ
 
 ```bash
-ros2 run crane_debug_tools crane_bag survey <rosbag_path>
+ros2 run crane_bag crane_bag survey <rosbag_path>
 ```
 
 出力される7セクション（PLAY SITUATIONS / ROLE ASSIGNMENTS / WORLD MODEL / CONTROL_TARGETS / ROBOT VELOCITY STATUS / GAME ANALYSIS / ROSOUT WARN/ERROR）を確認し、異常箇所を特定する。
@@ -58,22 +58,22 @@ Step 2の結果とユーザーの質問に合わせて追加調査を行う。
 
 ```bash
 # ロボット追跡（0.5秒間隔・10〜30秒範囲）
-ros2 run crane_debug_tools crane_bag track <path> --robot <id> --interval 0.5 --time 10.0:30.0
+ros2 run crane_bag crane_bag track <path> --robot <id> --interval 0.5 --time 10.0:30.0
 
 # planning_factors の変化のみ抽出
-ros2 run crane_debug_tools crane_bag control <path> --robot <id> --changes-only
+ros2 run crane_bag crane_bag control <path> --robot <id> --changes-only
 
 # キック・ファウルイベント
-ros2 run crane_debug_tools crane_bag events <path> --type kick foul
+ros2 run crane_bag crane_bag events <path> --type kick foul
 
 # レフェリーコマンド遷移のみ
-ros2 run crane_debug_tools crane_bag referee <path> --changes-only
+ros2 run crane_bag crane_bag referee <path> --changes-only
 
 # JSON + jq 連携（ゴール時刻抽出 / ファウル集計 / 停止フレーム抽出）
-ros2 run crane_debug_tools crane_bag events <path> --type goal --format json | jq -r '.[].t'
-ros2 run crane_debug_tools crane_bag events <path> --type foul --format json \
+ros2 run crane_bag crane_bag events <path> --type goal --format json | jq -r '.[].t'
+ros2 run crane_bag crane_bag events <path> --type foul --format json \
   | jq '[.[] | {type: (.description | split(":")[0])}] | group_by(.type) | map({type: .[0].type, count: length})'
-ros2 run crane_debug_tools crane_bag track <path> --robot 0 --format json | jq '.[] | select(.speed < 0.01)'
+ros2 run crane_bag crane_bag track <path> --robot 0 --format json | jq '.[] | select(.speed < 0.01)'
 ```
 
 Pythonで直接解析が必要な場合は `.claude/commands/rosbag-python-reference.md` を Read で参照すること。
