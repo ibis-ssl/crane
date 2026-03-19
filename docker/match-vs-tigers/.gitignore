@@ -3,3 +3,6 @@ proto/*_pb2.py
 
 # Match results output
 results/*.txt
+
+# SSL log recorder output
+ssl-logs/

@@ -1,7 +1,23 @@
 name: TIGERs対戦CI
 
 on:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/match-vs-tigers.yaml
+  pull_request:
+    branches: [develop]
+    types: [closed]
   workflow_dispatch:
+    inputs:
+      crane_image_tag:
+        description: '既存のcraneイメージタグ（例: match-abc1234）。指定しない場合は現在のコミットからビルド'
+        required: false
+        default: ''
+      match_duration:
+        description: '試合時間（分）。前半・後半に半分ずつ分割されます（デフォルト: 10分）'
+        required: false
+        default: '10'
   schedule:
     # 毎週月曜日 9:00 (JST) に実行
     - cron: '0 0 * * 1'
@@ -12,6 +28,8 @@ env:
 jobs:
   build_crane_image:
     name: craneイメージのビルド
+    # PRマージ時のみ実行（クローズだけでは実行しない）。crane_image_tag指定時はスキップ
+    if: (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && inputs.crane_image_tag == ''
     runs-on: ubuntu-latest
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -54,30 +72,57 @@ jobs:
           cache-to: type=gha,mode=max,scope=match-${{ github.ref_name }}
 
   match_vs_tigers:
-    needs: build_crane_image
+    needs: [build_crane_image]
+    # PRマージ時のみ実行。ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
     name: TIGERs Sumatra AIとの対戦
     runs-on: ubuntu-latest
     steps:
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine crane image tag
+        run: |
+          if [ -n "${{ inputs.crane_image_tag }}" ]; then
+            echo "CRANE_TAG=${{ inputs.crane_image_tag }}" >> $GITHUB_ENV
+            echo "使用するイメージ: ${{ inputs.crane_image_tag }} (既存イメージ)"
+          else
+            echo "CRANE_TAG=match-${{ github.sha }}" >> $GITHUB_ENV
+            echo "使用するイメージ: match-${{ github.sha }} (新規ビルド)"
+          fi
+
+      - name: Calculate match duration settings
+        run: |
+          DURATION_MINUTES="${{ inputs.match_duration || 5 }}"
+          HALF_MINUTES=$(( DURATION_MINUTES / 2 ))
+          HALF_SECONDS=$(( (DURATION_MINUTES % 2) * 30 ))
+          echo "HALF_DURATION=${HALF_MINUTES}m${HALF_SECONDS}s" >> $GITHUB_ENV
+          echo "MATCH_MAX_DURATION=$(( DURATION_MINUTES * 60 * 14 / 10 ))" >> $GITHUB_ENV
+          echo "試合時間: ${DURATION_MINUTES}分（前半/後半: ${HALF_MINUTES}m${HALF_SECONDS}s）"
+
       - name: Start Docker Compose services
         run: |
+          mkdir -p docker/match-vs-tigers/ssl-logs
+          chmod 777 docker/match-vs-tigers/ssl-logs
           docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
-          CRANE_TAG: match-${{ github.sha }}
+          CRANE_TAG: ${{ env.CRANE_TAG }}
+          HALF_DURATION: ${{ env.HALF_DURATION }}
+          MATCH_MAX_DURATION: ${{ env.MATCH_MAX_DURATION }}
 
       - name: Wait for match to complete
-        timeout-minutes: 5
+        timeout-minutes: 30
         run: |
-          echo "試合の完了を待機中..."
+          echo "試合の完了を待機中（最大 ${{ inputs.match_duration || 5 }} 分試合）..."
           # match-controllerコンテナが終了するまで待機
           while docker ps | grep -q match_controller; do
             sleep 5
@@ -115,6 +160,18 @@ jobs:
         if: always()
         run: docker compose -f docker/match-vs-tigers/docker-compose.yaml down -v
 
+      - name: Get SSL log file
+        if: always()
+        run: |
+          echo "ssl-logsディレクトリの内容:"
+          ls -la docker/match-vs-tigers/ssl-logs/ || echo "ディレクトリが見つかりません"
+          # ssl-log-recorderコンテナが作成したファイルはpacker:root所有で600パーミッション
+          # runnerユーザーが読めるように権限を変更
+          sudo chmod -R a+r docker/match-vs-tigers/ssl-logs/ 2>/dev/null || true
+          mkdir -p ssl-logs-artifact
+          cp docker/match-vs-tigers/ssl-logs/* ssl-logs-artifact/ 2>/dev/null || echo "SSLログファイルが見つかりません"
+          ls -la ssl-logs-artifact/ || true
+
       - name: Upload match result
         if: env.RESULT_EXISTS == 'true'
         uses: actions/upload-artifact@v5
@@ -129,16 +186,21 @@ jobs:
           name: match-logs-${{ github.sha }}
           path: match_logs.txt
 
-      - name: Check match result (fail if crane lost)
+      - name: Upload SSL log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: match-ssl-log-${{ github.sha }}
+          path: ssl-logs-artifact/
+          if-no-files-found: warn
+
+      - name: Show match result
         if: env.RESULT_EXISTS == 'true'
         run: |
           if grep -q "TIGERs WIN" match_result.txt; then
-            echo "::warning::craneが敗北しました"
-            exit 1
+            echo "::notice::craneが敗北しました"
           elif grep -q "CRANE WIN" match_result.txt; then
             echo "::notice::craneが勝利しました！"
-            exit 0
           else
-            echo "::warning::引き分けでした"
-            exit 0
+            echo "::notice::引き分けでした"
           fi

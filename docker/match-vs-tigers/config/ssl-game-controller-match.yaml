@@ -55,8 +55,9 @@ game:
   multiple-card-step: 2
   multiple-foul-step: 3
   multiple-placement-failures: 5
+  # CIテスト用: イエローカードによるbot台数減少の影響を受けないよう大幅に増加
   max-bots:
-    DIV_A: 11
+    DIV_A: 16
     DIV_B: 6
   auto-ref-proposal-timeout: 1s
   prepare-timeout: 10s
