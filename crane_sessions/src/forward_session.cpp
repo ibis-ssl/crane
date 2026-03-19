@@ -18,7 +18,9 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
 
   const double goal_line_x = world_model->fieldSize().x() * 0.5;
   const double field_half_width = world_model->fieldSize().y() * 0.5;
-  const double penalty_front_x = goal_line_x - world_model->penaltyAreaSize().y() * 0.5;
+  constexpr double PENALTY_AREA_MARGIN = 0.3;  // SSL rule: 0.2m minimum + 0.1m safety buffer
+  const double penalty_front_x =
+    goal_line_x - world_model->penaltyAreaSize().x() - PENALTY_AREA_MARGIN;
   const double penalty_side_y = world_model->penaltyAreaSize().y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
   const double ball_x_abs = world_model->ball().pos.x() * (-world_model->getOurSideSign());
