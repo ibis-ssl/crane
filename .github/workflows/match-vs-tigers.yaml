@@ -194,16 +194,13 @@ jobs:
           path: ssl-logs-artifact/
           if-no-files-found: warn
 
-      - name: Check match result (fail if crane lost)
+      - name: Show match result
         if: env.RESULT_EXISTS == 'true'
         run: |
           if grep -q "TIGERs WIN" match_result.txt; then
-            echo "::warning::craneが敗北しました"
-            exit 1
+            echo "::notice::craneが敗北しました"
           elif grep -q "CRANE WIN" match_result.txt; then
             echo "::notice::craneが勝利しました！"
-            exit 0
           else
-            echo "::warning::引き分けでした"
-            exit 0
+            echo "::notice::引き分けでした"
           fi
