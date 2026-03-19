@@ -1,36 +1,22 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_debug_tools</name>
+  <name>crane_web_debugger</name>
   <version>1.0.231</version>
-  <description>Modern debugging tools for crane robot skills</description>
+  <description>WebSocketデバッグサーバーとWebフロントエンド</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>ament_index_cpp</depend>
-  <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
-  <depend>crane_robot_skills</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>libboost-system-dev</depend>
-  <depend>libgoogle-glog-dev</depend>
   <depend>libssl-dev</depend>
   <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
-  <depend>rclcpp_action</depend>
-  <depend>robocup_ssl_msgs</depend>
-  <depend>rosbag2_cpp</depend>
-  <depend>rosidl_runtime_cpp</depend>
   <depend>std_msgs</depend>
-
-  <!-- Python dependencies -->
-  <exec_depend>python3-cairosvg</exec_depend>
-  <exec_depend>python3-yaml</exec_depend>
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>rosbag2_py</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

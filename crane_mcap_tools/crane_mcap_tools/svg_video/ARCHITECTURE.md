@@ -236,8 +236,8 @@ frame_duration = 1秒 / fps / speed
 
 ## 参考実装
 
-- `crane_debug_tools/mcap_analysis/extractor.py`: MCAP読み込みパターン
-- `crane_debug_tools/web/svg_viewer.js`: SVG組み立て・増分更新ロジック
+- `crane_mcap_tools/mcap_analysis/extractor.py`: MCAP読み込みパターン
+- `crane_web_debugger/web/svg_viewer.js`: SVG組み立て・増分更新ロジック
 - ROS 2 rosbag2_py: MCAP読み込みAPI
 - cairosvg: SVG→PNG変換
 - ffmpeg: 動画エンコード
