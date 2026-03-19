@@ -15,7 +15,7 @@ pip install cairosvg
 または、プロジェクトのsetup.pyから自動インストール:
 
 ```bash
-cd /home/hans/workspace/ibis_ws/src/crane/crane_debug_tools
+cd /home/hans/workspace/ibis_ws/src/crane/crane_mcap_tools
 pip install -e .
 ```
 
@@ -94,8 +94,8 @@ cd /home/hans/workspace/ibis_ws
 source install/setup.bash
 
 # 基本的な使い方
-ros2 run crane_debug_tools svg_video_generator.py /path/to/rosbag -o output.mp4
+ros2 run crane_mcap_tools svg_video_generator.py /path/to/rosbag -o output.mp4
 
 # 詳細はヘルプを参照
-ros2 run crane_debug_tools svg_video_generator.py --help
+ros2 run crane_mcap_tools svg_video_generator.py --help
 ```

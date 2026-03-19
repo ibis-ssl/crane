@@ -27,29 +27,29 @@ MCAP → SvgExtractor → SvgAssembler → SvgRenderer → VideoGenerator → MP
 ### 基本的な使い方
 
 ```bash
-ros2 run crane_debug_tools svg_video_generator.py /path/to/rosbag_dir -o output.mp4
+ros2 run crane_mcap_tools svg_video_generator.py /path/to/rosbag_dir -o output.mp4
 ```
 
 ### オプション
 
 ```bash
 # フレームレート指定
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 --fps 60
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 --fps 60
 
 # 2倍速再生
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 --speed 2.0
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 --speed 2.0
 
 # 特定のレイヤーのみ表示
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 --layers "layer1,layer2"
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 --layers "layer1,layer2"
 
 # フレームをディレクトリに保存（デバッグ用）
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 --save-frames frames/
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 --save-frames frames/
 
 # 時刻範囲を指定
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 --start-time 10 --end-time 30
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 --start-time 10 --end-time 30
 
 # 詳細ログ
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4 -v
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4 -v
 ```
 
 ### 全オプション
@@ -143,7 +143,7 @@ apt-get update && apt-get install -y ffmpeg
 
 ```bash
 # --save-framesオプションを削除
-ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4
+ros2 run crane_mcap_tools svg_video_generator.py rosbag_dir -o output.mp4
 ```
 
 ## 例
@@ -151,7 +151,7 @@ ros2 run crane_debug_tools svg_video_generator.py rosbag_dir -o output.mp4
 ### 試合全体を動画化
 
 ```bash
-ros2 run crane_debug_tools svg_video_generator.py \
+ros2 run crane_mcap_tools svg_video_generator.py \
   ~/rosbags/match_2024_01_15/ \
   -o match.mp4 \
   --fps 30
@@ -160,7 +160,7 @@ ros2 run crane_debug_tools svg_video_generator.py \
 ### ハイライトシーンを高画質で
 
 ```bash
-ros2 run crane_debug_tools svg_video_generator.py \
+ros2 run crane_mcap_tools svg_video_generator.py \
   ~/rosbags/match_2024_01_15/ \
   -o highlight.mp4 \
   --start-time 120 \
@@ -173,7 +173,7 @@ ros2 run crane_debug_tools svg_video_generator.py \
 ### デバッグ用フレーム確認
 
 ```bash
-ros2 run crane_debug_tools svg_video_generator.py \
+ros2 run crane_mcap_tools svg_video_generator.py \
   ~/rosbags/test/ \
   -o test.mp4 \
   --save-frames debug_frames/ \

@@ -16,12 +16,12 @@ import logging
 import sys
 from pathlib import Path
 
-from crane_debug_tools.mcap_analysis import (
+from crane_mcap_tools.mcap_analysis import (
     MCAPAnnotationExtractor,
     GeminiAnalysisClient,
     ReportGenerator,
 )
-from crane_debug_tools.mcap_analysis.prompts import (
+from crane_mcap_tools.mcap_analysis.prompts import (
     SYSTEM_INSTRUCTION,
     create_annotation_analysis_prompt,
     format_position_info,

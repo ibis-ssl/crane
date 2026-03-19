@@ -243,7 +243,7 @@ public:
 
     // Get package share directory for static files
     try {
-      package_share_dir_ = ament_index_cpp::get_package_share_directory("crane_debug_tools");
+      package_share_dir_ = ament_index_cpp::get_package_share_directory("crane_web_debugger");
       web_root_ = package_share_dir_ + "/web";
     } catch (const std::exception & e) {
       RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());

@@ -11,15 +11,15 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-from crane_debug_tools.svg_video import (
+from crane_mcap_tools.svg_video import (
     SvgAssembler,
     SvgExtractor,
     VideoGenerator,
     create_renderer,
     list_available_backends,
 )
-from crane_debug_tools.svg_video.renderers import OutputFormat
-from crane_debug_tools.svg_video.video_generator import InputFormat
+from crane_mcap_tools.svg_video.renderers import OutputFormat
+from crane_mcap_tools.svg_video.video_generator import InputFormat
 
 
 def setup_logging(verbose: bool) -> None:

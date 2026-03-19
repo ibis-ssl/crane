@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(crane_debug_tools)
+project(crane_web_debugger)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
@@ -14,20 +14,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake_auto REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Bag Analysis CLI Tool
-ament_auto_add_executable(crane_bag
-  src/bag/crane_bag_main.cpp
-  src/bag/bag_reader.cpp
-  src/bag/bag_survey.cpp
-  src/bag/bag_events.cpp
-  src/bag/bag_tracking.cpp
-  src/bag/bag_control.cpp
-  src/bag/bag_referee.cpp
-)
-target_include_directories(crane_bag PRIVATE src/bag)
+cmake_policy(SET CMP0167 NEW)
 
 # WebSocket Debug Server
 ament_auto_add_executable(crane_websocket_server
@@ -47,16 +36,4 @@ else()
   target_include_directories(crane_websocket_server PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-# Install Python package
-ament_python_install_package(crane_debug_tools)
-
-# Install scripts
-install(PROGRAMS
-  scripts/mcap_analyzer.py
-  scripts/svg_video_generator.py
-  scripts/crane_bag
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-# Install
-ament_auto_package(INSTALL_TO_SHARE web launch)
+ament_auto_package(INSTALL_TO_SHARE web)
