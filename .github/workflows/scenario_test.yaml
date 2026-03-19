@@ -64,23 +64,19 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Setup virtual environment
-        run: |
-          python -m venv env
-          source env/bin/activate
-
       - name: Cache virtual environment
+        id: cache-venv
         uses: actions/cache@v4
         with:
           path: |
-            env
             ~/.cache/pip
-          key: ${{ runner.os }}-venv-${{ env.PYTHON_VERSION }}-${{ hashFiles('scenario_test/**/*.py') }}-robocup-scenario
+          key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('scenario_test/**/*.py') }}-robocup-scenario
           restore-keys: |
-            ${{ runner.os }}-venv-${{ env.PYTHON_VERSION }}-
+            ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
 
       - name: Install robocup_scenario_test library
         run: |
+          python -m venv env
           source env/bin/activate
           python -m pip install --upgrade pip
           sudo apt update
@@ -115,15 +111,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache virtual environment
+      - name: Cache pip packages
         uses: actions/cache@v4
         with:
           path: |
-            env
             ~/.cache/pip
-          key: ${{ runner.os }}-venv-${{ env.PYTHON_VERSION }}-${{ hashFiles('scenario_test/**/*.py') }}-robocup-scenario
+          key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('scenario_test/**/*.py') }}-robocup-scenario
           restore-keys: |
-            ${{ runner.os }}-venv-${{ env.PYTHON_VERSION }}-
+            ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
 
       - name: Setup virtual environment
         run: |
