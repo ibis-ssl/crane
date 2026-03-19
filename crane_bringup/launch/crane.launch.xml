@@ -229,15 +229,6 @@ limitations under the License.
     <node pkg="crane_speaker" exec="crane_speaker_node"/>
   </group>
 
-  <!-- 実況システム（条件付き起動） -->
-  <group if="$(var commentary)">
-    <node pkg="crane_commentary" exec="commentary_node.py" name="commentary_node" output="screen">
-      <param from="$(find-pkg-share crane_commentary)/config/commentary_config.yaml"/>
-      <!-- モード切替: reflex_analyst（通常の実況）または self_commentary（自己解説） -->
-      <param name="mode" value="reflex_analyst"/>
-    </node>
-  </group>
-
   <!-- 音声合成エンジン -->
   <node pkg="speak_ros" exec="speak_ros_node">
     <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
