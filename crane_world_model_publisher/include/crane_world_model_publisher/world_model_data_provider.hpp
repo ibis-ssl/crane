@@ -69,8 +69,17 @@ struct ProcessorConfig
   std::string vision_address;
   int vision_port;
   double confidence_threshold;
+  std::string tracker_address;
+  int tracker_port;
 
-  ProcessorConfig() : vision_address("224.5.23.2"), vision_port(10020), confidence_threshold(0.3) {}
+  ProcessorConfig()
+  : vision_address("224.5.23.2"),
+    vision_port(10020),
+    confidence_threshold(0.3),
+    tracker_address("224.5.23.2"),
+    tracker_port(10010)
+  {
+  }
 };
 
 // Vision用ボール状態

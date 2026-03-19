@@ -410,7 +410,16 @@ public:
           // 距離が大きすぎる場合は着地位置を使用
           auto parabolic = ParabolicPhysics{*this};
           auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          end_point = landing_pos;
+          if (landing_time > 1e-6) {
+            end_point = landing_pos;
+          } else {
+            // pos_z≈0で既に着地済み: ゼロ長セグメントを避けるため速度方向にフォールバック
+            if (vel.norm() > 1e-6) {
+              end_point = pos + vel.normalized() * distance;
+            } else {
+              end_point = pos + Point(std::min(distance, 0.1), 0);
+            }
+          }
         }
         break;
     }
