@@ -7,6 +7,7 @@ ssl-game-controllerのProtocol Buffersメッセージを使用して試合を制
 
 import time
 import sys
+import os
 import socket
 import struct
 import asyncio
@@ -602,7 +603,8 @@ class MatchController:
             return 1
 
         # 試合監視
-        if not self.monitor_match():
+        max_duration = int(os.environ.get("MATCH_MAX_DURATION", "420"))
+        if not self.monitor_match(max_duration=max_duration):
             return 1
 
         # 結果保存

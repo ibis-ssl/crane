@@ -1,12 +1,19 @@
 name: TIGERs対戦CI
 
 on:
+  pull_request:
+    branches: [develop]
+    types: [closed]
   workflow_dispatch:
     inputs:
       crane_image_tag:
         description: '既存のcraneイメージタグ（例: match-abc1234）。指定しない場合は現在のコミットからビルド'
         required: false
         default: ''
+      match_duration:
+        description: '試合時間（分）。前半・後半に半分ずつ分割されます（デフォルト: 5分）'
+        required: false
+        default: '5'
   schedule:
     # 毎週月曜日 9:00 (JST) に実行
     - cron: '0 0 * * 1'
@@ -17,8 +24,8 @@ env:
 jobs:
   build_crane_image:
     name: craneイメージのビルド
-    # crane_image_tagが指定されている場合はビルドをスキップ
-    if: inputs.crane_image_tag == ''
+    # PRマージ時のみ実行（クローズだけでは実行しない）。crane_image_tag指定時はスキップ
+    if: (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && inputs.crane_image_tag == ''
     runs-on: ubuntu-latest
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -62,8 +69,8 @@ jobs:
 
   match_vs_tigers:
     needs: [build_crane_image]
-    # ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
-    if: always() && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
+    # PRマージ時のみ実行。ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
     name: TIGERs Sumatra AIとの対戦
     runs-on: ubuntu-latest
     steps:
@@ -94,6 +101,15 @@ jobs:
             echo "使用するイメージ: match-${{ github.sha }} (新規ビルド)"
           fi
 
+      - name: Calculate match duration settings
+        run: |
+          DURATION_MINUTES="${{ inputs.match_duration || 5 }}"
+          HALF_MINUTES=$(( DURATION_MINUTES / 2 ))
+          HALF_SECONDS=$(( (DURATION_MINUTES % 2) * 30 ))
+          echo "HALF_DURATION=${HALF_MINUTES}m${HALF_SECONDS}s" >> $GITHUB_ENV
+          echo "MATCH_MAX_DURATION=$(( DURATION_MINUTES * 60 * 14 / 10 ))" >> $GITHUB_ENV
+          echo "試合時間: ${DURATION_MINUTES}分（前半/後半: ${HALF_MINUTES}m${HALF_SECONDS}s）"
+
       - name: Start Docker Compose services
         run: |
           mkdir -p docker/match-vs-tigers/ssl-logs
@@ -101,9 +117,11 @@ jobs:
           docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
           CRANE_TAG: ${{ env.CRANE_TAG }}
+          HALF_DURATION: ${{ env.HALF_DURATION }}
+          MATCH_MAX_DURATION: ${{ env.MATCH_MAX_DURATION }}
 
       - name: Wait for match to complete
-        timeout-minutes: 5
+        timeout-minutes: ${{ fromJSON(inputs.match_duration || '5') + 10 }}
         run: |
           echo "試合の完了を待機中..."
           # match-controllerコンテナが終了するまで待機
