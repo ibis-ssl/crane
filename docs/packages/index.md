@@ -17,7 +17,6 @@
 ### 最近の開発活動
 
 - **2026年1-3月**: コード品質改善キャンペーン（#1129-#1172）。全パッケージを対象にリファクタリング・バグ修正・効率化を実施
-- **2026年1月**: Gemini AI実況システム（crane_commentary）の信頼性向上（自動再接続等）
 - **2025年6月**: JapanOpen2025での実戦運用完了
 - **開発状況**: リファクタリングフェーズ（品質・保守性向上）
 
@@ -41,7 +40,6 @@
 | [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_speaker](./crane_speaker.md) | 音声出力システム | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_commentary](./crane_commentary.md) | Gemini AI リアルタイム実況 | 🔴 高活動 | ✅ 新規作成 | 2026-01 |
 | [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ✅ 作成済み | 完了 |
 | [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ✅ 作成済み | 完了 |
