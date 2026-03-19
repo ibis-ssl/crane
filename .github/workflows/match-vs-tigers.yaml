@@ -1,6 +1,10 @@
 name: TIGERs対戦CI
 
 on:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/match-vs-tigers.yaml
   pull_request:
     branches: [develop]
     types: [closed]
