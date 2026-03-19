@@ -43,6 +43,7 @@
             color: inherit;
             display: block;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
         }
         .tool-card:hover {
             transform: translateY(-10px);
@@ -93,7 +94,7 @@
     </style>
 </head>
 <body>
-    <div class="portal-container">
+    <div class="portal-container px-3">
         <!-- ヘッダー -->
         <div class="portal-header">
             <div class="d-flex justify-content-between align-items-center">
@@ -113,7 +114,7 @@
         </div>
 
         <!-- Crane Debug Tools -->
-        <h2 class="section-title">Crane Debug Tools</h2>
+        <h2 class="section-title"><i class="fas fa-tools me-2"></i>Crane Debug Tools</h2>
         <div class="row g-4">
             <!-- メインデバッガー -->
             <div class="col-md-6">
@@ -192,12 +193,12 @@
             </div>
         </div>
 
-        <!-- External Tools -->
-        <h2 class="section-title">External Tools</h2>
+        <!-- SSL Infrastructure -->
+        <h2 class="section-title"><i class="fas fa-network-wired me-2"></i>SSL Infrastructure</h2>
         <div class="row g-4">
             <!-- SSL Game Controller -->
-            <div class="col-md-6">
-                <a href="http://localhost:8081" target="_blank" class="tool-card" id="game-controller-card">
+            <div class="col-md-4">
+                <a href="#" target="_blank" class="tool-card" id="game-controller-card">
                     <span class="badge bg-secondary" id="game-controller-status">確認中...</span>
                     <div class="tool-icon">
                         <i class="fas fa-flag"></i>
@@ -216,8 +217,8 @@
             </div>
 
             <!-- SSL Vision Client -->
-            <div class="col-md-6">
-                <a href="http://localhost:8082" target="_blank" class="tool-card" id="vision-client-card">
+            <div class="col-md-4">
+                <a href="#" target="_blank" class="tool-card" id="vision-client-card">
                     <span class="badge bg-secondary" id="vision-client-status">確認中...</span>
                     <div class="tool-icon">
                         <i class="fas fa-video"></i>
@@ -234,20 +235,97 @@
                     </ul>
                 </a>
             </div>
+
+            <!-- SSL Status Board -->
+            <div class="col-md-4">
+                <a href="#" target="_blank" class="tool-card" id="status-board-card">
+                    <span class="badge bg-secondary" id="status-board-status">確認中...</span>
+                    <div class="tool-icon">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <div class="tool-title">SSL Status Board</div>
+                    <div class="tool-description">
+                        試合状況をリアルタイム表示するステータスボード
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> レフェリー情報のリアルタイム表示</li>
+                        <li><i class="fas fa-check text-success"></i> チーム・スコア・カード状況</li>
+                        <li><i class="fas fa-check text-success"></i> 試合進行のモニタリング</li>
+                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8083 (simプロファイル)</li>
+                    </ul>
+                </a>
+            </div>
+        </div>
+
+        <!-- Analysis & Calibration -->
+        <h2 class="section-title"><i class="fas fa-flask me-2"></i>Analysis & Calibration</h2>
+        <div class="row g-4 pb-4">
+            <!-- Ball Calibration UI -->
+            <div class="col-md-6">
+                <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
+                    <span class="badge bg-secondary" id="ball-calibration-status">確認中...</span>
+                    <div class="tool-icon">
+                        <i class="fas fa-futbol"></i>
+                    </div>
+                    <div class="tool-title">Ball Calibration UI</div>
+                    <div class="tool-description">
+                        ボール物理モデルパラメータのインタラクティブ最適化（Human-in-the-Loop）
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> 軌跡データの読込・可視化</li>
+                        <li><i class="fas fa-check text-success"></i> 減速パラメータの自動最適化</li>
+                        <li><i class="fas fa-check text-success"></i> 予測軌跡のリアルタイムプレビュー</li>
+                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8095</li>
+                    </ul>
+                </a>
+            </div>
+
+            <!-- Foxglove Studio -->
+            <div class="col-md-6">
+                <a href="#" target="_blank" class="tool-card" id="foxglove-card">
+                    <span class="badge bg-secondary" id="foxglove-status">確認中...</span>
+                    <div class="tool-icon">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="tool-title">Foxglove Studio</div>
+                    <div class="tool-description">
+                        ROS2トピックのWebベースリアルタイム可視化・分析
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> マルチパネルカスタムレイアウト</li>
+                        <li><i class="fas fa-check text-success"></i> ログ・TF・画像の統合ビュー</li>
+                        <li><i class="fas fa-check text-success"></i> ROS2トピックのリアルタイム可視化</li>
+                        <li><i class="fas fa-info-circle text-info"></i> WebSocket: ポート 8765</li>
+                    </ul>
+                </a>
+            </div>
         </div>
     </div>
 
     <script>
+        const host = window.location.hostname;
+
+        // 外部ツール定義
+        const EXTERNAL_TOOLS = [
+            { id: 'game-controller', url: `http://${host}:8081` },
+            { id: 'vision-client',   url: `http://${host}:8082` },
+            { id: 'status-board',    url: `http://${host}:8083` },
+            { id: 'ball-calibration', url: `http://${host}:8095` },
+            { id: 'foxglove',
+              url: `https://app.foxglove.dev/?ds=foxglove-websocket&ds.url=ws://${host}:8765`,
+              checkUrl: `http://${host}:8765` },
+        ];
+
         // WebSocket接続チェック
         function checkConnection() {
-            const ws = new WebSocket(`ws://${window.location.hostname}:8091`);
+            const ws = new WebSocket(`ws://${host}:8091`);
             const statusIndicator = document.querySelector('.status-indicator');
             const statusText = document.getElementById('status-text');
 
             ws.onopen = () => {
                 statusIndicator.classList.remove('disconnected');
                 statusIndicator.classList.add('connected');
-                statusText.textContent = `WebSocket接続済み (${window.location.hostname}:8091)`;
+                statusText.textContent = `WebSocket接続済み (${host}:8091)`;
                 ws.close();
             };
 
@@ -259,28 +337,17 @@
         }
 
         // 外部ツールの可用性チェック
-        async function checkExternalTool(url, cardId, statusId) {
-            const card = document.getElementById(cardId);
-            const statusBadge = document.getElementById(statusId);
-
+        async function checkExternalTool(checkUrl, card, statusBadge) {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-                const response = await fetch(url, {
+                await fetch(checkUrl, {
                     mode: 'no-cors',
-                    signal: controller.signal
+                    signal: AbortSignal.timeout(3000)
                 });
-
-                clearTimeout(timeoutId);
-
-                // no-corsモードでは常にopaque responseが返るため、
-                // エラーが出なければ接続可能と判断
                 statusBadge.textContent = '利用可能';
                 statusBadge.classList.remove('bg-secondary', 'bg-danger');
                 statusBadge.classList.add('bg-success');
+                card.classList.remove('disabled');
             } catch (error) {
-                // タイムアウトまたはネットワークエラー
                 statusBadge.textContent = '利用不可';
                 statusBadge.classList.remove('bg-secondary', 'bg-success');
                 statusBadge.classList.add('bg-danger');
@@ -288,12 +355,30 @@
             }
         }
 
-        // ページロード時に接続チェック
-        checkConnection();
+        // 各カードのhrefを初期化（初回のみ）
+        function setupExternalToolLinks() {
+            EXTERNAL_TOOLS.forEach(tool => {
+                const card = document.getElementById(`${tool.id}-card`);
+                if (card) card.href = tool.url;
+            });
+        }
 
-        // 外部ツールの可用性チェック
-        checkExternalTool('http://localhost:8081', 'game-controller-card', 'game-controller-status');
-        checkExternalTool('http://localhost:8082', 'vision-client-card', 'vision-client-status');
+        // 可用性チェックを実行
+        function checkAllExternalTools() {
+            EXTERNAL_TOOLS.forEach(tool => {
+                const card = document.getElementById(`${tool.id}-card`);
+                const statusBadge = document.getElementById(`${tool.id}-status`);
+                checkExternalTool(tool.checkUrl || tool.url, card, statusBadge);
+            });
+        }
+
+        // ページロード時に初期化
+        checkConnection();
+        setupExternalToolLinks();
+        checkAllExternalTools();
+
+        // 30秒ごとに可用性を再チェック
+        setInterval(checkAllExternalTools, 30000);
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
