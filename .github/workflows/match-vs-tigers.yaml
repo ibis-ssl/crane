@@ -15,9 +15,9 @@ on:
         required: false
         default: ''
       match_duration:
-        description: '試合時間（分）。前半・後半に半分ずつ分割されます（デフォルト: 5分）'
+        description: '試合時間（分）。前半・後半に半分ずつ分割されます（デフォルト: 10分）'
         required: false
-        default: '5'
+        default: '10'
   schedule:
     # 毎週月曜日 9:00 (JST) に実行
     - cron: '0 0 * * 1'

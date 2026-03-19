@@ -23,12 +23,12 @@ services:
       - -c
       - |
         mkdir -p config
-        sed "s/half-duration: 45s/half-duration: ${HALF_DURATION:-2m30s}/g" /mounted/ssl-game-controller-match.yaml > config/ssl-game-controller.yaml
+        sed "s/half-duration: 45s/half-duration: ${HALF_DURATION:-5m0s}/g" /mounted/ssl-game-controller-match.yaml > config/ssl-game-controller.yaml
         cp /mounted/engine.yaml config/engine.yaml
         cp /mounted/state-store-initial.json.stream state-store.json.stream
         exec /app -address localhost:8082 -verbose
     environment:
-      - HALF_DURATION=${HALF_DURATION:-2m30s}
+      - HALF_DURATION=${HALF_DURATION:-5m0s}
     volumes:
       - ./config/ssl-game-controller-match.yaml:/mounted/ssl-game-controller-match.yaml:ro
       - ../config/engine.yaml:/mounted/engine.yaml:ro
@@ -134,5 +134,5 @@ services:
     working_dir: /app
     environment:
       PYTHONUNBUFFERED: "1"
-      MATCH_MAX_DURATION: ${MATCH_MAX_DURATION:-420}
+      MATCH_MAX_DURATION: ${MATCH_MAX_DURATION:-840}
     restart: "no"

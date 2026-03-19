@@ -603,7 +603,7 @@ class MatchController:
             return 1
 
         # 試合監視
-        max_duration = int(os.environ.get("MATCH_MAX_DURATION", "420"))
+        max_duration = int(os.environ.get("MATCH_MAX_DURATION", "840"))
         if not self.monitor_match(max_duration=max_duration):
             return 1
 
