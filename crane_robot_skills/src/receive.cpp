@@ -13,6 +13,11 @@
 #include <sstream>
 #include <string>
 
+namespace
+{
+bool isValidPoint(const crane::Point & p) { return std::isfinite(p.x()) && std::isfinite(p.y()); }
+}  // namespace
+
 namespace crane::skills
 {
 Status Receive::update()
@@ -120,11 +125,6 @@ Status Receive::update()
 
 Point Receive::getInterceptionPoint() const
 {
-  // NaN値チェックのヘルパー関数
-  auto isValidPoint = [](const Point & p) -> bool {
-    return std::isfinite(p.x()) && std::isfinite(p.y());
-  };
-
   Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.0);
   Point closest_point =
     world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0).closest_point;
@@ -190,16 +190,18 @@ Point Receive::getInterceptionPoint() const
       slack_times.end());
 
     if (slack_times.empty()) {
-      RCLCPP_WARN(
-        rclcpp::get_logger("Receive"), "slack_times is empty, falling back to ball stop position");
       // ボール停止予測位置へ先回りする（減速モデル対応フォールバック）
-      Point stop_pos =
-        world_model()->ball().getPredictedPosition(world_model()->ball().getStopTime());
-      if (isValidPoint(stop_pos) && world_model()->point_checker.isFieldInside(stop_pos)) {
+      const auto & ball = world_model()->ball();
+      double stop_time = ball.getStopTime();
+      Point stop_pos = ball.getPredictedPosition(stop_time);
+      if (
+        isValidPoint(stop_pos) && world_model()->point_checker.isFieldInside(stop_pos) &&
+        !world_model()->point_checker.isPenaltyArea(stop_pos)) {
         command->addPlanningFactor(
           "Receive", "WARN: [Receive] slack_timesが空のため、ボール停止予測位置にフォールバック");
         return stop_pos;
       }
+
       // フィールド外またはNaN値の場合は従来の closest point フォールバック
       command->addPlanningFactor(
         "Receive", "WARN: [Receive] 停止予測位置が無効のため、closest pointにフォールバック");
@@ -302,11 +304,6 @@ Point Receive::getInterceptionPointWithEnemyAvoidance() const
 
   // 敵が割り込んでいる場合、Slack Timeベースで代替位置を探す
   auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray({robot()});
-
-  // 有効なNaN値チェックと敵ブロックチェック
-  auto isValidPoint = [](const Point & p) -> bool {
-    return std::isfinite(p.x()) && std::isfinite(p.y());
-  };
 
   std::vector<WorldModelWrapper::SlackTimeResult> valid_points;
   for (const auto & slack : slack_times) {

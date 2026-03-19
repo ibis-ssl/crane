@@ -8,6 +8,7 @@
 #include <crane_msgs/msg/ball_physics_config.hpp>
 #include <crane_physics/ball_info.hpp>
 #include <crane_physics/ball_physics_model.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -156,6 +157,17 @@ auto Ball::getRollingTimeToReachDistance(double distance) const -> std::optional
 // fromMsgメソッドでBallPhysicsModelを設定
 void Ball::updatePhysicsConfigFromMsg(const crane_msgs::msg::BallPhysicsConfig & physics_config)
 {
+  // deceleration <= 0 はメッセージが未設定（ゼロ初期化）と判断し、現在の設定を維持する
+  // deceleration=0 のまま適用すると stop_time=inf → NaN が伝播する
+  if (physics_config.deceleration <= 0.0) {
+    RCLCPP_WARN_ONCE(
+      rclcpp::get_logger("Ball"),
+      "BallPhysicsConfig.deceleration <= 0 (%.3f): message is uninitialized, keeping current "
+      "config (deceleration=%.3f)",
+      physics_config.deceleration, physics_model_->getDeceleration());
+    return;
+  }
+
   BallPhysicsModel::Config config;
   config.deceleration = physics_config.deceleration;
   config.gravity = physics_config.gravity;

@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace crane
@@ -68,12 +69,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // MulticastReceiver初期化（Tracker UDP）
   try {
-    auto tracker_addr = node.get_parameter("tracker_address").get_value<std::string>();
-    auto tracker_port = node.get_parameter("tracker_port").get_value<int>();
-    tracker_receiver_ = std::make_unique<crane::MulticastReceiver>(tracker_addr, tracker_port);
+    config_.tracker_address = node.get_parameter("tracker_address").get_value<std::string>();
+    config_.tracker_port = node.get_parameter("tracker_port").get_value<int>();
+    tracker_receiver_ =
+      std::make_unique<crane::MulticastReceiver>(config_.tracker_address, config_.tracker_port);
     RCLCPP_INFO(
-      node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d", tracker_addr.c_str(),
-      static_cast<int>(tracker_port));
+      node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d",
+      config_.tracker_address.c_str(), config_.tracker_port);
   } catch (const std::exception & ex) {
     reportError("Trackerの初期化に失敗しました: " + std::string(ex.what()));
     RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", ex.what());
@@ -148,12 +150,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
     if (tracker_receiver_) {
       if ((now - last_tracker_recv_time_).seconds() > 1.0) {
-        // trackerアドレス/ポートはパラメータから取得
-        auto tracker_addr = this->node.get_parameter("tracker_address").get_value<std::string>();
-        auto tracker_port = this->node.get_parameter("tracker_port").get_value<int>();
         RCLCPP_WARN(
-          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)", tracker_addr.c_str(),
-          static_cast<int>(tracker_port));
+          this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)",
+          config_.tracker_address.c_str(), config_.tracker_port);
       }
     }
   });
@@ -376,7 +375,13 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       node.get_logger(), *node.get_clock(), 5000, "新しいボールデータがありません");
   }
 
-  auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
+  auto current_time = node.get_clock()->now();
+
+  // robot_feedback を ID → ポインタのマップに変換して O(N×M) → O(N) に削減
+  std::unordered_map<uint8_t, const crane_msgs::msg::RobotFeedback *> feedback_map;
+  for (const auto & fb : robot_feedback.feedback) {
+    feedback_map[static_cast<uint8_t>(fb.robot_id)] = &fb;
+  }
 
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
@@ -386,52 +391,50 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
     // robot_feedbackデータを統合
     for (auto & robot : vision_robots) {
-      // robot_feedbackから対応するロボットの情報を検索
-      for (const auto & feedback : robot_feedback.feedback) {
-        if (feedback.robot_id == robot.id) {
-          // feedbackデータを含むRobotInfoを作成
-          crane_msgs::msg::RobotInfo feedback_robot;
-          feedback_robot.id = feedback.robot_id;
-          feedback_robot.available_feedback = true;
-          feedback_robot.ball_sensor = feedback.ball_sensor;
-          feedback_robot.last_ball_sensor_stamp = feedback.received_stamp;
-          feedback_robot.last_feedback_detection_stamp = feedback.received_stamp;
+      if (auto it = feedback_map.find(robot.id); it != feedback_map.end()) {
+        const auto & feedback = *it->second;
 
-          // エラー情報を転送 + 継続時間の算出
-          bool has_err = (feedback.error_id != 0 || feedback.error_info != 0);
-          feedback_robot.has_error = has_err;
-          feedback_robot.error_id = feedback.error_id;
-          feedback_robot.error_info = feedback.error_info;
-          feedback_robot.error_value = feedback.error_value;
-          feedback_robot.last_error_stamp = feedback.received_stamp;
+        // feedbackデータを含むRobotInfoを作成
+        crane_msgs::msg::RobotInfo feedback_robot;
+        feedback_robot.id = feedback.robot_id;
+        feedback_robot.available_feedback = true;
+        feedback_robot.ball_sensor = feedback.ball_sensor;
+        feedback_robot.last_ball_sensor_stamp = feedback.received_stamp;
+        feedback_robot.last_feedback_detection_stamp = feedback.received_stamp;
 
-          auto & err_tracker = error_tracker_[team_idx][robot.id];
-          if (has_err) {
-            if (!err_tracker.active) {
-              // Any error started now
-              err_tracker.active = true;
-              err_tracker.start = rclcpp::Time(feedback.received_stamp);
-            }
-            // 稼働中のエラーとして種類(id/info)のみ更新（開始時刻はリセットしない）
-            err_tracker.id = feedback.error_id;
-            err_tracker.info = feedback.error_info;
-            double duration = (current_time - err_tracker.start).seconds();
-            if (duration < 0.0) duration = 0.0;
-            feedback_robot.error_duration_sec = static_cast<float>(duration);
-          } else {
-            err_tracker.active = false;
-            err_tracker.id = 0;
-            err_tracker.info = 0;
-            feedback_robot.error_duration_sec = 0.0f;
+        // エラー情報を転送 + 継続時間の算出
+        bool has_err = (feedback.error_id != 0 || feedback.error_info != 0);
+        feedback_robot.has_error = has_err;
+        feedback_robot.error_id = feedback.error_id;
+        feedback_robot.error_info = feedback.error_info;
+        feedback_robot.error_value = feedback.error_value;
+        feedback_robot.last_error_stamp = feedback.received_stamp;
+
+        auto & err_tracker = error_tracker_[team_idx][robot.id];
+        if (has_err) {
+          if (!err_tracker.active) {
+            // Any error started now
+            err_tracker.active = true;
+            err_tracker.start = rclcpp::Time(feedback.received_stamp);
           }
-
-          // モーター温度情報を転送
-          feedback_robot.motor_temperatures = feedback.temperatures;
-
-          // visionデータとfeedbackデータを統合
-          robot = mergeRobotInfo(robot, feedback_robot);
-          break;
+          // 稼働中のエラーとして種類(id/info)のみ更新（開始時刻はリセットしない）
+          err_tracker.id = feedback.error_id;
+          err_tracker.info = feedback.error_info;
+          double duration = (current_time - err_tracker.start).seconds();
+          if (duration < 0.0) duration = 0.0;
+          feedback_robot.error_duration_sec = static_cast<float>(duration);
+        } else {
+          err_tracker.active = false;
+          err_tracker.id = 0;
+          err_tracker.info = 0;
+          feedback_robot.error_duration_sec = 0.0f;
         }
+
+        // モーター温度情報を転送
+        feedback_robot.motor_temperatures = feedback.temperatures;
+
+        // visionデータとfeedbackデータを統合
+        robot = mergeRobotInfo(robot, feedback_robot);
       }
     }
 
@@ -472,30 +475,28 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   // Vision遅延情報をDelayCheckpointに追加
   if (last_t_capture_ > 0.0 && last_t_sent_ > 0.0) {
-    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
     std::string vision_delay_info =
-      DelayMonitorWrapper::formatVisionDelayInfo(last_t_capture_, last_t_sent_, now);
+      DelayMonitorWrapper::formatVisionDelayInfo(last_t_capture_, last_t_sent_, current_time);
 
     DelayMonitorWrapper::addDelayCheckpoint(
       msg.delay_checkpoints, "vision_timestamps", vision_delay_info);
   }
 
   if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
-    static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
-    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+    static rclcpp::Time last_warning_time = node.get_clock()->now();
     // Warn every 5 seconds to avoid spam
-    if ((now - last_warning_time).seconds() > 5.0) {
+    if ((current_time - last_warning_time).seconds() > 5.0) {
       RCLCPP_WARN(
         node.get_logger(),
         "不正なフィールド情報です: field=%.3fx%.3f, goal=%.3fx%.3f, "
         "penalty_area=%.3fx%.3f",
         game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
         game_data.penalty_area_w, game_data.penalty_area_h);
-      last_warning_time = now;
+      last_warning_time = current_time;
     }
   }
 
-  msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
+  msg.header.stamp = current_time;
   return msg;
 }
 
@@ -577,6 +578,14 @@ auto WorldModelDataProvider::updateVisionBallState(const robocup_ssl::SSL_Detect
   double x = ssl_ball.x() / 1000.0;
   double y = ssl_ball.y() / 1000.0;
   double z = ssl_ball.has_z() ? ssl_ball.z() / 1000.0 : 0.0;
+
+  // NaN/Inf チェック: 無効パケットは無視してworld modelを汚染させない
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
+    RCLCPP_WARN(
+      node.get_logger(),
+      "Vision ball position contains NaN/Inf: (%.3f, %.3f, %.3f) - skipping packet", x, y, z);
+    return;
+  }
 
   auto now = node.get_clock()->now();
 
@@ -719,6 +728,17 @@ auto WorldModelDataProvider::updateTrackerBallState(
 {
   auto now = node.get_clock()->now();
 
+  // NaN/Inf チェック: 位置が無効なパケットは無視してworld modelを汚染させない
+  if (
+    !std::isfinite(tracked_ball.pos.x) || !std::isfinite(tracked_ball.pos.y) ||
+    !std::isfinite(tracked_ball.pos.z)) {
+    RCLCPP_WARN(
+      node.get_logger(),
+      "Tracker ball position contains NaN/Inf: (%.3f, %.3f, %.3f) - skipping packet",
+      tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z);
+    return;
+  }
+
   // Tracker状態を更新
   tracker_ball_state_.position =
     Eigen::Vector3d(tracked_ball.pos.x, tracked_ball.pos.y, tracked_ball.pos.z);
@@ -726,7 +746,15 @@ auto WorldModelDataProvider::updateTrackerBallState(
   // 速度情報（オプション）
   if (tracked_ball.has_field & tracked_ball.VEL_FIELD_SET) {
     const auto & vel = tracked_ball.vel;
-    tracker_ball_state_.velocity = Eigen::Vector3d(vel.x, vel.y, vel.z);
+    if (!std::isfinite(vel.x) || !std::isfinite(vel.y) || !std::isfinite(vel.z)) {
+      RCLCPP_WARN(
+        node.get_logger(),
+        "Tracker ball velocity contains NaN/Inf: (%.3f, %.3f, %.3f) - using zero", vel.x, vel.y,
+        vel.z);
+      tracker_ball_state_.velocity = Eigen::Vector3d::Zero();
+    } else {
+      tracker_ball_state_.velocity = Eigen::Vector3d(vel.x, vel.y, vel.z);
+    }
   } else {
     tracker_ball_state_.velocity = Eigen::Vector3d::Zero();
   }
@@ -808,17 +836,37 @@ auto WorldModelDataProvider::convertTrackedRobot(
 
   robot_info.id = static_cast<uint8_t>(tracked_robot.robot_id.id);
 
-  // 位置・姿勢情報
-  robot_info.pose.x = tracked_robot.pos.x;
-  robot_info.pose.y = tracked_robot.pos.y;
+  // 検出フラグ（NaN位置のロボットは利用不可として扱う）
+  const bool valid_position =
+    std::isfinite(tracked_robot.pos.x) && std::isfinite(tracked_robot.pos.y);
+  if (!valid_position) {
+    RCLCPP_WARN_THROTTLE(
+      node.get_logger(), *node.get_clock(), 1000,
+      "Robot id=%d position contains NaN/Inf: (%.3f, %.3f) - marking unavailable",
+      tracked_robot.robot_id.id, tracked_robot.pos.x, tracked_robot.pos.y);
+  }
+
+  // 位置・姿勢情報（NaN/Infは0にクランプ - available_*フラグで無効として扱われる）
+  robot_info.pose.x = valid_position ? tracked_robot.pos.x : 0.0;
+  robot_info.pose.y = valid_position ? tracked_robot.pos.y : 0.0;
   robot_info.pose.theta = crane::normalizeAngle(tracked_robot.orientation);
 
   // 速度情報（オプション）
   if (tracked_robot.has_field & tracked_robot.VEL_FIELD_SET) {
     const auto & vel = tracked_robot.vel;
-    robot_info.velocity.x = vel.x;
-    robot_info.velocity.y = vel.y;
-    robot_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y);
+    if (!std::isfinite(vel.x) || !std::isfinite(vel.y)) {
+      RCLCPP_WARN_THROTTLE(
+        node.get_logger(), *node.get_clock(), 1000,
+        "Robot id=%d velocity contains NaN/Inf: (%.3f, %.3f) - using zero",
+        tracked_robot.robot_id.id, vel.x, vel.y);
+      robot_info.velocity.x = 0.0;
+      robot_info.velocity.y = 0.0;
+      robot_info.velocity_norm = 0.0;
+    } else {
+      robot_info.velocity.x = vel.x;
+      robot_info.velocity.y = vel.y;
+      robot_info.velocity_norm = std::hypot(vel.x, vel.y);
+    }
   } else {
     robot_info.velocity.x = 0.0;
     robot_info.velocity.y = 0.0;
@@ -827,13 +875,9 @@ auto WorldModelDataProvider::convertTrackedRobot(
 
   // Vision情報（Trackerは内部でVisionを統合しているため、Vision情報としても扱う）
   robot_info.vision.stamp = now;
-  robot_info.vision.pose.x = tracked_robot.pos.x;
-  robot_info.vision.pose.y = tracked_robot.pos.y;
+  robot_info.vision.pose.x = robot_info.pose.x;
+  robot_info.vision.pose.y = robot_info.pose.y;
   robot_info.vision.pose.theta = tracked_robot.orientation;
-
-  // 検出フラグ（TrackerはVisionを統合しているため、両方trueに設定）
-  // NaN位置のロボットは利用不可として扱う
-  const bool valid_position = !std::isnan(tracked_robot.pos.x) && !std::isnan(tracked_robot.pos.y);
   robot_info.available_vision = valid_position;
   robot_info.available_feedback = false;
   robot_info.available_tracker = valid_position;
