@@ -12,6 +12,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <cmath>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
@@ -831,9 +832,11 @@ auto WorldModelDataProvider::convertTrackedRobot(
   robot_info.vision.pose.theta = tracked_robot.orientation;
 
   // 検出フラグ（TrackerはVisionを統合しているため、両方trueに設定）
-  robot_info.available_vision = true;
+  // NaN位置のロボットは利用不可として扱う
+  const bool valid_position = !std::isnan(tracked_robot.pos.x) && !std::isnan(tracked_robot.pos.y);
+  robot_info.available_vision = valid_position;
   robot_info.available_feedback = false;
-  robot_info.available_tracker = true;
+  robot_info.available_tracker = valid_position;
 
   // タイムスタンプ設定
   robot_info.last_tracker_detection_stamp = now;
