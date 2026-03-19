@@ -125,9 +125,9 @@ jobs:
           MATCH_MAX_DURATION: ${{ env.MATCH_MAX_DURATION }}
 
       - name: Wait for match to complete
-        timeout-minutes: ${{ fromJSON(inputs.match_duration || '5') + 10 }}
+        timeout-minutes: 30
         run: |
-          echo "試合の完了を待機中..."
+          echo "試合の完了を待機中（最大 ${{ inputs.match_duration || 5 }} 分試合）..."
           # match-controllerコンテナが終了するまで待機
           while docker ps | grep -q match_controller; do
             sleep 5
