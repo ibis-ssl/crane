@@ -1,5 +1,7 @@
 """Setup script for crane_mcap_tools package."""
 
+import os
+
 from setuptools import setup
 
 package_name = "crane_mcap_tools"
@@ -17,6 +19,10 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
+        (
+            os.path.join("lib", package_name),
+            ["scripts/mcap_analyzer.py", "scripts/svg_video_generator.py"],
+        ),
     ],
     install_requires=[
         "setuptools",
@@ -36,7 +42,6 @@ setup(
     entry_points={
         "console_scripts": [
             "crane_bag_py = crane_mcap_tools.bag_analysis.cli:main",
-            "mcap_analyzer = crane_mcap_tools.mcap_analysis.mcap_tools:main",
         ],
     },
 )
