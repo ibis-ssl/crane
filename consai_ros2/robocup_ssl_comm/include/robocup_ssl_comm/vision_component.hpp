@@ -17,14 +17,19 @@
 
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
+#include <boost/asio.hpp>
 #include <chrono>
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
+#include <thread>
 
 #include "visibility_control.h"
+
+namespace asio = boost::asio;
 
 namespace robocup_ssl_comm
 {
@@ -33,6 +38,8 @@ class Vision : public rclcpp::Node
 public:
   ROBOCUP_SSL_COMM_PUBLIC
   explicit Vision(const rclcpp::NodeOptions & options);
+
+  ~Vision();
 
 protected:
   void on_timer();
@@ -51,9 +58,14 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::unique_ptr<crane::MulticastReceiver> receiver;
+  asio::io_context io_context_;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+  std::thread io_thread_;
+  std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>::SharedPtr pub_detection_frame;
+
+  std::mutex frames_mutex_;
 
   // カメラ別の最新フレームデータを保存
   std::map<uint32_t, robocup_ssl_msgs::msg::SSLDetectionFrame> camera_frames_;

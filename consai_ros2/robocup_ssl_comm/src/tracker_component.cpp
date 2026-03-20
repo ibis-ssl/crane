@@ -25,33 +25,53 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
+Tracker::Tracker(const rclcpp::NodeOptions & options)
+: Node("tracker", options), work_guard_(asio::make_work_guard(io_context_))
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10010);
-  receiver = std::make_unique<crane::MulticastReceiver>(
-    get_parameter("multicast_address").get_value<std::string>(),
-    get_parameter("multicast_port").get_value<int>());
+  const std::string address = get_parameter("multicast_address").get_value<std::string>();
+  const int port = get_parameter("multicast_port").get_value<int>();
+
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(io_context_, address, port);
+  receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
+    if (size > 0) {
+      robocup_ssl::TrackerWrapperPacket wrapper_packet;
+      if (
+        wrapper_packet.ParseFromArray(buf.data(), static_cast<int>(size)) &&
+        wrapper_packet.has_tracked_frame()) {
+        auto frame = parse_tracked_frame(wrapper_packet);
+        std::lock_guard<std::mutex> lock(latest_mutex_);
+        latest_frame_ = std::move(frame);
+      }
+    }
+  });
+
+  io_thread_ = std::thread([this]() { io_context_.run(); });
+
   pub_tracked_frame = create_publisher<robocup_ssl_msgs::msg::TrackedFrame>("tracked_frame", 10);
   timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&Tracker::on_timer, this));
 }
 
+Tracker::~Tracker()
+{
+  work_guard_.reset();
+  io_context_.stop();
+  if (io_thread_.joinable()) {
+    io_thread_.join();
+  }
+}
+
 void Tracker::on_timer()
 {
-  while (receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = receiver->receive(buf);
+  std::optional<robocup_ssl_msgs::msg::TrackedFrame> frame;
+  {
+    std::lock_guard<std::mutex> lock(latest_mutex_);
+    frame = std::exchange(latest_frame_, std::nullopt);
+  }
 
-    if (size > 0) {
-      robocup_ssl::TrackerWrapperPacket wrapper_packet;
-      wrapper_packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (wrapper_packet.has_tracked_frame()) {
-        auto tracked_frame_msg = std::make_unique<robocup_ssl_msgs::msg::TrackedFrame>();
-        *tracked_frame_msg = parse_tracked_frame(wrapper_packet);
-        pub_tracked_frame->publish(std::move(tracked_frame_msg));
-      }
-    }
+  if (frame) {
+    pub_tracked_frame->publish(std::move(*frame));
   }
 }
 

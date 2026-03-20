@@ -17,14 +17,20 @@
 
 #include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
 
-#include <crane_comm/multicast.hpp>
+#include <boost/asio.hpp>
+#include <crane_comm/unicast.hpp>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/game_event.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/robocup_ssl_msgs/conversions.hpp>
+#include <thread>
 
 #include "visibility_control.h"
+
+namespace asio = boost::asio;
 
 namespace robocup_ssl_comm
 {
@@ -34,17 +40,24 @@ public:
   ROBOCUP_SSL_COMM_PUBLIC
   explicit GameController(const rclcpp::NodeOptions & options);
 
+  ~GameController();
+
 protected:
   void on_timer();
 
 private:
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::unique_ptr<crane::MulticastReceiver> receiver;
+  asio::io_context io_context_;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+  std::thread io_thread_;
+  std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
   rclcpp::Publisher<robocup_ssl_msgs::msg::GameEvent>::SharedPtr pub_game_event;
 
+  std::mutex latest_mutex_;
+  std::optional<robocup_ssl::Referee> latest_packet_;
   std::vector<robocup_ssl_msgs::msg::GameEvent> previous_game_events_;
 };
 

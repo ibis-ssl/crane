@@ -25,7 +25,8 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
+Vision::Vision(const rclcpp::NodeOptions & options)
+: Node("vision", options), work_guard_(asio::make_work_guard(io_context_))
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10020);
@@ -38,7 +39,22 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
   const int multicast_port = get_parameter("multicast_port").get_value<int>();
 
-  receiver = std::make_unique<crane::MulticastReceiver>(multicast_address, multicast_port);
+  receiver =
+    std::make_unique<crane::AsyncUdpReceiver>(io_context_, multicast_address, multicast_port);
+  receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
+    if (size > 0) {
+      robocup_ssl::SSL_WrapperPacket wrapper_packet;
+      wrapper_packet.ParseFromArray(buf.data(), static_cast<int>(size));
+      if (wrapper_packet.has_detection()) {
+        auto detection_frame_msg = parse_detection_frame(wrapper_packet);
+        uint32_t camera_id = detection_frame_msg.camera_id;
+        std::lock_guard<std::mutex> lock(frames_mutex_);
+        update_camera_frame(camera_id, detection_frame_msg);
+      }
+    }
+  });
+
+  io_thread_ = std::thread([this]() { io_context_.run(); });
 
   pub_detection_frame =
     create_publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>("detection_frame", 10);
@@ -51,36 +67,23 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
     multicast_port);
 }
 
+Vision::~Vision()
+{
+  work_guard_.reset();
+  io_context_.stop();
+  if (io_thread_.joinable()) {
+    io_thread_.join();
+  }
+}
+
 void Vision::on_timer()
 {
-  // SSL-Visionパケットを受信し、カメラ別フレームを更新
-  while (receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = receiver->receive(buf);
-
-    if (size > 0) {
-      robocup_ssl::SSL_WrapperPacket wrapper_packet;
-      wrapper_packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (wrapper_packet.has_detection()) {
-        auto detection_frame_msg = parse_detection_frame(wrapper_packet);
-        uint32_t camera_id = detection_frame_msg.camera_id;
-
-        // カメラ別フレームを更新
-        update_camera_frame(camera_id, detection_frame_msg);
-
-        RCLCPP_DEBUG(
-          get_logger(),
-          "Received detection frame from camera %u with %zu balls, %zu yellow robots, %zu blue "
-          "robots",
-          camera_id, detection_frame_msg.balls.size(), detection_frame_msg.robots_yellow.size(),
-          detection_frame_msg.robots_blue.size());
-      }
-    }
-  }
-
   // 全カメラのデータをマージして統合フレームをパブリッシュ
-  auto merged_frame = merge_camera_frames();
+  robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
+  {
+    std::lock_guard<std::mutex> lock(frames_mutex_);
+    merged_frame = merge_camera_frames();
+  }
   if (
     merged_frame.camera_id != 0 || !merged_frame.balls.empty() ||
     !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {

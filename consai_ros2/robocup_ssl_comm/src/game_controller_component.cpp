@@ -27,52 +27,73 @@ using namespace std::chrono_literals;
 namespace robocup_ssl_comm
 {
 GameController::GameController(const rclcpp::NodeOptions & options)
-: Node("game_controller", options)
+: Node("game_controller", options), work_guard_(asio::make_work_guard(io_context_))
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
-  receiver = std::make_unique<crane::MulticastReceiver>(
-    get_parameter("multicast_address").get_value<std::string>(),
-    get_parameter("multicast_port").get_value<int>());
+  const std::string address = get_parameter("multicast_address").get_value<std::string>();
+  const int port = get_parameter("multicast_port").get_value<int>();
+
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(io_context_, address, port);
+  receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
+    if (size > 0) {
+      robocup_ssl::Referee packet;
+      if (packet.ParseFromArray(buf.data(), static_cast<int>(size))) {
+        std::lock_guard<std::mutex> lock(latest_mutex_);
+        latest_packet_ = std::move(packet);
+      }
+    }
+  });
+
+  io_thread_ = std::thread([this]() { io_context_.run(); });
+
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
   pub_game_event = create_publisher<robocup_ssl_msgs::msg::GameEvent>("game_event", 10);
   timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&GameController::on_timer, this));
 }
 
+GameController::~GameController()
+{
+  work_guard_.reset();
+  io_context_.stop();
+  if (io_thread_.joinable()) {
+    io_thread_.join();
+  }
+}
+
 void GameController::on_timer()
 {
-  while (receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = receiver->receive(buf);
+  std::optional<robocup_ssl::Referee> packet;
+  {
+    std::lock_guard<std::mutex> lock(latest_mutex_);
+    packet = std::exchange(latest_packet_, std::nullopt);
+  }
 
-    if (size > 0) {
-      robocup_ssl::Referee packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
+  if (!packet) {
+    return;
+  }
 
-      // Use proto2ros Convert API to convert protobuf message to ROS message
-      auto referee_msg = std::make_unique<robocup_ssl_msgs::msg::Referee>();
-      robocup_ssl_msgs::conversions::Convert(packet, referee_msg.get());
+  // Use proto2ros Convert API to convert protobuf message to ROS message
+  auto referee_msg = std::make_unique<robocup_ssl_msgs::msg::Referee>();
+  robocup_ssl_msgs::conversions::Convert(*packet, referee_msg.get());
+  pub_referee->publish(std::move(referee_msg));
 
-      pub_referee->publish(std::move(referee_msg));
+  // Process game events - only publish new events
+  std::vector<robocup_ssl_msgs::msg::GameEvent> current_events;
+  for (const auto & proto_event : packet->game_events()) {
+    robocup_ssl_msgs::msg::GameEvent event_msg;
+    robocup_ssl_msgs::conversions::Convert(proto_event, &event_msg);
+    current_events.push_back(event_msg);
+  }
 
-      // Process game events - only publish new events
-      std::vector<robocup_ssl_msgs::msg::GameEvent> current_events;
-      for (const auto & proto_event : packet.game_events()) {
-        robocup_ssl_msgs::msg::GameEvent event_msg;
-        robocup_ssl_msgs::conversions::Convert(proto_event, &event_msg);
-        current_events.push_back(event_msg);
-      }
-
-      for (const auto & event : current_events) {
-        auto it = std::find(previous_game_events_.begin(), previous_game_events_.end(), event);
-        if (it == previous_game_events_.end()) {
-          pub_game_event->publish(event);
-        }
-      }
-
-      previous_game_events_ = std::move(current_events);
+  for (const auto & event : current_events) {
+    auto it = std::find(previous_game_events_.begin(), previous_game_events_.end(), event);
+    if (it == previous_game_events_.end()) {
+      pub_game_event->publish(event);
     }
   }
+
+  previous_game_events_ = std::move(current_events);
 }
 
 }  // namespace robocup_ssl_comm
