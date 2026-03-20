@@ -117,9 +117,12 @@ public:
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
     for (auto command : position_commands) {
-      // WorldModelから現在の速度情報を取得して設定
+      // WorldModelから現在の位置・速度情報を取得して設定
       auto robot = world_model->getOurRobot(command.robot_id);
       if (robot) {
+        command.current_pose.x = robot->pose.pos.x();
+        command.current_pose.y = robot->pose.pos.y();
+        command.current_pose.theta = robot->pose.theta;
         command.current_velocity.x = robot->vel.linear.x();
         command.current_velocity.y = robot->vel.linear.y();
         command.current_velocity.theta = robot->vel.omega;

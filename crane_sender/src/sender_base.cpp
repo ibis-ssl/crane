@@ -50,6 +50,12 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
   get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
+
+  RCLCPP_INFO(
+    get_logger(),
+    "[DIAG] robot_acceleration: acc=%.2f decel_high=%.2f decel_low=%.2f thresh=%.2f",
+    robot_acceleration_acceleration_, robot_acceleration_deceleration_high_,
+    robot_acceleration_deceleration_low_, robot_acceleration_velocity_threshold_);
 }
 
 void SenderBase::callback(const VelocityCommandsMsg & msg)
