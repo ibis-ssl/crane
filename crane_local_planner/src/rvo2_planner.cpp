@@ -447,12 +447,6 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     if (distance < original_pos_mode.position_tolerance) {
       vel = Velocity::Zero();
       zero_velocity_reason = ZeroVelocityReason::POSITION_TOLERANCE;
-    } else if (
-      original_command.local_planner_config.terminal_velocity == 0. &&
-      original_pos_mode.position_tolerance == 0. && distance < 0.01) {
-      // terminal_velocityが0のときはデフォルトで1cmのトレランス
-      vel = Velocity::Zero();
-      zero_velocity_reason = ZeroVelocityReason::DEFAULT_1CM_TOLERANCE;
     }
     if (zero_velocity_reason == ZeroVelocityReason::NONE && vel.norm() < 1e-4) {
       zero_velocity_reason = (pref_vel.norm() > 1e-3)

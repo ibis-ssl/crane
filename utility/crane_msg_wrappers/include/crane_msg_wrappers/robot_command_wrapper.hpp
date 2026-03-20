@@ -425,7 +425,7 @@ public:
 
   // ===== PositionTargetMode固有の関数 =====
 
-  auto setTargetPosition(double x, double y, double tolerance = 0.0) -> RobotCommandWrapper &
+  auto setTargetPosition(double x, double y, double tolerance = 0.01) -> RobotCommandWrapper &
   {
     // 必要に応じてモードを切り替え
     if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
@@ -439,12 +439,12 @@ public:
     return *this;
   }
 
-  auto setTargetPosition(Point position, double tolerance = 0.0) -> RobotCommandWrapper &
+  auto setTargetPosition(Point position, double tolerance = 0.01) -> RobotCommandWrapper &
   {
     return setTargetPosition(position.x(), position.y(), tolerance);
   }
 
-  auto setDribblerTargetPosition(Point position, double tolerance = 0.0) -> RobotCommandWrapper &
+  auto setDribblerTargetPosition(Point position, double tolerance = 0.01) -> RobotCommandWrapper &
   {
     double theta = latest_msg.target_theta;
     return setTargetPosition(

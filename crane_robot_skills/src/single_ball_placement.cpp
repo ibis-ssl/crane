@@ -284,7 +284,7 @@ void SingleBallPlacement::initialize()
     approach.x() = std::clamp(approach.x(), -max_x, max_x);
     approach.y() = std::clamp(approach.y(), -max_y, max_y);
 
-    command->setTargetPosition(approach);
+    command->setTargetPosition(approach, 0.0);
     command->lookAtFrom(placement_target, ball_pos);
     command->disablePlacementAvoidance();
     command->disableGoalAreaAvoidance();
