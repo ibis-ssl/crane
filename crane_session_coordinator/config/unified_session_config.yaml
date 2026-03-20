@@ -16,15 +16,15 @@ situations:
       - name: defender
         max_robots: 3
         params:
-          reduced_robots: 2
+          reduced_robots: 1
       - name: pass_receive
-        max_robots: 1
-      - name: second_threat_defender
         max_robots: 1
       - name: sub_attacker_skill
         max_robots: 1
+      - name: second_threat_defender
+        max_robots: 1
       - name: marker
-        max_robots: 3
+        max_robots: 2
       - name: forward
         max_robots: 20
 
