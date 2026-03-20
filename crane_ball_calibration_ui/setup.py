@@ -24,6 +24,7 @@ setup(
         ),
     ],
     install_requires=["setuptools", "numpy", "fastapi", "uvicorn[standard]", "pyyaml"],
+    tests_require=["pytest"],
     zip_safe=True,
     maintainer="ibis ssl",
     maintainer_email="ibis.ssl.team@gmail.com",

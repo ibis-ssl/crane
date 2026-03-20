@@ -28,6 +28,7 @@ setup(
         "setuptools",
         "cairosvg>=2.5.0",  # SVG to PNG conversion (fallback renderer)
     ],
+    tests_require=["pytest"],
     extras_require={
         "fast": [
             "resvg-py>=0.4.0",  # Rust-based high-performance renderer (推奨)
