@@ -17,7 +17,7 @@ class Forward : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Forward(Args &&... args) : SkillBase("Forward", std::forward<Args>(args)...)
+  explicit Forward(Args &&... args) : SkillBase("forward", std::forward<Args>(args)...)
   {
     // 敵陣側
     setParameter("front_point", Point(0, 0));

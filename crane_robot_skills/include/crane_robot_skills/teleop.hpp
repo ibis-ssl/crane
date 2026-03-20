@@ -19,7 +19,7 @@ class Teleop : public SkillBase, public rclcpp::Node
 public:
   template <typename... Args>
   explicit Teleop(Args &&... args)
-  : SkillBase("Teleop", std::forward<Args>(args)...), Node("teleop_skill")
+  : SkillBase("teleop", std::forward<Args>(args)...), Node("teleop_skill")
   {
     setParameter("rotation_deg", 0.);
     setParameter("use_local_coordinate", false);

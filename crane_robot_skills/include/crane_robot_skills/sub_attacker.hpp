@@ -21,7 +21,7 @@ class SubAttacker : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit SubAttacker(Args &&... args) : SkillBase("SubAttacker", std::forward<Args>(args)...)
+  explicit SubAttacker(Args &&... args) : SkillBase("sub_attacker", std::forward<Args>(args)...)
   {
     initialize();
   }

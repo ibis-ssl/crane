@@ -24,7 +24,7 @@ class SimpleKickOff : public SkillBase
 public:
   template <typename... Args>
   explicit SimpleKickOff(Args &&... args)
-  : SkillBase("SimpleKickOff", std::forward<Args>(args)...), kick_skill(command)
+  : SkillBase("simple_kickoff", std::forward<Args>(args)...), kick_skill(command)
   {
     initializeParameters();
   }

@@ -61,9 +61,9 @@ auto getDangerEnemies(const WorldModelWrapper::SharedPtr & world_model)
 auto assignMarkersToEnemies(
   const std::vector<uint8_t> & available_robot_ids,
   const WorldModelWrapper::SharedPtr & world_model,
-  const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
-  bool assign_remaining, const std::string & mark_mode,
-  const std::unordered_map<uint8_t, uint8_t> & prev_assignments) -> MarkingResult
+  const VisualizerMessageBuilder::SharedPtr & visualizer, bool assign_remaining,
+  const std::string & mark_mode, const std::unordered_map<uint8_t, uint8_t> & prev_assignments)
+  -> MarkingResult
 {
   MarkingResult result;
 
@@ -147,8 +147,8 @@ auto assignMarkersToEnemies(
       return robot->id == best_robot->id;
     }));
 
-    auto marker = std::make_shared<skills::Marker>(
-      command_name, static_cast<uint8_t>(best_robot->id), world_model);
+    auto marker =
+      std::make_shared<skills::Marker>(static_cast<uint8_t>(best_robot->id), world_model);
     marker->setParameter("marking_robot_id", enemy_robot->id);
     marker->setParameter("mark_mode", mark_mode);
     marker->setParameter("mark_distance", 0.5);
@@ -164,8 +164,7 @@ auto assignMarkersToEnemies(
   if (assign_remaining) {
     for (const auto & robot : remaining_robots) {
       result.markers.push_back(
-        std::make_shared<skills::Marker>(
-          command_name, static_cast<uint8_t>(robot->id), world_model));
+        std::make_shared<skills::Marker>(static_cast<uint8_t>(robot->id), world_model));
       result.selected_robot_ids.push_back(robot->id);
     }
   }

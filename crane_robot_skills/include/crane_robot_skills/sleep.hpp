@@ -17,7 +17,7 @@ class Sleep : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Sleep(Args &&... args) : SkillBase("Sleep", std::forward<Args>(args)...)
+  explicit Sleep(Args &&... args) : SkillBase("sleep", std::forward<Args>(args)...)
   {
     setParameter("duration", 0.0);
   }

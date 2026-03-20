@@ -18,7 +18,7 @@ class SecondThreatDefender : public SkillBase
 public:
   template <typename... Args>
   explicit SecondThreatDefender(Args &&... args)
-  : SkillBase("SecondThreatDefender", std::forward<Args>(args)...)
+  : SkillBase("second_threat_defender", std::forward<Args>(args)...)
   {
     initialize();
   }

@@ -48,8 +48,7 @@ public:
 protected:
   auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::SubAttacker> override
   {
-    return std::make_shared<skills::SubAttacker>(
-      "sub_attacker_skill_planner", robot_id, world_model);
+    return std::make_shared<skills::SubAttacker>(robot_id, world_model);
   }
 };
 }  // namespace crane

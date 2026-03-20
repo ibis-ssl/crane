@@ -317,7 +317,7 @@ public:
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer =
-    std::make_shared<crane::VisualizerMessageBuilder>("robot_receiver");
+    std::make_shared<crane::VisualizerMessageBuilder>("receiver/feedback");
 
 private:
   asio::io_context io_context_;

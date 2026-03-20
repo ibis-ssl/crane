@@ -18,7 +18,7 @@ class BallNearByPositioner : public SkillBase
 public:
   template <typename... Args>
   explicit BallNearByPositioner(Args &&... args)
-  : SkillBase("BallNearByPositioner", std::forward<Args>(args)...)
+  : SkillBase("ball_positioner", std::forward<Args>(args)...)
   {
     // このロボットのインデックス
     setParameter("current_robot_index", 0);

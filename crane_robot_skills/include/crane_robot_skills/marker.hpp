@@ -22,7 +22,7 @@ class Marker : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Marker(Args &&... args) : SkillBase("Marker", std::forward<Args>(args)...)
+  explicit Marker(Args &&... args) : SkillBase("marker", std::forward<Args>(args)...)
   {
     initialize();
   }

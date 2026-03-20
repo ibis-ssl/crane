@@ -24,12 +24,11 @@ auto BallNearByPositionerSkillSession::calculatePositionCommand(
   };
   if (ids_changed()) {
     skills.clear();
+    visualizer->layer = "skill/ball_positioner";
 
     int index = 0;
     for (const auto & robot_id : robots) {
-      skills.emplace_back(
-        std::make_shared<skills::BallNearByPositioner>(
-          "ball_near_by_positioner_skill_planner", robot_id.id, world_model));
+      skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(robot_id.id, world_model));
       skills.back()->setParameter("total_robot_number", static_cast<int>(robots.size()));
       skills.back()->setParameter("current_robot_index", index++);
       skills.back()->setParameter("line_policy", std::string("arc"));

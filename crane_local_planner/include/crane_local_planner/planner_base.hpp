@@ -19,7 +19,7 @@ class LocalPlannerBase
 {
 public:
   LocalPlannerBase(const std::string & name, rclcpp::Node & node)
-  : visualizer(std::make_shared<VisualizerMessageBuilder>("local_planner/" + name))
+  : visualizer(std::make_shared<VisualizerMessageBuilder>("planner/" + name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
 

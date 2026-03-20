@@ -18,7 +18,7 @@ class Receive : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Receive(Args &&... args) : SkillBase("Receive", std::forward<Args>(args)...)
+  explicit Receive(Args &&... args) : SkillBase("receive", std::forward<Args>(args)...)
   {
     setParameter("dribble_power", 0.3);
     setParameter("enable_software_bumper", true);

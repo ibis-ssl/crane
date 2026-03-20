@@ -36,7 +36,7 @@ public:
   template <typename... Args>
   explicit Attacker(Args &&... args)
   : SkillBaseWithState(
-      static_cast<int>(AttackerState::ENTRY_POINT), &Attacker::getStateName, "Attacker",
+      static_cast<int>(AttackerState::ENTRY_POINT), &Attacker::getStateName, "attacker",
       std::forward<Args>(args)...),
     kick_skill(command),
     goal_kick_skill(command),

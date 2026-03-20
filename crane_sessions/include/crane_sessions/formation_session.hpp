@@ -61,7 +61,7 @@ class IbisFormationSession final : public FormationSession
 public:
   COMPOSITION_PUBLIC
   explicit IbisFormationSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-  : FormationSession(world_model, node, FormationType::IBIS, "ibis_formation")
+  : FormationSession(world_model, node, FormationType::IBIS, "formation")
   {
   }
 };

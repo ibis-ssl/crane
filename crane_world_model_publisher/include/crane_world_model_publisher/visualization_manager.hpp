@@ -59,9 +59,6 @@ public:
   crane::VisualizerMessageBuilder::SharedPtr referee_builder;
   crane::VisualizerMessageBuilder::SharedPtr placement_builder;
   crane::VisualizerMessageBuilder::SharedPtr trajectory_builder;
-  crane::VisualizerMessageBuilder::SharedPtr slack_builder;
-  crane::VisualizerMessageBuilder::SharedPtr pass_score_builder;
-  crane::VisualizerMessageBuilder::SharedPtr kick_event_builder;
 
   // drawFieldGeometry はコールバック経由で呼ばれるため world_model を受け取れない。
   // ゴール色描画のためにチーム情報をキャッシュする。

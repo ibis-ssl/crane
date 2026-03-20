@@ -50,7 +50,8 @@ public:
       return {SessionBase::Status::RUNNING, {}};
     }
     if (not skill) {
-      skill = std::make_shared<skills::Attacker>("attacker", robots.front().id, world_model);
+      skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
+      visualizer->layer = "skill/" + skill->name;
     }
 
     std::string state_name(magic_enum::enum_name(skill->getCurrentState()));

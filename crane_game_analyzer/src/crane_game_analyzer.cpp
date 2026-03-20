@@ -26,7 +26,7 @@ namespace crane
 
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options),
-  visualizer(std::make_shared<VisualizerMessageBuilder>("game_analyzer"))
+  visualizer(std::make_shared<VisualizerMessageBuilder>("analyzer"))
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 

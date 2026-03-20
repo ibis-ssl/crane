@@ -33,6 +33,7 @@ public:
     }
     if (not skill) {
       skill = createSkill(robots.front().id);
+      visualizer->layer = "skill/" + skill->name;
     }
     auto status = skill->run();
     return {static_cast<SessionBase::Status>(status), {skill->getRobotCommand()}};

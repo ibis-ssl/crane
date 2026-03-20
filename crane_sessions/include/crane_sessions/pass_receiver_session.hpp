@@ -49,9 +49,9 @@ public:
       return {SessionBase::Status::RUNNING, {}};
     }
     if (!receive_skill) {
-      receive_skill =
-        std::make_shared<skills::Receive>("pass_receiver", robots.front().id, world_model);
+      receive_skill = std::make_shared<skills::Receive>("receiver", robots.front().id, world_model);
       receive_skill->setParameter("policy", std::string("closest"));
+      visualizer->layer = "skill/" + receive_skill->name;
     }
 
     // If a kick is ongoing by our team or ball is moving sufficiently, actively receive

@@ -44,7 +44,7 @@ public:
 protected:
   auto createSkill(uint8_t robot_id) -> std::shared_ptr<skills::Goalie> override
   {
-    return std::make_shared<skills::Goalie>("goalie", robot_id, world_model);
+    return std::make_shared<skills::Goalie>(robot_id, world_model);
   }
 };
 }  // namespace crane

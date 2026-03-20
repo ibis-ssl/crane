@@ -64,6 +64,7 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
   // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
   if (forward_skills.size() != robots.size()) {
     forward_skills.clear();
+    visualizer->layer = "skill/forward";
 
     auto forward_lines = createForwardLines();
 

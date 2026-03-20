@@ -31,7 +31,7 @@ public:
   template <typename... Args>
   explicit Kick(Args &&... args)
   : SkillBaseWithState(
-      static_cast<int>(KickState::ENTRY_POINT), &Kick::getStateName, "Kick",
+      static_cast<int>(KickState::ENTRY_POINT), &Kick::getStateName, "kick",
       std::forward<Args>(args)...)
   {
     initialize();
