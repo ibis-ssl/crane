@@ -226,6 +226,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     }
 
     double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
+	max_vel = std::max(0.4, max_vel);
 
     // 目標速度を位置差分から直接計算（シンプルアプローチ）
     // 目標方向ベクトルをmax_velでクランプして使用する
