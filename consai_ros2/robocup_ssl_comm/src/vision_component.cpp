@@ -34,11 +34,28 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 
   publish_interval_ms_ =
     std::chrono::milliseconds(get_parameter("publish_interval_ms").get_value<int>());
+  max_camera_age_ms_ =
+    std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
 
   const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
   const int multicast_port = get_parameter("multicast_port").get_value<int>();
 
-  receiver = std::make_unique<crane::MulticastReceiver>(multicast_address, multicast_port);
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(
+    asio_ctx_.io_context, multicast_address, multicast_port);
+  receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
+    if (size > 0) {
+      robocup_ssl::SSL_WrapperPacket wrapper_packet;
+      wrapper_packet.ParseFromArray(buf.data(), static_cast<int>(size));
+      if (wrapper_packet.has_detection()) {
+        auto detection_frame_msg = parse_detection_frame(wrapper_packet);
+        uint32_t camera_id = detection_frame_msg.camera_id;
+        std::lock_guard<std::mutex> lock(frames_mutex_);
+        update_camera_frame(camera_id, detection_frame_msg);
+      }
+    }
+  });
+
+  asio_ctx_.start();
 
   pub_detection_frame =
     create_publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>("detection_frame", 10);
@@ -53,34 +70,12 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 
 void Vision::on_timer()
 {
-  // SSL-Visionパケットを受信し、カメラ別フレームを更新
-  while (receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = receiver->receive(buf);
-
-    if (size > 0) {
-      robocup_ssl::SSL_WrapperPacket wrapper_packet;
-      wrapper_packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (wrapper_packet.has_detection()) {
-        auto detection_frame_msg = parse_detection_frame(wrapper_packet);
-        uint32_t camera_id = detection_frame_msg.camera_id;
-
-        // カメラ別フレームを更新
-        update_camera_frame(camera_id, detection_frame_msg);
-
-        RCLCPP_DEBUG(
-          get_logger(),
-          "Received detection frame from camera %u with %zu balls, %zu yellow robots, %zu blue "
-          "robots",
-          camera_id, detection_frame_msg.balls.size(), detection_frame_msg.robots_yellow.size(),
-          detection_frame_msg.robots_blue.size());
-      }
-    }
-  }
-
   // 全カメラのデータをマージして統合フレームをパブリッシュ
-  auto merged_frame = merge_camera_frames();
+  robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
+  {
+    std::lock_guard<std::mutex> lock(frames_mutex_);
+    merged_frame = merge_camera_frames();
+  }
   if (
     merged_frame.camera_id != 0 || !merged_frame.balls.empty() ||
     !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {
@@ -187,11 +182,9 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
   double latest_t_sent = 0.0;
   uint32_t latest_frame_number = 0;
 
-  auto max_age_ms = std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
-
   // 有効な全カメラのデータを統合
   for (const auto & [camera_id, frame] : camera_frames_) {
-    if (!is_camera_frame_valid(camera_id, max_age_ms)) {
+    if (!is_camera_frame_valid(camera_id)) {
       RCLCPP_DEBUG(get_logger(), "Camera %u frame is too old, skipping", camera_id);
       continue;
     }
@@ -251,17 +244,16 @@ void Vision::update_camera_frame(
   RCLCPP_DEBUG(get_logger(), "Updated camera %u frame data", camera_id);
 }
 
-bool Vision::is_camera_frame_valid(uint32_t camera_id, std::chrono::milliseconds max_age_ms)
+bool Vision::is_camera_frame_valid(uint32_t camera_id) const
 {
   auto it = camera_timestamps_.find(camera_id);
   if (it == camera_timestamps_.end()) {
     return false;
   }
 
-  auto now = std::chrono::steady_clock::now();
-  auto age = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second);
-
-  return age <= max_age_ms;
+  auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - it->second);
+  return age <= max_camera_age_ms_;
 }
 
 }  // namespace robocup_ssl_comm

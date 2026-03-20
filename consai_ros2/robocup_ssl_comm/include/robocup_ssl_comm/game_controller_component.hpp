@@ -17,8 +17,10 @@
 
 #include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
 
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/game_event.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
@@ -34,17 +36,21 @@ public:
   ROBOCUP_SSL_COMM_PUBLIC
   explicit GameController(const rclcpp::NodeOptions & options);
 
+  ~GameController();
+
 protected:
   void on_timer();
 
 private:
+  crane::AsioContext asio_ctx_;
+  std::unique_ptr<crane::AsyncUdpReceiver> receiver;
+
   rclcpp::TimerBase::SharedPtr timer;
-
-  std::unique_ptr<crane::MulticastReceiver> receiver;
-
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
   rclcpp::Publisher<robocup_ssl_msgs::msg::GameEvent>::SharedPtr pub_game_event;
 
+  std::mutex latest_mutex_;
+  std::optional<robocup_ssl::Referee> latest_packet_;
   std::vector<robocup_ssl_msgs::msg::GameEvent> previous_game_events_;
 };
 
