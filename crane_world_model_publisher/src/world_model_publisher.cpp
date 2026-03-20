@@ -50,9 +50,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         msg, field_w, field_h, data_provider_->getLatestPlaySituation().command.name);
     });
 
-  declare_parameter("position_history_size", 200);
-  get_parameter<int>("position_history_size", history_size);
-
   declare_parameter("robot_id_mask", std::string("1, 2, 3"));
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);
@@ -125,32 +122,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
 WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
 
-auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
-{
-  if (ball_info_history.size() >= static_cast<size_t>(history_size)) {
-    ball_info_history.pop_front();
-  }
-  ball_info_history.emplace_back(msg.ball_info);
-
-  for (const auto & robot : msg.robot_info_ours) {
-    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
-      friend_history[robot.id].push_back(robot);
-    }
-    if (friend_history[robot.id].size() > static_cast<size_t>(history_size)) {
-      friend_history[robot.id].pop_front();
-    }
-  }
-
-  for (const auto & robot : msg.robot_info_theirs) {
-    if (robot.available_vision || robot.available_feedback || robot.available_tracker) {
-      enemy_history[robot.id].push_back(robot);
-    }
-    if (enemy_history[robot.id].size() > static_cast<size_t>(history_size)) {
-      enemy_history[robot.id].pop_front();
-    }
-  }
-}
-
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
   // 遅延監視: データ取得開始
@@ -163,9 +134,6 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   // ROS 2でのVisionパケット受信時刻を追加
   wrapper_->addDelayCheckpoint("vision_packet_received", "ros2_received");
   wrapper_->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
-
-  updateHistory(msg);
-  wrapper_->addDelayCheckpoint("history_updated", "");
 
   wrapper_->update(msg);
   wrapper_->addDelayCheckpoint("wrapper_updated", "");
@@ -187,10 +155,6 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr wor
 
   // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
-
-  // 軌跡履歴データをVisualizationManagerに渡す（コピーなし）
-  visualization_manager_->drawTrajectoryHistory(
-    friend_history, enemy_history, ball_info_history, world_model->isYellow());
 
   visualization_manager_->drawBallPlacement(world_model);
 

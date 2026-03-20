@@ -79,8 +79,6 @@ private:
 
   auto publishVisualization(WorldModelWrapperPtr world_model) -> void;
 
-  auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
-
   auto postProcessWorldModel(WorldModelWrapperPtr) -> void;
 
   auto updateBallContact() -> void;
@@ -96,14 +94,6 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
 
   std::unique_ptr<VisualizationManager> visualization_manager_;
-
-  std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
-
-  std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> enemy_history;
-
-  std::deque<crane_msgs::msg::BallInfo> ball_info_history;
-
-  int history_size{};
 
   WorldModelWrapperPtr wrapper_;
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis_;
