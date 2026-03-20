@@ -180,39 +180,17 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     position_diff << pos_mode.target_x - current_position.x(),
       pos_mode.target_y - current_position.y();
 
-    // [BangBang無効化] 前回速度によるdeceleration選択・max_brk・max_accは使用しない
-    // double pre_vel = [&]() {
-    //   if (
-    //     auto it = ranges::find_if(
-    //       pre_commands.robot_commands,
-    //       [&](const auto & c) { return c.robot_id == command.robot_id; });
-    //     it != ranges::end(pre_commands.robot_commands)) {
-    //     if (it->position_target_mode.empty()) {
-    //       return 0.0;
-    //     }
-    //     return std::hypot(
-    //              it->position_target_mode.front().target_x - current_position.x(),
-    //              it->position_target_mode.front().target_y - current_position.y()) > 0.01
-    //              ? vel
-    //              : 0.0;
-    //   } else {
-    //     return 0.0;
-    //   }
-    // }();
-    //
-    // double deceleration_for_planning;
-    // if (pre_vel >= planning_deceleration_velocity_threshold) {
-    //   deceleration_for_planning = planning_deceleration_high_speed;
-    // } else {
-    //   deceleration_for_planning = planning_deceleration_low_speed;
-    // }
-    //
-    // double max_brk = deceleration_for_planning;
-    // command.local_planner_config.max_acceleration_factors.emplace_back(
-    //   crane_msgs::msg::NamedFloat()
-    //     .set__name("RVO2Planner::max_acc from parameter")
-    //     .set__value(planning_acceleration));
-    // double max_acc = resolveMaxAccelerationFactors(command, planning_acceleration);
+    // 現在速度ベースで減速度を選択
+    double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
+    double max_brk = (current_speed >= planning_deceleration_velocity_threshold)
+                       ? planning_deceleration_high_speed
+                       : planning_deceleration_low_speed;
+
+    command.local_planner_config.max_acceleration_factors.emplace_back(
+      crane_msgs::msg::NamedFloat()
+        .set__name("RVO2Planner::max_acc from parameter")
+        .set__value(planning_acceleration));
+    double max_acc = resolveMaxAccelerationFactors(command, planning_acceleration);
 
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
@@ -228,58 +206,42 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 	max_vel = std::max(0.4, max_vel);
 
-    // 目標速度を位置差分から直接計算（シンプルアプローチ）
-    // 目標方向ベクトルをmax_velでクランプして使用する
+    // 1D BangBangTrajectoryで速度プロファイルを計算し、方向は目標への単位ベクトルを使用
+    // 横方向の速度成分をBangBangに渡さないことで旧実装の周回問題を解消
     Velocity target_vel;
-    target_vel << (pos_mode.target_x - current_position.x()),
-      pos_mode.target_y - current_position.y();
-    if (target_vel.norm() > max_vel) {
-      target_vel = target_vel.normalized() * max_vel;
-    }
+    double distance_to_target = position_diff.norm();
 
-    // [BangBang無効化] BangBangTrajectory2D による速度計算
-    // constexpr double MAX_VEL_TOLERANCE = 0.2;
-    // Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
-    // if (vel > max_vel && vel < max_vel + MAX_VEL_TOLERANCE) {
-    //   v0 = v0 * (max_vel / vel);
-    // }
-    //
-    // BangBangTrajectory2D trajectory;
-    // trajectory.generate(
-    //   Eigen::Vector2d(current_position.x(), current_position.y()),
-    //   Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y), v0, max_vel, max_acc, max_brk);
-    //
-    // const double lookahead_time = 0.1;
-    // Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
-    //
-    // addOrUpdatePlanningFactor(command, "BBAccel", formatPlanningDouble(max_acc, 1));
-    // addOrUpdatePlanningFactor(command, "BBBrk", formatPlanningDouble(max_brk, 1));
-    // addOrUpdatePlanningFactor(command, "BBMaxVel", formatPlanningDouble(max_vel, 1));
-    // addOrUpdatePlanningFactor(
-    //   command, "BBV0", formatPlanningDouble(v0.x(), 2) + "," + formatPlanningDouble(v0.y(), 2));
-    // addOrUpdatePlanningFactor(
-    //   command, "BBOutVel",
-    //   formatPlanningDouble(next_vel.x(), 2) + "," + formatPlanningDouble(next_vel.y(), 2));
-    // addOrUpdatePlanningFactor(
-    //   command, "BBOutAngle",
-    //   formatPlanningDouble(std::atan2(next_vel.y(), next_vel.x()) * 180.0 / M_PI, 1));
-    //
-    // double distance_to_target = std::hypot(
-    //   pos_mode.target_x - current_position.x(), pos_mode.target_y - current_position.y());
-    //
-    // const double terminal_vel = command.local_planner_config.terminal_velocity;
-    // const double min_distance =
-    //   std::max(static_cast<double>(pos_mode.position_tolerance) * 2, 0.03);
-    //
-    // if (terminal_vel > 0 && next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
-    //   Eigen::Vector2d direction =
-    //     (Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y) - current_position).normalized();
-    //   target_vel = direction * terminal_vel;
-    // } else if (next_vel.norm() < 1e-6) {
-    //   target_vel.setZero();
-    // } else {
-    //   target_vel << next_vel.x(), next_vel.y();
-    // }
+    if (distance_to_target > 0.01) {
+      Eigen::Vector2d dir = position_diff.normalized();
+
+      // 現在速度を目標方向に射影してスカラー初速度を算出
+      Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
+      double v0_along_target = std::clamp(v0.dot(dir), 0.0, max_vel);
+
+      // 1D BangBangで目標方向の速度プロファイルを計算
+      BangBangTrajectory1D bb_trajectory;
+      bb_trajectory.generate(0.0, distance_to_target, v0_along_target, max_vel, max_acc, max_brk);
+
+      const double lookahead_time = 0.1;
+      double speed = bb_trajectory.getVelocity(lookahead_time);
+
+      addOrUpdatePlanningFactor(command, "BBAccel", formatPlanningDouble(max_acc, 1));
+      addOrUpdatePlanningFactor(command, "BBBrk", formatPlanningDouble(max_brk, 1));
+      addOrUpdatePlanningFactor(command, "BBMaxVel", formatPlanningDouble(max_vel, 1));
+      addOrUpdatePlanningFactor(command, "BBSpeed", formatPlanningDouble(speed, 2));
+
+      target_vel = dir * speed;
+
+      // terminal_velocity: パス等で目標通過速度が指定されている場合
+      const double terminal_vel = command.local_planner_config.terminal_velocity;
+      const double min_distance =
+        std::max(static_cast<double>(pos_mode.position_tolerance) * 2, 0.03);
+      if (terminal_vel > 0 && speed < terminal_vel && distance_to_target > min_distance) {
+        target_vel = dir * terminal_vel;
+      }
+    } else {
+      target_vel.setZero();
+    }
     // 衝突ファール (crashing) 回避:
     // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
     // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
