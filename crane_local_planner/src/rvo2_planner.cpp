@@ -330,26 +330,53 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           return;
         }
 
-        // 各境界面への距離を計算し、接近方向速度成分を物理制動距離内に制限する
-        // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
-        if (const double d = xmin - current_position.x(); d > 0.0 && target_vel.x() > 0.0) {
-          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
-          target_vel.x() = std::min(target_vel.x(), v_max);
-        }
-        // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
-        if (const double d = current_position.x() - xmax; d > 0.0 && target_vel.x() < 0.0) {
-          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
-          target_vel.x() = std::max(target_vel.x(), -v_max);
-        }
-        // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
-        if (const double d = ymin - current_position.y(); d > 0.0 && target_vel.y() > 0.0) {
-          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
-          target_vel.y() = std::min(target_vel.y(), v_max);
-        }
-        // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
-        if (const double d = current_position.y() - ymax; d > 0.0 && target_vel.y() < 0.0) {
-          const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * d);
-          target_vel.y() = std::max(target_vel.y(), -v_max);
+        // 各軸方向の境界からの距離（外側から境界への距離、外側で正）
+        const double dx_left = xmin - current_position.x();   // 左側にある場合 > 0
+        const double dx_right = current_position.x() - xmax;  // 右側にある場合 > 0
+        const double dy_below = ymin - current_position.y();  // 下側にある場合 > 0
+        const double dy_above = current_position.y() - ymax;  // 上側にある場合 > 0
+
+        if ((dx_left > 0.0 || dx_right > 0.0) && (dy_below > 0.0 || dy_above > 0.0)) {
+          // 角の外側: 最近傍角頂点までのユークリッド距離でブレーキング制約を計算
+          // 各軸独立制約より緩やかになり、角を回り込む際の接線方向の速度が維持される
+          const double corner_x = (dx_left > 0.0) ? xmin : xmax;
+          const double corner_y = (dy_below > 0.0) ? ymin : ymax;
+          const double cdx = corner_x - current_position.x();
+          const double cdy = corner_y - current_position.y();
+          const double dist_to_corner = std::hypot(cdx, cdy);
+          if (dist_to_corner > 1e-9) {
+            const Eigen::Vector2d corner_dir(cdx / dist_to_corner, cdy / dist_to_corner);
+            const double approach = target_vel.dot(corner_dir);
+            if (approach > 0.0) {
+              const double v_max =
+                std::sqrt(2.0 * planning_deceleration_high_speed * dist_to_corner);
+              if (approach > v_max) {
+                target_vel -= (approach - v_max) * corner_dir;
+              }
+            }
+          }
+        } else {
+          // 面の外側: 各境界面への距離を計算し、接近方向速度成分を物理制動距離内に制限する
+          // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
+          if (dx_left > 0.0 && target_vel.x() > 0.0) {
+            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dx_left);
+            target_vel.x() = std::min(target_vel.x(), v_max);
+          }
+          // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
+          if (dx_right > 0.0 && target_vel.x() < 0.0) {
+            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dx_right);
+            target_vel.x() = std::max(target_vel.x(), -v_max);
+          }
+          // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
+          if (dy_below > 0.0 && target_vel.y() > 0.0) {
+            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dy_below);
+            target_vel.y() = std::min(target_vel.y(), v_max);
+          }
+          // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
+          if (dy_above > 0.0 && target_vel.y() < 0.0) {
+            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dy_above);
+            target_vel.y() = std::max(target_vel.y(), -v_max);
+          }
         }
       };
       applyPhysicalBrakingConstraint(world_model->getOurPenaltyArea());
@@ -684,7 +711,14 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
           (around_corner_1 - current_pos).norm() + (target_pos - around_corner_1).norm();
         const double dist_via_2 =
           (around_corner_2 - current_pos).norm() + (target_pos - around_corner_2).norm();
-        target_pos = (dist_via_1 <= dist_via_2) ? around_corner_1 : around_corner_2;
+        const Point & chosen_corner =
+          (dist_via_1 <= dist_via_2) ? around_corner_1 : around_corner_2;
+        // 角に十分近い場合はリダイレクトせず通過（RVO2が侵入防止を担当）
+        // 角ウェイポイントへのBangBang減速を防ぎ、通過速度を維持する
+        constexpr double CORNER_PASS_THROUGH_DISTANCE = 0.5;
+        if ((current_pos - chosen_corner).norm() > CORNER_PASS_THROUGH_DISTANCE) {
+          target_pos = chosen_corner;
+        }
       }
     };
 
