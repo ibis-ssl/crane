@@ -291,7 +291,7 @@ void SingleBallPlacement::initialize()
     command->dribble(0.0);
     command->setOmegaLimit(10.0);
 
-    if (command->getTargetDistance() < 0.02) {
+    if (command->getTargetDistance() < 0.05) {
       skill_status = Status::SUCCESS;
     } else {
       skill_status = Status::RUNNING;
