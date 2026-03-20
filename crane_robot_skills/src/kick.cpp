@@ -76,6 +76,7 @@ void Kick::initialize()
       return computeAroundBallApproachTargetDynamic(
         ball_pos, safe_target, robot()->pose.pos, interval, max_interval);
     }();
+	approach += (approach - robot()->pose.pos) * 1.0;
 
     command->disableBallAvoidance();
     using boost::math::constants::degree;
