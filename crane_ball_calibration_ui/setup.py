@@ -9,7 +9,7 @@ package_name = "crane_ball_calibration_ui"
 
 setup(
     name=package_name,
-    version="1.0.246",
+    version="1.0.247",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
