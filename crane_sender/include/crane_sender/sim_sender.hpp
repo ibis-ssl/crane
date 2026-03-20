@@ -67,7 +67,7 @@ public:
         p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), i_saturation_);
       state.theta_controller.setGain(
         theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
-      state.previous_velocity = Velocity::Zero();
+      state.previous_velocity_global = Velocity::Zero();
     }
 
     // the parameters of the PID controller
@@ -109,7 +109,10 @@ private:
     PIDController vx_controller;
     PIDController vy_controller;
     PIDController theta_controller;
-    Velocity previous_velocity;
+    // 前回出力した速度をグローバルフレームで保持する。
+    // ローカルフレームで保持するとロボット回転時にフレーム不一致が生じ、
+    // Δv の計算が誤るため、グローバルフレームで統一する。
+    Velocity previous_velocity_global;
   };
 
   // 全ロボットの状態

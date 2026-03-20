@@ -58,8 +58,14 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
     Eigen::Vector2d target_vel_local(
       target_velocity_r * std::cos(velocity_theta), target_velocity_r * std::sin(velocity_theta));
 
-    // Step 2: ローカル座標系での現在速度（前回の出力速度を使用）
-    Eigen::Vector2d current_vel_local = robot_states_[command.robot_id].previous_velocity;
+    // Step 2: 前回の出力速度（グローバルフレーム）を現在のローカルフレームへ変換
+    // グローバル→ローカル変換: R(-θ) = [[cos θ, sin θ], [-sin θ, cos θ]]
+    const Eigen::Vector2d & prev_vel_global =
+      robot_states_[command.robot_id].previous_velocity_global;
+    Eigen::Vector2d current_vel_local(
+      prev_vel_global.x() * std::cos(current_theta) + prev_vel_global.y() * std::sin(current_theta),
+      -prev_vel_global.x() * std::sin(current_theta) +
+        prev_vel_global.y() * std::cos(current_theta));
 
     // Step 3: 加速度制限を選択（速度の大きさで加速/減速を判定）
     double current_speed = current_vel_local.norm();
@@ -82,8 +88,11 @@ void SimSenderComponent::sendCommands(const crane_msgs::msg::RobotCommands & msg
     move_local_velocity->set_forward(vx);
     move_local_velocity->set_left(vy);
 
-    // 次回の計算用に保存
-    robot_states_[command.robot_id].previous_velocity = Velocity(vx, vy);
+    // 次回の計算用に保存（ローカル→グローバルへ変換）
+    // グローバル→ローカル変換の逆: R(θ) = [[cos θ, -sin θ], [sin θ, cos θ]]
+    robot_states_[command.robot_id].previous_velocity_global = Velocity(
+      vx * std::cos(current_theta) - vy * std::sin(current_theta),
+      vx * std::sin(current_theta) + vy * std::cos(current_theta));
 
     // ストップ
     if (command.stop_flag) {
