@@ -19,12 +19,13 @@ void Marker::initialize()
 
 Status Marker::update()
 {
+  constexpr double PENALTY_AREA_OFFSET = 0.2;
+
   auto marked_robot = world_model()->getTheirRobot(getParameter<int>("marking_robot_id"));
   if (!marked_robot->available()) {
     // マーク対象が存在しないためペナルティエリア正面中央（守備ライン上）で待機
-    constexpr double OFFSET_X = 0.2;
-    constexpr double OFFSET_Y = 0.2;
-    auto [p1, p2, p3, p4] = world_model()->getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
+    auto [p1, p2, p3, p4] =
+      world_model()->getPenaltyAreaCorners(PENALTY_AREA_OFFSET, PENALTY_AREA_OFFSET);
     command->setTargetPosition((p2 + p3) / 2.0, 0.1).lookAtBall();
     return Status::RUNNING;
   }
@@ -33,13 +34,12 @@ Status Marker::update()
   double mark_distance = getParameter<double>("mark_distance");
   double max_mark_distance = getParameter<double>("max_mark_distance");
 
-  if (mode == "penalty_area") {
-    // 守備ライン（ペナルティエリア外周+オフセット）上の守備位置に配置
-    constexpr double OFFSET_X = 0.2;
-    constexpr double OFFSET_Y = 0.2;
-
+  // penalty_areaモードのロジック: 守備ライン上の位置を計算し設定する
+  // 交点が見つかれば RUNNING を返す、見つからなければ nullopt を返す（save_goalへフォールバック用）
+  auto execute_penalty_area_mode = [&]() -> std::optional<Status> {
     Segment enemy_to_goal{enemy_pos, world_model()->getOurGoalCenter()};
-    auto [p1, p2, p3, p4] = world_model()->getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
+    auto [p1, p2, p3, p4] =
+      world_model()->getPenaltyAreaCorners(PENALTY_AREA_OFFSET, PENALTY_AREA_OFFSET);
     Segment seg1{p1, p2}, seg2{p2, p3}, seg3{p3, p4};
 
     // 敵→ゴール線と守備ラインの交点を求める
@@ -52,31 +52,38 @@ Status Marker::update()
       }
     }
 
-    if (target_on_line_opt) {
-      Point target_on_line = *target_on_line_opt;
-
-      // 守備ラインの最近傍点を求める（3セグメント中で最短）
-      auto cp1 = getClosestPointAndDistance(robot()->pose.pos, seg1);
-      auto cp2 = getClosestPointAndDistance(robot()->pose.pos, seg2);
-      auto cp3 = getClosestPointAndDistance(robot()->pose.pos, seg3);
-
-      Point nearest_on_line = cp1.closest_point;
-      double min_dist = cp1.distance;
-      if (cp2.distance < min_dist) {
-        nearest_on_line = cp2.closest_point;
-        min_dist = cp2.distance;
-      }
-      if (cp3.distance < min_dist) {
-        nearest_on_line = cp3.closest_point;
-        min_dist = cp3.distance;
-      }
-
-      // ラインから離れているときは最近傍点優先、近いときはtarget_on_line優先
-      double pull_ratio = std::clamp(1.0 - min_dist * 2.0, 0.0, 1.0);
-      Point target = nearest_on_line * (1.0 - pull_ratio) + target_on_line * pull_ratio;
-      command->setTargetPosition(target, 0.1).lookAtBall();
-      return Status::RUNNING;
+    if (!target_on_line_opt) {
+      return std::nullopt;  // 交点なし: save_goalモードへフォールバック
     }
+
+    Point target_on_line = *target_on_line_opt;
+
+    // 守備ラインの最近傍点を求める（3セグメント中で最短）
+    auto cp1 = getClosestPointAndDistance(robot()->pose.pos, seg1);
+    auto cp2 = getClosestPointAndDistance(robot()->pose.pos, seg2);
+    auto cp3 = getClosestPointAndDistance(robot()->pose.pos, seg3);
+
+    Point nearest_on_line = cp1.closest_point;
+    double min_dist = cp1.distance;
+    if (cp2.distance < min_dist) {
+      nearest_on_line = cp2.closest_point;
+      min_dist = cp2.distance;
+    }
+    if (cp3.distance < min_dist) {
+      nearest_on_line = cp3.closest_point;
+      min_dist = cp3.distance;
+    }
+
+    // ラインから離れているときは最近傍点優先、近いときはtarget_on_line優先
+    double pull_ratio = std::clamp(1.0 - min_dist * 2.0, 0.0, 1.0);
+    Point target = nearest_on_line * (1.0 - pull_ratio) + target_on_line * pull_ratio;
+    command->setTargetPosition(target, 0.1).lookAtBall();
+    return Status::RUNNING;
+  };
+
+  if (mode == "penalty_area") {
+    auto result = execute_penalty_area_mode();
+    if (result) return *result;
     // 交点なし: save_goalモードにフォールバック
     mode = "save_goal";
   }
@@ -95,6 +102,31 @@ Status Marker::update()
   auto dir = (reference - enemy_pos).normalized();
   Point near_end = enemy_pos + dir * mark_distance;     // 敵に近い端（理想位置）
   Point far_end = enemy_pos + dir * max_mark_distance;  // 遠い端
+
+  // ペナルティエリア交差チェック: セグメントがペナルティエリア内に入らないよう調整
+  {
+    constexpr double penalty_offset = 0.15;
+    Segment enemy_to_ref{enemy_pos, reference};
+    auto intersection =
+      world_model()->getIntersectionOurPenaltyArea(enemy_to_ref, penalty_offset, penalty_offset);
+    if (intersection) {
+      double dist_to_boundary = (intersection.value() - enemy_pos).norm();
+      if (dist_to_boundary < mark_distance + 0.05) {
+        // 敵がペナルティエリア境界に近すぎる → penalty_areaモードにフォールバック
+        auto result = execute_penalty_area_mode();
+        if (result) return *result;
+        // penalty_areaでも交点なし → セグメントをペナルティエリア境界手前にクランプして続行
+        double clamped_max = std::max(0.0, dist_to_boundary - 0.05);
+        near_end = enemy_pos + dir * std::min(mark_distance, clamped_max);
+        far_end = enemy_pos + dir * std::min(max_mark_distance, clamped_max);
+      } else {
+        // far_endをペナルティエリア境界手前にクランプ
+        double clamped_max = dist_to_boundary - 0.05;
+        far_end = enemy_pos + dir * std::min(max_mark_distance, clamped_max);
+      }
+    }
+  }
+
   Segment marking_segment{near_end, far_end};
 
   // 自ロボットからセグメントへの最近傍点と距離
