@@ -21,7 +21,7 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
-  setParameter("emit_force_timeout", 3.0);
+  setParameter("emit_force_timeout", 1.5);
   setParameter("emit_enemy_distance_threshold", 0.5);
   setParameter("emit_ball_speed_threshold", 0.5);
 }
