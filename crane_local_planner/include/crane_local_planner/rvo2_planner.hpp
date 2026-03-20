@@ -26,7 +26,7 @@ namespace crane
 enum class ZeroVelocityReason {
   NONE,
   POSITION_TOLERANCE,
-  DEFAULT_3CM_TOLERANCE,
+  DEFAULT_1CM_TOLERANCE,
   RVO_COLLISION_OR_CONSTRAINT,
   PREF_VELOCITY_ZERO,
 };
@@ -36,8 +36,8 @@ inline auto toString(ZeroVelocityReason reason) -> std::string
   switch (reason) {
     case ZeroVelocityReason::POSITION_TOLERANCE:
       return "POSITION_TOLERANCE";
-    case ZeroVelocityReason::DEFAULT_3CM_TOLERANCE:
-      return "DEFAULT_3CM_TOLERANCE";
+    case ZeroVelocityReason::DEFAULT_1CM_TOLERANCE:
+      return "DEFAULT_1CM_TOLERANCE";
     case ZeroVelocityReason::RVO_COLLISION_OR_CONSTRAINT:
       return "RVO_COLLISION_OR_CONSTRAINT";
     case ZeroVelocityReason::PREF_VELOCITY_ZERO:

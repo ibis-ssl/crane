@@ -14,8 +14,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
-#include "crane_physics/bang_bang_trajectory.hpp"
-
 // cspell: ignore OBST
 
 namespace crane
@@ -209,12 +207,6 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
     // max_brk: 停止のための減速度（planning_decelerationの値を使用）
     double max_brk = deceleration_for_planning;
-    // max_acc: 加速フェーズの加速度（planning_accelerationの値を使用、スキルによる制限も適用）
-    command.local_planner_config.max_acceleration_factors.emplace_back(
-      crane_msgs::msg::NamedFloat()
-        .set__name("RVO2Planner::max_acc from parameter")
-        .set__value(planning_acceleration));
-    double max_acc = resolveMaxAccelerationFactors(command, planning_acceleration);
 
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
@@ -240,19 +232,23 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       v0 = v0 * (max_vel / vel);
     }
 
-    BangBangTrajectory2D trajectory;
-    trajectory.generate(
-      Eigen::Vector2d(current_position.x(), current_position.y()),
-      Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y), v0, max_vel, max_acc, max_brk);
-
-    // BangBangTrajectoryから速度を取得
-    // Vision遅延（~100ms）を考慮してlookahead時間を設定
-    const double lookahead_time = 0.1;
-    Eigen::Vector2d next_vel = trajectory.getVelocity(lookahead_time);
-
     // 目標との距離を計算
-    double distance_to_target = std::hypot(
-      pos_mode.target_x - current_position.x(), pos_mode.target_y - current_position.y());
+    const double dx = pos_mode.target_x - current_position.x();
+    const double dy = pos_mode.target_y - current_position.y();
+    const double distance_to_target = std::hypot(dx, dy);
+
+    // 各軸独立に減速制約を計算: v = sign(d) * sqrt(2 * max_brk * |d|)
+    // これにより現在速度方向と目標方向が異なる場合（横方向の慣性）も正しく扱える
+    auto brk_vel = [max_brk](double d) -> double {
+      const double abs_d = std::abs(d);
+      return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
+    };
+    Eigen::Vector2d next_vel(brk_vel(dx), brk_vel(dy));
+    // 合成速度がmax_velを超えた場合はスケールダウン
+    const double next_vel_norm = next_vel.norm();
+    if (next_vel_norm > max_vel) {
+      next_vel *= max_vel / next_vel_norm;
+    }
 
     // terminal_velocity: スキルが明示的に設定した場合のみ疑似I項として適用する
     // 0（デフォルト・未指定）のときはBangBang軌道の出力に従い、目標で停止する
@@ -373,9 +369,9 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     // 速度計画トレースに計画点を追加
     if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
       // 現在時刻から100ms後の予測位置・速度を記録
-      const int32_t target_time_us =
-        static_cast<int32_t>(lookahead_time * 1e6);  // 100ms = 100000us
-      Eigen::Vector2d predicted_pos = trajectory.getPosition(lookahead_time);
+      constexpr double TRACE_LOOKAHEAD_S = 0.1;
+      const int32_t target_time_us = static_cast<int32_t>(TRACE_LOOKAHEAD_S * 1e6);  // 100000us
+      Eigen::Vector2d predicted_pos = current_position + next_vel * TRACE_LOOKAHEAD_S;
       Eigen::Vector2d predicted_vel = next_vel;
 
       VelocityPlanTracker::addPlanPoint(
@@ -453,10 +449,10 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
       zero_velocity_reason = ZeroVelocityReason::POSITION_TOLERANCE;
     } else if (
       original_command.local_planner_config.terminal_velocity == 0. &&
-      original_pos_mode.position_tolerance == 0. && distance < 0.03) {
-      // terminal_velocityが0のときはデフォルトで3cmのトレランス
+      original_pos_mode.position_tolerance == 0. && distance < 0.01) {
+      // terminal_velocityが0のときはデフォルトで1cmのトレランス
       vel = Velocity::Zero();
-      zero_velocity_reason = ZeroVelocityReason::DEFAULT_3CM_TOLERANCE;
+      zero_velocity_reason = ZeroVelocityReason::DEFAULT_1CM_TOLERANCE;
     }
     if (zero_velocity_reason == ZeroVelocityReason::NONE && vel.norm() < 1e-4) {
       zero_velocity_reason = (pref_vel.norm() > 1e-3)
