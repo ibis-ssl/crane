@@ -27,14 +27,14 @@ using namespace std::chrono_literals;
 namespace robocup_ssl_comm
 {
 GameController::GameController(const rclcpp::NodeOptions & options)
-: Node("game_controller", options), work_guard_(asio::make_work_guard(io_context_))
+: Node("game_controller", options)
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
   const std::string address = get_parameter("multicast_address").get_value<std::string>();
   const int port = get_parameter("multicast_port").get_value<int>();
 
-  receiver = std::make_unique<crane::AsyncUdpReceiver>(io_context_, address, port);
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(asio_ctx_.io_context, address, port);
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
     if (size > 0) {
       robocup_ssl::Referee packet;
@@ -45,21 +45,14 @@ GameController::GameController(const rclcpp::NodeOptions & options)
     }
   });
 
-  io_thread_ = std::thread([this]() { io_context_.run(); });
+  asio_ctx_.start();
 
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
   pub_game_event = create_publisher<robocup_ssl_msgs::msg::GameEvent>("game_event", 10);
   timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&GameController::on_timer, this));
 }
 
-GameController::~GameController()
-{
-  work_guard_.reset();
-  io_context_.stop();
-  if (io_thread_.joinable()) {
-    io_thread_.join();
-  }
-}
+GameController::~GameController() = default;
 
 void GameController::on_timer()
 {

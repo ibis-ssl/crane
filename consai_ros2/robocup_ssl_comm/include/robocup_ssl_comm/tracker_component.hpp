@@ -17,18 +17,14 @@
 
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <boost/asio.hpp>
 #include <crane_comm/unicast.hpp>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
-#include <thread>
 
 #include "visibility_control.h"
-
-namespace asio = boost::asio;
 
 namespace robocup_ssl_comm
 {
@@ -47,17 +43,14 @@ private:
   robocup_ssl_msgs::msg::TrackedFrame parse_tracked_frame(
     const robocup_ssl::TrackerWrapperPacket & wrapper_packet);
 
-  rclcpp::TimerBase::SharedPtr timer;
-
-  asio::io_context io_context_;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
+  crane::AsioContext asio_ctx_;
   std::unique_ptr<crane::AsyncUdpReceiver> receiver;
+
+  rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr pub_tracked_frame;
 
   std::mutex latest_mutex_;
   std::optional<robocup_ssl_msgs::msg::TrackedFrame> latest_frame_;
-
-  rclcpp::Publisher<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr pub_tracked_frame;
 };
 
 }  // namespace robocup_ssl_comm

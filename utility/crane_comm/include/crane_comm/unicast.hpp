@@ -25,6 +25,7 @@
 #include <rclcpp/logging.hpp>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_set>
 #include <vector>
 
@@ -34,6 +35,35 @@ namespace asio = boost::asio;
 
 // SO_REUSEPORTソケットオプションの定義
 typedef asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
+
+// io_context / work_guard / io_thread の管理をまとめたヘルパー構造体
+// 各コンポーネントでの定型的なasioスレッド管理を共通化する
+struct AsioContext
+{
+  asio::io_context io_context;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard;
+  std::thread thread;
+
+  AsioContext() : work_guard(asio::make_work_guard(io_context)) {}
+
+  // non-copyable, non-movable
+  AsioContext(const AsioContext &) = delete;
+  AsioContext & operator=(const AsioContext &) = delete;
+
+  void start()
+  {
+    thread = std::thread([this]() { io_context.run(); });
+  }
+
+  ~AsioContext()
+  {
+    work_guard.reset();
+    io_context.stop();
+    if (thread.joinable()) {
+      thread.join();
+    }
+  }
+};
 
 class AsyncUdpReceiver
 {

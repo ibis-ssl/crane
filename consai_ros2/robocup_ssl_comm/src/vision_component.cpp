@@ -25,8 +25,7 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-Vision::Vision(const rclcpp::NodeOptions & options)
-: Node("vision", options), work_guard_(asio::make_work_guard(io_context_))
+Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10020);
@@ -35,12 +34,14 @@ Vision::Vision(const rclcpp::NodeOptions & options)
 
   publish_interval_ms_ =
     std::chrono::milliseconds(get_parameter("publish_interval_ms").get_value<int>());
+  max_camera_age_ms_ =
+    std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
 
   const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
   const int multicast_port = get_parameter("multicast_port").get_value<int>();
 
-  receiver =
-    std::make_unique<crane::AsyncUdpReceiver>(io_context_, multicast_address, multicast_port);
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(
+    asio_ctx_.io_context, multicast_address, multicast_port);
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
     if (size > 0) {
       robocup_ssl::SSL_WrapperPacket wrapper_packet;
@@ -54,7 +55,7 @@ Vision::Vision(const rclcpp::NodeOptions & options)
     }
   });
 
-  io_thread_ = std::thread([this]() { io_context_.run(); });
+  asio_ctx_.start();
 
   pub_detection_frame =
     create_publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>("detection_frame", 10);
@@ -65,15 +66,6 @@ Vision::Vision(const rclcpp::NodeOptions & options)
   RCLCPP_INFO(
     get_logger(), "Vision component initialized - listening on %s:%d", multicast_address.c_str(),
     multicast_port);
-}
-
-Vision::~Vision()
-{
-  work_guard_.reset();
-  io_context_.stop();
-  if (io_thread_.joinable()) {
-    io_thread_.join();
-  }
 }
 
 void Vision::on_timer()
@@ -190,11 +182,9 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
   double latest_t_sent = 0.0;
   uint32_t latest_frame_number = 0;
 
-  auto max_age_ms = std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
-
   // 有効な全カメラのデータを統合
   for (const auto & [camera_id, frame] : camera_frames_) {
-    if (!is_camera_frame_valid(camera_id, max_age_ms)) {
+    if (!is_camera_frame_valid(camera_id)) {
       RCLCPP_DEBUG(get_logger(), "Camera %u frame is too old, skipping", camera_id);
       continue;
     }
@@ -254,17 +244,16 @@ void Vision::update_camera_frame(
   RCLCPP_DEBUG(get_logger(), "Updated camera %u frame data", camera_id);
 }
 
-bool Vision::is_camera_frame_valid(uint32_t camera_id, std::chrono::milliseconds max_age_ms)
+bool Vision::is_camera_frame_valid(uint32_t camera_id) const
 {
   auto it = camera_timestamps_.find(camera_id);
   if (it == camera_timestamps_.end()) {
     return false;
   }
 
-  auto now = std::chrono::steady_clock::now();
-  auto age = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second);
-
-  return age <= max_age_ms;
+  auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - it->second);
+  return age <= max_camera_age_ms_;
 }
 
 }  // namespace robocup_ssl_comm

@@ -13,7 +13,6 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
-#include <boost/asio.hpp>
 #include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
@@ -34,7 +33,6 @@
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace crane
@@ -166,9 +164,7 @@ private:
   TeamColor our_team_color_;
 
   // ネットワーク通信
-  boost::asio::io_context io_context_;
-  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
+  crane::AsioContext asio_ctx_;
   std::unique_ptr<crane::AsyncUdpReceiver> multicast_receiver_;
 
   // asioスレッドからROS2スレッドへの安全な受け渡し用バッファ

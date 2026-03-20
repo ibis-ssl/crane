@@ -17,7 +17,6 @@
 
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
-#include <boost/asio.hpp>
 #include <chrono>
 #include <crane_comm/unicast.hpp>
 #include <map>
@@ -25,11 +24,8 @@
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
-#include <thread>
 
 #include "visibility_control.h"
-
-namespace asio = boost::asio;
 
 namespace robocup_ssl_comm
 {
@@ -38,8 +34,6 @@ class Vision : public rclcpp::Node
 public:
   ROBOCUP_SSL_COMM_PUBLIC
   explicit Vision(const rclcpp::NodeOptions & options);
-
-  ~Vision();
 
 protected:
   void on_timer();
@@ -53,16 +47,12 @@ private:
   void update_camera_frame(
     uint32_t camera_id, const robocup_ssl_msgs::msg::SSLDetectionFrame & frame);
 
-  bool is_camera_frame_valid(
-    uint32_t camera_id, std::chrono::milliseconds max_age_ms = std::chrono::milliseconds(100));
+  bool is_camera_frame_valid(uint32_t camera_id) const;
 
-  rclcpp::TimerBase::SharedPtr timer;
-
-  asio::io_context io_context_;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
+  crane::AsioContext asio_ctx_;
   std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
+  rclcpp::TimerBase::SharedPtr timer;
   rclcpp::Publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>::SharedPtr pub_detection_frame;
 
   std::mutex frames_mutex_;
@@ -73,8 +63,9 @@ private:
   // カメラ別のタイムスタンプを保存（フレームの有効性確認用）
   std::map<uint32_t, std::chrono::steady_clock::time_point> camera_timestamps_;
 
-  // 統合フレームの生成頻度（ミリ秒）
+  // 統合フレームの生成頻度・最大フレーム有効期間（コンストラクタでキャッシュ）
   std::chrono::milliseconds publish_interval_ms_;
+  std::chrono::milliseconds max_camera_age_ms_;
 };
 
 }  // namespace robocup_ssl_comm

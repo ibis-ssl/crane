@@ -25,15 +25,14 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-Tracker::Tracker(const rclcpp::NodeOptions & options)
-: Node("tracker", options), work_guard_(asio::make_work_guard(io_context_))
+Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10010);
   const std::string address = get_parameter("multicast_address").get_value<std::string>();
   const int port = get_parameter("multicast_port").get_value<int>();
 
-  receiver = std::make_unique<crane::AsyncUdpReceiver>(io_context_, address, port);
+  receiver = std::make_unique<crane::AsyncUdpReceiver>(asio_ctx_.io_context, address, port);
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
     if (size > 0) {
       robocup_ssl::TrackerWrapperPacket wrapper_packet;
@@ -47,20 +46,13 @@ Tracker::Tracker(const rclcpp::NodeOptions & options)
     }
   });
 
-  io_thread_ = std::thread([this]() { io_context_.run(); });
+  asio_ctx_.start();
 
   pub_tracked_frame = create_publisher<robocup_ssl_msgs::msg::TrackedFrame>("tracked_frame", 10);
   timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&Tracker::on_timer, this));
 }
 
-Tracker::~Tracker()
-{
-  work_guard_.reset();
-  io_context_.stop();
-  if (io_thread_.joinable()) {
-    io_thread_.join();
-  }
-}
+Tracker::~Tracker() = default;
 
 void Tracker::on_timer()
 {

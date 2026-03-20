@@ -28,7 +28,6 @@ namespace crane
 WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 : node(node),
   our_team_color_(TeamColor::BLUE),
-  work_guard_(boost::asio::make_work_guard(io_context_)),
   has_vision_updated_(false),
   has_latest_detection_frame_(false),
   last_t_capture_(0.0),
@@ -59,7 +58,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // AsyncUdpReceiver初期化（Vision UDP）
   try {
     multicast_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
-      io_context_, config_.vision_address, config_.vision_port);
+      asio_ctx_.io_context, config_.vision_address, config_.vision_port);
     multicast_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
@@ -79,7 +78,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     config_.tracker_address = node.get_parameter("tracker_address").get_value<std::string>();
     config_.tracker_port = node.get_parameter("tracker_port").get_value<int>();
     tracker_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
-      io_context_, config_.tracker_address, config_.tracker_port);
+      asio_ctx_.io_context, config_.tracker_address, config_.tracker_port);
     tracker_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
@@ -94,7 +93,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", ex.what());
   }
 
-  io_thread_ = std::thread([this]() { io_context_.run(); });
+  asio_ctx_.start();
 
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
@@ -251,14 +250,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // direct UDP from Tracker; no ROS topic subscription
 }
 
-WorldModelDataProvider::~WorldModelDataProvider()
-{
-  work_guard_.reset();
-  io_context_.stop();
-  if (io_thread_.joinable()) {
-    io_thread_.join();
-  }
-}
+WorldModelDataProvider::~WorldModelDataProvider() = default;
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
