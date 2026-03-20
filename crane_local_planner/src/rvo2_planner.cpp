@@ -676,10 +676,14 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
         if (std::abs(current_pos.x()) > world_model->fieldSize().x() / 2.0) {
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
+        // stopHere()等でtarget_pos == current_posの場合（ペナルティエリア内で停止指示）、
+        // ゴールから離れる方向に初期目標を設定することで脱出ループを有効化する
+        if ((target_pos - current_pos).norm() < 1e-6) {
+          target_pos = current_pos + (current_pos - goal_pos).normalized() * 0.05;
+        }
         // 目標点をペナルティエリアの外に出るようにする (反復上限で無限ループ防止)
         for (int iter = 0;
-             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) &&
-             target_pos != current_pos;
+             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET);
              ++iter) {
           target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
         }
