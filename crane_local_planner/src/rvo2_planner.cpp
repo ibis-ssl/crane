@@ -738,15 +738,12 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
         } else if (isInBox(penalty_area, closest_point_2, PENALTY_AREA_OFFSET)) {
           target_pos = around_corner_2;
         } else {
-          static rclcpp::Clock steady_clock(RCL_STEADY_TIME);
-          RCLCPP_WARN_THROTTLE(
-            rclcpp::get_logger("rvo2_local_planner"), steady_clock, 1000,
-            "Failed to find a target position outside the penalty area. Fallback to current "
-            "position. current_pos:(%.3f, %.3f) target_pos:(%.3f, %.3f) "
-            "closest_point_1:(%.3f, %.3f) closest_point_2:(%.3f, %.3f)",
-            current_pos.x(), current_pos.y(), target_pos.x(), target_pos.y(), closest_point_1.x(),
-            closest_point_1.y(), closest_point_2.x(), closest_point_2.y());
-          target_pos = current_pos;
+          // フォールバック: 各角を経由した総距離が短い方を選択
+          const double dist_via_1 =
+            (around_corner_1 - current_pos).norm() + (target_pos - around_corner_1).norm();
+          const double dist_via_2 =
+            (around_corner_2 - current_pos).norm() + (target_pos - around_corner_2).norm();
+          target_pos = (dist_via_1 <= dist_via_2) ? around_corner_1 : around_corner_2;
         }
       }
     };
