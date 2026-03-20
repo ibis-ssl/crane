@@ -81,7 +81,6 @@ docker compose -f docker/dev/docker-compose.yaml down
 - **ssl-status-board**: ステータスボード(simのみ)
 - **autoref-tigers**: Tigers Mannheimのオートレフェリー
 - **voicevox**: 音声合成エンジン
-- **aivis-speech**: AIVIS音声エンジン
 - **debug_tools**: WebSocketベースのデバッグツール(docker-dev.shで自動起動)
 
 ## 設定ファイル
