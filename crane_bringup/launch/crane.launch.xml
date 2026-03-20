@@ -194,6 +194,9 @@ limitations under the License.
     <param name="sim_mode" value="$(var sim)"/>
   </node>
 
+  <!-- Webデバッガー（ブラウザ http://localhost:8090 でアクセス可能） -->
+  <node pkg="crane_web_debugger" exec="crane_websocket_server" output="screen"/>
+
   <!-- 可視化情報の集約 -->
   <node pkg="crane_visualization_aggregator" exec="crane_visualization_aggregator_node" output="screen"/>
 
