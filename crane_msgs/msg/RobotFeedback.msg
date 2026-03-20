@@ -1,6 +1,10 @@
 builtin_interfaces/Time received_stamp
 uint8 robot_id
 float32 packet_frequency_hz
+float32 receive_interval_mean_ms
+float32 receive_interval_min_ms
+float32 receive_interval_max_ms
+float32 receive_interval_stddev_ms
 
 uint8 counter
 
