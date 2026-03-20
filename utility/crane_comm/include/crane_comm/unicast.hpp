@@ -25,6 +25,7 @@
 #include <rclcpp/logging.hpp>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_set>
 #include <vector>
 
@@ -35,118 +36,135 @@ namespace asio = boost::asio;
 // SO_REUSEPORTソケットオプションの定義
 typedef asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
-class UdpReceiver
+// io_context / work_guard / io_thread の管理をまとめたヘルパー構造体
+// 各コンポーネントでの定型的なasioスレッド管理を共通化する
+struct AsioContext
+{
+  asio::io_context io_context;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard;
+  std::thread thread;
+
+  AsioContext() : work_guard(asio::make_work_guard(io_context)) {}
+
+  // non-copyable, non-movable
+  AsioContext(const AsioContext &) = delete;
+  AsioContext & operator=(const AsioContext &) = delete;
+
+  void start()
+  {
+    thread = std::thread([this]() { io_context.run(); });
+  }
+
+  ~AsioContext()
+  {
+    work_guard.reset();
+    io_context.stop();
+    if (thread.joinable()) {
+      thread.join();
+    }
+  }
+};
+
+class AsyncUdpReceiver
 {
 public:
-  UdpReceiver(const std::string & host, const int port) : socket(io_context, asio::ip::udp::v4())
+  AsyncUdpReceiver(
+    asio::io_context & io_ctx, const std::string & host, const int port, size_t buffer_size = 2048)
+  : socket_(io_ctx, asio::ip::udp::v4()), recv_buffer_(buffer_size)
   {
     asio::ip::address addr = asio::ip::address::from_string(host);
-
-    // ソケットオプションを設定
     boost::system::error_code ec;
 
-    socket.set_option(asio::socket_base::reuse_address(true), ec);
+    socket_.set_option(asio::socket_base::reuse_address(true), ec);
+    socket_.set_option(reuse_port(true), ec);
 
-    socket.set_option(reuse_port(true), ec);
-
-    // マルチキャストかユニキャストかで処理を分岐
     if (addr.is_multicast()) {
-      // マルチキャストの場合: ANY_ADDRでバインド後にグループに参加
-      socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port), ec);
+      socket_.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port), ec);
       if (ec) {
         RCLCPP_ERROR(
           rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
         throw std::runtime_error("bind failed: " + ec.message());
       }
 
-      socket.non_blocking(true);
-
-      // マルチキャストグループに参加
       try {
         struct ifaddrs * interfaces = nullptr;
-        struct ifaddrs * ifa = nullptr;
-
-        // ネットワークインターフェース情報の取得
         if (getifaddrs(&interfaces) == -1) {
           throw std::runtime_error("Error: getifaddrs failed.");
         }
 
-        int interface_count = 0;
-        int success_count = 0;
-        int skip_count = 0;
-        std::unordered_set<std::string> joined_interfaces;  // 参加済みインターフェース名を記録
+        std::unordered_set<std::string> joined_interfaces;
+        for (struct ifaddrs * ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+          if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) continue;
 
-        // ネットワークインターフェースのリストを巡回
-        for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
-          if (ifa->ifa_addr == nullptr) {
-            continue;
-          }
+          char ip[INET_ADDRSTRLEN];
+          auto * addr_in = reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr);
+          inet_ntop(AF_INET, &(addr_in->sin_addr), ip, INET_ADDRSTRLEN);
 
-          if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
-            char ip[INET_ADDRSTRLEN];
-            struct sockaddr_in * addr_in =
-              (struct sockaddr_in *)ifa->ifa_addr;  // キャスト後に変数に格納
-            inet_ntop(AF_INET, &(addr_in->sin_addr), ip, INET_ADDRSTRLEN);
+          std::string if_name(ifa->ifa_name);
+          if (joined_interfaces.count(if_name) > 0) continue;
 
-            interface_count++;
-            // 同じインターフェースで既に参加済みの場合はスキップ
-            std::string if_name(ifa->ifa_name);
-            RCLCPP_DEBUG(rclcpp::get_logger("crane_comm"), "Multicast: %s: %s", ifa->ifa_name, ip);
-            if (joined_interfaces.count(if_name) > 0) {
-              skip_count++;
-              continue;
-            }
+          boost::asio::ip::detail::socket_option::multicast_request<
+            IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
+            join_device(addr.to_v4(), asio::ip::address::from_string(ip).to_v4());
 
-            boost::asio::ip::detail::socket_option::multicast_request<
-              IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
-              join_device(addr.to_v4(), asio::ip::address::from_string(ip).to_v4());
-
-            boost::system::error_code join_ec;
-            socket.set_option(join_device, join_ec);
-
-            if (join_ec) {
-              skip_count++;
-            } else {
-              joined_interfaces.insert(if_name);  // 参加成功したインターフェースを記録
-              success_count++;
-            }
+          boost::system::error_code join_ec;
+          socket_.set_option(join_device, join_ec);
+          if (!join_ec) {
+            joined_interfaces.insert(if_name);
           }
         }
-
-        freeifaddrs(interfaces);  // メモリの解放
+        freeifaddrs(interfaces);
       } catch (std::exception & e) {
         RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "%s", e.what());
       }
     } else {
-      // ユニキャストの場合: 指定されたアドレスとポートでバインド
-      socket.bind(asio::ip::udp::endpoint(addr, port), ec);
+      socket_.bind(asio::ip::udp::endpoint(addr, port), ec);
       if (ec) {
         RCLCPP_ERROR(
           rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
         throw std::runtime_error("bind failed: " + ec.message());
       }
-
-      socket.non_blocking(true);
     }
   }
 
-  auto receive(std::vector<char> & msg) -> size_t
+  void startReceive(std::function<void(const std::vector<char> &, size_t)> callback)
   {
-    boost::system::error_code error;
-    const size_t received = socket.receive(asio::buffer(msg), 0, error);
-    if (error && error != asio::error::message_size) {
-      throw boost::system::system_error(error);
-      return 0;
-    }
-    return received;
+    callback_ = std::move(callback);
+    running_ = true;
+    doReceive();
   }
 
-  auto available() const -> size_t { return socket.available(); }
+  void stop()
+  {
+    running_ = false;
+    boost::system::error_code ec;
+    socket_.cancel(ec);
+  }
 
 private:
-  asio::io_context io_context;
+  void doReceive()
+  {
+    socket_.async_receive_from(
+      asio::buffer(recv_buffer_), sender_endpoint_,
+      [this](const boost::system::error_code & ec, size_t bytes_transferred) {
+        if (!ec) {
+          try {
+            callback_(recv_buffer_, bytes_transferred);
+          } catch (const std::exception & e) {
+            RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "受信コールバックエラー: %s", e.what());
+          }
+        } else if (ec != asio::error::operation_aborted) {
+          RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "UDP受信エラー: %s", ec.message().c_str());
+        }
+        if (running_) doReceive();
+      });
+  }
 
-  asio::ip::udp::socket socket;
+  asio::ip::udp::socket socket_;
+  asio::ip::udp::endpoint sender_endpoint_;
+  std::vector<char> recv_buffer_;
+  std::function<void(const std::vector<char> &, size_t)> callback_;
+  bool running_ = false;
 };
 
 class AsyncUdpReceiver

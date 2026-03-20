@@ -17,8 +17,10 @@
 
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 
@@ -32,6 +34,8 @@ public:
   ROBOCUP_SSL_COMM_PUBLIC
   explicit Tracker(const rclcpp::NodeOptions & options);
 
+  ~Tracker();
+
 protected:
   void on_timer();
 
@@ -39,11 +43,14 @@ private:
   robocup_ssl_msgs::msg::TrackedFrame parse_tracked_frame(
     const robocup_ssl::TrackerWrapperPacket & wrapper_packet);
 
+  crane::AsioContext asio_ctx_;
+  std::unique_ptr<crane::AsyncUdpReceiver> receiver;
+
   rclcpp::TimerBase::SharedPtr timer;
-
-  std::unique_ptr<crane::MulticastReceiver> receiver;
-
   rclcpp::Publisher<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr pub_tracked_frame;
+
+  std::mutex latest_mutex_;
+  std::optional<robocup_ssl_msgs::msg::TrackedFrame> latest_frame_;
 };
 
 }  // namespace robocup_ssl_comm

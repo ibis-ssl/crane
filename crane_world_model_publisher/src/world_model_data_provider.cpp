@@ -55,10 +55,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // Initialize UDP receivers
 
-  // MulticastReceiver初期化（Vision UDP）
+  // AsyncUdpReceiver初期化（Vision UDP）
   try {
-    multicast_receiver_ =
-      std::make_unique<crane::MulticastReceiver>(config_.vision_address, config_.vision_port);
+    multicast_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
+      asio_ctx_.io_context, config_.vision_address, config_.vision_port);
+    multicast_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
+      if (size > 0) {
+        std::lock_guard<std::mutex> lock(recv_mutex_);
+        pending_vision_packets_.emplace_back(buf.data(), size);
+      }
+    });
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Vision設定: %s:%d", config_.vision_address.c_str(),
       config_.vision_port);
@@ -67,12 +73,18 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     RCLCPP_ERROR(node.get_logger(), "Vision initialization failed: %s", ex.what());
   }
 
-  // MulticastReceiver初期化（Tracker UDP）
+  // AsyncUdpReceiver初期化（Tracker UDP）
   try {
     config_.tracker_address = node.get_parameter("tracker_address").get_value<std::string>();
     config_.tracker_port = node.get_parameter("tracker_port").get_value<int>();
-    tracker_receiver_ =
-      std::make_unique<crane::MulticastReceiver>(config_.tracker_address, config_.tracker_port);
+    tracker_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
+      asio_ctx_.io_context, config_.tracker_address, config_.tracker_port);
+    tracker_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
+      if (size > 0) {
+        std::lock_guard<std::mutex> lock(recv_mutex_);
+        pending_tracker_packets_.emplace_back(buf.data(), size);
+      }
+    });
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Tracker設定: %s:%d",
       config_.tracker_address.c_str(), config_.tracker_port);
@@ -80,6 +92,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     reportError("Trackerの初期化に失敗しました: " + std::string(ex.what()));
     RCLCPP_ERROR(node.get_logger(), "Trackerの初期化に失敗しました: %s", ex.what());
   }
+
+  asio_ctx_.start();
 
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
@@ -236,69 +250,50 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // direct UDP from Tracker; no ROS topic subscription
 }
 
+WorldModelDataProvider::~WorldModelDataProvider() = default;
+
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
-  if (!multicast_receiver_) {
-    RCLCPP_WARN_THROTTLE(
-      node.get_logger(), *node.get_clock(), 5000, "MulticastReceiverが初期化されていません");
-    return;
+  // asioスレッドからのパケットを取り出す（最小限のロック）
+  std::vector<std::string> vision_packets, tracker_packets;
+  {
+    std::lock_guard<std::mutex> lock(recv_mutex_);
+    vision_packets.swap(pending_vision_packets_);
+    tracker_packets.swap(pending_tracker_packets_);
   }
 
-  int packets_processed = 0;
-  while (multicast_receiver_ && multicast_receiver_->available()) {
-    std::vector<char> raw_packet_data(2048);
+  // Visionパケット処理（ROS2スレッドから安全に実行）
+  for (const auto & raw : vision_packets) {
     try {
-      size_t received = multicast_receiver_->receive(raw_packet_data);
-      if (received > 0) {
-        packets_processed++;
-
-        try {
-          robocup_ssl::SSL_WrapperPacket packet;
-          if (packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
-            // Tracker利用時はUDP detectionの処理を省略可能
-            if (use_udp_detection_ && packet.has_detection()) {
-              processDetectionFrame(packet.detection());
-              has_vision_updated_ = true;
-              last_vision_recv_time_ = node.get_clock()->now();
-            }
-            if (packet.has_geometry()) {
-              processGeometryData(packet.geometry());
-            }
-          } else {
-            RCLCPP_DEBUG(node.get_logger(), "SSL_WrapperPacketのパースに失敗しました");
-          }
-        } catch (const std::exception & ex) {
-          RCLCPP_WARN(node.get_logger(), "パケットのパースエラー: %s", ex.what());
+      robocup_ssl::SSL_WrapperPacket packet;
+      if (packet.ParseFromString(raw)) {
+        if (use_udp_detection_ && packet.has_detection()) {
+          processDetectionFrame(packet.detection());
+          has_vision_updated_ = true;
+          last_vision_recv_time_ = node.get_clock()->now();
+        }
+        if (packet.has_geometry()) {
+          processGeometryData(packet.geometry());
         }
       }
     } catch (const std::exception & ex) {
-      // 受信エラーは無視（非ブロッキング受信のため）
-      break;
+      RCLCPP_WARN(node.get_logger(), "Visionパケットパースエラー: %s", ex.what());
     }
   }
 
-  // Process Tracker UDP packets
-  if (tracker_receiver_) {
-    while (tracker_receiver_->available()) {
-      std::vector<char> raw_packet_data(2048);
-      try {
-        size_t received = tracker_receiver_->receive(raw_packet_data);
-        if (received > 0) {
-          robocup_ssl::TrackerWrapperPacket wrapper_packet;
-          if (wrapper_packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
-            if (wrapper_packet.has_tracked_frame()) {
-              auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
-              latest_tracked_frame = tracked_frame_msg;
-              has_tracked_frame_updated_ = true;
-              last_tracker_recv_time_ = node.get_clock()->now();
-              processTrackedFrame(tracked_frame_msg);
-            }
-          }
-        }
-      } catch (const std::exception & ex) {
-        // ignore per non-blocking receive
-        break;
+  // Trackerパケット処理（ROS2スレッドから安全に実行）
+  for (const auto & raw : tracker_packets) {
+    try {
+      robocup_ssl::TrackerWrapperPacket wrapper_packet;
+      if (wrapper_packet.ParseFromString(raw) && wrapper_packet.has_tracked_frame()) {
+        auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
+        latest_tracked_frame = tracked_frame_msg;
+        has_tracked_frame_updated_ = true;
+        last_tracker_recv_time_ = node.get_clock()->now();
+        processTrackedFrame(tracked_frame_msg);
       }
+    } catch (const std::exception & ex) {
+      RCLCPP_WARN(node.get_logger(), "Trackerパケットパースエラー: %s", ex.what());
     }
   }
 

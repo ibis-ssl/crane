@@ -14,6 +14,7 @@
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
 #include <deque>
 #include <format>
+#include <limits>
 #include <mutex>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -62,47 +63,23 @@ public:
     float stddev_ms = 0.f;
   };
 
-  auto getPacketFrequency() -> float
+  struct ReceiverStats
+  {
+    float packet_frequency_hz = 0.f;
+    IntervalStats interval;
+  };
+
+  // 周波数と受信間隔統計を1回のロックでまとめて取得する
+  auto getStats() -> ReceiverStats
   {
     std::lock_guard<std::mutex> lock(mutex_);
     pruneTimestampsLocked();
-    return static_cast<float>(receive_timestamps_.size());
-  }
-
-  auto getReceiveIntervalStats() -> IntervalStats
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    pruneTimestampsLocked();
-    if (receive_timestamps_.size() < 2) {
-      return {};
+    ReceiverStats result;
+    result.packet_frequency_hz = static_cast<float>(receive_timestamps_.size());
+    if (receive_timestamps_.size() >= 2) {
+      result.interval = computeIntervalStatsLocked();
     }
-
-    std::vector<float> intervals;
-    intervals.reserve(receive_timestamps_.size() - 1);
-    for (size_t i = 1; i < receive_timestamps_.size(); ++i) {
-      float dt = static_cast<float>(
-        (receive_timestamps_[i] - receive_timestamps_[i - 1]).nanoseconds() * 1e-6);
-      intervals.push_back(dt);
-    }
-
-    float sum = 0.f;
-    float min_val = intervals[0];
-    float max_val = intervals[0];
-    for (float v : intervals) {
-      sum += v;
-      if (v < min_val) min_val = v;
-      if (v > max_val) max_val = v;
-    }
-    float mean = sum / static_cast<float>(intervals.size());
-
-    float var = 0.f;
-    for (float v : intervals) {
-      float d = v - mean;
-      var += d * d;
-    }
-    float stddev = std::sqrt(var / static_cast<float>(intervals.size()));
-
-    return {mean, min_val, max_val, stddev};
+    return result;
   }
 
   const int robot_id;
@@ -188,6 +165,31 @@ private:
     }
   }
 
+  // mutex_ を保持した状態で呼ぶこと。サイズが2以上であることを確認してから呼ぶ
+  auto computeIntervalStatsLocked() -> IntervalStats
+  {
+    const size_t n = receive_timestamps_.size() - 1;
+    float sum = 0.f;
+    float min_val = std::numeric_limits<float>::max();
+    float max_val = std::numeric_limits<float>::lowest();
+    for (size_t i = 1; i <= n; ++i) {
+      float dt = static_cast<float>(
+        (receive_timestamps_[i] - receive_timestamps_[i - 1]).nanoseconds() * 1e-6);
+      sum += dt;
+      if (dt < min_val) min_val = dt;
+      if (dt > max_val) max_val = dt;
+    }
+    float mean = sum / static_cast<float>(n);
+    float var = 0.f;
+    for (size_t i = 1; i <= n; ++i) {
+      float dt = static_cast<float>(
+        (receive_timestamps_[i] - receive_timestamps_[i - 1]).nanoseconds() * 1e-6);
+      float d = dt - mean;
+      var += d * d;
+    }
+    return {mean, min_val, max_val, std::sqrt(var / static_cast<float>(n))};
+  }
+
   std::unique_ptr<crane::AsyncUdpReceiver> async_receiver_;
   std::mutex mutex_;
   std::optional<RobotFeedback> latest_feedback_;
@@ -235,13 +237,13 @@ public:
     using std::chrono::operator""s;
     log_timer = rclcpp::create_timer(this, get_clock(), 5s, [&]() {
       for (auto & receiver : receivers) {
-        float freq = receiver->getPacketFrequency();
-        if (freq <= 0.f) continue;
-        auto stats = receiver->getReceiveIntervalStats();
+        auto s = receiver->getStats();
+        if (s.packet_frequency_hz <= 0.f) continue;
         RCLCPP_INFO(
           get_logger(),
           "[Robot %d] interval: mean=%.1fms, min=%.1fms, max=%.1fms, stddev=%.1fms, freq=%.1fHz",
-          receiver->robot_id, stats.mean_ms, stats.min_ms, stats.max_ms, stats.stddev_ms, freq);
+          receiver->robot_id, s.interval.mean_ms, s.interval.min_ms, s.interval.max_ms,
+          s.interval.stddev_ms, s.packet_frequency_hz);
       }
     });
 
@@ -260,13 +262,13 @@ public:
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
         robot_feedback_msg.received_stamp = robot_feedback->received_stamp;
         robot_feedback_msg.robot_id = receiver->robot_id;
-        robot_feedback_msg.packet_frequency_hz = receiver->getPacketFrequency();
         {
-          auto stats = receiver->getReceiveIntervalStats();
-          robot_feedback_msg.receive_interval_mean_ms = stats.mean_ms;
-          robot_feedback_msg.receive_interval_min_ms = stats.min_ms;
-          robot_feedback_msg.receive_interval_max_ms = stats.max_ms;
-          robot_feedback_msg.receive_interval_stddev_ms = stats.stddev_ms;
+          auto s = receiver->getStats();
+          robot_feedback_msg.packet_frequency_hz = s.packet_frequency_hz;
+          robot_feedback_msg.receive_interval_mean_ms = s.interval.mean_ms;
+          robot_feedback_msg.receive_interval_min_ms = s.interval.min_ms;
+          robot_feedback_msg.receive_interval_max_ms = s.interval.max_ms;
+          robot_feedback_msg.receive_interval_stddev_ms = s.interval.stddev_ms;
         }
         robot_feedback_msg.counter = robot_feedback->counter;
         robot_feedback_msg.kick_state = robot_feedback->kick_state;
@@ -310,19 +312,20 @@ public:
     if (io_thread_.joinable()) io_thread_.join();
   }
 
-  asio::io_context io_context_;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
-
-  rclcpp::TimerBase::SharedPtr timer;
-  rclcpp::TimerBase::SharedPtr log_timer;
-
   std::vector<std::shared_ptr<RobotFeedbackReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer =
     std::make_shared<crane::VisualizerMessageBuilder>("robot_receiver");
+
+private:
+  asio::io_context io_context_;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+  std::thread io_thread_;
+
+  rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::TimerBase::SharedPtr log_timer;
 
   rclcpp::Clock clock;
 };

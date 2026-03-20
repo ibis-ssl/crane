@@ -18,9 +18,10 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
 #include <chrono>
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 
@@ -46,14 +47,15 @@ private:
   void update_camera_frame(
     uint32_t camera_id, const robocup_ssl_msgs::msg::SSLDetectionFrame & frame);
 
-  bool is_camera_frame_valid(
-    uint32_t camera_id, std::chrono::milliseconds max_age_ms = std::chrono::milliseconds(100));
+  bool is_camera_frame_valid(uint32_t camera_id) const;
+
+  crane::AsioContext asio_ctx_;
+  std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
   rclcpp::TimerBase::SharedPtr timer;
-
-  std::unique_ptr<crane::MulticastReceiver> receiver;
-
   rclcpp::Publisher<robocup_ssl_msgs::msg::SSLDetectionFrame>::SharedPtr pub_detection_frame;
+
+  std::mutex frames_mutex_;
 
   // カメラ別の最新フレームデータを保存
   std::map<uint32_t, robocup_ssl_msgs::msg::SSLDetectionFrame> camera_frames_;
@@ -61,8 +63,9 @@ private:
   // カメラ別のタイムスタンプを保存（フレームの有効性確認用）
   std::map<uint32_t, std::chrono::steady_clock::time_point> camera_timestamps_;
 
-  // 統合フレームの生成頻度（ミリ秒）
+  // 統合フレームの生成頻度・最大フレーム有効期間（コンストラクタでキャッシュ）
   std::chrono::milliseconds publish_interval_ms_;
+  std::chrono::milliseconds max_camera_age_ms_;
 };
 
 }  // namespace robocup_ssl_comm

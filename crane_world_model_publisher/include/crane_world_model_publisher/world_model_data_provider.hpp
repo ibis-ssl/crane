@@ -13,7 +13,7 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
-#include <crane_comm/multicast.hpp>
+#include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
@@ -25,6 +25,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
@@ -105,7 +106,7 @@ class WorldModelDataProvider
 public:
   explicit WorldModelDataProvider(rclcpp::Node & node);
 
-  ~WorldModelDataProvider() = default;
+  ~WorldModelDataProvider();
 
   auto on_udp_timer() -> void;
 
@@ -163,7 +164,13 @@ private:
   TeamColor our_team_color_;
 
   // ネットワーク通信
-  std::unique_ptr<crane::MulticastReceiver> multicast_receiver_;
+  crane::AsioContext asio_ctx_;
+  std::unique_ptr<crane::AsyncUdpReceiver> multicast_receiver_;
+
+  // asioスレッドからROS2スレッドへの安全な受け渡し用バッファ
+  std::mutex recv_mutex_;
+  std::vector<std::string> pending_vision_packets_;
+  std::vector<std::string> pending_tracker_packets_;
 
   // データ状態
   crane_msgs::msg::BallInfo ball_info_;
@@ -256,7 +263,7 @@ private:
   bool has_tracked_frame_updated_;
 
   // Tracker UDP receiver
-  std::unique_ptr<crane::MulticastReceiver> tracker_receiver_;
+  std::unique_ptr<crane::AsyncUdpReceiver> tracker_receiver_;
 
   // Whether to use UDP detection (legacy Vision) for ball/robots
   bool use_udp_detection_ = false;
