@@ -101,12 +101,7 @@ class RobotTelemetry {
         this.startTime = null;
         this.knownRobotIds = new Set();
 
-        this.latestWorldModel = null;
-        this.latestControlTargets = null;
-        this.latestRobotFeedback = null;
-
         this.charts = {};
-        this.ringBuffers = {};
 
         this.initCharts();
         this.setupControls();
@@ -214,16 +209,13 @@ class RobotTelemetry {
     handleMessage(data) {
         switch (data.type) {
             case 'world_model':
-                this.latestWorldModel = data;
                 this.discoverRobotIds(data);
                 this.pushWorldModelData(data);
                 break;
             case 'control_targets':
-                this.latestControlTargets = data;
                 this.pushControlTargetsData(data);
                 break;
             case 'robot_feedback':
-                this.latestRobotFeedback = data;
                 this.pushRobotFeedbackData(data);
                 break;
         }
@@ -276,10 +268,6 @@ class RobotTelemetry {
         if (ds.data.length > this.bufferSize) ds.data.shift();
     }
 
-    updateChart(chart) {
-        chart.update('none');
-    }
-
     pushWorldModelData(data) {
         if (!data.robots_ours) return;
         const robot = data.robots_ours.find(r => r.id === this.robotId);
@@ -292,17 +280,17 @@ class RobotTelemetry {
         this.pushToChart(this.charts.position, 1, t, robot.y ?? null);
         this.pushToChart(this.charts.position, 4, t, robot.vision_x ?? null);
         this.pushToChart(this.charts.position, 5, t, robot.vision_y ?? null);
-        this.updateChart(this.charts.position);
+        this.charts.position.update('none');
 
         // Velocity chart
         this.pushToChart(this.charts.velocity, 0, t, robot.vx ?? null);
         this.pushToChart(this.charts.velocity, 1, t, robot.vy ?? null);
-        this.updateChart(this.charts.velocity);
+        this.charts.velocity.update('none');
 
         // Theta chart
         this.pushToChart(this.charts.theta, 0, t, robot.theta ?? null);
         this.pushToChart(this.charts.theta, 2, t, robot.vision_theta ?? null);
-        this.updateChart(this.charts.theta);
+        this.charts.theta.update('none');
 
         // Update table
         const estPos = document.getElementById('tbl-est-pos');
@@ -329,13 +317,10 @@ class RobotTelemetry {
             const pt = cmd.position_target_mode;
             this.pushToChart(this.charts.position, 2, t, pt.target_x ?? null);
             this.pushToChart(this.charts.position, 3, t, pt.target_y ?? null);
-            this.updateChart(this.charts.position);
+            this.charts.position.update('none');
 
             const tgtPos = document.getElementById('tbl-tgt-pos');
             if (tgtPos) tgtPos.textContent = `(${pt.target_x?.toFixed(3)}, ${pt.target_y?.toFixed(3)})`;
-        } else {
-            this.pushToChart(this.charts.position, 2, t, null);
-            this.pushToChart(this.charts.position, 3, t, null);
         }
 
         // Velocity target
@@ -343,7 +328,7 @@ class RobotTelemetry {
             const sv = cmd.simple_velocity_target_mode;
             this.pushToChart(this.charts.velocity, 2, t, sv.target_vx ?? null);
             this.pushToChart(this.charts.velocity, 3, t, sv.target_vy ?? null);
-            this.updateChart(this.charts.velocity);
+            this.charts.velocity.update('none');
 
             const tgtVel = document.getElementById('tbl-tgt-vel');
             if (tgtVel) tgtVel.textContent = `(${sv.target_vx?.toFixed(3)}, ${sv.target_vy?.toFixed(3)})`;
@@ -351,7 +336,7 @@ class RobotTelemetry {
 
         // Target theta
         this.pushToChart(this.charts.theta, 1, t, cmd.target_theta ?? null);
-        this.updateChart(this.charts.theta);
+        this.charts.theta.update('none');
 
         // Prediction errors from velocity_plan_trace.actuals
         if (cmd.velocity_plan_trace?.actuals?.length > 0) {
@@ -359,7 +344,7 @@ class RobotTelemetry {
             if (latest) {
                 this.pushToChart(this.charts.error, 0, t, latest.velocity_error ?? null);
                 this.pushToChart(this.charts.error, 1, t, latest.position_error ?? null);
-                this.updateChart(this.charts.error);
+                this.charts.error.update('none');
             }
         }
 
@@ -393,8 +378,8 @@ class RobotTelemetry {
 
         // gyro yaw
         this.pushToChart(this.charts.theta, 3, t, robot.yaw_angle ?? null);
-        this.updateChart(this.charts.theta);
-        this.updateChart(this.charts.velocity);
+        this.charts.theta.update('none');
+        this.charts.velocity.update('none');
     }
 
     renderCorrectionBars(corrections) {
@@ -430,12 +415,10 @@ class RobotTelemetry {
     resetCharts() {
         this.startTime = null;
         for (const chart of Object.values(this.charts)) {
-            if (!chart) continue;
-            for (const ds of chart.data.datasets) {
-                ds.data = [];
-            }
-            chart.update('none');
+            chart?.destroy();
         }
+        this.charts = {};
+        this.initCharts();
         document.getElementById('correction-bars').innerHTML = '<div style="color:#666; font-size:0.75rem;">データなし</div>';
         const ids = ['tbl-est-pos', 'tbl-vis-pos', 'tbl-tgt-pos', 'tbl-est-vel', 'tbl-tgt-vel'];
         for (const id of ids) {
@@ -453,6 +436,8 @@ class RobotTelemetry {
             chart.update('none');
         }
     }
+
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,3 +1,7 @@
+const CONTROL_MODE_SHORT = { 0: 'CAM', 1: 'POS', 2: 'VEL', 3: 'POL' };
+const CONTROL_MODE_LONG = { 0: 'LOCAL_CAMERA', 1: 'POSITION_TARGET', 2: 'SIMPLE_VELOCITY', 3: 'POLAR_VELOCITY' };
+const SVG_PARSER = new DOMParser();
+
 class CraneViewer {
     constructor() {
         this.websocket = null;
@@ -17,11 +21,13 @@ class CraneViewer {
 
         this.fieldUpdateTimer = null;
         this.robotUpdateTimer = null;
+        this.svgFieldEl = null; // cached after DOM is ready
 
         this.init();
     }
 
     init() {
+        this.svgFieldEl = document.getElementById('svg-field');
         this.setupWebSocket();
         this.setupEventListeners();
         this.updateConnectionStatus(false);
@@ -277,8 +283,7 @@ class CraneViewer {
             g.setAttribute('class', `layer-${layer.layer}`);
             layer.svg_primitives.forEach(primitive => {
                 try {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${primitive}</svg>`, 'image/svg+xml');
+                    const doc = SVG_PARSER.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${primitive}</svg>`, 'image/svg+xml');
                     for (const child of doc.documentElement.children) {
                         g.appendChild(document.importNode(child, true));
                     }
@@ -309,12 +314,11 @@ class CraneViewer {
         }
 
         container.innerHTML = '';
-        const CONTROL_MODE_NAMES = { 0: 'CAM', 1: 'POS', 2: 'VEL', 3: 'POL' };
 
         for (const id of ids) {
             const robot = this.robotsOurs[id];
             const cmd = this.controlTargets[id];
-            const modeName = cmd ? (CONTROL_MODE_NAMES[cmd.control_mode] ?? `M${cmd.control_mode}`) : '--';
+            const modeName = cmd ? (CONTROL_MODE_SHORT[cmd.control_mode] ?? `M${cmd.control_mode}`) : '--';
             const plannerName = cmd?.planner_name || '--';
 
             const card = document.createElement('div');
@@ -337,8 +341,7 @@ class CraneViewer {
         const modal = document.getElementById('robot-detail-modal');
         if (!modal) return;
 
-        const CONTROL_MODE_NAMES = { 0: 'LOCAL_CAMERA', 1: 'POSITION_TARGET', 2: 'SIMPLE_VELOCITY', 3: 'POLAR_VELOCITY' };
-        const modeName = cmd ? (CONTROL_MODE_NAMES[cmd.control_mode] ?? `MODE_${cmd.control_mode}`) : '--';
+        const modeName = cmd ? (CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`) : '--';
 
         document.getElementById('robot-detail-title').textContent = `Robot ${id}`;
 
@@ -465,10 +468,8 @@ class CraneViewer {
 
             svgContainer.addEventListener('mousemove', (e) => {
                 if (!this.isPanning) return;
-                // pan in SVG coordinates
-                const svgEl = document.getElementById('svg-field');
-                if (svgEl) {
-                    const vb = svgEl.viewBox.baseVal;
+                if (this.svgFieldEl) {
+                    const vb = this.svgFieldEl.viewBox.baseVal;
                     const rect = svgContainer.getBoundingClientRect();
                     const scaleX = vb.width / rect.width;
                     const scaleY = vb.height / rect.height;
