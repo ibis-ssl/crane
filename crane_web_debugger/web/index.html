@@ -116,59 +116,40 @@
         <!-- Crane Debug Tools -->
         <h2 class="section-title"><i class="fas fa-tools me-2"></i>Crane Debug Tools</h2>
         <div class="row g-4">
-            <!-- メインデバッガー -->
+            <!-- メインビューア -->
             <div class="col-md-6">
-                <a href="/debugger.html" class="tool-card">
+                <a href="/viewer.html" class="tool-card">
+                    <div class="tool-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <div class="tool-title">メインビューア</div>
+                    <div class="tool-description">
+                        SVGフィールド可視化とロボット状態一覧の統合ビュー
+                    </div>
+                    <ul class="tool-features">
+                        <li><i class="fas fa-check text-success"></i> SVGレイヤー付きフィールド描画</li>
+                        <li><i class="fas fa-check text-success"></i> ロボットカード一覧（プランナー・モード表示）</li>
+                        <li><i class="fas fa-check text-success"></i> ズーム・パン操作対応</li>
+                        <li><i class="fas fa-check text-success"></i> ゲーム情報・スコア表示</li>
+                    </ul>
+                </a>
+            </div>
+
+            <!-- ロボットテレメトリ -->
+            <div class="col-md-6">
+                <a href="/robot_telemetry.html" class="tool-card">
                     <div class="tool-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <div class="tool-title">メインデバッガー</div>
+                    <div class="tool-title">ロボットテレメトリ</div>
                     <div class="tool-description">
-                        リアルタイムでロボットの状態を監視し、スキルをインタラクティブに制御
+                        ロボット個別の予実プロット・詳細テレメトリ分析
                     </div>
                     <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> フィールド可視化とロボット位置表示</li>
-                        <li><i class="fas fa-check text-success"></i> スキル状態のリアルタイム監視</li>
-                        <li><i class="fas fa-check text-success"></i> WebSocket経由のコマンド送信</li>
-                        <li><i class="fas fa-check text-success"></i> ログメッセージの表示</li>
-                    </ul>
-                </a>
-            </div>
-
-            <!-- SVG可視化ツール -->
-            <div class="col-md-6">
-                <a href="/svg_viewer.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-layer-group"></i>
-                    </div>
-                    <div class="tool-title">SVG可視化ツール</div>
-                    <div class="tool-description">
-                        SVGレイヤーの表示制御と詳細なフィールドビジュアライゼーション
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> レイヤー別の表示/非表示切り替え</li>
-                        <li><i class="fas fa-check text-success"></i> 高精度なSVGレンダリング</li>
-                        <li><i class="fas fa-check text-success"></i> ズーム・パン操作対応</li>
-                        <li><i class="fas fa-check text-success"></i> デバッグ情報のビジュアル表示</li>
-                    </ul>
-                </a>
-            </div>
-
-            <!-- スタンドアローン -->
-            <div class="col-md-6">
-                <a href="/standalone.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-terminal"></i>
-                    </div>
-                    <div class="tool-title">スタンドアローンツール</div>
-                    <div class="tool-description">
-                        オフラインでCLIコマンドを試験・実行できる軽量ツール
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> WebSocket接続不要</li>
-                        <li><i class="fas fa-check text-success"></i> コマンド構文の検証</li>
-                        <li><i class="fas fa-check text-success"></i> シンプルなインターフェース</li>
-                        <li><i class="fas fa-check text-success"></i> 開発・テスト用途に最適</li>
+                        <li><i class="fas fa-check text-success"></i> 推定位置・Vision位置・目標位置の比較</li>
+                        <li><i class="fas fa-check text-success"></i> 速度・角度の予実グラフ</li>
+                        <li><i class="fas fa-check text-success"></i> 速度計画誤差・修正ログ表示</li>
+                        <li><i class="fas fa-check text-success"></i> ロボットID切替（URL ?id=N）</li>
                     </ul>
                 </a>
             </div>
