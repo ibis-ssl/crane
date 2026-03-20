@@ -495,6 +495,29 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     command.polar_velocity_target_mode.front().target_velocity_theta =
       std::atan2(vel.y(), vel.x()) + theta_offset;
 
+// 効率的な加速のための回転制御
+    // if (command.local_planner_config.enable_rotation_stop_on_accel) {
+	if(true){
+      double move_angle = std::atan2(vel.y(), vel.x());
+      double angle_diff = getAngleDiff(robot->pose.theta, move_angle);
+
+      constexpr double ANGLE_THRESHOLD = 15.0 * M_PI / 180.0;  // 15度
+      bool is_forward_or_backward =
+        (std::abs(angle_diff) <= ANGLE_THRESHOLD) ||                 // 前方
+        (std::abs(std::abs(angle_diff) - M_PI) <= ANGLE_THRESHOLD);  // 後方
+
+      double current_speed = robot->vel.linear.norm();
+      double target_speed = vel.norm();
+      double max_speed = rvo_sim->getAgentMaxSpeed(original_command.robot_id);
+
+      bool is_accelerating = current_speed < target_speed;
+      bool is_low_speed = current_speed <= max_speed * 0.5;
+
+      // 加速初期段階かつ前後方向に向いている場合、回転を停止
+      if (is_forward_or_backward && is_low_speed && is_accelerating && target_speed > 0.01) {
+        command.omega_limit = 0.0;
+      }
+    }
     commands.robot_commands.emplace_back(command);
   }
 
