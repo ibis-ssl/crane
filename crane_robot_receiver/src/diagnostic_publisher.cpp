@@ -273,7 +273,7 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
 
   // 可視化用のCraneVisualizerBufferを初期化
   CraneVisualizerBuffer::activate(*this);
-  visualizer_error = std::make_shared<VisualizerMessageBuilder>("diagnostic_errors");
+  visualizer_error = std::make_shared<VisualizerMessageBuilder>("receiver/diagnostic");
 
   // WorldModelの設定（ロボットデータ初期化より先に必要）
   world_model = std::make_unique<WorldModelWrapper>(*this);

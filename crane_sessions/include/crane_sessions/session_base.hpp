@@ -62,7 +62,7 @@ public:
   explicit SessionBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_shared<VisualizerMessageBuilder>("session_coordinator/" + name))
+    visualizer(std::make_shared<VisualizerMessageBuilder>("session/" + name))
   {
     // セッション用ビジュアライザのデフォルトduration: 0.5秒
     visualizer->withDuration(0.5);

@@ -16,7 +16,7 @@ class EmplaceRobot : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit EmplaceRobot(Args &&... args) : SkillBase("EmplaceRobot", std::forward<Args>(args)...)
+  explicit EmplaceRobot(Args &&... args) : SkillBase("emplace_robot", std::forward<Args>(args)...)
   {
     // このロボットのインデックス
     setParameter("current_robot_index", 0);

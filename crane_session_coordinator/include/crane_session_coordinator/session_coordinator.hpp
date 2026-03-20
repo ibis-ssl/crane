@@ -94,7 +94,7 @@ private:
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
   VisualizerMessageBuilder::SharedPtr visualizer =
-    std::make_shared<VisualizerMessageBuilder>("session_controller");
+    std::make_shared<VisualizerMessageBuilder>("coordinator");
 
   diagnostic_updater::Updater diagnostic_updater_;
 

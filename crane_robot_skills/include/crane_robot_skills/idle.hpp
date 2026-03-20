@@ -17,7 +17,7 @@ class Idle : public SkillBase
 {
 public:
   template <typename... Args>
-  explicit Idle(Args &&... args) : SkillBase("Idle", std::forward<Args>(args)...)
+  explicit Idle(Args &&... args) : SkillBase("idle", std::forward<Args>(args)...)
   {
   }
 

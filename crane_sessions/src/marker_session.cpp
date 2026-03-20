@@ -31,8 +31,9 @@ MarkerSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
       mark_mode = "save_goal";
     }
   }
-  auto result = assignMarkersToEnemies(
-    robot_ids, world_model, visualizer, "marker_planner", true, mark_mode, prev_assignments_);
+  visualizer->layer = "skill/marker";
+  auto result =
+    assignMarkersToEnemies(robot_ids, world_model, visualizer, true, mark_mode, prev_assignments_);
   prev_assignments_ = std::move(result.enemy_to_marker);
   markers = std::move(result.markers);
 

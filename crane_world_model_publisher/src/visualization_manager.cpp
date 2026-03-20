@@ -29,15 +29,12 @@ namespace crane
 
 VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 {
-  geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/geometry");
-  vision_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/vision");
-  tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/tracked");
-  referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/referee");
-  trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/trajectory");
-  placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/placement");
-  slack_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/slack");
-  pass_score_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/pass_score");
-  kick_event_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/kick_event");
+  geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/geometry");
+  vision_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/vision");
+  tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/tracked");
+  referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/referee");
+  trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/trajectory");
+  placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/placement");
 
   crane::CraneVisualizerBuffer::activate(node_);
 

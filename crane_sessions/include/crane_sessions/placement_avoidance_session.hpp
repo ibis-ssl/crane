@@ -29,7 +29,7 @@ class BallPlacementAvoidanceSession : public SessionBase
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidanceSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
-  : SessionBase("ball_placement_avoidance", world_model)
+  : SessionBase("placement_avoidance", world_model)
   {
   }
 

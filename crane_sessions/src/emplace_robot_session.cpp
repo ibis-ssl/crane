@@ -16,7 +16,7 @@ void EmplaceRobotSession::onRobotsChanged() { m_skill_map.clear(); }
 
 EmplaceRobotSession::EmplaceRobotSession(
   WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-: SessionBase("emplace_robot", world_model), topics_interface_(node.get_node_topics_interface())
+: SessionBase("emplace", world_model), topics_interface_(node.get_node_topics_interface())
 {
   // パラメータを取得（既に宣言されている場合はその値を使用、未宣言ならデフォルト値を使用）
   if (!node.has_parameter("emplace_robot.use_voice_announcement")) {

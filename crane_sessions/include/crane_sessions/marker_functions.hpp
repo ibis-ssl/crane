@@ -37,15 +37,14 @@ struct MarkingResult
 /// @param available_robot_ids 割り当て可能なロボットIDのリスト
 /// @param world_model ワールドモデル
 /// @param visualizer ビジュアライザー
-/// @param command_name コマンド名（デバッグ用）
 /// @param assign_remaining ターゲットがいない残余ロボットにもMarkerを生成するか
 /// @param mark_mode マーキングモード ("intercept_pass": ボール基準, "save_goal": ゴール基準)
 /// @return マーキング結果（生成したMarkerリストと選択されたロボットIDリスト）
 auto assignMarkersToEnemies(
   const std::vector<uint8_t> & available_robot_ids,
   const WorldModelWrapper::SharedPtr & world_model,
-  const VisualizerMessageBuilder::SharedPtr & visualizer, const std::string & command_name,
-  bool assign_remaining = false, const std::string & mark_mode = "intercept_pass",
+  const VisualizerMessageBuilder::SharedPtr & visualizer, bool assign_remaining = false,
+  const std::string & mark_mode = "intercept_pass",
   const std::unordered_map<uint8_t, uint8_t> & prev_assignments = {}) -> MarkingResult;
 
 }  // namespace crane

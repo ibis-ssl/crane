@@ -38,7 +38,8 @@ class KickEventDetector
 {
 public:
   KickEventDetector()
-  : ros_clock(RCL_ROS_TIME), visualizer(std::make_shared<VisualizerMessageBuilder>("kick_event"))
+  : ros_clock(RCL_ROS_TIME),
+    visualizer(std::make_shared<VisualizerMessageBuilder>("analyzer/kick_event"))
   {
   }
 

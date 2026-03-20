@@ -179,8 +179,8 @@ auto TotalDefenseSession::assignMarkingTargets(const std::vector<uint8_t> & avai
   -> std::vector<uint8_t>
 {
   auto lock = std::lock_guard(markers_mutex);
-  auto result = assignMarkersToEnemies(
-    available_robots, world_model, visualizer, "total_defense_planner/marker", false, "save_goal");
+  auto result =
+    assignMarkersToEnemies(available_robots, world_model, visualizer, false, "save_goal");
   markers = std::move(result.markers);
   return result.selected_robot_ids;
 }
