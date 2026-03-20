@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<VarXML>
+  <Var name="Geometry" type="list">
+    <Var name="Game" type="list">
+      <Var name="Division" type="stringenum">Division A
+        <Var name="Division A" type="string">Division A</Var>
+        <Var name="Division B" type="string">Division B</Var>
+      </Var>
+      <Var name="Robots Count" type="int">8</Var>
+      <Var name="Color Robot Blue" type="string">#0000ff</Var>
+      <Var name="Color Robot Yellow" type="string">#ffff00</Var>
+    </Var>
+    <Var name="Field" type="list">
+      <Var name="Division A" type="list">
+        <Var name="Line Thickness" type="double">0.010000</Var>
+        <Var name="Length" type="double">12.000000</Var>
+        <Var name="Width" type="double">9.000000</Var>
+        <Var name="Radius" type="double">0.500000</Var>
+        <Var name="Free Kick Distance From Defense Area" type="double">0.700000</Var>
+        <Var name="Penalty width" type="double">3.600000</Var>
+        <Var name="Penalty depth" type="double">1.800000</Var>
+        <Var name="Penalty point" type="double">8.000000</Var>
+        <Var name="Margin" type="double">0.300000</Var>
+        <Var name="Referee margin" type="double">0.000000</Var>
+        <Var name="Wall thickness" type="double">0.050000</Var>
+        <Var name="Goal thickness" type="double">0.020000</Var>
+        <Var name="Goal depth" type="double">0.180000</Var>
+        <Var name="Goal width" type="double">1.800000</Var>
+        <Var name="Goal height" type="double">0.160000</Var>
+      </Var>
+      <Var name="Division B" type="list">
+        <Var name="Line Thickness" type="double">0.010000</Var>
+        <Var name="Length" type="double">9.000000</Var>
+        <Var name="Width" type="double">6.000000</Var>
+        <Var name="Radius" type="double">0.500000</Var>
+        <Var name="Free Kick Distance From Defense Area" type="double">0.700000</Var>
+        <Var name="Penalty width" type="double">2.000000</Var>
+        <Var name="Penalty depth" type="double">1.000000</Var>
+        <Var name="Penalty point" type="double">6.000000</Var>
+        <Var name="Margin" type="double">0.300000</Var>
+        <Var name="Referee margin" type="double">0.000000</Var>
+        <Var name="Wall thickness" type="double">0.050000</Var>
+        <Var name="Goal thickness" type="double">0.020000</Var>
+        <Var name="Goal depth" type="double">0.180000</Var>
+        <Var name="Goal width" type="double">1.000000</Var>
+        <Var name="Goal height" type="double">0.160000</Var>
+      </Var>
+    </Var>
+    <Var name="Yellow Team" type="stringenum">Parsian</Var>
+    <Var name="Blue Team" type="stringenum">Parsian</Var>
+    <Var name="Cameras" type="list">
+      <Var name="Height of all cameras" type="double">4.000000</Var>
+      <Var name="Focal length" type="double">390.000000</Var>
+      <Var name="Camera scaling limit" type="double">0.900000</Var>
+    </Var>
+    <Var name="Ball" type="list">
+      <Var name="Radius" type="double">0.021500</Var>
+    </Var>
+  </Var>
+  <Var name="Physics" type="list">
+    <Var name="World" type="list">
+      <Var name="Desired FPS" type="double">60.000000</Var>
+      <Var name="Synchronize ODE with OpenGL" type="bool">false</Var>
+      <Var name="ODE time step" type="double">0.016667</Var>
+      <Var name="Gravity" type="double">9.810000</Var>
+      <Var name="Auto reset turn-over" type="bool">true</Var>
+    </Var>
+    <Var name="Ball" type="list">
+      <Var name="Ball mass" type="double">0.043000</Var>
+      <Var name="Ball-ground friction" type="double">0.050000</Var>
+      <Var name="Ball-ground slip" type="double">1.000000</Var>
+      <Var name="Ball-ground bounce factor" type="double">0.500000</Var>
+      <Var name="Ball-ground bounce min velocity" type="double">0.100000</Var>
+      <Var name="Ball linear damping" type="double">0.004000</Var>
+      <Var name="Ball angular damping" type="double">0.004000</Var>
+      <Var name="Project airborne balls" type="bool">true</Var>
+      <Var name="Models" type="list">
+        <Var name="Straight-two-phase sliding acceleration" type="double">-14.000000</Var>
+        <Var name="Straight-two-phase rolling acceleration" type="double">-0.700000</Var>
+        <Var name="Straight-two-phase switch factor k" type="double">0.700000</Var>
+        <Var name="Chip-fixed-loss damping in xy-direction for first hop" type="double">0.600000</Var>
+        <Var name="Chip-fixed-loss damping in xy-direction for other hops" type="double">0.960000</Var>
+        <Var name="Chip-fixed-loss damping in z-direction" type="double">0.420000</Var>
+      </Var>
+    </Var>
+  </Var>
+  <Var name="Communication" type="list">
+    <Var name="Vision multicast address" type="string">224.5.23.2</Var>
+    <Var name="Vision multicast port" type="int">10020</Var>
+    <Var name="Command listen port" type="int">20011</Var>
+    <Var name="Blue Team status send port" type="int">30011</Var>
+    <Var name="Yellow Team status send port" type="int">30012</Var>
+    <Var name="Simulation control port" type="int">10300</Var>
+    <Var name="Blue team control port" type="int">10301</Var>
+    <Var name="Yellow team control port" type="int">10302</Var>
+    <Var name="Sending delay (milliseconds)" type="int">100</Var>
+    <Var name="Send geometry every X frames" type="int">120</Var>
+    <Var name="Binary Feedback" type="list">
+      <Var name="Enable Binary Feedback" type="bool">true</Var>
+      <Var name="Binary Feedback Address" type="string">127.0.0.1</Var>
+      <Var name="Binary Feedback Port Base" type="int">50100</Var>
+      <Var name="Select Team from Referee" type="bool">true</Var>
+      <Var name="Referee Multicast Address" type="string">224.5.23.1</Var>
+      <Var name="Referee Multicast Port" type="int">11003</Var>
+      <Var name="Our Team Name" type="string">ibis</Var>
+    </Var>
+    <Var name="Gaussian noise" type="list">
+      <Var name="Noise" type="bool">false</Var>
+      <Var name="Deviation for x values" type="double">3.000000</Var>
+      <Var name="Deviation for y values" type="double">3.000000</Var>
+      <Var name="Deviation for angle values" type="double">2.000000</Var>
+      <Var name="Vanishing" type="bool">false</Var>
+    </Var>
+    <Var name="Vanishing probability" type="list">
+      <Var name="Blue team" type="double">0.000000</Var>
+      <Var name="Yellow team" type="double">0.000000</Var>
+      <Var name="Ball" type="double">0.000000</Var>
+    </Var>
+  </Var>
+</VarXML>
