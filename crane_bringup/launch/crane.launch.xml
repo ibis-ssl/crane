@@ -55,7 +55,7 @@ limitations under the License.
   <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
 
   <!-- Slack時間計算パラメータ -->
-  <arg name="slack.robot_max_acceleration" default="2.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
+  <arg name="slack.robot_max_acceleration" default="1.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
   <arg name="slack.robot_max_velocity" default="5.0" description="slack時間計算に用いるロボットの最大速度 [m/s]"/>
   <arg name="slack.time_horizon" default="3.0" description="ボール軌道予測時間範囲 [s]"/>
   <arg name="slack.time_step" default="0.1" description="ボール軌道サンプリング時間間隔 [s]"/>
