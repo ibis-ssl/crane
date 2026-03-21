@@ -319,10 +319,14 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     //   max_approach_vel = sqrt(2 * planning_deceleration_high_speed * dist_to_boundary)
     if (!command.local_planner_config.disable_goal_area_avoidance) {
       auto applyPhysicalBrakingConstraint = [&](const Box & area) {
-        const double xmin = area.min_corner().x() - PENALTY_AREA_OFFSET;
-        const double xmax = area.max_corner().x() + PENALTY_AREA_OFFSET;
-        const double ymin = area.min_corner().y() - PENALTY_AREA_OFFSET;
-        const double ymax = area.max_corner().y() + PENALTY_AREA_OFFSET;
+        const double penalty_area_offset =
+          world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
+          ? PENALTY_AREA_OFFSET_STOP
+          : PENALTY_AREA_OFFSET;
+        const double xmin = area.min_corner().x() - penalty_area_offset;
+        const double xmax = area.max_corner().x() + penalty_area_offset;
+        const double ymin = area.min_corner().y() - penalty_area_offset;
+        const double ymax = area.max_corner().y() + penalty_area_offset;
         // ロボットがエリア内にいる場合はグローバル回避に任せる
         if (
           current_position.x() >= xmin && current_position.x() <= xmax &&
@@ -669,10 +673,14 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
 {
   if (not command.local_planner_config.disable_goal_area_avoidance) {
     constexpr double SURROUNDING_OFFSET = 0.2;
+    const double penalty_area_offset =
+      world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
+      ? PENALTY_AREA_OFFSET_STOP
+      : PENALTY_AREA_OFFSET;
 
     auto avoidPenaltyArea = [&](const Box & penalty_area, const Point & goal_pos) {
       constexpr int MAX_ITERATIONS = 100;
-      if (isInBox(penalty_area, current_pos, PENALTY_AREA_OFFSET)) {
+      if (isInBox(penalty_area, current_pos, penalty_area_offset)) {
         if (std::abs(current_pos.x()) > world_model->fieldSize().x() / 2.0) {
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
@@ -683,18 +691,18 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
         }
         // 目標点をペナルティエリアの外に出るようにする (反復上限で無限ループ防止)
         for (int iter = 0;
-             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET);
+             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, penalty_area_offset);
              ++iter) {
           target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
         }
-      } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+      } else if (isInBox(penalty_area, target_pos, penalty_area_offset)) {
         // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
         if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
         // 目標点をペナルティエリアの外に出るようにする
         for (int iter = 0;
-             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) &&
+             iter < MAX_ITERATIONS && isInBox(penalty_area, target_pos, penalty_area_offset) &&
              target_pos != goal_pos;
              ++iter) {
           target_pos += (target_pos - goal_pos).normalized() * 0.05;
