@@ -292,9 +292,7 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
     return cmd == PlaySituation::STOP || (cmd >= PlaySituation::STOP_PRE_OUR_PENALTY_PREPARATION &&
                                           cmd <= PlaySituation::STOP_PRE_FORCE_START);
   };
-  auto is_inplay = [](uint8_t cmd) {
-    return cmd >= PlaySituation::INPLAY && cmd <= PlaySituation::AMBIGUOUS_INPLAY;
-  };
+  auto is_inplay = [](uint8_t cmd) { return cmd == PlaySituation::INPLAY; };
 
   uint8_t current = static_cast<uint8_t>(msg.command.value);
 
@@ -329,24 +327,7 @@ auto GameAnalyzerComponent::onPlaySituationChanged(const crane_msgs::msg::PlaySi
       stop_type, current, next_cmd, msg.reason_text);
   } else if (is_inplay(current) && !is_inplay(last)) {
     event = createPlaySituationEvent(crane_msgs::msg::RonarEvent::EVENT_INPLAY_START, msg);
-    std::string inplay_type;
-    switch (current) {
-      case PlaySituation::INPLAY:
-        inplay_type = "INPLAY";
-        break;
-      case PlaySituation::OUR_INPLAY:
-        inplay_type = "OUR_INPLAY";
-        break;
-      case PlaySituation::THEIR_INPLAY:
-        inplay_type = "THEIR_INPLAY";
-        break;
-      case PlaySituation::AMBIGUOUS_INPLAY:
-        inplay_type = "AMBIGUOUS_INPLAY";
-        break;
-      default:
-        inplay_type = "UNKNOWN";
-        break;
-    }
+    std::string inplay_type = "INPLAY";
     event->metadata_json =
       std::format(R"({{"inplay_type": "{}", "previous_command": {}}})", inplay_type, last);
   } else if (
