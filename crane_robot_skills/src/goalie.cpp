@@ -33,6 +33,7 @@ Status Goalie::update()
     situation = crane_msgs::msg::PlaySituation::INPLAY;
   }
   phase = "";
+  command->withDribble(0.0);
 
   switch (situation) {
     case crane_msgs::msg::PlaySituation::HALT:
