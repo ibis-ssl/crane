@@ -180,6 +180,7 @@ protected:
     command->clearPlanningFactors();
 
     auto & msg = command->getEditableMsg();
+    msg.omega_limit = 10.0;
     msg.current_pose.x = robot()->pose.pos.x();
     msg.current_pose.y = robot()->pose.pos.y();
     msg.current_pose.theta = robot()->pose.theta;
