@@ -9,6 +9,8 @@ const TEMP_WARN = 60;
 const PING_WARN = 10;
 const PING_CRIT = 50;
 
+const CONTROL_MODE_LONG = { 0: 'LOCAL_CAMERA', 1: 'POSITION_TARGET', 2: 'SIMPLE_VELOCITY', 3: 'POLAR_VELOCITY' };
+
 // ---- State ----------------------------------------------------------------
 
 const robotState = {};
@@ -20,6 +22,12 @@ for (let i = 0; i < NUM_ROBOTS; i++) {
         last_feedback_ms: 0,
     };
 }
+
+// world_model / control_targets per robot
+const robotPose = {};     // { x, y, theta, vx, vy, omega, vision_x, vision_y, vision_theta }
+const robotCommand = {};  // control_targets commands keyed by robot_id
+
+let detailOpenId = null;
 
 let ws = null;
 let wsConnected = false;
@@ -73,21 +81,14 @@ function setWsStatus(connected) {
 
 function handleMessage(msg) {
     switch (msg.type) {
-        case 'robot_feedback':
-            onRobotFeedback(msg);
-            break;
-        case 'ping_status':
-            onPingStatus(msg);
-            break;
-        case 'pi_status':
-            onPiStatus(msg);
-            break;
-        case 'robot_control_result':
-            onRobotControlResult(msg);
-            break;
-        // diagnostics は将来の拡張用
-        default:
-            break;
+        case 'robot_feedback':      onRobotFeedback(msg); break;
+        case 'ping_status':         onPingStatus(msg); break;
+        case 'pi_status':           onPiStatus(msg); break;
+        case 'robot_control_result': onRobotControlResult(msg); break;
+        case 'world_model':         onWorldModel(msg); break;
+        case 'control_targets':     onControlTargets(msg); break;
+        case 'robot_commands':      onRobotCommands(msg); break;
+        default: break;
     }
 }
 
@@ -121,6 +122,34 @@ function onPiStatus(msg) {
         }
     }
     pendingUpdate = true;
+}
+
+function onWorldModel(msg) {
+    if (msg.robots_ours) {
+        for (const r of msg.robots_ours) {
+            robotPose[r.id] = r;
+        }
+    }
+    if (detailOpenId !== null) refreshDetailPanel(detailOpenId);
+}
+
+function onControlTargets(msg) {
+    if (msg.commands) {
+        for (const cmd of msg.commands) {
+            robotCommand[cmd.robot_id] = cmd;
+        }
+    }
+    if (detailOpenId !== null) refreshDetailPanel(detailOpenId);
+}
+
+function onRobotCommands(msg) {
+    // control_targets がない場合のフォールバック
+    if (msg.commands && Object.keys(robotCommand).length === 0) {
+        for (const cmd of msg.commands) {
+            robotCommand[cmd.robot_id] = cmd;
+        }
+        if (detailOpenId !== null) refreshDetailPanel(detailOpenId);
+    }
 }
 
 function onRobotControlResult(msg) {
@@ -227,18 +256,18 @@ function pingClass(ms) {
     return 'text-success';
 }
 
-function renderRobotCard(id) {
+function renderRobotRow(id) {
     const state = robotState[id];
     const fb = state.feedback;
     const overallStatus = getOverallStatus(id);
 
-    const card = document.getElementById(`robot-card-${id}`);
-    if (!card) return;
+    const row = document.getElementById(`robot-row-${id}`);
+    if (!row) return;
 
-    // Card border style
-    card.className = 'card robot-card h-100';
-    if (overallStatus === 'Error') card.classList.add('has-error');
-    else if (overallStatus === 'Offline') card.classList.add('offline');
+    // Row style
+    row.className = 'robot-row';
+    if (overallStatus === 'Error') row.classList.add('has-error');
+    else if (overallStatus === 'Offline') row.classList.add('offline');
 
     // Status badge
     const badge = document.getElementById(`badge-${id}`);
@@ -252,12 +281,12 @@ function renderRobotCard(id) {
         const v = fb.voltage[0];
         const pct = Math.max(0, Math.min(100, (v - VOLTAGE_MIN) / (VOLTAGE_MAX - VOLTAGE_MIN) * 100));
         voltageEl.textContent = `${v.toFixed(2)} V`;
-        voltageEl.className = `info-value ${v < 22.0 ? 'text-danger' : v < 23.0 ? 'text-warning' : 'text-success'}`;
+        voltageEl.className = `fw-medium ${v < 22.0 ? 'text-danger' : v < 23.0 ? 'text-warning' : 'text-success'}`;
         voltageBarEl.style.width = `${pct}%`;
         voltageBarEl.className = `progress-bar ${voltageBarClass(v)}`;
     } else {
         voltageEl.textContent = '--';
-        voltageEl.className = 'info-value text-secondary';
+        voltageEl.className = 'fw-medium text-secondary';
         voltageBarEl.style.width = '0%';
         voltageBarEl.className = 'progress-bar bg-secondary';
     }
@@ -267,30 +296,30 @@ function renderRobotCard(id) {
     if (fb && fb.temperatures && fb.temperatures.length > 0) {
         const maxTemp = Math.max(...fb.temperatures);
         tempEl.textContent = `${maxTemp} °C`;
-        tempEl.className = `info-value ${maxTemp >= TEMP_WARN ? 'text-danger' : ''}`;
+        tempEl.className = `fw-medium ${maxTemp >= TEMP_WARN ? 'text-danger' : ''}`;
     } else {
         tempEl.textContent = '--';
-        tempEl.className = 'info-value text-secondary';
+        tempEl.className = 'fw-medium text-secondary';
     }
 
     // Ping
     const pingEl = document.getElementById(`ping-${id}`);
     if (state.ping_ms !== null) {
         pingEl.textContent = `${state.ping_ms.toFixed(1)} ms`;
-        pingEl.className = `info-value ${pingClass(state.ping_ms)}`;
+        pingEl.className = `fw-medium ${pingClass(state.ping_ms)}`;
     } else {
         pingEl.textContent = '--';
-        pingEl.className = 'info-value text-secondary';
+        pingEl.className = 'fw-medium text-secondary';
     }
 
     // Packet frequency
     const freqEl = document.getElementById(`freq-${id}`);
     if (fb) {
         freqEl.textContent = `${fb.packet_frequency_hz.toFixed(1)} Hz`;
-        freqEl.className = `info-value ${fb.packet_frequency_hz < 50 ? 'text-warning' : 'text-success'}`;
+        freqEl.className = `fw-medium ${fb.packet_frequency_hz < 50 ? 'text-warning' : 'text-success'}`;
     } else {
         freqEl.textContent = '--';
-        freqEl.className = 'info-value text-secondary';
+        freqEl.className = 'fw-medium text-secondary';
     }
 
     // Error
@@ -326,74 +355,207 @@ function renderSummary() {
 
 function renderAll() {
     for (let i = 0; i < NUM_ROBOTS; i++) {
-        renderRobotCard(i);
+        renderRobotRow(i);
     }
     renderSummary();
 }
 
-// ---- Card Generation ------------------------------------------------------
+// ---- Table Row Generation -------------------------------------------------
 
-function createRobotCard(id) {
+function createRobotRow(id) {
     return `
-<div class="col-xl-3 col-lg-4 col-md-6">
-    <div class="card robot-card h-100" id="robot-card-${id}">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <strong><i class="fas fa-robot me-1"></i>Robot #${id}</strong>
-            <span class="badge bg-secondary" id="badge-${id}">不明</span>
-        </div>
-        <div class="card-body">
-            <!-- 電圧 -->
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-battery-half me-1"></i>電圧</span>
-                <span class="info-value text-secondary" id="voltage-${id}">--</span>
-            </div>
-            <div class="progress voltage-bar mb-2">
-                <div class="progress-bar bg-secondary" id="voltage-bar-${id}" style="width:0%"></div>
-            </div>
-            <!-- 温度 -->
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-thermometer-half me-1"></i>最高温度</span>
-                <span class="info-value text-secondary" id="temp-${id}">--</span>
-            </div>
-            <!-- Ping -->
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-wifi me-1"></i>Ping</span>
-                <span class="info-value text-secondary" id="ping-${id}">--</span>
-            </div>
-            <!-- 通信頻度 -->
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-signal me-1"></i>通信</span>
-                <span class="info-value text-secondary" id="freq-${id}">--</span>
-            </div>
-            <!-- エラー -->
-            <div class="info-row align-items-start">
-                <span class="info-label"><i class="fas fa-exclamation-circle me-1"></i>エラー</span>
-                <span class="error-text text-success" id="error-${id}">OK</span>
-            </div>
-        </div>
-        <div class="card-footer p-2">
-            <div class="btn-group w-100" role="group">
-                <button class="btn btn-sm btn-outline-success"
-                        onclick="sendRobotControl(${id}, 'start')">
-                    <i class="fas fa-play me-1"></i>Start
+<tr class="robot-row" id="robot-row-${id}">
+    <td><i class="fas fa-robot me-1 text-secondary"></i><strong>#${id}</strong></td>
+    <td>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" id="badge-${id}" style="min-width:60px">不明</span>
+            <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-success" onclick="sendRobotControl(${id}, 'start')" title="Start">
+                    <i class="fas fa-play"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger"
-                        onclick="sendRobotControl(${id}, 'stop')">
-                    <i class="fas fa-stop me-1"></i>Stop
+                <button class="btn btn-outline-danger" onclick="sendRobotControl(${id}, 'stop')" title="Stop">
+                    <i class="fas fa-stop"></i>
                 </button>
             </div>
         </div>
-    </div>
-</div>`;
+    </td>
+    <td>
+        <span class="fw-medium text-secondary" id="voltage-${id}">--</span>
+        <div class="progress voltage-bar">
+            <div class="progress-bar bg-secondary" id="voltage-bar-${id}" style="width:0%"></div>
+        </div>
+    </td>
+    <td><span class="fw-medium text-secondary" id="temp-${id}">--</span></td>
+    <td><span class="fw-medium text-secondary" id="ping-${id}">--</span></td>
+    <td><span class="fw-medium text-secondary" id="freq-${id}">--</span></td>
+    <td><span class="error-text text-success" id="error-${id}">OK</span></td>
+    <td>
+        <button class="btn btn-sm btn-outline-info" onclick="openDetailPanel(${id})" title="詳細">
+            <i class="fas fa-info-circle"></i>
+        </button>
+    </td>
+</tr>`;
 }
 
-function initGrid() {
-    const grid = document.getElementById('robot-grid');
+function initTable() {
+    const tbody = document.getElementById('robot-table-body');
     let html = '';
     for (let i = 0; i < NUM_ROBOTS; i++) {
-        html += createRobotCard(i);
+        html += createRobotRow(i);
     }
-    grid.innerHTML = html;
+    tbody.innerHTML = html;
+}
+
+// ---- Detail Side Panel ----------------------------------------------------
+
+function openDetailPanel(id) {
+    detailOpenId = id;
+    refreshDetailPanel(id);
+    document.getElementById('detail-panel').classList.add('open');
+    document.getElementById('panel-backdrop').style.display = 'block';
+}
+
+function closeDetailPanel() {
+    detailOpenId = null;
+    document.getElementById('detail-panel').classList.remove('open');
+    document.getElementById('panel-backdrop').style.display = 'none';
+}
+
+function row(label, value) {
+    return `<tr><td>${label}</td><td>${value}</td></tr>`;
+}
+
+function refreshDetailPanel(id) {
+    const pose = robotPose[id];
+    const cmd = robotCommand[id];
+    const state = robotState[id];
+
+    document.getElementById('panel-title').textContent = `Robot #${id}`;
+    document.getElementById('panel-telemetry-link').href = `/robot_telemetry.html?id=${id}`;
+
+    // --- 位置・速度 ---
+    let poseHtml = '';
+    if (pose) {
+        const fp = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
+        const deg = (v) => { const n = parseFloat(v); return isNaN(n) ? '--' : (n * 180 / Math.PI).toFixed(1); };
+        const cell = (label, val) =>
+            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:#6c757d">${label}</span> ${val}</td>`;
+        poseHtml = `
+<table style="width:100%;border-collapse:collapse">
+  <tr>
+    ${cell('X', fp(pose.x, 3))}
+    ${cell('Y', fp(pose.y, 3))}
+    ${cell('θ', deg(pose.theta) + '°')}
+  </tr>
+  <tr>
+    ${cell('Vx', fp(pose.vx, 3))}
+    ${cell('Vy', fp(pose.vy, 3))}
+    ${cell('ω', deg(pose.omega) + '°/s')}
+  </tr>`;
+        if (pose.available_vision != null) {
+            const flag = (ok, label) =>
+                ok ? `<span class="text-success">${label}</span>` : `<span class="text-secondary">${label}</span>`;
+            poseHtml += `<tr><td colspan="3" style="padding-top:4px;font-size:0.78rem">
+                ${flag(pose.available_vision, 'Vision')}
+                ${flag(pose.available_feedback, 'FB')}
+                ${flag(pose.available_tracker, 'Tracker')}
+            </td></tr>`;
+        }
+        poseHtml += '</table>';
+    } else {
+        poseHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+    }
+    document.getElementById('panel-pose').innerHTML = poseHtml;
+
+    // --- Session / スキル ---
+    let sessionHtml = '';
+    if (cmd) {
+        const fc = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
+        const modeName = CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`;
+        sessionHtml += row('プランナー', cmd.planner_name || '--');
+        sessionHtml += row('制御モード', modeName);
+        const kick = parseFloat(cmd.kick_power);
+        sessionHtml += row('キック', kick > 0 ? `<span class="text-warning">${fc(cmd.kick_power, 2)}</span>` : '0');
+        const drib = parseFloat(cmd.dribble_power);
+        sessionHtml += row('ドリブル', drib > 0 ? `<span class="text-info">${fc(cmd.dribble_power, 2)}</span>` : '0');
+        sessionHtml += row('チップ', cmd.chip_enable ? '<span class="text-warning">ON</span>' : 'OFF');
+    } else {
+        sessionHtml = row('--', '<span class="text-secondary">データなし</span>');
+    }
+    document.getElementById('panel-session').innerHTML = sessionHtml;
+
+    // --- 目標値 ---
+    let targetHtml = '';
+    if (cmd) {
+        const ft = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
+        const fdeg = (v) => { const n = parseFloat(v); return isNaN(n) ? '--' : (n * 180 / Math.PI).toFixed(1) + '°'; };
+        const tcell = (label, val) =>
+            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:#6c757d">${label}</span> ${val}</td>`;
+        if (cmd.position_target_mode) {
+            const t = cmd.position_target_mode;
+            targetHtml = `<table style="width:100%;border-collapse:collapse"><tr>
+                ${tcell('X', ft(t.target_x, 3))}
+                ${tcell('Y', ft(t.target_y, 3))}
+                ${tcell('θ', fdeg(cmd.target_theta))}
+            </tr></table>`;
+        } else if (cmd.simple_velocity_target_mode) {
+            const t = cmd.simple_velocity_target_mode;
+            targetHtml = `<table style="width:100%;border-collapse:collapse"><tr>
+                ${tcell('Vx', ft(t.target_vx, 3))}
+                ${tcell('Vy', ft(t.target_vy, 3))}
+                ${tcell('θ', fdeg(cmd.target_theta))}
+            </tr></table>`;
+        } else if (cmd.polar_velocity_target_mode) {
+            const t = cmd.polar_velocity_target_mode;
+            targetHtml = `<table style="width:100%;border-collapse:collapse"><tr>
+                ${tcell('r', ft(t.target_velocity_r, 3))}
+                ${tcell('θ', fdeg(t.target_velocity_theta))}
+                ${tcell('向き', fdeg(cmd.target_theta))}
+            </tr></table>`;
+        } else if (cmd.target_theta != null) {
+            targetHtml = `<table style="width:100%;border-collapse:collapse"><tr>
+                ${tcell('θ', fdeg(cmd.target_theta))}
+            </tr></table>`;
+        }
+    }
+    if (!targetHtml) targetHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+    document.getElementById('panel-target').innerHTML = targetHtml;
+
+    // --- プランニング要素 ---
+    let factorsHtml = '';
+    if (cmd?.planning_factors?.length) {
+        for (const f of cmd.planning_factors) {
+            const stateVal = parseFloat(f.state);
+            const pct = isNaN(stateVal) ? 0 : Math.max(0, Math.min(100, stateVal * 100));
+            const stateStr = isNaN(stateVal) ? String(f.state) : stateVal.toFixed(3);
+            factorsHtml += `
+<div style="margin-bottom:0.5rem">
+  <div style="display:flex; justify-content:space-between; font-size:0.8rem">
+    <span>${f.name}</span>
+    <span class="text-secondary">${stateStr}</span>
+  </div>
+  <div class="factor-bar"><div class="factor-bar-fill" style="width:${pct}%"></div></div>
+</div>`;
+        }
+    } else {
+        factorsHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+    }
+    document.getElementById('panel-factors').innerHTML = factorsHtml;
+
+    // --- ハードウェア ---
+    let hwHtml = '';
+    const fb = state.feedback;
+    const fmt = (v, digits) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(digits); };
+    if (fb) {
+        if (fb.voltage?.length) hwHtml += row('電圧', `${fmt(fb.voltage[0], 2)} V`);
+        if (fb.temperatures?.length) hwHtml += row('最高温度', `${Math.max(...fb.temperatures.map(parseFloat))} °C`);
+        if (fb.yaw_angle != null) hwHtml += row('Yaw角', `${fmt(fb.yaw_angle, 2)} °`);
+        if (fb.odom_speed != null) hwHtml += row('オドム速度', `${fmt(fb.odom_speed, 3)} m/s`);
+        if (fb.ball_sensor != null) hwHtml += row('ボールセンサ', fb.ball_sensor ? '<span class="text-success">検知</span>' : '未検知');
+    }
+    if (state.ping_ms !== null) hwHtml += row('Ping', `${fmt(state.ping_ms, 1)} ms`);
+    if (!hwHtml) hwHtml = row('--', '<span class="text-secondary">データなし</span>');
+    document.getElementById('panel-hw').innerHTML = hwHtml;
 }
 
 // ---- Control Commands -----------------------------------------------------
@@ -429,7 +591,7 @@ function refreshPiStatus() {
 
 // ---- Main -----------------------------------------------------------------
 
-initGrid();
+initTable();
 renderAll();
 connectWebSocket();
 
