@@ -59,6 +59,12 @@ void Kick::initialize()
   addStateFunction(static_cast<int>(KickState::AROUND_BALL_AND_KICK), [this]() {
     pivot_turn_entry_time_.reset();
     Point ball_pos = world_model()->ball().pos;
+    // 味方ペナルティエリア内のボールには接近しない（GKに委ねる）
+    if (world_model()->point_checker.isFriendPenaltyArea(ball_pos, 0.15)) {
+      command->lookAtBall();
+      command->addPlanningFactor("kick", "WAIT_BALL_EXIT_FRIEND_PA");
+      return Status::RUNNING;
+    }
     const double interval = std::max(getParameter<double>("around_interval"), 0.01);
     const bool go_around_ball = getParameter<bool>("go_around_ball");
     const Vector2 kick_vec = computeKickVec();

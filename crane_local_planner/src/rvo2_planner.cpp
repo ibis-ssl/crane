@@ -327,10 +327,30 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         const double xmax = area.max_corner().x() + penalty_area_offset;
         const double ymin = area.min_corner().y() - penalty_area_offset;
         const double ymax = area.max_corner().y() + penalty_area_offset;
-        // ロボットがエリア内にいる場合はグローバル回避に任せる
+        // ロボットがエリア内にいる場合は最短経路で脱出させる
         if (
           current_position.x() >= xmin && current_position.x() <= xmax &&
           current_position.y() >= ymin && current_position.y() <= ymax) {
+          const double d_left = current_position.x() - xmin;
+          const double d_right = xmax - current_position.x();
+          const double d_bottom = current_position.y() - ymin;
+          const double d_top = ymax - current_position.y();
+          const double min_d = std::min({d_left, d_right, d_bottom, d_top});
+          Eigen::Vector2d escape_dir(0, 0);
+          if (min_d == d_left)
+            escape_dir = Eigen::Vector2d(-1, 0);
+          else if (min_d == d_right)
+            escape_dir = Eigen::Vector2d(1, 0);
+          else if (min_d == d_bottom)
+            escape_dir = Eigen::Vector2d(0, -1);
+          else
+            escape_dir = Eigen::Vector2d(0, 1);
+          // 脱出方向と逆に向いている成分を除去し、最低脱出速度を保証
+          const double escape_component = target_vel.dot(escape_dir);
+          if (escape_component <= 0.0) {
+            target_vel -= escape_component * escape_dir;
+            target_vel += 0.5 * escape_dir;
+          }
           return;
         }
 
@@ -340,6 +360,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         const double dy_below = ymin - current_position.y();  // 下側にある場合 > 0
         const double dy_above = current_position.y() - ymax;  // 上側にある場合 > 0
 
+        // 制御遅延（~50ms）分の安全マージンを加味した有効距離
+        constexpr double BRAKING_SAFETY_MARGIN = 0.05;
         if ((dx_left > 0.0 || dx_right > 0.0) && (dy_below > 0.0 || dy_above > 0.0)) {
           // 角の外側: 最近傍角頂点までのユークリッド距離でブレーキング制約を計算
           // 各軸独立制約より緩やかになり、角を回り込む際の接線方向の速度が維持される
@@ -352,8 +374,9 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             const Eigen::Vector2d corner_dir(cdx / dist_to_corner, cdy / dist_to_corner);
             const double approach = target_vel.dot(corner_dir);
             if (approach > 0.0) {
+              const double effective_dist = std::max(dist_to_corner - BRAKING_SAFETY_MARGIN, 0.0);
               const double v_max =
-                std::sqrt(2.0 * planning_deceleration_high_speed * dist_to_corner);
+                std::sqrt(2.0 * planning_deceleration_high_speed * effective_dist);
               if (approach > v_max) {
                 target_vel -= (approach - v_max) * corner_dir;
               }
@@ -363,22 +386,30 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           // 面の外側: 各境界面への距離を計算し、接近方向速度成分を物理制動距離内に制限する
           // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
           if (dx_left > 0.0 && target_vel.x() > 0.0) {
-            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dx_left);
+            const double v_max = std::sqrt(
+              2.0 * planning_deceleration_high_speed *
+              std::max(dx_left - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.x() = std::min(target_vel.x(), v_max);
           }
           // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
           if (dx_right > 0.0 && target_vel.x() < 0.0) {
-            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dx_right);
+            const double v_max = std::sqrt(
+              2.0 * planning_deceleration_high_speed *
+              std::max(dx_right - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.x() = std::max(target_vel.x(), -v_max);
           }
           // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
           if (dy_below > 0.0 && target_vel.y() > 0.0) {
-            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dy_below);
+            const double v_max = std::sqrt(
+              2.0 * planning_deceleration_high_speed *
+              std::max(dy_below - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.y() = std::min(target_vel.y(), v_max);
           }
           // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
           if (dy_above > 0.0 && target_vel.y() < 0.0) {
-            const double v_max = std::sqrt(2.0 * planning_deceleration_high_speed * dy_above);
+            const double v_max = std::sqrt(
+              2.0 * planning_deceleration_high_speed *
+              std::max(dy_above - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.y() = std::max(target_vel.y(), -v_max);
           }
         }
