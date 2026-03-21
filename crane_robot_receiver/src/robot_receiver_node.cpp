@@ -28,8 +28,10 @@ namespace protocol = crane::robot_receiver::protocol;
 class RobotFeedbackReceiver
 {
 public:
-  RobotFeedbackReceiver(asio::io_context & io_ctx, const std::string & host, const int port)
+  RobotFeedbackReceiver(
+    asio::io_context & io_ctx, const std::string & host, const int port, float alpha)
   : robot_id(port - 50100),
+    alpha_(alpha),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
     clock(RCL_ROS_TIME)
@@ -42,9 +44,13 @@ public:
   void onReceive(const std::vector<char> & buf, size_t /*size*/)
   {
     auto stamp = clock.now();
-    RobotFeedback feedback = parseBuffer(buf, stamp);
+    RobotFeedback new_packet = parseBuffer(buf, stamp);
     std::lock_guard<std::mutex> lock(mutex_);
-    latest_feedback_ = feedback;
+    if (!master_feedback_) {
+      master_feedback_ = new_packet;
+    } else {
+      blendFeedback(master_feedback_.value(), new_packet, alpha_);
+    }
     receive_timestamps_.push_back(stamp);
   }
 
@@ -52,7 +58,7 @@ public:
   auto getLatestFeedback() -> std::optional<RobotFeedback>
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    return latest_feedback_;
+    return master_feedback_;
   }
 
   struct IntervalStats
@@ -190,9 +196,52 @@ private:
     return {mean, min_val, max_val, std::sqrt(var / static_cast<float>(n))};
   }
 
+  static void blendFeedback(RobotFeedback & master, const RobotFeedback & incoming, float alpha)
+  {
+    // タイムスタンプ・離散値: 直接上書き
+    master.received_stamp = incoming.received_stamp;
+    master.counter = incoming.counter;
+    master.kick_state = incoming.kick_state;
+    master.error_id = incoming.error_id;
+    master.error_info = incoming.error_info;
+    master.error_value = incoming.error_value;
+    master.ball_sensor = incoming.ball_sensor;
+    master.check_ver = incoming.check_ver;
+    master.values = incoming.values;
+    std::copy(
+      std::begin(incoming.ball_detection), std::end(incoming.ball_detection),
+      std::begin(master.ball_detection));
+    std::copy(
+      std::begin(incoming.temperature), std::end(incoming.temperature),
+      std::begin(master.temperature));
+
+    // 連続値: EMAブレンド (master = alpha * incoming + (1 - alpha) * master)
+    // TODO(ibis-ssl): yaw_angle/diff_angleは±π境界でラップアラウンドが起きる場合がある。
+    //       問題発生時はcircular EMAへの変更を検討すること。
+    const float inv_alpha = 1.0f - alpha;
+    master.yaw_angle = alpha * incoming.yaw_angle + inv_alpha * master.yaw_angle;
+    master.diff_angle = alpha * incoming.diff_angle + inv_alpha * master.diff_angle;
+    for (int i = 0; i < 4; ++i) {
+      master.motor_current[i] =
+        alpha * incoming.motor_current[i] + inv_alpha * master.motor_current[i];
+    }
+    auto blend_array2 = [alpha, inv_alpha](
+                          std::array<float, 2> & dst, const std::array<float, 2> & src) {
+      for (int i = 0; i < 2; ++i) {
+        dst[i] = alpha * src[i] + inv_alpha * dst[i];
+      }
+    };
+    blend_array2(master.odom, incoming.odom);
+    blend_array2(master.odom_speed, incoming.odom_speed);
+    blend_array2(master.mouse_odom, incoming.mouse_odom);
+    blend_array2(master.mouse_vel, incoming.mouse_vel);
+    blend_array2(master.voltage, incoming.voltage);
+  }
+
+  float alpha_;
   std::unique_ptr<crane::AsyncUdpReceiver> async_receiver_;
   std::mutex mutex_;
-  std::optional<RobotFeedback> latest_feedback_;
+  std::optional<RobotFeedback> master_feedback_;
   std::deque<rclcpp::Time> receive_timestamps_;
   rclcpp::Clock clock;
 };
@@ -214,6 +263,8 @@ public:
     std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
     int port_base = declare_parameter("port_base", 50100);
     int ip_offset = declare_parameter("ip_octet_offset", 100);
+    // EMAブレンド係数: 0.0=全く追従しない, 1.0=即座に追従(従来動作と同等)
+    float feedback_alpha = static_cast<float>(declare_parameter("feedback_alpha", 0.1));
 
     RCLCPP_INFO(
       get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,
@@ -227,7 +278,8 @@ public:
         ip = std::format("{}.{}", ip_base, i + ip_offset);
       }
       int port = port_base + i;
-      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+      receivers.push_back(
+        std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, feedback_alpha));
     }
 
     // asioイベントループを専用スレッドで開始
