@@ -57,6 +57,31 @@ private:
     return p;
   }
 
+  /// ボールがドリブラーから確実に離れたかを判定する。
+  /// Vision/Tracker両方が検出かつ位置が一致かつデータが新鮮な場合のみ判定可能。
+  bool isBallTrulyLostFromDribbler(double distance_threshold = 0.2) const
+  {
+    const auto & ball_info = world_model()->getMsg().ball_info;
+    if (!ball_info.vision_detected || !ball_info.tracker_detected) {
+      return false;
+    }
+    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+    constexpr double FRESHNESS_SEC = 0.1;
+    rclcpp::Time vision_stamp(ball_info.vision.stamp, RCL_ROS_TIME);
+    rclcpp::Time tracker_stamp(ball_info.tracker.stamp, RCL_ROS_TIME);
+    if (
+      (now - vision_stamp).seconds() > FRESHNESS_SEC ||
+      (now - tracker_stamp).seconds() > FRESHNESS_SEC) {
+      return false;
+    }
+    Point vision_pos(ball_info.vision.pos.x, ball_info.vision.pos.y);
+    Point tracker_pos(ball_info.tracker.pos.x, ball_info.tracker.pos.y);
+    if ((vision_pos - tracker_pos).norm() > 0.15) {
+      return false;
+    }
+    return (tracker_pos - robot()->kicker_center()).norm() > distance_threshold;
+  }
+
 public:
   template <typename... Args>
   explicit SingleBallPlacement(Args &&... args)

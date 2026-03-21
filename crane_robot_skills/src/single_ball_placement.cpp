@@ -267,6 +267,12 @@ void SingleBallPlacement::initialize()
   //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
   //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
 
+  // Vision/Tracker両方が一致してボールがドリブラーから離れている場合はやり直し
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return isBallTrulyLostFromDribbler(0.2); });
+
   addStateFunction(static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
     command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
     auto placement_target = getPlacementTarget();
@@ -380,11 +386,14 @@ void SingleBallPlacement::initialize()
   addTransition(
     static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
-      // ロボットの向きがボールの方を向いていなかったらやり直し
       using boost::math::constants::degree;
-      return std::abs(getAngleDiff(
-               getAngle(world_model()->ball().pos - robot()->pose.pos), robot()->pose.theta)) >
-             45 * degree<double>();
+      if (
+        std::abs(getAngleDiff(
+          getAngle(world_model()->ball().pos - robot()->pose.pos), robot()->pose.theta)) >
+        45 * degree<double>()) {
+        return true;
+      }
+      return isBallTrulyLostFromDribbler(0.3);
     });
 
   addStateFunction(static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
@@ -402,8 +411,8 @@ void SingleBallPlacement::initialize()
     double dist = (placement_target - robot()->pose.pos).norm();
     double acc = 0.5;
     double max_vel = std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
-    command->setTargetPosition(placement_target);
     command->lookAt(placement_target);
+    command->setDribblerTargetPosition(placement_target);
     command->disableAnyAreaAvoidance();
     command->setMaxVelocity("SingleBallPlacementStates::MOVE_TO_TARGET", max_vel);
     command->setMaxAcceleration("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
@@ -453,19 +462,24 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-      bool flag = robot()->ball_sensor_stamp.has_value() &&
-                  now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
-                  (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
-
-      if (flag && !robot()->ball_sensor) {
+      bool feedback_timeout =
+        robot()->ball_sensor_stamp.has_value() &&
+        now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
+        (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
+      if (feedback_timeout && !robot()->ball_sensor) {
         RCLCPP_INFO(
           rclcpp::get_logger("SingleBallPlacement"),
           "Ball sensor is not working, so return to ENTRY_POINT: %fs",
           std::abs((now - *(robot()->ball_sensor_stamp)).seconds()));
         return true;
-      } else {
-        return false;
       }
+      if (isBallTrulyLostFromDribbler(0.2)) {
+        RCLCPP_INFO(
+          rclcpp::get_logger("SingleBallPlacement"),
+          "Ball truly lost during MOVE_TO_TARGET (vision+tracker agree, ball far from dribbler)");
+        return true;
+      }
+      return false;
     });
   // ボールが離れたら始めに戻る
   // addTransition(
