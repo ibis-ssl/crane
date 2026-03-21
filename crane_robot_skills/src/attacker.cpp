@@ -121,7 +121,8 @@ void Attacker::initialize()
       // Attackerはボール取得が役割なので、転がるボールを積極的に追いかけるべきである。
       if (
         robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-        world_model()->ball().isMoving(MOVING_BALL_VELOCITY)) {
+        world_model()->ball().isMoving(MOVING_BALL_VELOCITY) &&
+        !world_model()->point_checker.isFriendPenaltyArea(world_model()->ball().pos, 0.15)) {
         // GameAnalysisの既存slackデータで敵との競合チェック（追加計算コストなし）
         const auto & ga = world_model()->getMsg().game_analysis;
         double my_min_slack = -100.0;
@@ -258,6 +259,13 @@ void Attacker::initialize()
     if (!in_kick_state) {
       kick_state_entry_time = std::chrono::steady_clock::now();
       in_kick_state = true;
+    }
+
+    // 味方ペナルティエリア内のボールには接近しない（GKに委ねる）
+    if (world_model()->point_checker.isFriendPenaltyArea(world_model()->ball().pos, 0.15)) {
+      command->lookAtBall();
+      command->addPlanningFactor("attacker", "WAIT_BALL_EXIT_FRIEND_PA");
+      return Status::RUNNING;
     }
 
     // 相手ペナルティエリア近辺での速度制限（ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA防止）

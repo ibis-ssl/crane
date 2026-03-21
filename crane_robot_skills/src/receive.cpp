@@ -16,6 +16,50 @@
 namespace
 {
 bool isValidPoint(const crane::Point & p) { return std::isfinite(p.x()) && std::isfinite(p.y()); }
+
+/// ボール軌道線分を味方ペナルティエリア（+offset）でクリップ。
+/// seg.first（ボール現在位置）がPA外のとき、PA侵入点で切り詰めて返す。
+/// 交差しない場合はそのまま返す。
+crane::Segment clipSegmentAtPenaltyArea(
+  const crane::Segment & seg, const crane::Box & penalty_area, double offset)
+{
+  using crane::Point;
+  using crane::Segment;
+  const double xmin = penalty_area.min_corner().x() - offset;
+  const double xmax = penalty_area.max_corner().x() + offset;
+  const double ymin = penalty_area.min_corner().y() - offset;
+  const double ymax = penalty_area.max_corner().y() + offset;
+
+  // ボール自体がPA内の場合はクリップしない（上流ガードで対処）
+  if (
+    seg.first.x() >= xmin && seg.first.x() <= xmax && seg.first.y() >= ymin &&
+    seg.first.y() <= ymax) {
+    return seg;
+  }
+
+  // 拡張PAの4辺との交点を求め、seg.firstに最も近いものをカット点とする
+  const std::array<Segment, 4> edges = {{
+    {Point(xmin, ymin), Point(xmax, ymin)},
+    {Point(xmax, ymin), Point(xmax, ymax)},
+    {Point(xmax, ymax), Point(xmin, ymax)},
+    {Point(xmin, ymax), Point(xmin, ymin)},
+  }};
+
+  double min_dist = std::numeric_limits<double>::max();
+  Point clip_point = seg.second;
+  bool found = false;
+  for (const auto & edge : edges) {
+    for (const auto & p : crane::getIntersections(seg, edge)) {
+      double d = (p - seg.first).norm();
+      if (d < min_dist) {
+        min_dist = d;
+        clip_point = p;
+        found = true;
+      }
+    }
+  }
+  return found ? Segment(seg.first, clip_point) : seg;
+}
 }  // namespace
 
 namespace crane::skills
@@ -126,8 +170,9 @@ Status Receive::update()
 Point Receive::getInterceptionPoint() const
 {
   Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.0);
-  Point closest_point =
-    world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0).closest_point;
+  // 味方ペナルティエリアで軌道をクリップし、PA内候補点を事前排除する
+  ball_line = clipSegmentAtPenaltyArea(ball_line, world_model()->getOurPenaltyArea(), 0.1);
+  Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
 
   // Optionally draw ball trajectory thin and semi-transparent for both policies
   if (getParameter<bool>("viz_ball_traj")) {
@@ -180,12 +225,13 @@ Point Receive::getInterceptionPoint() const
       return oss.str();
     };
 
-    // マイナスのスラックタイムとNaN値を含むエントリを削除
+    // マイナスのスラックタイム、NaN値、味方PA内の候補点を削除
     slack_times.erase(
       std::remove_if(
         slack_times.begin(), slack_times.end(),
         [&](const auto & slack) {
-          return slack.slack_time < 0 || !isValidPoint(slack.intercept_point);
+          return slack.slack_time < 0 || !isValidPoint(slack.intercept_point) ||
+                 world_model()->point_checker.isFriendPenaltyArea(slack.intercept_point, 0.1);
         }),
       slack_times.end());
 
