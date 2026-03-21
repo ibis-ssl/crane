@@ -34,7 +34,18 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
     if (
       (world_model->ball().pos - world_model->getOurGoalCenter()).norm() <
       world_model->fieldSize().y() * 0.5) {
-      return getDefenseLinePoints(robots.size(), ball_line, world_model);
+      // ball_lineが防御ラインと交差しない場合のフォールバック
+      // ボールがPA境界〜防御ライン間にいるとき、ball_line(ball→goal)が防御ラインの内側を向くため交差しない
+      auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
+      Segment effective_ball_line = ball_line;
+      if (not defense_parameter) {
+        effective_ball_line = Segment{
+          world_model->getOurGoalCenter(),
+          ball.pos + (ball.pos - world_model->getOurGoalCenter()).normalized() * 2.0};
+        defense_parameter = getDefenseLinePointParameter(effective_ball_line, world_model);
+      }
+      return getDefenseLinePoints(
+        robots.size(), effective_ball_line, world_model, false, defense_parameter);
     } else {
       return getDefenseArcPoints(robots.size(), ball_line, world_model);
     }
@@ -52,7 +63,14 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
           command->enablePlacementAvoidance();
         } else {
           command->disableAnyAreaAvoidance();
-          command->enableGoalAreaAvoidance();
+          // INPLAY時のみPA回避を有効化
+          // INPLAY: PA回避offset=0.1m < defense_offset=0.2m → 有効で安全
+          // STOP/セットプレイ: PA回避offset=0.3m > defense_offset=0.2m → 競合するため無効
+          if (
+            world_model->getMsg().play_situation.command.value ==
+            crane_msgs::msg::PlaySituation::INPLAY) {
+            command->enableGoalAreaAvoidance();
+          }
         }
       });
     return {SessionBase::Status::RUNNING, robot_commands};
