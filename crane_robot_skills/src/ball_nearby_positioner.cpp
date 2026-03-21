@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_robot_skills/ball_nearby_positioner.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_robot_skills/ball_nearby_positioner.hpp>
 
 namespace crane::skills
 {
@@ -84,10 +84,9 @@ auto BallNearByPositioner::update() -> Status
 
   auto avoidEnemyPenaltyArea = [&](Point & point) {
     const double penalty_offset =
-      (world_model()->getMsg().play_situation.command.value ==
-       crane_msgs::msg::PlaySituation::STOP)
-      ? 0.2
-      : 0.15;
+      (world_model()->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP)
+        ? 0.2
+        : 0.15;
 
     if (world_model()->point_checker.isEnemyPenaltyArea(point, penalty_offset)) {
       const auto their_penalty_area = world_model()->getTheirPenaltyArea();
@@ -101,8 +100,8 @@ auto BallNearByPositioner::update() -> Status
       }
 
       constexpr double step = 0.05;
-      for (int i = 0; i < 100 && world_model()->point_checker.isEnemyPenaltyArea(point, penalty_offset);
-           ++i) {
+      for (int i = 0;
+           i < 100 && world_model()->point_checker.isEnemyPenaltyArea(point, penalty_offset); ++i) {
         point += escape_direction * step;
       }
 
