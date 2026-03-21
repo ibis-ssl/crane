@@ -18,31 +18,73 @@
         .status-dot.connected { background-color: #28a745; }
         .status-dot.disconnected { background-color: #dc3545; }
 
-        .robot-card {
-            transition: border-color 0.3s ease;
-        }
-        .robot-card.has-error { border-color: #dc3545; border-width: 2px; }
-        .robot-card.has-warning { border-color: #ffc107; border-width: 2px; }
-        .robot-card.offline { opacity: 0.65; }
+        .robot-row.has-error { background-color: rgba(220, 53, 69, 0.1); }
+        .robot-row.offline { opacity: 0.65; }
 
-        .card-header { padding: 0.5rem 0.75rem; }
-        .card-body { padding: 0.5rem 0.75rem; }
-        .card-footer { padding: 0.4rem 0.75rem; }
-
-        .voltage-bar { height: 6px; }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.3rem;
-            font-size: 0.82rem;
-        }
-        .info-label { color: #6c757d; }
-        .info-value { font-weight: 500; }
+        .voltage-bar { height: 5px; margin-top: 3px; }
 
         .error-text {
-            font-size: 0.78rem;
+            font-size: 0.82rem;
             word-break: break-word;
+        }
+
+        /* Side Panel */
+        #detail-panel {
+            position: fixed;
+            top: 0;
+            right: -380px;
+            width: 360px;
+            height: 100%;
+            background: #212529;
+            color: #dee2e6;
+            z-index: 1050;
+            transition: right 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.4);
+        }
+        #detail-panel.open { right: 0; }
+        #detail-panel .panel-header {
+            padding: 0.75rem 1rem;
+            background: #343a40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        #detail-panel .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1rem;
+        }
+        #detail-panel .section-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6c757d;
+            margin: 0.75rem 0 0.3rem;
+        }
+        #detail-panel table td:first-child {
+            color: #6c757d;
+            white-space: nowrap;
+            padding-right: 0.75rem;
+            font-size: 0.82rem;
+        }
+        #detail-panel table td:last-child {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        #detail-panel .factor-bar {
+            height: 4px;
+            background: #495057;
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+        #detail-panel .factor-bar-fill {
+            height: 100%;
+            background: #0d6efd;
+            border-radius: 2px;
+            transition: width 0.3s;
         }
     </style>
 </head>
@@ -101,8 +143,62 @@
             </div>
         </div>
 
-        <!-- Robot Cards Grid -->
-        <div class="row g-3" id="robot-grid"></div>
+        <!-- Detail Side Panel -->
+        <div id="detail-panel">
+            <div class="panel-header">
+                <span><i class="fas fa-robot me-2"></i><strong id="panel-title">Robot #--</strong></span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="closeDetailPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                <!-- 位置・速度 -->
+                <div class="section-title"><i class="fas fa-map-marker-alt me-1"></i>位置・速度</div>
+                <div id="panel-pose"></div>
+                <!-- 目標値 -->
+                <div class="section-title"><i class="fas fa-crosshairs me-1"></i>目標値</div>
+                <div id="panel-target"></div>
+                <!-- Session / スキル -->
+                <div class="section-title"><i class="fas fa-layer-group me-1"></i>Session / スキル</div>
+                <table class="table table-sm table-borderless table-dark mb-0">
+                    <tbody id="panel-session"></tbody>
+                </table>
+                <!-- プランニング要素 -->
+                <div class="section-title"><i class="fas fa-sliders-h me-1"></i>プランニング要素</div>
+                <div id="panel-factors"></div>
+                <!-- ハードウェア -->
+                <div class="section-title"><i class="fas fa-microchip me-1"></i>ハードウェア</div>
+                <table class="table table-sm table-borderless table-dark mb-0">
+                    <tbody id="panel-hw"></tbody>
+                </table>
+                <div class="mt-3">
+                    <a id="panel-telemetry-link" href="#" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-chart-line me-1"></i>テレメトリを開く
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div id="panel-backdrop" onclick="closeDetailPanel()"
+             style="display:none; position:fixed; inset:0; z-index:1040; background:rgba(0,0,0,0.3)"></div>
+
+        <!-- Robot Table -->
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>ステータス / 操作</th>
+                        <th style="min-width:110px">電圧</th>
+                        <th>最高温度</th>
+                        <th>Ping</th>
+                        <th>通信</th>
+                        <th>エラー</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="robot-table-body"></tbody>
+            </table>
+        </div>
     </div>
 
     <script src="robot_manager.js"></script>
