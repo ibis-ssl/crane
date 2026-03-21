@@ -321,8 +321,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       auto applyPhysicalBrakingConstraint = [&](const Box & area) {
         const double penalty_area_offset =
           world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
-          ? PENALTY_AREA_OFFSET_STOP
-          : PENALTY_AREA_OFFSET;
+            ? PENALTY_AREA_OFFSET_STOP
+            : PENALTY_AREA_OFFSET;
         const double xmin = area.min_corner().x() - penalty_area_offset;
         const double xmax = area.max_corner().x() + penalty_area_offset;
         const double ymin = area.min_corner().y() - penalty_area_offset;
@@ -675,8 +675,8 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
     constexpr double SURROUNDING_OFFSET = 0.2;
     const double penalty_area_offset =
       world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
-      ? PENALTY_AREA_OFFSET_STOP
-      : PENALTY_AREA_OFFSET;
+        ? PENALTY_AREA_OFFSET_STOP
+        : PENALTY_AREA_OFFSET;
 
     auto avoidPenaltyArea = [&](const Box & penalty_area, const Point & goal_pos) {
       constexpr int MAX_ITERATIONS = 100;
