@@ -219,12 +219,13 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           .set__value(STOP_STATE_MAX_VELOCITY));
     }
 
-    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.2;
+    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
 
     Velocity target_vel;
     target_vel << (pos_mode.target_x - current_position.x()),
       pos_mode.target_y - current_position.y();
-    target_vel *= 2.0;
+    target_vel = target_vel.normalized() * (target_vel.norm() + 0.1);
+    target_vel *= 1.0;
 
     // 目標速度を位置差分から直接計算（シンプルアプローチ）
     // 目標方向ベクトルをmax_velでクランプして使用する
