@@ -224,4 +224,74 @@ TEST(PredictedPositionTrapezoidalTest, NegativeTime_ReturnsCurrentPosition)
   EXPECT_DOUBLE_EQ(predicted.x(), 2.0);
   EXPECT_DOUBLE_EQ(predicted.y(), 3.0);
 }
+// getTravelTimeWithApproachPenalty のテスト
+TEST(ApproachPenaltyTest, BallStationary_NoPenalty)
+{
+  // ボール静止時はペナルティなし（直線計算と同じ）
+  Point robot_pos(0.0, 0.0);
+  Vector2 robot_vel(0.0, 0.0);
+  Point intercept(4.0, 0.0);
+  Vector2 ball_vel(0.0, 0.0);
+
+  double penalty_time =
+    crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
+  double straight_time =
+    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+
+  EXPECT_DOUBLE_EQ(penalty_time, straight_time);
+}
+
+TEST(ApproachPenaltyTest, ApproachFromFront_NoPenalty)
+{
+  // 正面からアプローチ（alignment <= 0）: ペナルティなし
+  // ボールは+X方向に進んでいる、ロボットはインターセプト地点の+X側
+  Point robot_pos(5.0, 0.0);
+  Vector2 robot_vel(0.0, 0.0);
+  Point intercept(3.0, 0.0);
+  Vector2 ball_vel(1.0, 0.0);  // ボールは+X方向
+
+  // ロボット→インターセプト方向は-X、ボール方向は+X → alignment = -1.0 → ペナルティなし
+  double penalty_time =
+    crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
+  double straight_time =
+    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+
+  EXPECT_DOUBLE_EQ(penalty_time, straight_time);
+}
+
+TEST(ApproachPenaltyTest, ApproachFromBehind_HasPenalty)
+{
+  // 真後ろからアプローチ（alignment ≈ 1.0）: ペナルティあり（直線より長い）
+  // ボールは+X方向に進んでいる、ロボットはインターセプト地点の-X側（後方）
+  Point robot_pos(-1.0, 0.0);
+  Vector2 robot_vel(0.0, 0.0);
+  Point intercept(3.0, 0.0);
+  Vector2 ball_vel(1.0, 0.0);  // ボールは+X方向
+
+  // ロボット→インターセプト方向は+X、ボール方向も+X → alignment = 1.0 → ペナルティあり
+  double penalty_time =
+    crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
+  double straight_time =
+    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+
+  EXPECT_GT(penalty_time, straight_time);
+}
+
+TEST(ApproachPenaltyTest, ApproachFromSide_NoPenalty)
+{
+  // 横からアプローチ（alignment ≈ 0）: ペナルティなし
+  Point robot_pos(3.0, -3.0);
+  Vector2 robot_vel(0.0, 0.0);
+  Point intercept(3.0, 0.0);
+  Vector2 ball_vel(1.0, 0.0);  // ボールは+X方向
+
+  // ロボット→インターセプト方向は+Y、ボール方向は+X → alignment = 0.0 → ペナルティなし
+  double penalty_time =
+    crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
+  double straight_time =
+    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+
+  EXPECT_DOUBLE_EQ(penalty_time, straight_time);
+}
+
 }  // namespace crane

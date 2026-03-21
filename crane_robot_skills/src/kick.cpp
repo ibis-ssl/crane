@@ -32,7 +32,7 @@ void Kick::initialize()
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("kicked_speed_threshold", 1.5);
-  setParameter("enable_pivot_turn", true);
+  setParameter("enable_pivot_turn", false);
   setParameter("pivot_dribble_power", 0.6);
   setParameter("pivot_omega_limit", 3.0);
   setParameter("pivot_max_velocity", 1.0);
@@ -80,7 +80,13 @@ void Kick::initialize()
       ball_vel = world_model()->ball().vel;
     }
 
-    Point ball_pos = world_model()->ball().pos + ball_vel * 0.5;
+    Point ball_pos = world_model()->ball().pos + ball_vel * [&](){
+		if(world_model()->ball().vel.norm() > 0.5 && world_model()->ball().vel.normalized().dot((robot()->pose.pos - world_model()->ball().pos).normalized()) > 0.7){
+			return 0.5;
+		}else{
+			return 0.5 + 0.5 * std::clamp(world_model()->ball().vel.norm(), 0.0, 2.0);
+		}
+	}();
 
     const double interval = std::max(getParameter<double>("around_interval"), 0.01);
     const bool go_around_ball = getParameter<bool>("go_around_ball");

@@ -19,7 +19,6 @@
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
-#include <unordered_set>
 
 namespace asio = boost::asio;
 using crane::robot_receiver::RobotFeedback;
@@ -29,9 +28,8 @@ class RobotFeedbackReceiver
 {
 public:
   RobotFeedbackReceiver(
-    asio::io_context & io_ctx, const std::string & host, const int port, float alpha)
+    asio::io_context & io_ctx, const std::string & host, const int port)
   : robot_id(port - 50100),
-    alpha_(alpha),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
     clock(RCL_ROS_TIME)
@@ -46,11 +44,7 @@ public:
     auto stamp = clock.now();
     RobotFeedback new_packet = parseBuffer(buf, stamp);
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!master_feedback_) {
-      master_feedback_ = new_packet;
-    } else {
-      blendFeedback(master_feedback_.value(), new_packet, alpha_);
-    }
+    packet_queue_.push_back(new_packet);
     receive_timestamps_.push_back(stamp);
   }
 
@@ -58,7 +52,63 @@ public:
   auto getLatestFeedback() -> std::optional<RobotFeedback>
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    return master_feedback_;
+    if (packet_queue_.empty()) {
+      return last_output_;
+    }
+
+    // キュー内の全パケットを平均して出力
+    const auto & latest = packet_queue_.back();
+    RobotFeedback result;
+
+    // 離散値: 最新パケットの値を採用
+    result.received_stamp = latest.received_stamp;
+    result.counter = latest.counter;
+    result.kick_state = latest.kick_state;
+    result.error_id = latest.error_id;
+    result.error_info = latest.error_info;
+    result.error_value = latest.error_value;
+    result.ball_sensor = latest.ball_sensor;
+    result.check_ver = latest.check_ver;
+    result.values = latest.values;
+    std::copy(
+      std::begin(latest.ball_detection), std::end(latest.ball_detection),
+      std::begin(result.ball_detection));
+    std::copy(
+      std::begin(latest.temperature), std::end(latest.temperature),
+      std::begin(result.temperature));
+
+    // 連続値: 算術平均
+    const float n = static_cast<float>(packet_queue_.size());
+    float sum_yaw = 0.f, sum_diff = 0.f;
+    float sum_motor[4] = {};
+    std::array<float, 2> sum_odom = {}, sum_odom_speed = {}, sum_mouse_odom = {},
+                         sum_mouse_vel = {}, sum_voltage = {};
+    for (const auto & p : packet_queue_) {
+      sum_yaw += p.yaw_angle;
+      sum_diff += p.diff_angle;
+      for (int i = 0; i < 4; ++i) sum_motor[i] += p.motor_current[i];
+      for (int i = 0; i < 2; ++i) {
+        sum_odom[i] += p.odom[i];
+        sum_odom_speed[i] += p.odom_speed[i];
+        sum_mouse_odom[i] += p.mouse_odom[i];
+        sum_mouse_vel[i] += p.mouse_vel[i];
+        sum_voltage[i] += p.voltage[i];
+      }
+    }
+    result.yaw_angle = sum_yaw / n;
+    result.diff_angle = sum_diff / n;
+    for (int i = 0; i < 4; ++i) result.motor_current[i] = sum_motor[i] / n;
+    for (int i = 0; i < 2; ++i) {
+      result.odom[i] = sum_odom[i] / n;
+      result.odom_speed[i] = sum_odom_speed[i] / n;
+      result.mouse_odom[i] = sum_mouse_odom[i] / n;
+      result.mouse_vel[i] = sum_mouse_vel[i] / n;
+      result.voltage[i] = sum_voltage[i] / n;
+    }
+
+    packet_queue_.clear();
+    last_output_ = result;
+    return last_output_;
   }
 
   struct IntervalStats
@@ -196,52 +246,10 @@ private:
     return {mean, min_val, max_val, std::sqrt(var / static_cast<float>(n))};
   }
 
-  static void blendFeedback(RobotFeedback & master, const RobotFeedback & incoming, float alpha)
-  {
-    // タイムスタンプ・離散値: 直接上書き
-    master.received_stamp = incoming.received_stamp;
-    master.counter = incoming.counter;
-    master.kick_state = incoming.kick_state;
-    master.error_id = incoming.error_id;
-    master.error_info = incoming.error_info;
-    master.error_value = incoming.error_value;
-    master.ball_sensor = incoming.ball_sensor;
-    master.check_ver = incoming.check_ver;
-    master.values = incoming.values;
-    std::copy(
-      std::begin(incoming.ball_detection), std::end(incoming.ball_detection),
-      std::begin(master.ball_detection));
-    std::copy(
-      std::begin(incoming.temperature), std::end(incoming.temperature),
-      std::begin(master.temperature));
-
-    // 連続値: EMAブレンド (master = alpha * incoming + (1 - alpha) * master)
-    // TODO(ibis-ssl): yaw_angle/diff_angleは±π境界でラップアラウンドが起きる場合がある。
-    //       問題発生時はcircular EMAへの変更を検討すること。
-    const float inv_alpha = 1.0f - alpha;
-    master.yaw_angle = alpha * incoming.yaw_angle + inv_alpha * master.yaw_angle;
-    master.diff_angle = alpha * incoming.diff_angle + inv_alpha * master.diff_angle;
-    for (int i = 0; i < 4; ++i) {
-      master.motor_current[i] =
-        alpha * incoming.motor_current[i] + inv_alpha * master.motor_current[i];
-    }
-    auto blend_array2 = [alpha, inv_alpha](
-                          std::array<float, 2> & dst, const std::array<float, 2> & src) {
-      for (int i = 0; i < 2; ++i) {
-        dst[i] = alpha * src[i] + inv_alpha * dst[i];
-      }
-    };
-    blend_array2(master.odom, incoming.odom);
-    blend_array2(master.odom_speed, incoming.odom_speed);
-    blend_array2(master.mouse_odom, incoming.mouse_odom);
-    blend_array2(master.mouse_vel, incoming.mouse_vel);
-    blend_array2(master.voltage, incoming.voltage);
-  }
-
-  float alpha_;
   std::unique_ptr<crane::AsyncUdpReceiver> async_receiver_;
   std::mutex mutex_;
-  std::optional<RobotFeedback> master_feedback_;
+  std::vector<RobotFeedback> packet_queue_;
+  std::optional<RobotFeedback> last_output_;
   std::deque<rclcpp::Time> receive_timestamps_;
   rclcpp::Clock clock;
 };
@@ -263,8 +271,6 @@ public:
     std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
     int port_base = declare_parameter("port_base", 50100);
     int ip_offset = declare_parameter("ip_octet_offset", 100);
-    // EMAブレンド係数: 0.0=全く追従しない, 1.0=即座に追従(従来動作と同等)
-    float feedback_alpha = static_cast<float>(declare_parameter("feedback_alpha", 0.1));
 
     RCLCPP_INFO(
       get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,
@@ -278,8 +284,7 @@ public:
         ip = std::format("{}.{}", ip_base, i + ip_offset);
       }
       int port = port_base + i;
-      receivers.push_back(
-        std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, feedback_alpha));
+      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
     }
 
     // asioイベントループを専用スレッドで開始

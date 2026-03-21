@@ -61,6 +61,11 @@ struct SlackTimeConfig
   /// @details ボール速度がこの値以下の場合、静止していると判定
   double velocity_epsilon = 0.2;
 
+  /// @brief 追い越し迂回半径 [m]
+  /// @details ボール後方からアプローチ時の迂回経路のオフセット基準半径
+  /// alignment=1（真後ろ）の場合にこの値のオフセットが最大になる
+  double circling_radius = 0.15;
+
   /**
    * @brief ROS2ノードからパラメータを読み込む
    *
@@ -95,6 +100,8 @@ struct SlackTimeConfig
       node.get_parameter_or(prefix + "distance_horizon", config.distance_horizon);
     config.velocity_epsilon =
       node.get_parameter_or(prefix + "velocity_epsilon", config.velocity_epsilon);
+    config.circling_radius =
+      node.get_parameter_or(prefix + "circling_radius", config.circling_radius);
 
     return config;
   }
@@ -117,6 +124,7 @@ struct SlackTimeConfig
     node.declare_parameter(prefix + "slack_time_offset", slack_time_offset);
     node.declare_parameter(prefix + "distance_horizon", distance_horizon);
     node.declare_parameter(prefix + "velocity_epsilon", velocity_epsilon);
+    node.declare_parameter(prefix + "circling_radius", circling_radius);
   }
 
   /**
@@ -134,6 +142,7 @@ struct SlackTimeConfig
     os << "  slack_time_offset: " << slack_time_offset << " s\n";
     os << "  distance_horizon: " << distance_horizon << " m\n";
     os << "  velocity_epsilon: " << velocity_epsilon << " m/s\n";
+    os << "  circling_radius: " << circling_radius << " m\n";
   }
 };
 

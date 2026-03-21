@@ -1,7 +1,7 @@
 {
-  "visionPort": 10020,
-  "trackedPort": 11010,
-  "refereePort": 11003,
+  "visionPort": 10006,
+  "trackedPort": 10010,
+  "refereePort": 10003,
   "grSimAddress": "127.0.0.1",
   "grSimPort": 20011,
   "autoBallPlacementEnabled": true,
