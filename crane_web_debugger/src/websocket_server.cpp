@@ -323,6 +323,26 @@ public:
       broadcastRobotFeedback(msg);
     });
 
+    // control_targets subscription (cached, broadcast at 10Hz via timer)
+    control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/control_targets", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
+        std::lock_guard<std::mutex> lock(control_targets_mutex_);
+        latest_control_targets_ = msg;
+        control_targets_updated_ = true;
+      });
+
+    // 100ms timer for control_targets broadcast (10Hz throttle)
+    control_targets_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
+      crane_msgs::msg::RobotCommands::SharedPtr msg;
+      {
+        std::lock_guard<std::mutex> lock(control_targets_mutex_);
+        if (!control_targets_updated_ || !latest_control_targets_) return;
+        msg = latest_control_targets_;
+        control_targets_updated_ = false;
+      }
+      broadcastControlTargets(msg);
+    });
+
     // 5s timer for Pi status polling
     pi_status_timer_ =
       this->create_wall_timer(std::chrono::seconds(5), [this]() { pollAllPiStatus(); });
@@ -546,6 +566,17 @@ private:
         {"vx", robot.velocity.x},
         {"vy", robot.velocity.y},
         {"omega", robot.velocity.theta},
+        {"vision_x", robot.vision.pose.x},
+        {"vision_y", robot.vision.pose.y},
+        {"vision_theta", robot.vision.pose.theta},
+        {"vision_stamp_sec", robot.vision.stamp.sec},
+        {"vision_stamp_nanosec", robot.vision.stamp.nanosec},
+        {"available_vision", robot.available_vision},
+        {"available_feedback", robot.available_feedback},
+        {"available_tracker", robot.available_tracker},
+        {"acceleration_x", robot.acceleration.x},
+        {"acceleration_y", robot.acceleration.y},
+        {"acceleration_theta", robot.acceleration.theta},
         {"team", "ours"}};
       world_model["robots_ours"].push_back(robot_json);
     }
@@ -577,37 +608,147 @@ private:
     broadcastToAll(world_model.dump());
   }
 
+  static json robotCommandToJson(const crane_msgs::msg::RobotCommand & cmd)
+  {
+    json planning_factors_json = json::array();
+    for (const auto & factor : cmd.planning_factors) {
+      planning_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
+    }
+
+    json position_target_json = nullptr;
+    if (!cmd.position_target_mode.empty()) {
+      const auto & pt = cmd.position_target_mode[0];
+      position_target_json = {
+        {"target_x", pt.target_x},
+        {"target_y", pt.target_y},
+        {"position_tolerance", pt.position_tolerance},
+        {"speed_limit_at_target", pt.speed_limit_at_target}};
+    }
+
+    json simple_velocity_json = nullptr;
+    if (!cmd.simple_velocity_target_mode.empty()) {
+      const auto & sv = cmd.simple_velocity_target_mode[0];
+      simple_velocity_json = {
+        {"target_vx", sv.target_vx},
+        {"target_vy", sv.target_vy},
+        {"speed_limit_at_target", sv.speed_limit_at_target}};
+    }
+
+    json polar_velocity_json = nullptr;
+    if (!cmd.polar_velocity_target_mode.empty()) {
+      const auto & pv = cmd.polar_velocity_target_mode[0];
+      polar_velocity_json = {
+        {"target_velocity_r", pv.target_velocity_r},
+        {"target_velocity_theta", pv.target_velocity_theta}};
+    }
+
+    json local_camera_json = nullptr;
+    if (!cmd.local_camera_mode.empty()) {
+      const auto & lc = cmd.local_camera_mode[0];
+      local_camera_json = {
+        {"ball_x", lc.ball_x},
+        {"ball_y", lc.ball_y},
+        {"ball_vx", lc.ball_vx},
+        {"ball_vy", lc.ball_vy},
+        {"target_global_vx", lc.target_global_vx},
+        {"target_global_vy", lc.target_global_vy}};
+    }
+
+    json velocity_plan_trace_json = nullptr;
+    if (!cmd.velocity_plan_trace.empty()) {
+      const auto & trace = cmd.velocity_plan_trace[0];
+      json plan_points_json = json::array();
+      for (const auto & pt : trace.plan_points) {
+        plan_points_json.push_back(
+          {{"source", pt.source},
+           {"target_time_us", pt.target_time_us},
+           {"predicted_pos_x", pt.predicted_pos_x},
+           {"predicted_pos_y", pt.predicted_pos_y},
+           {"predicted_vel_x", pt.predicted_vel_x},
+           {"predicted_vel_y", pt.predicted_vel_y},
+           {"estimated_arrival_time_us", pt.estimated_arrival_time_us}});
+      }
+      json corrections_json = json::array();
+      for (const auto & corr : trace.corrections) {
+        corrections_json.push_back(
+          {{"source", corr.source},
+           {"before_vel_x", corr.before_vel_x},
+           {"before_vel_y", corr.before_vel_y},
+           {"after_vel_x", corr.after_vel_x},
+           {"after_vel_y", corr.after_vel_y},
+           {"velocity_delta", corr.velocity_delta},
+           {"direction_delta_deg", corr.direction_delta_deg}});
+      }
+      json actuals_json = json::array();
+      for (const auto & actual : trace.actuals) {
+        actuals_json.push_back(
+          {{"plan_time_us", actual.plan_time_us},
+           {"planned_vel_x", actual.planned_vel_x},
+           {"planned_vel_y", actual.planned_vel_y},
+           {"planned_pos_x", actual.planned_pos_x},
+           {"planned_pos_y", actual.planned_pos_y},
+           {"actual_vel_x", actual.actual_vel_x},
+           {"actual_vel_y", actual.actual_vel_y},
+           {"actual_pos_x", actual.actual_pos_x},
+           {"actual_pos_y", actual.actual_pos_y},
+           {"velocity_error", actual.velocity_error},
+           {"position_error", actual.position_error}});
+      }
+      velocity_plan_trace_json = {
+        {"trace_id", trace.trace_id},
+        {"reference_timestamp_ns", trace.reference_timestamp_ns},
+        {"plan_points", plan_points_json},
+        {"corrections", corrections_json},
+        {"actuals", actuals_json}};
+    }
+
+    return {
+      {"robot_id", cmd.robot_id},
+      {"kick_power", cmd.kick_power},
+      {"dribble_power", cmd.dribble_power},
+      {"chip_enable", cmd.chip_enable},
+      {"target_theta", cmd.target_theta},
+      {"control_mode", cmd.control_mode},
+      {"current_pose",
+       {{"x", cmd.current_pose.x}, {"y", cmd.current_pose.y}, {"theta", cmd.current_pose.theta}}},
+      {"current_velocity",
+       {{"vx", cmd.current_velocity.x},
+        {"vy", cmd.current_velocity.y},
+        {"omega", cmd.current_velocity.theta}}},
+      {"planning_factors", planning_factors_json},
+      {"planner_name", cmd.planner_name},
+      {"delay_checkpoints", to_delay_checkpoints_json(cmd.delay_checkpoints.checkpoints)},
+      {"position_target_mode", position_target_json},
+      {"simple_velocity_target_mode", simple_velocity_json},
+      {"polar_velocity_target_mode", polar_velocity_json},
+      {"local_camera_mode", local_camera_json},
+      {"velocity_plan_trace", velocity_plan_trace_json}};
+  }
+
   void broadcastRobotCommands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
   {
     json commands = {{"type", "robot_commands"}, {"commands", json::array()}};
 
-    // 遅延監視情報をRobotCommands全体レベルで追加
     commands["delay_checkpoints"] = to_delay_checkpoints_json(msg->delay_checkpoints.checkpoints);
     commands["delay_reference_timestamp_ns"] = msg->delay_checkpoints.reference_timestamp_ns;
 
-    // 遅延分析情報を計算して追加
     if (!msg->delay_checkpoints.checkpoints.empty()) {
       commands["delay_analysis"] = compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
     }
 
     for (const auto & cmd : msg->robot_commands) {
-      json planning_factors_json = json::array();
-      for (const auto & factor : cmd.planning_factors) {
-        planning_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
-      }
-
-      json cmd_json = {
-        {"robot_id", cmd.robot_id},
-        {"kick_power", cmd.kick_power},
-        {"dribble_power", cmd.dribble_power},
-        {"chip_enable", cmd.chip_enable},
-        {"target_theta", cmd.target_theta},
-        {"planning_factors", planning_factors_json},
-        {"planner_name", cmd.planner_name},
-        {"delay_checkpoints", to_delay_checkpoints_json(cmd.delay_checkpoints.checkpoints)}};
-      commands["commands"].push_back(cmd_json);
+      commands["commands"].push_back(robotCommandToJson(cmd));
     }
 
+    broadcastToAll(commands.dump());
+  }
+
+  void broadcastControlTargets(const crane_msgs::msg::RobotCommands::SharedPtr msg)
+  {
+    json commands = {{"type", "control_targets"}, {"commands", json::array()}};
+    for (const auto & cmd : msg->robot_commands) {
+      commands["commands"].push_back(robotCommandToJson(cmd));
+    }
     broadcastToAll(commands.dump());
   }
 
@@ -813,12 +954,23 @@ private:
     json data = {{"type", "robot_feedback"}, {"robots", json::array()}};
     for (const auto & robot : msg->feedback) {
       json robot_json = {
-        {"robot_id", robot.robot_id},           {"voltage", robot.voltage},
-        {"temperatures", robot.temperatures},   {"error_id", robot.error_id},
-        {"error_info", robot.error_info},       {"error_value", robot.error_value},
-        {"motor_current", robot.motor_current}, {"ball_sensor", robot.ball_sensor},
-        {"kick_state", robot.kick_state},       {"packet_frequency_hz", robot.packet_frequency_hz},
-        {"yaw_angle", robot.yaw_angle},         {"odom_speed", robot.odom_speed}};
+        {"robot_id", robot.robot_id},
+        {"voltage", robot.voltage},
+        {"temperatures", robot.temperatures},
+        {"error_id", robot.error_id},
+        {"error_info", robot.error_info},
+        {"error_value", robot.error_value},
+        {"motor_current", robot.motor_current},
+        {"ball_sensor", robot.ball_sensor},
+        {"kick_state", robot.kick_state},
+        {"packet_frequency_hz", robot.packet_frequency_hz},
+        {"yaw_angle", robot.yaw_angle},
+        {"diff_angle", robot.diff_angle},
+        {"odom_speed", robot.odom_speed},
+        {"odom", robot.odom},
+        {"mouse_vel", robot.mouse_vel},
+        {"mouse_odom", robot.mouse_odom},
+        {"values", robot.values}};
       data["robots"].push_back(robot_json);
     }
     broadcastToAll(data.dump());
@@ -1017,6 +1169,13 @@ private:
   crane_msgs::msg::RobotFeedbackArray::SharedPtr latest_robot_feedback_;
   bool robot_feedback_updated_{false};
   std::mutex robot_feedback_mutex_;
+
+  // Control targets monitoring
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub_;
+  rclcpp::TimerBase::SharedPtr control_targets_timer_;
+  crane_msgs::msg::RobotCommands::SharedPtr latest_control_targets_;
+  bool control_targets_updated_{false};
+  std::mutex control_targets_mutex_;
 
   // Server components
   std::thread http_thread_;
