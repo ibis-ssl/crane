@@ -30,7 +30,7 @@ Status Goalie::update()
 {
   auto situation = world_model()->getMsg().play_situation.command.value;
   if (getParameter<bool>("run_inplay")) {
-    situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
+    situation = crane_msgs::msg::PlaySituation::INPLAY;
   }
   phase = "";
 

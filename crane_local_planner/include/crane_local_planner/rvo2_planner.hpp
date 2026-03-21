@@ -68,9 +68,6 @@ public:
     using PS = crane_msgs::msg::PlaySituation;
     switch (cmd) {
       case PS::INPLAY:
-      case PS::OUR_INPLAY:
-      case PS::THEIR_INPLAY:
-      case PS::AMBIGUOUS_INPLAY:
       case PS::HALT:
       case PS::HALF_TIME:
       case PS::POST_GAME:
