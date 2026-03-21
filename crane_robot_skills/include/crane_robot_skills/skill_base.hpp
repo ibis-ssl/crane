@@ -105,6 +105,8 @@ public:
   : SkillInterface(std::forward<Args>(args)...)
   {
     this->name = name;
+    // commandはdelegating constructor内で空のnameで生成されるため、ここで正しいnameを設定する
+    this->command->name = name;
     if (visualizer->layer == "skill/") {
       visualizer->layer = "skill/" + name;
     }

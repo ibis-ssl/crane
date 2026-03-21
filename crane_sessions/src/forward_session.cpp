@@ -85,6 +85,12 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     } else {
       if (forward_lines.size() > robots.size()) {
         forward_lines.resize(robots.size());
+      } else if (forward_lines.size() < robots.size()) {
+        // ロボット数がライン数を超える場合、既存ラインを循環的に複製して全ロボットに割当
+        size_t original_size = forward_lines.size();
+        while (forward_lines.size() < robots.size()) {
+          forward_lines.push_back(forward_lines[forward_lines.size() % original_size]);
+        }
       }
 
       std::vector<Point> robot_positions =

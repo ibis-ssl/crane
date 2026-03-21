@@ -66,7 +66,7 @@ private:
   auto getID() const -> uint8_t { return latest_msg.robot_id; }
 
 public:
-  const std::string name;
+  std::string name;
 
   RobotCommandWrapper(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)

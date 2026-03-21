@@ -74,6 +74,21 @@ auto GlobalRobotAllocator::allocate(
                            << "ロボットを割り当て: " << assigned_robots);
   }
 
+  if (!remaining_robots.empty()) {
+    RCLCPP_WARN(
+      logger_,
+      "[GlobalRobotAllocator] %zu台のロボットがどのセッションにも割り当てられませんでした: %s",
+      remaining_robots.size(),
+      [&]() {
+        std::string ids;
+        for (auto id : remaining_robots) {
+          ids += std::to_string(id) + " ";
+        }
+        return ids;
+      }()
+        .c_str());
+  }
+
   return result;
 }
 
