@@ -26,6 +26,34 @@ $ARGUMENTS
 
 ## 実行手順
 
+### Step 0: Rosbag前処理（zstd圧縮対応）
+
+`crane_bag` を実行する前に、rosbagディレクトリを正常な状態にする。
+rosbag2ライブラリが `.mcap.zstd` を直接 mcap プラグインで開こうとしてエラーになるため、必ず以下のbashを実行すること。
+
+```bash
+BAG_DIR="<rosbag_path>"
+
+# .mcap.zstd があるが .mcap がない場合、展開する
+for zst in "$BAG_DIR"/*.mcap.zstd; do
+  [ -f "$zst" ] || continue
+  mcap="${zst%.zstd}"
+  if [ ! -f "$mcap" ]; then
+    echo "zstd展開中: $(basename "$zst")"
+    zstd -d "$zst" -o "$mcap"
+  fi
+done
+
+# metadata.yaml の compression 設定を修正（.mcap.zstd を指したままだと読めない）
+META="$BAG_DIR/metadata.yaml"
+if [ -f "$META" ] && grep -q 'compression_format: zstd' "$META"; then
+  sed -i 's/compression_format: zstd/compression_format: ""/' "$META"
+  sed -i 's/compression_mode: FILE/compression_mode: NONE/' "$META"
+  sed -i 's/\.mcap\.zstd/.mcap/g' "$META"
+  echo "metadata.yaml を更新しました（圧縮設定を解除）"
+fi
+```
+
 ### Step 1: Bag情報の確認
 
 ```bash
