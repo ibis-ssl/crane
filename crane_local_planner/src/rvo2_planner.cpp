@@ -320,7 +320,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     if (!command.local_planner_config.disable_goal_area_avoidance) {
       auto applyPhysicalBrakingConstraint = [&](const Box & area) {
         const double penalty_area_offset =
-          world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
+          needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
             ? PENALTY_AREA_OFFSET_STOP
             : PENALTY_AREA_OFFSET;
         const double xmin = area.min_corner().x() - penalty_area_offset;
@@ -674,7 +674,7 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
   if (not command.local_planner_config.disable_goal_area_avoidance) {
     constexpr double SURROUNDING_OFFSET = 0.2;
     const double penalty_area_offset =
-      world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP
+      needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
         ? PENALTY_AREA_OFFSET_STOP
         : PENALTY_AREA_OFFSET;
 

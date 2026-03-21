@@ -60,6 +60,26 @@ public:
 
   auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
 
+  // セットプレイ中（INPLAY/HALT以外）かどうかを判定する。
+  // STOP_PRE_*（値60-66）、FREE_KICK、BALL_PLACEMENT等が該当し、
+  // これらの状態では敵ペナルティエリアへの離隔マージンを拡大する。
+  static auto needsExpandedPenaltyAreaOffset(uint8_t cmd) -> bool
+  {
+    using PS = crane_msgs::msg::PlaySituation;
+    switch (cmd) {
+      case PS::INPLAY:
+      case PS::OUR_INPLAY:
+      case PS::THEIR_INPLAY:
+      case PS::AMBIGUOUS_INPLAY:
+      case PS::HALT:
+      case PS::HALF_TIME:
+      case PS::POST_GAME:
+        return false;
+      default:
+        return true;
+    }
+  }
+
 private:
   auto adjustForPenaltyAreaAvoidance(
     Point & target_pos, const Point & current_pos,
