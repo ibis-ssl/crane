@@ -217,17 +217,13 @@ public:
     addPlanningFactor("CommandSource", name);
     switch (current_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
-        return setTargetPosition(robot->pose.pos, 0.001)
-          .setTargetTheta(robot->pose.theta)
-          .setOmegaLimit(0.);
+        return setTargetPosition(robot->pose.pos, 0.001).setOmegaLimit(0.);
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
         return setVelocityNorm(0.);
       default:
         // 不明なモードの場合は位置モードで停止
         usePositionMode();
-        return setTargetPosition(robot->pose.pos, 0.001)
-          .setTargetTheta(robot->pose.theta)
-          .setOmegaLimit(0.);
+        return setTargetPosition(robot->pose.pos, 0.001).setOmegaLimit(0.);
     }
   }
 
