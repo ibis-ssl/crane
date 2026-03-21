@@ -5,6 +5,7 @@ geometry_msgs/Vector3 velocity
 float32 velocity_norm
 
 Vector3Stamped vision
+Vector3Stamped tracker
 
 bool detected
 

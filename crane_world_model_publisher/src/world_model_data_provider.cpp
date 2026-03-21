@@ -814,6 +814,14 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
     ball_info_.vision.pos = vision_ball_state_.raw_position;
   }
 
+  // Tracker情報の更新（常にTrackerの生データを保持）
+  if (tracker_ball_state_.detected) {
+    ball_info_.tracker.stamp = tracker_ball_state_.last_detect_time;
+    ball_info_.tracker.pos.x = tracker_ball_state_.position.x();
+    ball_info_.tracker.pos.y = tracker_ball_state_.position.y();
+    ball_info_.tracker.pos.z = tracker_ball_state_.position.z();
+  }
+
   // ボール状態の決定
   if (ball_info_.velocity_norm < 0.1) {
     ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
