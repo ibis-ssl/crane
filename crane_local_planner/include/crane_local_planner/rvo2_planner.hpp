@@ -107,7 +107,8 @@ private:
   double CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
 
   // ペナルティエリア回避パラメータ
-  double PENALTY_AREA_OFFSET = 0.1;  // ペナルティエリア判定マージン [m]（グローバル回避用）
+  double PENALTY_AREA_OFFSET = 0.1;       // ペナルティエリア判定マージン [m]（グローバル回避用）
+  double PENALTY_AREA_OFFSET_STOP = 0.3;  // ペナルティエリア判定マージン [m]（STOP時）
   float PENALTY_AREA_TIME_HORIZON_OBST = 0.5f;  // RVO2障害物回避の時間ホライズン [s]
 
   bool penalty_area_obstacles_initialized = false;
