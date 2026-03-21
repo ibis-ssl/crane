@@ -83,10 +83,13 @@ auto BallNearByPositioner::update() -> Status
   }(getParameter<std::string>("line_policy"));
 
   auto avoidEnemyPenaltyArea = [&](Point & point) {
-    const double penalty_offset =
-      (world_model()->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::STOP)
-        ? 0.2
-        : 0.15;
+    const auto cmd = world_model()->getMsg().play_situation.command.value;
+    using PS = crane_msgs::msg::PlaySituation;
+    // INPLAY/HALT/HALF_TIME/POST_GAME以外（セットプレイ中）は拡大マージンを使用
+    // rvo2_planner の needsExpandedPenaltyAreaOffset() と同等の判定
+    const bool is_setplay =
+      (cmd != PS::INPLAY && cmd != PS::HALT && cmd != PS::HALF_TIME && cmd != PS::POST_GAME);
+    const double penalty_offset = is_setplay ? 0.2 : 0.15;
 
     if (world_model()->point_checker.isEnemyPenaltyArea(point, penalty_offset)) {
       const auto their_penalty_area = world_model()->getTheirPenaltyArea();

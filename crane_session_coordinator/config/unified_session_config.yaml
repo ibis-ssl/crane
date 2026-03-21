@@ -57,6 +57,8 @@ situations:
         max_robots: 1
       - name: simple_kickoff
         max_robots: 1
+      - name: waiter
+        max_robots: 20
   OUR_PENALTY_KICK:
     description: OUR_PENALTY_KICK
     sessions:
