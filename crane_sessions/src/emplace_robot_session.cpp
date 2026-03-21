@@ -102,6 +102,21 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
       }
       last_announce_time_ = now;
     }
+  } else {
+    // ロボット不足時のアナウンス
+    int available_count =
+      static_cast<int>(world_model->ours().robotsWhere().available().getIds().size());
+    int max_allowed = static_cast<int>(world_model->getOurMaxAllowedBots());
+    if (max_allowed > 0 && available_count < max_allowed) {
+      auto now = std::chrono::steady_clock::now();
+      if (now - last_announce_time_ >= ANNOUNCE_INTERVAL) {
+        if (use_voice_announcement_) {
+          sendSpeakGoal(
+            "ロボット上限は" + std::to_string(max_allowed) + "台です。ロボットを追加できます");
+        }
+        last_announce_time_ = now;
+      }
+    }
   }
 
   // GlobalRobotAllocator対応: robotsが変更されたらスキルマップを再生成
