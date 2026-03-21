@@ -8,7 +8,7 @@ package_name = "crane_mcap_tools"
 
 setup(
     name=package_name,
-    version="1.0.256",
+    version="1.0.257",
     packages=[
         package_name,
         f"{package_name}.mcap_analysis",
