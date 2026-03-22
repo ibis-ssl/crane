@@ -74,7 +74,7 @@ colcon build --packages-select crane_world_model_publisher crane_sessions
 
 目安:
 
-- 最適化前: 約 7分18秒（31パッケージ）
+- 最適化前: 約 7分18秒（32パッケージ）
 - 最適化後: 目標 5分30秒（20–30% 削減）
 
 詳細: `docs/logs/portal/build_optimization_guide.md`
