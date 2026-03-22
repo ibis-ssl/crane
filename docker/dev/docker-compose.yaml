@@ -67,6 +67,25 @@ services:
       - 224.5.23.2:11010
     network_mode: host
 
+  ssl-log-recorder:
+    image: robocupssl/ssl-log-recorder:latest
+    container_name: crane-ssl-log-recorder
+    network_mode: host
+    restart: "no"
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    volumes:
+      - ../../:/logs
+    working_dir: /logs
+    command:
+      - -referee-address
+      - "224.5.23.1:${REFEREE_PORT:-11003}"
+      - -vision-address
+      - "224.5.23.2:${VISION_PORT:-10020}"
+      - -vision-tracker-address
+      - "224.5.23.2:${TRACKER_PORT:-11010}"
+      - -vision-legacy-enabled=false
+
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
     # image: voicevox/voicevox_engine:nvidia-latest
