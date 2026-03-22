@@ -139,8 +139,9 @@ void Goalie::inplay(bool enable_emit)
       }
     }();
 
-    if (robot->getDistance(target) > 0.2) {
-      target += (target - robot->pose.pos).normalized() * 0.5;
+    if (robot()->getDistance(target) > 0.2) {
+      target += (target - robot()->pose.pos).normalized() * 2.0;
+      // command->setTerminalVelocity(3.0); //動作しない
     }
 
     command->setTargetPosition(target).lookAtBallFrom(target);
