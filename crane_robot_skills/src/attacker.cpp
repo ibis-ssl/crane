@@ -213,12 +213,12 @@ void Attacker::initialize()
       printTextOnRobot("RECEIVE::REDIRECT");
       receive_skill.setParameter("enable_redirect", true);
       receive_skill.setParameter("redirect_target", redirect_target);
-      receive_skill.setParameter("policy", std::string("min_slack"));
+      receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("redirect_kick_power", 0.4);
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
-      receive_skill.setParameter("policy", std::string("min_slack"));
+      receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
     }
