@@ -1,6 +1,7 @@
 const CONTROL_MODE_SHORT = { 0: 'CAM', 1: 'POS', 2: 'VEL', 3: 'POL' };
 const CONTROL_MODE_LONG = { 0: 'LOCAL_CAMERA', 1: 'POSITION_TARGET', 2: 'SIMPLE_VELOCITY', 3: 'POLAR_VELOCITY' };
 const SVG_PARSER = new DOMParser();
+const ROBOT_HIT_RADIUS_M = 0.15;
 
 class CraneViewer {
     constructor() {
@@ -18,6 +19,11 @@ class CraneViewer {
 
         this.robotsOurs = {};
         this.controlTargets = {};
+
+        this.moveMode = false;
+        this.selectedRobotId = null;
+        this.isYellow = false;
+        this.onPositiveHalf = false;
 
         this.fieldUpdateTimer = null;
         this.robotUpdateTimer = null;
@@ -68,6 +74,8 @@ class CraneViewer {
             case 'control_targets': this.handleControlTargets(data); break;
             case 'robot_commands': this.handleRobotCommands(data); break;
             case 'game_info': this.handleGameInfo(data); break;
+            case 'move_mode_activated': break;
+            case 'move_robot_result': break;
         }
     }
 
@@ -171,6 +179,8 @@ class CraneViewer {
     }
 
     handleWorldModel(data) {
+        if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
+        if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
         if (data.robots_ours) {
             this.robotsOurs = {};
             for (const robot of data.robots_ours) {
@@ -178,6 +188,7 @@ class CraneViewer {
             }
         }
         this.scheduleRobotUpdate();
+        if (this.moveMode && this.selectedRobotId !== null) this.updateMoveOverlay();
     }
 
     handleControlTargets(data) {
@@ -294,6 +305,8 @@ class CraneViewer {
 
         container.appendChild(transformGroup);
         this.applyTransform();
+
+        if (this.moveMode) this.updateMoveOverlay();
     }
 
     applyTransform() {
@@ -420,6 +433,99 @@ class CraneViewer {
         }
     }
 
+    clientToFieldCoords(clientX, clientY) {
+        const svg = this.svgFieldEl;
+        if (!svg) return { x: 0, y: 0 };
+        const pt = svg.createSVGPoint();
+        pt.x = clientX;
+        pt.y = clientY;
+        const ctm = svg.getScreenCTM();
+        if (!ctm) return { x: 0, y: 0 };
+        const svgPt = pt.matrixTransform(ctm.inverse());
+        const fieldMmX = (svgPt.x - this.panOffset.x) / this.zoomLevel;
+        const fieldMmY = (svgPt.y - this.panOffset.y) / this.zoomLevel;
+        return { x: fieldMmX / 1000.0, y: fieldMmY / 1000.0 };
+    }
+
+    findRobotAtPosition(fieldX, fieldY) {
+        let closest = null;
+        let minDist = ROBOT_HIT_RADIUS_M;
+        for (const [id, robot] of Object.entries(this.robotsOurs)) {
+            const dx = robot.x - fieldX;
+            const dy = robot.y - fieldY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = Number(id);
+            }
+        }
+        return closest;
+    }
+
+    activateMoveMode() {
+        this.moveMode = true;
+        document.getElementById('btn-move-mode')?.classList.add('active');
+        if (this.websocket?.readyState === WebSocket.OPEN) {
+            this.websocket.send(JSON.stringify({ type: 'activate_move_mode' }));
+        }
+    }
+
+    deactivateMoveMode() {
+        this.moveMode = false;
+        this.selectedRobotId = null;
+        document.getElementById('btn-move-mode')?.classList.remove('active');
+        document.getElementById('selected-robot-label').textContent = '--';
+        this.clearMoveOverlay();
+    }
+
+    sendMoveCommand(robotId, targetX, targetY) {
+        const robot = this.robotsOurs[robotId];
+        if (!robot) return;
+        if (this.websocket?.readyState !== WebSocket.OPEN) return;
+        this.websocket.send(JSON.stringify({
+            type: 'move_robot',
+            robot_id: robotId,
+            target_x: targetX,
+            target_y: targetY,
+            target_theta: robot.theta ?? 0
+        }));
+    }
+
+    updateMoveOverlay() {
+        const transformGroup = document.getElementById('svg-transform-group');
+        if (!transformGroup) return;
+        let overlay = document.getElementById('move-overlay');
+        if (!overlay) {
+            overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            overlay.id = 'move-overlay';
+            transformGroup.appendChild(overlay);
+        }
+
+        const robot = this.selectedRobotId !== null ? this.robotsOurs[this.selectedRobotId] : null;
+        if (!robot) {
+            overlay.innerHTML = '';
+            return;
+        }
+
+        let circle = overlay.querySelector('circle');
+        if (!circle) {
+            circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', String(ROBOT_HIT_RADIUS_M * 1000));
+            circle.setAttribute('fill', 'none');
+            circle.setAttribute('stroke', '#00ffff');
+            circle.setAttribute('stroke-width', '20');
+            circle.setAttribute('stroke-dasharray', '40 20');
+            overlay.appendChild(circle);
+        }
+        circle.setAttribute('cx', robot.x * 1000);
+        circle.setAttribute('cy', robot.y * 1000);
+    }
+
+    clearMoveOverlay() {
+        const overlay = document.getElementById('move-overlay');
+        if (overlay) overlay.innerHTML = '';
+    }
+
     setupEventListeners() {
         document.getElementById('btn-select-all')?.addEventListener('click', () => {
             this.currentSvgData?.layers?.forEach(l => this.visibleLayers.add(l.layer));
@@ -431,6 +537,14 @@ class CraneViewer {
             this.visibleLayers.clear();
             this.updateLayerList();
             this.scheduleFieldUpdate();
+        });
+
+        document.getElementById('btn-move-mode')?.addEventListener('click', () => {
+            if (this.moveMode) {
+                this.deactivateMoveMode();
+            } else {
+                this.activateMoveMode();
+            }
         });
 
         document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
@@ -460,9 +574,21 @@ class CraneViewer {
 
             svgContainer.addEventListener('mousedown', (e) => {
                 if (e.button === 0) {
-                    this.isPanning = true;
-                    this.lastPanPoint = { x: e.clientX, y: e.clientY };
-                    svgContainer.style.cursor = 'grabbing';
+                    if (e.shiftKey && this.moveMode) {
+                        const fieldPos = this.clientToFieldCoords(e.clientX, e.clientY);
+                        const hitId = this.findRobotAtPosition(fieldPos.x, fieldPos.y);
+                        if (hitId !== null) {
+                            this.selectedRobotId = hitId;
+                            document.getElementById('selected-robot-label').textContent = hitId;
+                            this.updateMoveOverlay();
+                        } else if (this.selectedRobotId !== null) {
+                            this.sendMoveCommand(this.selectedRobotId, fieldPos.x, fieldPos.y);
+                        }
+                    } else {
+                        this.isPanning = true;
+                        this.lastPanPoint = { x: e.clientX, y: e.clientY };
+                        svgContainer.style.cursor = 'grabbing';
+                    }
                 }
             });
 

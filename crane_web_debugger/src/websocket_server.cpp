@@ -19,6 +19,8 @@
 #include <crane_msgs/msg/human_annotation.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/position_target_mode.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -294,6 +296,12 @@ public:
     annotation_pub_ =
       this->create_publisher<crane_msgs::msg::HumanAnnotation>("/human_annotations", 10);
 
+    // Robot move command publishers
+    move_command_pub_ =
+      this->create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
+    session_injection_pub_ =
+      this->create_publisher<std_msgs::msg::String>("/session_injection", 10);
+
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
       "/robot_feedback", 10, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
@@ -494,6 +502,10 @@ private:
         handleRobotControl(connection, request);
       } else if (type == "poll_pi_status") {
         pollAllPiStatus();
+      } else if (type == "activate_move_mode") {
+        handleActivateMoveMode(connection);
+      } else if (type == "move_robot") {
+        handleMoveRobot(connection, request);
       } else if (type == "get_world_model") {
         // World model is automatically broadcasted, but we can send current state if needed
       } else {
@@ -543,10 +555,17 @@ private:
 
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
+    {
+      std::lock_guard<std::mutex> lock(world_model_cache_mutex_);
+      cached_is_yellow_ = msg->is_yellow;
+      cached_on_positive_half_ = msg->on_positive_half;
+    }
+
     json world_model = {
       {"type", "world_model"},
       {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
       {"is_yellow", msg->is_yellow},
+      {"on_positive_half", msg->on_positive_half},
       {"ball",
        {{"x", msg->ball_info.position.x},
         {"y", msg->ball_info.position.y},
@@ -1070,6 +1089,61 @@ private:
     }
   }
 
+  void handleActivateMoveMode(std::shared_ptr<WebSocketConnection> connection)
+  {
+    std_msgs::msg::String injection_msg;
+    injection_msg.data = "HALT";
+    session_injection_pub_->publish(injection_msg);
+    RCLCPP_INFO(this->get_logger(), "Move mode activated: injecting HALT session");
+    json result = {{"type", "move_mode_activated"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleMoveRobot(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    int robot_id = request.value("robot_id", -1);
+    if (robot_id < 0 || robot_id > 15) {
+      json error = {{"type", "error"}, {"message", "Invalid robot_id"}};
+      connection->sendMessage(error.dump());
+      return;
+    }
+
+    crane_msgs::msg::RobotCommands commands_msg;
+    commands_msg.header.stamp = this->get_clock()->now();
+    {
+      std::lock_guard<std::mutex> lock(world_model_cache_mutex_);
+      commands_msg.is_yellow = cached_is_yellow_;
+      commands_msg.on_positive_half = cached_on_positive_half_;
+    }
+
+    crane_msgs::msg::RobotCommand cmd;
+    cmd.robot_id = static_cast<uint8_t>(robot_id);
+    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    cmd.target_theta = request.value("target_theta", 0.0f);
+
+    crane_msgs::msg::PositionTargetMode pos_target;
+    pos_target.target_x = request.value("target_x", 0.0f);
+    pos_target.target_y = request.value("target_y", 0.0f);
+    pos_target.position_tolerance = 0.05f;
+    pos_target.speed_limit_at_target = 0.0f;
+    cmd.position_target_mode.push_back(pos_target);
+
+    commands_msg.robot_commands.push_back(cmd);
+    move_command_pub_->publish(commands_msg);
+
+    RCLCPP_INFO(
+      this->get_logger(), "Move robot %d to (%.2f, %.2f)", robot_id, pos_target.target_x,
+      pos_target.target_y);
+
+    json result = {
+      {"type", "move_robot_result"},
+      {"robot_id", robot_id},
+      {"success", true},
+      {"target_x", pos_target.target_x},
+      {"target_y", pos_target.target_y}};
+    connection->sendMessage(result.dump());
+  }
+
   void handleRobotControl(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     int robot_id = request.value("robot_id", -1);
@@ -1159,6 +1233,13 @@ private:
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgUpdates>::SharedPtr
     visualizer_svgs_sub_;
   rclcpp::Publisher<crane_msgs::msg::HumanAnnotation>::SharedPtr annotation_pub_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr move_command_pub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
+
+  // Cached world model state for move commands
+  bool cached_is_yellow_{false};
+  bool cached_on_positive_half_{false};
+  std::mutex world_model_cache_mutex_;
 
   // Robot monitoring
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr robot_feedback_sub_;
