@@ -157,13 +157,6 @@ public:
     RCLCPP_DEBUG(get_logger(), "  Broadcast preparation complete -> Start sending packet");
 
     broadcast_sender->sendBroadcastPackets(robot_packets, counter_);
-
-    // 定期的な詳細ログ（100回に1回）
-    if (call_count_ % 100 == 0) {
-      RCLCPP_INFO(
-        get_logger(), "📈 Statistics (every 100 calls): Total calls=%d Avg cmd count=%ld",
-        call_count_, msg.robot_commands.size());
-    }
   }
 };
 }  // namespace crane

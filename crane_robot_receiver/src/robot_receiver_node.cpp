@@ -290,17 +290,6 @@ public:
 
     using std::chrono::operator""ms;
     using std::chrono::operator""s;
-    log_timer = rclcpp::create_timer(this, get_clock(), 5s, [&]() {
-      for (auto & receiver : receivers) {
-        auto s = receiver->getStats();
-        if (s.packet_frequency_hz <= 0.f) continue;
-        RCLCPP_INFO(
-          get_logger(),
-          "[Robot %d] interval: mean=%.1fms, min=%.1fms, max=%.1fms, stddev=%.1fms, freq=%.1fHz",
-          receiver->robot_id, s.interval.mean_ms, s.interval.min_ms, s.interval.max_ms,
-          s.interval.stddev_ms, s.packet_frequency_hz);
-      }
-    });
 
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
@@ -380,7 +369,6 @@ private:
   std::thread io_thread_;
 
   rclcpp::TimerBase::SharedPtr timer;
-  rclcpp::TimerBase::SharedPtr log_timer;
 
   rclcpp::Clock clock;
 };
