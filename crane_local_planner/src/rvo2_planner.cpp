@@ -219,19 +219,30 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           .set__value(STOP_STATE_MAX_VELOCITY));
     }
 
-    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
+    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
 
     Velocity target_vel;
     target_vel << (pos_mode.target_x - current_position.x()),
       pos_mode.target_y - current_position.y();
+    target_vel = target_vel.normalized() * (target_vel.norm() + 0.1);
+    target_vel *= 1.0;
 
+    // 目標速度を位置差分から直接計算（シンプルアプローチ）
+    // 目標方向ベクトルをmax_velでクランプして使用する
+    if (target_vel.norm() > max_vel) {
+      target_vel = target_vel.normalized() * max_vel;
+    }
+
+    /*
     // 速度超過クランプ: Vision観測誤差でmax_velをわずかに超えた速度を正規化（Sumatra adaptVel相当）
     constexpr double MAX_VEL_TOLERANCE = 0.2;
     Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
     if (vel > max_vel && vel < max_vel + MAX_VEL_TOLERANCE) {
       v0 = v0 * (max_vel / vel);
     }
+*/
 
+    /*
     // 目標との距離を計算
     const double dx = pos_mode.target_x - current_position.x();
     const double dy = pos_mode.target_y - current_position.y();
@@ -267,6 +278,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     } else {
       target_vel << next_vel.x(), next_vel.y();
     }
+*/
     // 衝突ファール (crashing) 回避:
     // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
     // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
@@ -428,6 +440,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
     rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
 
+    /*
     // 速度計画トレースに計画点を追加
     if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
       // 現在時刻から100ms後の予測位置・速度を記録
@@ -442,6 +455,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         0  // estimated_arrival_time_us（後で実装可能）
       );
     }
+*/
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {

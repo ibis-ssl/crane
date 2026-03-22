@@ -97,5 +97,68 @@ inline auto getPredictedPositionTrapezoidal(
   return current_pos + dir * traveled_distance;
 }
 
+/**
+ * @brief ボール追い越し時の迂回を考慮した移動時間を計算
+ *
+ * ロボットがボール進行方向の後方（同じ方向）からインターセプト地点へアプローチする場合、
+ * ボールを追い越して正面に回り込む迂回時間を加算する。
+ *
+ * alignment = (intercept_point - robot_pos).normalized().dot(ball_dir) が正の場合（後方から接近）、
+ * インターセプト地点の垂直方向へオフセットしたウェイポイント経由の2区間パスで時間を推定する。
+ *
+ * @param current_pos ロボットの現在位置
+ * @param current_vel ロボットの現在速度ベクトル
+ * @param intercept_point インターセプト地点
+ * @param ball_velocity ボールの速度ベクトル
+ * @param max_acceleration 最大加速度 [m/s^2]
+ * @param max_velocity 最大速度 [m/s]
+ * @param circling_radius 迂回オフセットの基準半径 [m]
+ * @return 移動時間 [s]
+ */
+inline auto getTravelTimeWithApproachPenalty(
+  const Point & current_pos, const Vector2 & current_vel, const Point & intercept_point,
+  const Vector2 & ball_velocity, const double max_acceleration, const double max_velocity,
+  const double circling_radius = 0.15) -> double
+{
+  double ball_speed = ball_velocity.norm();
+  if (ball_speed < 1e-3) {
+    return getTravelTimeTrapezoidal(
+      current_pos, current_vel, intercept_point, max_acceleration, max_velocity);
+  }
+
+  Vector2 robot_to_intercept = intercept_point - current_pos;
+  double dist = robot_to_intercept.norm();
+  if (dist < 1e-6) {
+    return 0.0;
+  }
+
+  Vector2 ball_dir = ball_velocity / ball_speed;
+  double alignment = robot_to_intercept.normalized().dot(ball_dir);
+
+  if (alignment <= 0.0) {
+    return getTravelTimeTrapezoidal(
+      current_pos, current_vel, intercept_point, max_acceleration, max_velocity);
+  }
+
+  // ウェイポイント: インターセプト地点から垂直方向 + ボール後方側にオフセット
+  Vector2 perp(-ball_dir.y(), ball_dir.x());
+  if ((current_pos - intercept_point).dot(perp) < 0) {
+    perp = -perp;  // ロボットに近い側を選択
+  }
+
+  double offset = circling_radius * alignment;
+  Point waypoint = intercept_point + perp * offset - ball_dir * offset;
+
+  double total_dist = (waypoint - current_pos).norm() + (intercept_point - waypoint).norm();
+  double v0 = current_vel.dot((waypoint - current_pos).normalized());
+
+  BangBangTrajectory1D traj;
+  traj.generate(0.0, total_dist, v0, max_velocity, max_acceleration);
+
+  double straight_time = getTravelTimeTrapezoidal(
+    current_pos, current_vel, intercept_point, max_acceleration, max_velocity);
+  return std::max(traj.getTotalTime(), straight_time);
+}
+
 }  // namespace crane
 #endif  // CRANE_PHYSICS__TRAVEL_TIME_HPP_
