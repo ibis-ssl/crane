@@ -50,6 +50,8 @@ private:
 
   int contact_count_ = 0;
 
+  mutable std::optional<rclcpp::Time> last_ball_sensor_active_time_;
+
   Point getPlacementTarget() const
   {
     Point p;
@@ -59,11 +61,31 @@ private:
 
   /// ボールがドリブラーから確実に離れたかを判定する。
   /// Vision/Tracker両方が検出かつ位置が一致かつデータが新鮮な場合のみ判定可能。
+  /// ボールセンサーが最後に反応してから0.1秒以内は喪失判定をスキップする。
   bool isBallTrulyLostFromDribbler(double distance_threshold = 0.2) const
   {
     const auto & ball_info = world_model()->getMsg().ball_info;
     auto now = rclcpp::Clock(RCL_ROS_TIME).now();
     constexpr double FRESHNESS_SEC = 0.1;
+
+    // ボールセンサーの最終反応時刻を更新
+    if (robot()->ball_sensor) {
+      last_ball_sensor_active_time_ = now;
+    }
+
+    // ボールセンサーが最近反応している場合はドリブル中と判断し喪失判定をスキップ
+    constexpr double BALL_SENSOR_ACTIVE_TIMEOUT_SEC = 0.1;
+    if (
+      last_ball_sensor_active_time_.has_value() &&
+      now.get_clock_type() == last_ball_sensor_active_time_->get_clock_type() &&
+      (now - *last_ball_sensor_active_time_).seconds() <= BALL_SENSOR_ACTIVE_TIMEOUT_SEC) {
+      auto clock = rclcpp::Clock(RCL_ROS_TIME).make_shared();
+      RCLCPP_INFO_THROTTLE(
+        rclcpp::get_logger("SingleBallPlacement"), *clock, 500,
+        "[isBallTrulyLostFromDribbler] result=0 reason=ball_sensor_active ball_sensor=%d",
+        robot()->ball_sensor);
+      return false;
+    }
     rclcpp::Time vision_stamp(ball_info.vision.stamp, RCL_ROS_TIME);
     rclcpp::Time tracker_stamp(ball_info.tracker.stamp, RCL_ROS_TIME);
 
