@@ -129,6 +129,12 @@
       border-color: #2d7dd2;
     }
 
+    #btn-move-mode.active {
+      background-color: #ffc107;
+      color: #000;
+      border-color: #ffc107;
+    }
+
     .robot-card .robot-id {
       font-size: 0.85rem;
       font-weight: 700;
@@ -462,6 +468,9 @@
         <button id="btn-zoom-in" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fas fa-search-plus"></i></button>
         <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fas fa-search-minus"></i></button>
         <button id="btn-zoom-reset" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fas fa-compress-arrows-alt"></i></button>
+        <span style="border-left:1px solid #333; margin:0 4px; height:20px; display:inline-block; align-self:center;"></span>
+        <button id="btn-move-mode" class="btn btn-sm btn-outline-warning py-0 px-2" title="ロボット移動モード (Shift+クリックでロボット選択/移動)"><i class="fas fa-arrows-alt"></i></button>
+        <span id="move-status" class="text-muted" style="font-size:0.7rem; margin-left:4px;">選択: <span id="selected-robot-label">--</span></span>
         <span class="text-muted" style="font-size:0.7rem; margin-left:8px;">
           レイヤー: <span id="layer-count">0</span> | プリミティブ: <span id="prim-count">0</span>
         </span>
