@@ -235,8 +235,7 @@ TEST(ApproachPenaltyTest, BallStationary_NoPenalty)
 
   double penalty_time =
     crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
-  double straight_time =
-    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+  double straight_time = crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
 
   EXPECT_DOUBLE_EQ(penalty_time, straight_time);
 }
@@ -253,8 +252,7 @@ TEST(ApproachPenaltyTest, ApproachFromFront_NoPenalty)
   // ロボット→インターセプト方向は-X、ボール方向は+X → alignment = -1.0 → ペナルティなし
   double penalty_time =
     crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
-  double straight_time =
-    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+  double straight_time = crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
 
   EXPECT_DOUBLE_EQ(penalty_time, straight_time);
 }
@@ -271,8 +269,7 @@ TEST(ApproachPenaltyTest, ApproachFromBehind_HasPenalty)
   // ロボット→インターセプト方向は+X、ボール方向も+X → alignment = 1.0 → ペナルティあり
   double penalty_time =
     crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
-  double straight_time =
-    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+  double straight_time = crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
 
   EXPECT_GT(penalty_time, straight_time);
 }
@@ -288,8 +285,7 @@ TEST(ApproachPenaltyTest, ApproachFromSide_NoPenalty)
   // ロボット→インターセプト方向は+Y、ボール方向は+X → alignment = 0.0 → ペナルティなし
   double penalty_time =
     crane::getTravelTimeWithApproachPenalty(robot_pos, robot_vel, intercept, ball_vel, 1.0, 4.0);
-  double straight_time =
-    crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
+  double straight_time = crane::getTravelTimeTrapezoidal(robot_pos, robot_vel, intercept, 1.0, 4.0);
 
   EXPECT_DOUBLE_EQ(penalty_time, straight_time);
 }
