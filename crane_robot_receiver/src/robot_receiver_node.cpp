@@ -27,8 +27,7 @@ namespace protocol = crane::robot_receiver::protocol;
 class RobotFeedbackReceiver
 {
 public:
-  RobotFeedbackReceiver(
-    asio::io_context & io_ctx, const std::string & host, const int port)
+  RobotFeedbackReceiver(asio::io_context & io_ctx, const std::string & host, const int port)
   : robot_id(port - 50100),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
@@ -74,8 +73,7 @@ public:
       std::begin(latest.ball_detection), std::end(latest.ball_detection),
       std::begin(result.ball_detection));
     std::copy(
-      std::begin(latest.temperature), std::end(latest.temperature),
-      std::begin(result.temperature));
+      std::begin(latest.temperature), std::end(latest.temperature), std::begin(result.temperature));
 
     // 連続値: 算術平均
     const float n = static_cast<float>(packet_queue_.size());

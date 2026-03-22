@@ -353,8 +353,7 @@ auto WorldModelWrapper::getBallSlackTime(
       return std::make_pair(
         robot, getTravelTimeWithApproachPenalty(
                  robot->pose.pos, robot->vel.linear, intercept_point, ball_velocity,
-                 config.robot_max_acceleration, config.robot_max_velocity,
-                 config.circling_radius));
+                 config.robot_max_acceleration, config.robot_max_velocity, config.circling_radius));
     }),
     ranges::less{}, [](const auto & pair) {
       return pair.second;  // 移動時間が小さい順にソート

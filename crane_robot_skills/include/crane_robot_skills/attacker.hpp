@@ -42,6 +42,7 @@ public:
     goal_kick_skill(command),
     receive_skill(command)
   {
+    over_dribble_check_enabled_ = true;
     initialize();
   }
 

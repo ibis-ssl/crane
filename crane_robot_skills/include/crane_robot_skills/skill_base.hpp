@@ -275,9 +275,11 @@ public:
     auto it = state_functions_.find(current_state);
     Status status = (it != state_functions_.end()) ? it->second() : Status::RUNNING;
 
-    over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
-    if (over_dribble.distance > OVER_DRIBBLE_DISTANCE_THRESHOLD) {
-      command->stopHere();
+    if (over_dribble_check_enabled_) {
+      over_dribble.update(robot()->pose.pos, world_model()->ball().pos);
+      if (over_dribble.distance > OVER_DRIBBLE_DISTANCE_THRESHOLD) {
+        command->stopHere();
+      }
     }
 
     onPostUpdate();
@@ -328,6 +330,7 @@ public:
 protected:
   virtual void onPostUpdate() {}
 
+  bool over_dribble_check_enabled_ = false;
   StateMachine state_machine_;
   std::unordered_map<int, StateFunctionType> state_functions_;
   OverDribbleInfo over_dribble;
