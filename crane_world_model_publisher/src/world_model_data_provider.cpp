@@ -267,10 +267,17 @@ auto WorldModelDataProvider::on_udp_timer() -> void
     try {
       robocup_ssl::SSL_WrapperPacket packet;
       if (packet.ParseFromString(raw)) {
-        if (use_udp_detection_ && packet.has_detection()) {
-          processDetectionFrame(packet.detection());
-          has_vision_updated_ = true;
-          last_vision_recv_time_ = node.get_clock()->now();
+        if (packet.has_detection()) {
+          // Vision ボール生データは常に更新（isBallTrulyLostFromDribblerのクロスリファレンス用）
+          if (!packet.detection().balls().empty()) {
+            updateVisionBallState(packet.detection().balls().at(0));
+            integrateBallInfo();
+          }
+          if (use_udp_detection_) {
+            processDetectionFrame(packet.detection());
+            has_vision_updated_ = true;
+            last_vision_recv_time_ = node.get_clock()->now();
+          }
         }
         if (packet.has_geometry()) {
           processGeometryData(packet.geometry());

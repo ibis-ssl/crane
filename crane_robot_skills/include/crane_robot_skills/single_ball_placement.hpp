@@ -62,24 +62,47 @@ private:
   bool isBallTrulyLostFromDribbler(double distance_threshold = 0.2) const
   {
     const auto & ball_info = world_model()->getMsg().ball_info;
-    if (!ball_info.vision_detected || !ball_info.tracker_detected) {
-      return false;
-    }
     auto now = rclcpp::Clock(RCL_ROS_TIME).now();
     constexpr double FRESHNESS_SEC = 0.1;
     rclcpp::Time vision_stamp(ball_info.vision.stamp, RCL_ROS_TIME);
     rclcpp::Time tracker_stamp(ball_info.tracker.stamp, RCL_ROS_TIME);
-    if (
-      (now - vision_stamp).seconds() > FRESHNESS_SEC ||
-      (now - tracker_stamp).seconds() > FRESHNESS_SEC) {
-      return false;
-    }
+
+    double vision_age = (vision_stamp.nanoseconds() > 0) ? (now - vision_stamp).seconds() : -1.0;
+    double tracker_age = (tracker_stamp.nanoseconds() > 0) ? (now - tracker_stamp).seconds() : -1.0;
+
     Point vision_pos(ball_info.vision.pos.x, ball_info.vision.pos.y);
     Point tracker_pos(ball_info.tracker.pos.x, ball_info.tracker.pos.y);
-    if ((vision_pos - tracker_pos).norm() > 0.15) {
-      return false;
+    double vision_tracker_diff = (vision_pos - tracker_pos).norm();
+    double dist_from_dribbler = (tracker_pos - robot()->kicker_center()).norm();
+
+    bool vision_fresh = vision_age >= 0.0 && vision_age <= FRESHNESS_SEC;
+    bool tracker_fresh = tracker_age >= 0.0 && tracker_age <= FRESHNESS_SEC;
+
+    bool result = false;
+    const char * reason = "unknown";
+    if (!vision_fresh) {
+      reason = "vision_not_fresh";
+    } else if (!tracker_fresh) {
+      reason = "tracker_not_fresh";
+    } else if (vision_tracker_diff > 0.15) {
+      reason = "vision_tracker_mismatch";
+    } else {
+      result = dist_from_dribbler > distance_threshold;
+      reason = result ? "lost" : "still_close";
     }
-    return (tracker_pos - robot()->kicker_center()).norm() > distance_threshold;
+
+    auto clock = rclcpp::Clock(RCL_ROS_TIME).make_shared();
+    RCLCPP_INFO_THROTTLE(
+      rclcpp::get_logger("SingleBallPlacement"), *clock, 500,
+      "[isBallTrulyLostFromDribbler] result=%d reason=%s "
+      "v_det=%d t_det=%d v_age=%.3fs t_age=%.3fs "
+      "v_pos=(%.3f,%.3f) t_pos=(%.3f,%.3f) diff=%.3fm "
+      "dist=%.3fm threshold=%.3fm",
+      result, reason, ball_info.vision_detected, ball_info.tracker_detected, vision_age,
+      tracker_age, vision_pos.x(), vision_pos.y(), tracker_pos.x(), tracker_pos.y(),
+      vision_tracker_diff, dist_from_dribbler, distance_threshold);
+
+    return result;
   }
 
 public:
