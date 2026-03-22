@@ -139,6 +139,10 @@ void Goalie::inplay(bool enable_emit)
       }
     }();
 
+    if (robot->getDistance(target) > 0.2) {
+      target += (target - robot->pose.pos).normalized() * 0.5;
+    }
+
     command->setTargetPosition(target).lookAtBallFrom(target);
   } else {
     // ボールがフィールド外かつ自陣側（ゴール内）かどうか
