@@ -84,7 +84,7 @@ private:
       reason = "vision_not_fresh";
     } else if (!tracker_fresh) {
       reason = "tracker_not_fresh";
-    } else if (vision_tracker_diff > 0.15) {
+    } else if (vision_tracker_diff > 0.05) {
       reason = "vision_tracker_mismatch";
     } else {
       result = dist_from_dribbler > distance_threshold;
