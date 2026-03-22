@@ -76,13 +76,6 @@ void Kick::initialize()
       }
     }();
 
-    // 味方ペナルティエリア内のボールには接近しない（GKに委ねる）
-    if (world_model()->point_checker.isFriendPenaltyArea(ball_pos, 0.15)) {
-      command->lookAtBall();
-      command->addPlanningFactor("kick", "WAIT_BALL_EXIT_FRIEND_PA");
-      return Status::RUNNING;
-    }
-
     const double interval = std::max(getParameter<double>("around_interval"), 0.01);
     const bool go_around_ball = getParameter<bool>("go_around_ball");
     const Vector2 kick_vec = computeKickVec();
