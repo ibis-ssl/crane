@@ -109,6 +109,8 @@ services:
     image: robocupssl/ssl-log-recorder:latest
     container_name: match_log_recorder
     network_mode: host
+    stop_signal: SIGINT
+    stop_grace_period: 30s
     volumes:
       - ./ssl-logs:/logs:rw
     working_dir: /logs

@@ -18,7 +18,6 @@ cd "$REPO_ROOT"
 
 COMPOSE_FILE="docker/dev/docker-compose.yaml"
 DEBUG_TOOLS_PID_FILE="/tmp/crane_debug_tools.pid"
-SSL_LOG_RECORDER_CONTAINER_NAME="crane-ssl-log-recorder"
 
 # 引数解析
 MODE="sim"
@@ -117,84 +116,11 @@ stop_debug_tools() {
     fi
 }
 
-start_ssl_log_recorder() {
-    local referee_address
-    local vision_address
-    local vision_tracker_address
-    local container_state
-
-    if [[ $MODE == "sim" ]]; then
-        referee_address="224.5.23.1:11003"
-        vision_address="224.5.23.2:10020"
-        vision_tracker_address="224.5.23.2:11010"
-    else
-        referee_address="224.5.23.1:10003"
-        vision_address="224.5.23.2:10006"
-        vision_tracker_address="224.5.23.2:10010"
-    fi
-
-    container_state=$(docker inspect -f '{{.State.Status}}' "$SSL_LOG_RECORDER_CONTAINER_NAME" 2>/dev/null || true)
-    if [[ $container_state == "running" ]]; then
-        echo "ssl-log-recorder は既に起動中です (container: $SSL_LOG_RECORDER_CONTAINER_NAME)"
-        return 0
-    fi
-
-    if [[ -n $container_state ]]; then
-        echo "既存の ssl-log-recorder コンテナを削除中 (state: $container_state)"
-        docker rm -f "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
-    fi
-
-    echo "=== ssl-log-recorder を起動中 ==="
-    docker run -d \
-        --name "$SSL_LOG_RECORDER_CONTAINER_NAME" \
-        --network host \
-        -v "$REPO_ROOT:/logs" \
-        -w /logs \
-        robocupssl/ssl-log-recorder:latest \
-        -referee-address "$referee_address" \
-        -vision-address "$vision_address" \
-        -vision-tracker-address "$vision_tracker_address" >/dev/null
-
-    echo "ssl-log-recorder 起動完了"
-    echo "  Container: $SSL_LOG_RECORDER_CONTAINER_NAME"
-    echo "  保存先: $REPO_ROOT"
-    echo "  referee: $referee_address"
-    echo "  vision: $vision_address"
-    echo "  vision-tracker: $vision_tracker_address"
-}
-
-stop_ssl_log_recorder() {
-    local container_state
-    local stop_timeout=30
-    local wait_timeout=35
-
-    container_state=$(docker inspect -f '{{.State.Status}}' "$SSL_LOG_RECORDER_CONTAINER_NAME" 2>/dev/null || true)
-    if [[ -z $container_state ]]; then
-        return 0
-    fi
-
-    echo "=== ssl-log-recorder を停止中 (container: $SSL_LOG_RECORDER_CONTAINER_NAME) ==="
-
-    if [[ $container_state == "running" ]]; then
-        # ssl-log-recorder は SIGINT で正常終了処理に入る実装が多いため、先に SIGINT を試す
-        echo "SIGINT で graceful shutdown を試行します"
-        docker kill --signal=SIGINT "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
-
-        if ! timeout "$wait_timeout" docker wait "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1; then
-            echo "SIGINT で停止しなかったため docker stop へフォールバックします (timeout: ${stop_timeout}s)"
-            docker stop --time "$stop_timeout" "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
-        fi
-    fi
-
-    docker rm "$SSL_LOG_RECORDER_CONTAINER_NAME" >/dev/null 2>&1 || true
-    echo "ssl-log-recorder 停止完了"
-}
 COMPOSE_COMMAND="$(detect_compose_command)"
 
 # downコマンドの場合はdebug_toolsも停止
 if [[ $COMPOSE_COMMAND == "down" ]]; then
     stop_debug_tools
-    stop_ssl_log_recorder
 fi
 
 echo "=== Docker開発環境 ==="
@@ -205,16 +131,12 @@ echo "Compose file: $COMPOSE_FILE"
 echo "引数: ${DOCKER_ARGS[*]}"
 echo ""
 
-if [[ $COMPOSE_COMMAND == "up" ]]; then
-    start_ssl_log_recorder
-fi
-
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
     docker compose -f "$COMPOSE_FILE" --profile sim "${DOCKER_ARGS[@]}"
 else
     # 実機環境(Visionポート変更、status-board無効)
-    VISION_PORT=10006 docker compose -f "$COMPOSE_FILE" "${DOCKER_ARGS[@]}"
+    VISION_PORT=10006 REFEREE_PORT=10003 TRACKER_PORT=10010 docker compose -f "$COMPOSE_FILE" "${DOCKER_ARGS[@]}"
 fi
 
 # バックグラウンド起動時のみdebug_toolsを起動
