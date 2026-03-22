@@ -132,7 +132,7 @@ public:
       }
 
       command->setTargetPosition(target_position);
-      command->disableGoalAreaAvoidance().setTargetTheta(robot->pose.theta);
+      command->disableGoalAreaAvoidance().lookAtBall();
       robot_commands.push_back(command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
