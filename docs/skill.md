@@ -15,7 +15,7 @@ Skillは単一ロボットの行動を表す基本単位です。
 | ベースクラス | 用途 | 実装要件 |
 |------------|------|---------|
 | `SkillBase` | シンプルな行動制御 | `update()`メソッドのみ |
-| `SkillBaseWithState<T>` | 複雑な状態遷移 | `addStateFunction()` + `addTransition()` |
+| `SkillBaseWithState` | 複雑な状態遷移 | `addStateFunction()` + `addTransition()` |
 
 ### 基本実装パターン
 
@@ -44,11 +44,14 @@ public:
 // 状態付きスキル例  
 enum class KickState { ENTRY_POINT, APPROACH, KICK, FINISH };
 
-class Kick : public SkillBaseWithState<KickState>
+class Kick : public SkillBaseWithState
 {
 public:
-  explicit Kick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-    : SkillBaseWithState("Kick", id, wm) {
+  template <typename... Args>
+  explicit Kick(Args &&... args)
+    : SkillBaseWithState(
+        static_cast<int>(KickState::ENTRY_POINT), &Kick::getStateName, "Kick",
+        std::forward<Args>(args)...) {
 
     // 状態ごとの処理定義
     addStateFunction(KickState::ENTRY_POINT, [this]() {
@@ -76,7 +79,7 @@ public:
 
 | メソッド | 戻り値 | 説明 |
 |---------|-------|------|
-| `commander()` | `PositionCommandWrapper::SharedPtr` | ロボットコマンド操作用ラッパー |
+| `commander()` | コマンドラッパーへの参照 | ロボットコマンド操作用ラッパー |
 | `world_model()` | `WorldModelWrapper::SharedPtr` | ワールド状態取得 |
 | `getID()` | `uint8_t` | ロボットID取得 |
 | `robot()` | `RobotInfo::SharedPtr` | 自身のロボット情報取得 |

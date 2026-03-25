@@ -1,7 +1,6 @@
 # Craneパッケージドキュメント ポータル
 
-> **📋 ドキュメント保守ハブ**  
-> このページは各パッケージドキュメントの最新状況を集約し、アップデート対象の洗い出しと進捗共有を簡潔に把握できるようにするためのポータルです。
+Craneを構成する全パッケージのドキュメント一覧。
 
 ## プロジェクト概要
 
@@ -22,124 +21,69 @@
 
 ---
 
-## 📦 パッケージ一覧・作業状況
+## 📦 パッケージ一覧
 
-### 🔥 Core系パッケージ群 (16/16) - 高優先度
+### 🔥 Core系
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [crane_msgs](./crane_msgs.md) | メッセージ定義基盤 | 🟢 安定 | ✅ 作成済み | Session 1 |
-| [crane_world_model_publisher](./crane_world_model_publisher.md) | 世界状態推定・トラッキング | 🔴 高活動 | ✅ 作成済み | Session 1 |
-| [crane_robot_skills](./crane_robot_skills.md) | ロボットスキルライブラリ | 🟡 中活動 | ✅ 作成済み | Session 1 |
-| [crane_local_planner](./crane_local_planner.md) | 経路計画・衝突回避 | 🔴 高活動 | ✅ 作成済み | 完了 |
-| [crane_game_analyzer](./crane_game_analyzer.md) | 試合状況分析 | 🟡 中活動 | ✅ 作成済み | 完了 |
-| [crane_play_switcher](./crane_play_switcher.md) | プレイ自動選択 | 🟡 中活動 | ✅ 作成済み | 完了 |
-| [crane_sender](./crane_sender.md) | ロボットコマンド送信 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_bringup](./crane_bringup.md) | システム起動統合 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_description](./crane_description.md) | パラメータ管理 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_speaker](./crane_speaker.md) | 音声出力システム | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ✅ 作成済み | 完了 |
+| パッケージ名 | 役割 |
+|-------------|------|
+| [crane_msgs](./crane_msgs.md) | メッセージ定義基盤 |
+| [crane_world_model_publisher](./crane_world_model_publisher.md) | 世界状態推定・トラッキング |
+| [crane_robot_skills](./crane_robot_skills.md) | ロボットスキルライブラリ |
+| [crane_local_planner](./crane_local_planner.md) | 経路計画・衝突回避 |
+| [crane_game_analyzer](./crane_game_analyzer.md) | 試合状況分析 |
+| [crane_play_switcher](./crane_play_switcher.md) | プレイ自動選択 |
+| [crane_sender](./crane_sender.md) | ロボットコマンド送信 |
+| [crane_bringup](./crane_bringup.md) | システム起動統合 |
+| [crane_description](./crane_description.md) | パラメータ管理 |
+| [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 |
+| [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース |
+| [crane_speaker](./crane_speaker.md) | 音声出力システム |
+| [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 |
+| [crane_teleop](./crane_teleop.md) | 遠隔操作 |
+| [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 |
 
-### 🎯 Session系パッケージ群 (2/2) - 高優先度
+### 🎯 Session系
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [crane_session_coordinator](./crane_session_coordinator.md) | 試合統括・ゲーム状態管理 | 🟡 中活動 | ✅ 作成済み | Session 1 |
-| [crane_sessions](./crane_sessions.md) | 戦略セッションプラグイン | 🔴 高活動 | ✅ 作成済み | 完了 |
+| パッケージ名 | 役割 |
+|-------------|------|
+| [crane_session_coordinator](./crane_session_coordinator.md) | 試合統括・ゲーム状態管理 |
+| [crane_sessions](./crane_sessions.md) | 戦略セッションプラグイン |
 
-### 🔧 Utility系パッケージ群 (6/6) - 中優先度
+### 🔧 Utility系
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [crane_geometry](./crane_geometry.md) | 幾何学計算ライブラリ | 🔴 高活動 | ✅ 作成済み | 完了 |
-| [crane_physics](./crane_physics.md) | 物理計算・ボールモデル | 🔴 高活動 | ✅ 作成済み | 完了 |
-| [crane_comm](./crane_comm.md) | 通信ユーティリティ | 🟡 中活動 | ✅ 作成済み | 完了 |
-| [crane_msg_wrappers](./crane_msg_wrappers.md) | メッセージラッパー | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_lint_common](./crane_lint_common.md) | 共通リント設定 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [crane_utils](./crane_utils.md) | 共通ユーティリティ関数 | 🟢 安定 | ✅ 作成済み | 完了 |
+| パッケージ名 | 役割 |
+|-------------|------|
+| [crane_geometry](./crane_geometry.md) | 幾何学計算ライブラリ |
+| [crane_physics](./crane_physics.md) | 物理計算・ボールモデル |
+| [crane_comm](./crane_comm.md) | 通信ユーティリティ |
+| [crane_msg_wrappers](./crane_msg_wrappers.md) | メッセージラッパー |
+| [crane_lint_common](./crane_lint_common.md) | 共通リント設定 |
+| [crane_utils](./crane_utils.md) | 共通ユーティリティ関数 |
 
-### 📡 SSL通信系パッケージ群 (2/2) - 中優先度
+### 📡 SSL通信系
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [robocup_ssl_comm](./robocup_ssl_comm.md) | SSL通信プロトコル処理 | 🟢 安定 | ✅ 作成済み | 完了 |
-| [robocup_ssl_msgs](./robocup_ssl_msgs.md) | SSL公式メッセージ定義 | 🟢 安定 | ✅ 作成済み | 完了 |
+| パッケージ名 | 役割 |
+|-------------|------|
+| [robocup_ssl_comm](./robocup_ssl_comm.md) | SSL通信プロトコル処理 |
+| [robocup_ssl_msgs](./robocup_ssl_msgs.md) | SSL公式メッセージ定義 |
 
-### 📚 3rdparty系パッケージ群 (3/3) - 低優先度
+### 📚 3rdparty
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [rvo2_vendor](./rvo2_vendor.md) | RVO2衝突回避アルゴリズム | 🟢 安定 | ✅ 作成済み | 完了 |
-| [matplotlib_cpp_17_vendor](./matplotlib_cpp_17_vendor.md) | C++17対応matplotlib | 🟢 安定 | ✅ 作成済み | 完了 |
-| [closest_point_vendor](./closest_point_vendor.md) | 最近点計算ライブラリ | 🟢 安定 | ✅ 作成済み | 完了 |
+| パッケージ名 | 役割 |
+|-------------|------|
+| [rvo2_vendor](./rvo2_vendor.md) | RVO2衝突回避アルゴリズム |
+| [matplotlib_cpp_17_vendor](./matplotlib_cpp_17_vendor.md) | C++17対応matplotlib |
+| [closest_point_vendor](./closest_point_vendor.md) | 最近点計算ライブラリ |
 
-### 🛠️ 開発ツール系パッケージ群 (1/1) - 開発支援
+### 🛠️ 開発ツール系
 
-| パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
-|-------------|------|-----------|----------------|---------------|
-| [crane_debug_tools](./crane_debug_tools.md) | デバッグ・テストツール | 🔴 高活動 | ✅ 作成済み | 完了 |
-
----
-
-## 🛠️ ドキュメント更新手順
-
-### 推奨ワークフロー
-
-1. 対象パッケージを表から確認し、担当欄を更新
-2. ドキュメントを見直し、実装と差分がある箇所のみを書き換え
-3. 更新後は「ドキュメント状況」と「担当セッション」を反映
-4. 参照リンクと隣接パッケージの記述が矛盾しないか確認
-
-### テンプレート（参考）
-
-```markdown
-# パッケージ名
-
-## 概要
-[パッケージの目的と概要]
-
-## 主要機能
-- 機能1
-- 機能2
-
-## アーキテクチャ上の役割
-[システム内での位置づけ]
-
-## コンポーネント
-### ノード
-- ノード名: 機能説明
-
-### ライブラリ
-- ライブラリ名: 機能説明
-
-## 依存関係
-- パッケージ依存
-- システム依存
-
-## 使用方法
-[基本的な使用例]
-
-## 最近の開発状況
-[2025年JapanOpen後の開発状況と主要な変更]
-```
-
----
-
-## 📊 進捗サマリー
-
-- **全体進捗**: 30/30 パッケージ (100%) ✅ **完了**
-- **Core系**: 16/16 完了 (100%) ✅
-- **Session系**: 2/2 完了 (100%) ✅
-- **Utility系**: 6/6 完了 (100%) ✅
-- **SSL通信系**: 2/2 完了 (100%) ✅
-- **3rdparty系**: 3/3 完了 (100%) ✅
-- **開発ツール系**: 1/1 完了 (100%) ✅
-
-**最終更新**: 2026-03-12
+| パッケージ名 | 役割 |
+|-------------|------|
+| [crane_bag](./crane_bag.md) | C++ rosbag解析CLIツール |
+| [crane_mcap_tools](./crane_mcap_tools.md) | Python解析・SVG動画生成 |
+| [crane_web_debugger](./crane_web_debugger.md) | WebSocketデバッグサーバー |
+| [crane_ball_calibration_ui](./crane_ball_calibration_ui.md) | ボールモデルキャリブレーションUI |
 
 ---
 
@@ -148,13 +92,3 @@
 - [メインドキュメント](../index.md)
 - [アーキテクチャ概要](../../README.md)
 - [開発ログ](../logs/)
-- [Claude Code開発ドキュメント](../../CLAUDE.md)
-
----
-
-## 📝 注意事項
-
-1. **並列作業時**: 担当セッション欄を必ず更新してください
-2. **ドキュメント品質**: 技術的正確性と日本語統一性を保持
-3. **リンク整合性**: パッケージ間参照の正確性を確認
-4. **定期更新**: 開発進捗に応じてドキュメント更新

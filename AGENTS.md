@@ -67,17 +67,14 @@ colcon build --packages-select crane_world_model_publisher crane_sessions
 
 ### ビルド時間最適化
 
-- colcon.meta による並列設定と最適化
 - vendor の shallow clone
 - 不要警告の抑制でログ簡素化
 - `scripts/optimized_build.bash` による自動化
 
 目安:
 
-- 最適化前: 約 7分18秒（31パッケージ）
+- 最適化前: 約 7分18秒
 - 最適化後: 目標 5分30秒（20–30% 削減）
-
-詳細: `docs/logs/portal/build_optimization_guide.md`
 
 ### テスト
 
@@ -117,9 +114,6 @@ ros2 launch crane_bringup crane.launch.xml sim:=true
 
 # 通信系のみ
 ros2 launch robocup_ssl_comm comm.launch.py
-
-# データパイプライン
-ros2 launch crane_bringup data.launch.py
 ```
 
 ## システム全体アーキテクチャ
@@ -261,24 +255,9 @@ ros2 launch crane_bringup data.launch.py
 
 ## 開発環境
 
-### Docker（シミュレーション）
+### Docker環境
 
-```bash
-cd docker/sim
-docker compose up -d
-
-# アクセス
-# - Game Controller: http://localhost:8081
-# - Vision Client:   http://localhost:8082
-# - Status Board:    http://localhost:8083
-```
-
-### 実機環境
-
-```bash
-cd docker/real
-docker compose up -d
-```
+詳細は `docker/README.md` を参照してください。
 
 ## コード規約
 
@@ -408,7 +387,7 @@ minor/majorバージョンアップが必要な場合は、GitHub ActionsのUI�
 
 ### バージョン管理ポリシー
 
-- **全パッケージ統一**: 31個の全パッケージを同一バージョンで管理
+- **全パッケージ統一**: 全パッケージを同一バージョンで管理
 - **セマンティックバージョニング**: メジャー.マイナー.パッチ形式
 - **Gitタグ**: 各バージョンにタグを付与（例: `1.0.0`）
 - **リリースノート**: GitHub Releaseで自動生成
