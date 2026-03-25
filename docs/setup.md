@@ -96,21 +96,7 @@ newgrp docker
 
 #### シミュレーション環境の起動
 
-Docker Compose V2 を使用します（コマンドが `docker compose` とハイフンなしになっている点に注意）。
-
-```bash
-cd ~/ibis_ws/src/crane/docker/sim
-docker compose up -d
-```
-
-これにより以下のサービスが起動します：
-
-- SSL Game Controller
-- Vision Client
-- Status Board
-- AutoRef-Tigers
-
-#### サービスへのアクセス
+詳細な起動手順は `docker/README.md` を参照してください。起動後のサービスへのアクセス先:
 
 - SSL Game Controller: [http://localhost:8081](http://localhost:8081)
 - SSL Vision Client: [http://localhost:8082](http://localhost:8082)

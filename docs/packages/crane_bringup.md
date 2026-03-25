@@ -23,13 +23,6 @@ ros2 launch crane_bringup crane.launch.xml sim:=true
 ros2 launch crane_bringup crane.launch.xml sim:=false
 ```
 
-### data.launch.py
-
-```bash
-# データ処理パイプライン起動
-ros2 launch crane_bringup data.launch.py
-```
-
 ## アーキテクチャ上の役割
 
 Craneシステムの**統合・起動管理層**として、複雑なマルチノードシステムの起動順序制御と依存関係管理を担います。

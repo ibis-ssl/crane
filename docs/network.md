@@ -56,15 +56,15 @@ graph TD
     SwitchingHub -- UDP Multicast --> OfficialInterface
     OfficialInterface -- UDP Multicast --> crane
     crane -- ROS --> crane_sender
-    crane_sender -- UPD to 192.168.20.1xx --> ibisInterface
+    crane_sender -- UDP to 192.168.20.1xx --> ibisInterface
 
-    ibisInterface -- UPD to 192.168.20.1xx --> SwitchingHub
-    SwitchingHub -- UPD to 192.168.20.1xx --> Router
+    ibisInterface -- UDP to 192.168.20.1xx --> SwitchingHub
+    SwitchingHub -- UDP to 192.168.20.1xx --> Router
     Router -- AICommand --> Robots
     Robots -- RobotFeedback --> Router
-    Router -- UPD to 192.168.20.1xx --> SwitchingHub
-    SwitchingHub -- RobotFeedback UPD Multicast --> ibisInterface
-    ibisInterface -- RobotFeedback UPD Multicast --> crane_robot_receiver
+    Router -- UDP to 192.168.20.1xx --> SwitchingHub
+    SwitchingHub -- RobotFeedback UDP Multicast --> ibisInterface
+    ibisInterface -- RobotFeedback UDP Multicast --> crane_robot_receiver
     crane_robot_receiver -- ROS  --> crane
 
 ```
