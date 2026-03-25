@@ -6,3 +6,6 @@ results/*.txt
 
 # SSL log recorder output
 ssl-logs/
+
+# crane rosbag output
+crane-rosbag/
