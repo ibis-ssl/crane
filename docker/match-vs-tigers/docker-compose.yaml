@@ -56,8 +56,11 @@ services:
     image: ghcr.io/ibis-ssl/crane:${CRANE_TAG:-match-local}
     container_name: match_crane
     network_mode: host
+    volumes:
+      - ./crane-rosbag:/root/crane-rosbag
     command: |
       bash -c "
+      cd /root/crane-rosbag &&
       source /root/ibis_ws/install/setup.bash &&
       ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=ibis
       "

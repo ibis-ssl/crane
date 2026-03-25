@@ -113,6 +113,8 @@ jobs:
         run: |
           mkdir -p docker/match-vs-tigers/ssl-logs
           chmod 777 docker/match-vs-tigers/ssl-logs
+          mkdir -p docker/match-vs-tigers/crane-rosbag
+          chmod 777 docker/match-vs-tigers/crane-rosbag
           docker compose -f docker/match-vs-tigers/docker-compose.yaml up -d
         env:
           CRANE_TAG: ${{ env.CRANE_TAG }}
@@ -192,6 +194,24 @@ jobs:
         with:
           name: match-ssl-log-${{ github.sha }}
           path: ssl-logs-artifact/
+          if-no-files-found: warn
+
+      - name: Get crane rosbag
+        if: always()
+        run: |
+          echo "crane-rosbagディレクトリの内容:"
+          ls -la docker/match-vs-tigers/crane-rosbag/ || echo "ディレクトリが見つかりません"
+          sudo chmod -R a+r docker/match-vs-tigers/crane-rosbag/ 2>/dev/null || true
+          mkdir -p crane-rosbag-artifact
+          cp -r docker/match-vs-tigers/crane-rosbag/* crane-rosbag-artifact/ 2>/dev/null || echo "rosbagファイルが見つかりません"
+          ls -la crane-rosbag-artifact/ || true
+
+      - name: Upload crane rosbag
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: match-crane-rosbag-${{ github.sha }}
+          path: crane-rosbag-artifact/
           if-no-files-found: warn
 
       - name: Show match result
