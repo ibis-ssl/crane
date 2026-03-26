@@ -292,11 +292,13 @@ void PlaySwitcher::check_referee_timeout()
   using crane_msgs::msg::PlaySituation;
   constexpr double REFEREE_TIMEOUT_SEC = 1.0;
 
-  if ((now() - last_referee_recv_time_).seconds() <= REFEREE_TIMEOUT_SEC) {
+  const rclcpp::Time current_time = now();
+  const double elapsed_sec = (current_time - last_referee_recv_time_).seconds();
+
+  if (elapsed_sec <= REFEREE_TIMEOUT_SEC) {
     return;
   }
 
-  // 既に安全な状態（HALT/STOP/HALF_TIME/POST_GAME）の場合は何もしない
   const int current_cmd = play_situation_msg.command.value;
   if (
     current_cmd == PlaySituation::HALT || current_cmd == PlaySituation::STOP ||
@@ -304,18 +306,18 @@ void PlaySwitcher::check_referee_timeout()
     return;
   }
 
-  if (!referee_timeout_active_) {
-    RCLCPP_WARN(
-      get_logger(),
-      "レフェリーメッセージが%.1f秒以上受信できていません。安全のためSTOPに遷移します。"
-      "（最終受信からの経過時間: %.1f秒）",
-      REFEREE_TIMEOUT_SEC, (now() - last_referee_recv_time_).seconds());
-    referee_timeout_active_ = true;
+  if (referee_timeout_active_) {
+    return;
   }
+
+  RCLCPP_WARN(
+    get_logger(), "レフェリーメッセージが%.1f秒受信できていません。安全のためSTOPに遷移します。",
+    elapsed_sec);
+  referee_timeout_active_ = true;
 
   play_situation_msg.command = getSituationCommandNamedInt(PlaySituation::STOP);
   play_situation_msg.reason_text = "レフェリーメッセージタイムアウト：安全のためSTOPに遷移";
-  play_situation_msg.header.stamp = now();
+  play_situation_msg.header.stamp = current_time;
   play_situation_pub->publish(play_situation_msg);
 }
 
