@@ -41,6 +41,8 @@ private:
 
   auto referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void;
 
+  void check_referee_timeout();
+
   WorldModelWrapper::SharedPtr world_model;
 
   crane_msgs::msg::PlaySituation play_situation_msg;
@@ -62,6 +64,10 @@ private:
   } inplay_command_info;
 
   robocup_ssl_msgs::msg::Referee latest_raw_referee;
+
+  rclcpp::TimerBase::SharedPtr referee_watchdog_timer_;
+  rclcpp::Time last_referee_recv_time_;
+  bool referee_timeout_active_ = false;
 };
 }  // namespace crane
 
