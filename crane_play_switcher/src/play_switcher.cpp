@@ -32,6 +32,12 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
   last_command_changed_state.stamp = now();
+  last_referee_recv_time_ = now();
+
+  constexpr double REFEREE_WATCHDOG_PERIOD_SEC = 0.5;
+  referee_watchdog_timer_ = create_wall_timer(
+    std::chrono::duration<double>(REFEREE_WATCHDOG_PERIOD_SEC),
+    [this]() { check_referee_timeout(); });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [&](const std_msgs::msg::String & msg) {
@@ -68,6 +74,11 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void
 {
   ScopedTimer process_timer(process_time_pub);
+  last_referee_recv_time_ = now();
+  if (referee_timeout_active_) {
+    RCLCPP_WARN(get_logger(), "レフェリーメッセージの受信が復帰しました");
+    referee_timeout_active_ = false;
+  }
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
 
@@ -275,6 +286,40 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
 #undef NORMAL_START_MAPPING
 #undef REDIRECT_MAPPING
 #undef CMD_MAPPING
+
+void PlaySwitcher::check_referee_timeout()
+{
+  using crane_msgs::msg::PlaySituation;
+  constexpr double REFEREE_TIMEOUT_SEC = 1.0;
+
+  const rclcpp::Time current_time = now();
+  const double elapsed_sec = (current_time - last_referee_recv_time_).seconds();
+
+  if (elapsed_sec <= REFEREE_TIMEOUT_SEC) {
+    return;
+  }
+
+  const int current_cmd = play_situation_msg.command.value;
+  if (
+    current_cmd == PlaySituation::HALT || current_cmd == PlaySituation::STOP ||
+    current_cmd == PlaySituation::HALF_TIME || current_cmd == PlaySituation::POST_GAME) {
+    return;
+  }
+
+  if (referee_timeout_active_) {
+    return;
+  }
+
+  RCLCPP_WARN(
+    get_logger(), "レフェリーメッセージが%.1f秒受信できていません。安全のためSTOPに遷移します。",
+    elapsed_sec);
+  referee_timeout_active_ = true;
+
+  play_situation_msg.command = getSituationCommandNamedInt(PlaySituation::STOP);
+  play_situation_msg.reason_text = "レフェリーメッセージタイムアウト：安全のためSTOPに遷移";
+  play_situation_msg.header.stamp = current_time;
+  play_situation_pub->publish(play_situation_msg);
+}
 
 }  // namespace crane
 
