@@ -73,11 +73,9 @@ limitations under the License.
   <arg name="robot_acceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
 
   <!-- 経路計画用の減速度パラメータ（実行側の90%以下に設定して計画と実行の不一致によるオーバーシュートを防止） -->
-  <arg name="planning_deceleration.high_speed" default="2.5" description="高速域での減速計算用の減速度 [m/s^2]"/>
-  <arg name="planning_deceleration.low_speed" default="2.5" description="低速域での減速計算用の減速度 [m/s^2]"/>
-  <arg name="planning_deceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
+  <arg name="planning_deceleration" default="1.5" description="減速計算用の減速度 [m/s^2]"/>
   <!-- 経路計画用の加速度パラメータ（加速フェーズ専用、減速度より高い値を設定可能） -->
-  <arg name="planning_acceleration" default="4.0" description="加速フェーズの計画用加速度 [m/s^2]"/>
+  <arg name="planning_acceleration" default="3.0" description="加速フェーズの計画用加速度 [m/s^2]"/>
 
   <!-- ============================================================ -->
   <!-- フィールド/試合設定 -->
@@ -123,11 +121,10 @@ limitations under the License.
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="rvo2"/>
       <param name="max_vel" value="$(var max_vel)"/>
-      <param name="planning_deceleration.high_speed" value="$(var planning_deceleration.high_speed)"/>
-      <param name="planning_deceleration.low_speed" value="$(var planning_deceleration.low_speed)"/>
-      <param name="planning_deceleration.velocity_threshold" value="$(var planning_deceleration.velocity_threshold)"/>
+      <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
       <param name="rvo_radius" value="0.15"/>
+      <param name="velocity_damping_gain" value="0.0"/>
       <!-- KickerModel統合：YAML設定ファイルから読み込み -->
       <param name="kicker_physics_config" value="$(find-pkg-share crane_world_model_publisher)/config/kicker_physics.yaml"/>
     </node>
@@ -148,9 +145,7 @@ limitations under the License.
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="rvo2"/>
       <param name="max_vel" value="$(var max_vel)"/>
-      <param name="planning_deceleration.high_speed" value="$(var planning_deceleration.high_speed)"/>
-      <param name="planning_deceleration.low_speed" value="$(var planning_deceleration.low_speed)"/>
-      <param name="planning_deceleration.velocity_threshold" value="$(var planning_deceleration.velocity_threshold)"/>
+      <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
       <param name="straight_kick_power_array" value="[0.0, 0.4, 1.0, 1.0]"/>
       <param name="straight_kick_speed_array" value="[0.0, 2.0, 4.0, 7.5]"/>

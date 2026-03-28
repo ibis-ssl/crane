@@ -81,6 +81,9 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
 
+  node.declare_parameter("velocity_damping_gain", velocity_damping_gain);
+  velocity_damping_gain = node.get_parameter("velocity_damping_gain").as_double();
+
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -178,35 +181,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     position_diff << pos_mode.target_x - current_position.x(),
       pos_mode.target_y - current_position.y();
 
-    double pre_vel = [&]() {
-      if (
-        auto it = ranges::find_if(
-          pre_commands.robot_commands,
-          [&](const auto & c) { return c.robot_id == command.robot_id; });
-        it != ranges::end(pre_commands.robot_commands)) {
-        if (it->position_target_mode.empty()) {
-          return 0.0;
-        }
-        return std::hypot(
-                 it->position_target_mode.front().target_x - current_position.x(),
-                 it->position_target_mode.front().target_y - current_position.y()) > 0.01
-                 ? vel
-                 : 0.0;
-      } else {
-        return 0.0;
-      }
-    }();
-
-    // 減速計算用の減速度を選択（現在速度に応じて高速域・低速域を選択）
-    double deceleration_for_planning;
-    if (pre_vel >= planning_deceleration_velocity_threshold) {
-      deceleration_for_planning = planning_deceleration_high_speed;
-    } else {
-      deceleration_for_planning = planning_deceleration_low_speed;
-    }
-
-    // max_brk: 停止のための減速度（planning_decelerationの値を使用）
-    double max_brk = deceleration_for_planning;
+    const double max_brk = planning_deceleration;
 
     command.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
@@ -219,66 +194,29 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           .set__value(STOP_STATE_MAX_VELOCITY));
     }
 
-    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
+    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
-    Velocity target_vel;
-    target_vel << (pos_mode.target_x - current_position.x()),
-      pos_mode.target_y - current_position.y();
-    target_vel = target_vel.normalized() * (target_vel.norm() + 0.1);
-    target_vel *= 1.0;
-
-    // 目標速度を位置差分から直接計算（シンプルアプローチ）
-    // 目標方向ベクトルをmax_velでクランプして使用する
-    if (target_vel.norm() > max_vel) {
-      target_vel = target_vel.normalized() * max_vel;
-    }
-
-    /*
-    // 速度超過クランプ: Vision観測誤差でmax_velをわずかに超えた速度を正規化（Sumatra adaptVel相当）
-    constexpr double MAX_VEL_TOLERANCE = 0.2;
-    Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
-    if (vel > max_vel && vel < max_vel + MAX_VEL_TOLERANCE) {
-      v0 = v0 * (max_vel / vel);
-    }
-*/
-
-    /*
-    // 目標との距離を計算
-    const double dx = pos_mode.target_x - current_position.x();
-    const double dy = pos_mode.target_y - current_position.y();
-    const double distance_to_target = std::hypot(dx, dy);
-
-    // 各軸独立に減速制約を計算: v = sign(d) * sqrt(2 * max_brk * |d|)
-    // これにより現在速度方向と目標方向が異なる場合（横方向の慣性）も正しく扱える
+    // P成分: v = sign(d) * sqrt(2 * max_brk * |d|)（制動距離から逆算した運動学的速度）
     auto brk_vel = [max_brk](double d) -> double {
       const double abs_d = std::abs(d);
       return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
     };
-    Eigen::Vector2d next_vel(brk_vel(dx), brk_vel(dy));
-    // 合成速度がmax_velを超えた場合はスケールダウン
-    const double next_vel_norm = next_vel.norm();
-    if (next_vel_norm > max_vel) {
-      next_vel *= max_vel / next_vel_norm;
-    }
+    Velocity target_vel;
+    target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
 
-    // terminal_velocity: スキルが明示的に設定した場合のみ疑似I項として適用する
-    // 0（デフォルト・未指定）のときはBangBang軌道の出力に従い、目標で停止する
-    const double terminal_vel = command.local_planner_config.terminal_velocity;
-    const double min_distance =
-      std::max(static_cast<double>(pos_mode.position_tolerance) * 2, 0.03);  // 最低3cm
+    // D成分: 現在速度によるダンピング（オーバーシュート抑制）
+    const Vector2 current_vel(command.current_velocity.x, command.current_velocity.y);
+    target_vel -= velocity_damping_gain * current_vel;
 
-    if (terminal_vel > 0 && next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
-      // terminal_velocityが指定されており、低速かつ目標から離れている場合に補正
-      Eigen::Vector2d direction =
-        (Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y) - current_position).normalized();
-      target_vel = direction * terminal_vel;
-    } else if (next_vel.norm() < 1e-6) {
-      // 目標到達済み
+    // ダンピングが強すぎて目標と逆方向になった場合は0にクランプ（1cm未満は位置許容内とみなす）
+    if (position_diff.norm() > 0.01 && target_vel.dot(position_diff) < 0.0) {
       target_vel.setZero();
-    } else {
-      target_vel << next_vel.x(), next_vel.y();
     }
-*/
+
+    const double target_vel_norm = target_vel.norm();
+    if (target_vel_norm > max_vel) {
+      target_vel *= max_vel / target_vel_norm;
+    }
     // 衝突ファール (crashing) 回避:
     // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
     // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
@@ -328,7 +266,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     // ペナルティエリア物理ブレーキング制約
     // ORCA（速度空間制約）はコマンド速度を制限するが、ロボットの物理慣性は考慮できない。
     // 境界までの距離に基づく「物理的に停止可能な最大接近速度」を計算してprefVelocityを制限する。
-    //   max_approach_vel = sqrt(2 * planning_deceleration_high_speed * dist_to_boundary)
+    //   max_approach_vel = sqrt(2 * planning_deceleration * dist_to_boundary)
     if (!command.local_planner_config.disable_goal_area_avoidance) {
       auto applyPhysicalBrakingConstraint = [&](const Box & area) {
         const double penalty_area_offset =
@@ -387,8 +325,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             const double approach = target_vel.dot(corner_dir);
             if (approach > 0.0) {
               const double effective_dist = std::max(dist_to_corner - BRAKING_SAFETY_MARGIN, 0.0);
-              const double v_max =
-                std::sqrt(2.0 * planning_deceleration_high_speed * effective_dist);
+              const double v_max = std::sqrt(2.0 * planning_deceleration * effective_dist);
               if (approach > v_max) {
                 target_vel -= (approach - v_max) * corner_dir;
               }
@@ -399,29 +336,25 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
           if (dx_left > 0.0 && target_vel.x() > 0.0) {
             const double v_max = std::sqrt(
-              2.0 * planning_deceleration_high_speed *
-              std::max(dx_left - BRAKING_SAFETY_MARGIN, 0.0));
+              2.0 * planning_deceleration * std::max(dx_left - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.x() = std::min(target_vel.x(), v_max);
           }
           // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
           if (dx_right > 0.0 && target_vel.x() < 0.0) {
             const double v_max = std::sqrt(
-              2.0 * planning_deceleration_high_speed *
-              std::max(dx_right - BRAKING_SAFETY_MARGIN, 0.0));
+              2.0 * planning_deceleration * std::max(dx_right - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.x() = std::max(target_vel.x(), -v_max);
           }
           // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
           if (dy_below > 0.0 && target_vel.y() > 0.0) {
             const double v_max = std::sqrt(
-              2.0 * planning_deceleration_high_speed *
-              std::max(dy_below - BRAKING_SAFETY_MARGIN, 0.0));
+              2.0 * planning_deceleration * std::max(dy_below - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.y() = std::min(target_vel.y(), v_max);
           }
           // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
           if (dy_above > 0.0 && target_vel.y() < 0.0) {
             const double v_max = std::sqrt(
-              2.0 * planning_deceleration_high_speed *
-              std::max(dy_above - BRAKING_SAFETY_MARGIN, 0.0));
+              2.0 * planning_deceleration * std::max(dy_above - BRAKING_SAFETY_MARGIN, 0.0));
             target_vel.y() = std::max(target_vel.y(), -v_max);
           }
         }

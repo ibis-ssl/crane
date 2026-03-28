@@ -24,17 +24,8 @@ public:
     world_model = std::make_shared<WorldModelWrapper>(node);
 
     // 経路計画用の減速度パラメータを読み込み
-    node.declare_parameter("planning_deceleration.high_speed", 4.5);
-    planning_deceleration_high_speed =
-      node.get_parameter("planning_deceleration.high_speed").as_double();
-
-    node.declare_parameter("planning_deceleration.low_speed", 1.8);
-    planning_deceleration_low_speed =
-      node.get_parameter("planning_deceleration.low_speed").as_double();
-
-    node.declare_parameter("planning_deceleration.velocity_threshold", 1.5);
-    planning_deceleration_velocity_threshold =
-      node.get_parameter("planning_deceleration.velocity_threshold").as_double();
+    node.declare_parameter("planning_deceleration", 2.5);
+    planning_deceleration = node.get_parameter("planning_deceleration").as_double();
 
     // 経路計画用の加速度パラメータを読み込み（減速度とは別に設定）
     node.declare_parameter("planning_acceleration", 5.0);
@@ -82,9 +73,7 @@ protected:
   WorldModelWrapper::SharedPtr world_model;
 
   // 経路計画用の減速度パラメータ
-  double planning_deceleration_high_speed;
-  double planning_deceleration_low_speed;
-  double planning_deceleration_velocity_threshold;
+  double planning_deceleration;
   // 経路計画用の加速度パラメータ（加速フェーズに使用）
   double planning_acceleration;
 };

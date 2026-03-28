@@ -133,6 +133,10 @@ private:
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;
 
+  // D成分ゲイン: 現在速度に比例したダンピング項のゲイン
+  // target_vel = position_error - velocity_damping_gain * current_vel
+  double velocity_damping_gain = 0.5;
+
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
