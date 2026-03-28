@@ -196,9 +196,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
     double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
 
-    // P成分: 台形速度プロファイル（BangBang）に基づく目標速度
-    // v = sign(d) * sqrt(2 * max_brk * |d|) — 制動距離から逆算した運動学的速度
-    // 線形スケール(Kp=1)より大幅に強いP成分となり、遠距離でも十分な速度を出せる
+    // P成分: v = sign(d) * sqrt(2 * max_brk * |d|)（制動距離から逆算した運動学的速度）
     auto brk_vel = [max_brk](double d) -> double {
       const double abs_d = std::abs(d);
       return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
@@ -207,65 +205,18 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
 
     // D成分: 現在速度によるダンピング（オーバーシュート抑制）
-    // target_vel = P(position_error) - Kd * current_velocity
-    const Eigen::Vector2d current_vel(command.current_velocity.x, command.current_velocity.y);
+    const Vector2 current_vel(command.current_velocity.x, command.current_velocity.y);
     target_vel -= velocity_damping_gain * current_vel;
 
-    // ダンピングが強すぎて目標と逆方向になった場合は0にクランプ
-    if (position_diff.norm() > 0.01 && target_vel.dot(position_diff.cast<double>()) < 0.0) {
+    // ダンピングが強すぎて目標と逆方向になった場合は0にクランプ（1cm未満は位置許容内とみなす）
+    if (position_diff.norm() > 0.01 && target_vel.dot(position_diff) < 0.0) {
       target_vel.setZero();
     }
 
-    if (target_vel.norm() > max_vel) {
-      target_vel = target_vel.normalized() * max_vel;
+    const double target_vel_norm = target_vel.norm();
+    if (target_vel_norm > max_vel) {
+      target_vel *= max_vel / target_vel_norm;
     }
-
-    /*
-    // 速度超過クランプ: Vision観測誤差でmax_velをわずかに超えた速度を正規化（Sumatra adaptVel相当）
-    constexpr double MAX_VEL_TOLERANCE = 0.2;
-    Eigen::Vector2d v0(command.current_velocity.x, command.current_velocity.y);
-    if (vel > max_vel && vel < max_vel + MAX_VEL_TOLERANCE) {
-      v0 = v0 * (max_vel / vel);
-    }
-*/
-
-    /*
-    // 目標との距離を計算
-    const double dx = pos_mode.target_x - current_position.x();
-    const double dy = pos_mode.target_y - current_position.y();
-    const double distance_to_target = std::hypot(dx, dy);
-
-    // 各軸独立に減速制約を計算: v = sign(d) * sqrt(2 * max_brk * |d|)
-    // これにより現在速度方向と目標方向が異なる場合（横方向の慣性）も正しく扱える
-    auto brk_vel = [max_brk](double d) -> double {
-      const double abs_d = std::abs(d);
-      return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
-    };
-    Eigen::Vector2d next_vel(brk_vel(dx), brk_vel(dy));
-    // 合成速度がmax_velを超えた場合はスケールダウン
-    const double next_vel_norm = next_vel.norm();
-    if (next_vel_norm > max_vel) {
-      next_vel *= max_vel / next_vel_norm;
-    }
-
-    // terminal_velocity: スキルが明示的に設定した場合のみ疑似I項として適用する
-    // 0（デフォルト・未指定）のときはBangBang軌道の出力に従い、目標で停止する
-    const double terminal_vel = command.local_planner_config.terminal_velocity;
-    const double min_distance =
-      std::max(static_cast<double>(pos_mode.position_tolerance) * 2, 0.03);  // 最低3cm
-
-    if (terminal_vel > 0 && next_vel.norm() < terminal_vel && distance_to_target > min_distance) {
-      // terminal_velocityが指定されており、低速かつ目標から離れている場合に補正
-      Eigen::Vector2d direction =
-        (Eigen::Vector2d(pos_mode.target_x, pos_mode.target_y) - current_position).normalized();
-      target_vel = direction * terminal_vel;
-    } else if (next_vel.norm() < 1e-6) {
-      // 目標到達済み
-      target_vel.setZero();
-    } else {
-      target_vel << next_vel.x(), next_vel.y();
-    }
-*/
     // 衝突ファール (crashing) 回避:
     // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
     // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
