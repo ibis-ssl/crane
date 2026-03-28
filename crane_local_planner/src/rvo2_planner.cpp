@@ -194,7 +194,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           .set__value(STOP_STATE_MAX_VELOCITY));
     }
 
-    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
+    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
     // P成分: v = sign(d) * sqrt(2 * max_brk * |d|)（制動距離から逆算した運動学的速度）
     auto brk_vel = [max_brk](double d) -> double {
