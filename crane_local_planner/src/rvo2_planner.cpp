@@ -224,13 +224,18 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
     double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
 
-    // P成分: 位置誤差に基づく目標速度（PD制御のP項）
-    Velocity target_vel = position_diff.cast<double>();
+    // P成分: 台形速度プロファイル（BangBang）に基づく目標速度
+    // v = sign(d) * sqrt(2 * max_brk * |d|) — 制動距離から逆算した運動学的速度
+    // 線形スケール(Kp=1)より大幅に強いP成分となり、遠距離でも十分な速度を出せる
+    auto brk_vel = [max_brk](double d) -> double {
+      const double abs_d = std::abs(d);
+      return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
+    };
+    Velocity target_vel;
+    target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
 
-    // D成分: 現在速度によるダンピング（PD制御のD項）
-    // target_vel = Kp * position_error - Kd * current_velocity
-    // Kpは暗黙的に1.0。Kdはvelocity_damping_gainパラメータで調整可能。
-    // これによりオーバーシュートと振動を抑制し位置収束性能を向上させる。
+    // D成分: 現在速度によるダンピング（オーバーシュート抑制）
+    // target_vel = P(position_error) - Kd * current_velocity
     const Eigen::Vector2d current_vel(command.current_velocity.x, command.current_velocity.y);
     target_vel -= velocity_damping_gain * current_vel;
 
