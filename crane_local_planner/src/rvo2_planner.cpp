@@ -81,6 +81,9 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
 
+  node.declare_parameter("velocity_damping_gain", velocity_damping_gain);
+  velocity_damping_gain = node.get_parameter("velocity_damping_gain").as_double();
+
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -221,14 +224,21 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
     double max_vel = resolveMaxVelocityFactors(command, MAX_VEL) + 0.1;
 
-    Velocity target_vel;
-    target_vel << (pos_mode.target_x - current_position.x()),
-      pos_mode.target_y - current_position.y();
-    target_vel = target_vel.normalized() * (target_vel.norm() + 0.1);
-    target_vel *= 1.0;
+    // P成分: 位置誤差に基づく目標速度（PD制御のP項）
+    Velocity target_vel = position_diff.cast<double>();
 
-    // 目標速度を位置差分から直接計算（シンプルアプローチ）
-    // 目標方向ベクトルをmax_velでクランプして使用する
+    // D成分: 現在速度によるダンピング（PD制御のD項）
+    // target_vel = Kp * position_error - Kd * current_velocity
+    // Kpは暗黙的に1.0。Kdはvelocity_damping_gainパラメータで調整可能。
+    // これによりオーバーシュートと振動を抑制し位置収束性能を向上させる。
+    const Eigen::Vector2d current_vel(command.current_velocity.x, command.current_velocity.y);
+    target_vel -= velocity_damping_gain * current_vel;
+
+    // ダンピングが強すぎて目標と逆方向になった場合は0にクランプ
+    if (position_diff.norm() > 0.01 && target_vel.dot(position_diff.cast<double>()) < 0.0) {
+      target_vel.setZero();
+    }
+
     if (target_vel.norm() > max_vel) {
       target_vel = target_vel.normalized() * max_vel;
     }
