@@ -263,6 +263,12 @@ public:
     return *this;
   }
 
+  auto setPenaltyAreaContraction(float contraction) -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.penalty_area_contraction = contraction;
+    return *this;
+  }
+
   auto disableBallAvoidance() -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.disable_ball_avoidance = true;

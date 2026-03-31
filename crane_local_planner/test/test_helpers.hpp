@@ -89,6 +89,13 @@ inline std::vector<crane::ateb::Obstacle> makeFieldWalls()
   return walls;
 }
 
+// PA縮小障害物（ディフェンダー用）
+inline crane::ateb::Obstacle makeOurPenaltyObstacleContracted(
+  double contraction = 0.5, double offset = kPenaltyOffsetInplay)
+{
+  return makeInflatedPenaltyObstacle(makeOurPenaltyBox(), offset - contraction);
+}
+
 // デフォルト設定ファクトリ
 inline crane::ateb::VisibilityGraph::Config makeDefaultVGConfig()
 {

@@ -259,6 +259,78 @@ TEST(ATEBIntegration, PathQualityAroundPenaltyCorner)
     << "PAを迂回する経路が直線の3倍以上に長い: " << band.total_cost << " vs " << direct_dist;
 }
 
+// ===== ディフェンダーPA縮小回避テスト =====
+// Rosbag rosbag2_2026_03_31-18_24_54 で観測された問題を再現:
+// ロボット2,3,5がPA下方から上方目標へ直線移動し、PA内を縦断していた
+
+TEST(ATEBIntegration, DefenderCrossPenaltyAreaWithContraction)
+{
+  // ロボット2のシナリオ再現: (5.0, -3.0) → (5.6, 2.0)
+  // 縮小PA(0.5m contraction): offset=0.1-0.5=-0.4 → x=[4.6,5.6], y=[-1.4,1.4]
+  // この範囲をVG/SOが迂回する経路を見つけるべき
+  const auto contracted_obs = test_helpers::makeOurPenaltyObstacleContracted(0.5);
+  const std::vector<Obstacle> obstacles = {contracted_obs};
+
+  const Point start(5.0, -3.0);
+  const Point goal(5.6, 2.0);
+
+  VisibilityGraph vg;
+  vg.configure(test_helpers::makeDefaultVGConfig());
+  const auto homotopies = vg.extract(start, goal, obstacles);
+  ASSERT_FALSE(homotopies.empty()) << "縮小PA障害物でも経路が見つかるべき";
+
+  SpatialOptimizer so;
+  so.configure(test_helpers::makeDefaultSOConfig());
+  ElasticBand best_band;
+  for (const auto & h : homotopies) {
+    const auto band = so.optimize(h, start, goal, obstacles);
+    if (!best_band.isValid() || band.total_cost < best_band.total_cost) {
+      best_band = band;
+    }
+  }
+  ASSERT_TRUE(best_band.isValid());
+
+  // 中間ノードが縮小PA内部を通らないこと
+  int nodes_inside = 0;
+  for (size_t i = 1; i + 1 < best_band.nodes.size(); ++i) {
+    if (contracted_obs.distance(best_band.nodes[i].pos) < 0.0) {
+      ++nodes_inside;
+    }
+  }
+  EXPECT_EQ(nodes_inside, 0) << nodes_inside << "個の中間ノードが縮小PA内部に残っている";
+}
+
+TEST(ATEBIntegration, DefenderCanPassPenaltyEdge)
+{
+  // 縮小PAでは辺付近の通行が許可される:
+  // PA辺(x=4.2)に近い始点から、PA上辺(y=1.8)のすぐ外側の目標へ
+  // 縮小PA(offset=-0.4): x=[4.6,5.6] → x=4.3 は縮小PA外なので通行可能
+  const auto contracted_obs = test_helpers::makeOurPenaltyObstacleContracted(0.5);
+  const std::vector<Obstacle> obstacles = {contracted_obs};
+
+  // PA左辺(x=4.2)の外側から上へ移動: PA辺付近は通行可能
+  const Point start(4.3, -2.5);
+  const Point goal(4.3, 2.5);
+
+  VisibilityGraph vg;
+  vg.configure(test_helpers::makeDefaultVGConfig());
+  const auto homotopies = vg.extract(start, goal, obstacles);
+  ASSERT_FALSE(homotopies.empty());
+
+  // 直線経路(x=4.3)は縮小PA(x=[4.6,5.6])の外側なので迂回不要
+  // → 最短経路が直線か確認
+  SpatialOptimizer so;
+  so.configure(test_helpers::makeDefaultSOConfig());
+  const auto band = so.optimize(homotopies[0], start, goal, obstacles);
+  EXPECT_TRUE(band.isValid());
+
+  // ノードが縮小PA外にあること（x=4.3 < 4.6 なのでPA外）
+  for (size_t i = 1; i + 1 < band.nodes.size(); ++i) {
+    EXPECT_GE(contracted_obs.distance(band.nodes[i].pos), 0.0)
+      << "ノード" << i << "が縮小PA内部: x=" << band.nodes[i].pos.x();
+  }
+}
+
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

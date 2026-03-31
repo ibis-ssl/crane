@@ -159,10 +159,12 @@ auto ATEBPlanner::buildObstacles(uint8_t ego_id, const crane_msgs::msg::RobotCom
 
   // ペナルティエリア
   if (include_penalty) {
-    const double penalty_offset =
+    const double base_offset =
       needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
         ? PENALTY_AREA_OFFSET_STOP
         : PENALTY_AREA_OFFSET;
+    const double penalty_offset =
+      base_offset - static_cast<double>(cmd.local_planner_config.penalty_area_contraction);
     const auto our_pa = world_model->getOurPenaltyArea();
     const auto their_pa = world_model->getTheirPenaltyArea();
 
@@ -291,7 +293,6 @@ auto ATEBPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, dou
     resolveMaxAccelerationFactors(result, static_cast<float>(planning_acceleration));
 
   const auto obstacles = buildObstacles(cmd.robot_id, cmd);
-  const bool use_collision = !cmd.local_planner_config.disable_collision_avoidance;
 
   auto & state = robot_states_[cmd.robot_id];
 
@@ -304,16 +305,10 @@ auto ATEBPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, dou
 
   Vector2 output_vel;
 
-  if (!use_collision) {
-    // 衝突回避無効: 直線的な速度計算
-    const Vector2 diff = target_pos - current_pos;
-    const double d = diff.norm();
-    const double max_brk = planning_deceleration;
-    const double v = std::min(max_vel, std::sqrt(2.0 * max_brk * d));
-    output_vel = (d > 1e-6) ? Vector2(diff.normalized() * v) : Vector2::Zero();
-    addOrUpdatePlanningFactor(result, "ATEBStatus", "COLLISION_AVOIDANCE_DISABLED");
-  } else {
+  {
     // Phase 1: 可視グラフでホモトピークラスを抽出
+    // disable_collision_avoidance=true でもPA等静的障害物は回避する
+    // （ロボット障害物はbuildObstacles()で除外済み）
     std::vector<ateb::HomotopyClass> homotopies;
     if (!state.warm_start_valid) {
       homotopies = visibility_graph_.extract(current_pos, target_pos, obstacles);

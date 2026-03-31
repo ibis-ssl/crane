@@ -63,14 +63,10 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
           command->enablePlacementAvoidance();
         } else {
           command->disableAnyAreaAvoidance();
-          // INPLAY時のみPA回避を有効化
-          // INPLAY: PA回避offset=0.1m < defense_offset=0.2m → 有効で安全
-          // STOP/セットプレイ: PA回避offset=0.3m > defense_offset=0.2m → 競合するため無効
-          if (
-            world_model->getMsg().play_situation.command.value ==
-            crane_msgs::msg::PlaySituation::INPLAY) {
-            command->enableGoalAreaAvoidance();
-          }
+          // 常にPA縮小回避を有効化: PA内部横断を防ぎつつPA辺付近の自由な移動を保証
+          // PA内侵入はルール上ファールではない（ボール接触がファール）ため縮小PA(0.5m)を適用
+          command->enableGoalAreaAvoidance();
+          command->setPenaltyAreaContraction(0.5f);
         }
       });
     return {SessionBase::Status::RUNNING, robot_commands};
