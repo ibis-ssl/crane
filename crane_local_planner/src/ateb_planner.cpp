@@ -664,7 +664,6 @@ auto ATEBPlanner::adjustForPenaltyAreaAvoidance(
         const Point around_corner_1 = goal_pos + Point(x_offset, half_height);
         const Point around_corner_2 = goal_pos + Point(x_offset, -half_height);
 
-        constexpr double CORNER_PASS_THROUGH_DISTANCE = 0.5;
         const double dist_via_1 =
           (around_corner_1 - current_pos).norm() + (target_pos - around_corner_1).norm();
         const double dist_via_2 =
@@ -675,10 +674,14 @@ auto ATEBPlanner::adjustForPenaltyAreaAvoidance(
           !bg::intersects(Segment(current_pos, around_corner_1), penalty_area);
         const bool c2_accessible =
           !bg::intersects(Segment(current_pos, around_corner_2), penalty_area);
+        // コーナー通過判定: ロボットがコーナーをターゲット方向に抜けているかどうか
+        // ドット積 > 0 → ロボットがコーナーよりもターゲット側にいる（通過済み）
+        // 距離閾値による判定では、コーナー手前0.5mで「通過済み」と誤判定し
+        // 反対側コーナーへのターゲット切り替えが発生して振動が生じるため使用しない
         const bool c1_passed =
-          (current_pos - around_corner_1).norm() <= CORNER_PASS_THROUGH_DISTANCE;
+          (target_pos - around_corner_1).dot(current_pos - around_corner_1) > 0;
         const bool c2_passed =
-          (current_pos - around_corner_2).norm() <= CORNER_PASS_THROUGH_DISTANCE;
+          (target_pos - around_corner_2).dot(current_pos - around_corner_2) > 0;
 
         bool use_c1 = c1_accessible && !c1_passed;
         bool use_c2 = c2_accessible && !c2_passed;

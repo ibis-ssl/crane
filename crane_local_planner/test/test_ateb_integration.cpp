@@ -331,6 +331,63 @@ TEST(ATEBIntegration, DefenderCanPassPenaltyEdge)
   }
 }
 
+// ===== コーナー通過判定テスト =====
+// Rosbag rosbag2_2026_03_31-21_25_07 で観測された問題:
+// ロボット1がPA上コーナー手前0.5m地点で「通過済み」と誤判定され、
+// 下コーナーへ目標が切り替わり振動が発生していた。
+// 修正: 距離閾値判定 → ドット積による「コーナーをターゲット方向に抜けたか」判定
+
+TEST(ATEBIntegration, CornerPassDetectionBeforeCorner)
+{
+  // rosbagシナリオ再現:
+  //   ロボット1が (4.0, 1.5) からコーナー(4.0, 2.0) 経由で目標(4.72, 2.76) へ移動中
+  //   コーナー手前0.5m地点 → 旧距離判定はTRUEと誤判定し、下コーナーへ目標を切り替えていた
+  const Point corner(4.0, 2.0);
+  const Point target(4.72, 2.76);
+  const Point robot_before_corner(4.0, 1.5);  // コーナーから0.5m手前
+
+  // 新: ドット積チェック → コーナーよりターゲット側にいるか
+  // (target - corner) · (robot - corner) > 0 → 通過済み
+  const bool passed_new = (target - corner).dot(robot_before_corner - corner) > 0;
+  EXPECT_FALSE(passed_new) << "コーナー手前ではまだ通過していないはず";
+
+  // 旧コードの挙動を確認（バグ再現）: 距離<=0.5m でTRUEになる
+  const bool passed_old = (robot_before_corner - corner).norm() <= 0.5;
+  EXPECT_TRUE(passed_old) << "旧距離判定はコーナー手前0.5mでTRUEと誤判定する（これが振動の原因）";
+}
+
+TEST(ATEBIntegration, CornerPassDetectionAfterCorner)
+{
+  // ロボットがコーナーを通過した直後 → ドット積チェックでTRUEになる
+  const Point corner(4.0, 2.0);
+  const Point target(4.72, 2.76);
+  const Point robot_after_corner(4.1, 2.1);  // コーナーを通過した直後
+
+  const bool passed_new = (target - corner).dot(robot_after_corner - corner) > 0;
+  EXPECT_TRUE(passed_new) << "コーナー通過後はドット積チェックでTRUEになるはず";
+}
+
+TEST(ATEBIntegration, CornerPassDetectionBelowLowerCorner)
+{
+  // ロボットが下コーナー(4.0, -2.0)の下側にいる場合:
+  // 上コーナー(4.0, 2.0)はまだ通過していない
+  // 下コーナー(4.0, -2.0)もまだ通過していない（ロボットはさらに下にいる）
+  const Point corner_upper(4.0, 2.0);
+  const Point corner_lower(4.0, -2.0);
+  const Point target(4.72, 2.76);
+
+  // ロボットが下コーナーの下側: (4.0, -3.0)
+  const Point robot_below(4.0, -3.0);
+
+  // 上コーナーはまだ通過していない: (target - c1)=(0.72, 0.76), (robot - c1)=(0, -5.0) → 負
+  const bool c1_passed = (target - corner_upper).dot(robot_below - corner_upper) > 0;
+  EXPECT_FALSE(c1_passed) << "下側ロボットは上コーナーを通過していないはず";
+
+  // 下コーナーもまだ通過していない: (target - c2)=(0.72, 4.76), (robot - c2)=(0, -1.0) → 負
+  const bool c2_passed = (target - corner_lower).dot(robot_below - corner_lower) > 0;
+  EXPECT_FALSE(c2_passed) << "下コーナーの下側ロボットは下コーナーも通過していないはず";
+}
+
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
