@@ -1,6 +1,6 @@
 bool disable_collision_avoidance false
 bool disable_goal_area_avoidance false
-float32 penalty_area_contraction 0.0
+float64 penalty_area_contraction 0.0
 bool disable_placement_avoidance false
 bool disable_ball_avoidance false
 bool disable_field_boundary false

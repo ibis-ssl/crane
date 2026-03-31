@@ -8,6 +8,12 @@
 
 namespace crane
 {
+namespace
+{
+/// PA内侵入はルール上ファールではない（ボール接触がファール）ため、
+/// ディフェンダーにはPA辺付近の自由な移動を確保するため縮小PAを適用する
+constexpr double kDefenderPenaltyAreaContraction = 0.5;
+}  // namespace
 std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
 {
@@ -63,10 +69,8 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
           command->enablePlacementAvoidance();
         } else {
           command->disableAnyAreaAvoidance();
-          // 常にPA縮小回避を有効化: PA内部横断を防ぎつつPA辺付近の自由な移動を保証
-          // PA内侵入はルール上ファールではない（ボール接触がファール）ため縮小PA(0.5m)を適用
           command->enableGoalAreaAvoidance();
-          command->setPenaltyAreaContraction(0.5f);
+          command->setPenaltyAreaContraction(kDefenderPenaltyAreaContraction);
         }
       });
     return {SessionBase::Status::RUNNING, robot_commands};

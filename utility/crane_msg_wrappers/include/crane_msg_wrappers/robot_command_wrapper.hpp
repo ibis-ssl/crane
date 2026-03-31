@@ -263,7 +263,7 @@ public:
     return *this;
   }
 
-  auto setPenaltyAreaContraction(float contraction) -> RobotCommandWrapper &
+  auto setPenaltyAreaContraction(double contraction) -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.penalty_area_contraction = contraction;
     return *this;

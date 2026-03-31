@@ -163,8 +163,7 @@ auto ATEBPlanner::buildObstacles(uint8_t ego_id, const crane_msgs::msg::RobotCom
       needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
         ? PENALTY_AREA_OFFSET_STOP
         : PENALTY_AREA_OFFSET;
-    const double penalty_offset =
-      base_offset - static_cast<double>(cmd.local_planner_config.penalty_area_contraction);
+    const double penalty_offset = base_offset - cmd.local_planner_config.penalty_area_contraction;
     const auto our_pa = world_model->getOurPenaltyArea();
     const auto their_pa = world_model->getTheirPenaltyArea();
 
