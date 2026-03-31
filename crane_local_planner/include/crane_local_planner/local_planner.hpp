@@ -19,6 +19,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <string>
 
+#include "ateb_planner.hpp"
 #include "rvo2_planner.hpp"
 #include "visibility_control.h"
 
@@ -99,6 +100,8 @@ public:
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
     if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
+    } else if (planner_str == "ateb") {
+      planner = std::make_shared<ATEBPlanner>(*this);
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());
       throw std::runtime_error("Unknown planner: " + planner_str);
