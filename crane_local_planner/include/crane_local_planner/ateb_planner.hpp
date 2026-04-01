@@ -61,6 +61,8 @@ private:
   double CRASH_AVOIDANCE_DISTANCE = 1.0;
   double CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
   double REPLAN_THRESHOLD = 0.05;
+  double PATH_TRACKING_LOOKAHEAD = 0.3;    ///< ピュアパースーット先読み距離 [m]
+  double PATH_TRACKING_REPLAN_DIST = 0.5;  ///< 横偏差がこれを超えたら再計画 [m]
 
   /// セットプレイ中（INPLAY/HALT以外）かどうかを判定
   static auto needsExpandedPenaltyAreaOffset(uint8_t cmd) -> bool;
@@ -72,6 +74,27 @@ private:
   /// 1台のロボットの速度命令を計算する
   [[nodiscard]] auto planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, double theta_offset)
     -> crane_msgs::msg::RobotCommand;
+
+  /// バンド上へのロボット位置の射影結果
+  struct BandProjection
+  {
+    Point projected_pos;      ///< バンド上の射影点
+    Vector2 tangent;          ///< 射影点での接線方向（単位ベクトル）
+    double arc_length = 0.0;  ///< 射影点の弧長
+    double total_arc = 0.0;   ///< バンド全長
+  };
+
+  /// posをバンドに射影し、射影点・接線・弧長を返す
+  [[nodiscard]] static BandProjection projectOnBand(
+    const Point & pos, const ateb::ElasticBand & band);
+
+  /// バンド上の arc_from + lookahead_dist の点を返す（バンド終端を超える場合は終端を返す）
+  [[nodiscard]] static Point getLookaheadPoint(
+    const ateb::ElasticBand & band, double arc_from, double lookahead_dist);
+
+  /// 軌跡の弧長 arc_s における速度の大きさを返す（線形補間）
+  [[nodiscard]] static double speedAtArcLength(
+    const ateb::TimeOptimalTrajectory & traj, double arc_s);
 
   /// 目標位置を各種回避ロジックで調整する（RVO2Plannerと同じロジック）
   auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;

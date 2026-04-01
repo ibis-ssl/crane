@@ -111,10 +111,105 @@ ATEBPlanner::ATEBPlanner(rclcpp::Node & node) : LocalPlannerBase("ateb_planner",
   cbf_cfg.safety_margin = ateb_cbf_margin;
   cbf_filter_.configure(cbf_cfg);
 
+  node.declare_parameter("path_tracking_lookahead", PATH_TRACKING_LOOKAHEAD);
+  PATH_TRACKING_LOOKAHEAD = node.get_parameter("path_tracking_lookahead").as_double();
+
+  node.declare_parameter("path_tracking_replan_dist", PATH_TRACKING_REPLAN_DIST);
+  PATH_TRACKING_REPLAN_DIST = node.get_parameter("path_tracking_replan_dist").as_double();
+
   // ロボット状態初期化
   for (uint8_t i = 0; i < 20; ++i) {
     robot_states_[i].robot_id = i;
   }
+}
+
+ATEBPlanner::BandProjection ATEBPlanner::projectOnBand(
+  const Point & pos, const ateb::ElasticBand & band)
+{
+  BandProjection result;
+  if (band.nodes.size() < 2) {
+    result.projected_pos = pos;
+    result.tangent = Vector2(1.0, 0.0);
+    result.arc_length = 0.0;
+    result.total_arc = 0.0;
+    return result;
+  }
+
+  double best_dist = std::numeric_limits<double>::max();
+  double cum_arc = 0.0;
+
+  for (size_t i = 0; i + 1 < band.nodes.size(); ++i) {
+    const Point & a = band.nodes[i].pos;
+    const Point & b = band.nodes[i + 1].pos;
+    const Vector2 ab = b - a;
+    const double seg_len = ab.norm();
+
+    if (seg_len < 1e-9) {
+      cum_arc += seg_len;
+      continue;
+    }
+
+    const Vector2 tangent = ab / seg_len;
+    const double t = std::clamp((pos - a).dot(ab) / (seg_len * seg_len), 0.0, 1.0);
+    const Point proj = a + t * ab;
+    const double dist = (pos - proj).norm();
+
+    if (dist < best_dist) {
+      best_dist = dist;
+      result.projected_pos = proj;
+      result.tangent = tangent;
+      result.arc_length = cum_arc + t * seg_len;
+    }
+    cum_arc += seg_len;
+  }
+
+  result.total_arc = cum_arc;
+  return result;
+}
+
+Point ATEBPlanner::getLookaheadPoint(
+  const ateb::ElasticBand & band, double arc_from, double lookahead_dist)
+{
+  const double target_arc = arc_from + lookahead_dist;
+  double cum_arc = 0.0;
+
+  for (size_t i = 0; i + 1 < band.nodes.size(); ++i) {
+    const Point & a = band.nodes[i].pos;
+    const Point & b = band.nodes[i + 1].pos;
+    const double seg_len = (b - a).norm();
+
+    if (seg_len < 1e-9) {
+      cum_arc += seg_len;
+      continue;
+    }
+
+    if (cum_arc + seg_len >= target_arc) {
+      const double t = (target_arc - cum_arc) / seg_len;
+      return a + t * (b - a);
+    }
+    cum_arc += seg_len;
+  }
+
+  return band.nodes.back().pos;
+}
+
+double ATEBPlanner::speedAtArcLength(const ateb::TimeOptimalTrajectory & traj, double arc_s)
+{
+  if (traj.points.size() < 2) {
+    return traj.points.empty() ? 0.0 : traj.points.front().vel.norm();
+  }
+
+  double cum_arc = 0.0;
+  for (size_t i = 1; i < traj.points.size(); ++i) {
+    const double ds = (traj.points[i].pos - traj.points[i - 1].pos).norm();
+    if (cum_arc + ds >= arc_s) {
+      const double alpha = (ds > 1e-9) ? (arc_s - cum_arc) / ds : 0.0;
+      return traj.points[i - 1].vel.norm() * (1.0 - alpha) + traj.points[i].vel.norm() * alpha;
+    }
+    cum_arc += ds;
+  }
+
+  return traj.points.back().vel.norm();
 }
 
 auto ATEBPlanner::needsExpandedPenaltyAreaOffset(uint8_t cmd) -> bool
@@ -179,6 +274,25 @@ auto ATEBPlanner::buildObstacles(uint8_t ego_id, const crane_msgs::msg::RobotCom
     their_inflated.min_corner().y() -= penalty_offset;
     their_inflated.max_corner().x() += penalty_offset;
     their_inflated.max_corner().y() += penalty_offset;
+
+    // ゴールライン外方向（フィールド外）に5m延長して、PA内からフィールド外側への脱出経路を塞ぐ
+    // 各PAのX方向中心を見て、フィールド外側（ゴール側）の辺を延長する
+    constexpr double PA_FIELD_EXTENSION = 5.0;
+    const double our_center_x =
+      (our_inflated.min_corner().x() + our_inflated.max_corner().x()) / 2.0;
+    if (our_center_x > 0.0) {
+      our_inflated.max_corner().x() += PA_FIELD_EXTENSION;
+    } else {
+      our_inflated.min_corner().x() -= PA_FIELD_EXTENSION;
+    }
+
+    const double their_center_x =
+      (their_inflated.min_corner().x() + their_inflated.max_corner().x()) / 2.0;
+    if (their_center_x > 0.0) {
+      their_inflated.max_corner().x() += PA_FIELD_EXTENSION;
+    } else {
+      their_inflated.min_corner().x() -= PA_FIELD_EXTENSION;
+    }
 
     // buildObstacles内で既にpenalty_offset分膨張済みのため、VG内での再膨張をスキップする
     auto our_pa_obs = ateb::Obstacle::makeBox(our_inflated);
@@ -319,10 +433,27 @@ auto ATEBPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, dou
     // Phase 2: 各ホモトピークラスのバンドを最適化して最良を選ぶ
     ateb::ElasticBand best_band;
     if (state.warm_start_valid && state.best_band.isValid()) {
-      // ウォームスタート時は始点・終点を現在値に更新してからreoptimize
-      state.best_band.nodes.front().pos = current_pos;
-      state.best_band.nodes.back().pos = target_pos;
-      best_band = spatial_optimizer_.reoptimize(state.best_band, obstacles);
+      // ウォームスタート時: 現在位置をバンドに射影して始点とする
+      // （現在位置をそのまま始点にすると経路がロボットを追いかけてしまうため）
+      const auto proj = projectOnBand(current_pos, state.best_band);
+      const double cross_track_dist = (current_pos - proj.projected_pos).norm();
+
+      if (cross_track_dist > PATH_TRACKING_REPLAN_DIST) {
+        // 横偏差が閾値超え → ウォームスタート破棄して再計画
+        state.warm_start_valid = false;
+        for (const auto & homotopy : homotopies) {
+          ateb::ElasticBand band =
+            spatial_optimizer_.optimize(homotopy, current_pos, target_pos, obstacles);
+          if (band.total_cost < best_band.total_cost) {
+            best_band = band;
+          }
+        }
+      } else {
+        // 射影点を始点に設定してreoptimize（経路を現在位置に引き寄せない）
+        state.best_band.nodes.front().pos = proj.projected_pos;
+        state.best_band.nodes.back().pos = target_pos;
+        best_band = spatial_optimizer_.reoptimize(state.best_band, obstacles);
+      }
     } else {
       for (const auto & homotopy : homotopies) {
         ateb::ElasticBand band =
@@ -336,18 +467,51 @@ auto ATEBPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, dou
     state.best_band = best_band;
     state.warm_start_valid = true;
 
-    // Phase 3: 弾性バンドの接線方向 × 減速則速度でコマンドを生成
-    // sampleVelocity(0.0)はt=0の初期速度（静止時=0）を返すため使用しない。
-    // 速度の大きさは目標までの距離に基づく減速則、方向はバンド第1セグメントの接線とする。
+    // Phase 3: 経路追従制御（Pure Pursuit + 時間最適速度プロファイル）
+    //
+    // 1. 現在位置をバンドに射影して弧長を求める
+    // 2. TimeParameterizerで速度プロファイルを生成し、射影点の弧長での速度を得る
+    // 3. 先読み点（lookahead）へのPure Pursuitで速度方向を決定
+    //    → 接線方向追従と横偏差補正を両立する
     {
-      const double v = std::min(max_vel, std::sqrt(2.0 * planning_deceleration * dist));
       if (best_band.nodes.size() >= 2) {
-        const Vector2 band_dir = best_band.nodes[1].pos - best_band.nodes[0].pos;
-        const double bd = band_dir.norm();
-        const Vector2 tangent =
-          (bd > 1e-9) ? Vector2(band_dir / bd) : Vector2((target_pos - current_pos).normalized());
-        output_vel = tangent * v;
+        // バンドへの射影
+        const auto proj = projectOnBand(current_pos, best_band);
+
+        // 速度プロファイル生成（初速: 現在速度、終速: 0）
+        const auto trajectory = time_parameterizer_.parameterize(
+          best_band, current_vel, Vector2::Zero(), max_vel, max_acc, planning_deceleration);
+
+        // 先読み点の弧長位置で速度を取得する
+        // （射影点（≈現在位置）の速度は停止時に0になり、ロボットが動き出せないため）
+        const double lookahead_arc =
+          std::min(proj.arc_length + PATH_TRACKING_LOOKAHEAD, proj.total_arc);
+        const double remaining_dist = proj.total_arc - proj.arc_length;
+
+        // 速度の大きさを2つのソースから決定:
+        // 1. 時間最適プロファイル: 曲率・加速度制約を反映した上限速度
+        // 2. 減速則: 残り距離に基づく滑らかな減速 sqrt(2*a*d)
+        double profile_speed = max_vel;
+        if (trajectory.isValid() && lookahead_arc < proj.total_arc) {
+          // 先読み点がバンド内にある場合のみプロファイル速度を参照
+          // （先読みが終端を超えると終端速度=0が返り、早期停止の原因になるため）
+          profile_speed = speedAtArcLength(trajectory, lookahead_arc);
+        }
+        const double decel_speed =
+          std::min(max_vel, std::sqrt(2.0 * planning_deceleration * remaining_dist));
+        const double speed = std::min(profile_speed, decel_speed);
+
+        // Pure Pursuit: 先読み点へのベクトルを速度方向とする
+        const Point lookahead =
+          getLookaheadPoint(best_band, proj.arc_length, PATH_TRACKING_LOOKAHEAD);
+        const Vector2 to_lookahead = lookahead - current_pos;
+        const double d_lookahead = to_lookahead.norm();
+        const Vector2 direction =
+          (d_lookahead > 1e-6) ? Vector2(to_lookahead / d_lookahead) : proj.tangent;
+
+        output_vel = direction * speed;
       } else {
+        const double v = std::min(max_vel, std::sqrt(2.0 * planning_deceleration * dist));
         const Vector2 diff = target_pos - current_pos;
         const double d = diff.norm();
         output_vel = (d > 1e-6) ? Vector2(diff.normalized() * v) : Vector2::Zero();
@@ -484,6 +648,15 @@ auto ATEBPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & cmd, dou
   // 速度ベクトル（黄色矢印）と目標位置（白円）を描画
   visualizer->velocityArrow(current_pos, output_vel, "yellow");
   visualizer->drawCircle(target_pos, 0.06, "white", 8.0, 0.7);
+
+  // 経路追従デバッグ: バンドへの射影点（緑）と先読み点（オレンジ）を描画
+  if (state.best_band.isValid()) {
+    const auto proj = projectOnBand(current_pos, state.best_band);
+    visualizer->drawFilledCircle(proj.projected_pos, 0.04, "green", 0.8);
+    const Point lookahead =
+      getLookaheadPoint(state.best_band, proj.arc_length, PATH_TRACKING_LOOKAHEAD);
+    visualizer->drawFilledCircle(lookahead, 0.04, "orange", 0.8);
+  }
 
   return result;
 }
