@@ -111,6 +111,9 @@ typedef struct
   union {
     PolarVelocityModeArgs polar_velocity;
   } mode_args;
+
+  float target_global_pos[2];
+  float terminal_velocity;
 } RobotCommandV2;
 
 typedef struct
@@ -144,6 +147,12 @@ enum Address {
   FLAGS,
   CONTROL_MODE,
   CONTROL_MODE_ARGS,
+  TARGET_GLOBAL_POS_X_HIGH = CONTROL_MODE_ARGS + MODE_ARGS_SIZE,
+  TARGET_GLOBAL_POS_X_LOW,
+  TARGET_GLOBAL_POS_Y_HIGH,
+  TARGET_GLOBAL_POS_Y_LOW,
+  TERMINAL_VELOCITY_HIGH,
+  TERMINAL_VELOCITY_LOW,
 };
 
 enum FlagAddress {
@@ -198,6 +207,15 @@ inline void RobotCommandSerializedV2_serialize(
         &command->mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
+  forward(
+    &serialized->data[TARGET_GLOBAL_POS_X_HIGH], &serialized->data[TARGET_GLOBAL_POS_X_LOW],
+    command->target_global_pos[0], 32.767);
+  forward(
+    &serialized->data[TARGET_GLOBAL_POS_Y_HIGH], &serialized->data[TARGET_GLOBAL_POS_Y_LOW],
+    command->target_global_pos[1], 32.767);
+  forward(
+    &serialized->data[TERMINAL_VELOCITY_HIGH], &serialized->data[TERMINAL_VELOCITY_LOW],
+    command->terminal_velocity, 32.767);
 }
 
 inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
@@ -240,6 +258,12 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
         &command.mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
+  command.target_global_pos[0] = convertTwoByteToFloat(
+    serialized->data[TARGET_GLOBAL_POS_X_HIGH], serialized->data[TARGET_GLOBAL_POS_X_LOW], 32.767);
+  command.target_global_pos[1] = convertTwoByteToFloat(
+    serialized->data[TARGET_GLOBAL_POS_Y_HIGH], serialized->data[TARGET_GLOBAL_POS_Y_LOW], 32.767);
+  command.terminal_velocity = convertTwoByteToFloat(
+    serialized->data[TERMINAL_VELOCITY_HIGH], serialized->data[TERMINAL_VELOCITY_LOW], 32.767);
   return command;
 }
 
