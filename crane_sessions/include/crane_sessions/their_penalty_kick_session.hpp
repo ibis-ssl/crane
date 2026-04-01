@@ -44,8 +44,13 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     auto wm = world_model;
-    return
-      [wm](const std::shared_ptr<RobotInfo> & robot) { return robot->getDistance(wm->ball().pos); };
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      // レフェリー指定ゴールキーパーIDを最優先（コスト0）
+      if (robot->id == wm->getOurGoalieId()) {
+        return 0.0;
+      }
+      return 1.0;
+    };
   }
 
 protected:
@@ -56,8 +61,10 @@ protected:
     other_robots.clear();
 
     if (!robots.empty()) {
-      // 最初のロボットをゴーリーとして選択
+      // 最初のロボットをゴーリーとして選択（suitability関数でレフェリー指定GKが優先される）
       goalie = std::make_shared<skills::Goalie>(robots[0].id, world_model);
+      // ペナルティ専用ロジックを使うためrun_inplayを無効化
+      goalie->setParameter("run_inplay", false);
 
       // 残りのロボットをother_robotsに割り当て
       for (size_t i = 1; i < robots.size(); ++i) {
