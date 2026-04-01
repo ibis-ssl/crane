@@ -119,7 +119,7 @@ limitations under the License.
   <!-- シミュレータ用（local_planner + sender） -->
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-      <param name="planner" value="rvo2"/>
+      <param name="planner" value="ateb"/>
       <param name="max_vel" value="$(var max_vel)"/>
       <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
