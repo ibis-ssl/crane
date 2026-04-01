@@ -35,7 +35,6 @@ auto GlobalRobotAllocator::allocate(
 
   for (const auto & req : sorted_requirements) {
     if (remaining_robots.empty()) {
-      RCLCPP_WARN(logger_, "Session「%s」に割り当てるロボットが不足しています", req.name.c_str());
       break;
     }
 

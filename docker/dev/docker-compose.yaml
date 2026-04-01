@@ -1,6 +1,6 @@
 services:
   grsim:
-    image: ghcr.io/ibis-ssl/grsim:latest
+    image: grsim:local
     container_name: grsim
     network_mode: host
     command: |
