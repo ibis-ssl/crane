@@ -18,9 +18,12 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ネットワーク設定 -->
   <!-- ============================================================ -->
-  <arg name="vision_port" default="" description="SSL-Visionと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-  <arg name="referee_port" default="" description="Game Controllerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-  <arg name="tracker_port" default="" description="SSL Trackerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
+  <arg name="vision_port" default="" description="SSL-Vision multicast port (empty: auto from sim flag)"/>
+  <arg name="referee_port" default="" description="Game Controller multicast port (empty: auto from sim flag)"/>
+  <arg name="tracker_port" default="" description="SSL Tracker multicast port (empty: auto from sim flag)"/>
+  <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf) / grsim (grSim legacy protobuf)"/>
+  <arg name="ibis_target_address" default="" description="Target address (empty: auto from sim flag: sim=true -&gt; 127.0.0.1, sim=false -&gt; 192.168.20.255)"/>
+  <arg name="ibis_target_port" default="12345" description="ibis_sender_nodeの送信先ポート（packet_type=ibisのみ使用）"/>
 
   <!-- ============================================================ -->
   <!-- チーム/動作モード設定 -->
@@ -31,6 +34,11 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ネットワークポート自動設定（sim引数に基づく） -->
   <!-- ============================================================ -->
+  <!-- ibis_target_address の自動解決（sim フラグに基づく） -->
+  <let name="ibis_target_address_final" value="127.0.0.1" if="$(eval &quot;'$(var ibis_target_address)' == '' and '$(var sim)' == 'true'&quot;)"/>
+  <let name="ibis_target_address_final" value="192.168.20.255" if="$(eval &quot;'$(var ibis_target_address)' == '' and '$(var sim)' == 'false'&quot;)"/>
+  <let name="ibis_target_address_final" value="$(var ibis_target_address)" unless="$(eval &quot;'$(var ibis_target_address)' == ''&quot;)"/>
+
   <!-- sim=trueの場合（独自ポート） -->
   <let name="vision_port_final" value="10020" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
   <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
@@ -116,7 +124,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- プランニング/制御系 -->
   <!-- ============================================================ -->
-  <!-- シミュレータ用（local_planner + sender） -->
+  <!-- local_planner: シミュレータ用設定 -->
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="rvo2"/>
@@ -128,19 +136,9 @@ limitations under the License.
       <!-- KickerModel統合：YAML設定ファイルから読み込み -->
       <param name="kicker_physics_config" value="$(find-pkg-share crane_world_model_publisher)/config/kicker_physics.yaml"/>
     </node>
-
-    <node pkg="crane_sender" exec="sim_sender_node">
-      <param name="no_movement" value="false"/>
-      <param name="latency_ms" value="0.0"/>
-      <param name="sim_mode" value="$(var sim)"/>
-      <param name="kick_power_limit_straight" value="1.0"/>
-      <param name="kick_power_limit_chip" value="1.0"/>
-      <param name="chip_angle_deg" value="30.0"/>
-      <param name="theta_p_gain" value="3.0"/>
-    </node>
   </group>
 
-  <!-- 実機用（local_planner + sender） -->
+  <!-- local_planner: 実機用設定 -->
   <group unless="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="rvo2"/>
@@ -152,19 +150,32 @@ limitations under the License.
       <param name="chip_kick_power_array" value="[0.0, 0.8, 1.0]"/>
       <param name="chip_kick_distance_array" value="[0.0, 0.5, 1.5]"/>
     </node>
-
-    <node pkg="crane_sender" exec="ibis_sender_node">
-      <param name="no_movement" value="false"/>
-      <param name="latency_ms" value="100.0"/>
-      <param name="sim_mode" value="$(var sim)"/>
-      <param name="kick_power_limit_straight" value="0.5"/>
-      <param name="kick_power_limit_chip" value="1.0"/>
-      <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
-      <param name="robot_acceleration.deceleration_high" value="$(var robot_acceleration.deceleration_high)"/>
-      <param name="robot_acceleration.deceleration_low" value="$(var robot_acceleration.deceleration_low)"/>
-      <param name="robot_acceleration.velocity_threshold" value="$(var robot_acceleration.velocity_threshold)"/>
-    </node>
   </group>
+
+  <!-- sender パラメータ: sim フラグに基づく条件値を let で事前解決 -->
+  <!-- param タグは if/unless をサポートしないため let で分岐する -->
+  <let name="sender_latency_ms" value="0.0" if="$(var sim)"/>
+  <let name="sender_latency_ms" value="100.0" unless="$(var sim)"/>
+  <let name="sender_kick_power_limit_straight" value="1.0" if="$(var sim)"/>
+  <let name="sender_kick_power_limit_straight" value="0.5" unless="$(var sim)"/>
+
+  <!-- sender: 統合（packet_typeでプロトコルを切り替え） -->
+  <node pkg="crane_sender" exec="ibis_sender_node">
+    <param name="no_movement" value="false"/>
+    <param name="sim_mode" value="$(var sim)"/>
+    <param name="packet_type" value="$(var packet_type)"/>
+    <param name="target_address" value="$(var ibis_target_address_final)"/>
+    <param name="target_port" value="$(var ibis_target_port)"/>
+    <param name="latency_ms" value="$(var sender_latency_ms)"/>
+    <param name="kick_power_limit_straight" value="$(var sender_kick_power_limit_straight)"/>
+    <param name="kick_power_limit_chip" value="1.0"/>
+    <param name="chip_angle_deg" value="30.0"/>
+    <param name="theta_p_gain" value="3.0"/>
+    <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
+    <param name="robot_acceleration.deceleration_high" value="$(var robot_acceleration.deceleration_high)"/>
+    <param name="robot_acceleration.deceleration_low" value="$(var robot_acceleration.deceleration_low)"/>
+    <param name="robot_acceleration.velocity_threshold" value="$(var robot_acceleration.velocity_threshold)"/>
+  </node>
 
   <!-- ============================================================ -->
   <!-- 通信系 -->

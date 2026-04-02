@@ -12,11 +12,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <string>
-#include <vector>
 
 namespace crane
 {
-BroadcastCommandSender::BroadcastCommandSender()
+BroadcastCommandSender::BroadcastCommandSender(const std::string & address, int port)
 : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
 {
   try {
@@ -24,8 +23,7 @@ BroadcastCommandSender::BroadcastCommandSender()
     socket.set_option(boost::asio::socket_base::broadcast(true));
     RCLCPP_INFO(rclcpp::get_logger("BroadcastCommandSender"), "✓ SO_BROADCAST flag set");
 
-    std::string host = CommConfig::BROADCAST_ADDRESS;
-    int port = CommConfig::DEFAULT_PORT;
+    std::string host = address;
     endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(host), port);
 
     // インターフェース情報の確認（デバッグ用）
@@ -49,12 +47,13 @@ BroadcastCommandSender::BroadcastCommandSender()
 }
 
 void BroadcastCommandSender::sendBroadcastPackets(
-  const std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> & robot_packets,
+  const std::array<std::pair<uint8_t, RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM> &
+    robot_packets,
   [[maybe_unused]] int check_counter)
 {
   char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
 
-  for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
+  for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
     int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
     broadcast_buf[offset] = static_cast<char>(i);
     memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);

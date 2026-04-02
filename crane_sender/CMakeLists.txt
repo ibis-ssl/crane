@@ -47,7 +47,7 @@ target_include_directories(crane_sender_base PUBLIC include)
 
 target_link_libraries(sim_sender_component crane_sender_base ${robocup_ssl_msgs_LIBRARIES})
 target_link_libraries(sim_sender_node crane_sender_base)
-target_link_libraries(ibis_sender_node crane_sender_base)
+target_link_libraries(ibis_sender_node crane_sender_base ${robocup_ssl_msgs_LIBRARIES})
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
