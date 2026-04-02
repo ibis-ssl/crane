@@ -7,10 +7,10 @@
 #ifndef CRANE_SENDER__BROADCAST_COMMAND_SENDER_HPP_
 #define CRANE_SENDER__BROADCAST_COMMAND_SENDER_HPP_
 
+#include <array>
 #include <boost/asio.hpp>
 #include <cstdint>
 #include <utility>
-#include <vector>
 
 #include "crane_sender/robot_packet.h"
 
@@ -28,10 +28,14 @@ constexpr int AI_CMD_V2_ROBOT_NUM = 11;
 class BroadcastCommandSender
 {
 public:
-  explicit BroadcastCommandSender();
+  explicit BroadcastCommandSender(
+    const std::string & address = CommConfig::BROADCAST_ADDRESS,
+    int port = CommConfig::DEFAULT_PORT);
 
   void sendBroadcastPackets(
-    const std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> & robot_packets,
+    const std::array<
+      std::pair<uint8_t, RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM> &
+      robot_packets,
     int check_counter);
 
 private:

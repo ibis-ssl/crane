@@ -4,6 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <robocup_ssl_msgs/grSim_Commands.pb.h>
+#include <robocup_ssl_msgs/grSim_Packet.pb.h>
+#include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
+
 #include <array>
 #include <class_loader/visibility_control.hpp>
 #include <cmath>
@@ -17,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "crane_comm/udp_sender.hpp"
+#include "crane_geometry/geometry_operations.hpp"
 #include "crane_sender/broadcast_command_sender.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
@@ -24,19 +30,41 @@
 namespace crane
 {
 
+// 送信パケット種別
+enum class PacketType { IBIS, SSL, GRSIM };
+
 class IbisSenderNode : public SenderBase
 {
 private:
   int debug_id;
 
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
-
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 
-  std::shared_ptr<BroadcastCommandSender> broadcast_sender;
+  PacketType packet_type_{PacketType::IBIS};
+
+  // IBIS type
+  std::shared_ptr<BroadcastCommandSender> broadcast_sender_;
+
+  // SSL type
+  std::unique_ptr<UDPSender> ssl_blue_sender_;
+  std::unique_ptr<UDPSender> ssl_yellow_sender_;
+
+  // GRSIM type
+  std::unique_ptr<UDPSender> grsim_sender_;
+
+  // SSL/GRSIM type: per-robot state for theta control and acceleration limiting
+  struct PerRobotState
+  {
+    double prev_vx = 0.0;
+    double prev_vy = 0.0;
+  };
+  std::array<PerRobotState, CommConfig::AI_CMD_V2_ROBOT_NUM> robot_states_;
+
+  double theta_p_gain_{4.0};
+  double chip_angle_deg_{30.0};
 
   int counter_{0};
-  int call_count_{0};
 
 public:
   CLASS_LOADER_PUBLIC
@@ -55,12 +83,57 @@ public:
         }
       });
 
-    // ブロードキャスト送信システム初期化
-    broadcast_sender = std::make_shared<BroadcastCommandSender>();
-    RCLCPP_INFO(get_logger(), "ibis_sender_node started");
+    // packet_type パラメータ: ibis / ssl / grsim
+    declare_parameter("packet_type", std::string("ibis"));
+    const std::string packet_type_str = get_parameter("packet_type").as_string();
+
+    // 送信先アドレスとポートの設定
+    declare_parameter("target_address", std::string(CommConfig::BROADCAST_ADDRESS));
+    declare_parameter("target_port", CommConfig::DEFAULT_PORT);
+    declare_parameter("theta_p_gain", theta_p_gain_);
+    declare_parameter("chip_angle_deg", chip_angle_deg_);
+
+    const std::string target_address = get_parameter("target_address").as_string();
+    const int target_port = get_parameter("target_port").as_int();
+    theta_p_gain_ = get_parameter("theta_p_gain").as_double();
+    chip_angle_deg_ = get_parameter("chip_angle_deg").as_double();
+
+    if (packet_type_str == "ssl") {
+      packet_type_ = PacketType::SSL;
+      // SSL制御ポートはgrSimの標準ポートを使用（target_addressのホストに送信）
+      declare_parameter("ssl_blue_port", 10301);
+      declare_parameter("ssl_yellow_port", 10302);
+      const int blue_port = get_parameter("ssl_blue_port").as_int();
+      const int yellow_port = get_parameter("ssl_yellow_port").as_int();
+      ssl_blue_sender_ = std::make_unique<UDPSender>(target_address, blue_port);
+      ssl_yellow_sender_ = std::make_unique<UDPSender>(target_address, yellow_port);
+      RCLCPP_INFO(
+        get_logger(), "ibis_sender_node started [packet_type=ssl] (blue: %s:%d, yellow: %s:%d)",
+        target_address.c_str(), blue_port, target_address.c_str(), yellow_port);
+    } else if (packet_type_str == "grsim") {
+      packet_type_ = PacketType::GRSIM;
+      declare_parameter("grsim_port", 20011);
+      const int grsim_port = get_parameter("grsim_port").as_int();
+      grsim_sender_ = std::make_unique<UDPSender>(target_address, grsim_port);
+      RCLCPP_INFO(
+        get_logger(), "ibis_sender_node started [packet_type=grsim] (%s:%d)",
+        target_address.c_str(), grsim_port);
+    } else {
+      if (packet_type_str != "ibis") {
+        RCLCPP_WARN(
+          get_logger(), "Unknown packet_type '%s', falling back to 'ibis'",
+          packet_type_str.c_str());
+      }
+      packet_type_ = PacketType::IBIS;
+      broadcast_sender_ = std::make_shared<BroadcastCommandSender>(target_address, target_port);
+      RCLCPP_INFO(
+        get_logger(), "ibis_sender_node started [packet_type=ibis] (%s:%d)", target_address.c_str(),
+        target_port);
+    }
   }
 
 private:
+  // IBIS バイナリパケット生成
   RobotCommandV2 createRobotPacket(
     const crane_msgs::msg::RobotCommand & command, int counter,
     const std::vector<uint8_t> & available_ids)
@@ -91,7 +164,6 @@ private:
     packet.enable_chip = command.chip_enable;
     packet.stop_emergency = command.stop_flag;
 
-    // 現在の速度から加速度を選択
     double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
     double target_speed = resolved_max_velocity;
     double selected_acceleration = calculateAccelerationLimit(current_speed, target_speed);
@@ -105,7 +177,6 @@ private:
     packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
-    // RobotCommand は常に極座標速度モード
     packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
     packet.mode_args.polar_velocity.target_global_velocity_r = target_velocity_r;
     packet.mode_args.polar_velocity.target_global_velocity_theta = target_velocity_theta;
@@ -124,50 +195,189 @@ private:
     return packet;
   }
 
-public:
-  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
+  // SSL/GRSIM 共通：極座標速度＋theta制御 → ロボットローカル速度変換
+  struct LocalVelocity
   {
-    call_count_++;
+    double vx;  // forward
+    double vy;  // left
+    double omega;
+  };
 
+  LocalVelocity convertToLocalVelocity(
+    const crane_msgs::msg::RobotCommand & command, PerRobotState & state)
+  {
+    const double target_velocity_r =
+      !command.polar_velocity_target_mode.empty()
+        ? command.polar_velocity_target_mode.front().target_velocity_r
+        : 0.0;
+    const double target_velocity_theta =
+      !command.polar_velocity_target_mode.empty()
+        ? command.polar_velocity_target_mode.front().target_velocity_theta
+        : 0.0;
+
+    // Theta P制御
+    const double theta_error = getAngleDiff(command.target_theta, command.current_pose.theta);
+    double omega = theta_p_gain_ * (-theta_error);
+    omega = std::clamp(
+      omega, -static_cast<double>(command.omega_limit), static_cast<double>(command.omega_limit));
+
+    // 遅延補正後の現在角度
+    constexpr double dt = 1.0 / 30.0;
+    const double current_theta = command.current_pose.theta + omega * delay_s;
+
+    // グローバル極座標 → ロボットローカル直交座標
+    const double velocity_theta = target_velocity_theta - current_theta;
+    const double target_vx = target_velocity_r * std::cos(velocity_theta);
+    const double target_vy = target_velocity_r * std::sin(velocity_theta);
+
+    // 加速度制限
+    const double current_speed = std::hypot(state.prev_vx, state.prev_vy);
+    const double target_speed = std::hypot(target_vx, target_vy);
+    const double acc_limit = calculateAccelerationLimit(current_speed, target_speed);
+    const double max_delta = acc_limit * dt;
+
+    const double delta_vx = target_vx - state.prev_vx;
+    const double delta_vy = target_vy - state.prev_vy;
+    const double delta_norm = std::hypot(delta_vx, delta_vy);
+
+    double out_vx, out_vy;
+    if (delta_norm > max_delta && delta_norm > 1e-9) {
+      out_vx = state.prev_vx + (delta_vx / delta_norm) * max_delta;
+      out_vy = state.prev_vy + (delta_vy / delta_norm) * max_delta;
+    } else {
+      out_vx = target_vx;
+      out_vy = target_vy;
+    }
+
+    if (command.stop_flag) {
+      out_vx = 0.0;
+      out_vy = 0.0;
+      omega = 0.0;
+    }
+
+    state.prev_vx = out_vx;
+    state.prev_vy = out_vy;
+    return {out_vx, out_vy, omega};
+  }
+
+  struct KickParams
+  {
+    double speed;
+    double angle_rad;  // 0 for flat kick
+  };
+
+  KickParams computeKick(float kick_power, bool chip_enable) const
+  {
+    constexpr double MAX_KICK_SPEED = 8.0;
+    const double kick_speed = MAX_KICK_SPEED * kick_power;
+    if (chip_enable) {
+      return {kick_speed * 0.5, chip_angle_deg_ * M_PI / 180.0};
+    }
+    return {kick_speed, 0.0};
+  }
+
+  void sendSSL(const crane_msgs::msg::RobotCommands & msg)
+  {
+    auto & sender = msg.is_yellow ? ssl_yellow_sender_ : ssl_blue_sender_;
+
+    robocup_ssl::RobotControl packet;
+    for (const auto & command : msg.robot_commands) {
+      auto cmd = packet.add_robot_commands();
+      cmd->set_id(command.robot_id);
+
+      auto & state = robot_states_[command.robot_id];
+      const auto vel = convertToLocalVelocity(command, state);
+
+      auto move_command = new robocup_ssl::RobotMoveCommand();
+      auto move_local_velocity = new robocup_ssl::MoveLocalVelocity();
+      move_local_velocity->set_forward(vel.vx);
+      move_local_velocity->set_left(vel.vy);
+      move_local_velocity->set_angular(vel.omega);
+      move_command->set_allocated_local_velocity(move_local_velocity);
+      cmd->set_allocated_move_command(move_command);
+
+      const auto kick = computeKick(command.kick_power, command.chip_enable);
+      cmd->set_kick_angle(kick.angle_rad);
+      cmd->set_kick_speed(kick.speed);
+      cmd->set_dribbler_speed(command.dribble_power * 1000.0);
+    }
+
+    std::string output;
+    packet.SerializeToString(&output);
+    sender->send(output);
+  }
+
+  void sendGrSim(const crane_msgs::msg::RobotCommands & msg)
+  {
+    robocup_ssl::grSim_Packet packet;
+    auto * commands = packet.mutable_commands();
+    commands->set_isteamyellow(msg.is_yellow);
+    commands->set_timestamp(0.0);
+
+    for (const auto & command : msg.robot_commands) {
+      auto * robot_cmd = commands->add_robot_commands();
+      robot_cmd->set_id(command.robot_id);
+
+      auto & state = robot_states_[command.robot_id];
+      const auto vel = convertToLocalVelocity(command, state);
+
+      robot_cmd->set_veltangent(static_cast<float>(vel.vx));
+      robot_cmd->set_velnormal(static_cast<float>(vel.vy));
+      robot_cmd->set_velangular(static_cast<float>(vel.omega));
+      robot_cmd->set_spinner(command.dribble_power > 0.001f);
+      robot_cmd->set_wheelsspeed(false);
+
+      const auto kick = computeKick(command.kick_power, command.chip_enable);
+      robot_cmd->set_kickspeedx(static_cast<float>(kick.speed * std::cos(kick.angle_rad)));
+      robot_cmd->set_kickspeedz(static_cast<float>(kick.speed * std::sin(kick.angle_rad)));
+    }
+
+    std::string output;
+    packet.SerializeToString(&output);
+    grsim_sender_->send(output);
+  }
+
+  void sendIbis(const crane_msgs::msg::RobotCommands & msg)
+  {
     if (++counter_ > 200) {
       counter_ = 0;
     }
 
-    RCLCPP_DEBUG(
-      get_logger(), "🚀 sendCommands method called #%d (counter=%d)", call_count_, counter_);
-    RCLCPP_DEBUG(get_logger(), "  Received robot command count: %ld", msg.robot_commands.size());
-
     const auto available_ids = world_model->ours().robotsWhere().available().getIds();
 
-    // ブロードキャストモード：全ロボットのパケットを作成して一括送信
-    // 11スロット分を空パケットで初期化
-    std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> robot_packets(
-      CommConfig::AI_CMD_V2_ROBOT_NUM);
+    std::array<std::pair<uint8_t, RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM>
+      robot_packets{};
     for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
       robot_packets[i] = {static_cast<uint8_t>(i), RobotCommandSerializedV2{}};
     }
 
-    int processed_commands = 0;
     for (const auto & command : msg.robot_commands) {
       if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
         RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
         RobotCommandSerializedV2 serialized_packet;
         RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
         robot_packets[command.robot_id] = {command.robot_id, serialized_packet};
-        processed_commands++;
       }
     }
 
-    RCLCPP_DEBUG(
-      get_logger(), "  Processed command count: %d/%ld", processed_commands,
-      msg.robot_commands.size());
+    broadcast_sender_->sendBroadcastPackets(robot_packets, counter_);
+  }
 
-    RCLCPP_DEBUG(
-      get_logger(), "  Packet slot usage: %d/%d slots used", processed_commands,
-      CommConfig::AI_CMD_V2_ROBOT_NUM);
-    RCLCPP_DEBUG(get_logger(), "  Broadcast preparation complete -> Start sending packet");
-
-    broadcast_sender->sendBroadcastPackets(robot_packets, counter_);
+public:
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
+  {
+    switch (packet_type_) {
+      case PacketType::SSL:
+        sendSSL(msg);
+        break;
+      case PacketType::GRSIM:
+        sendGrSim(msg);
+        break;
+      case PacketType::IBIS:
+      default:
+        sendIbis(msg);
+        break;
+    }
   }
 };
 }  // namespace crane
