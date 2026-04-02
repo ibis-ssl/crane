@@ -110,6 +110,17 @@ private:
     packet.mode_args.polar_velocity.target_global_velocity_r = target_velocity_r;
     packet.mode_args.polar_velocity.target_global_velocity_theta = target_velocity_theta;
 
+    if (!command.position_target_mode.empty()) {
+      const auto & pos_mode = command.position_target_mode.front();
+      packet.target_global_pos[0] = pos_mode.target_x;
+      packet.target_global_pos[1] = pos_mode.target_y;
+      packet.terminal_velocity = pos_mode.speed_limit_at_target;
+    } else {
+      packet.target_global_pos[0] = 0.0f;
+      packet.target_global_pos[1] = 0.0f;
+      packet.terminal_velocity = 0.0f;
+    }
+
     return packet;
   }
 

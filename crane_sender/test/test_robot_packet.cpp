@@ -44,6 +44,10 @@ TEST(RobotPacket, ENcodeDecode)
   packet.elapsed_time_ms_since_last_vision = dist_uint16(gen);
 
   {
+    packet.target_global_pos[0] = dist_32(gen);
+    packet.target_global_pos[1] = dist_32(gen);
+    packet.terminal_velocity = dist_32(gen);
+
     packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
     packet.mode_args.polar_velocity.target_global_velocity_r = dist_32(gen);
     packet.mode_args.polar_velocity.target_global_velocity_theta = dist_32(gen);
@@ -81,6 +85,11 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_NEAR(
       packet.mode_args.polar_velocity.target_global_velocity_theta,
       deserialized_packet.mode_args.polar_velocity.target_global_velocity_theta, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.target_global_pos[0], deserialized_packet.target_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.target_global_pos[1], deserialized_packet.target_global_pos[1], MAX_ERROR_32);
+    EXPECT_NEAR(packet.terminal_velocity, deserialized_packet.terminal_velocity, MAX_ERROR_32);
   }
 }
 
