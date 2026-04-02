@@ -18,11 +18,11 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ネットワーク設定 -->
   <!-- ============================================================ -->
-  <arg name="vision_port" default="" description="SSL-Visionと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-  <arg name="referee_port" default="" description="Game Controllerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-  <arg name="tracker_port" default="" description="SSL Trackerと接続するためのマルチキャストポート（空の場合はsimに基づいて自動設定）"/>
-  <arg name="packet_type" default="ibis" description="送信パケット種別: ibis（実機バイナリ）/ ssl（SSL RobotControl protobuf）/ grsim（grSim legacy protobuf）"/>
-  <arg name="ibis_target_address" default="" description="送信先アドレス（空の場合はsimに基づいて自動設定: sim=true → 127.0.0.1, sim=false → 192.168.20.255）"/>
+  <arg name="vision_port" default="" description="SSL-Vision multicast port (empty: auto from sim flag)"/>
+  <arg name="referee_port" default="" description="Game Controller multicast port (empty: auto from sim flag)"/>
+  <arg name="tracker_port" default="" description="SSL Tracker multicast port (empty: auto from sim flag)"/>
+  <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf) / grsim (grSim legacy protobuf)"/>
+  <arg name="ibis_target_address" default="" description="Target address (empty: auto from sim flag: sim=true -&gt; 127.0.0.1, sim=false -&gt; 192.168.20.255)"/>
   <arg name="ibis_target_port" default="12345" description="ibis_sender_nodeの送信先ポート（packet_type=ibisのみ使用）"/>
 
   <!-- ============================================================ -->
@@ -152,6 +152,13 @@ limitations under the License.
     </node>
   </group>
 
+  <!-- sender パラメータ: sim フラグに基づく条件値を let で事前解決 -->
+  <!-- param タグは if/unless をサポートしないため let で分岐する -->
+  <let name="sender_latency_ms" value="0.0" if="$(var sim)"/>
+  <let name="sender_latency_ms" value="100.0" unless="$(var sim)"/>
+  <let name="sender_kick_power_limit_straight" value="1.0" if="$(var sim)"/>
+  <let name="sender_kick_power_limit_straight" value="0.5" unless="$(var sim)"/>
+
   <!-- sender: 統合（packet_typeでプロトコルを切り替え） -->
   <node pkg="crane_sender" exec="ibis_sender_node">
     <param name="no_movement" value="false"/>
@@ -159,16 +166,11 @@ limitations under the License.
     <param name="packet_type" value="$(var packet_type)"/>
     <param name="target_address" value="$(var ibis_target_address_final)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
-    <!-- sim=true: ラテンシなし・キックパワー上限なし -->
-    <param name="latency_ms" value="0.0" if="$(var sim)"/>
-    <param name="kick_power_limit_straight" value="1.0" if="$(var sim)"/>
-    <param name="kick_power_limit_chip" value="1.0" if="$(var sim)"/>
+    <param name="latency_ms" value="$(var sender_latency_ms)"/>
+    <param name="kick_power_limit_straight" value="$(var sender_kick_power_limit_straight)"/>
+    <param name="kick_power_limit_chip" value="1.0"/>
     <param name="chip_angle_deg" value="30.0"/>
     <param name="theta_p_gain" value="3.0"/>
-    <!-- sim=false: ラテンシあり・キックパワー制限あり・加速度設定 -->
-    <param name="latency_ms" value="100.0" unless="$(var sim)"/>
-    <param name="kick_power_limit_straight" value="0.5" unless="$(var sim)"/>
-    <param name="kick_power_limit_chip" value="1.0" unless="$(var sim)"/>
     <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
     <param name="robot_acceleration.deceleration_high" value="$(var robot_acceleration.deceleration_high)"/>
     <param name="robot_acceleration.deceleration_low" value="$(var robot_acceleration.deceleration_low)"/>
