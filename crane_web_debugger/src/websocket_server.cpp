@@ -131,9 +131,7 @@ public:
       }
 
       // Payload
-      for (char c : message) {
-        frame.push_back(static_cast<uint8_t>(c));
-      }
+      frame.insert(frame.end(), message.begin(), message.end());
 
       boost::asio::write(*socket_, boost::asio::buffer(frame));
     } catch (const std::exception & e) {
@@ -260,8 +258,11 @@ public:
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_model", 10,
-      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) { broadcastWorldModel(msg); });
+      "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
+        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+        latest_world_model_ = msg;
+        world_model_updated_ = true;
+      });
 
     robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10,
@@ -281,15 +282,18 @@ public:
       this->create_subscription<crane_visualization_interfaces::msg::SvgSnapshot>(
         "/aggregated_svgs", 10,
         [this](const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg) {
-          broadcastSvgData(msg);
+          std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
+          latest_svg_snapshot_ = msg;
+          svg_snapshot_updated_ = true;
         });
 
-    // High-frequency incremental SVG updates
+    // High-frequency incremental SVG updates — accumulate, flush at 20Hz
     visualizer_svgs_sub_ =
       this->create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
         "/visualizer_svgs", rclcpp::SensorDataQoS(),
         [this](const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg) {
-          broadcastSvgUpdates(msg);
+          std::lock_guard<std::mutex> lock(svg_updates_mutex_);
+          pending_svg_updates_.push_back(msg);
         });
 
     // Human annotation publisher
@@ -349,6 +353,41 @@ public:
         control_targets_updated_ = false;
       }
       broadcastControlTargets(msg);
+    });
+
+    // 100ms timer for world_model broadcast (10Hz throttle)
+    world_model_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
+      crane_msgs::msg::WorldModel::SharedPtr msg;
+      {
+        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+        if (!world_model_updated_ || !latest_world_model_) return;
+        msg = latest_world_model_;
+        world_model_updated_ = false;
+      }
+      broadcastWorldModel(msg);
+    });
+
+    // 200ms timer for aggregated_svgs broadcast (5Hz throttle)
+    svg_snapshot_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() {
+      crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg;
+      {
+        std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
+        if (!svg_snapshot_updated_ || !latest_svg_snapshot_) return;
+        msg = latest_svg_snapshot_;
+        svg_snapshot_updated_ = false;
+      }
+      broadcastSvgData(msg);
+    });
+
+    // 50ms timer for visualizer_svgs broadcast (20Hz coalescing)
+    svg_updates_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), [this]() {
+      std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> batch;
+      {
+        std::lock_guard<std::mutex> lock(svg_updates_mutex_);
+        if (pending_svg_updates_.empty()) return;
+        batch.swap(pending_svg_updates_);
+      }
+      broadcastCoalescedSvgUpdates(batch);
     });
 
     // 5s timer for Pi status polling
@@ -506,8 +545,6 @@ private:
         handleActivateMoveMode(connection);
       } else if (type == "move_robot") {
         handleMoveRobot(connection, request);
-      } else if (type == "get_world_model") {
-        // World model is automatically broadcasted, but we can send current state if needed
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
         connection->sendMessage(error_response.dump());
@@ -773,8 +810,7 @@ private:
 
   void broadcastSvgData(const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg)
   {
-    const auto stamp_ns =
-      static_cast<int64_t>(msg->header.stamp.sec) * 1000000000LL + msg->header.stamp.nanosec;
+    const auto stamp_ns = rclcpp::Time(msg->header.stamp).nanoseconds();
     json svg_data = {
       {"type", "svg_data"},
       {"epoch", msg->epoch},
@@ -795,26 +831,20 @@ private:
     broadcastToAll(svg_data.dump());
   }
 
-  void broadcastSvgUpdates(const crane_visualization_interfaces::msg::SvgUpdates::SharedPtr msg)
+  void broadcastCoalescedSvgUpdates(
+    const std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> & batch)
   {
-    const auto stamp_ns =
-      static_cast<int64_t>(msg->header.stamp.sec) * 1000000000LL + msg->header.stamp.nanosec;
-    json svg_update = {
-      {"type", "svg_update"},
-      {"epoch", msg->epoch},
-      {"seq", msg->seq},
-      {"stamp_ns", stamp_ns},
-      {"updates", json::array()}};
-
-    for (const auto & upd : msg->updates) {
-      json upd_json = {
-        {"layer", upd.layer}, {"operation", upd.operation}, {"svg_primitives", json::array()}};
-      for (const auto & primitive : upd.svg_primitives) {
-        upd_json["svg_primitives"].push_back(primitive);
+    json svg_update = {{"type", "svg_update"}, {"updates", json::array()}};
+    for (const auto & msg : batch) {
+      for (const auto & upd : msg->updates) {
+        json upd_json = {
+          {"layer", upd.layer}, {"operation", upd.operation}, {"svg_primitives", json::array()}};
+        for (const auto & primitive : upd.svg_primitives) {
+          upd_json["svg_primitives"].push_back(primitive);
+        }
+        svg_update["updates"].push_back(upd_json);
       }
-      svg_update["updates"].push_back(upd_json);
     }
-
     broadcastToAll(svg_update.dump());
   }
 
@@ -907,26 +937,14 @@ private:
 
   std::string createGameInfoMessage(const crane_msgs::msg::PlaySituation::SharedPtr msg)
   {
-    // プレイ状況の文字列を取得
-    std::string play_situation_str = msg->command.name;
-
-    // スコアを取得
-    int our_score = msg->our_team_info.score;
-    int their_score = msg->their_team_info.score;
-
-    // 試合時間を取得（秒単位）
-    int game_time = msg->referee_raw.stage_time_left / 1000000;  // マイクロ秒から秒へ
-
-    // ゲームステージを取得
-    std::string game_stage = msg->stage.name;
-
-    // ゲームイベント（ファールなど）を取得
-    std::string game_event = msg->reason_text;
-
-    json game_info = {{"type", "game_info"},     {"play_situation", play_situation_str},
-                      {"our_score", our_score},  {"their_score", their_score},
-                      {"game_time", game_time},  {"game_stage", game_stage},
-                      {"game_event", game_event}};
+    json game_info = {
+      {"type", "game_info"},
+      {"play_situation", msg->command.name},
+      {"our_score", msg->our_team_info.score},
+      {"their_score", msg->their_team_info.score},
+      {"game_time", msg->referee_raw.stage_time_left / 1000000},  // マイクロ秒→秒
+      {"game_stage", msg->stage.name},
+      {"game_event", msg->reason_text}};
 
     return game_info.dump();
   }
@@ -1274,6 +1292,23 @@ private:
   // Game info cache
   crane_msgs::msg::PlaySituation::SharedPtr latest_play_situation_;
   std::mutex game_info_mutex_;
+
+  // World model throttle (10Hz)
+  crane_msgs::msg::WorldModel::SharedPtr latest_world_model_;
+  bool world_model_updated_{false};
+  std::mutex world_model_throttle_mutex_;
+  rclcpp::TimerBase::SharedPtr world_model_timer_;
+
+  // SVG snapshot throttle (5Hz)
+  crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr latest_svg_snapshot_;
+  bool svg_snapshot_updated_{false};
+  std::mutex svg_snapshot_mutex_;
+  rclcpp::TimerBase::SharedPtr svg_snapshot_timer_;
+
+  // SVG updates coalescing (20Hz)
+  std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> pending_svg_updates_;
+  std::mutex svg_updates_mutex_;
+  rclcpp::TimerBase::SharedPtr svg_updates_timer_;
 };
 
 int main(int argc, char ** argv)

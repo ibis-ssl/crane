@@ -311,7 +311,7 @@
       background-color: #0d1117;
     }
 
-    #svg-field {
+    #field-canvas {
       width: 100%;
       height: 100%;
       display: block;
@@ -476,16 +476,9 @@
         </span>
       </div>
 
-      <!-- SVG field viewer -->
+      <!-- Canvas field viewer -->
       <div id="svg-container" style="flex:1; overflow:hidden; position:relative;">
-        <svg id="svg-field" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"
-             viewBox="-6000 -4500 12000 9000" preserveAspectRatio="xMidYMid meet"
-             style="background:#1a5c1a;">
-          <text x="0" y="0" text-anchor="middle" dominant-baseline="middle"
-                fill="#444" font-size="200" font-family="sans-serif">
-            接続待機中...
-          </text>
-        </svg>
+        <canvas id="field-canvas"></canvas>
       </div>
 
       <!-- Log / status area -->
