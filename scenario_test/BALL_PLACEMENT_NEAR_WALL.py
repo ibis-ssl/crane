@@ -18,7 +18,7 @@ def distance(x1: float, y1: float, x2: float, y2: float) -> float:
 
 def setup_robots(rcst_comm: Communication, placer_x: float, placer_y: float):
     """ゴールキーパー + ball placerロボットを配置"""
-    rcst_comm.send_yellow_robot(0, -6.0, 0.0, 0)   # GK
+    rcst_comm.send_yellow_robot(0, -6.0, 0.0, 0)  # GK
     rcst_comm.send_yellow_robot(1, placer_x, placer_y, 0)  # ball placer
     rcst_comm.send_yellow_robot(2, -2.0, 1.0, 0)
     rcst_comm.send_yellow_robot(3, -2.0, -1.0, 0)
@@ -32,7 +32,9 @@ def run_ball_placement(
     timeout: int = 30,
 ) -> bool:
     """STOP → BALL_PLACEMENT_YELLOW の順でコマンドを送り、成功するまでポーリング"""
-    rcst_comm.observer.ball_placement().set_targets(target_x, target_y, for_blue_team=False)
+    rcst_comm.observer.ball_placement().set_targets(
+        target_x, target_y, for_blue_team=False
+    )
 
     rcst_comm.change_referee_command("STOP", 3.0)
 
@@ -70,8 +72,10 @@ def test_ball_placement_near_wall_x_boundary(rcst_comm: Communication):
 
     final_ball = rcst_comm.observer.get_world().get_ball()
     dist = distance(final_ball.x, final_ball.y, target_x, target_y)
-    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
-          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m")
+    print(
+        f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+        f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m"
+    )
 
     assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
@@ -98,8 +102,10 @@ def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
 
     final_ball = rcst_comm.observer.get_world().get_ball()
     dist = distance(final_ball.x, final_ball.y, target_x, target_y)
-    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
-          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m")
+    print(
+        f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+        f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m"
+    )
 
     assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
@@ -133,10 +139,14 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
     final_ball = rcst_comm.observer.get_world().get_ball()
     dist = distance(final_ball.x, final_ball.y, target_x, target_y)
     final_robots = rcst_comm.observer.get_world().get_yellow_robots()
-    robot_moved = distance(initial_r1_x, initial_r1_y, final_robots[1].x, final_robots[1].y) > 0.1
+    robot_moved = (
+        distance(initial_r1_x, initial_r1_y, final_robots[1].x, final_robots[1].y) > 0.1
+    )
 
-    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
-          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m, Robot moved: {robot_moved}")
+    print(
+        f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+        f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m, Robot moved: {robot_moved}"
+    )
 
     assert robot_moved, "Robot appears to be stuck (did not move)"
     assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
