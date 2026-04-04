@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Robot Telemetry - Crane</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..200&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="m3e-theme.css">
   <style>
     html, body {
       height: 100%;
       margin: 0;
       overflow: hidden;
-      background: #0d1117;
-      color: #e0e0e0;
-      font-family: system-ui, sans-serif;
     }
 
     body {
@@ -21,28 +21,13 @@
       flex-direction: column;
     }
 
-    .navbar {
-      flex-shrink: 0;
-      background: #16213e !important;
-      border-bottom: 1px solid #0f3460;
-    }
-
-    #status-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: #dc3545;
-      display: inline-block;
-      transition: background 0.3s;
-    }
-    #status-dot.connected { background: #28a745; }
-
     #header-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 6px 12px;
-      background: #16213e;
-      border-bottom: 1px solid #0f3460;
+      gap: var(--md-sys-spacing-md);
+      padding: 6px var(--md-sys-spacing-md);
+      background: var(--md-sys-color-surface-container);
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
       flex-shrink: 0;
       font-size: 0.85rem;
     }
@@ -50,20 +35,11 @@
     #header-bar .robot-id-badge {
       font-size: 1.1rem;
       font-weight: 700;
-      background: #0f3460;
-      border: 1px solid #1a4a7a;
-      border-radius: 6px;
+      background: var(--md-sys-color-primary-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
       padding: 2px 10px;
-      color: #7ec8e3;
-    }
-
-    #header-bar .info-chip {
-      background: #0f3460;
-      border: 1px solid #1a4a7a;
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 0.75rem;
-      color: #ccc;
+      color: var(--md-sys-color-primary);
     }
 
     #scroll-area {
@@ -72,23 +48,32 @@
       padding: 10px;
     }
 
-    #scroll-area::-webkit-scrollbar { width: 6px; }
-    #scroll-area::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
 
     .chart-card {
-      background: #16213e;
-      border: 1px solid #1a4a7a;
-      border-radius: 8px;
+      background: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-md);
       padding: 10px;
-      margin-bottom: 10px;
     }
 
     .chart-card h6 {
       font-size: 0.75rem;
-      color: #7ec8e3;
+      color: var(--md-sys-color-primary);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .chart-wrapper {
@@ -96,20 +81,26 @@
       height: 180px;
     }
 
+    .full-width-section {
+      margin-top: 10px;
+    }
+
     .correction-bar-section {
-      background: #16213e;
-      border: 1px solid #1a4a7a;
-      border-radius: 8px;
+      background: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-md);
       padding: 10px;
-      margin-bottom: 10px;
     }
 
     .correction-bar-section h6 {
       font-size: 0.75rem;
-      color: #7ec8e3;
+      color: var(--md-sys-color-primary);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .correction-row {
@@ -123,7 +114,7 @@
     .correction-source {
       width: 100px;
       flex-shrink: 0;
-      color: #aaa;
+      color: var(--md-sys-color-on-surface-variant);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -132,204 +123,189 @@
     .correction-bar-bg {
       flex: 1;
       height: 8px;
-      background: #0f3460;
-      border-radius: 4px;
+      background: var(--md-sys-color-surface-container-highest);
+      border-radius: var(--md-sys-shape-full);
       overflow: hidden;
     }
 
     .correction-bar-fill {
       height: 100%;
-      border-radius: 4px;
-      transition: width 0.2s;
+      border-radius: var(--md-sys-shape-full);
+      transition: width var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
     }
 
     .correction-value {
       width: 50px;
       text-align: right;
-      color: #ccc;
+      color: var(--md-sys-color-on-surface-variant);
     }
 
-    .data-table {
-      background: #16213e;
-      border: 1px solid #1a4a7a;
-      border-radius: 8px;
+    .data-table-section {
+      background: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-md);
       padding: 10px;
-      margin-bottom: 10px;
+      margin-top: 10px;
     }
 
-    .data-table h6 {
+    .data-table-section h6 {
       font-size: 0.75rem;
-      color: #7ec8e3;
+      color: var(--md-sys-color-primary);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .data-table table {
+    .data-table-section table {
       width: 100%;
       font-size: 0.75rem;
       border-collapse: collapse;
     }
 
-    .data-table th {
-      color: #6c757d;
+    .data-table-section th {
+      color: var(--md-sys-color-on-surface-variant);
       font-weight: 600;
       padding: 3px 6px;
-      border-bottom: 1px solid #1a4a7a;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
       text-align: center;
     }
 
-    .data-table td {
+    .data-table-section td {
       padding: 3px 6px;
       text-align: center;
-      color: #e0e0e0;
-      border-bottom: 1px solid #0f3460;
+      color: var(--md-sys-color-on-surface);
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
       font-variant-numeric: tabular-nums;
     }
 
-    .data-table tr:last-child td { border-bottom: none; }
+    .data-table-section tr:last-child td { border-bottom: none; }
 
     .buffer-control {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
-      background: #0d1117;
-      border-top: 1px solid #0f3460;
+      padding: 6px var(--md-sys-spacing-md);
+      background: var(--md-sys-color-surface-dim);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
       flex-shrink: 0;
       font-size: 0.75rem;
     }
 
     .buffer-control input[type=range] {
       flex: 1;
-      accent-color: #2d7dd2;
+      accent-color: var(--md-sys-color-primary);
     }
   </style>
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-dark py-1">
-    <div class="container-fluid">
-      <div class="d-flex align-items-center gap-3">
-        <a href="/viewer.html" class="btn btn-sm btn-outline-secondary py-0">
-          <i class="fas fa-arrow-left me-1"></i>ビューアに戻る
-        </a>
-        <span class="navbar-brand mb-0 h6">
-          <i class="fas fa-chart-line me-1 text-info"></i>Robot Telemetry
-        </span>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <label for="robot-selector" class="text-muted" style="font-size:0.8rem; margin:0;">Robot ID:</label>
-        <select id="robot-selector" class="form-select form-select-sm" style="width:80px; background:#0f3460; color:#e0e0e0; border-color:#1a4a7a;">
-        </select>
-        <span id="status-dot"></span>
-        <span id="status-label" style="font-size:0.8rem;">未接続</span>
-      </div>
+  <!-- Top App Bar -->
+  <nav class="m3-top-app-bar">
+    <a href="/viewer.html" class="m3-btn m3-btn--sm m3-btn--outlined" style="padding:4px 12px;">
+      <span class="material-symbols-outlined icon-sm">arrow_back</span> Viewer
+    </a>
+    <div class="m3-top-app-bar__title">
+      <span class="material-symbols-outlined">show_chart</span>
+      Robot Telemetry
+    </div>
+    <div class="m3-top-app-bar__actions">
+      <label for="robot-selector" class="m3-text-on-surface-variant m3-body-small">Robot ID:</label>
+      <select id="robot-selector" class="m3-select" style="width:80px;">
+      </select>
+      <span class="m3-connection-dot" id="status-dot"></span>
+      <span class="m3-body-small m3-text-on-surface-variant" id="status-label">disconnected</span>
     </div>
   </nav>
 
   <!-- Header info bar -->
   <div id="header-bar">
     <span class="robot-id-badge">ID: <span id="current-robot-id">--</span></span>
-    <span class="info-chip" id="header-planner">プランナー: --</span>
-    <span class="info-chip" id="header-mode">モード: --</span>
-    <span class="info-chip" id="header-pos">位置: (---, ---)</span>
-    <span class="info-chip" id="header-vel">速度: (---, ---)</span>
+    <span class="m3-chip" id="header-planner">Planner: --</span>
+    <span class="m3-chip" id="header-mode">Mode: --</span>
+    <span class="m3-chip" id="header-pos">Pos: (---, ---)</span>
+    <span class="m3-chip" id="header-vel">Vel: (---, ---)</span>
   </div>
 
   <!-- Scroll area -->
   <div id="scroll-area">
-    <div class="row g-2">
-      <!-- 位置 X/Y チャート -->
-      <div class="col-md-6">
-        <div class="chart-card">
-          <h6><i class="fas fa-map-marker-alt me-1"></i>位置 X / Y</h6>
-          <div class="chart-wrapper">
-            <canvas id="chart-position"></canvas>
-          </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h6><span class="material-symbols-outlined icon-sm">location_on</span> Position X / Y</h6>
+        <div class="chart-wrapper">
+          <canvas id="chart-position"></canvas>
         </div>
       </div>
 
-      <!-- 速度 Vx/Vy チャート -->
-      <div class="col-md-6">
-        <div class="chart-card">
-          <h6><i class="fas fa-tachometer-alt me-1"></i>速度 Vx / Vy</h6>
-          <div class="chart-wrapper">
-            <canvas id="chart-velocity"></canvas>
-          </div>
+      <div class="chart-card">
+        <h6><span class="material-symbols-outlined icon-sm">speed</span> Velocity Vx / Vy</h6>
+        <div class="chart-wrapper">
+          <canvas id="chart-velocity"></canvas>
         </div>
       </div>
 
-      <!-- 角度 theta チャート -->
-      <div class="col-md-6">
-        <div class="chart-card">
-          <h6><i class="fas fa-compass me-1"></i>角度 θ</h6>
-          <div class="chart-wrapper">
-            <canvas id="chart-theta"></canvas>
-          </div>
+      <div class="chart-card">
+        <h6><span class="material-symbols-outlined icon-sm">explore</span> Angle θ</h6>
+        <div class="chart-wrapper">
+          <canvas id="chart-theta"></canvas>
         </div>
       </div>
 
-      <!-- 予実誤差チャート -->
-      <div class="col-md-6">
-        <div class="chart-card">
-          <h6><i class="fas fa-exclamation-triangle me-1"></i>予実誤差</h6>
-          <div class="chart-wrapper">
-            <canvas id="chart-error"></canvas>
-          </div>
+      <div class="chart-card">
+        <h6><span class="material-symbols-outlined icon-sm">warning</span> Prediction Error</h6>
+        <div class="chart-wrapper">
+          <canvas id="chart-error"></canvas>
         </div>
       </div>
+    </div>
 
-      <!-- 速度修正バー -->
-      <div class="col-12">
-        <div class="correction-bar-section">
-          <h6><i class="fas fa-sliders-h me-1"></i>速度修正 (VelocityCorrection)</h6>
-          <div id="correction-bars">
-            <div style="color:#666; font-size:0.75rem;">データなし</div>
-          </div>
+    <!-- Velocity corrections -->
+    <div class="full-width-section">
+      <div class="correction-bar-section">
+        <h6><span class="material-symbols-outlined icon-sm">tune</span> Velocity Correction</h6>
+        <div id="correction-bars">
+          <div style="color:var(--md-sys-color-on-surface-variant); font-size:0.75rem;">No data</div>
         </div>
       </div>
+    </div>
 
-      <!-- 数値テーブル -->
-      <div class="col-12">
-        <div class="data-table">
-          <h6><i class="fas fa-table me-1"></i>リアルタイム数値</h6>
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>推定位置 (x,y,θ)</th>
-                <th>Vision位置 (x,y,θ)</th>
-                <th>目標位置 (x,y)</th>
-                <th>推定速度 (vx,vy)</th>
-                <th>目標速度 (vx,vy)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="color:#6c757d; font-weight:600;">値</td>
-                <td id="tbl-est-pos">--</td>
-                <td id="tbl-vis-pos">--</td>
-                <td id="tbl-tgt-pos">--</td>
-                <td id="tbl-est-vel">--</td>
-                <td id="tbl-tgt-vel">--</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <!-- Data table -->
+    <div class="data-table-section">
+      <h6><span class="material-symbols-outlined icon-sm">table</span> Real-time Values</h6>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Estimated (x,y,θ)</th>
+            <th>Vision (x,y,θ)</th>
+            <th>Target (x,y)</th>
+            <th>Est. Vel (vx,vy)</th>
+            <th>Tgt. Vel (vx,vy)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--md-sys-color-on-surface-variant); font-weight:600;">Value</td>
+            <td id="tbl-est-pos">--</td>
+            <td id="tbl-vis-pos">--</td>
+            <td id="tbl-tgt-pos">--</td>
+            <td id="tbl-est-vel">--</td>
+            <td id="tbl-tgt-vel">--</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <!-- Buffer size control -->
   <div class="buffer-control">
-    <span class="text-muted">バッファ:</span>
+    <span class="m3-text-on-surface-variant">Buffer:</span>
     <input type="range" id="buffer-size-slider" min="100" max="600" value="300" step="100">
-    <span id="buffer-size-label">300点 (30秒)</span>
+    <span id="buffer-size-label">300 pts (30s)</span>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="robot_telemetry.js"></script>
 </body>

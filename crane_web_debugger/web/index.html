@@ -4,308 +4,350 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crane Debug Tools Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..200&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="m3e-theme.css">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 2rem 0;
+            padding: var(--md-sys-spacing-lg) 0;
         }
-        .portal-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+
         .portal-header {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background-color: var(--md-sys-color-surface-container);
+            border-radius: var(--md-sys-shape-xl);
+            padding: var(--md-sys-spacing-lg);
+            margin-bottom: var(--md-sys-spacing-lg);
+            box-shadow: var(--md-sys-elevation-2);
         }
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
+
+        .portal-header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--md-sys-spacing-sm);
         }
-        .connected { background-color: #28a745; }
-        .disconnected { background-color: #dc3545; }
+
+        .portal-header h1 .material-symbols-outlined {
+            font-size: 32px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .portal-header p {
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--md-sys-spacing-sm);
+            font-size: 0.8125rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .section-title {
+            color: var(--md-sys-color-primary);
+            font-size: 0.8125rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--md-sys-spacing-md);
+            margin-top: var(--md-sys-spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--md-sys-spacing-sm);
+        }
+
+        .section-title .material-symbols-outlined {
+            font-size: 20px;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--md-sys-spacing-md);
+        }
+
+        @media (max-width: 768px) {
+            .tool-grid { grid-template-columns: 1fr; }
+        }
+
+        .tool-grid--3col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        @media (max-width: 768px) {
+            .tool-grid--3col { grid-template-columns: 1fr; }
+        }
+
         .tool-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            height: 100%;
-            transition: all 0.3s ease;
+            background-color: var(--md-sys-color-surface-container-low);
+            border-radius: var(--md-sys-shape-lg);
+            padding: var(--md-sys-spacing-lg);
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            display: block;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--md-sys-elevation-1);
             position: relative;
+            transition: box-shadow var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard),
+                        transform var(--md-sys-motion-duration-medium) var(--md-sys-motion-spring),
+                        border-radius var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard),
+                        background-color var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
         }
+
         .tool-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transform: translateY(-6px);
+            box-shadow: var(--md-sys-elevation-4);
+            border-radius: var(--md-sys-shape-xl);
+            background-color: var(--md-sys-color-surface-container);
             color: inherit;
         }
-        .tool-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+
+        .tool-card:active {
+            transform: translateY(-2px) scale(0.99);
         }
-        .tool-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .tool-description {
-            color: #6c757d;
-            margin-bottom: 1rem;
-        }
-        .tool-features {
-            font-size: 0.9rem;
-            color: #495057;
-        }
-        .tool-features li {
-            margin-bottom: 0.25rem;
-        }
+
         .tool-card.disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
             pointer-events: none;
         }
-        .tool-card .badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
+
+        .tool-card__icon {
+            font-size: 40px;
+            margin-bottom: var(--md-sys-spacing-sm);
+            color: var(--md-sys-color-primary);
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 48;
         }
-        .section-title {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            margin-top: 2rem;
+
+        .tool-card__icon--tertiary {
+            color: var(--md-sys-color-tertiary);
+        }
+
+        .tool-card__title {
+            font-size: 1.125rem;
+            font-weight: 500;
+            margin-bottom: var(--md-sys-spacing-xs);
+        }
+
+        .tool-card__desc {
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 0.8125rem;
+            margin-bottom: var(--md-sys-spacing-md);
+            line-height: 1.5;
+        }
+
+        .tool-card__features {
+            list-style: none;
+            font-size: 0.8125rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .tool-card__features li {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .tool-card__features li .material-symbols-outlined {
+            font-size: 16px;
+            color: var(--md-sys-color-success);
+        }
+
+        .tool-card__features li .material-symbols-outlined.icon-info {
+            color: var(--md-sys-color-info);
+        }
+
+        .tool-card__badge {
+            position: absolute;
+            top: var(--md-sys-spacing-md);
+            right: var(--md-sys-spacing-md);
         }
     </style>
 </head>
 <body>
-    <div class="portal-container px-3">
-        <!-- ヘッダー -->
+    <div class="m3-container">
+        <!-- Header -->
         <div class="portal-header">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="m3-flex m3-justify-between m3-items-center">
                 <div>
-                    <h1 class="mb-2">
-                        <i class="fas fa-robot"></i> Crane Debug Tools Portal
+                    <h1>
+                        <span class="material-symbols-outlined">smart_toy</span>
+                        Crane Debug Tools Portal
                     </h1>
-                    <p class="text-muted mb-0">RoboCup SSL ロボット制御デバッグツール統合ポータル</p>
+                    <p>RoboCup SSL robot control debug tool portal</p>
                 </div>
-                <div class="text-end">
-                    <div id="connection-status">
-                        <span class="status-indicator disconnected"></span>
-                        <span id="status-text">接続確認中...</span>
-                    </div>
+                <div class="connection-status" id="connection-status">
+                    <span class="m3-connection-dot" id="connection-dot"></span>
+                    <span id="status-text">connecting...</span>
                 </div>
             </div>
         </div>
 
         <!-- Crane Debug Tools -->
-        <h2 class="section-title"><i class="fas fa-tools me-2"></i>Crane Debug Tools</h2>
-        <div class="row g-4">
-            <!-- メインビューア -->
-            <div class="col-md-6">
-                <a href="/viewer.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-map"></i>
-                    </div>
-                    <div class="tool-title">メインビューア</div>
-                    <div class="tool-description">
-                        SVGフィールド可視化とロボット状態一覧の統合ビュー
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> SVGレイヤー付きフィールド描画</li>
-                        <li><i class="fas fa-check text-success"></i> ロボットカード一覧（プランナー・モード表示）</li>
-                        <li><i class="fas fa-check text-success"></i> ズーム・パン操作対応</li>
-                        <li><i class="fas fa-check text-success"></i> ゲーム情報・スコア表示</li>
-                    </ul>
-                </a>
-            </div>
+        <h2 class="section-title">
+            <span class="material-symbols-outlined">build</span>
+            Crane Debug Tools
+        </h2>
+        <div class="tool-grid">
+            <a href="/viewer.html" class="tool-card">
+                <span class="material-symbols-outlined tool-card__icon">map</span>
+                <div class="tool-card__title">Main Viewer</div>
+                <div class="tool-card__desc">
+                    SVG field visualization + robot status overview
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> SVG layered field rendering</li>
+                    <li><span class="material-symbols-outlined">check</span> Robot card list (planner/mode)</li>
+                    <li><span class="material-symbols-outlined">check</span> Zoom & pan controls</li>
+                    <li><span class="material-symbols-outlined">check</span> Game info & score display</li>
+                </ul>
+            </a>
 
-            <!-- ロボットテレメトリ -->
-            <div class="col-md-6">
-                <a href="/robot_telemetry.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="tool-title">ロボットテレメトリ</div>
-                    <div class="tool-description">
-                        ロボット個別の予実プロット・詳細テレメトリ分析
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> 推定位置・Vision位置・目標位置の比較</li>
-                        <li><i class="fas fa-check text-success"></i> 速度・角度の予実グラフ</li>
-                        <li><i class="fas fa-check text-success"></i> 速度計画誤差・修正ログ表示</li>
-                        <li><i class="fas fa-check text-success"></i> ロボットID切替（URL ?id=N）</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="/robot_telemetry.html" class="tool-card">
+                <span class="material-symbols-outlined tool-card__icon">show_chart</span>
+                <div class="tool-card__title">Robot Telemetry</div>
+                <div class="tool-card__desc">
+                    Per-robot prediction/actual plots & telemetry analysis
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Estimated/Vision/Target position comparison</li>
+                    <li><span class="material-symbols-outlined">check</span> Velocity & angle prediction graphs</li>
+                    <li><span class="material-symbols-outlined">check</span> Velocity correction logs</li>
+                    <li><span class="material-symbols-outlined">check</span> Robot ID switching (?id=N)</li>
+                </ul>
+            </a>
 
-            <!-- アノテーションツール -->
-            <div class="col-md-6">
-                <a href="/annotation/index.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-sticky-note"></i>
-                    </div>
-                    <div class="tool-title">アノテーションツール</div>
-                    <div class="tool-description">
-                        試合中のメモ記録とタイムスタンプ付きアノテーション（PWA対応）
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> リアルタイムメモ記録</li>
-                        <li><i class="fas fa-check text-success"></i> タイムスタンプ自動付与</li>
-                        <li><i class="fas fa-check text-success"></i> PWAでオフライン利用可能</li>
-                        <li><i class="fas fa-check text-success"></i> 試合分析・振り返りに活用</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="/annotation/index.html" class="tool-card">
+                <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sticky_note_2</span>
+                <div class="tool-card__title">Annotation Tool</div>
+                <div class="tool-card__desc">
+                    Match-time memo recording with timestamped annotations (PWA)
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Real-time memo recording</li>
+                    <li><span class="material-symbols-outlined">check</span> Automatic timestamp tagging</li>
+                    <li><span class="material-symbols-outlined">check</span> PWA offline support</li>
+                    <li><span class="material-symbols-outlined">check</span> Match analysis & review</li>
+                </ul>
+            </a>
 
-            <!-- ロボット管理 -->
-            <div class="col-md-6">
-                <a href="/robot_manager.html" class="tool-card">
-                    <div class="tool-icon">
-                        <i class="fas fa-microchip"></i>
-                    </div>
-                    <div class="tool-title">ロボット管理</div>
-                    <div class="tool-description">
-                        ロボットのハードウェア状態監視と起動制御（電圧・温度・エラー・Ping）
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> バッテリー電圧・温度のリアルタイム監視</li>
-                        <li><i class="fas fa-check text-success"></i> エラー状態の詳細表示</li>
-                        <li><i class="fas fa-check text-success"></i> Pi起動・停止制御</li>
-                        <li><i class="fas fa-check text-success"></i> Ping・通信品質の確認</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="/robot_manager.html" class="tool-card">
+                <span class="material-symbols-outlined tool-card__icon">memory</span>
+                <div class="tool-card__title">Robot Manager</div>
+                <div class="tool-card__desc">
+                    Hardware status monitoring & boot control (voltage, temp, errors, ping)
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Real-time battery & temperature monitoring</li>
+                    <li><span class="material-symbols-outlined">check</span> Error state details</li>
+                    <li><span class="material-symbols-outlined">check</span> Pi start/stop control</li>
+                    <li><span class="material-symbols-outlined">check</span> Ping & communication quality</li>
+                </ul>
+            </a>
         </div>
 
         <!-- SSL Infrastructure -->
-        <h2 class="section-title"><i class="fas fa-network-wired me-2"></i>SSL Infrastructure</h2>
-        <div class="row g-4">
-            <!-- SSL Game Controller -->
-            <div class="col-md-4">
-                <a href="#" target="_blank" class="tool-card" id="game-controller-card">
-                    <span class="badge bg-secondary" id="game-controller-status">確認中...</span>
-                    <div class="tool-icon">
-                        <i class="fas fa-flag"></i>
-                    </div>
-                    <div class="tool-title">SSL Game Controller</div>
-                    <div class="tool-description">
-                        RoboCup SSL公式のゲームコントローラー（審判システム）
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> 試合進行の管理</li>
-                        <li><i class="fas fa-check text-success"></i> レフェリーコマンド発行</li>
-                        <li><i class="fas fa-check text-success"></i> スコア・時間管理</li>
-                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8081</li>
-                    </ul>
-                </a>
-            </div>
+        <h2 class="section-title">
+            <span class="material-symbols-outlined">hub</span>
+            SSL Infrastructure
+        </h2>
+        <div class="tool-grid tool-grid--3col">
+            <a href="#" target="_blank" class="tool-card" id="game-controller-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="game-controller-status">checking...</span>
+                <span class="material-symbols-outlined tool-card__icon">flag</span>
+                <div class="tool-card__title">SSL Game Controller</div>
+                <div class="tool-card__desc">
+                    Official RoboCup SSL game controller (referee system)
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Match progression management</li>
+                    <li><span class="material-symbols-outlined">check</span> Referee command issuing</li>
+                    <li><span class="material-symbols-outlined">check</span> Score & time management</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8081</li>
+                </ul>
+            </a>
 
-            <!-- SSL Vision Client -->
-            <div class="col-md-4">
-                <a href="#" target="_blank" class="tool-card" id="vision-client-card">
-                    <span class="badge bg-secondary" id="vision-client-status">確認中...</span>
-                    <div class="tool-icon">
-                        <i class="fas fa-video"></i>
-                    </div>
-                    <div class="tool-title">SSL Vision Client</div>
-                    <div class="tool-description">
-                        SSL-Visionからのビジョンデータを可視化・監視
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> ビジョンデータのリアルタイム表示</li>
-                        <li><i class="fas fa-check text-success"></i> カメラ別データの確認</li>
-                        <li><i class="fas fa-check text-success"></i> ロボット・ボール位置の監視</li>
-                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8082</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="#" target="_blank" class="tool-card" id="vision-client-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="vision-client-status">checking...</span>
+                <span class="material-symbols-outlined tool-card__icon">videocam</span>
+                <div class="tool-card__title">SSL Vision Client</div>
+                <div class="tool-card__desc">
+                    Visualize & monitor vision data from SSL-Vision
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Real-time vision data display</li>
+                    <li><span class="material-symbols-outlined">check</span> Per-camera data check</li>
+                    <li><span class="material-symbols-outlined">check</span> Robot & ball position monitoring</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8082</li>
+                </ul>
+            </a>
 
-            <!-- SSL Status Board -->
-            <div class="col-md-4">
-                <a href="#" target="_blank" class="tool-card" id="status-board-card">
-                    <span class="badge bg-secondary" id="status-board-status">確認中...</span>
-                    <div class="tool-icon">
-                        <i class="fas fa-tv"></i>
-                    </div>
-                    <div class="tool-title">SSL Status Board</div>
-                    <div class="tool-description">
-                        試合状況をリアルタイム表示するステータスボード
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> レフェリー情報のリアルタイム表示</li>
-                        <li><i class="fas fa-check text-success"></i> チーム・スコア・カード状況</li>
-                        <li><i class="fas fa-check text-success"></i> 試合進行のモニタリング</li>
-                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8083 (simプロファイル)</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="#" target="_blank" class="tool-card" id="status-board-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="status-board-status">checking...</span>
+                <span class="material-symbols-outlined tool-card__icon">tv</span>
+                <div class="tool-card__title">SSL Status Board</div>
+                <div class="tool-card__desc">
+                    Real-time match status display board
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Real-time referee info display</li>
+                    <li><span class="material-symbols-outlined">check</span> Team, score & card status</li>
+                    <li><span class="material-symbols-outlined">check</span> Match progression monitoring</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8083 (sim profile)</li>
+                </ul>
+            </a>
         </div>
 
         <!-- Analysis & Calibration -->
-        <h2 class="section-title"><i class="fas fa-flask me-2"></i>Analysis & Calibration</h2>
-        <div class="row g-4 pb-4">
-            <!-- Ball Calibration UI -->
-            <div class="col-md-6">
-                <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
-                    <span class="badge bg-secondary" id="ball-calibration-status">確認中...</span>
-                    <div class="tool-icon">
-                        <i class="fas fa-futbol"></i>
-                    </div>
-                    <div class="tool-title">Ball Calibration UI</div>
-                    <div class="tool-description">
-                        ボール物理モデルパラメータのインタラクティブ最適化（Human-in-the-Loop）
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> 軌跡データの読込・可視化</li>
-                        <li><i class="fas fa-check text-success"></i> 減速パラメータの自動最適化</li>
-                        <li><i class="fas fa-check text-success"></i> 予測軌跡のリアルタイムプレビュー</li>
-                        <li><i class="fas fa-info-circle text-info"></i> ポート: 8095</li>
-                    </ul>
-                </a>
-            </div>
+        <h2 class="section-title">
+            <span class="material-symbols-outlined">science</span>
+            Analysis & Calibration
+        </h2>
+        <div class="tool-grid" style="padding-bottom: var(--md-sys-spacing-lg);">
+            <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="ball-calibration-status">checking...</span>
+                <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sports_soccer</span>
+                <div class="tool-card__title">Ball Calibration UI</div>
+                <div class="tool-card__desc">
+                    Interactive ball physics model parameter optimization (Human-in-the-Loop)
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Trajectory data loading & visualization</li>
+                    <li><span class="material-symbols-outlined">check</span> Auto deceleration parameter optimization</li>
+                    <li><span class="material-symbols-outlined">check</span> Real-time prediction trajectory preview</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8095</li>
+                </ul>
+            </a>
 
-            <!-- Foxglove Studio -->
-            <div class="col-md-6">
-                <a href="#" target="_blank" class="tool-card" id="foxglove-card">
-                    <span class="badge bg-secondary" id="foxglove-status">確認中...</span>
-                    <div class="tool-icon">
-                        <i class="fas fa-wave-square"></i>
-                    </div>
-                    <div class="tool-title">Foxglove Studio</div>
-                    <div class="tool-description">
-                        ROS2トピックのWebベースリアルタイム可視化・分析
-                    </div>
-                    <ul class="tool-features">
-                        <li><i class="fas fa-check text-success"></i> マルチパネルカスタムレイアウト</li>
-                        <li><i class="fas fa-check text-success"></i> ログ・TF・画像の統合ビュー</li>
-                        <li><i class="fas fa-check text-success"></i> ROS2トピックのリアルタイム可視化</li>
-                        <li><i class="fas fa-info-circle text-info"></i> WebSocket: ポート 8765</li>
-                    </ul>
-                </a>
-            </div>
+            <a href="#" target="_blank" class="tool-card" id="foxglove-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="foxglove-status">checking...</span>
+                <span class="material-symbols-outlined tool-card__icon">analytics</span>
+                <div class="tool-card__title">Foxglove Studio</div>
+                <div class="tool-card__desc">
+                    Web-based real-time visualization & analysis of ROS2 topics
+                </div>
+                <ul class="tool-card__features">
+                    <li><span class="material-symbols-outlined">check</span> Multi-panel custom layout</li>
+                    <li><span class="material-symbols-outlined">check</span> Log, TF & image integrated view</li>
+                    <li><span class="material-symbols-outlined">check</span> Real-time ROS2 topic visualization</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> WebSocket: Port 8765</li>
+                </ul>
+            </a>
         </div>
     </div>
 
     <script>
         const host = window.location.hostname;
 
-        // 外部ツール定義
         const EXTERNAL_TOOLS = [
             { id: 'game-controller', url: `http://${host}:8081` },
             { id: 'vision-client',   url: `http://${host}:8082` },
@@ -316,46 +358,39 @@
               checkUrl: `http://${host}:8765` },
         ];
 
-        // WebSocket接続チェック
         function checkConnection() {
             const ws = new WebSocket(`ws://${host}:8091`);
-            const statusIndicator = document.querySelector('.status-indicator');
-            const statusText = document.getElementById('status-text');
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('status-text');
 
             ws.onopen = () => {
-                statusIndicator.classList.remove('disconnected');
-                statusIndicator.classList.add('connected');
-                statusText.textContent = `WebSocket接続済み (${host}:8091)`;
+                dot.classList.add('connected');
+                text.textContent = `WebSocket connected (${host}:8091)`;
                 ws.close();
             };
 
             ws.onerror = () => {
-                statusIndicator.classList.remove('connected');
-                statusIndicator.classList.add('disconnected');
-                statusText.textContent = 'WebSocket未接続 (一部ツールはオフラインでも利用可能)';
+                dot.classList.remove('connected');
+                text.textContent = 'WebSocket disconnected';
             };
         }
 
-        // 外部ツールの可用性チェック
-        async function checkExternalTool(checkUrl, card, statusBadge) {
+        async function checkExternalTool(checkUrl, card, badge) {
             try {
                 await fetch(checkUrl, {
                     mode: 'no-cors',
                     signal: AbortSignal.timeout(3000)
                 });
-                statusBadge.textContent = '利用可能';
-                statusBadge.classList.remove('bg-secondary', 'bg-danger');
-                statusBadge.classList.add('bg-success');
+                badge.textContent = 'available';
+                badge.className = 'm3-badge m3-badge--success tool-card__badge';
                 card.classList.remove('disabled');
             } catch (error) {
-                statusBadge.textContent = '利用不可';
-                statusBadge.classList.remove('bg-secondary', 'bg-success');
-                statusBadge.classList.add('bg-danger');
+                badge.textContent = 'unavailable';
+                badge.className = 'm3-badge m3-badge--error tool-card__badge';
                 card.classList.add('disabled');
             }
         }
 
-        // 各カードのhrefを初期化（初回のみ）
         function setupExternalToolLinks() {
             EXTERNAL_TOOLS.forEach(tool => {
                 const card = document.getElementById(`${tool.id}-card`);
@@ -363,24 +398,18 @@
             });
         }
 
-        // 可用性チェックを実行
         function checkAllExternalTools() {
             EXTERNAL_TOOLS.forEach(tool => {
                 const card = document.getElementById(`${tool.id}-card`);
-                const statusBadge = document.getElementById(`${tool.id}-status`);
-                checkExternalTool(tool.checkUrl || tool.url, card, statusBadge);
+                const badge = document.getElementById(`${tool.id}-status`);
+                checkExternalTool(tool.checkUrl || tool.url, card, badge);
             });
         }
 
-        // ページロード時に初期化
         checkConnection();
         setupExternalToolLinks();
         checkAllExternalTools();
-
-        // 30秒ごとに可用性を再チェック
         setInterval(checkAllExternalTools, 30000);
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

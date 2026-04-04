@@ -709,7 +709,7 @@ class CraneViewer {
         const dot = document.getElementById('connection-dot');
         const label = document.getElementById('connection-label');
         if (dot) dot.classList.toggle('connected', connected);
-        if (label) label.textContent = connected ? '接続済み' : '未接続';
+        if (label) label.textContent = connected ? 'connected' : 'disconnected';
     }
 
     renderRobotCards() {
@@ -717,7 +717,7 @@ class CraneViewer {
         if (!container) return;
         const ids = Object.keys(this.robotsOurs).map(Number).sort((a, b) => a - b);
         if (ids.length === 0) {
-            container.innerHTML = '<div style="font-size:0.7rem;color:#666;text-align:center;grid-column:span 4;padding:8px;">ロボットデータなし</div>';
+            container.innerHTML = '<div style="font-size:0.7rem;color:var(--md-sys-color-on-surface-variant);text-align:center;grid-column:span 4;padding:8px;">No robot data</div>';
             return;
         }
         container.innerHTML = '';
@@ -738,42 +738,55 @@ class CraneViewer {
         const cmd = this.controlTargets[id];
         if (!robot) return;
         const modal = document.getElementById('robot-detail-modal');
+        const scrim = document.getElementById('robot-detail-scrim');
         if (!modal) return;
         const modeName = cmd ? (CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`) : '--';
         document.getElementById('robot-detail-title').textContent = `Robot ${id}`;
         let targetHtml = '';
         if (cmd?.position_target_mode) {
-            targetHtml = `<tr><td class="text-muted">目標位置</td><td>(${cmd.position_target_mode.target_x?.toFixed(3)}, ${cmd.position_target_mode.target_y?.toFixed(3)})</td></tr>`;
+            targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(3)}, ${cmd.position_target_mode.target_y?.toFixed(3)})</td></tr>`;
         } else if (cmd?.simple_velocity_target_mode) {
-            targetHtml = `<tr><td class="text-muted">目標速度</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(3)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(3)})</td></tr>`;
+            targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(3)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(3)})</td></tr>`;
         }
         document.getElementById('robot-detail-body').innerHTML = `
-            <table class="table table-sm table-dark table-borderless mb-2"><tbody>
-                <tr><td class="text-muted" style="width:6em">制御モード</td><td>${modeName}</td></tr>
-                <tr><td class="text-muted">プランナー</td><td>${cmd?.planner_name || '--'}</td></tr>
-                <tr><td class="text-muted">推定 X</td><td>${robot.x?.toFixed(3)} m</td></tr>
-                <tr><td class="text-muted">推定 Y</td><td>${robot.y?.toFixed(3)} m</td></tr>
-                <tr><td class="text-muted">推定 θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
-                <tr><td class="text-muted">速度 Vx</td><td>${robot.vx?.toFixed(3)} m/s</td></tr>
-                <tr><td class="text-muted">速度 Vy</td><td>${robot.vy?.toFixed(3)} m/s</td></tr>
-                <tr><td class="text-muted">ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
-                <tr><td class="text-muted">Vision X</td><td>${robot.vision_x?.toFixed(3) ?? '--'}</td></tr>
-                <tr><td class="text-muted">Vision Y</td><td>${robot.vision_y?.toFixed(3) ?? '--'}</td></tr>
+            <table class="m3-data-table m3-data-table--borderless m3-mb-sm"><tbody>
+                <tr><td style="width:6em">Control Mode</td><td>${modeName}</td></tr>
+                <tr><td>Planner</td><td>${cmd?.planner_name || '--'}</td></tr>
+                <tr><td>Est. X</td><td>${robot.x?.toFixed(3)} m</td></tr>
+                <tr><td>Est. Y</td><td>${robot.y?.toFixed(3)} m</td></tr>
+                <tr><td>Est. θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
+                <tr><td>Vel Vx</td><td>${robot.vx?.toFixed(3)} m/s</td></tr>
+                <tr><td>Vel Vy</td><td>${robot.vy?.toFixed(3)} m/s</td></tr>
+                <tr><td>ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
+                <tr><td>Vision X</td><td>${robot.vision_x?.toFixed(3) ?? '--'}</td></tr>
+                <tr><td>Vision Y</td><td>${robot.vision_y?.toFixed(3) ?? '--'}</td></tr>
                 ${targetHtml}
-                <tr><td class="text-muted">目標 θ</td><td>${cmd?.target_theta?.toFixed(3) ?? '--'}</td></tr>
+                <tr><td>Target θ</td><td>${cmd?.target_theta?.toFixed(3) ?? '--'}</td></tr>
             </tbody></table>
-            <a href="/robot_telemetry.html?id=${id}" class="btn btn-sm btn-primary w-100">
-                <i class="fas fa-chart-line me-1"></i>テレメトリを開く
+            <a href="/robot_telemetry.html?id=${id}" class="m3-btn m3-btn--filled m3-btn--sm m3-w-full">
+                <span class="material-symbols-outlined icon-sm">show_chart</span> Open Telemetry
             </a>
         `;
-        bootstrap.Modal.getOrCreateInstance(modal).show();
+        modal.classList.add('open');
+        if (scrim) scrim.classList.add('open');
+        window.__closeRobotDialog = () => {
+            modal.classList.remove('open');
+            if (scrim) scrim.classList.remove('open');
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') {
+                window.__closeRobotDialog();
+                document.removeEventListener('keydown', onKey);
+            }
+        };
+        document.addEventListener('keydown', onKey);
     }
 
     updateLayerList() {
         const container = document.getElementById('layer-list');
         if (!container) return;
         if (this.layerStore.size === 0) {
-            container.innerHTML = '<div style="font-size:0.7rem;color:#666;text-align:center;padding:6px;">レイヤーなし</div>';
+            container.innerHTML = '<div style="font-size:0.7rem;color:var(--md-sys-color-on-surface-variant);text-align:center;padding:6px;">No layers</div>';
             return;
         }
         container.innerHTML = '';
@@ -781,10 +794,10 @@ class CraneViewer {
             const item = document.createElement('div');
             item.className = 'layer-item';
             item.innerHTML = `
-                <input type="checkbox" class="form-check-input layer-cb" id="layer-${name}"
+                <input type="checkbox" class="m3-checkbox layer-cb" id="layer-${name}"
                        data-layer="${name}" ${this.visibleLayers.has(name) ? 'checked' : ''}>
-                <label class="form-check-label" for="layer-${name}">${name}</label>
-                <span class="ms-auto text-muted" style="font-size:0.65rem">${layer.primitives.length}</span>
+                <label for="layer-${name}">${name}</label>
+                <span class="m3-ms-auto m3-text-on-surface-variant" style="font-size:0.65rem">${layer.primitives.length}</span>
             `;
             container.appendChild(item);
         }
