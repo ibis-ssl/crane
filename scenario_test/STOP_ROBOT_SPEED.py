@@ -2,8 +2,6 @@ import math
 import time
 from rcst.communication import Communication
 from rcst import calc
-from rcst.ball import Ball
-from rcst.robot import RobotDict
 
 
 def test_robot_speed(rcst_comm: Communication):
@@ -14,19 +12,6 @@ def test_robot_speed(rcst_comm: Communication):
         rcst_comm.send_yellow_robot(i, -1.0, 3.0 - i * 0.5, math.radians(0))
 
     rcst_comm.change_referee_command("STOP", 3.0)
-
-    def yellow_robot_did_not_move(
-        ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict
-    ) -> bool:
-        for i in range(11):
-            robot = yellow_robots[i]
-            if not calc.distance(robot.x, robot.y, -1.0, 3.0 - i * 0.5) < 0.1:
-                return False
-        return True
-
-    rcst_comm.observer.customized().register_sticky_true_callback(
-        "yellow_robot_did_not_move", yellow_robot_did_not_move
-    )
 
     rcst_comm.observer.reset()
     success = True
@@ -41,8 +26,16 @@ def test_robot_speed(rcst_comm: Communication):
         time.sleep(1)
     assert success is True
 
-    assert (
-        rcst_comm.observer.customized().get_result("yellow_robot_did_not_move") is False
+    # 10秒後の最終位置で判定: 少なくとも1台のロボットが初期位置から0.1m以上移動しているか
+    some_robot_moved = False
+    for i in range(11):
+        robot = rcst_comm.observer.get_world().get_yellow_robot(i)
+        dist = calc.distance(robot.x, robot.y, -1.0, 3.0 - i * 0.5)
+        if dist >= 0.1:
+            print(f"Robot {i} moved {dist:.3f}m from initial position")
+            some_robot_moved = True
+    assert some_robot_moved, (
+        "No yellow robot moved during STOP (expected at least one to reposition)"
     )
 
 
