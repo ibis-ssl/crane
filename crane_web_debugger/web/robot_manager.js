@@ -69,11 +69,11 @@ function setWsStatus(connected) {
     const dot = document.getElementById('ws-dot');
     const text = document.getElementById('ws-status-text');
     if (connected) {
-        dot.className = 'status-dot connected';
-        text.textContent = '接続済み';
+        dot.className = 'm3-connection-dot connected';
+        text.textContent = 'connected';
     } else {
-        dot.className = 'status-dot disconnected';
-        text.textContent = '未接続';
+        dot.className = 'm3-connection-dot';
+        text.textContent = 'disconnected';
     }
 }
 
@@ -229,31 +229,31 @@ function getOverallStatus(id) {
 }
 
 const STATUS_CONFIG = {
-    'Running': { badge: 'bg-success',          label: '稼働中' },
-    'Stopped': { badge: 'bg-warning text-dark', label: '停止中' },
-    'Error':   { badge: 'bg-danger',            label: 'エラー' },
-    'Offline': { badge: 'bg-secondary',         label: 'オフライン' },
+    'Running': { badge: 'm3-badge--success', label: 'Running' },
+    'Stopped': { badge: 'm3-badge--warning', label: 'Stopped' },
+    'Error':   { badge: 'm3-badge--error',   label: 'Error' },
+    'Offline': { badge: 'm3-badge--secondary', label: 'Offline' },
 };
 
 function statusBadgeClass(status) {
-    return STATUS_CONFIG[status]?.badge ?? 'bg-secondary';
+    return STATUS_CONFIG[status]?.badge ?? 'm3-badge--secondary';
 }
 
 function statusLabel(status) {
     return STATUS_CONFIG[status]?.label ?? (status || '不明');
 }
 
-function voltageBarClass(v) {
-    if (v < 22.0) return 'bg-danger';
-    if (v < 23.0) return 'bg-warning';
-    return 'bg-success';
+function voltageBarColor(v) {
+    if (v < 22.0) return 'var(--md-sys-color-error)';
+    if (v < 23.0) return 'var(--md-sys-color-warning)';
+    return 'var(--md-sys-color-success)';
 }
 
 function pingClass(ms) {
-    if (ms === null) return 'text-secondary';
-    if (ms > PING_CRIT) return 'text-danger';
-    if (ms > PING_WARN) return 'text-warning';
-    return 'text-success';
+    if (ms === null) return 'm3-text-on-surface-variant';
+    if (ms > PING_CRIT) return 'm3-text-error';
+    if (ms > PING_WARN) return 'm3-text-warning';
+    return 'm3-text-success';
 }
 
 function renderRobotRow(id) {
@@ -271,7 +271,7 @@ function renderRobotRow(id) {
 
     // Status badge
     const badge = document.getElementById(`badge-${id}`);
-    badge.className = `badge ${statusBadgeClass(overallStatus)}`;
+    badge.className = `m3-badge ${statusBadgeClass(overallStatus)}`;
     badge.textContent = statusLabel(overallStatus);
 
     // Voltage
@@ -281,14 +281,14 @@ function renderRobotRow(id) {
         const v = fb.voltage[0];
         const pct = Math.max(0, Math.min(100, (v - VOLTAGE_MIN) / (VOLTAGE_MAX - VOLTAGE_MIN) * 100));
         voltageEl.textContent = `${v.toFixed(2)} V`;
-        voltageEl.className = `fw-medium ${v < 22.0 ? 'text-danger' : v < 23.0 ? 'text-warning' : 'text-success'}`;
+        voltageEl.className = `m3-fw-medium ${v < 22.0 ? 'm3-text-error' : v < 23.0 ? 'm3-text-warning' : 'm3-text-success'}`;
         voltageBarEl.style.width = `${pct}%`;
-        voltageBarEl.className = `progress-bar ${voltageBarClass(v)}`;
+        voltageBarEl.style.backgroundColor = voltageBarColor(v);
     } else {
         voltageEl.textContent = '--';
-        voltageEl.className = 'fw-medium text-secondary';
+        voltageEl.className = 'm3-fw-medium m3-text-on-surface-variant';
         voltageBarEl.style.width = '0%';
-        voltageBarEl.className = 'progress-bar bg-secondary';
+        voltageBarEl.style.backgroundColor = 'var(--md-sys-color-surface-container-highest)';
     }
 
     // Temperature
@@ -296,40 +296,40 @@ function renderRobotRow(id) {
     if (fb && fb.temperatures && fb.temperatures.length > 0) {
         const maxTemp = Math.max(...fb.temperatures);
         tempEl.textContent = `${maxTemp} °C`;
-        tempEl.className = `fw-medium ${maxTemp >= TEMP_WARN ? 'text-danger' : ''}`;
+        tempEl.className = `m3-fw-medium ${maxTemp >= TEMP_WARN ? 'm3-text-error' : ''}`;
     } else {
         tempEl.textContent = '--';
-        tempEl.className = 'fw-medium text-secondary';
+        tempEl.className = 'm3-fw-medium m3-text-on-surface-variant';
     }
 
     // Ping
     const pingEl = document.getElementById(`ping-${id}`);
     if (state.ping_ms !== null) {
         pingEl.textContent = `${state.ping_ms.toFixed(1)} ms`;
-        pingEl.className = `fw-medium ${pingClass(state.ping_ms)}`;
+        pingEl.className = `m3-fw-medium ${pingClass(state.ping_ms)}`;
     } else {
         pingEl.textContent = '--';
-        pingEl.className = 'fw-medium text-secondary';
+        pingEl.className = 'm3-fw-medium m3-text-on-surface-variant';
     }
 
     // Packet frequency
     const freqEl = document.getElementById(`freq-${id}`);
     if (fb) {
         freqEl.textContent = `${fb.packet_frequency_hz.toFixed(1)} Hz`;
-        freqEl.className = `fw-medium ${fb.packet_frequency_hz < 50 ? 'text-warning' : 'text-success'}`;
+        freqEl.className = `m3-fw-medium ${fb.packet_frequency_hz < 50 ? 'm3-text-warning' : 'm3-text-success'}`;
     } else {
         freqEl.textContent = '--';
-        freqEl.className = 'fw-medium text-secondary';
+        freqEl.className = 'm3-fw-medium m3-text-on-surface-variant';
     }
 
     // Error
     const errorEl = document.getElementById(`error-${id}`);
     if (fb && fb.error_info) {
         errorEl.textContent = getErrorString(fb.error_id, fb.error_info);
-        errorEl.className = 'error-text text-danger';
+        errorEl.className = 'error-text m3-text-error';
     } else {
         errorEl.textContent = 'OK';
-        errorEl.className = 'error-text text-success';
+        errorEl.className = 'error-text m3-text-success';
     }
 }
 
@@ -365,33 +365,33 @@ function renderAll() {
 function createRobotRow(id) {
     return `
 <tr class="robot-row" id="robot-row-${id}">
-    <td><i class="fas fa-robot me-1 text-secondary"></i><strong>#${id}</strong></td>
+    <td><span class="material-symbols-outlined icon-sm m3-text-on-surface-variant" style="vertical-align:middle;margin-right:4px">smart_toy</span><strong>#${id}</strong></td>
     <td>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-secondary" id="badge-${id}" style="min-width:60px">不明</span>
-            <div class="btn-group btn-group-sm" role="group">
-                <button class="btn btn-outline-success" onclick="sendRobotControl(${id}, 'start')" title="Start">
-                    <i class="fas fa-play"></i>
+        <div class="m3-flex m3-items-center m3-gap-sm">
+            <span class="m3-badge m3-badge--secondary" id="badge-${id}" style="min-width:60px">--</span>
+            <div class="m3-flex m3-gap-xs">
+                <button class="m3-icon-btn m3-icon-btn--sm" onclick="sendRobotControl(${id}, 'start')" title="Start" style="color:var(--md-sys-color-success)">
+                    <span class="material-symbols-outlined icon-sm">play_arrow</span>
                 </button>
-                <button class="btn btn-outline-danger" onclick="sendRobotControl(${id}, 'stop')" title="Stop">
-                    <i class="fas fa-stop"></i>
+                <button class="m3-icon-btn m3-icon-btn--sm" onclick="sendRobotControl(${id}, 'stop')" title="Stop" style="color:var(--md-sys-color-error)">
+                    <span class="material-symbols-outlined icon-sm">stop</span>
                 </button>
             </div>
         </div>
     </td>
     <td>
-        <span class="fw-medium text-secondary" id="voltage-${id}">--</span>
-        <div class="progress voltage-bar">
-            <div class="progress-bar bg-secondary" id="voltage-bar-${id}" style="width:0%"></div>
+        <span class="m3-fw-medium m3-text-on-surface-variant" id="voltage-${id}">--</span>
+        <div class="m3-linear-progress voltage-bar">
+            <div class="m3-linear-progress__bar" id="voltage-bar-${id}" style="width:0%"></div>
         </div>
     </td>
-    <td><span class="fw-medium text-secondary" id="temp-${id}">--</span></td>
-    <td><span class="fw-medium text-secondary" id="ping-${id}">--</span></td>
-    <td><span class="fw-medium text-secondary" id="freq-${id}">--</span></td>
-    <td><span class="error-text text-success" id="error-${id}">OK</span></td>
+    <td><span class="m3-fw-medium m3-text-on-surface-variant" id="temp-${id}">--</span></td>
+    <td><span class="m3-fw-medium m3-text-on-surface-variant" id="ping-${id}">--</span></td>
+    <td><span class="m3-fw-medium m3-text-on-surface-variant" id="freq-${id}">--</span></td>
+    <td><span class="error-text m3-text-success" id="error-${id}">OK</span></td>
     <td>
-        <button class="btn btn-sm btn-outline-info" onclick="openDetailPanel(${id})" title="詳細">
-            <i class="fas fa-info-circle"></i>
+        <button class="m3-icon-btn m3-icon-btn--sm" onclick="openDetailPanel(${id})" title="Details" style="color:var(--md-sys-color-info)">
+            <span class="material-symbols-outlined icon-sm">info</span>
         </button>
     </td>
 </tr>`;
@@ -439,7 +439,7 @@ function refreshDetailPanel(id) {
         const fp = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
         const deg = (v) => { const n = parseFloat(v); return isNaN(n) ? '--' : (n * 180 / Math.PI).toFixed(1); };
         const cell = (label, val) =>
-            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:#6c757d">${label}</span> ${val}</td>`;
+            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:var(--md-sys-color-on-surface-variant)">${label}</span> ${val}</td>`;
         poseHtml = `
 <table style="width:100%;border-collapse:collapse">
   <tr>
@@ -454,7 +454,7 @@ function refreshDetailPanel(id) {
   </tr>`;
         if (pose.available_vision != null) {
             const flag = (ok, label) =>
-                ok ? `<span class="text-success">${label}</span>` : `<span class="text-secondary">${label}</span>`;
+                ok ? `<span class="m3-text-success">${label}</span>` : `<span class="m3-text-on-surface-variant">${label}</span>`;
             poseHtml += `<tr><td colspan="3" style="padding-top:4px;font-size:0.78rem">
                 ${flag(pose.available_vision, 'Vision')}
                 ${flag(pose.available_feedback, 'FB')}
@@ -463,7 +463,7 @@ function refreshDetailPanel(id) {
         }
         poseHtml += '</table>';
     } else {
-        poseHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+        poseHtml = '<span class="m3-text-on-surface-variant m3-body-small">No data</span>';
     }
     document.getElementById('panel-pose').innerHTML = poseHtml;
 
@@ -472,15 +472,15 @@ function refreshDetailPanel(id) {
     if (cmd) {
         const fc = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
         const modeName = CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`;
-        sessionHtml += row('プランナー', cmd.planner_name || '--');
-        sessionHtml += row('制御モード', modeName);
+        sessionHtml += row('Planner', cmd.planner_name || '--');
+        sessionHtml += row('Control Mode', modeName);
         const kick = parseFloat(cmd.kick_power);
-        sessionHtml += row('キック', kick > 0 ? `<span class="text-warning">${fc(cmd.kick_power, 2)}</span>` : '0');
+        sessionHtml += row('Kick', kick > 0 ? `<span class="m3-text-warning">${fc(cmd.kick_power, 2)}</span>` : '0');
         const drib = parseFloat(cmd.dribble_power);
-        sessionHtml += row('ドリブル', drib > 0 ? `<span class="text-info">${fc(cmd.dribble_power, 2)}</span>` : '0');
-        sessionHtml += row('チップ', cmd.chip_enable ? '<span class="text-warning">ON</span>' : 'OFF');
+        sessionHtml += row('Dribble', drib > 0 ? `<span class="m3-text-info">${fc(cmd.dribble_power, 2)}</span>` : '0');
+        sessionHtml += row('Chip', cmd.chip_enable ? '<span class="m3-text-warning">ON</span>' : 'OFF');
     } else {
-        sessionHtml = row('--', '<span class="text-secondary">データなし</span>');
+        sessionHtml = row('--', '<span class="m3-text-on-surface-variant">No data</span>');
     }
     document.getElementById('panel-session').innerHTML = sessionHtml;
 
@@ -490,7 +490,7 @@ function refreshDetailPanel(id) {
         const ft = (v, d) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(d); };
         const fdeg = (v) => { const n = parseFloat(v); return isNaN(n) ? '--' : (n * 180 / Math.PI).toFixed(1) + '°'; };
         const tcell = (label, val) =>
-            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:#6c757d">${label}</span> ${val}</td>`;
+            `<td style="padding:1px 6px 1px 0;font-size:0.78rem"><span style="color:var(--md-sys-color-on-surface-variant)">${label}</span> ${val}</td>`;
         if (cmd.position_target_mode) {
             const t = cmd.position_target_mode;
             targetHtml = `<table style="width:100%;border-collapse:collapse"><tr>
@@ -518,7 +518,7 @@ function refreshDetailPanel(id) {
             </tr></table>`;
         }
     }
-    if (!targetHtml) targetHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+    if (!targetHtml) targetHtml = '<span class="m3-text-on-surface-variant m3-body-small">No data</span>';
     document.getElementById('panel-target').innerHTML = targetHtml;
 
     // --- プランニング要素 ---
@@ -532,13 +532,13 @@ function refreshDetailPanel(id) {
 <div style="margin-bottom:0.5rem">
   <div style="display:flex; justify-content:space-between; font-size:0.8rem">
     <span>${f.name}</span>
-    <span class="text-secondary">${stateStr}</span>
+    <span class="m3-text-on-surface-variant">${stateStr}</span>
   </div>
   <div class="factor-bar"><div class="factor-bar-fill" style="width:${pct}%"></div></div>
 </div>`;
         }
     } else {
-        factorsHtml = '<span class="text-secondary" style="font-size:0.82rem">データなし</span>';
+        factorsHtml = '<span class="m3-text-on-surface-variant m3-body-small">No data</span>';
     }
     document.getElementById('panel-factors').innerHTML = factorsHtml;
 
@@ -547,14 +547,14 @@ function refreshDetailPanel(id) {
     const fb = state.feedback;
     const fmt = (v, digits) => { const n = parseFloat(v); return isNaN(n) ? '--' : n.toFixed(digits); };
     if (fb) {
-        if (fb.voltage?.length) hwHtml += row('電圧', `${fmt(fb.voltage[0], 2)} V`);
-        if (fb.temperatures?.length) hwHtml += row('最高温度', `${Math.max(...fb.temperatures.map(parseFloat))} °C`);
-        if (fb.yaw_angle != null) hwHtml += row('Yaw角', `${fmt(fb.yaw_angle, 2)} °`);
-        if (fb.odom_speed != null) hwHtml += row('オドム速度', `${fmt(fb.odom_speed, 3)} m/s`);
-        if (fb.ball_sensor != null) hwHtml += row('ボールセンサ', fb.ball_sensor ? '<span class="text-success">検知</span>' : '未検知');
+        if (fb.voltage?.length) hwHtml += row('Voltage', `${fmt(fb.voltage[0], 2)} V`);
+        if (fb.temperatures?.length) hwHtml += row('Max Temp', `${Math.max(...fb.temperatures.map(parseFloat))} °C`);
+        if (fb.yaw_angle != null) hwHtml += row('Yaw', `${fmt(fb.yaw_angle, 2)} °`);
+        if (fb.odom_speed != null) hwHtml += row('Odom Speed', `${fmt(fb.odom_speed, 3)} m/s`);
+        if (fb.ball_sensor != null) hwHtml += row('Ball Sensor', fb.ball_sensor ? '<span class="m3-text-success">Detected</span>' : 'None');
     }
     if (state.ping_ms !== null) hwHtml += row('Ping', `${fmt(state.ping_ms, 1)} ms`);
-    if (!hwHtml) hwHtml = row('--', '<span class="text-secondary">データなし</span>');
+    if (!hwHtml) hwHtml = row('--', '<span class="m3-text-on-surface-variant">No data</span>');
     document.getElementById('panel-hw').innerHTML = hwHtml;
 }
 

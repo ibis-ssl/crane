@@ -1,11 +1,12 @@
 // Service Worker for Crane Annotation Tool
-const CACHE_NAME = 'crane-annotation-v2';
+const CACHE_NAME = 'crane-annotation-v3';
 const urlsToCache = [
   './index.html',
   './app.js',
   './style.css',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  '../m3e-theme.css'
 ];
 
 // インストール時にキャッシュ

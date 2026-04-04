@@ -3,196 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ロボット管理 - Crane Debug Tools</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Robot Manager - Crane Debug Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..200&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="m3e-theme.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .status-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 6px;
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
         }
-        .status-dot.connected { background-color: #28a745; }
-        .status-dot.disconnected { background-color: #dc3545; }
 
-        .robot-row.has-error { background-color: rgba(220, 53, 69, 0.1); }
-        .robot-row.offline { opacity: 0.65; }
+        .main-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--md-sys-spacing-md);
+        }
 
-        .voltage-bar { height: 5px; margin-top: 3px; }
+        /* Summary bar */
+        .summary-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--md-sys-spacing-md);
+            background-color: var(--md-sys-color-surface-container);
+            border-radius: var(--md-sys-shape-md);
+            padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md);
+            margin-bottom: var(--md-sys-spacing-md);
+        }
+
+        .summary-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8125rem;
+        }
+
+        .summary-actions {
+            margin-left: auto;
+            display: flex;
+            gap: var(--md-sys-spacing-sm);
+        }
+
+        /* Robot table */
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .robot-row.has-error {
+            background-color: rgba(255, 180, 171, 0.08);
+        }
+
+        .robot-row.offline {
+            opacity: 0.55;
+        }
+
+        .voltage-bar {
+            height: 4px;
+            margin-top: 3px;
+        }
 
         .error-text {
-            font-size: 0.82rem;
+            font-size: 0.8125rem;
             word-break: break-word;
         }
 
-        /* Side Panel */
-        #detail-panel {
-            position: fixed;
-            top: 0;
-            right: -380px;
-            width: 360px;
-            height: 100%;
-            background: #212529;
-            color: #dee2e6;
-            z-index: 1050;
-            transition: right 0.25s ease;
-            display: flex;
-            flex-direction: column;
-            box-shadow: -4px 0 12px rgba(0,0,0,0.4);
-        }
-        #detail-panel.open { right: 0; }
-        #detail-panel .panel-header {
-            padding: 0.75rem 1rem;
-            background: #343a40;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-        #detail-panel .panel-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.75rem 1rem;
-        }
-        #detail-panel .section-title {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6c757d;
-            margin: 0.75rem 0 0.3rem;
-        }
-        #detail-panel table td:first-child {
-            color: #6c757d;
-            white-space: nowrap;
-            padding-right: 0.75rem;
-            font-size: 0.82rem;
-        }
-        #detail-panel table td:last-child {
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
+        /* Side panel */
         #detail-panel .factor-bar {
             height: 4px;
-            background: #495057;
-            border-radius: 2px;
+            background: var(--md-sys-color-surface-container-highest);
+            border-radius: var(--md-sys-shape-full);
             margin-top: 2px;
         }
+
         #detail-panel .factor-bar-fill {
             height: 100%;
-            background: #0d6efd;
-            border-radius: 2px;
-            transition: width 0.3s;
+            background: var(--md-sys-color-primary);
+            border-radius: var(--md-sys-shape-full);
+            transition: width var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark bg-dark py-2">
-        <div class="container-fluid">
-            <div class="d-flex align-items-center gap-3">
-                <a href="/" class="text-white text-decoration-none">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <span class="navbar-brand mb-0">
-                    <i class="fas fa-microchip me-2"></i>ロボット管理
-                </span>
-            </div>
-            <div class="text-white d-flex align-items-center">
-                <span class="status-dot disconnected" id="ws-dot"></span>
-                <small id="ws-status-text">未接続</small>
-            </div>
+    <!-- Top App Bar -->
+    <nav class="m3-top-app-bar">
+        <a href="/" class="m3-icon-btn m3-icon-btn--sm">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <div class="m3-top-app-bar__title">
+            <span class="material-symbols-outlined">memory</span>
+            Robot Manager
+        </div>
+        <div class="m3-top-app-bar__actions">
+            <span class="m3-connection-dot" id="ws-dot"></span>
+            <span class="m3-body-small m3-text-on-surface-variant" id="ws-status-text">disconnected</span>
         </div>
     </nav>
 
-    <div class="container-fluid py-3">
+    <div class="main-scroll">
         <!-- Summary Bar -->
-        <div class="row mb-3">
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-body py-2">
-                        <div class="d-flex flex-wrap align-items-center gap-3">
-                            <span>
-                                <i class="fas fa-robot text-success me-1"></i>
-                                稼働中: <strong id="active-count">0</strong>
-                            </span>
-                            <span>
-                                <i class="fas fa-exclamation-triangle text-danger me-1"></i>
-                                エラー: <strong id="error-count">0</strong>
-                            </span>
-                            <span>
-                                <i class="fas fa-signal text-info me-1"></i>
-                                フィードバック受信: <strong id="feedback-count">0</strong>
-                            </span>
-                            <div class="ms-auto d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="startAll()">
-                                    <i class="fas fa-play me-1"></i>全台起動
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="stopAll()">
-                                    <i class="fas fa-stop me-1"></i>全台停止
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="refreshPiStatus()">
-                                    <i class="fas fa-sync-alt me-1"></i>状態更新
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="summary-bar">
+            <span class="summary-stat">
+                <span class="material-symbols-outlined icon-sm m3-text-success">smart_toy</span>
+                Active: <strong id="active-count">0</strong>
+            </span>
+            <span class="summary-stat">
+                <span class="material-symbols-outlined icon-sm m3-text-error">warning</span>
+                Errors: <strong id="error-count">0</strong>
+            </span>
+            <span class="summary-stat">
+                <span class="material-symbols-outlined icon-sm m3-text-info">signal_cellular_alt</span>
+                Feedback: <strong id="feedback-count">0</strong>
+            </span>
+            <div class="summary-actions">
+                <button class="m3-btn m3-btn--sm m3-btn--success" onclick="startAll()">
+                    <span class="material-symbols-outlined icon-sm">play_arrow</span> Start All
+                </button>
+                <button class="m3-btn m3-btn--sm m3-btn--error" onclick="stopAll()">
+                    <span class="material-symbols-outlined icon-sm">stop</span> Stop All
+                </button>
+                <button class="m3-btn m3-btn--sm m3-btn--outlined" onclick="refreshPiStatus()">
+                    <span class="material-symbols-outlined icon-sm">sync</span> Refresh
+                </button>
             </div>
         </div>
 
-        <!-- Detail Side Panel -->
-        <div id="detail-panel">
-            <div class="panel-header">
-                <span><i class="fas fa-robot me-2"></i><strong id="panel-title">Robot #--</strong></span>
-                <button class="btn btn-sm btn-outline-secondary" onclick="closeDetailPanel()">
-                    <i class="fas fa-times"></i>
+        <!-- Side Sheet (detail panel) -->
+        <div class="m3-side-sheet" id="detail-panel">
+            <div class="m3-side-sheet__header">
+                <span class="m3-flex m3-items-center m3-gap-sm">
+                    <span class="material-symbols-outlined">smart_toy</span>
+                    <strong id="panel-title">Robot #--</strong>
+                </span>
+                <button class="m3-icon-btn m3-icon-btn--sm" onclick="closeDetailPanel()">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="panel-body">
-                <!-- 位置・速度 -->
-                <div class="section-title"><i class="fas fa-map-marker-alt me-1"></i>位置・速度</div>
+            <div class="m3-side-sheet__body">
+                <div class="m3-side-sheet__section-title">
+                    <span class="material-symbols-outlined icon-sm">location_on</span> Position / Velocity
+                </div>
                 <div id="panel-pose"></div>
-                <!-- 目標値 -->
-                <div class="section-title"><i class="fas fa-crosshairs me-1"></i>目標値</div>
+
+                <div class="m3-side-sheet__section-title">
+                    <span class="material-symbols-outlined icon-sm">gps_fixed</span> Targets
+                </div>
                 <div id="panel-target"></div>
-                <!-- Session / スキル -->
-                <div class="section-title"><i class="fas fa-layer-group me-1"></i>Session / スキル</div>
-                <table class="table table-sm table-borderless table-dark mb-0">
+
+                <div class="m3-side-sheet__section-title">
+                    <span class="material-symbols-outlined icon-sm">layers</span> Session / Skill
+                </div>
+                <table class="m3-data-table m3-data-table--borderless m3-mb-0">
                     <tbody id="panel-session"></tbody>
                 </table>
-                <!-- プランニング要素 -->
-                <div class="section-title"><i class="fas fa-sliders-h me-1"></i>プランニング要素</div>
+
+                <div class="m3-side-sheet__section-title">
+                    <span class="material-symbols-outlined icon-sm">tune</span> Planning Factors
+                </div>
                 <div id="panel-factors"></div>
-                <!-- ハードウェア -->
-                <div class="section-title"><i class="fas fa-microchip me-1"></i>ハードウェア</div>
-                <table class="table table-sm table-borderless table-dark mb-0">
+
+                <div class="m3-side-sheet__section-title">
+                    <span class="material-symbols-outlined icon-sm">memory</span> Hardware
+                </div>
+                <table class="m3-data-table m3-data-table--borderless m3-mb-0">
                     <tbody id="panel-hw"></tbody>
                 </table>
-                <div class="mt-3">
-                    <a id="panel-telemetry-link" href="#" class="btn btn-sm btn-primary w-100">
-                        <i class="fas fa-chart-line me-1"></i>テレメトリを開く
+
+                <div class="m3-mt-md">
+                    <a id="panel-telemetry-link" href="#" class="m3-btn m3-btn--filled m3-w-full">
+                        <span class="material-symbols-outlined icon-sm">show_chart</span> Open Telemetry
                     </a>
                 </div>
             </div>
         </div>
-        <div id="panel-backdrop" onclick="closeDetailPanel()"
-             style="display:none; position:fixed; inset:0; z-index:1040; background:rgba(0,0,0,0.3)"></div>
+        <div id="panel-backdrop" class="m3-side-sheet__backdrop" onclick="closeDetailPanel()"></div>
 
         <!-- Robot Table -->
-        <div class="table-responsive">
-            <table class="table table-sm table-hover align-middle">
-                <thead class="table-dark">
+        <div class="table-wrap">
+            <table class="m3-data-table">
+                <thead>
                     <tr>
                         <th>ID</th>
-                        <th>ステータス / 操作</th>
-                        <th style="min-width:110px">電圧</th>
-                        <th>最高温度</th>
+                        <th>Status / Controls</th>
+                        <th style="min-width:110px">Voltage</th>
+                        <th>Max Temp</th>
                         <th>Ping</th>
-                        <th>通信</th>
-                        <th>エラー</th>
+                        <th>Comm</th>
+                        <th>Error</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -202,6 +202,5 @@
     </div>
 
     <script src="robot_manager.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,24 +1,24 @@
 const CHART_COLORS = {
-    estX:     '#4fc3f7',
-    estY:     '#0288d1',
-    visX:     '#81c784',
-    visY:     '#388e3c',
-    tgtX:     '#ff8a65',
-    tgtY:     '#e64a19',
-    fbVx:     '#4fc3f7',
-    fbVy:     '#0288d1',
-    odomVx:   '#81c784',
-    odomVy:   '#388e3c',
-    mouseVx:  '#ce93d8',
-    mouseVy:  '#7b1fa2',
-    tgtVx:    '#ff8a65',
-    tgtVy:    '#e64a19',
-    estTheta: '#4fc3f7',
-    visTheta: '#81c784',
-    tgtTheta: '#ff8a65',
-    gyroYaw:  '#ce93d8',
-    velErr:   '#ef5350',
-    posErr:   '#ff9800',
+    estX:     '#A0C4FF',  // primary
+    estY:     '#5A9BD5',
+    visX:     '#66BB6A',  // success green
+    visY:     '#2E7D32',
+    tgtX:     '#D0BCFF',  // tertiary purple
+    tgtY:     '#9575CD',
+    fbVx:     '#A0C4FF',
+    fbVy:     '#5A9BD5',
+    odomVx:   '#66BB6A',
+    odomVy:   '#2E7D32',
+    mouseVx:  '#D0BCFF',
+    mouseVy:  '#9575CD',
+    tgtVx:    '#FFA726',  // warning
+    tgtVy:    '#EF6C00',
+    estTheta: '#A0C4FF',
+    visTheta: '#66BB6A',
+    tgtTheta: '#D0BCFF',
+    gyroYaw:  '#FFA726',
+    velErr:   '#FFB4AB',  // error
+    posErr:   '#FFA726',
 };
 
 const CONTROL_MODE_NAMES = {
@@ -29,9 +29,9 @@ const CONTROL_MODE_NAMES = {
 };
 
 const CORRECTION_SOURCE_COLORS = {
-    'rvo2': '#ef5350',
-    'sender_accel_limit': '#ff9800',
-    'feedback_control': '#66bb6a',
+    'rvo2': '#FFB4AB',
+    'sender_accel_limit': '#FFA726',
+    'feedback_control': '#66BB6A',
 };
 
 function makeDataset(label, color, dashed = false) {
@@ -60,20 +60,20 @@ function makeChart(canvasId, datasets, yLabel = '') {
             scales: {
                 x: {
                     type: 'linear',
-                    title: { display: true, text: '経過時間 (s)', color: '#666', font: { size: 10 } },
-                    ticks: { color: '#666', maxTicksLimit: 6, font: { size: 10 } },
-                    grid: { color: '#1a2a3a' },
+                    title: { display: true, text: 'Elapsed (s)', color: '#8C929A', font: { size: 10 } },
+                    ticks: { color: '#8C929A', maxTicksLimit: 6, font: { size: 10 } },
+                    grid: { color: '#2D3748' },
                 },
                 y: {
-                    title: { display: !!yLabel, text: yLabel, color: '#666', font: { size: 10 } },
-                    ticks: { color: '#666', maxTicksLimit: 6, font: { size: 10 } },
-                    grid: { color: '#1a2a3a' },
+                    title: { display: !!yLabel, text: yLabel, color: '#8C929A', font: { size: 10 } },
+                    ticks: { color: '#8C929A', maxTicksLimit: 6, font: { size: 10 } },
+                    grid: { color: '#2D3748' },
                 }
             },
             plugins: {
                 legend: {
                     labels: {
-                        color: '#aaa',
+                        color: '#8C929A',
                         font: { size: 10 },
                         boxWidth: 12,
                         padding: 6,
@@ -82,9 +82,9 @@ function makeChart(canvasId, datasets, yLabel = '') {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
-                    backgroundColor: '#0f3460',
-                    titleColor: '#7ec8e3',
-                    bodyColor: '#e0e0e0',
+                    backgroundColor: '#213052',
+                    titleColor: '#A0C4FF',
+                    bodyColor: '#E2E4E8',
                     titleFont: { size: 10 },
                     bodyFont: { size: 10 },
                 }
@@ -116,33 +116,33 @@ class RobotTelemetry {
 
     initCharts() {
         this.charts.position = makeChart('chart-position', [
-            makeDataset('推定X', CHART_COLORS.estX),
-            makeDataset('推定Y', CHART_COLORS.estY),
-            makeDataset('目標X', CHART_COLORS.tgtX, true),
-            makeDataset('目標Y', CHART_COLORS.tgtY, true),
+            makeDataset('Est. X', CHART_COLORS.estX),
+            makeDataset('Est. Y', CHART_COLORS.estY),
+            makeDataset('Target X', CHART_COLORS.tgtX, true),
+            makeDataset('Target Y', CHART_COLORS.tgtY, true),
             makeDataset('Vision X', CHART_COLORS.visX, true),
             makeDataset('Vision Y', CHART_COLORS.visY, true),
         ], 'm');
 
         this.charts.velocity = makeChart('chart-velocity', [
-            makeDataset('推定Vx', CHART_COLORS.fbVx),
-            makeDataset('推定Vy', CHART_COLORS.fbVy),
-            makeDataset('目標Vx', CHART_COLORS.tgtVx, true),
-            makeDataset('目標Vy', CHART_COLORS.tgtVy, true),
-            makeDataset('odom Vx', CHART_COLORS.odomVx, true),
-            makeDataset('mouse Vx', CHART_COLORS.mouseVx, true),
+            makeDataset('Est. Vx', CHART_COLORS.fbVx),
+            makeDataset('Est. Vy', CHART_COLORS.fbVy),
+            makeDataset('Target Vx', CHART_COLORS.tgtVx, true),
+            makeDataset('Target Vy', CHART_COLORS.tgtVy, true),
+            makeDataset('Odom Vx', CHART_COLORS.odomVx, true),
+            makeDataset('Mouse Vx', CHART_COLORS.mouseVx, true),
         ], 'm/s');
 
         this.charts.theta = makeChart('chart-theta', [
-            makeDataset('推定θ', CHART_COLORS.estTheta),
-            makeDataset('目標θ', CHART_COLORS.tgtTheta, true),
+            makeDataset('Est. θ', CHART_COLORS.estTheta),
+            makeDataset('Target θ', CHART_COLORS.tgtTheta, true),
             makeDataset('Vision θ', CHART_COLORS.visTheta, true),
-            makeDataset('gyro yaw', CHART_COLORS.gyroYaw, true),
+            makeDataset('Gyro Yaw', CHART_COLORS.gyroYaw, true),
         ], 'rad');
 
         this.charts.error = makeChart('chart-error', [
-            makeDataset('速度誤差', CHART_COLORS.velErr),
-            makeDataset('位置誤差', CHART_COLORS.posErr),
+            makeDataset('Vel Error', CHART_COLORS.velErr),
+            makeDataset('Pos Error', CHART_COLORS.posErr),
         ], 'm / m/s');
     }
 
@@ -152,7 +152,7 @@ class RobotTelemetry {
         if (slider) {
             slider.addEventListener('input', () => {
                 this.bufferSize = parseInt(slider.value, 10);
-                if (label) label.textContent = `${this.bufferSize}点 (${Math.round(this.bufferSize / 10)}秒)`;
+                if (label) label.textContent = `${this.bufferSize} pts (${Math.round(this.bufferSize / 10)}s)`;
                 this.trimBuffers();
             });
         }
@@ -203,7 +203,7 @@ class RobotTelemetry {
         const dot = document.getElementById('status-dot');
         const label = document.getElementById('status-label');
         if (dot) dot.classList.toggle('connected', connected);
-        if (label) label.textContent = connected ? '接続済み' : '未接続';
+        if (label) label.textContent = connected ? 'connected' : 'disconnected';
     }
 
     handleMessage(data) {
@@ -301,8 +301,8 @@ class RobotTelemetry {
         if (estVel) estVel.textContent = `(${robot.vx?.toFixed(3)}, ${robot.vy?.toFixed(3)})`;
 
         // Header
-        document.getElementById('header-pos').textContent = `位置: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)})`;
-        document.getElementById('header-vel').textContent = `速度: (${robot.vx?.toFixed(2)}, ${robot.vy?.toFixed(2)})`;
+        document.getElementById('header-pos').textContent = `Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)})`;
+        document.getElementById('header-vel').textContent = `Vel: (${robot.vx?.toFixed(2)}, ${robot.vy?.toFixed(2)})`;
     }
 
     pushControlTargetsData(data) {
@@ -355,8 +355,8 @@ class RobotTelemetry {
 
         // Header info
         const modeName = CONTROL_MODE_NAMES[cmd.control_mode] ?? `MODE_${cmd.control_mode}`;
-        document.getElementById('header-planner').textContent = `プランナー: ${cmd.planner_name || '--'}`;
-        document.getElementById('header-mode').textContent = `モード: ${modeName}`;
+        document.getElementById('header-planner').textContent = `Planner: ${cmd.planner_name || '--'}`;
+        document.getElementById('header-mode').textContent = `Mode: ${modeName}`;
     }
 
     pushRobotFeedbackData(data) {
