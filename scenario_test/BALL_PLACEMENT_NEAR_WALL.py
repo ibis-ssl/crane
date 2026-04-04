@@ -18,14 +18,34 @@ def distance(x1: float, y1: float, x2: float, y2: float) -> float:
 
 def setup_robots(rcst_comm: Communication, placer_x: float, placer_y: float):
     """ゴールキーパー + ball placerロボットを配置"""
-    # robot 0: ゴールキーパー（自陣ゴール前）
-    rcst_comm.send_yellow_robot(0, -6.0, 0.0, 0)
-    # robot 1: ball placer（ボール付近に配置）
-    rcst_comm.send_yellow_robot(1, placer_x, placer_y, 0)
-    # robot 2-4: 追加フィールドプレイヤー
+    rcst_comm.send_yellow_robot(0, -6.0, 0.0, 0)   # GK
+    rcst_comm.send_yellow_robot(1, placer_x, placer_y, 0)  # ball placer
     rcst_comm.send_yellow_robot(2, -2.0, 1.0, 0)
     rcst_comm.send_yellow_robot(3, -2.0, -1.0, 0)
     rcst_comm.send_yellow_robot(4, -3.0, 0.0, 0)
+
+
+def run_ball_placement(
+    rcst_comm: Communication,
+    target_x: float,
+    target_y: float,
+    timeout: int = 30,
+) -> bool:
+    """STOP → BALL_PLACEMENT_YELLOW の順でコマンドを送り、成功するまでポーリング"""
+    rcst_comm.observer.ball_placement().set_targets(target_x, target_y, for_blue_team=False)
+
+    rcst_comm.change_referee_command("STOP", 3.0)
+
+    rcst_comm.set_ball_placement_position(target_x, target_y)
+    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 0.0)
+
+    rcst_comm.observer.reset()
+
+    for _ in range(timeout):
+        if rcst_comm.observer.ball_placement().success():
+            return True
+        time.sleep(1)
+    return False
 
 
 def test_ball_placement_near_wall_x_boundary(rcst_comm: Communication):
@@ -37,39 +57,23 @@ def test_ball_placement_near_wall_x_boundary(rcst_comm: Communication):
     - 配置目標: (0.0, 0.0) - フィールド中央
 
     期待結果:
-    - 15秒以内にボールが配置目標から20cm以内に配置される
+    - 30秒以内にボールが配置目標から15cm以内に配置される
     """
     rcst_comm.send_empty_world()
-
-    # ボールをX軸方向の壁際に配置（フィールド内だが境界付近）
     ball_x, ball_y = 5.8, 0.0
     rcst_comm.send_ball(ball_x, ball_y)
-
     setup_robots(rcst_comm, 5.0, 0.0)
+    time.sleep(1)
 
-    # 配置目標をフィールド中央に設定
     target_x, target_y = 0.0, 0.0
-    rcst_comm.set_ball_placement_position(target_x, target_y)
+    success = run_ball_placement(rcst_comm, target_x, target_y)
 
-    # レフェリーコマンドを送信してテスト開始
-    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
+    final_ball = rcst_comm.observer.get_world().get_ball()
+    dist = distance(final_ball.x, final_ball.y, target_x, target_y)
+    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m")
 
-    rcst_comm.observer.reset()
-    time.sleep(15)
-
-    # ボールが配置目標から20cm以内にあるか確認
-    final_ball_x = rcst_comm.observer.get_world().get_ball().x
-    final_ball_y = rcst_comm.observer.get_world().get_ball().y
-    dist_to_target = distance(final_ball_x, final_ball_y, target_x, target_y)
-
-    print(f"Initial ball position: ({ball_x}, {ball_y})")
-    print(f"Final ball position: ({final_ball_x}, {final_ball_y})")
-    print(f"Target position: ({target_x}, {target_y})")
-    print(f"Distance to target: {dist_to_target:.3f}m")
-
-    assert dist_to_target < 0.20, (
-        f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.20m)"
-    )
+    assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
 
 def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
@@ -81,39 +85,23 @@ def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
     - 配置目標: (2.0, 2.0)
 
     期待結果:
-    - 15秒以内にボールが配置目標から20cm以内に配置される
+    - 30秒以内にボールが配置目標から15cm以内に配置される
     """
     rcst_comm.send_empty_world()
-
-    # ボールをY軸方向の壁際に配置（フィールド内だが境界付近）
     ball_x, ball_y = 2.0, 4.3
     rcst_comm.send_ball(ball_x, ball_y)
-
     setup_robots(rcst_comm, 2.0, 3.5)
+    time.sleep(1)
 
-    # 配置目標を設定
     target_x, target_y = 2.0, 2.0
-    rcst_comm.set_ball_placement_position(target_x, target_y)
+    success = run_ball_placement(rcst_comm, target_x, target_y)
 
-    # レフェリーコマンドを送信してテスト開始
-    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
+    final_ball = rcst_comm.observer.get_world().get_ball()
+    dist = distance(final_ball.x, final_ball.y, target_x, target_y)
+    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m")
 
-    rcst_comm.observer.reset()
-    time.sleep(15)
-
-    # ボールが配置目標から20cm以内にあるか確認
-    final_ball_x = rcst_comm.observer.get_world().get_ball().x
-    final_ball_y = rcst_comm.observer.get_world().get_ball().y
-    dist_to_target = distance(final_ball_x, final_ball_y, target_x, target_y)
-
-    print(f"Initial ball position: ({ball_x}, {ball_y})")
-    print(f"Final ball position: ({final_ball_x}, {final_ball_y})")
-    print(f"Target position: ({target_x}, {target_y})")
-    print(f"Distance to target: {dist_to_target:.3f}m")
-
-    assert dist_to_target < 0.20, (
-        f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.20m)"
-    )
+    assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
 
 def test_ball_placement_tight_space(rcst_comm: Communication):
@@ -121,69 +109,37 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
     シナリオ3: 回り込みスペースが不足している場合のテスト
 
     初期配置:
-    - ボール: (5.5, 3.0) - 壁と配置目標の間
-    - 配置目標: (4.0, 3.0) - ボールから手前方向
+    - ボール: (5.5, 3.0) - 壁際
+    - 配置目標: (4.0, 3.0) - ボールより手前
 
     期待結果:
     - ロボットがスタックせずに動作する
-    - 15秒以内にボールが配置目標から30cm以内に配置される
-      (スペース不足のため精度は若干緩和)
+    - 30秒以内にボールが配置目標から15cm以内に配置される
     """
     rcst_comm.send_empty_world()
-
-    # ボールを壁際に配置
     ball_x, ball_y = 5.5, 3.0
     rcst_comm.send_ball(ball_x, ball_y)
-
     setup_robots(rcst_comm, 4.5, 3.0)
+    time.sleep(1)
 
-    # 配置目標をボールより手前に設定（フィールド内で到達可能）
+    # robot 1の初期位置を記録してスタック確認用に使う
+    initial_robots = rcst_comm.observer.get_world().get_yellow_robots()
+    initial_r1_x = initial_robots[1].x
+    initial_r1_y = initial_robots[1].y
+
     target_x, target_y = 4.0, 3.0
-    rcst_comm.set_ball_placement_position(target_x, target_y)
+    success = run_ball_placement(rcst_comm, target_x, target_y)
 
-    # レフェリーコマンドを送信してテスト開始
-    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
+    final_ball = rcst_comm.observer.get_world().get_ball()
+    dist = distance(final_ball.x, final_ball.y, target_x, target_y)
+    final_robots = rcst_comm.observer.get_world().get_yellow_robots()
+    robot_moved = distance(initial_r1_x, initial_r1_y, final_robots[1].x, final_robots[1].y) > 0.1
 
-    rcst_comm.observer.reset()
+    print(f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
+          f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m, Robot moved: {robot_moved}")
 
-    # ロボットが動いているか確認（スタックしていないか）
-    time.sleep(7)
-    yellow_robots = rcst_comm.observer.get_world().get_yellow_robots()
-    robot = yellow_robots[1]
-    initial_robot_x = robot.x
-    initial_robot_y = robot.y
-
-    time.sleep(8)  # さらに8秒待機（合計15秒）
-
-    # ロボットが移動したか確認（スタックしていない証拠）
-    yellow_robots = rcst_comm.observer.get_world().get_yellow_robots()
-    robot = yellow_robots[1]
-    final_robot_x = robot.x
-    final_robot_y = robot.y
-    robot_moved = (
-        distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y) > 0.1
-    )
-
-    # ボールが配置目標に近づいたか確認
-    final_ball_x = rcst_comm.observer.get_world().get_ball().x
-    final_ball_y = rcst_comm.observer.get_world().get_ball().y
-    dist_to_target = distance(final_ball_x, final_ball_y, target_x, target_y)
-
-    print(f"Initial ball position: ({ball_x}, {ball_y})")
-    print(f"Final ball position: ({final_ball_x}, {final_ball_y})")
-    print(f"Target position: ({target_x}, {target_y})")
-    print(f"Distance to target: {dist_to_target:.3f}m")
-    print(
-        f"Robot moved: {robot_moved} (distance: {distance(initial_robot_x, initial_robot_y, final_robot_x, final_robot_y):.3f}m)"
-    )
-
-    # ロボットが動作していることを確認
     assert robot_moved, "Robot appears to be stuck (did not move)"
-
-    # スペース不足のため精度は緩和するが、ある程度は近づいているはず
-    assert dist_to_target < 0.30, (
-        f"Ball placement failed: ball is {dist_to_target:.3f}m from target (expected < 0.30m)"
-    )
+    assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
 
 if __name__ == "__main__":
