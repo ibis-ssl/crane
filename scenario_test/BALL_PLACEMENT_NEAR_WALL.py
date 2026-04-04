@@ -40,7 +40,7 @@ def test_ball_placement_near_wall_x_boundary(rcst_comm: Communication):
 
     # 配置目標をフィールド中央に設定
     target_x, target_y = 0.0, 0.0
-    rcst_comm.send_ball_placement_command(target_x, target_y)
+    rcst_comm.set_ball_placement_position(target_x, target_y)
 
     # レフェリーコマンドを送信してテスト開始
     rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
@@ -88,7 +88,7 @@ def test_ball_placement_near_wall_y_boundary(rcst_comm: Communication):
 
     # 配置目標を設定
     target_x, target_y = 2.0, 2.0
-    rcst_comm.send_ball_placement_command(target_x, target_y)
+    rcst_comm.set_ball_placement_position(target_x, target_y)
 
     # レフェリーコマンドを送信してテスト開始
     rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
@@ -138,7 +138,7 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
 
     # 配置目標を壁に近い位置に設定
     target_x, target_y = 6.0, 3.0
-    rcst_comm.send_ball_placement_command(target_x, target_y)
+    rcst_comm.set_ball_placement_position(target_x, target_y)
 
     # レフェリーコマンドを送信してテスト開始
     rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 3.0)
@@ -147,14 +147,14 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
 
     # ロボットが動いているか確認（スタックしていないか）
     time.sleep(5)
-    robot = rcst_comm.observer.get_world().get_yellow_robot(0)
+    robot = rcst_comm.observer.get_world().get_yellow_robots()[0]
     initial_robot_x = robot.x
     initial_robot_y = robot.y
 
     time.sleep(5)  # さらに5秒待機（合計10秒）
 
     # ロボットが移動したか確認（スタックしていない証拠）
-    robot = rcst_comm.observer.get_world().get_yellow_robot(0)
+    robot = rcst_comm.observer.get_world().get_yellow_robots()[0]
     final_robot_x = robot.x
     final_robot_y = robot.y
     robot_moved = (

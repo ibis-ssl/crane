@@ -28,8 +28,9 @@ def test_robot_speed(rcst_comm: Communication):
 
     # 10秒後の最終位置で判定: 少なくとも1台のロボットが初期位置から0.1m以上移動しているか
     some_robot_moved = False
+    yellow_robots = rcst_comm.observer.get_world().get_yellow_robots()
     for i in range(11):
-        robot = rcst_comm.observer.get_world().get_yellow_robot(i)
+        robot = yellow_robots[i]
         dist = calc.distance(robot.x, robot.y, -1.0, 3.0 - i * 0.5)
         if dist >= 0.1:
             print(f"Robot {i} moved {dist:.3f}m from initial position")
