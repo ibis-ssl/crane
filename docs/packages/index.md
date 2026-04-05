@@ -35,7 +35,6 @@ Craneを構成する全パッケージのドキュメント一覧。
 | [crane_play_switcher](./crane_play_switcher.md) | プレイ自動選択 |
 | [crane_sender](./crane_sender.md) | ロボットコマンド送信 |
 | [crane_bringup](./crane_bringup.md) | システム起動統合 |
-| [crane_description](./crane_description.md) | パラメータ管理 |
 | [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 |
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース |
 | [crane_speaker](./crane_speaker.md) | 音声出力システム |
