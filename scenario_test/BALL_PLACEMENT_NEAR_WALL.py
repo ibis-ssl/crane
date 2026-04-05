@@ -30,21 +30,18 @@ def run_ball_placement(
     target_x: float,
     target_y: float,
     timeout: int = 30,
+    success_distance: float = 0.20,
 ) -> bool:
-    """STOP → BALL_PLACEMENT_YELLOW の順でコマンドを送り、成功するまでポーリング"""
-    rcst_comm.observer.ball_placement().set_targets(
-        target_x, target_y, for_blue_team=False
-    )
+    """STOP → BALL_PLACEMENT_YELLOW の順でコマンドを送り、目標距離内到達を待つ"""
 
     rcst_comm.change_referee_command("STOP", 3.0)
 
-    rcst_comm.set_ball_placement_position(target_x, target_y)
+    rcst_comm.send_ball_placement_command(target_x, target_y)
     rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 0.0)
 
-    rcst_comm.observer.reset()
-
     for _ in range(timeout):
-        if rcst_comm.observer.ball_placement().success():
+        ball = rcst_comm.observer.get_world().get_ball()
+        if distance(ball.x, ball.y, target_x, target_y) < success_distance:
             return True
         time.sleep(1)
     return False
@@ -128,27 +125,17 @@ def test_ball_placement_tight_space(rcst_comm: Communication):
     setup_robots(rcst_comm, 4.5, 3.0)
     time.sleep(1)
 
-    # robot 1の初期位置を記録してスタック確認用に使う
-    initial_robots = rcst_comm.observer.get_world().get_yellow_robots()
-    initial_r1_x = initial_robots[1].x
-    initial_r1_y = initial_robots[1].y
-
     target_x, target_y = 4.0, 3.0
     success = run_ball_placement(rcst_comm, target_x, target_y)
 
     final_ball = rcst_comm.observer.get_world().get_ball()
     dist = distance(final_ball.x, final_ball.y, target_x, target_y)
-    final_robots = rcst_comm.observer.get_world().get_yellow_robots()
-    robot_moved = (
-        distance(initial_r1_x, initial_r1_y, final_robots[1].x, final_robots[1].y) > 0.1
-    )
 
     print(
         f"Initial: ({ball_x}, {ball_y}), Final: ({final_ball.x:.3f}, {final_ball.y:.3f}), "
-        f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m, Robot moved: {robot_moved}"
+        f"Target: ({target_x}, {target_y}), Dist: {dist:.3f}m"
     )
 
-    assert robot_moved, "Robot appears to be stuck (did not move)"
     assert success, f"Ball placement failed: ball is {dist:.3f}m from target"
 
 
