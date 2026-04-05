@@ -35,9 +35,8 @@ def run_ball_placement(
     """STOP → BALL_PLACEMENT_YELLOW の順でコマンドを送り、目標距離内到達を待つ"""
 
     rcst_comm.change_referee_command("STOP", 3.0)
-
-    rcst_comm.send_ball_placement_command(target_x, target_y)
-    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 0.0)
+    rcst_comm.set_ball_placement_position(target_x, target_y)
+    rcst_comm.change_referee_command("BALL_PLACEMENT_YELLOW", 0.1)
 
     for _ in range(timeout):
         ball = rcst_comm.observer.get_world().get_ball()
