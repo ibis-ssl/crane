@@ -39,7 +39,6 @@ Craneを構成する全パッケージのドキュメント一覧。
 | [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 |
 | [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース |
 | [crane_speaker](./crane_speaker.md) | 音声出力システム |
-| [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 |
 | [crane_teleop](./crane_teleop.md) | 遠隔操作 |
 | [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 |
 
