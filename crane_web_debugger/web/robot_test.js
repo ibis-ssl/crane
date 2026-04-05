@@ -438,6 +438,9 @@ class RobotTestController {
             case 'world_model':
                 this.onWorldModel(data);
                 break;
+            case 'robot_commands':
+                this.onRobotCommands(data);
+                break;
             case 'control_targets':
                 this.onControlTargets(data);
                 break;
@@ -490,17 +493,19 @@ class RobotTestController {
         const cmd = data.commands.find(c => c.robot_id === this.selectedRobotId);
         if (!cmd) return;
 
-        // velocity_plan_trace から速度ノルムを取得
-        let cmdSpeed = null;
-        if (cmd.velocity_plan_trace && cmd.velocity_plan_trace.plan_points?.length > 0) {
-            const pt = cmd.velocity_plan_trace.plan_points[0];
-            const vx = pt.predicted_vel_x ?? 0;
-            const vy = pt.predicted_vel_y ?? 0;
-            cmdSpeed = Math.sqrt(vx * vx + vy * vy);
-        }
-        if (cmdSpeed !== null) {
-            this._pushChartPoint('cmd', cmdSpeed);
-        }
+        // backward compatibility: /control_targets が来る環境向けのフォールバック
+        const cmdSpeed = cmd.polar_velocity_target_mode?.target_velocity_r;
+        if (Number.isFinite(cmdSpeed)) this._pushChartPoint('cmd', cmdSpeed);
+    }
+
+    onRobotCommands(data) {
+        if (!data.commands || this.selectedRobotId === null) return;
+        const cmd = data.commands.find(c => c.robot_id === this.selectedRobotId);
+        if (!cmd) return;
+
+        // /robot_commands の target_velocity_r を Cmd Speed として表示
+        const cmdSpeed = cmd.polar_velocity_target_mode?.target_velocity_r;
+        if (Number.isFinite(cmdSpeed)) this._pushChartPoint('cmd', cmdSpeed);
     }
 
     onRobotFeedback(data) {
