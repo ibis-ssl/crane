@@ -65,4 +65,23 @@ TEST(PenaltyAvoidanceHelperTest, BetterSideOverridesLockWhenGapIsLarge)
   EXPECT_EQ(decision.selected_side, PenaltyBypassSide::TOP);
 }
 
+TEST(PenaltyAvoidanceHelperTest, LockPreventsSideOscillationForNearSymmetricTargets)
+{
+  // 1回目: 自動選択で側を確定
+  const auto first = computePenaltyBypassDecision(
+    Point(-3.4, 0.0), Point(-5.6, 0.08), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2, std::nullopt,
+    0.25, true);
+  ASSERT_TRUE(first.crossing_detected);
+
+  // 2回目以降: 目標yが微小に揺れるケースでもロック側を維持できることを確認
+  for (const double target_y : {0.10, -0.10, 0.06, -0.06, 0.02, -0.02}) {
+    const auto d = computePenaltyBypassDecision(
+      Point(-3.4, 0.0), Point(-5.6, target_y), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2,
+      first.selected_side, 0.25, true);
+    EXPECT_TRUE(d.crossing_detected);
+    EXPECT_EQ(d.selected_side, first.selected_side);
+    EXPECT_TRUE(d.used_locked_side);
+  }
+}
+
 }  // namespace crane
