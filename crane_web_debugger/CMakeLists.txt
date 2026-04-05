@@ -38,4 +38,4 @@ else()
   target_include_directories(crane_websocket_server PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-ament_auto_package(INSTALL_TO_SHARE web)
+ament_auto_package(INSTALL_TO_SHARE web web_server)

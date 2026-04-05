@@ -327,8 +327,8 @@
             Analysis & Calibration
         </h2>
         <div class="tool-grid" style="padding-bottom: var(--md-sys-spacing-lg);">
-            <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="ball-calibration-status">checking...</span>
+            <a href="/ball-calibration/" class="tool-card" id="ball-calibration-card">
+                <span class="m3-badge m3-badge--success tool-card__badge" id="ball-calibration-status">integrated</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sports_soccer</span>
                 <div class="tool-card__title">Ball Calibration UI</div>
                 <div class="tool-card__desc">
@@ -338,7 +338,7 @@
                     <li><span class="material-symbols-outlined">check</span> Trajectory data loading & visualization</li>
                     <li><span class="material-symbols-outlined">check</span> Auto deceleration parameter optimization</li>
                     <li><span class="material-symbols-outlined">check</span> Real-time prediction trajectory preview</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8095</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Path: /ball-calibration/</li>
                 </ul>
             </a>
 
@@ -366,7 +366,6 @@
             { id: 'game-controller', url: `http://${host}:8081` },
             { id: 'vision-client',   url: `http://${host}:8082` },
             { id: 'status-board',    url: `http://${host}:8083` },
-            { id: 'ball-calibration', url: `http://${host}:8095` },
             { id: 'foxglove',
               url: `https://app.foxglove.dev/?ds=foxglove-websocket&ds.url=ws://${host}:8765`,
               checkUrl: `http://${host}:8765` },
