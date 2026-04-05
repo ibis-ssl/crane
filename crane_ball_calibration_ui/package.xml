@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_ball_calibration_ui</name>
-  <version>1.0.292</version>
+  <version>1.0.293</version>
   <description>
     ボール物理モデルとキッカーモデルのパラメータをHuman-in-the-Loopで
     インタラクティブに最適化するためのWebインターフェース
