@@ -437,11 +437,18 @@ private:
       return;
     }
 
-    // Simple Python HTTP server for static files
-    // Bind to 0.0.0.0 to accept connections from any interface
-    std::string command = "cd \"" + web_root_ + "\" && python3 -m http.server " +
-                          std::to_string(port_) + " --bind 0.0.0.0 2>/dev/null";
-    RCLCPP_INFO(this->get_logger(), "Starting HTTP server at: %s", web_root_.c_str());
+    const std::string app_path = package_share_dir_.empty()
+                                   ? "./web_server/app.py"
+                                   : package_share_dir_ + "/web_server/app.py";
+    if (!std::filesystem::exists(app_path)) {
+      RCLCPP_ERROR(this->get_logger(), "Unified HTTP app not found: %s", app_path.c_str());
+      return;
+    }
+
+    std::string command = "python3 \"" + app_path + "\" --host 0.0.0.0 --port " +
+                          std::to_string(port_) + " --web-root \"" + web_root_ + "\" 2>/dev/null";
+    RCLCPP_INFO(
+      this->get_logger(), "Starting unified HTTP server (web root: %s)", web_root_.c_str());
     int result = system(command.c_str());
     if (result != 0) {
       RCLCPP_ERROR(this->get_logger(), "Failed to start HTTP server, exit code: %d", result);

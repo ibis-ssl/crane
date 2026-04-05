@@ -2,12 +2,13 @@
 
 ## 概要
 
-`crane_web_debugger`は、WebSocketサーバーとWebフロントエンドを提供するリアルタイムデバッグツールです。ROS 2トピックをブラウザから監視・制御するためのインターフェースを提供します。
+`crane_web_debugger`は、WebSocketサーバーと統合HTTPサーバーを提供するリアルタイムデバッグツールです。ROS 2トピックをブラウザから監視・制御するインターフェースに加え、ボールモデルキャリブレーションUIも同一ポートで提供します。
 
 ## 主要機能
 
 - **WebSocketサーバー**: リアルタイム双方向通信（Boost.Asio実装）
-- **Webフロントエンド**: ブラウザベースのデバッグUI・ロボット管理画面
+- **統合HTTPサーバー**: FastAPIベースでデバッグUIとキャリブレーションUIを同一配信
+- **Webフロントエンド**: ブラウザベースのデバッグUI・ロボット管理画面・キャリブレーション画面
 - **ROS 2ブリッジ**: 以下のトピックをWebSocket経由で配信
   - `/world_model`
   - `/robot_commands`
@@ -39,6 +40,16 @@ ROS 2とブラウザを接続するブリッジノード。
 
 - SVGビジュアライゼーション表示
 - デバッグUI統合ポータル
+- Ball Calibration UI（`/ball-calibration/`）
+
+### Ball Calibration API
+
+- `POST /ball-calibration/api/load`
+- `GET /ball-calibration/api/trajectories`
+- `GET /ball-calibration/api/trajectory/{event_id}`
+- `POST /ball-calibration/api/optimize`
+- `POST /ball-calibration/api/predict`
+- `POST /ball-calibration/api/export`
 
 ## ロボット管理画面の分離
 
@@ -56,15 +67,17 @@ ROS 2とブラウザを接続するブリッジノード。
 - `diagnostic_msgs`, `std_msgs`, `rclcpp`
 - `ament_index_cpp`
 - `libboost-system-dev`, `libssl-dev`, `nlohmann-json-dev`
+- `python3-fastapi`, `python3-uvicorn`, `python3-numpy`, `python3-pydantic`, `python3-yaml`
 
 ## 使用方法
 
 ```bash
 # WebSocketサーバーを起動
-ros2 run crane_web_debugger websocket_server
+ros2 run crane_web_debugger crane_websocket_server
 
 # ブラウザでアクセス
 # http://localhost:8090/
+# http://localhost:8090/ball-calibration/
 ```
 
 ### Docker環境での自動起動

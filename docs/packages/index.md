@@ -81,8 +81,7 @@ Craneを構成する全パッケージのドキュメント一覧。
 |-------------|------|
 | [crane_bag](./crane_bag.md) | C++ rosbag解析CLIツール |
 | [crane_mcap_tools](./crane_mcap_tools.md) | Python解析・SVG動画生成 |
-| [crane_web_debugger](./crane_web_debugger.md) | WebSocketデバッグサーバー |
-| [crane_ball_calibration_ui](./crane_ball_calibration_ui.md) | ボールモデルキャリブレーションUI |
+| [crane_web_debugger](./crane_web_debugger.md) | WebSocketデバッグサーバー + キャリブレーションUI |
 
 ---
 

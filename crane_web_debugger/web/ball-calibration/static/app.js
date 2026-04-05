@@ -66,7 +66,7 @@ async function loadData() {
 
   showStatus('loadStatus', '読み込み中...', 'info');
   try {
-    const result = await apiPost('/api/load', { directory_path: path });
+    const result = await apiPost('/ball-calibration/api/load', { directory_path: path });
     showStatus('loadStatus', `${result.loaded} 件の軌道データを読み込みました`, 'success');
     await refreshTrajectoryList();
   } catch (e) {
@@ -75,7 +75,7 @@ async function loadData() {
 }
 
 async function refreshTrajectoryList() {
-  state.trajectories = await apiGet('/api/trajectories');
+  state.trajectories = await apiGet('/ball-calibration/api/trajectories');
   state.selectedIds = new Set(state.trajectories.map(t => t.event_id)); // デフォルト全選択
 
   const tbody = document.getElementById('trajectoryTable');
@@ -115,7 +115,7 @@ async function showTrajectoryPreview(eventId) {
   document.getElementById('previewEmpty').style.display = 'none';
 
   try {
-    const d = await apiGet(`/api/trajectory/${eventId}`);
+    const d = await apiGet(`/ball-calibration/api/trajectory/${eventId}`);
 
     // XY軌跡
     Plotly.newPlot('previewXY', [{
@@ -182,7 +182,7 @@ async function runOptimization() {
       min_data_points_per_trajectory: parseInt(document.getElementById('cfgMinPoints').value),
     };
 
-    const result = await apiPost('/api/optimize', {
+    const result = await apiPost('/ball-calibration/api/optimize', {
       enabled_event_ids: [...state.selectedIds],
       config,
     });
@@ -249,7 +249,7 @@ function onKickOverrideChange(key, value) {
   } else {
     state.kickOverrides[key] = parseFloat(value);
   }
-  apiPut('/api/manual_params', { kick_power_overrides: state.kickOverrides });
+  apiPut('/ball-calibration/api/manual_params', { kick_power_overrides: state.kickOverrides });
 }
 
 function resetKickOverrides() {
@@ -257,12 +257,12 @@ function resetKickOverrides() {
   if (state.optimizationResult) {
     renderKickMappingTable(state.optimizationResult.power_velocity_summary);
   }
-  apiPut('/api/manual_params', { kick_power_overrides: {} });
+  apiPut('/ball-calibration/api/manual_params', { kick_power_overrides: {} });
 }
 
 const _onDecelChangeDebounced = debounce(async (value) => {
   state.currentDecel = parseFloat(value);
-  await apiPut('/api/manual_params', { deceleration: state.currentDecel });
+  await apiPut('/ball-calibration/api/manual_params', { deceleration: state.currentDecel });
   await updatePredictions();
 }, 200);
 
@@ -273,7 +273,7 @@ function onDecelChange(value) {
 
 async function updatePredictions() {
   try {
-    const result = await apiPost('/api/predict', {
+    const result = await apiPost('/ball-calibration/api/predict', {
       deceleration: state.currentDecel,
       event_ids: state.selectedIds.size > 0 ? [...state.selectedIds] : null,
     });
@@ -385,7 +385,7 @@ function renderAccuracyTable() {
 
 async function refreshPreview() {
   try {
-    const data = await apiGet('/api/export/preview');
+    const data = await apiGet('/ball-calibration/api/export/preview');
     document.getElementById('yamlPreview').value = data.yaml || '';
 
     const la = data.launch_arrays;
@@ -404,7 +404,7 @@ async function exportYaml() {
   if (!path) { showStatus('exportStatus', '出力パスを入力してください', 'warning'); return; }
 
   try {
-    const result = await apiPost('/api/export', {
+    const result = await apiPost('/ball-calibration/api/export', {
       output_path: path,
       deceleration_override: state.currentDecel !== (state.optimizationResult?.global_deceleration) ? state.currentDecel : null,
       kick_power_overrides: Object.keys(state.kickOverrides).length > 0 ? state.kickOverrides : null,
