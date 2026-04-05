@@ -232,7 +232,11 @@ def create_app(web_root: Path) -> FastAPI:
     app.include_router(api)
 
     # Existing crane_web_debugger static site (portal, viewer, telemetry, ...)
-    app.mount("/", StaticFiles(directory=str(web_root), html=True), name="web-root")
+    app.mount(
+        "/",
+        StaticFiles(directory=str(web_root), html=True, follow_symlink=True),
+        name="web-root",
+    )
     return app
 
 
