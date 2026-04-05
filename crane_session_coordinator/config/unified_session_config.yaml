@@ -95,6 +95,13 @@ situations:
         max_robots: 1
       - name: waiter
         max_robots: 20
+  ROBOT_TEST:
+    description: Interactive robot test from web UI
+    sessions:
+      - name: robot_test_session
+        max_robots: 1
+      - name: waiter
+        max_robots: 20
   THEIR_BALL_PLACEMENT:
     description: THEIR_BALL_PLACEMENT
     sessions:

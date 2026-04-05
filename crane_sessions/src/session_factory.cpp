@@ -27,6 +27,7 @@
 #include <crane_sessions/passable_ball_placement_session.hpp>
 #include <crane_sessions/placement_avoidance_session.hpp>
 #include <crane_sessions/placement_target_near_by_positioner_skill_session.hpp>
+#include <crane_sessions/robot_test_session.hpp>
 #include <crane_sessions/second_threat_defender_session.hpp>
 #include <crane_sessions/simple_kick_off_skill_session.hpp>
 #include <crane_sessions/simple_placer_session.hpp>
@@ -72,6 +73,7 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
     PLANNER_ENTRY("our_direct_free", OurDirectFreeKickSession),
     PLANNER_ENTRY("simple_kickoff", SimpleKickOffSkillSession),
     PLANNER_ENTRY("simple_placer", SimplePlacerSession),
+    PLANNER_ENTRY("robot_test_session", RobotTestSession),
     PLANNER_ENTRY("test", TestSession),
     PLANNER_ENTRY("total_defense", TotalDefenseSession),
     PLANNER_ENTRY("emplace_robot", EmplaceRobotSession),
