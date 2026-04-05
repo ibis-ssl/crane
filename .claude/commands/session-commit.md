@@ -116,8 +116,6 @@ git add <file1> <file2> ...
 ## 変更内容
 - <箇条書き>
 - <箇条書き>
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
 
 pre-commit フックで自動修正が入った場合は、修正済みファイルを再ステージして再コミットします:
@@ -154,11 +152,6 @@ PR 本文テンプレート:
 ## 変更内容
 - <箇条書き>
 
-## テスト方法
-- [ ] `colcon build --packages-select <package>` でビルド確認
-- [ ] <動作確認項目>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ---

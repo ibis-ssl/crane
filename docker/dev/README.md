@@ -15,14 +15,14 @@
 # 実機環境 + ssl-log-recorder自動起動
 ./scripts/docker-dev.sh real
 
-# バックグラウンド起動 + debug_tools自動起動
+# バックグラウンド起動
 ./scripts/docker-dev.sh -d
 ./scripts/docker-dev.sh real -d
 
-# debug_toolsなしで起動
+# robot-manager なしで起動
 ./scripts/docker-dev.sh --no-debug
 
-# 停止(debug_toolsとssl-log-recorderも自動停止)
+# 停止
 ./scripts/docker-dev.sh down
 ```
 
@@ -33,22 +33,20 @@
 **注2**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
 `up` を Ctrl+C で終了した場合は recorder は継続起動します。
 
-**注3**: バックグラウンド起動(`-d`)時、debug_tools
-(crane_websocket_server) が自動的に起動します。
+**注3**: `robot-manager` は Docker Compose サービスとして常時定義されています。
 
-- HTTP Server: <http://localhost:8090>
-- WebSocket: ws://localhost:8091
-- `--no-debug` オプションで無効化可能
+- URL: <http://localhost:8090>
+- `--no-debug` オプションで無効化可能（`robot-manager` のみ停止）
 
-### debug_tools の手動操作
+### robot-manager の手動操作
 
-debug_tools を個別に操作したい場合は、以下のスクリプトを使用できます。
+`robot-manager` を個別に操作したい場合は、以下のスクリプトを使用できます。
 
 ```bash
-# debug_tools を起動
+# robot-manager を起動
 ./scripts/start-debug-tools.sh
 
-# debug_tools を停止
+# robot-manager を停止
 ./scripts/stop-debug-tools.sh
 ```
 
@@ -81,7 +79,7 @@ docker compose -f docker/dev/docker-compose.yaml down
 - **ssl-status-board**: ステータスボード(simのみ)
 - **autoref-tigers**: Tigers Mannheimのオートレフェリー
 - **voicevox**: 音声合成エンジン
-- **debug_tools**: WebSocketベースのデバッグツール(docker-dev.shで自動起動)
+- **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
 
 ## 設定ファイル
 
