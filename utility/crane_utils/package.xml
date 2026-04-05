@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_utils</name>
-  <version>1.0.289</version>
+  <version>1.0.290</version>
   <description>Common utility functions and helpers for crane robotics system</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
