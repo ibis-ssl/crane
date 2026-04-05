@@ -305,6 +305,8 @@ public:
       this->create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
     session_injection_pub_ =
       this->create_publisher<std_msgs::msg::String>("/session_injection", 10);
+    robot_test_target_pub_ =
+      this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
 
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -545,6 +547,12 @@ private:
         handleActivateMoveMode(connection);
       } else if (type == "move_robot") {
         handleMoveRobot(connection, request);
+      } else if (type == "activate_robot_test") {
+        handleActivateRobotTest(connection);
+      } else if (type == "deactivate_robot_test") {
+        handleDeactivateRobotTest(connection);
+      } else if (type == "robot_test_target") {
+        handleRobotTestTarget(connection, request);
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
         connection->sendMessage(error_response.dump());
@@ -1162,6 +1170,67 @@ private:
     connection->sendMessage(result.dump());
   }
 
+  void handleActivateRobotTest(std::shared_ptr<WebSocketConnection> connection)
+  {
+    std_msgs::msg::String injection_msg;
+    injection_msg.data = "ROBOT_TEST";
+    session_injection_pub_->publish(injection_msg);
+    RCLCPP_INFO(this->get_logger(), "Robot test mode activated: injecting ROBOT_TEST session");
+    json result = {{"type", "robot_test_activated"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleDeactivateRobotTest(std::shared_ptr<WebSocketConnection> connection)
+  {
+    std_msgs::msg::String injection_msg;
+    injection_msg.data = "HALT";
+    session_injection_pub_->publish(injection_msg);
+    RCLCPP_INFO(this->get_logger(), "Robot test mode deactivated: injecting HALT session");
+    json result = {{"type", "robot_test_deactivated"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleRobotTestTarget(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    int robot_id = request.value("robot_id", -1);
+    if (robot_id < 0 || robot_id > 15) {
+      json error = {{"type", "error"}, {"message", "Invalid robot_id"}};
+      connection->sendMessage(error.dump());
+      return;
+    }
+
+    crane_msgs::msg::RobotCommand cmd;
+    cmd.robot_id = static_cast<uint8_t>(robot_id);
+    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    cmd.target_theta = request.value("target_theta", 0.0);
+
+    crane_msgs::msg::PositionTargetMode pos_target;
+    pos_target.target_x = request.value("target_x", 0.0f);
+    pos_target.target_y = request.value("target_y", 0.0f);
+    pos_target.position_tolerance = 0.05f;
+    pos_target.speed_limit_at_target = 0.0f;
+    cmd.position_target_mode.push_back(pos_target);
+
+    crane_msgs::msg::NamedFloat vel_factor;
+    vel_factor.name = "robot_test";
+    vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
+    cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
+
+    crane_msgs::msg::NamedFloat acc_factor;
+    acc_factor.name = "robot_test";
+    acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
+    cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
+
+    robot_test_target_pub_->publish(cmd);
+
+    RCLCPP_DEBUG(
+      this->get_logger(), "Robot test target: robot=%d, x=%.2f, y=%.2f", robot_id,
+      pos_target.target_x, pos_target.target_y);
+
+    json result = {{"type", "robot_test_target_result"}, {"robot_id", robot_id}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
   void handleRobotControl(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     int robot_id = request.value("robot_id", -1);
@@ -1253,6 +1322,7 @@ private:
   rclcpp::Publisher<crane_msgs::msg::HumanAnnotation>::SharedPtr annotation_pub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr move_command_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
 
   // Cached world model state for move commands
   bool cached_is_yellow_{false};
