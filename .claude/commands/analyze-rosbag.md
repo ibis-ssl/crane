@@ -1,4 +1,5 @@
 ---
+name: analyze-rosbag
 description: "craneのrosbagを解析して試合状況・ロボット動作・異常を診断"
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent"]
 ---

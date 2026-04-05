@@ -1,3 +1,9 @@
+---
+name: rosbag-python-reference
+description: "crane_bag CLIで不足する低レベル項目のPython解析リファレンス"
+allowed-tools: ["Read", "Grep"]
+---
+
 # Crane Rosbag Python フィールドリファレンス
 
 crane_bag CLIでは取得できない低レベルな詳細が必要な場合に、直接MCAPを読んでPythonで解析する際のフィールドリファレンス。
