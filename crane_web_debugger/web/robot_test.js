@@ -4,7 +4,6 @@
 const ROBOT_HIT_RADIUS_M = 0.15;
 const FIELD_MARGIN_M = 1.0;  // フィールド外側の余白 (m)
 const CHART_BUF = 300;  // 10Hz × 30秒
-const DRAG_THRESHOLD_PX = 5;
 
 // ---- Chart.js ヘルパー ----
 function makeDataset(label, color, dashed = false) {
@@ -153,7 +152,6 @@ class FieldRenderer {
         ctx.translate(vp.ox, vp.oy);
         ctx.scale(vp.vs, vp.vs);
         ctx.translate(-vp.vbX, -vp.vbY);
-        ctx.translate(c.panOffset.x, c.panOffset.y);
         ctx.scale(c.zoomLevel, c.zoomLevel);
 
         // フィールド背景
@@ -343,20 +341,10 @@ class FieldRenderer {
         const cssX = clientX - rect.left;
         const cssY = clientY - rect.top;
         const { vs, ox, oy, vbX, vbY } = this._getVP();
-        const c = this.controller;
-        const svgX = (cssX - ox) / vs + vbX;
-        const svgY = (cssY - oy) / vs + vbY;
-        const mmX = (svgX - c.panOffset.x) / c.zoomLevel;
-        const mmY = (svgY - c.panOffset.y) / c.zoomLevel;
-        return { x: mmX / 1000, y: -mmY / 1000 };
-    }
-
-    pixelDeltaToSvgDelta(dxPx, dyPx) {
-        const { vs } = this._getVP();
-        return {
-            dx: dxPx / vs / this.controller.zoomLevel,
-            dy: dyPx / vs / this.controller.zoomLevel,
-        };
+        const zoom = this.controller.zoomLevel;
+        const svgX = (cssX - ox) / (zoom * vs) + vbX;
+        const svgY = (cssY - oy) / (zoom * vs) + vbY;
+        return { x: svgX / 1000, y: -svgY / 1000 };
     }
 }
 
@@ -383,11 +371,10 @@ class RobotTestController {
 
         // ビュー状態
         this.zoomLevel = 1.0;
-        this.panOffset = { x: 0, y: 0 };
-        this.lastPanPoint = { x: 0, y: 0 };
 
         // テストモード状態
         this.testModeActive = false;
+        this.cursorFollowMode = false;
 
         // 設定値
         this.maxVelocity = 2.0;
@@ -582,12 +569,22 @@ class RobotTestController {
     deactivateTest() {
         this.wsSend({ type: 'deactivate_robot_test' });
         this.testModeActive = false;
+        this.cursorFollowMode = false;
         this.selectedRobotId = null;
         this.targetPos = null;
         this.renderer?.invalidate();
         this.updateModeDisplay();
         document.getElementById('selected-robot-id').textContent = '--';
         document.getElementById('target-pos-display').textContent = '--';
+        const canvas = document.getElementById('field-canvas');
+        if (canvas) canvas.style.cursor = 'crosshair';
+    }
+
+    setCursorFollowMode(active) {
+        this.cursorFollowMode = active;
+        const canvas = document.getElementById('field-canvas');
+        if (canvas) canvas.style.cursor = active ? 'none' : 'crosshair';
+        this.updateModeDisplay();
     }
 
     sendTarget() {
@@ -630,7 +627,10 @@ class RobotTestController {
     updateModeDisplay() {
         const el = document.getElementById('mode-status');
         if (!el) return;
-        if (this.testModeActive) {
+        if (this.cursorFollowMode) {
+            el.textContent = 'CURSOR FOLLOW';
+            el.classList.add('active');
+        } else if (this.testModeActive) {
             el.textContent = 'ROBOT TEST ACTIVE';
             el.classList.add('active');
         } else {
@@ -678,6 +678,7 @@ class RobotTestController {
         const canvas = document.getElementById('field-canvas');
         if (!canvas) return;
 
+        // ホイールズーム
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const factor = e.deltaY < 0 ? 1.1 : 0.9;
@@ -685,59 +686,47 @@ class RobotTestController {
             this.renderer?.invalidate();
         }, { passive: false });
 
-        let mouseDownPos = null;
-        let hasMoved = false;
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            mouseDownPos = { x: e.clientX, y: e.clientY };
-            hasMoved = false;
-            this.lastPanPoint = { x: e.clientX, y: e.clientY };
-            canvas.style.cursor = 'grabbing';
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!mouseDownPos) return;
-            const dx = e.clientX - mouseDownPos.x;
-            const dy = e.clientY - mouseDownPos.y;
-            if (!hasMoved && Math.sqrt(dx * dx + dy * dy) >= DRAG_THRESHOLD_PX) {
-                hasMoved = true;
+        // シングルクリック: ロボット選択 / 目的地設定 / カーソル追従モード解除
+        canvas.addEventListener('click', (e) => {
+            if (this.cursorFollowMode) {
+                this.setCursorFollowMode(false);
+                return;
             }
-            if (hasMoved) {
-                const d = this.renderer.pixelDeltaToSvgDelta(
-                    e.clientX - this.lastPanPoint.x,
-                    e.clientY - this.lastPanPoint.y
-                );
-                this.panOffset.x += d.dx;
-                this.panOffset.y += d.dy;
+            const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
+            const hitId = this.findRobotAtPosition(fp.x, fp.y);
+            if (hitId !== null) {
+                this.selectRobot(hitId);
+            } else if (this.selectedRobotId !== null && this.testModeActive) {
+                this.targetPos = fp;
+                this.sendTarget();
                 this.renderer?.invalidate();
             }
-            this.lastPanPoint = { x: e.clientX, y: e.clientY };
         });
 
-        canvas.addEventListener('mouseup', (e) => {
-            if (!mouseDownPos) return;
-            const didMove = hasMoved;
-            mouseDownPos = null;
-            canvas.style.cursor = 'crosshair';
+        // ダブルクリック: カーソル追従モード開始
+        canvas.addEventListener('dblclick', (e) => {
+            if (!this.testModeActive || this.selectedRobotId === null) return;
+            this.setCursorFollowMode(true);
+            const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
+            this.targetPos = fp;
+            this.sendTarget();
+            this.renderer?.invalidate();
+        });
 
-            if (!didMove) {
-                // クリック判定: ロボット選択 or 目的地設定
-                const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
-                const hitId = this.findRobotAtPosition(fp.x, fp.y);
-                if (hitId !== null) {
-                    this.selectRobot(hitId);
-                } else if (this.selectedRobotId !== null && this.testModeActive) {
-                    this.targetPos = fp;
-                    this.sendTarget();
-                    this.renderer?.invalidate();
-                }
+        // マウス移動: カーソル追従モード時にリアルタイム送信
+        canvas.addEventListener('mousemove', (e) => {
+            if (!this.cursorFollowMode) return;
+            const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
+            this.targetPos = fp;
+            this.sendTarget();
+            this.renderer?.invalidate();
+        });
+
+        // Escキーでカーソル追従モード解除
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.cursorFollowMode) {
+                this.setCursorFollowMode(false);
             }
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            mouseDownPos = null;
-            canvas.style.cursor = 'crosshair';
         });
 
         canvas.style.cursor = 'crosshair';
