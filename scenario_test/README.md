@@ -13,6 +13,7 @@
 | `STOP_ROBOT_SPEED` | STOP状態でのロボット速度制限テスト（1.5m/s以下） |
 | `emit_from_penalty_01` | ペナルティエリアからのボール排出テスト |
 | `STOP_AVOID_BALL` | STOP状態でのボール回避テスト（0.4m以上離れる） |
+| `PENALTY_AREA_BYPASS_STABILITY` | ペナルティ横断回避時の侵入防止・安定性テスト |
 
 ## 前提条件
 
