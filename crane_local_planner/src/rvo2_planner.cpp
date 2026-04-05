@@ -78,11 +78,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("penalty_area_surrounding_offset", PENALTY_AREA_SURROUNDING_OFFSET);
   PENALTY_AREA_SURROUNDING_OFFSET =
     node.get_parameter("penalty_area_surrounding_offset").as_double();
-  node.declare_parameter("penalty_area_side_lock_seconds", PENALTY_AREA_SIDE_LOCK_SECONDS);
-  PENALTY_AREA_SIDE_LOCK_SECONDS = node.get_parameter("penalty_area_side_lock_seconds").as_double();
-  node.declare_parameter("penalty_area_side_switch_margin", PENALTY_AREA_SIDE_SWITCH_MARGIN);
-  PENALTY_AREA_SIDE_SWITCH_MARGIN =
-    node.get_parameter("penalty_area_side_switch_margin").as_double();
   node.declare_parameter(
     "penalty_area_force_waypoint_on_crossing", PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
   PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING =
@@ -159,7 +154,6 @@ auto RVO2Planner::initializePlanningFactors(crane_msgs::msg::RobotCommand & comm
   addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "0");
   addOrUpdatePlanningFactor(command, "RVO2PenaltyCrossingDetected", "0");
   addOrUpdatePlanningFactor(command, "RVO2PenaltyBypassSide", "NONE");
-  addOrUpdatePlanningFactor(command, "RVO2PenaltySideLock", "NONE");
   addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "0");
   addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "0");
   addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NONE");
@@ -739,23 +733,8 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
       needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
         ? PENALTY_AREA_OFFSET_STOP
         : PENALTY_AREA_OFFSET;
-    const auto now = std::chrono::steady_clock::now();
 
-    // 期限切れロック状態を掃除
-    for (auto it = penalty_bypass_lock_states_.begin(); it != penalty_bypass_lock_states_.end();) {
-      if (it->second.expires_at < now) {
-        it = penalty_bypass_lock_states_.erase(it);
-      } else {
-        ++it;
-      }
-    }
-
-    auto lock_key_for = [&](bool is_our_area) -> uint16_t {
-      return static_cast<uint16_t>(command.robot_id) * 2 + (is_our_area ? 0U : 1U);
-    };
-
-    auto avoidPenaltyArea = [&](
-                              const Box & penalty_area, const Point & goal_pos, bool is_our_area) {
+    auto avoidPenaltyArea = [&](const Box & penalty_area, const Point & goal_pos) {
       constexpr int MAX_ITERATIONS = 100;
       if (isInBox(penalty_area, current_pos, penalty_area_offset)) {
         if (std::abs(current_pos.x()) > world_model->fieldSize().x() / 2.0) {
@@ -785,38 +764,26 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
           target_pos += (target_pos - goal_pos).normalized() * 0.05;
         }
       }
-      const auto key = lock_key_for(is_our_area);
-      std::optional<PenaltyBypassSide> locked_side = std::nullopt;
-      if (
-        auto it = penalty_bypass_lock_states_.find(key); it != penalty_bypass_lock_states_.end()) {
-        locked_side = it->second.side;
-      }
 
       const auto decision = computePenaltyBypassDecision(
         current_pos, target_pos, penalty_area, goal_pos, world_model->penaltyAreaSize(),
-        penalty_area_offset, PENALTY_AREA_SURROUNDING_OFFSET, locked_side,
-        PENALTY_AREA_SIDE_SWITCH_MARGIN, PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
+        penalty_area_offset, PENALTY_AREA_SURROUNDING_OFFSET,
+        PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
       if (!decision.crossing_detected) {
         return;
       }
 
       addOrUpdatePlanningFactor(command, "RVO2PenaltyCrossingDetected", "1");
       addOrUpdatePlanningFactor(command, "RVO2PenaltyBypassSide", toString(decision.selected_side));
-      addOrUpdatePlanningFactor(
-        command, "RVO2PenaltySideLock", decision.used_locked_side ? "LOCKED" : "SWITCHED");
 
-      penalty_bypass_lock_states_[key] = {
-        decision.selected_side,
-        now + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                std::chrono::duration<double>(PENALTY_AREA_SIDE_LOCK_SECONDS))};
       if (decision.target_overridden) {
         target_pos = decision.waypoint;
       }
     };
 
     // 自陣と敵陣の両方のペナルティエリアを回避
-    avoidPenaltyArea(world_model->getOurPenaltyArea(), world_model->getOurGoalCenter(), true);
-    avoidPenaltyArea(world_model->getTheirPenaltyArea(), world_model->getTheirGoalCenter(), false);
+    avoidPenaltyArea(world_model->getOurPenaltyArea(), world_model->getOurGoalCenter());
+    avoidPenaltyArea(world_model->getTheirPenaltyArea(), world_model->getTheirGoalCenter());
   }
 }
 
