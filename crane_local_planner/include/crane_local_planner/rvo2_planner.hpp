@@ -78,6 +78,55 @@ public:
   }
 
 private:
+  struct PreprocessContext
+  {
+    uint8_t robot_id = 0;
+    Point current_pose_position = Point::Zero();
+    Point current_estimated_position = Point::Zero();
+    Point original_target_pos = Point::Zero();
+    Point target_pos = Point::Zero();
+    Velocity target_vel = Velocity::Zero();
+    double max_vel = 0.0;
+    bool is_valid = true;
+    bool run_target_adjustments = true;
+  };
+
+  auto initializePlanningFactors(crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto setPlanningStage(crane_msgs::msg::RobotCommand & command, const std::string & stage) const
+    -> void;
+
+  auto addMaxVelocityFactor(
+    crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void;
+
+  auto createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
+    -> PreprocessContext;
+
+  auto applyInputValidation(PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const
+    -> void;
+
+  auto applyTargetAdjustmentPipeline(
+    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto computePreferredVelocityStage(
+    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command, uint8_t referee_command) const
+    -> void;
+
+  auto applyCrashAvoidanceConstraint(
+    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto applyPenaltyAreaBrakingConstraint(
+    PreprocessContext & ctx, const Box & area, const crane_msgs::msg::RobotCommand & command) const
+    -> void;
+
+  auto applyPreConstraintStage(
+    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void;
+
+  auto applyRVOInputStage(
+    const PreprocessContext & ctx, const crane_msgs::msg::RobotCommand & command) -> void;
+
+  auto getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const -> Point;
+
   auto adjustForPenaltyAreaAvoidance(
     Point & target_pos, const Point & current_pos,
     const crane_msgs::msg::RobotCommand & command) const -> void;

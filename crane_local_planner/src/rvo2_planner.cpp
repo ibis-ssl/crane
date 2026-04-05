@@ -127,6 +127,335 @@ auto RVO2Planner::initializePenaltyAreaObstacles() -> void
     their_area.min_corner().y(), their_area.max_corner().y());
 }
 
+auto RVO2Planner::getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const
+  -> Point
+{
+  if (
+    auto feedback = ranges::find_if(
+      latest_feedback.feedback, [&](const auto & f) { return f.robot_id == robot_id; });
+    feedback != latest_feedback.feedback.end()) {
+    return Point(feedback->odom[0], feedback->odom[1]);
+  }
+  return fallback;
+}
+
+auto RVO2Planner::initializePlanningFactors(crane_msgs::msg::RobotCommand & command) const -> void
+{
+  setPlanningStage(command, "INIT");
+  addOrUpdatePlanningFactor(command, "RVO2AdjustFieldBoundary", "0");
+  addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "0");
+  addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "0");
+  addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "0");
+  addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NONE");
+}
+
+auto RVO2Planner::setPlanningStage(
+  crane_msgs::msg::RobotCommand & command, const std::string & stage) const -> void
+{
+  addOrUpdatePlanningFactor(command, "RVO2Stage", stage);
+}
+
+auto RVO2Planner::addMaxVelocityFactor(
+  crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void
+{
+  command.local_planner_config.max_velocity_factors.emplace_back(
+    crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
+}
+
+auto RVO2Planner::createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
+  -> PreprocessContext
+{
+  PreprocessContext ctx;
+  ctx.robot_id = command.robot_id;
+  ctx.current_pose_position = Point(command.current_pose.x, command.current_pose.y);
+  ctx.current_estimated_position =
+    getCurrentEstimatedPosition(command.robot_id, ctx.current_pose_position);
+  if (!command.position_target_mode.empty()) {
+    const auto & pos_mode = command.position_target_mode.front();
+    ctx.target_pos = Point(pos_mode.target_x, pos_mode.target_y);
+    ctx.original_target_pos = ctx.target_pos;
+  }
+  return ctx;
+}
+
+auto RVO2Planner::applyInputValidation(
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
+{
+  if (command.position_target_mode.empty()) {
+    ctx.is_valid = false;
+    setPlanningStage(command, "INPUT_INVALID");
+    addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NO_POSITION_TARGET_MODE");
+    return;
+  }
+
+  auto & pos_mode = command.position_target_mode.front();
+
+  setPlanningStage(command, "INPUT_VALIDATION");
+  if (std::isnan(ctx.target_pos.x()) || std::isnan(ctx.target_pos.y())) {
+    RCLCPP_WARN_STREAM(
+      rclcpp::get_logger("rvo2_local_planner"),
+      "[RVO2Planner] NaN detected in target_pos for robot "
+        << static_cast<int>(command.robot_id) << ": target_pos(" << ctx.target_pos.x() << ", "
+        << ctx.target_pos.y() << "), using current position as fallback\n"
+        << crane_msgs::msg::to_yaml(command));
+    ctx.target_pos = ctx.current_pose_position;
+    ctx.run_target_adjustments = false;
+    addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_TARGET");
+  }
+
+  if (std::isnan(ctx.current_pose_position.x()) || std::isnan(ctx.current_pose_position.y())) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("rvo2_local_planner"),
+      "[RVO2Planner] NaN detected in current_pos for robot %d: current_pos(%f, %f), stopping "
+      "planner output for this robot",
+      static_cast<int>(command.robot_id), ctx.current_pose_position.x(),
+      ctx.current_pose_position.y());
+    ctx.is_valid = false;
+    ctx.current_pose_position = Point(20.0, 20.0);
+    ctx.current_estimated_position = ctx.current_pose_position;
+    ctx.target_vel = Velocity::Zero();
+    ctx.max_vel = 0.0;
+    setPlanningStage(command, "INPUT_INVALID");
+    addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_CURRENT");
+    return;
+  }
+
+  if (
+    std::isnan(ctx.current_estimated_position.x()) ||
+    std::isnan(ctx.current_estimated_position.y())) {
+    ctx.current_estimated_position = ctx.current_pose_position;
+    addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_FEEDBACK_FALLBACK_POSE");
+  }
+
+  pos_mode.target_x = ctx.target_pos.x();
+  pos_mode.target_y = ctx.target_pos.y();
+}
+
+auto RVO2Planner::applyTargetAdjustmentPipeline(
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
+{
+  if (command.position_target_mode.empty()) {
+    return;
+  }
+
+  setPlanningStage(command, "TARGET_ADJUSTMENT");
+  Point before = ctx.target_pos;
+  adjustForFieldBoundary(ctx.target_pos, ctx.current_pose_position, command);
+  if (pointChanged(before, ctx.target_pos)) {
+    addOrUpdatePlanningFactor(command, "RVO2AdjustFieldBoundary", "1");
+  }
+
+  before = ctx.target_pos;
+  adjustForPenaltyAreaAvoidance(ctx.target_pos, ctx.current_pose_position, command);
+  if (pointChanged(before, ctx.target_pos)) {
+    addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "1");
+  }
+
+  before = ctx.target_pos;
+  adjustForBallAvoidance(ctx.target_pos, ctx.current_pose_position, command);
+  if (pointChanged(before, ctx.target_pos)) {
+    addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "1");
+  }
+
+  before = ctx.target_pos;
+  adjustForPlacementAvoidance(ctx.target_pos, ctx.current_pose_position, command);
+  if (pointChanged(before, ctx.target_pos)) {
+    addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "1");
+  }
+
+  auto & pos_mode = command.position_target_mode.front();
+  pos_mode.target_x = ctx.target_pos.x();
+  pos_mode.target_y = ctx.target_pos.y();
+  addOrUpdatePlanningFactor(
+    command, "RVO2TargetAdjustedDistance",
+    formatPlanningDouble((ctx.target_pos - ctx.original_target_pos).norm()));
+}
+
+auto RVO2Planner::computePreferredVelocityStage(
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command, uint8_t referee_command) const
+  -> void
+{
+  setPlanningStage(command, "PREF_VELOCITY");
+  Vector2 position_diff;
+  position_diff << ctx.target_pos.x() - ctx.current_estimated_position.x(),
+    ctx.target_pos.y() - ctx.current_estimated_position.y();
+
+  const double max_brk = planning_deceleration;
+  addMaxVelocityFactor(command, "RVO2Planner::max_vel from parameter", MAX_VEL);
+  if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+    addMaxVelocityFactor(command, "RVO2Planner STOP制限", STOP_STATE_MAX_VELOCITY);
+  }
+  ctx.max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
+
+  auto brk_vel = [max_brk](double d) -> double {
+    const double abs_d = std::abs(d);
+    return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
+  };
+
+  ctx.target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
+
+  const Vector2 current_vel(command.current_velocity.x, command.current_velocity.y);
+  ctx.target_vel -= velocity_damping_gain * current_vel;
+
+  if (position_diff.norm() > 0.01 && ctx.target_vel.dot(position_diff) < 0.0) {
+    ctx.target_vel.setZero();
+  }
+
+  const double target_vel_norm = ctx.target_vel.norm();
+  if (target_vel_norm > ctx.max_vel) {
+    ctx.target_vel *= ctx.max_vel / target_vel_norm;
+  }
+}
+
+auto RVO2Planner::applyCrashAvoidanceConstraint(
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
+{
+  if (command.local_planner_config.disable_crash_avoidance) {
+    return;
+  }
+
+  const Point our_pos = ctx.current_pose_position;
+  for (const auto & enemy_robot : world_model->theirs().robotsWhere().available().get()) {
+    const Vector2 to_enemy = enemy_robot->pose.pos - our_pos;
+    const double dist = to_enemy.norm();
+
+    if (dist < CRASH_AVOIDANCE_DISTANCE && dist > 0.01) {
+      const Vector2 dir = to_enemy.normalized();
+      const double enemy_approach = -enemy_robot->vel.linear.dot(dir);
+      double safe_approach =
+        CRASH_SPEED_LIMIT - std::max(0.0, enemy_approach) - CRASH_SAFETY_MARGIN;
+      safe_approach = std::max(safe_approach, 0.0);
+
+      const double factor = 1.0 - std::clamp(
+                                    (dist - CRASH_AVOIDANCE_DECEL_DISTANCE) /
+                                      (CRASH_AVOIDANCE_DISTANCE - CRASH_AVOIDANCE_DECEL_DISTANCE),
+                                    0.0, 1.0);
+
+      const double approach_component = ctx.target_vel.dot(dir);
+      const double max_approach = approach_component * (1.0 - factor) + safe_approach * factor;
+      if (approach_component > max_approach && approach_component > 0.0) {
+        const Vector2 lateral = ctx.target_vel - approach_component * dir;
+        ctx.target_vel = lateral + max_approach * dir;
+        addOrUpdatePlanningFactor(
+          command, "CrashAvoidance",
+          "robot" + std::to_string(enemy_robot->id) + ":" + formatPlanningDouble(max_approach));
+      }
+    }
+  }
+}
+
+auto RVO2Planner::applyPenaltyAreaBrakingConstraint(
+  PreprocessContext & ctx, const Box & area, const crane_msgs::msg::RobotCommand & command) const
+  -> void
+{
+  const double penalty_area_offset =
+    needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
+      ? PENALTY_AREA_OFFSET_STOP
+      : PENALTY_AREA_OFFSET;
+
+  const double xmin = area.min_corner().x() - penalty_area_offset;
+  const double xmax = area.max_corner().x() + penalty_area_offset;
+  const double ymin = area.min_corner().y() - penalty_area_offset;
+  const double ymax = area.max_corner().y() + penalty_area_offset;
+
+  if (
+    ctx.current_estimated_position.x() >= xmin && ctx.current_estimated_position.x() <= xmax &&
+    ctx.current_estimated_position.y() >= ymin && ctx.current_estimated_position.y() <= ymax) {
+    const double d_left = ctx.current_estimated_position.x() - xmin;
+    const double d_right = xmax - ctx.current_estimated_position.x();
+    const double d_bottom = ctx.current_estimated_position.y() - ymin;
+    const double d_top = ymax - ctx.current_estimated_position.y();
+    const double min_d = std::min({d_left, d_right, d_bottom, d_top});
+    Eigen::Vector2d escape_dir(0, 0);
+    if (min_d == d_left) {
+      escape_dir = Eigen::Vector2d(-1, 0);
+    } else if (min_d == d_right) {
+      escape_dir = Eigen::Vector2d(1, 0);
+    } else if (min_d == d_bottom) {
+      escape_dir = Eigen::Vector2d(0, -1);
+    } else {
+      escape_dir = Eigen::Vector2d(0, 1);
+    }
+
+    const double escape_component = ctx.target_vel.dot(escape_dir);
+    if (escape_component <= 0.0) {
+      ctx.target_vel -= escape_component * escape_dir;
+      ctx.target_vel += 0.5 * escape_dir;
+    }
+    return;
+  }
+
+  const double dx_left = xmin - ctx.current_estimated_position.x();
+  const double dx_right = ctx.current_estimated_position.x() - xmax;
+  const double dy_below = ymin - ctx.current_estimated_position.y();
+  const double dy_above = ctx.current_estimated_position.y() - ymax;
+
+  constexpr double BRAKING_SAFETY_MARGIN = 0.05;
+  if ((dx_left > 0.0 || dx_right > 0.0) && (dy_below > 0.0 || dy_above > 0.0)) {
+    const double corner_x = (dx_left > 0.0) ? xmin : xmax;
+    const double corner_y = (dy_below > 0.0) ? ymin : ymax;
+    const double cdx = corner_x - ctx.current_estimated_position.x();
+    const double cdy = corner_y - ctx.current_estimated_position.y();
+    const double dist_to_corner = std::hypot(cdx, cdy);
+    if (dist_to_corner > 1e-9) {
+      const Eigen::Vector2d corner_dir(cdx / dist_to_corner, cdy / dist_to_corner);
+      const double approach = ctx.target_vel.dot(corner_dir);
+      if (approach > 0.0) {
+        const double effective_dist = std::max(dist_to_corner - BRAKING_SAFETY_MARGIN, 0.0);
+        const double v_max = std::sqrt(2.0 * planning_deceleration * effective_dist);
+        if (approach > v_max) {
+          ctx.target_vel -= (approach - v_max) * corner_dir;
+        }
+      }
+    }
+    return;
+  }
+
+  if (dx_left > 0.0 && ctx.target_vel.x() > 0.0) {
+    const double v_max =
+      std::sqrt(2.0 * planning_deceleration * std::max(dx_left - BRAKING_SAFETY_MARGIN, 0.0));
+    ctx.target_vel.x() = std::min(ctx.target_vel.x(), v_max);
+  }
+  if (dx_right > 0.0 && ctx.target_vel.x() < 0.0) {
+    const double v_max =
+      std::sqrt(2.0 * planning_deceleration * std::max(dx_right - BRAKING_SAFETY_MARGIN, 0.0));
+    ctx.target_vel.x() = std::max(ctx.target_vel.x(), -v_max);
+  }
+  if (dy_below > 0.0 && ctx.target_vel.y() > 0.0) {
+    const double v_max =
+      std::sqrt(2.0 * planning_deceleration * std::max(dy_below - BRAKING_SAFETY_MARGIN, 0.0));
+    ctx.target_vel.y() = std::min(ctx.target_vel.y(), v_max);
+  }
+  if (dy_above > 0.0 && ctx.target_vel.y() < 0.0) {
+    const double v_max =
+      std::sqrt(2.0 * planning_deceleration * std::max(dy_above - BRAKING_SAFETY_MARGIN, 0.0));
+    ctx.target_vel.y() = std::max(ctx.target_vel.y(), -v_max);
+  }
+}
+
+auto RVO2Planner::applyPreConstraintStage(
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
+{
+  setPlanningStage(command, "PRE_CONSTRAINT");
+  applyCrashAvoidanceConstraint(ctx, command);
+  if (!command.local_planner_config.disable_goal_area_avoidance) {
+    applyPenaltyAreaBrakingConstraint(ctx, world_model->getOurPenaltyArea(), command);
+    applyPenaltyAreaBrakingConstraint(ctx, world_model->getTheirPenaltyArea(), command);
+  }
+}
+
+auto RVO2Planner::applyRVOInputStage(
+  const PreprocessContext & ctx, const crane_msgs::msg::RobotCommand & command) -> void
+{
+  rvo_sim->setAgentPosition(command.robot_id, toRVO(ctx.current_pose_position));
+  rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(ctx.target_vel));
+  rvo_sim->setAgentMaxSpeed(command.robot_id, ctx.max_vel);
+  rvo_sim->setAgentTimeHorizonObst(
+    command.robot_id, command.local_planner_config.disable_goal_area_avoidance
+                        ? 0.0f
+                        : PENALTY_AREA_TIME_HORIZON_OBST);
+}
+
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
   // ペナルティエリアObstacleの遅延初期化（フィールド情報が確定してから一度だけ）
@@ -152,11 +481,15 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         "robot_id=%d has no position_target_mode. skipping.", static_cast<int>(command.robot_id));
       continue;
     }
-    auto & pos_mode = command.position_target_mode.front();
+    auto ctx = createPreprocessContext(command);
+    initializePlanningFactors(command);
+    applyInputValidation(ctx, command);
+    if (!ctx.is_valid) {
+      applyRVOInputStage(ctx, command);
+      continue;
+    }
 
-    rvo_sim->setAgentPosition(
-      command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
-    rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
+    setPlanningStage(command, "RVO_INPUT");
     auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
     double radius = 0.05f + vel * 0.1f;
     rvo_sim->setAgentRadius(command.robot_id, radius);
@@ -164,231 +497,20 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     auto robot = world_model->getOurRobot(command.robot_id);
     drawRobotRadiusWithSpeed(visualizer, robot->pose.pos, radius, vel, "yellow");
 
-    // feedback情報があればそちらの現在位置を参照する
-    Point current_position = [&]() -> Point {
-      if (
-        auto feedback = ranges::find_if(
-          latest_feedback.feedback, [&](const auto & f) { return f.robot_id == command.robot_id; });
-        feedback != latest_feedback.feedback.end()) {
-        return Point(feedback->odom[0], feedback->odom[1]);
-      } else {
-        return Point(command.current_pose.x, command.current_pose.y);
-      }
-    }();
-
-    // 位置指令の処理
-    Vector2 position_diff;
-    position_diff << pos_mode.target_x - current_position.x(),
-      pos_mode.target_y - current_position.y();
-
-    const double max_brk = planning_deceleration;
-
-    command.local_planner_config.max_velocity_factors.emplace_back(
-      crane_msgs::msg::NamedFloat()
-        .set__name("RVO2Planner::max_vel from parameter")
-        .set__value(MAX_VEL));
-    if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
-      command.local_planner_config.max_velocity_factors.emplace_back(
-        crane_msgs::msg::NamedFloat()
-          .set__name("RVO2Planner STOP制限")
-          .set__value(STOP_STATE_MAX_VELOCITY));
+    if (
+      referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT &&
+      ctx.run_target_adjustments) {
+      applyTargetAdjustmentPipeline(ctx, command);
+    } else if (!command.position_target_mode.empty()) {
+      auto & pos_mode = command.position_target_mode.front();
+      pos_mode.target_x = ctx.target_pos.x();
+      pos_mode.target_y = ctx.target_pos.y();
+      addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
     }
-
-    double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
-
-    // P成分: v = sign(d) * sqrt(2 * max_brk * |d|)（制動距離から逆算した運動学的速度）
-    auto brk_vel = [max_brk](double d) -> double {
-      const double abs_d = std::abs(d);
-      return (abs_d > 1e-9) ? std::copysign(std::sqrt(2.0 * max_brk * abs_d), d) : 0.0;
-    };
-    Velocity target_vel;
-    target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
-
-    // D成分: 現在速度によるダンピング（オーバーシュート抑制）
-    const Vector2 current_vel(command.current_velocity.x, command.current_velocity.y);
-    target_vel -= velocity_damping_gain * current_vel;
-
-    // ダンピングが強すぎて目標と逆方向になった場合は0にクランプ（1cm未満は位置許容内とみなす）
-    if (position_diff.norm() > 0.01 && target_vel.dot(position_diff) < 0.0) {
-      target_vel.setZero();
-    }
-
-    const double target_vel_norm = target_vel.norm();
-    if (target_vel_norm > max_vel) {
-      target_vel *= max_vel / target_vel_norm;
-    }
-    // 衝突ファール (crashing) 回避:
-    // SSLルールでは衝突時の速度ベクトル差をロボット間直線に射影した値が
-    // 1.5 m/s を超えるとファール。敵ロボットへの接近方向成分を制限する。
-    if (!command.local_planner_config.disable_crash_avoidance) {
-      const Point our_pos(command.current_pose.x, command.current_pose.y);
-      for (const auto & enemy_robot : world_model->theirs().robotsWhere().available().get()) {
-        const Vector2 to_enemy = enemy_robot->pose.pos - our_pos;
-        const double dist = to_enemy.norm();
-
-        if (dist < CRASH_AVOIDANCE_DISTANCE && dist > 0.01) {
-          const Vector2 dir = to_enemy.normalized();
-
-          // 敵ロボットの自ロボットへの接近速度成分（敵が向かってくる方向を正）
-          const double enemy_approach = -enemy_robot->vel.linear.dot(dir);
-
-          // 安全な接近速度 = ルール閾値 - 敵の接近速度 - 安全マージン
-          double safe_approach =
-            CRASH_SPEED_LIMIT - std::max(0.0, enemy_approach) - CRASH_SAFETY_MARGIN;
-          safe_approach = std::max(safe_approach, 0.0);
-
-          // 距離に応じた線形補間: 近い(factor=1)ほど制限を強く適用
-          const double factor =
-            1.0 - std::clamp(
-                    (dist - CRASH_AVOIDANCE_DECEL_DISTANCE) /
-                      (CRASH_AVOIDANCE_DISTANCE - CRASH_AVOIDANCE_DECEL_DISTANCE),
-                    0.0, 1.0);
-
-          // target_velの敵方向への射影成分を取得
-          const double approach_component = target_vel.dot(dir);
-
-          // factor補間した制限値を計算（factor=0なら制限なし）
-          const double max_approach = approach_component * (1.0 - factor) + safe_approach * factor;
-
-          // 接近方向成分が制限を超えており、かつ敵に向かっている場合のみ制限
-          if (approach_component > max_approach && approach_component > 0.0) {
-            // 横方向成分を維持しながら接近方向成分のみを制限
-            const Vector2 lateral = target_vel - approach_component * dir;
-            target_vel = lateral + max_approach * dir;
-            addOrUpdatePlanningFactor(
-              command, "CrashAvoidance",
-              "robot" + std::to_string(enemy_robot->id) + ":" + formatPlanningDouble(max_approach));
-          }
-        }
-      }
-    }
-
-    // ペナルティエリア物理ブレーキング制約
-    // ORCA（速度空間制約）はコマンド速度を制限するが、ロボットの物理慣性は考慮できない。
-    // 境界までの距離に基づく「物理的に停止可能な最大接近速度」を計算してprefVelocityを制限する。
-    //   max_approach_vel = sqrt(2 * planning_deceleration * dist_to_boundary)
-    if (!command.local_planner_config.disable_goal_area_avoidance) {
-      auto applyPhysicalBrakingConstraint = [&](const Box & area) {
-        const double penalty_area_offset =
-          needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
-            ? PENALTY_AREA_OFFSET_STOP
-            : PENALTY_AREA_OFFSET;
-        const double xmin = area.min_corner().x() - penalty_area_offset;
-        const double xmax = area.max_corner().x() + penalty_area_offset;
-        const double ymin = area.min_corner().y() - penalty_area_offset;
-        const double ymax = area.max_corner().y() + penalty_area_offset;
-        // ロボットがエリア内にいる場合は最短経路で脱出させる
-        if (
-          current_position.x() >= xmin && current_position.x() <= xmax &&
-          current_position.y() >= ymin && current_position.y() <= ymax) {
-          const double d_left = current_position.x() - xmin;
-          const double d_right = xmax - current_position.x();
-          const double d_bottom = current_position.y() - ymin;
-          const double d_top = ymax - current_position.y();
-          const double min_d = std::min({d_left, d_right, d_bottom, d_top});
-          Eigen::Vector2d escape_dir(0, 0);
-          if (min_d == d_left)
-            escape_dir = Eigen::Vector2d(-1, 0);
-          else if (min_d == d_right)
-            escape_dir = Eigen::Vector2d(1, 0);
-          else if (min_d == d_bottom)
-            escape_dir = Eigen::Vector2d(0, -1);
-          else
-            escape_dir = Eigen::Vector2d(0, 1);
-          // 脱出方向と逆に向いている成分を除去し、最低脱出速度を保証
-          const double escape_component = target_vel.dot(escape_dir);
-          if (escape_component <= 0.0) {
-            target_vel -= escape_component * escape_dir;
-            target_vel += 0.5 * escape_dir;
-          }
-          return;
-        }
-
-        // 各軸方向の境界からの距離（外側から境界への距離、外側で正）
-        const double dx_left = xmin - current_position.x();   // 左側にある場合 > 0
-        const double dx_right = current_position.x() - xmax;  // 右側にある場合 > 0
-        const double dy_below = ymin - current_position.y();  // 下側にある場合 > 0
-        const double dy_above = current_position.y() - ymax;  // 上側にある場合 > 0
-
-        // 制御遅延（~50ms）分の安全マージンを加味した有効距離
-        constexpr double BRAKING_SAFETY_MARGIN = 0.05;
-        if ((dx_left > 0.0 || dx_right > 0.0) && (dy_below > 0.0 || dy_above > 0.0)) {
-          // 角の外側: 最近傍角頂点までのユークリッド距離でブレーキング制約を計算
-          // 各軸独立制約より緩やかになり、角を回り込む際の接線方向の速度が維持される
-          const double corner_x = (dx_left > 0.0) ? xmin : xmax;
-          const double corner_y = (dy_below > 0.0) ? ymin : ymax;
-          const double cdx = corner_x - current_position.x();
-          const double cdy = corner_y - current_position.y();
-          const double dist_to_corner = std::hypot(cdx, cdy);
-          if (dist_to_corner > 1e-9) {
-            const Eigen::Vector2d corner_dir(cdx / dist_to_corner, cdy / dist_to_corner);
-            const double approach = target_vel.dot(corner_dir);
-            if (approach > 0.0) {
-              const double effective_dist = std::max(dist_to_corner - BRAKING_SAFETY_MARGIN, 0.0);
-              const double v_max = std::sqrt(2.0 * planning_deceleration * effective_dist);
-              if (approach > v_max) {
-                target_vel -= (approach - v_max) * corner_dir;
-              }
-            }
-          }
-        } else {
-          // 面の外側: 各境界面への距離を計算し、接近方向速度成分を物理制動距離内に制限する
-          // 左面: ロボットが左(x < xmin)にいてxmin方向に接近中
-          if (dx_left > 0.0 && target_vel.x() > 0.0) {
-            const double v_max = std::sqrt(
-              2.0 * planning_deceleration * std::max(dx_left - BRAKING_SAFETY_MARGIN, 0.0));
-            target_vel.x() = std::min(target_vel.x(), v_max);
-          }
-          // 右面: ロボットが右(x > xmax)にいてxmax方向に接近中
-          if (dx_right > 0.0 && target_vel.x() < 0.0) {
-            const double v_max = std::sqrt(
-              2.0 * planning_deceleration * std::max(dx_right - BRAKING_SAFETY_MARGIN, 0.0));
-            target_vel.x() = std::max(target_vel.x(), -v_max);
-          }
-          // 下面: ロボットが下(y < ymin)にいてymin方向に接近中
-          if (dy_below > 0.0 && target_vel.y() > 0.0) {
-            const double v_max = std::sqrt(
-              2.0 * planning_deceleration * std::max(dy_below - BRAKING_SAFETY_MARGIN, 0.0));
-            target_vel.y() = std::min(target_vel.y(), v_max);
-          }
-          // 上面: ロボットが上(y > ymax)にいてymax方向に接近中
-          if (dy_above > 0.0 && target_vel.y() < 0.0) {
-            const double v_max = std::sqrt(
-              2.0 * planning_deceleration * std::max(dy_above - BRAKING_SAFETY_MARGIN, 0.0));
-            target_vel.y() = std::max(target_vel.y(), -v_max);
-          }
-        }
-      };
-      applyPhysicalBrakingConstraint(world_model->getOurPenaltyArea());
-      applyPhysicalBrakingConstraint(world_model->getTheirPenaltyArea());
-    }
-
-    // ペナルティエリア障害物回避のtimeHorizonObstをフラグに応じて設定
-    // disable_goal_area_avoidance=trueのロボット（GKなど）は障害物回避を無効化
-    rvo_sim->setAgentTimeHorizonObst(
-      command.robot_id, command.local_planner_config.disable_goal_area_avoidance
-                          ? 0.0f
-                          : PENALTY_AREA_TIME_HORIZON_OBST);
-
-    rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
-    rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
-
-    /*
-    // 速度計画トレースに計画点を追加
-    if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
-      // 現在時刻から100ms後の予測位置・速度を記録
-      constexpr double TRACE_LOOKAHEAD_S = 0.1;
-      const int32_t target_time_us = static_cast<int32_t>(TRACE_LOOKAHEAD_S * 1e6);  // 100000us
-      Eigen::Vector2d predicted_pos = current_position + next_vel * TRACE_LOOKAHEAD_S;
-      Eigen::Vector2d predicted_vel = next_vel;
-
-      VelocityPlanTracker::addPlanPoint(
-        command.velocity_plan_trace[0], "local_planner", predicted_pos, predicted_vel,
-        target_time_us,
-        0  // estimated_arrival_time_us（後で実装可能）
-      );
-    }
-*/
+    computePreferredVelocityStage(ctx, command, referee_command);
+    applyPreConstraintStage(ctx, command);
+    setPlanningStage(command, "RVO_INPUT");
+    applyRVOInputStage(ctx, command);
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {
@@ -508,10 +630,6 @@ auto RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  if (referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT) {
-    overrideTargetPosition(commands);
-  }
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
@@ -520,77 +638,29 @@ auto RVO2Planner::calculateRobotCommand(
 
 auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
 {
+  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
   for (auto & command : msg.robot_commands) {
     if (command.position_target_mode.empty()) {
       continue;
     }
-    auto & pos_mode = command.position_target_mode.front();
 
-    Point target_pos;
-    target_pos << pos_mode.target_x, pos_mode.target_y;
-    const Point original_target_pos = target_pos;
-    addOrUpdatePlanningFactor(command, "RVO2AdjustFieldBoundary", "0");
-    addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "0");
-    addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "0");
-    addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "0");
-    addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NONE");
-
-    // NaN値検証とフォールバック処理
-    const Point current_pos(command.current_pose.x, command.current_pose.y);
-    if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
-      RCLCPP_WARN_STREAM(
-        rclcpp::get_logger("rvo2_local_planner"),
-        "[RVO2Planner] NaN detected in target_pos for robot "
-          << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
-          << target_pos.y() << "), using current position as fallback\n"
-          << crane_msgs::msg::to_yaml(command));
-      target_pos = current_pos;  // フォールバック: 現在位置に設定
-      pos_mode.target_x = target_pos.x();
-      pos_mode.target_y = target_pos.y();
-      addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_TARGET");
-      continue;  // この時点で早期リターン、ペナルティエリア処理をスキップ
+    initializePlanningFactors(command);
+    auto ctx = createPreprocessContext(command);
+    applyInputValidation(ctx, command);
+    if (!ctx.is_valid) {
+      continue;
     }
 
-    if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
-      RCLCPP_WARN(
-        rclcpp::get_logger("rvo2_local_planner"),
-        "[RVO2Planner] NaN detected in current_pos for robot %d: current_pos(%f, %f), skipping "
-        "robot",
-        static_cast<int>(command.robot_id), current_pos.x(), current_pos.y());
-      addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_CURRENT");
-      continue;  // この場合は処理をスキップ
+    if (
+      referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT &&
+      ctx.run_target_adjustments) {
+      applyTargetAdjustmentPipeline(ctx, command);
+    } else if (!command.position_target_mode.empty()) {
+      auto & pos_mode = command.position_target_mode.front();
+      pos_mode.target_x = ctx.target_pos.x();
+      pos_mode.target_y = ctx.target_pos.y();
+      addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
     }
-
-    // 4つの独立した回避ロジックを適用
-    Point before = target_pos;
-    adjustForFieldBoundary(target_pos, current_pos, command);
-    if (pointChanged(before, target_pos)) {
-      addOrUpdatePlanningFactor(command, "RVO2AdjustFieldBoundary", "1");
-    }
-
-    before = target_pos;
-    adjustForPenaltyAreaAvoidance(target_pos, current_pos, command);
-    if (pointChanged(before, target_pos)) {
-      addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "1");
-    }
-
-    before = target_pos;
-    adjustForBallAvoidance(target_pos, current_pos, command);
-    if (pointChanged(before, target_pos)) {
-      addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "1");
-    }
-
-    before = target_pos;
-    adjustForPlacementAvoidance(target_pos, current_pos, command);
-    if (pointChanged(before, target_pos)) {
-      addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "1");
-    }
-
-    pos_mode.target_x = target_pos.x();
-    pos_mode.target_y = target_pos.y();
-    addOrUpdatePlanningFactor(
-      command, "RVO2TargetAdjustedDistance",
-      formatPlanningDouble((target_pos - original_target_pos).norm()));
   }
 }
 
