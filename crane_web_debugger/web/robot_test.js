@@ -2,8 +2,9 @@
 
 // ---- 定数 ----
 const ROBOT_HIT_RADIUS_M = 0.15;
-const VB_X = -6000, VB_Y = -4500, VB_W = 12000, VB_H = 9000;
+const FIELD_MARGIN_M = 1.0;  // フィールド外側の余白 (m)
 const CHART_BUF = 300;  // 10Hz × 30秒
+const DRAG_THRESHOLD_PX = 5;
 
 // ---- Chart.js ヘルパー ----
 function makeDataset(label, color, dashed = false) {
@@ -115,16 +116,28 @@ class FieldRenderer {
         this._resizeObserver.disconnect();
     }
 
+    // フィールド寸法(mm)をコントローラから取得
+    _getFieldDims() {
+        const c = this.controller;
+        const halfL = (c.fieldLength / 2 + FIELD_MARGIN_M) * 1000;
+        const halfW = (c.fieldWidth / 2 + FIELD_MARGIN_M) * 1000;
+        return {
+            vbX: -halfL, vbY: -halfW,
+            vbW: halfL * 2, vbH: halfW * 2,
+        };
+    }
+
     _getVP() {
         const dpr = this._dpr;
         const cssW = this.canvas.width / dpr;
         const cssH = this.canvas.height / dpr;
-        const scaleX = cssW / VB_W;
-        const scaleY = cssH / VB_H;
+        const { vbX, vbY, vbW, vbH } = this._getFieldDims();
+        const scaleX = cssW / vbW;
+        const scaleY = cssH / vbH;
         const vs = Math.min(scaleX, scaleY);
-        const ox = (cssW - VB_W * vs) / 2;
-        const oy = (cssH - VB_H * vs) / 2;
-        return { dpr, cssW, cssH, vs, ox, oy };
+        const ox = (cssW - vbW * vs) / 2;
+        const oy = (cssH - vbH * vs) / 2;
+        return { dpr, cssW, cssH, vs, ox, oy, vbX, vbY, vbW, vbH };
     }
 
     _render() {
@@ -139,55 +152,25 @@ class FieldRenderer {
         ctx.scale(vp.dpr, vp.dpr);
         ctx.translate(vp.ox, vp.oy);
         ctx.scale(vp.vs, vp.vs);
-        ctx.translate(-VB_X, -VB_Y);
+        ctx.translate(-vp.vbX, -vp.vbY);
         ctx.translate(c.panOffset.x, c.panOffset.y);
         ctx.scale(c.zoomLevel, c.zoomLevel);
 
         // フィールド背景
         ctx.fillStyle = '#1a5c1a';
-        ctx.fillRect(VB_X, VB_Y, VB_W, VB_H);
-        this._drawGrid(ctx);
+        ctx.fillRect(vp.vbX, vp.vbY, vp.vbW, vp.vbH);
+        this._drawGrid(ctx, vp);
         this._drawFieldLines(ctx);
 
-        // ロボット描画
+        // 敵ロボット描画（灰色）
+        for (const [id, robot] of Object.entries(c.robotsTheirs)) {
+            this._drawRobot(ctx, robot, Number(id), '#888888', null);
+        }
+
+        // 味方ロボット描画
         for (const [id, robot] of Object.entries(c.robotsOurs)) {
-            const svgX = robot.x * 1000;
-            const svgY = -robot.y * 1000;
-            const r = ROBOT_HIT_RADIUS_M * 1000;
-            const numId = Number(id);
-
-            ctx.save();
-            // ロボット本体
-            ctx.beginPath();
-            ctx.arc(svgX, svgY, r, 0, Math.PI * 2);
-            ctx.fillStyle = c.isYellow ? '#FFD700' : '#4488FF';
-            ctx.globalAlpha = 0.85;
-            ctx.fill();
-            ctx.strokeStyle = (numId === c.selectedRobotId) ? '#00ffff' : '#ffffff';
-            ctx.lineWidth = (numId === c.selectedRobotId) ? 25 : 10;
-            ctx.globalAlpha = 1.0;
-            ctx.stroke();
-
-            // ロボット方向インジケータ
-            ctx.beginPath();
-            ctx.moveTo(svgX, svgY);
-            ctx.lineTo(
-                svgX + Math.cos(robot.theta) * r * 0.9,
-                svgY - Math.sin(robot.theta) * r * 0.9
-            );
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 12;
-            ctx.globalAlpha = 0.9;
-            ctx.stroke();
-
-            // ロボットID
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 1.0;
-            ctx.font = `bold ${r * 0.8}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(String(numId), svgX, svgY);
-            ctx.restore();
+            const color = c.isYellow ? '#FFD700' : '#4488FF';
+            this._drawRobot(ctx, robot, Number(id), color, c.selectedRobotId);
         }
 
         // 選択ハイライト（破線円）
@@ -230,7 +213,7 @@ class FieldRenderer {
         ctx.restore();
 
         // データなし表示
-        if (Object.keys(c.robotsOurs).length === 0) {
+        if (Object.keys(c.robotsOurs).length === 0 && Object.keys(c.robotsTheirs).length === 0) {
             ctx.save();
             ctx.fillStyle = '#666';
             ctx.font = `${16 * vp.dpr}px sans-serif`;
@@ -241,36 +224,117 @@ class FieldRenderer {
         }
     }
 
-    _drawGrid(ctx) {
+    _drawRobot(ctx, robot, numId, fillColor, selectedId) {
+        const svgX = robot.x * 1000;
+        const svgY = -robot.y * 1000;
+        const r = ROBOT_HIT_RADIUS_M * 1000;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(svgX, svgY, r, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor;
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+        ctx.strokeStyle = (numId === selectedId) ? '#00ffff' : '#ffffff';
+        ctx.lineWidth = (numId === selectedId) ? 25 : 10;
+        ctx.globalAlpha = 1.0;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(svgX, svgY);
+        ctx.lineTo(
+            svgX + Math.cos(robot.theta) * r * 0.9,
+            svgY - Math.sin(robot.theta) * r * 0.9
+        );
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 12;
+        ctx.globalAlpha = 0.9;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 1.0;
+        ctx.font = `bold ${r * 0.8}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(numId), svgX, svgY);
+        ctx.restore();
+    }
+
+    _drawGrid(ctx, vp) {
         ctx.save();
         ctx.strokeStyle = '#2d8a2d';
         ctx.lineWidth = 15;
         ctx.globalAlpha = 0.3;
         ctx.beginPath();
-        for (let x = VB_X; x <= -VB_X; x += 1000) {
-            ctx.moveTo(x, VB_Y); ctx.lineTo(x, -VB_Y);
+        const xStart = Math.floor(vp.vbX / 1000) * 1000;
+        const xEnd = -vp.vbX;
+        const yStart = Math.floor(vp.vbY / 1000) * 1000;
+        const yEnd = -vp.vbY;
+        for (let x = xStart; x <= xEnd; x += 1000) {
+            ctx.moveTo(x, vp.vbY); ctx.lineTo(x, -vp.vbY);
         }
-        for (let y = VB_Y; y <= -VB_Y; y += 1000) {
-            ctx.moveTo(VB_X, y); ctx.lineTo(-VB_X, y);
+        for (let y = yStart; y <= yEnd; y += 1000) {
+            ctx.moveTo(vp.vbX, y); ctx.lineTo(-vp.vbX, y);
         }
         ctx.stroke();
         ctx.restore();
     }
 
     _drawFieldLines(ctx) {
+        const c = this.controller;
+        const halfL = c.fieldLength * 500;   // mm
+        const halfW = c.fieldWidth * 500;    // mm
+        const paDepth = c.penaltyDepth * 1000;   // mm
+        const paHalfW = c.penaltyWidth * 500;    // mm
+        const goalHalfW = c.goalWidth * 500;     // mm
+        const goalDepth = c.goalDepth * 1000;    // mm
+        const ccR = c.centerCircleRadius * 1000; // mm
+
         ctx.save();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 20;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+
+        // 外枠
+        ctx.rect(-halfL, -halfW, halfL * 2, halfW * 2);
+
+        // センターライン
+        ctx.moveTo(0, -halfW); ctx.lineTo(0, halfW);
+
+        // センターサークル
+        ctx.moveTo(ccR, 0);
+        ctx.arc(0, 0, ccR, 0, Math.PI * 2);
+
+        // 左ペナルティエリア（x < 0 側）
+        ctx.rect(-halfL, -paHalfW, paDepth, paHalfW * 2);
+
+        // 右ペナルティエリア（x > 0 側）
+        ctx.rect(halfL - paDepth, -paHalfW, paDepth, paHalfW * 2);
+
+        ctx.stroke();
+
+        // ゴール（塗りなし・別色）
+        ctx.strokeStyle = '#ffff88';
+        ctx.lineWidth = 15;
         ctx.globalAlpha = 0.6;
         ctx.beginPath();
-        // 外枠
-        ctx.rect(-4500, -3000, 9000, 6000);
-        // センターライン
-        ctx.moveTo(0, -3000); ctx.lineTo(0, 3000);
-        // センターサークル
-        ctx.moveTo(500, 0);
-        ctx.arc(0, 0, 500, 0, Math.PI * 2);
+
+        // 左ゴール
+        ctx.rect(-halfL - goalDepth, -goalHalfW, goalDepth, goalHalfW * 2);
+
+        // 右ゴール
+        ctx.rect(halfL, -goalHalfW, goalDepth, goalHalfW * 2);
+
         ctx.stroke();
+
+        // センタースポット
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 40, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
     }
 
@@ -278,10 +342,10 @@ class FieldRenderer {
         const rect = this.canvas.getBoundingClientRect();
         const cssX = clientX - rect.left;
         const cssY = clientY - rect.top;
-        const { vs, ox, oy } = this._getVP();
+        const { vs, ox, oy, vbX, vbY } = this._getVP();
         const c = this.controller;
-        const svgX = (cssX - ox) / vs + VB_X;
-        const svgY = (cssY - oy) / vs + VB_Y;
+        const svgX = (cssX - ox) / vs + vbX;
+        const svgY = (cssY - oy) / vs + vbY;
         const mmX = (svgX - c.panOffset.x) / c.zoomLevel;
         const mmY = (svgY - c.panOffset.y) / c.zoomLevel;
         return { x: mmX / 1000, y: -mmY / 1000 };
@@ -303,14 +367,23 @@ class RobotTestController {
 
         // フィールド状態
         this.robotsOurs = {};
+        this.robotsTheirs = {};
         this.isYellow = false;
         this.selectedRobotId = null;
         this.targetPos = null;
 
+        // フィールド寸法（Division A デフォルト）
+        this.fieldLength = 12.0;
+        this.fieldWidth = 9.0;
+        this.penaltyDepth = 1.8;
+        this.penaltyWidth = 3.6;
+        this.goalDepth = 0.18;
+        this.goalWidth = 1.2;
+        this.centerCircleRadius = 0.5;
+
         // ビュー状態
         this.zoomLevel = 1.0;
         this.panOffset = { x: 0, y: 0 };
-        this.isPanning = false;
         this.lastPanPoint = { x: 0, y: 0 };
 
         // テストモード状態
@@ -389,10 +462,31 @@ class RobotTestController {
 
     onWorldModel(data) {
         if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
+
         if (data.robots_ours) {
             this.robotsOurs = {};
             for (const r of data.robots_ours) this.robotsOurs[r.id] = r;
         }
+
+        if (data.robots_theirs) {
+            this.robotsTheirs = {};
+            for (const r of data.robots_theirs) this.robotsTheirs[r.id] = r;
+        }
+
+        // フィールド寸法を world_model から更新
+        if (data.field_info) {
+            if (data.field_info.length > 0) this.fieldLength = data.field_info.length;
+            if (data.field_info.width > 0) this.fieldWidth = data.field_info.width;
+        }
+        if (data.penalty_area_size) {
+            if (data.penalty_area_size.depth > 0) this.penaltyDepth = data.penalty_area_size.depth;
+            if (data.penalty_area_size.width > 0) this.penaltyWidth = data.penalty_area_size.width;
+        }
+        if (data.goal_size) {
+            if (data.goal_size.depth > 0) this.goalDepth = data.goal_size.depth;
+            if (data.goal_size.width > 0) this.goalWidth = data.goal_size.width;
+        }
+
         this.renderer?.invalidate();
 
         // Est Speed プロット
@@ -591,47 +685,58 @@ class RobotTestController {
             this.renderer?.invalidate();
         }, { passive: false });
 
+        let mouseDownPos = null;
+        let hasMoved = false;
+
         canvas.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
-            const hitId = this.findRobotAtPosition(fp.x, fp.y);
-
-            if (hitId !== null) {
-                // ロボットをクリック → 選択
-                this.selectRobot(hitId);
-            } else if (this.selectedRobotId !== null && this.testModeActive) {
-                // 空きエリアをクリック → 目的地設定
-                this.targetPos = fp;
-                this.sendTarget();
-                this.renderer?.invalidate();
-            } else {
-                // パン開始
-                this.isPanning = true;
-                this.lastPanPoint = { x: e.clientX, y: e.clientY };
-                canvas.style.cursor = 'grabbing';
-            }
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+            hasMoved = false;
+            this.lastPanPoint = { x: e.clientX, y: e.clientY };
+            canvas.style.cursor = 'grabbing';
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            if (!this.isPanning) return;
-            if (this.renderer) {
+            if (!mouseDownPos) return;
+            const dx = e.clientX - mouseDownPos.x;
+            const dy = e.clientY - mouseDownPos.y;
+            if (!hasMoved && Math.sqrt(dx * dx + dy * dy) >= DRAG_THRESHOLD_PX) {
+                hasMoved = true;
+            }
+            if (hasMoved) {
                 const d = this.renderer.pixelDeltaToSvgDelta(
                     e.clientX - this.lastPanPoint.x,
                     e.clientY - this.lastPanPoint.y
                 );
                 this.panOffset.x += d.dx;
                 this.panOffset.y += d.dy;
+                this.renderer?.invalidate();
             }
             this.lastPanPoint = { x: e.clientX, y: e.clientY };
-            this.renderer?.invalidate();
         });
 
-        canvas.addEventListener('mouseup', () => {
-            this.isPanning = false;
+        canvas.addEventListener('mouseup', (e) => {
+            if (!mouseDownPos) return;
+            const didMove = hasMoved;
+            mouseDownPos = null;
             canvas.style.cursor = 'crosshair';
+
+            if (!didMove) {
+                // クリック判定: ロボット選択 or 目的地設定
+                const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
+                const hitId = this.findRobotAtPosition(fp.x, fp.y);
+                if (hitId !== null) {
+                    this.selectRobot(hitId);
+                } else if (this.selectedRobotId !== null && this.testModeActive) {
+                    this.targetPos = fp;
+                    this.sendTarget();
+                    this.renderer?.invalidate();
+                }
+            }
         });
+
         canvas.addEventListener('mouseleave', () => {
-            this.isPanning = false;
+            mouseDownPos = null;
             canvas.style.cursor = 'crosshair';
         });
 
