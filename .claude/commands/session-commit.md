@@ -1,4 +1,5 @@
 ---
+name: session-commit
 description: "現在セッションの変更のみを選択してコミット＆PR作成（既存の無関係な変更を混入させない）"
 allowed-tools: ["Bash", "Read", "AskUserQuestion", "Glob", "Grep"]
 ---
