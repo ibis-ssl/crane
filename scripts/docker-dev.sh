@@ -5,9 +5,9 @@
 #
 # Examples:
 #   ./scripts/docker-dev.sh           # sim環境 + ssl-log-recorder
-#   ./scripts/docker-dev.sh -d        # sim環境(バックグラウンド) + debug_tools + ssl-log-recorder
-#   ./scripts/docker-dev.sh --no-debug  # debug_toolsなし
-#   ./scripts/docker-dev.sh down      # 停止(debug_tools/ssl-log-recorderも停止)
+#   ./scripts/docker-dev.sh -d        # sim環境(バックグラウンド)
+#   ./scripts/docker-dev.sh --no-debug  # robot-managerなし
+#   ./scripts/docker-dev.sh down      # 停止
 
 set -e
 
@@ -17,11 +17,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 COMPOSE_FILE="docker/dev/docker-compose.yaml"
-DEBUG_TOOLS_PID_FILE="/tmp/crane_debug_tools.pid"
 
 # 引数解析
 MODE="sim"
-ENABLE_DEBUG_TOOLS=true
+ENABLE_ROBOT_MANAGER=true
 DOCKER_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -35,7 +34,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     --no-debug)
-        ENABLE_DEBUG_TOOLS=false
+        ENABLE_ROBOT_MANAGER=false
         shift
         ;;
     *)
@@ -81,55 +80,19 @@ detect_compose_command() {
     echo "up"
 }
 
-start_debug_tools() {
-    if [[ -f $DEBUG_TOOLS_PID_FILE ]]; then
-        local old_pid
-        old_pid=$(cat "$DEBUG_TOOLS_PID_FILE")
-        if kill -0 "$old_pid" 2>/dev/null; then
-            echo "debug_tools は既に起動中です (PID: $old_pid)"
-            return 0
-        fi
-    fi
-
-    echo "=== debug_tools を起動中 ==="
-    # ROS2環境をセットアップしてノードを起動
-    # shellcheck disable=SC1090,SC1091,SC2086
-    (
-        source /opt/ros/${ROS_DISTRO:-humble}/setup.bash
-        source "$REPO_ROOT/../../install/setup.bash" 2>/dev/null || true
-        ros2 run crane_debug_tools crane_websocket_server \
-            --ros-args -p port:=8090 -p websocket_port:=8091 &
-        echo $! >"$DEBUG_TOOLS_PID_FILE"
-    )
-    echo "debug_tools 起動完了 (HTTP: 8090, WebSocket: 8091)"
-}
-
-stop_debug_tools() {
-    if [[ -f $DEBUG_TOOLS_PID_FILE ]]; then
-        local pid
-        pid=$(cat "$DEBUG_TOOLS_PID_FILE")
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "=== debug_tools を停止中 (PID: $pid) ==="
-            kill "$pid" 2>/dev/null || true
-            rm -f "$DEBUG_TOOLS_PID_FILE"
-        fi
-    fi
-}
-
 COMPOSE_COMMAND="$(detect_compose_command)"
-
-# downコマンドの場合はdebug_toolsも停止
-if [[ $COMPOSE_COMMAND == "down" ]]; then
-    stop_debug_tools
-fi
 
 echo "=== Docker開発環境 ==="
 echo "モード: $MODE"
-echo "debug_tools: $ENABLE_DEBUG_TOOLS"
+echo "robot-manager: $ENABLE_ROBOT_MANAGER"
 echo "compose command: $COMPOSE_COMMAND"
 echo "Compose file: $COMPOSE_FILE"
 echo "引数: ${DOCKER_ARGS[*]}"
 echo ""
+
+if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
+    DOCKER_ARGS+=(--scale robot-manager=0)
+fi
 
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
@@ -137,9 +100,4 @@ if [[ $MODE == "sim" ]]; then
 else
     # 実機環境(Visionポート変更、status-board無効)
     VISION_PORT=10006 REFEREE_PORT=10003 TRACKER_PORT=10010 docker compose -f "$COMPOSE_FILE" "${DOCKER_ARGS[@]}"
-fi
-
-# バックグラウンド起動時のみdebug_toolsを起動
-if [[ $ENABLE_DEBUG_TOOLS == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]] && [[ " ${DOCKER_ARGS[*]} " =~ " -d " ]]; then
-    start_debug_tools
 fi

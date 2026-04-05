@@ -37,9 +37,18 @@ ROS 2とブラウザを接続するブリッジノード。
 
 ### Webフロントエンド
 
-- ロボット管理画面（PR #1247）
 - SVGビジュアライゼーション表示
 - デバッグUI統合ポータル
+
+## ロボット管理画面の分離
+
+`robot_manager` は ROS 非依存の独立アプリとして `docker/dev/robot-manager/`
+へ分離されました。`docker/dev/docker-compose.yaml` から
+`robot-manager` コンテナとして起動します。
+
+- URL: `http://localhost:8090`
+- 機能: Start/Stop/Status（Pi HTTP API経由）
+- ROSトピック由来の表示（world_model/control_targets等）は含みません
 
 ## 依存関係
 

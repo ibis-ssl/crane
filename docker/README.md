@@ -47,20 +47,20 @@
 ### 開発環境の起動
 
 ```bash
-# シミュレーション環境(デフォルト) + debug_tools自動起動
+# シミュレーション環境(デフォルト)
 ./scripts/docker-dev.sh
 
-# 実機環境 + debug_tools自動起動
+# 実機環境
 ./scripts/docker-dev.sh real
 
-# バックグラウンド起動 + debug_tools自動起動
+# バックグラウンド起動
 ./scripts/docker-dev.sh -d
 ./scripts/docker-dev.sh real -d
 
-# debug_toolsなしで起動
+# robot-managerなしで起動
 ./scripts/docker-dev.sh --no-debug
 
-# 停止(debug_toolsも自動停止)
+# 停止
 ./scripts/docker-dev.sh down
 ```
 

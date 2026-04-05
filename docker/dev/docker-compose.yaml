@@ -1,4 +1,18 @@
 services:
+  robot-manager:
+    build:
+      context: ./robot-manager
+    container_name: crane-robot-manager
+    network_mode: host
+    environment:
+      - HTTP_PORT=8090
+      - NUM_ROBOTS=13
+      - ROBOT_IP_BASE=192.168.20.
+      - ROBOT_IP_OFFSET=100
+      - ROBOT_PORT=8000
+      - HTTP_TIMEOUT_SEC=0.8
+    restart: unless-stopped
+
   grsim:
     image: ghcr.io/ibis-ssl/grsim:latest
     container_name: grsim

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Manager</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --ok: #15803d;
+      --warn: #b45309;
+      --err: #b91c1c;
+      --line: #e5e7eb;
+      --btn: #2563eb;
+      --btn-danger: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 36px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0; font-size: 1.25rem; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: white;
+      background: var(--btn);
+    }
+    button.danger { background: var(--btn-danger); }
+    button.secondary { background: #374151; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+    th { background: #f3f4f6; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .status { font-weight: 700; }
+    .status.running { color: var(--ok); }
+    .status.stopped { color: var(--warn); }
+    .status.offline, .status.error { color: var(--err); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    .summary {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    .summary strong { margin-left: 4px; }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 6px;
+      background: #9ca3af;
+    }
+    .dot.ok { background: var(--ok); }
+    .dot.ng { background: var(--err); }
+    @media (max-width: 720px) {
+      th:nth-child(3), td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Robot Manager (Standalone)</h1>
+      <div class="muted"><span id="conn-dot" class="dot"></span><span id="conn-text">connecting...</span></div>
+    </div>
+
+    <div class="summary">
+      <div>Running:<strong id="running-count">0</strong></div>
+      <div>Stopped:<strong id="stopped-count">0</strong></div>
+      <div>Offline:<strong id="offline-count">0</strong></div>
+    </div>
+
+    <div class="toolbar">
+      <button id="refresh-btn" class="secondary">Refresh</button>
+      <button id="start-all-btn">Start All</button>
+      <button id="stop-all-btn" class="danger">Stop All</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>IP</th>
+            <th>Control</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
