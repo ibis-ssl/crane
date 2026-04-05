@@ -141,12 +141,25 @@ auto RVO2Planner::getCurrentEstimatedPosition(uint8_t robot_id, const Point & fa
 
 auto RVO2Planner::initializePlanningFactors(crane_msgs::msg::RobotCommand & command) const -> void
 {
-  addOrUpdatePlanningFactor(command, "RVO2Stage", "INIT");
+  setPlanningStage(command, "INIT");
   addOrUpdatePlanningFactor(command, "RVO2AdjustFieldBoundary", "0");
   addOrUpdatePlanningFactor(command, "RVO2AdjustPenaltyArea", "0");
   addOrUpdatePlanningFactor(command, "RVO2AdjustBallAvoidance", "0");
   addOrUpdatePlanningFactor(command, "RVO2AdjustPlacementAvoidance", "0");
   addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NONE");
+}
+
+auto RVO2Planner::setPlanningStage(
+  crane_msgs::msg::RobotCommand & command, const std::string & stage) const -> void
+{
+  addOrUpdatePlanningFactor(command, "RVO2Stage", stage);
+}
+
+auto RVO2Planner::addMaxVelocityFactor(
+  crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void
+{
+  command.local_planner_config.max_velocity_factors.emplace_back(
+    crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
 }
 
 auto RVO2Planner::createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
@@ -170,14 +183,14 @@ auto RVO2Planner::applyInputValidation(
 {
   if (command.position_target_mode.empty()) {
     ctx.is_valid = false;
-    addOrUpdatePlanningFactor(command, "RVO2Stage", "INPUT_INVALID");
+    setPlanningStage(command, "INPUT_INVALID");
     addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NO_POSITION_TARGET_MODE");
     return;
   }
 
   auto & pos_mode = command.position_target_mode.front();
 
-  addOrUpdatePlanningFactor(command, "RVO2Stage", "INPUT_VALIDATION");
+  setPlanningStage(command, "INPUT_VALIDATION");
   if (std::isnan(ctx.target_pos.x()) || std::isnan(ctx.target_pos.y())) {
     RCLCPP_WARN_STREAM(
       rclcpp::get_logger("rvo2_local_planner"),
@@ -202,7 +215,7 @@ auto RVO2Planner::applyInputValidation(
     ctx.current_estimated_position = ctx.current_pose_position;
     ctx.target_vel = Velocity::Zero();
     ctx.max_vel = 0.0;
-    addOrUpdatePlanningFactor(command, "RVO2Stage", "INPUT_INVALID");
+    setPlanningStage(command, "INPUT_INVALID");
     addOrUpdatePlanningFactor(command, "RVO2TargetFallback", "NAN_CURRENT");
     return;
   }
@@ -225,7 +238,7 @@ auto RVO2Planner::applyTargetAdjustmentPipeline(
     return;
   }
 
-  addOrUpdatePlanningFactor(command, "RVO2Stage", "TARGET_ADJUSTMENT");
+  setPlanningStage(command, "TARGET_ADJUSTMENT");
   Point before = ctx.target_pos;
   adjustForFieldBoundary(ctx.target_pos, ctx.current_pose_position, command);
   if (pointChanged(before, ctx.target_pos)) {
@@ -262,21 +275,15 @@ auto RVO2Planner::computePreferredVelocityStage(
   PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command, uint8_t referee_command) const
   -> void
 {
-  addOrUpdatePlanningFactor(command, "RVO2Stage", "PREF_VELOCITY");
+  setPlanningStage(command, "PREF_VELOCITY");
   Vector2 position_diff;
   position_diff << ctx.target_pos.x() - ctx.current_estimated_position.x(),
     ctx.target_pos.y() - ctx.current_estimated_position.y();
 
   const double max_brk = planning_deceleration;
-  command.local_planner_config.max_velocity_factors.emplace_back(
-    crane_msgs::msg::NamedFloat()
-      .set__name("RVO2Planner::max_vel from parameter")
-      .set__value(MAX_VEL));
+  addMaxVelocityFactor(command, "RVO2Planner::max_vel from parameter", MAX_VEL);
   if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
-    command.local_planner_config.max_velocity_factors.emplace_back(
-      crane_msgs::msg::NamedFloat()
-        .set__name("RVO2Planner STOP制限")
-        .set__value(STOP_STATE_MAX_VELOCITY));
+    addMaxVelocityFactor(command, "RVO2Planner STOP制限", STOP_STATE_MAX_VELOCITY);
   }
   ctx.max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
@@ -429,7 +436,7 @@ auto RVO2Planner::applyPenaltyAreaBrakingConstraint(
 auto RVO2Planner::applyPreConstraintStage(
   PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
 {
-  addOrUpdatePlanningFactor(command, "RVO2Stage", "PRE_CONSTRAINT");
+  setPlanningStage(command, "PRE_CONSTRAINT");
   applyCrashAvoidanceConstraint(ctx, command);
   if (!command.local_planner_config.disable_goal_area_avoidance) {
     applyPenaltyAreaBrakingConstraint(ctx, world_model->getOurPenaltyArea(), command);
@@ -482,7 +489,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       continue;
     }
 
-    addOrUpdatePlanningFactor(command, "RVO2Stage", "RVO_INPUT");
+    setPlanningStage(command, "RVO_INPUT");
     auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
     double radius = 0.05f + vel * 0.1f;
     rvo_sim->setAgentRadius(command.robot_id, radius);
@@ -502,7 +509,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     }
     computePreferredVelocityStage(ctx, command, referee_command);
     applyPreConstraintStage(ctx, command);
-    addOrUpdatePlanningFactor(command, "RVO2Stage", "RVO_INPUT");
+    setPlanningStage(command, "RVO_INPUT");
     applyRVOInputStage(ctx, command);
   }
 
