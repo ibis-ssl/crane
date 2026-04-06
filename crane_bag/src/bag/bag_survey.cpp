@@ -145,8 +145,10 @@ std::string section_velocity_status(const BagData & data, double interval = 10.0
 
   for (const auto * tm : BagData::sample(data.robot_commands, interval)) {
     double t = tm->t(data.info.start_time_ns);
-    std::vector<int> zero_robots;
-    std::vector<std::pair<int, double>> moving_robots;
+    std::ostringstream zero_oss, moving_oss;
+    zero_oss << "[";
+    moving_oss << "[";
+    bool first_zero = true, first_moving = true;
 
     for (const auto & rc : tm->msg.robot_commands) {
       double vr = 0.0;
@@ -154,28 +156,21 @@ std::string section_velocity_status(const BagData & data, double interval = 10.0
         vr = rc.polar_velocity_target_mode[0].target_velocity_r;
       }
       if (std::abs(vr) < 0.01 && !rc.stop_flag) {
-        zero_robots.push_back(static_cast<int>(rc.robot_id));
+        if (!first_zero) zero_oss << ", ";
+        zero_oss << static_cast<int>(rc.robot_id);
+        first_zero = false;
       } else if (std::abs(vr) >= 0.01) {
-        moving_robots.emplace_back(static_cast<int>(rc.robot_id), vr);
+        char tmp[32];
+        std::snprintf(tmp, sizeof(tmp), "(%d, %.2f)", static_cast<int>(rc.robot_id), vr);
+        if (!first_moving) moving_oss << ", ";
+        moving_oss << tmp;
+        first_moving = false;
       }
     }
-
-    std::string zero_str = "[";
-    for (size_t i = 0; i < zero_robots.size(); ++i) {
-      if (i > 0) zero_str += ", ";
-      zero_str += std::to_string(zero_robots[i]);
-    }
-    zero_str += "]";
-
-    std::string moving_str = "[";
-    for (size_t i = 0; i < moving_robots.size(); ++i) {
-      if (i > 0) moving_str += ", ";
-      char tmp[32];
-      std::snprintf(
-        tmp, sizeof(tmp), "(%d, %.2f)", moving_robots[i].first, moving_robots[i].second);
-      moving_str += tmp;
-    }
-    moving_str += "]";
+    zero_oss << "]";
+    moving_oss << "]";
+    std::string zero_str = zero_oss.str();
+    std::string moving_str = moving_oss.str();
 
     std::snprintf(
       buf, sizeof(buf), "  t=%.2f: zero_v=%s, moving=%s\n", t, zero_str.c_str(),

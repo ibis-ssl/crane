@@ -59,23 +59,21 @@ struct FlatValueMap
     size_t max_idx = 0;
     bool found = false;
 
-    auto scan = [&](const auto & map) {
-      for (const auto & [k, v] : map) {
-        if (k.size() <= prefix.size() || k.compare(0, prefix.size(), prefix) != 0) continue;
-        size_t start = prefix.size();
-        if (k[start] != '.') continue;
-        size_t end = k.find('/', start + 1);
-        if (end == std::string::npos) end = k.size();
-        try {
-          size_t idx = std::stoull(k.substr(start + 1, end - start - 1));
-          if (idx >= max_idx) max_idx = idx + 1;
-          found = true;
-        } catch (...) {
-        }
+    auto scan_key = [&](const std::string & k) {
+      if (k.size() <= prefix.size() || k.compare(0, prefix.size(), prefix) != 0) return;
+      size_t start = prefix.size();
+      if (k[start] != '.') return;
+      size_t end = k.find('/', start + 1);
+      if (end == std::string::npos) end = k.size();
+      try {
+        size_t idx = std::stoull(k.substr(start + 1, end - start - 1));
+        if (idx >= max_idx) max_idx = idx + 1;
+        found = true;
+      } catch (...) {
       }
     };
-    scan(numeric);
-    scan(text);
+    for (const auto & [k, v] : numeric) scan_key(k);
+    for (const auto & [k, v] : text) scan_key(k);
     return found ? max_idx : 0;
   }
 

@@ -17,7 +17,7 @@ namespace
 // ─── Referee コマンド文字列ルックアップ ────────────────────────────────────────
 // robocup_ssl_msgs::msg::RefereeCommand / RefereeStage の整数定数と同じ値
 
-static const std::map<int, std::string> referee_command_map = {
+const std::map<int, std::string> referee_command_map = {
   {0, "HALT"},
   {1, "STOP"},
   {2, "NORMAL_START"},
@@ -38,7 +38,7 @@ static const std::map<int, std::string> referee_command_map = {
   {17, "BALL_PLACEMENT_BLUE"},
 };
 
-static const std::map<int, std::string> stage_map = {
+const std::map<int, std::string> stage_map = {
   {0, "NORMAL_FIRST_HALF_PRE"},  {1, "NORMAL_FIRST_HALF"},  {2, "NORMAL_HALF_TIME"},
   {3, "NORMAL_SECOND_HALF_PRE"}, {4, "NORMAL_SECOND_HALF"}, {5, "EXTRA_TIME_BREAK"},
   {6, "EXTRA_FIRST_HALF_PRE"},   {7, "EXTRA_FIRST_HALF"},   {8, "EXTRA_HALF_TIME"},
