@@ -507,9 +507,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     auto robot = world_model->getOurRobot(command.robot_id);
     drawRobotRadiusWithSpeed(visualizer, robot->pose.pos, radius, vel, "yellow");
 
-    if (
-      referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT &&
-      ctx.run_target_adjustments) {
+    if (ctx.run_target_adjustments) {
       applyTargetAdjustmentPipeline(ctx, command);
     } else if (!command.position_target_mode.empty()) {
       auto & pos_mode = command.position_target_mode.front();
@@ -661,9 +659,7 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
       continue;
     }
 
-    if (
-      referee_command != robocup_ssl_msgs::msg::RefereeCommand::HALT &&
-      ctx.run_target_adjustments) {
+    if (ctx.run_target_adjustments) {
       applyTargetAdjustmentPipeline(ctx, command);
     } else if (!command.position_target_mode.empty()) {
       auto & pos_mode = command.position_target_mode.front();

@@ -97,20 +97,24 @@ inline auto computePenaltyBypassDecision(
   decision.top_cost = (top_corner - current_pos).norm() + (target_pos - top_corner).norm();
   decision.bottom_cost = (bottom_corner - current_pos).norm() + (target_pos - bottom_corner).norm();
 
-  PenaltyBypassSide selected = (decision.top_cost <= decision.bottom_cost)
-                                 ? PenaltyBypassSide::TOP
-                                 : PenaltyBypassSide::BOTTOM;
+  const bool top_reachable = !intersectsSegmentAABB(current_pos, top_corner, expanded);
+  const bool bottom_reachable = !intersectsSegmentAABB(current_pos, bottom_corner, expanded);
 
-  // If the waypoint on the selected side would still require crossing the PA to reach the target,
-  // prefer the other side (which avoids the re-crossing).
-  const Point selected_wp = (selected == PenaltyBypassSide::TOP) ? top_corner : bottom_corner;
-  const Point other_wp = (selected == PenaltyBypassSide::TOP) ? bottom_corner : top_corner;
-  if (
-    intersectsSegmentAABB(selected_wp, target_pos, expanded) &&
-    !intersectsSegmentAABB(other_wp, target_pos, expanded)) {
-    selected =
-      (selected == PenaltyBypassSide::TOP) ? PenaltyBypassSide::BOTTOM : PenaltyBypassSide::TOP;
-  }
+  // Short-circuit: skip target-clearance check if waypoint is unreachable.
+  const bool top_fully_good =
+    top_reachable && !intersectsSegmentAABB(top_corner, target_pos, expanded);
+  const bool bottom_fully_good =
+    bottom_reachable && !intersectsSegmentAABB(bottom_corner, target_pos, expanded);
+
+  // Priority: fully_good (2) > reachable intermediate (1) > neither (0); tie-break by cost.
+  auto side_score = [](bool fully_good, bool reachable, double cost) {
+    return std::make_pair(fully_good ? 2 : (reachable ? 1 : 0), -cost);
+  };
+  const PenaltyBypassSide selected =
+    (side_score(top_fully_good, top_reachable, decision.top_cost) >=
+     side_score(bottom_fully_good, bottom_reachable, decision.bottom_cost))
+      ? PenaltyBypassSide::TOP
+      : PenaltyBypassSide::BOTTOM;
 
   decision.selected_side = selected;
   decision.waypoint = selected == PenaltyBypassSide::TOP ? top_corner : bottom_corner;

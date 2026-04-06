@@ -68,58 +68,82 @@ TEST(PenaltyAvoidanceHelperTest, VerticalSegmentThroughPenaltyIsDetectedAsCrossi
   EXPECT_TRUE(decision.target_overridden);
 }
 
-// 再横断チェック: ターゲットがPA内x範囲でPA上方にある場合、TOP側が選択される
-// (コスト最小はBOTTOMだがBOTTOMからターゲットへの経路がPAを再横断するため)
-TEST(PenaltyAvoidanceHelperTest, ReCrossingCheckSelectsCorrectSideWhenTargetIsAbovePA)
+// 到達可能性チェック: ロボットPA下方・ターゲットPA上方の2ステップルーティング
+// Step1: current→TOP はPA横断あり(到達不可)→ BOTTOM を中間ウェイポイントとして選択
+// Step2: BOTTOMウェイポイントから TOP fully_good → TOP 選択でターゲットへ到達
+TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsBOTTOMWhenTargetIsAbovePA)
 {
-  // ターゲット: PAのx範囲内(x=-4.95)、y上方(3.08) → PA再横断が起きるケース
-  // ロボット: PA下方(-3.61) → コストだけならBOTTOMが安い可能性
-  const auto decision = computePenaltyBypassDecision(
+  Box expanded = makeOurPA();
+  expanded.min_corner() -= Point(0.3, 0.3);
+  expanded.max_corner() += Point(0.3, 0.3);
+
+  const auto step1 = computePenaltyBypassDecision(
     Point(-4.95, -3.61), Point(-4.75, 3.08), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
-  ASSERT_TRUE(decision.crossing_detected);
-  // ウェイポイントからターゲットへの経路がPAを再横断しないことを確認
-  Box expanded = makeOurPA();
-  expanded.min_corner() -= Point(0.3, 0.3);
-  expanded.max_corner() += Point(0.3, 0.3);
-  EXPECT_FALSE(intersectsSegmentAABB(decision.waypoint, Point(-4.75, 3.08), expanded));
+  ASSERT_TRUE(step1.crossing_detected);
+  EXPECT_EQ(step1.selected_side, PenaltyBypassSide::BOTTOM);
+  // current → BOTTOM ウェイポイントは PA を横断しない
+  EXPECT_FALSE(intersectsSegmentAABB(Point(-4.95, -3.61), step1.waypoint, expanded));
+
+  // Step 2: BOTTOM ウェイポイントから再計画 → TOP fully_good → TOP 選択
+  const auto step2 = computePenaltyBypassDecision(
+    step1.waypoint, Point(-4.75, 3.08), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+  ASSERT_TRUE(step2.crossing_detected);
+  EXPECT_EQ(step2.selected_side, PenaltyBypassSide::TOP);
+  EXPECT_FALSE(intersectsSegmentAABB(step2.waypoint, Point(-4.75, 3.08), expanded));
 }
 
-// 再横断チェック: ロボットPA上方・ターゲットPA下方 → BOTTOM側が選択される
-TEST(PenaltyAvoidanceHelperTest, ReCrossingCheckSelectsCorrectSideWhenTargetIsBelowPA)
+// 到達可能性チェック: ロボットPA上方・ターゲットPA下方の2ステップルーティング
+// Step1: current→BOTTOM はPA横断あり(到達不可)→ TOP を中間ウェイポイントとして選択
+// Step2: TOPウェイポイントから BOTTOM fully_good → BOTTOM 選択でターゲットへ到達
+TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsTOPWhenTargetIsBelowPA)
 {
-  const auto decision = computePenaltyBypassDecision(
-    Point(-4.75, 3.08), Point(-4.95, -3.61), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
-  ASSERT_TRUE(decision.crossing_detected);
   Box expanded = makeOurPA();
   expanded.min_corner() -= Point(0.3, 0.3);
   expanded.max_corner() += Point(0.3, 0.3);
-  EXPECT_FALSE(intersectsSegmentAABB(decision.waypoint, Point(-4.95, -3.61), expanded));
+
+  const auto step1 = computePenaltyBypassDecision(
+    Point(-4.75, 3.08), Point(-4.95, -3.61), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+  ASSERT_TRUE(step1.crossing_detected);
+  EXPECT_EQ(step1.selected_side, PenaltyBypassSide::TOP);
+  // current → TOP ウェイポイントは PA を横断しない
+  EXPECT_FALSE(intersectsSegmentAABB(Point(-4.75, 3.08), step1.waypoint, expanded));
+
+  // Step 2: TOP ウェイポイントから再計画 → BOTTOM fully_good → BOTTOM 選択
+  const auto step2 = computePenaltyBypassDecision(
+    step1.waypoint, Point(-4.95, -3.61), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+  ASSERT_TRUE(step2.crossing_detected);
+  EXPECT_EQ(step2.selected_side, PenaltyBypassSide::BOTTOM);
+  EXPECT_FALSE(intersectsSegmentAABB(step2.waypoint, Point(-4.95, -3.61), expanded));
 }
 
-// rosbagシナリオの再現: 味方PA(xright側)での同等ケース
-// ロボット(5.318, -3.763)からターゲット(5.194, 3.243)へ横断
-// PAをゴール右側として設定、選択ウェイポイントが再横断しないことを確認
+// rosbagシナリオの再現: 味方PA(right側)でのケース
+// ロボット(5.318, -3.763)からターゲット(5.194, 3.243)への2ステップルーティング
+// Step1: BOTTOM(中間WP)選択 → Step2: TOP選択でターゲットへ到達
 TEST(PenaltyAvoidanceHelperTest, RosbagScenario_RobotBelowPA_TargetAbovePA)
 {
-  // 味方PA: x=[4.2, 6.0], y=[-1.8, 1.8]、ゴール=(6.0, 0)
   const Box our_pa(Point(4.2, -1.8), Point(6.0, 1.8));
   const Point goal(6.0, 0.0);
   const Point pa_size(1.8, 3.6);
-
-  const auto decision = computePenaltyBypassDecision(
-    Point(5.318, -3.763), Point(5.194, 3.243), our_pa, goal, pa_size, 0.3, 0.2, true);
-
-  ASSERT_TRUE(decision.crossing_detected);
-  ASSERT_TRUE(decision.target_overridden);
-
-  // ウェイポイントからターゲットへの経路がPAを再横断しないこと
   Box expanded = our_pa;
   expanded.min_corner() -= Point(0.3, 0.3);
   expanded.max_corner() += Point(0.3, 0.3);
-  EXPECT_FALSE(intersectsSegmentAABB(decision.waypoint, Point(5.194, 3.243), expanded));
 
-  // ターゲットがPA上方なのでTOP側が選択されること
-  EXPECT_EQ(decision.selected_side, PenaltyBypassSide::TOP);
+  // Step 1: PA 下方から横断 → current→TOP 不達のため BOTTOM 選択
+  const auto step1 = computePenaltyBypassDecision(
+    Point(5.318, -3.763), Point(5.194, 3.243), our_pa, goal, pa_size, 0.3, 0.2, true);
+  ASSERT_TRUE(step1.crossing_detected);
+  ASSERT_TRUE(step1.target_overridden);
+  EXPECT_EQ(step1.selected_side, PenaltyBypassSide::BOTTOM);
+  // current → BOTTOM ウェイポイントは PA を横断しない
+  EXPECT_FALSE(intersectsSegmentAABB(Point(5.318, -3.763), step1.waypoint, expanded));
+
+  // Step 2: BOTTOM ウェイポイントから再計画 → TOP fully_good → TOP 選択
+  const auto step2 = computePenaltyBypassDecision(
+    step1.waypoint, Point(5.194, 3.243), our_pa, goal, pa_size, 0.3, 0.2, true);
+  ASSERT_TRUE(step2.crossing_detected);
+  EXPECT_EQ(step2.selected_side, PenaltyBypassSide::TOP);
+  // TOP ウェイポイント → ターゲットは PA を横断しない
+  EXPECT_FALSE(intersectsSegmentAABB(step2.waypoint, Point(5.194, 3.243), expanded));
 }
 
 }  // namespace crane
