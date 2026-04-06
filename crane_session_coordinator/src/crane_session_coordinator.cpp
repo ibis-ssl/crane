@@ -93,6 +93,8 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
       config_manager_->updateEventMapping("INJECTION", msg.data);
     });
 
+  practice_mode_pub = create_publisher<crane_msgs::msg::PracticeMode>("/practice_mode", 1);
+
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
     "/game_analysis", 10, [this](const crane_msgs::msg::GameAnalysis::SharedPtr msg) {
       latest_game_analysis_ = *msg;
@@ -117,6 +119,10 @@ auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
         get_logger(),
         "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
         event_name.c_str(), session_name.c_str());
+
+      // 練習モード設定を publish（situation 切り替え時のみ）
+      auto practice_mode = config_manager_->getPracticeModeForSituation(session_name);
+      practice_mode_pub->publish(practice_mode);
     }
     prev_session_name_ = session_name;
 

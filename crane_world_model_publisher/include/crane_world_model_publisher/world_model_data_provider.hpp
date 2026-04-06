@@ -17,6 +17,7 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/practice_mode.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -258,6 +259,9 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
+
+  rclcpp::Subscription<crane_msgs::msg::PracticeMode>::SharedPtr sub_practice_mode;
+  crane_msgs::msg::PracticeMode latest_practice_mode;
 
   robocup_ssl_msgs::msg::TrackedFrame latest_tracked_frame;
   bool has_tracked_frame_updated_;

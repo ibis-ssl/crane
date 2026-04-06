@@ -14,6 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/practice_mode.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_sessions/session_base.hpp>
@@ -78,6 +79,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr callback_process_time_pub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotSelectResults>::SharedPtr robot_select_results_pub;
+
+  rclcpp::Publisher<crane_msgs::msg::PracticeMode>::SharedPtr practice_mode_pub;
 
   crane_msgs::msg::PlaySituation play_situation;
 

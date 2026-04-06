@@ -38,7 +38,7 @@ auto Forward::update() -> Status
     std::clamp(static_cast<int>(std::ceil(line_length / 0.1)), 1, MAX_SAMPLING_POINTS);
 
   // ループ外で定数を取得（サンプル点ごとの重複呼び出しを回避）
-  const auto their_goal_center = world_model()->getTheirGoalCenter();
+  const auto their_goal_center = world_model()->getAttackGoalCenter();
   const auto available_our_robots = world_model()->ours().robotsWhere().available().get();
   const auto available_enemy_robots = world_model()->theirs().robotsWhere().available().get();
 
@@ -69,7 +69,7 @@ auto Forward::update() -> Status
       score *= (std::clamp(1.0 - distance / max_ball_distance, 0.0, 1.0) * 0.5 + 0.5);
 
       // 1-A: ゴールシュート角度評価
-      auto [goal_angle, goal_width] = world_model()->getLargestGoalAngleRangeFromPoint(p);
+      auto [goal_angle, goal_width] = world_model()->getLargestAttackGoalAngleRangeFromPoint(p);
       score *= (std::clamp(goal_width / 0.6, 0.0, 1.0) * 0.5 + 0.5);
 
       // 1-B: ボール後方回避（攻撃方向の後ろ側はスコアを下げる）

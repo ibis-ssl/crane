@@ -58,6 +58,17 @@ auto ConfigurationManager::updateEventMapping(
   event_map_[event_name] = situation_name;
 }
 
+auto ConfigurationManager::getPracticeModeForSituation(const std::string & situation_name) const
+  -> crane_msgs::msg::PracticeMode
+{
+  auto it = practice_mode_map_.find(situation_name);
+  if (it != practice_mode_map_.end()) {
+    return it->second;
+  }
+  // デフォルト: 練習モード無効
+  return crane_msgs::msg::PracticeMode{};
+}
+
 auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & config_file) -> void
 {
   auto config = YAML::LoadFile(config_file.c_str());
@@ -130,6 +141,22 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         session_capacity_list.emplace_back(session_capacity);
       }
       robot_selection_priority_map_[situation_name] = session_capacity_list;
+
+      // practice_mode の読み込み（存在する場合のみ）
+      if (situation_data["practice_mode"]) {
+        crane_msgs::msg::PracticeMode pm;
+        const auto & pm_node = situation_data["practice_mode"];
+        pm.enabled = pm_node["enabled"] ? pm_node["enabled"].as<bool>() : true;
+        pm.positive_side = pm_node["positive_side"] ? pm_node["positive_side"].as<bool>() : true;
+        pm.kick_prohibition =
+          pm_node["kick_prohibition"] ? pm_node["kick_prohibition"].as<bool>() : false;
+        pm.reverse_attack = pm_node["reverse_attack"] ? pm_node["reverse_attack"].as<bool>() : false;
+        practice_mode_map_[situation_name] = pm;
+        ss << "PRACTICE_MODE : enabled=" << (pm.enabled ? "true" : "false")
+           << " positive_side=" << (pm.positive_side ? "true" : "false")
+           << " kick_prohibition=" << (pm.kick_prohibition ? "true" : "false")
+           << " reverse_attack=" << (pm.reverse_attack ? "true" : "false") << "\n";
+      }
 
       ss << "----------------------------------------";
       RCLCPP_DEBUG_STREAM(logger_, ss.str());
