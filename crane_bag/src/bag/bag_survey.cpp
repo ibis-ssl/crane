@@ -33,7 +33,7 @@ std::string fmt_pos(double x, double y)
   return buf;
 }
 
-std::string fmt_factors(const std::vector<crane_msgs::msg::NamedString> & factors)
+std::string fmt_factors(const std::vector<NamedString> & factors)
 {
   if (factors.empty()) return "(empty)";
   std::string s;
@@ -50,7 +50,7 @@ std::string section_play_situations(const BagData & data)
   oss << "=== PLAY SITUATIONS ===\n";
   for (const auto & tm : data.play_situations) {
     double t = tm.t(data.info.start_time_ns);
-    oss << "  " << fmt_t(t) << ": " << tm.msg.command.name << ", reason=" << tm.msg.reason_text
+    oss << "  " << fmt_t(t) << ": " << tm.msg.command_name << ", reason=" << tm.msg.reason_text
         << "\n";
   }
   return oss.str();
@@ -66,9 +66,9 @@ std::string section_role_assignments(const BagData & data)
     oss << "  " << fmt_t(t) << ":\n";
     for (const auto & r : tm.msg.results) {
       oss << "    " << r.name << ": selected=[";
-      for (size_t i = 0; i < r.selected_robots.size(); ++i) {
-        if (i > 0) oss << ", ";
-        oss << static_cast<int>(r.selected_robots[i]);
+      for (size_t ri = 0; ri < r.selected_robots.size(); ++ri) {
+        if (ri > 0) oss << ", ";
+        oss << static_cast<int>(r.selected_robots[ri]);
       }
       oss << "]\n";
     }

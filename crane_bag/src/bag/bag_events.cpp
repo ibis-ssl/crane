@@ -8,9 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <robocup_ssl_msgs/msg/game_event_one_of_event.hpp>
-#include <robocup_ssl_msgs/msg/game_event_type.hpp>
-#include <robocup_ssl_msgs/msg/team.hpp>
+#include <map>
 #include <set>
 #include <sstream>
 #include <unordered_set>
@@ -19,12 +17,73 @@
 namespace crane::bag
 {
 
+// ─── GameEventType 定数（robocup_ssl_msgs::msg::GameEventType と同じ値）────────
+
+namespace GameEventType
+{
+constexpr int32_t UNKNOWN_GAME_EVENT_TYPE = 0;
+constexpr int32_t BALL_LEFT_FIELD_TOUCH_LINE = 6;
+constexpr int32_t BALL_LEFT_FIELD_GOAL_LINE = 7;
+constexpr int32_t AIMLESS_KICK = 11;
+constexpr int32_t ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA = 19;
+constexpr int32_t DEFENDER_IN_DEFENSE_AREA = 31;
+constexpr int32_t BOUNDARY_CROSSING = 41;
+constexpr int32_t KEEPER_HELD_BALL = 13;
+constexpr int32_t BOT_DRIBBLED_BALL_TOO_FAR = 17;
+constexpr int32_t BOT_PUSHED_BOT = 24;
+constexpr int32_t BOT_HELD_BALL_DELIBERATELY = 26;
+constexpr int32_t BOT_TIPPED_OVER = 27;
+constexpr int32_t ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA = 15;
+constexpr int32_t BOT_KICKED_BALL_TOO_FAST = 18;
+constexpr int32_t BOT_CRASH_UNIQUE = 22;
+constexpr int32_t BOT_CRASH_DRAWN = 21;
+constexpr int32_t DEFENDER_TOO_CLOSE_TO_KICK_POINT = 29;
+constexpr int32_t BOT_TOO_FAST_IN_STOP = 28;
+constexpr int32_t BOT_INTERFERED_PLACEMENT = 20;
+constexpr int32_t POSSIBLE_GOAL = 39;
+constexpr int32_t GOAL = 8;
+constexpr int32_t INVALID_GOAL = 42;
+constexpr int32_t ATTACKER_DOUBLE_TOUCHED_BALL = 14;
+constexpr int32_t PLACEMENT_SUCCEEDED = 5;
+constexpr int32_t PENALTY_KICK_FAILED = 43;
+constexpr int32_t NO_PROGRESS_IN_GAME = 2;
+constexpr int32_t PLACEMENT_FAILED = 3;
+constexpr int32_t MULTIPLE_CARDS = 32;
+constexpr int32_t MULTIPLE_FOULS = 34;
+constexpr int32_t BOT_SUBSTITUTION = 37;
+constexpr int32_t TOO_MANY_ROBOTS = 38;
+constexpr int32_t CHALLENGE_FLAG = 44;
+constexpr int32_t EMERGENCY_STOP = 45;
+constexpr int32_t UNSPORTING_BEHAVIOR_MINOR = 35;
+constexpr int32_t UNSPORTING_BEHAVIOR_MAJOR = 36;
+constexpr int32_t PREPARED = 1;
+constexpr int32_t INDIRECT_GOAL = 9;
+constexpr int32_t CHIPPED_GOAL = 10;
+constexpr int32_t KICK_TIMEOUT = 12;
+constexpr int32_t ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA = 16;
+constexpr int32_t ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED = 40;
+constexpr int32_t BOT_CRASH_UNIQUE_SKIPPED = 23;
+constexpr int32_t BOT_PUSHED_BOT_SKIPPED = 25;
+constexpr int32_t DEFENDER_IN_DEFENSE_AREA_PARTIALLY = 30;
+constexpr int32_t MULTIPLE_PLACEMENT_FAILURES = 33;
+}  // namespace GameEventType
+
+// Team 定数（robocup_ssl_msgs::msg::Team と同じ値）
+namespace Team
+{
+constexpr int32_t UNKNOWN = 0;
+constexpr int32_t YELLOW = 1;
+constexpr int32_t BLUE = 2;
+}  // namespace Team
+
+// ─── 既存の実装（変更少）────────────────────────────────────────────────────────
+
 std::vector<Event> detect_play_transitions(const BagData & data)
 {
   std::vector<Event> events;
   std::string prev_cmd;
   for (const auto & tm : data.play_situations) {
-    const std::string & cmd = tm.msg.command.name;
+    const std::string & cmd = tm.msg.command_name;
     if (cmd != prev_cmd) {
       Event e;
       e.timestamp_ns = tm.timestamp_ns;
@@ -97,7 +156,6 @@ std::vector<Event> detect_kick_events(const BagData & data)
         kicking_now.insert(static_cast<int>(rc.robot_id));
       }
     }
-    // 立ち上がりエッジ
     for (int rid : kicking_now) {
       if (prev_kicking.find(rid) == prev_kicking.end()) {
         Event e;
@@ -174,101 +232,57 @@ std::vector<Event> detect_goals(const BagData & data)
 
 std::string game_event_type_to_string(int32_t v)
 {
-  using T = robocup_ssl_msgs::msg::GameEventType;
-  switch (v) {
-    case T::UNKNOWN_GAME_EVENT_TYPE:
-      return "UNKNOWN_GAME_EVENT_TYPE";
-    case T::BALL_LEFT_FIELD_TOUCH_LINE:
-      return "BALL_LEFT_FIELD_TOUCH_LINE";
-    case T::BALL_LEFT_FIELD_GOAL_LINE:
-      return "BALL_LEFT_FIELD_GOAL_LINE";
-    case T::AIMLESS_KICK:
-      return "AIMLESS_KICK";
-    case T::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
-      return "ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA";
-    case T::DEFENDER_IN_DEFENSE_AREA:
-      return "DEFENDER_IN_DEFENSE_AREA";
-    case T::BOUNDARY_CROSSING:
-      return "BOUNDARY_CROSSING";
-    case T::KEEPER_HELD_BALL:
-      return "KEEPER_HELD_BALL";
-    case T::BOT_DRIBBLED_BALL_TOO_FAR:
-      return "BOT_DRIBBLED_BALL_TOO_FAR";
-    case T::BOT_PUSHED_BOT:
-      return "BOT_PUSHED_BOT";
-    case T::BOT_HELD_BALL_DELIBERATELY:
-      return "BOT_HELD_BALL_DELIBERATELY";
-    case T::BOT_TIPPED_OVER:
-      return "BOT_TIPPED_OVER";
-    case T::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
-      return "ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA";
-    case T::BOT_KICKED_BALL_TOO_FAST:
-      return "BOT_KICKED_BALL_TOO_FAST";
-    case T::BOT_CRASH_UNIQUE:
-      return "BOT_CRASH_UNIQUE";
-    case T::BOT_CRASH_DRAWN:
-      return "BOT_CRASH_DRAWN";
-    case T::DEFENDER_TOO_CLOSE_TO_KICK_POINT:
-      return "DEFENDER_TOO_CLOSE_TO_KICK_POINT";
-    case T::BOT_TOO_FAST_IN_STOP:
-      return "BOT_TOO_FAST_IN_STOP";
-    case T::BOT_INTERFERED_PLACEMENT:
-      return "BOT_INTERFERED_PLACEMENT";
-    case T::POSSIBLE_GOAL:
-      return "POSSIBLE_GOAL";
-    case T::GOAL:
-      return "GOAL";
-    case T::INVALID_GOAL:
-      return "INVALID_GOAL";
-    case T::ATTACKER_DOUBLE_TOUCHED_BALL:
-      return "ATTACKER_DOUBLE_TOUCHED_BALL";
-    case T::PLACEMENT_SUCCEEDED:
-      return "PLACEMENT_SUCCEEDED";
-    case T::PENALTY_KICK_FAILED:
-      return "PENALTY_KICK_FAILED";
-    case T::NO_PROGRESS_IN_GAME:
-      return "NO_PROGRESS_IN_GAME";
-    case T::PLACEMENT_FAILED:
-      return "PLACEMENT_FAILED";
-    case T::MULTIPLE_CARDS:
-      return "MULTIPLE_CARDS";
-    case T::MULTIPLE_FOULS:
-      return "MULTIPLE_FOULS";
-    case T::BOT_SUBSTITUTION:
-      return "BOT_SUBSTITUTION";
-    case T::TOO_MANY_ROBOTS:
-      return "TOO_MANY_ROBOTS";
-    case T::CHALLENGE_FLAG:
-      return "CHALLENGE_FLAG";
-    case T::EMERGENCY_STOP:
-      return "EMERGENCY_STOP";
-    case T::UNSPORTING_BEHAVIOR_MINOR:
-      return "UNSPORTING_BEHAVIOR_MINOR";
-    case T::UNSPORTING_BEHAVIOR_MAJOR:
-      return "UNSPORTING_BEHAVIOR_MAJOR";
-    case T::PREPARED:
-      return "PREPARED";
-    case T::INDIRECT_GOAL:
-      return "INDIRECT_GOAL";
-    case T::CHIPPED_GOAL:
-      return "CHIPPED_GOAL";
-    case T::KICK_TIMEOUT:
-      return "KICK_TIMEOUT";
-    case T::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA:
-      return "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA";
-    case T::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED:
-      return "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED";
-    case T::BOT_CRASH_UNIQUE_SKIPPED:
-      return "BOT_CRASH_UNIQUE_SKIPPED";
-    case T::BOT_PUSHED_BOT_SKIPPED:
-      return "BOT_PUSHED_BOT_SKIPPED";
-    case T::DEFENDER_IN_DEFENSE_AREA_PARTIALLY:
-      return "DEFENDER_IN_DEFENSE_AREA_PARTIALLY";
-    case T::MULTIPLE_PLACEMENT_FAILURES:
-      return "MULTIPLE_PLACEMENT_FAILURES";
-    default:
-      return "GAME_EVENT(" + std::to_string(v) + ")";
-  }
+  static const std::map<int32_t, const char *> m = {
+    {GameEventType::UNKNOWN_GAME_EVENT_TYPE, "UNKNOWN_GAME_EVENT_TYPE"},
+    {GameEventType::BALL_LEFT_FIELD_TOUCH_LINE, "BALL_LEFT_FIELD_TOUCH_LINE"},
+    {GameEventType::BALL_LEFT_FIELD_GOAL_LINE, "BALL_LEFT_FIELD_GOAL_LINE"},
+    {GameEventType::AIMLESS_KICK, "AIMLESS_KICK"},
+    {GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA, "ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA"},
+    {GameEventType::DEFENDER_IN_DEFENSE_AREA, "DEFENDER_IN_DEFENSE_AREA"},
+    {GameEventType::BOUNDARY_CROSSING, "BOUNDARY_CROSSING"},
+    {GameEventType::KEEPER_HELD_BALL, "KEEPER_HELD_BALL"},
+    {GameEventType::BOT_DRIBBLED_BALL_TOO_FAR, "BOT_DRIBBLED_BALL_TOO_FAR"},
+    {GameEventType::BOT_PUSHED_BOT, "BOT_PUSHED_BOT"},
+    {GameEventType::BOT_HELD_BALL_DELIBERATELY, "BOT_HELD_BALL_DELIBERATELY"},
+    {GameEventType::BOT_TIPPED_OVER, "BOT_TIPPED_OVER"},
+    {GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA, "ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA"},
+    {GameEventType::BOT_KICKED_BALL_TOO_FAST, "BOT_KICKED_BALL_TOO_FAST"},
+    {GameEventType::BOT_CRASH_UNIQUE, "BOT_CRASH_UNIQUE"},
+    {GameEventType::BOT_CRASH_DRAWN, "BOT_CRASH_DRAWN"},
+    {GameEventType::DEFENDER_TOO_CLOSE_TO_KICK_POINT, "DEFENDER_TOO_CLOSE_TO_KICK_POINT"},
+    {GameEventType::BOT_TOO_FAST_IN_STOP, "BOT_TOO_FAST_IN_STOP"},
+    {GameEventType::BOT_INTERFERED_PLACEMENT, "BOT_INTERFERED_PLACEMENT"},
+    {GameEventType::POSSIBLE_GOAL, "POSSIBLE_GOAL"},
+    {GameEventType::GOAL, "GOAL"},
+    {GameEventType::INVALID_GOAL, "INVALID_GOAL"},
+    {GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL, "ATTACKER_DOUBLE_TOUCHED_BALL"},
+    {GameEventType::PLACEMENT_SUCCEEDED, "PLACEMENT_SUCCEEDED"},
+    {GameEventType::PENALTY_KICK_FAILED, "PENALTY_KICK_FAILED"},
+    {GameEventType::NO_PROGRESS_IN_GAME, "NO_PROGRESS_IN_GAME"},
+    {GameEventType::PLACEMENT_FAILED, "PLACEMENT_FAILED"},
+    {GameEventType::MULTIPLE_CARDS, "MULTIPLE_CARDS"},
+    {GameEventType::MULTIPLE_FOULS, "MULTIPLE_FOULS"},
+    {GameEventType::BOT_SUBSTITUTION, "BOT_SUBSTITUTION"},
+    {GameEventType::TOO_MANY_ROBOTS, "TOO_MANY_ROBOTS"},
+    {GameEventType::CHALLENGE_FLAG, "CHALLENGE_FLAG"},
+    {GameEventType::EMERGENCY_STOP, "EMERGENCY_STOP"},
+    {GameEventType::UNSPORTING_BEHAVIOR_MINOR, "UNSPORTING_BEHAVIOR_MINOR"},
+    {GameEventType::UNSPORTING_BEHAVIOR_MAJOR, "UNSPORTING_BEHAVIOR_MAJOR"},
+    {GameEventType::PREPARED, "PREPARED"},
+    {GameEventType::INDIRECT_GOAL, "INDIRECT_GOAL"},
+    {GameEventType::CHIPPED_GOAL, "CHIPPED_GOAL"},
+    {GameEventType::KICK_TIMEOUT, "KICK_TIMEOUT"},
+    {GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA,
+     "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA"},
+    {GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED,
+     "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED"},
+    {GameEventType::BOT_CRASH_UNIQUE_SKIPPED, "BOT_CRASH_UNIQUE_SKIPPED"},
+    {GameEventType::BOT_PUSHED_BOT_SKIPPED, "BOT_PUSHED_BOT_SKIPPED"},
+    {GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY, "DEFENDER_IN_DEFENSE_AREA_PARTIALLY"},
+    {GameEventType::MULTIPLE_PLACEMENT_FAILURES, "MULTIPLE_PLACEMENT_FAILURES"},
+  };
+  auto it = m.find(v);
+  return it != m.end() ? it->second : "GAME_EVENT(" + std::to_string(v) + ")";
 }
 
 namespace
@@ -276,148 +290,118 @@ namespace
 
 const std::unordered_set<int32_t> & foul_event_types()
 {
-  using T = robocup_ssl_msgs::msg::GameEventType;
   static const std::unordered_set<int32_t> s = {
-    T::BOT_PUSHED_BOT,
-    T::BOT_PUSHED_BOT_SKIPPED,
-    T::BOT_HELD_BALL_DELIBERATELY,
-    T::BOT_TIPPED_OVER,
-    T::BOT_TOO_FAST_IN_STOP,
-    T::DEFENDER_TOO_CLOSE_TO_KICK_POINT,
-    T::DEFENDER_IN_DEFENSE_AREA,
-    T::DEFENDER_IN_DEFENSE_AREA_PARTIALLY,
-    T::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA,
-    T::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA,
-    T::ATTACKER_DOUBLE_TOUCHED_BALL,
-    T::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA,
-    T::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED,
-    T::BOT_CRASH_UNIQUE,
-    T::BOT_CRASH_UNIQUE_SKIPPED,
-    T::BOT_CRASH_DRAWN,
-    T::BOT_KICKED_BALL_TOO_FAST,
-    T::BOT_DRIBBLED_BALL_TOO_FAR,
-    T::BOUNDARY_CROSSING,
-    T::KEEPER_HELD_BALL,
-    T::BOT_INTERFERED_PLACEMENT,
-    T::UNSPORTING_BEHAVIOR_MINOR,
-    T::UNSPORTING_BEHAVIOR_MAJOR,
-    T::MULTIPLE_FOULS,
-    T::AIMLESS_KICK,
+    GameEventType::BOT_PUSHED_BOT,
+    GameEventType::BOT_PUSHED_BOT_SKIPPED,
+    GameEventType::BOT_HELD_BALL_DELIBERATELY,
+    GameEventType::BOT_TIPPED_OVER,
+    GameEventType::BOT_TOO_FAST_IN_STOP,
+    GameEventType::DEFENDER_TOO_CLOSE_TO_KICK_POINT,
+    GameEventType::DEFENDER_IN_DEFENSE_AREA,
+    GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY,
+    GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA,
+    GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA,
+    GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL,
+    GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA,
+    GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED,
+    GameEventType::BOT_CRASH_UNIQUE,
+    GameEventType::BOT_CRASH_UNIQUE_SKIPPED,
+    GameEventType::BOT_CRASH_DRAWN,
+    GameEventType::BOT_KICKED_BALL_TOO_FAST,
+    GameEventType::BOT_DRIBBLED_BALL_TOO_FAR,
+    GameEventType::BOUNDARY_CROSSING,
+    GameEventType::KEEPER_HELD_BALL,
+    GameEventType::BOT_INTERFERED_PLACEMENT,
+    GameEventType::UNSPORTING_BEHAVIOR_MINOR,
+    GameEventType::UNSPORTING_BEHAVIOR_MAJOR,
+    GameEventType::MULTIPLE_FOULS,
+    GameEventType::AIMLESS_KICK,
   };
   return s;
 }
 
 std::string team_name(int32_t team_value)
 {
-  using Team = robocup_ssl_msgs::msg::Team;
   if (team_value == Team::YELLOW) return "YELLOW";
   if (team_value == Team::BLUE) return "BLUE";
   return "UNKNOWN";
 }
 
-std::string foul_description(const robocup_ssl_msgs::msg::GameEvent & ge)
+std::string foul_description(const GameEventInfo & ge)
 {
-  using T = robocup_ssl_msgs::msg::GameEventType;
-  const auto & ev = ge.event;
-  const std::string type_name = game_event_type_to_string(ge.type.value);
+  const std::string type_name = game_event_type_to_string(ge.type_value);
   char buf[256];
 
-  switch (ge.type.value) {
-    case T::BOT_CRASH_UNIQUE:
-    case T::BOT_CRASH_UNIQUE_SKIPPED: {
-      const auto & e = ev.bot_crash_unique;
+  switch (ge.type_value) {
+    case GameEventType::BOT_CRASH_UNIQUE:
+    case GameEventType::BOT_CRASH_UNIQUE_SKIPPED:
       std::snprintf(
         buf, sizeof(buf), "%s: %s violator=%u victim=%u at (%.2f,%.2f) speed=%.2fm/s",
-        type_name.c_str(), team_name(e.by_team.value).c_str(), e.violator, e.victim, e.location.x,
-        e.location.y, e.crash_speed);
+        type_name.c_str(), team_name(ge.by_team_value).c_str(), ge.violator, ge.victim,
+        ge.location_x, ge.location_y, ge.crash_speed);
       return buf;
-    }
-    case T::BOT_TOO_FAST_IN_STOP: {
-      const auto & e = ev.bot_too_fast_in_stop;
+    case GameEventType::BOT_TOO_FAST_IN_STOP:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f) speed=%.2fm/s", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y, e.speed);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y, ge.speed);
       return buf;
-    }
-    case T::BOT_PUSHED_BOT:
-    case T::BOT_PUSHED_BOT_SKIPPED: {
-      const auto & e = ev.bot_pushed_bot;
+    case GameEventType::BOT_PUSHED_BOT:
+    case GameEventType::BOT_PUSHED_BOT_SKIPPED:
       std::snprintf(
         buf, sizeof(buf), "%s: %s violator=%u victim=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.violator, e.victim, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.violator, ge.victim, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::BOT_DRIBBLED_BALL_TOO_FAR: {
-      const auto & e = ev.bot_dribbled_ball_too_far;
+    case GameEventType::BOT_DRIBBLED_BALL_TOO_FAR:
       std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(e.by_team.value).c_str(),
-        e.by_bot);
+        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
+        ge.by_bot);
       return buf;
-    }
-    case T::KEEPER_HELD_BALL: {
-      const auto & e = ev.keeper_held_ball;
+    case GameEventType::KEEPER_HELD_BALL:
       std::snprintf(
         buf, sizeof(buf), "%s: %s at (%.2f,%.2f) duration=%.2fs", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.location.x, e.location.y, e.duration);
+        team_name(ge.by_team_value).c_str(), ge.location_x, ge.location_y, ge.duration);
       return buf;
-    }
-    case T::DEFENDER_IN_DEFENSE_AREA:
-    case T::DEFENDER_IN_DEFENSE_AREA_PARTIALLY: {
-      const auto & e = ev.defender_in_defense_area;
+    case GameEventType::DEFENDER_IN_DEFENSE_AREA:
+    case GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA: {
-      const auto & e = ev.attacker_too_close_to_defense_area;
+    case GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA: {
-      const auto & e = ev.attacker_touched_ball_in_defense_area;
+    case GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::BOT_HELD_BALL_DELIBERATELY: {
-      const auto & e = ev.bot_held_ball_deliberately;
+    case GameEventType::BOT_HELD_BALL_DELIBERATELY:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::BOT_INTERFERED_PLACEMENT: {
-      const auto & e = ev.bot_interfered_placement;
+    case GameEventType::BOT_INTERFERED_PLACEMENT:
       std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(e.by_team.value).c_str(),
-        e.by_bot);
+        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
+        ge.by_bot);
       return buf;
-    }
-    case T::ATTACKER_DOUBLE_TOUCHED_BALL: {
-      const auto & e = ev.attacker_double_touched_ball;
+    case GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
-    case T::BOT_KICKED_BALL_TOO_FAST: {
-      const auto & e = ev.bot_kicked_ball_too_fast;
+    case GameEventType::BOT_KICKED_BALL_TOO_FAST:
       std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(e.by_team.value).c_str(),
-        e.by_bot);
+        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
+        ge.by_bot);
       return buf;
-    }
-    case T::AIMLESS_KICK: {
-      const auto & e = ev.aimless_kick;
+    case GameEventType::AIMLESS_KICK:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(e.by_team.value).c_str(), e.by_bot, e.location.x, e.location.y);
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
-    }
     default:
       return type_name;
   }
@@ -431,16 +415,14 @@ std::vector<Event> detect_fouls(const BagData & data)
   if (data.referees.empty()) return events;
 
   int64_t bag_start = data.info.start_time_ns;
-  // 重複排除: (type_value, command_counter) ペア
   std::set<std::pair<int32_t, uint32_t>> seen;
 
   for (const auto & tm : data.referees) {
     const auto & msg = tm.msg;
     for (const auto & ge : msg.game_events) {
-      int32_t type_val = ge.type.value;
-      if (foul_event_types().find(type_val) == foul_event_types().end()) continue;
+      if (foul_event_types().find(ge.type_value) == foul_event_types().end()) continue;
 
-      auto key = std::make_pair(type_val, msg.command_counter);
+      auto key = std::make_pair(ge.type_value, msg.command_counter);
       if (seen.count(key)) continue;
       seen.insert(key);
 

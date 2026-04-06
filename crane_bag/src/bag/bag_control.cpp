@@ -12,7 +12,7 @@ namespace crane::bag
 namespace
 {
 
-ControlSnapshot extract_snapshot(double t, const crane_msgs::msg::RobotCommand & rc)
+ControlSnapshot extract_snapshot(double t, const RobotCommand & rc)
 {
   ControlSnapshot s;
   s.t = t;
