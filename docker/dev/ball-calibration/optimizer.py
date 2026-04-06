@@ -7,7 +7,7 @@ import math
 
 import numpy as np
 
-from .models import (
+from models import (
     KickPowerVelocityPair,
     OptimizationConfig,
     OptimizationResult,

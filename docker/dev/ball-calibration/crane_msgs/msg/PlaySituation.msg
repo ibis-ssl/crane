@@ -1,0 +1,99 @@
+# ID : text
+# 0  : HALT
+# 1  : STOP
+# 2  : ---
+# 3  : FORCE_START
+# 11 : OUR_KICKOFF_PREPARATION
+# 12 : OUR_KICKOFF_START
+# 13 : OUR_PENALTY_PREPARATION
+# 14 : OUR_PENALTY_START
+# 15 : OUR_DIRECT_FREE
+# 17 : OUR_TIMEOUT
+# 18 : OUR_GOAL
+# 19 : OUR_BALL_PLACEMENT
+# 20 : ---
+# 21 : THEIR_KICKOFF_PREPARATION
+# 22 : THEIR_KICKOFF_START
+# 23 : THEIR_PENALTY_PREPARATION
+# 24 : THEIR_PENALTY_START
+# 25 : THEIR_DIRECT_FREE
+# 27 : THEIR_TIMEOUT
+# 28 : THEIR_GOAL
+# 29 : THEIR_BALL_PLACEMENT
+
+std_msgs/Header header
+
+# FIXME 多分本当はreferee系メッセージの大元で定義するべき
+uint8 HALT = 0
+uint8 STOP = 1
+uint8 OUR_KICKOFF_PREPARATION = 11
+uint8 OUR_KICKOFF_START = 12
+uint8 OUR_PENALTY_PREPARATION = 13
+uint8 OUR_PENALTY_START = 14
+uint8 OUR_DIRECT_FREE = 15
+# uint8 OUR_INDIRECT_FREE = 16　現在は非推奨（使われていない）
+uint8 OUR_TIMEOUT = 17
+# uint8 OUR_GOAL = 18 use halt
+uint8 OUR_BALL_PLACEMENT = 19
+
+uint8 THEIR_KICKOFF_PREPARATION = 21
+uint8 THEIR_KICKOFF_START = 22
+uint8 THEIR_PENALTY_PREPARATION = 23
+uint8 THEIR_PENALTY_START = 24
+uint8 THEIR_DIRECT_FREE = 25
+# uint8 THEIR_INDIRECT_FREE = 26 現在は非推奨（使われていない）
+uint8 THEIR_TIMEOUT = 27
+# uint8 THEIR_GOAL = 28 use halt
+uint8 THEIR_BALL_PLACEMENT = 29
+
+# セッションの注入したときのイベント
+uint8 INJECTION = 40
+
+uint8 INPLAY = 50
+
+uint8 HALF_TIME = 100
+uint8 POST_GAME = 101
+
+
+# STOPの場合分け
+# 参考：https://github.com/RoboCup-SSL/ssl-game-controller/blob/master/internal/app/statemachine/change_gameevent.go#L329
+
+# DEFENDER_IN_DEFENSE_AREAの後のSTOP
+uint8 STOP_PRE_OUR_PENALTY_PREPARATION = 60
+uint8 STOP_PRE_THEIR_PENALTY_PREPARATION = 61
+
+# 得点後のSTOP
+uint8 STOP_PRE_OUR_KICKOFF_PREPARATION = 62
+uint8 STOP_PRE_THEIR_KICKOFF_PREPARATION = 63
+
+# 以下のいずれかのイベント後のSTOP。ボールプレイスメントが挟まるかも
+# BALL_LEFT_FIELD_GOAL_LINE / BALL_LEFT_FIELD_TOUCH_LINE / AIMLESS_KICK
+# ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA / BOT_PUSHED_BOT / BOT_HELD_BALL_DELIBERATELY
+# BOT_TIPPED_OVER / BOT_DROPPED_PARTS / KEEPER_HELD_BALL / BOUNDARY_CROSSING
+# BOT_DRIBBLED_BALL_TOO_FAR / ATTACKER_DOUBLE_TOUCHED_BALL / PENALTY_KICK_FAILED
+# INVALID_GOAL
+uint8 STOP_PRE_OUR_DIRECT_FREE = 64
+uint8 STOP_PRE_THEIR_DIRECT_FREE = 65
+
+# NO_PROGRESS_IN_GAME / TOO_MANY_ROBOTS イベント後のSTOP
+uint8 STOP_PRE_FORCE_START = 66
+
+NamedInt stage
+
+NamedInt command_raw
+
+NamedInt command
+
+NamedInt[<=1] next_command_raw
+
+NamedInt[<=1] next_command
+
+string reason_text
+
+geometry_msgs/Point placement_position
+
+robocup_ssl_msgs/RefereeTeamInfo our_team_info
+
+robocup_ssl_msgs/RefereeTeamInfo their_team_info
+
+robocup_ssl_msgs/Referee referee_raw
