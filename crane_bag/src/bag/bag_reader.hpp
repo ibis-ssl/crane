@@ -33,9 +33,9 @@ struct TimestampedMsg
 struct BagInfo
 {
   std::string path;
-  double duration_sec;
-  int64_t start_time_ns;
-  int64_t end_time_ns;
+  double duration_sec = 0.0;
+  int64_t start_time_ns = 0;
+  int64_t end_time_ns = 0;
   std::map<std::string, size_t> topic_counts;
   std::map<std::string, std::string> topic_types;
 };
