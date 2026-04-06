@@ -87,8 +87,7 @@ inline auto computePenaltyBypassDecision(
 
   decision.crossing_detected = true;
 
-  // Waypoint must be outside the expanded penalty area to avoid getting
-  // re-overridden by the same crossing logic on the next cycle.
+  // ウェイポイントは拡張PAの外側に配置し、次サイクルで同じ横断判定に再捕捉されないようにする
   const double bypass_x = (goal_pos.x() < 0.0) ? (expanded.max_corner().x() + surrounding_offset)
                                                : (expanded.min_corner().x() - surrounding_offset);
   const Point top_corner(bypass_x, expanded.max_corner().y() + surrounding_offset);
@@ -100,13 +99,13 @@ inline auto computePenaltyBypassDecision(
   const bool top_reachable = !intersectsSegmentAABB(current_pos, top_corner, expanded);
   const bool bottom_reachable = !intersectsSegmentAABB(current_pos, bottom_corner, expanded);
 
-  // Short-circuit: skip target-clearance check if waypoint is unreachable.
+  // 短絡評価: ウェイポイントが到達不可なら目標地点へのクリアランスチェックをスキップ
   const bool top_fully_good =
     top_reachable && !intersectsSegmentAABB(top_corner, target_pos, expanded);
   const bool bottom_fully_good =
     bottom_reachable && !intersectsSegmentAABB(bottom_corner, target_pos, expanded);
 
-  // Priority: fully_good (2) > reachable intermediate (1) > neither (0); tie-break by cost.
+  // 優先度: fully_good(2) > 到達可能な中間WP(1) > どちらでもない(0)、同スコアはコストで比較
   auto side_score = [](bool fully_good, bool reachable, double cost) {
     return std::make_pair(fully_good ? 2 : (reachable ? 1 : 0), -cost);
   };
