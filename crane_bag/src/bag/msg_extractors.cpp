@@ -39,19 +39,6 @@ struct FlatValueMap
     }
   }
 
-  // サフィックスが一致する最初の数値を返す（トピック名プレフィックスを無視）
-  double get_d(const std::string & suffix, double def = 0.0) const
-  {
-    for (const auto & [k, v] : numeric) {
-      if (
-        k.size() >= suffix.size() &&
-        k.compare(k.size() - suffix.size(), suffix.size(), suffix) == 0) {
-        return v;
-      }
-    }
-    return def;
-  }
-
   // 完全パス（先頭の /topic/ から始まる）で数値を返す
   double get_d_exact(const std::string & path, double def = 0.0) const
   {
@@ -66,62 +53,29 @@ struct FlatValueMap
     return it != text.end() ? it->second : def;
   }
 
-  // サフィックスが一致する最初の文字列を返す
-  std::string get_s(const std::string & suffix, const std::string & def = "") const
-  {
-    for (const auto & [k, v] : text) {
-      if (
-        k.size() >= suffix.size() &&
-        k.compare(k.size() - suffix.size(), suffix.size(), suffix) == 0) {
-        return v;
-      }
-    }
-    return def;
-  }
-
   // 配列の要素数をカウント（プレフィックス "/<field>." を持つキーの最大インデックス+1）
   size_t count_array(const std::string & prefix) const
   {
     size_t max_idx = 0;
     bool found = false;
-    for (const auto & [k, v] : numeric) {
-      if (k.size() > prefix.size() && k.compare(0, prefix.size(), prefix) == 0) {
-        // prefix の次の文字から数字を読む
-        size_t dot_pos = k.find('.', prefix.size());
-        if (dot_pos == std::string::npos) continue;
-        // prefix は "<topic>/array_field" 形式 → 次は ".<idx>/<subfield>"
-        // 実際のパスは "<topic>/array_field.N/<subfield>"
+
+    auto scan = [&](const auto & map) {
+      for (const auto & [k, v] : map) {
+        if (k.size() <= prefix.size() || k.compare(0, prefix.size(), prefix) != 0) continue;
         size_t start = prefix.size();
         if (k[start] != '.') continue;
         size_t end = k.find('/', start + 1);
         if (end == std::string::npos) end = k.size();
-        size_t idx = 0;
         try {
-          idx = std::stoull(k.substr(start + 1, end - start - 1));
+          size_t idx = std::stoull(k.substr(start + 1, end - start - 1));
+          if (idx >= max_idx) max_idx = idx + 1;
+          found = true;
         } catch (...) {
-          continue;
         }
-        if (idx >= max_idx) max_idx = idx + 1;
-        found = true;
       }
-    }
-    // textにも配列要素があるかチェック
-    for (const auto & [k, v] : text) {
-      if (k.size() > prefix.size() && k.compare(0, prefix.size(), prefix) == 0) {
-        size_t start = prefix.size();
-        if (k[start] != '.') continue;
-        size_t end = k.find('/', start + 1);
-        if (end == std::string::npos) end = k.size();
-        size_t idx = 0;
-        try {
-          idx = std::stoull(k.substr(start + 1, end - start - 1));
-        } catch (...) {
-          continue;
-        }
-        if (idx >= max_idx) max_idx = idx + 1;
-        found = true;
-      }
-    }
+    };
+    scan(numeric);
+    scan(text);
     return found ? max_idx : 0;
   }
 
@@ -175,37 +129,23 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
   // is_yellow
   wm.is_yellow = m.get_d_exact(p + "/is_yellow") != 0.0;
 
-  // robot_info_ours
-  const std::string ours_prefix = p + "/robot_info_ours";
-  size_t n_ours = m.count_array(ours_prefix);
-  wm.robot_info_ours.resize(n_ours);
-  for (size_t i = 0; i < n_ours; ++i) {
-    auto & r = wm.robot_info_ours[i];
-    r.id = static_cast<uint8_t>(m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "id")));
-    r.pose.x = m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "pose/x"));
-    r.pose.y = m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "pose/y"));
-    r.pose.theta = m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "pose/theta"));
-    r.velocity.x = m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "velocity/x"));
-    r.velocity.y = m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "velocity/y"));
-    r.available_vision =
-      m.get_d_exact(FlatValueMap::arr_path(ours_prefix, i, "available_vision")) != 0.0;
-  }
-
-  // robot_info_theirs
-  const std::string theirs_prefix = p + "/robot_info_theirs";
-  size_t n_theirs = m.count_array(theirs_prefix);
-  wm.robot_info_theirs.resize(n_theirs);
-  for (size_t i = 0; i < n_theirs; ++i) {
-    auto & r = wm.robot_info_theirs[i];
-    r.id = static_cast<uint8_t>(m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "id")));
-    r.pose.x = m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "pose/x"));
-    r.pose.y = m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "pose/y"));
-    r.pose.theta = m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "pose/theta"));
-    r.velocity.x = m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "velocity/x"));
-    r.velocity.y = m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "velocity/y"));
-    r.available_vision =
-      m.get_d_exact(FlatValueMap::arr_path(theirs_prefix, i, "available_vision")) != 0.0;
-  }
+  auto fill_robots = [&](const std::string & prefix, std::vector<RobotInfo> & out) {
+    size_t n = m.count_array(prefix);
+    out.resize(n);
+    for (size_t i = 0; i < n; ++i) {
+      auto & r = out[i];
+      r.id = static_cast<uint8_t>(m.get_d_exact(FlatValueMap::arr_path(prefix, i, "id")));
+      r.pose.x = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "pose/x"));
+      r.pose.y = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "pose/y"));
+      r.pose.theta = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "pose/theta"));
+      r.velocity.x = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "velocity/x"));
+      r.velocity.y = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "velocity/y"));
+      r.available_vision =
+        m.get_d_exact(FlatValueMap::arr_path(prefix, i, "available_vision")) != 0.0;
+    }
+  };
+  fill_robots(p + "/robot_info_ours", wm.robot_info_ours);
+  fill_robots(p + "/robot_info_theirs", wm.robot_info_theirs);
 
   return wm;
 }

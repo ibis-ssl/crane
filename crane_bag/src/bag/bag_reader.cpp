@@ -53,6 +53,36 @@ const std::unordered_set<std::string> & target_topics()
   return s;
 }
 
+/// readSummary 済みの McapReader から BagInfo を構築する共通ロジック
+BagInfo populate_bag_info(const std::string & bag_path, const mcap::McapReader & reader)
+{
+  BagInfo info;
+  info.path = bag_path;
+
+  const auto & stats = reader.statistics();
+  if (stats.has_value()) {
+    info.start_time_ns = static_cast<int64_t>(stats->messageStartTime);
+    int64_t end_ns = static_cast<int64_t>(stats->messageEndTime);
+    info.end_time_ns = end_ns;
+    info.duration_sec = static_cast<double>(end_ns - info.start_time_ns) / 1e9;
+    for (const auto & [ch_id, count] : stats->channelMessageCounts) {
+      auto ch_it = reader.channels().find(ch_id);
+      if (ch_it != reader.channels().end()) {
+        info.topic_counts[ch_it->second->topic] += count;
+      }
+    }
+  }
+
+  for (const auto & [ch_id, ch] : reader.channels()) {
+    auto it = reader.schemas().find(ch->schemaId);
+    if (it != reader.schemas().end()) {
+      info.topic_types[ch->topic] = it->second->name;
+    }
+  }
+
+  return info;
+}
+
 }  // namespace
 
 BagInfo BagReader::read_info(const std::string & bag_path)
@@ -67,41 +97,7 @@ BagInfo BagReader::read_info(const std::string & bag_path)
   }
 
   (void)reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
-
-  BagInfo info;
-  info.path = bag_path;
-
-  // 統計情報からタイムスタンプを取得
-  const auto & stats = reader.statistics();
-  if (stats.has_value()) {
-    info.start_time_ns = static_cast<int64_t>(stats->messageStartTime);
-    int64_t end_ns = static_cast<int64_t>(stats->messageEndTime);
-    info.end_time_ns = end_ns;
-    info.duration_sec = static_cast<double>(end_ns - info.start_time_ns) / 1e9;
-  }
-
-  // トピックごとのメッセージ数と型名を収集
-  const auto & channels = reader.channels();
-  const auto & schemas = reader.schemas();
-
-  for (const auto & [ch_id, ch] : channels) {
-    info.topic_counts[ch->topic] = 0;  // 詳細カウントは summary から
-    auto it = schemas.find(ch->schemaId);
-    if (it != schemas.end()) {
-      info.topic_types[ch->topic] = it->second->name;
-    }
-  }
-
-  // メッセージ数はsummaryのチャンネル統計から取得
-  if (stats.has_value()) {
-    for (const auto & [ch_id, count] : stats->channelMessageCounts) {
-      auto ch_it = channels.find(ch_id);
-      if (ch_it != channels.end()) {
-        info.topic_counts[ch_it->second->topic] += count;
-      }
-    }
-  }
-
+  BagInfo info = populate_bag_info(bag_path, reader);
   reader.close();
   return info;
 }
@@ -121,30 +117,7 @@ BagData BagReader::read(
   (void)reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
 
   BagData data;
-
-  // --- BagInfo を読み込み ---
-  const auto & stats = reader.statistics();
-  if (stats.has_value()) {
-    data.info.start_time_ns = static_cast<int64_t>(stats->messageStartTime);
-    int64_t end_ns = static_cast<int64_t>(stats->messageEndTime);
-    data.info.end_time_ns = end_ns;
-    data.info.duration_sec = static_cast<double>(end_ns - data.info.start_time_ns) / 1e9;
-    for (const auto & [ch_id, count] : stats->channelMessageCounts) {
-      auto ch_it = reader.channels().find(ch_id);
-      if (ch_it != reader.channels().end()) {
-        data.info.topic_counts[ch_it->second->topic] += count;
-      }
-    }
-  }
-  data.info.path = bag_path;
-
-  // トピック型名を収集
-  for (const auto & [ch_id, ch] : reader.channels()) {
-    auto it = reader.schemas().find(ch->schemaId);
-    if (it != reader.schemas().end()) {
-      data.info.topic_types[ch->topic] = it->second->name;
-    }
-  }
+  data.info = populate_bag_info(bag_path, reader);
 
   // --- rosx_introspection パーサを構築 ---
   // 対象トピックのチャンネルに対してのみパーサを登録
@@ -166,7 +139,7 @@ BagData BagReader::read(
   // --- 時間範囲フィルタを設定 ---
   mcap::Timestamp start_ts = 0;
   mcap::Timestamp end_ts = mcap::MaxTime;
-  if (time_range && stats.has_value()) {
+  if (time_range && data.info.start_time_ns != 0) {
     int64_t bag_start = data.info.start_time_ns;
     start_ts =
       static_cast<mcap::Timestamp>(bag_start + static_cast<int64_t>(time_range->first * 1e9));

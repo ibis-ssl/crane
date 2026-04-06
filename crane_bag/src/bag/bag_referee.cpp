@@ -58,19 +58,8 @@ RefereeSnapshot make_snapshot(const TimestampedMsg<Referee> & tm, int64_t bag_st
   snap.stage_name = stage_to_string(msg.stage_value);
   snap.command_counter = msg.command_counter;
 
-  snap.yellow.name = msg.yellow.name;
-  snap.yellow.score = msg.yellow.score;
-  snap.yellow.yellow_cards = msg.yellow.yellow_cards;
-  snap.yellow.red_cards = msg.yellow.red_cards;
-  snap.yellow.foul_counter = msg.yellow.foul_counter;
-  snap.yellow.goalkeeper = msg.yellow.goalkeeper;
-
-  snap.blue.name = msg.blue.name;
-  snap.blue.score = msg.blue.score;
-  snap.blue.yellow_cards = msg.blue.yellow_cards;
-  snap.blue.red_cards = msg.blue.red_cards;
-  snap.blue.foul_counter = msg.blue.foul_counter;
-  snap.blue.goalkeeper = msg.blue.goalkeeper;
+  snap.yellow = msg.yellow;
+  snap.blue = msg.blue;
 
   snap.has_designated_position = (msg.has_field & REFEREE_DESIGNATED_POSITION_FIELD_SET) != 0;
   snap.designated_x = snap.has_designated_position ? msg.designated_position_x / 1000.0f : 0.0f;
