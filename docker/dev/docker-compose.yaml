@@ -1,4 +1,15 @@
 services:
+  ball-calibration:
+    build:
+      context: ./ball-calibration
+    container_name: crane-ball-calibration
+    network_mode: host
+    environment:
+      - HTTP_PORT=8093
+    volumes:
+      - /home:/home:ro
+    restart: unless-stopped
+
   robot-manager:
     build:
       context: ./robot-manager

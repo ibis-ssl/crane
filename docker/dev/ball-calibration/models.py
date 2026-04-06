@@ -77,19 +77,11 @@ class OptimizationResult(BaseModel):
     power_velocity_summary: dict[str, float] = Field(default_factory=dict)
 
 
-class LoadRequest(BaseModel):
-    """データ読み込みリクエスト."""
-
-    directory_path: str
-
-
 class OptimizeRequest(BaseModel):
     """最適化実行リクエスト."""
 
-    enabled_event_ids: list[int] | None = None  # None = 全軌道使用
-    time_ranges: dict[int, tuple[float, float]] | None = (
-        None  # event_id -> (start, end)
-    )
+    enabled_event_ids: list[int] | None = None
+    time_ranges: dict[int, tuple[float, float]] | None = None
     config: OptimizationConfig = Field(default_factory=OptimizationConfig)
 
 
@@ -97,15 +89,13 @@ class PredictRequest(BaseModel):
     """手動パラメータでの予測計算リクエスト."""
 
     deceleration: float
-    event_ids: list[int] | None = None  # None = 全軌道
+    event_ids: list[int] | None = None
 
 
-class ExportRequest(BaseModel):
-    """YAMLエクスポートリクエスト."""
+class LoadPathRequest(BaseModel):
+    """サーバー上のファイルパスからの読み込みリクエスト."""
 
-    output_path: str
-    deceleration_override: float | None = None
-    kick_power_overrides: dict[str, float] | None = None  # "power_XX": velocity
+    path: str
 
 
 class ManualParamsRequest(BaseModel):

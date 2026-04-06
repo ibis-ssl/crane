@@ -6,16 +6,15 @@
 
 // ===== グローバル状態 =====
 const state = {
-  trajectories: [],       // TrajectoryInfo リスト
-  selectedIds: new Set(), // 選択済み event_id
-  previewId: null,        // プレビュー中の event_id
+  trajectories: [],
+  selectedIds: new Set(),
+  previewId: null,
   optimizationResult: null,
   currentDecel: 0.70,
-  kickOverrides: {},      // { "power_XX": velocity }
-  predictedData: [],      // 予測軌道データ
+  kickOverrides: {},
+  predictedData: [],
 };
 
-// Plotlyのダークテーマ設定
 const PLOT_LAYOUT_BASE = {
   paper_bgcolor: '#0f2744',
   plot_bgcolor: '#0a1929',
@@ -58,25 +57,97 @@ async function apiPut(url, body) {
   return res.json();
 }
 
-// ===== タブ1: データ読込 =====
+// ===== タブ1: ファイル読み込み =====
 
-async function loadData() {
-  const path = document.getElementById('directoryPath').value.trim();
-  if (!path) { showStatus('loadStatus', 'パスを入力してください', 'warning'); return; }
+// パス指定による読み込み
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pathInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadFromPath();
+  });
+});
 
-  showStatus('loadStatus', '読み込み中...', 'info');
+async function loadFromPath() {
+  const path = document.getElementById('pathInput').value.trim();
+  if (!path) {
+    showStatus('loadStatus', 'ファイルパスを入力してください', 'warning');
+    return;
+  }
+  showStatus('loadStatus', `読み込み中: ${path} ...`, 'info');
   try {
-    const result = await apiPost('/ball-calibration/api/load', { directory_path: path });
-    showStatus('loadStatus', `${result.loaded} 件の軌道データを読み込みました`, 'success');
+    const result = await apiPost('/api/load_path', { path });
+    showStatus('loadStatus', `完了: ${result.loaded} 件の軌道データを抽出 (${result.filename})`, 'success');
     await refreshTrajectoryList();
   } catch (e) {
     showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
   }
 }
 
+// ドラッグ&ドロップ設定
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+
+function onFileSelected(input) {
+  if (input.files[0]) uploadFile(input.files[0]);
+}
+
+async function uploadFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'mcap' && ext !== 'db3') {
+    showStatus('loadStatus', '対応形式: .mcap または .db3', 'warning');
+    return;
+  }
+
+  showStatus('loadStatus', `アップロード中: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)...`, 'info');
+
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadProgressBar');
+  progress.classList.remove('d-none');
+  bar.style.width = '30%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    bar.style.width = '60%';
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    bar.style.width = '90%';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+
+    const result = await res.json();
+    bar.style.width = '100%';
+    showStatus('loadStatus', `完了: ${result.loaded} 件の軌道データを抽出 (${file.name})`, 'success');
+    await refreshTrajectoryList();
+  } catch (e) {
+    showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
+  } finally {
+    setTimeout(() => {
+      progress.classList.add('d-none');
+      bar.style.width = '0%';
+    }, 800);
+    // reset file input
+    document.getElementById('fileInput').value = '';
+  }
+}
+
 async function refreshTrajectoryList() {
-  state.trajectories = await apiGet('/ball-calibration/api/trajectories');
-  state.selectedIds = new Set(state.trajectories.map(t => t.event_id)); // デフォルト全選択
+  state.trajectories = await apiGet('/api/trajectories');
+  state.selectedIds = new Set(state.trajectories.map(t => t.event_id));
 
   const tbody = document.getElementById('trajectoryTable');
   tbody.innerHTML = '';
@@ -115,9 +186,8 @@ async function showTrajectoryPreview(eventId) {
   document.getElementById('previewEmpty').style.display = 'none';
 
   try {
-    const d = await apiGet(`/ball-calibration/api/trajectory/${eventId}`);
+    const d = await apiGet(`/api/trajectory/${eventId}`);
 
-    // XY軌跡
     Plotly.newPlot('previewXY', [{
       x: d.positions_x, y: d.positions_y,
       mode: 'lines+markers',
@@ -132,7 +202,6 @@ async function showTrajectoryPreview(eventId) {
       margin: { ...PLOT_LAYOUT_BASE.margin, t: 25 },
     }, { displayModeBar: false, responsive: true });
 
-    // 速度-時間
     Plotly.newPlot('previewVT', [{
       x: d.time_points, y: d.velocities,
       mode: 'lines+markers',
@@ -182,7 +251,7 @@ async function runOptimization() {
       min_data_points_per_trajectory: parseInt(document.getElementById('cfgMinPoints').value),
     };
 
-    const result = await apiPost('/ball-calibration/api/optimize', {
+    const result = await apiPost('/api/optimize', {
       enabled_event_ids: [...state.selectedIds],
       config,
     });
@@ -190,7 +259,6 @@ async function runOptimization() {
     state.optimizationResult = result;
     state.currentDecel = result.global_deceleration;
 
-    // 結果サマリー更新
     const card = document.getElementById('resultSummaryCard');
     card.style.removeProperty('display');
     document.getElementById('resultDecel').textContent = result.global_deceleration.toFixed(4);
@@ -199,14 +267,10 @@ async function runOptimization() {
     document.getElementById('resultUsed').textContent =
       `${result.trajectories_used} / ${result.trajectories_analyzed}`;
 
-    // スライダーを最適値に設定
     document.getElementById('decelSlider').value = result.global_deceleration;
     document.getElementById('decelValue').textContent = result.global_deceleration.toFixed(2);
 
-    // キックマッピングテーブル更新
     renderKickMappingTable(result.power_velocity_summary);
-
-    // 予測データ取得
     await updatePredictions();
 
   } catch (e) {
@@ -249,7 +313,7 @@ function onKickOverrideChange(key, value) {
   } else {
     state.kickOverrides[key] = parseFloat(value);
   }
-  apiPut('/ball-calibration/api/manual_params', { kick_power_overrides: state.kickOverrides });
+  apiPut('/api/manual_params', { kick_power_overrides: state.kickOverrides });
 }
 
 function resetKickOverrides() {
@@ -257,12 +321,12 @@ function resetKickOverrides() {
   if (state.optimizationResult) {
     renderKickMappingTable(state.optimizationResult.power_velocity_summary);
   }
-  apiPut('/ball-calibration/api/manual_params', { kick_power_overrides: {} });
+  apiPut('/api/manual_params', { kick_power_overrides: {} });
 }
 
 const _onDecelChangeDebounced = debounce(async (value) => {
   state.currentDecel = parseFloat(value);
-  await apiPut('/ball-calibration/api/manual_params', { deceleration: state.currentDecel });
+  await apiPut('/api/manual_params', { deceleration: state.currentDecel });
   await updatePredictions();
 }, 200);
 
@@ -273,7 +337,7 @@ function onDecelChange(value) {
 
 async function updatePredictions() {
   try {
-    const result = await apiPost('/ball-calibration/api/predict', {
+    const result = await apiPost('/api/predict', {
       deceleration: state.currentDecel,
       event_ids: state.selectedIds.size > 0 ? [...state.selectedIds] : null,
     });
@@ -290,11 +354,10 @@ async function updatePredictions() {
 function renderVerifyCharts() {
   if (!state.predictedData || state.predictedData.length === 0) return;
 
-  // 速度-時間チャート (全軌道重ね描き)
-  const vtTraces = [];
   const colors = ['#a8d8ea', '#e8a838', '#ff6b6b', '#6bcb77', '#c77dff',
     '#4cc9f0', '#f72585', '#b5e48c', '#fca311', '#64dfdf'];
 
+  const vtTraces = [];
   state.predictedData.forEach((traj, i) => {
     const color = colors[i % colors.length];
     vtTraces.push({
@@ -322,7 +385,6 @@ function renderVerifyCharts() {
     margin: { ...PLOT_LAYOUT_BASE.margin, t: 40 },
   }, { responsive: true });
 
-  // パワー vs 初速度 散布図
   if (state.optimizationResult && state.optimizationResult.kick_data) {
     const pwVel = state.optimizationResult.kick_data.filter(k => !k.is_chip_kick);
     const pvTrace = [{
@@ -335,7 +397,6 @@ function renderVerifyCharts() {
       name: '推定初速度',
     }];
 
-    // マッピング曲線
     const summary = state.optimizationResult.power_velocity_summary;
     if (summary) {
       const items = Object.entries(summary).sort();
@@ -385,7 +446,7 @@ function renderAccuracyTable() {
 
 async function refreshPreview() {
   try {
-    const data = await apiGet('/ball-calibration/api/export/preview');
+    const data = await apiGet('/api/export/preview');
     document.getElementById('yamlPreview').value = data.yaml || '';
 
     const la = data.launch_arrays;
@@ -399,19 +460,34 @@ async function refreshPreview() {
   }
 }
 
-async function exportYaml() {
-  const path = document.getElementById('exportPath').value.trim();
-  if (!path) { showStatus('exportStatus', '出力パスを入力してください', 'warning'); return; }
-
+async function downloadYaml() {
+  const status = document.getElementById('exportStatus');
   try {
-    const result = await apiPost('/ball-calibration/api/export', {
-      output_path: path,
-      deceleration_override: state.currentDecel !== (state.optimizationResult?.global_deceleration) ? state.currentDecel : null,
-      kick_power_overrides: Object.keys(state.kickOverrides).length > 0 ? state.kickOverrides : null,
-    });
-    showStatus('exportStatus', `✓ エクスポート完了: ${result.output_path}`, 'success');
+    const res = await fetch('/api/export/download');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'calibrated_ball_physics.yaml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const span = document.createElement('span');
+    span.className = 'text-success';
+    span.textContent = '✓ calibrated_ball_physics.yaml をダウンロードしました';
+    status.replaceChildren(span);
   } catch (e) {
-    showStatus('exportStatus', `エラー: ${e.message}`, 'danger');
+    const span = document.createElement('span');
+    span.className = 'text-danger';
+    span.textContent = `エラー: ${e.message}`;
+    status.replaceChildren(span);
   }
 }
 

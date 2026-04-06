@@ -6,7 +6,42 @@
   <title>Ball Calibration UI - ibis-ssl</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/ball-calibration/static/style.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .drop-zone {
+      border: 2px dashed #2d4a7a;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      background-color: #0f2744;
+    }
+    .drop-zone.dragover {
+      border-color: #533483;
+      background-color: #1e3a5f;
+    }
+    .drop-zone i {
+      font-size: 2rem;
+      color: #2d4a7a;
+      margin-bottom: 0.5rem;
+    }
+    .drop-zone.dragover i {
+      color: #533483;
+    }
+    .upload-progress {
+      height: 4px;
+      background-color: #2d4a7a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      background-color: #533483;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
 </head>
 <body>
 
@@ -50,20 +85,46 @@
     <!-- ===== タブ1: データ読込 & 選択 ===== -->
     <div class="tab-pane fade show active" id="tab-data">
       <div class="row g-3">
-        <!-- 左: ディレクトリ入力 + 軌道テーブル -->
+        <!-- 左: ファイル読み込み + 軌道テーブル -->
         <div class="col-lg-7">
           <div class="card">
             <div class="card-header">
-              <i class="fas fa-folder me-1"></i>JSONデータディレクトリ
+              <i class="fas fa-folder-open me-1"></i>mcap ファイルの読み込み
             </div>
             <div class="card-body">
-              <div class="input-group">
-                <input type="text" id="directoryPath" class="form-control font-monospace"
-                  placeholder="/path/to/ball_calibration_analysis">
-                <button class="btn btn-primary" onclick="loadData()">
-                  <i class="fas fa-upload me-1"></i>読み込み
-                </button>
+              <!-- パス直接指定（メイン） -->
+              <div class="mb-2">
+                <label class="form-label small fw-bold mb-1">ファイルパスを指定</label>
+                <div class="input-group">
+                  <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
+                    placeholder="/home/user/bags/calibration.mcap">
+                  <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
+                    <i class="fas fa-folder-open me-1"></i>読み込む
+                  </button>
+                </div>
+                <div class="form-text">コンテナからアクセスできるパスを指定 (/home 以下が参照可能)</div>
               </div>
+
+              <!-- ファイルアップロード（サブオプション） -->
+              <div>
+                <a class="small text-muted" data-bs-toggle="collapse" href="#uploadCollapse" role="button">
+                  <i class="fas fa-upload me-1"></i>ファイルをアップロードする場合はこちら
+                </a>
+                <div class="collapse" id="uploadCollapse">
+                  <div class="mt-2">
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                      <div><i class="fas fa-cloud-upload-alt"></i></div>
+                      <div class="fw-bold mt-1">クリックまたはドラッグ&amp;ドロップ</div>
+                      <div class="text-muted small mt-1">対応形式: .mcap / .db3</div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".mcap,.db3" style="display:none" onchange="onFileSelected(this)">
+                    <div class="upload-progress mt-2 d-none" id="uploadProgress">
+                      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div id="loadStatus" class="mt-2 small text-muted"></div>
             </div>
           </div>
@@ -275,15 +336,13 @@
       <div class="row g-3">
         <div class="col-lg-5">
           <div class="card">
-            <div class="card-header"><i class="fas fa-file-code me-1"></i>エクスポート設定</div>
+            <div class="card-header"><i class="fas fa-file-code me-1"></i>エクスポート</div>
             <div class="card-body">
-              <div class="mb-3">
-                <label class="form-label fw-bold">出力ファイルパス</label>
-                <input type="text" id="exportPath" class="form-control font-monospace"
-                  placeholder="/path/to/calibrated_ball_physics.yaml">
-              </div>
-              <button class="btn btn-success w-100 mb-2" onclick="exportYaml()">
-                <i class="fas fa-download me-1"></i>YAMLエクスポート
+              <p class="small text-muted">
+                最適化結果を <code>calibrated_ball_physics.yaml</code> としてダウンロードします。
+              </p>
+              <button class="btn btn-success w-100 mb-2" onclick="downloadYaml()">
+                <i class="fas fa-download me-1"></i>YAMLをダウンロード
               </button>
               <button class="btn btn-outline-secondary w-100" onclick="refreshPreview()">
                 <i class="fas fa-sync me-1"></i>プレビュー更新
@@ -318,6 +377,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-<script src="/ball-calibration/static/app.js"></script>
+<script src="/static/app.js"></script>
 </body>
 </html>
