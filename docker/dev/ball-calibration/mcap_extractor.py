@@ -334,7 +334,6 @@ def _extract_trajectory(
     last_pos_x, last_pos_y = ball_data[start_idx][1], ball_data[start_idx][2]
     outside_field = False
     teleport_count = 0
-    teleport_disabled = False
 
     for i in range(start_idx, len(ball_data)):
         ts, sx, sy, _, vx, vy, _, state, _ = ball_data[i]
@@ -351,15 +350,10 @@ def _extract_trajectory(
             traj_state = 3  # INVALID
 
         # テレポートキック除外（キック直後に速度が閾値以下になった場合）
-        if (
-            not teleport_disabled
-            and elapsed <= _TELEPORT_WINDOW
-            and speed <= _TELEPORT_SPEED
-        ):
+        if elapsed <= _TELEPORT_WINDOW and speed <= _TELEPORT_SPEED:
             teleport_count += 1
             if teleport_count >= 5:
-                teleport_disabled = True
-            break
+                break
 
         trajectory.append((ts, sx, sy, speed, traj_state))
 
