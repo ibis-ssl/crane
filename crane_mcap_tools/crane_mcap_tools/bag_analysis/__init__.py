@@ -7,7 +7,7 @@ from .control import (
     detect_factor_transitions,
 )
 from .events import Event, detect_events
-from .metrics import angle_diff, ball_to_robot_dist, distance_2d, speed_2d
+from .metrics import angle_diff, ball_to_robot_dist, distance_2d, speed_2d, speed_3d
 from .models import BagData, BagInfo, TimestampedMsg
 from .reader import BagReader
 from .survey import run_survey
@@ -31,6 +31,7 @@ __all__ = [
     "FactorTransition",
     "distance_2d",
     "speed_2d",
+    "speed_3d",
     "angle_diff",
     "ball_to_robot_dist",
 ]

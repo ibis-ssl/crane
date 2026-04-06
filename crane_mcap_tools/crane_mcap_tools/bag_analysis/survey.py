@@ -1,8 +1,7 @@
 """概要サーベイ — analyze-rosbag Step 2 テンプレートの移植."""
 
-import math
-
 from .formatters import format_factors, format_pos, format_t_sec
+from .metrics import distance_2d, speed_2d
 from .models import BagData
 
 
@@ -63,12 +62,12 @@ def _world_model_samples(bag_data: BagData, interval: float) -> list[str]:
         ball = msg.ball_info
         bx, by = ball.position.x, ball.position.y
         bvx, bvy = ball.velocity.x, ball.velocity.y
-        bspeed = math.sqrt(bvx**2 + bvy**2)
+        bspeed = speed_2d(bvx, bvy)
         lines.append(
             f"  {format_t_sec(tm.t)}: ball={format_pos(bx, by)} speed={bspeed:.2f}m/s"
         )
         for r in msg.robot_info_ours:
-            dist = math.sqrt((r.pose.x - bx) ** 2 + (r.pose.y - by) ** 2)
+            dist = distance_2d(r.pose.x, r.pose.y, bx, by)
             lines.append(
                 f"    our[{r.id}]: {format_pos(r.pose.x, r.pose.y)}"
                 f" dist_ball={dist:.2f}m det={r.available_vision}"

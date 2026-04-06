@@ -195,7 +195,7 @@ Examples:
     )
     parser.add_argument(
         "--backend",
-        choices=["auto", "resvg", "rsvg", "cairosvg"],
+        choices=["auto", "resvg", "cairosvg"],
         default="auto",
         help="SVG rendering backend (default: auto - use fastest available)",
     )

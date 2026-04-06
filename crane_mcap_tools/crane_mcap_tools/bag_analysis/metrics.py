@@ -14,6 +14,11 @@ def speed_2d(vx: float, vy: float) -> float:
     return math.sqrt(vx**2 + vy**2)
 
 
+def speed_3d(vx: float, vy: float, vz: float) -> float:
+    """3次元速度ベクトルの大きさ."""
+    return math.sqrt(vx**2 + vy**2 + vz**2)
+
+
 def angle_diff(a1: float, a2: float) -> float:
     """2つの角度の差（-pi～pi に正規化）."""
     diff = a2 - a1

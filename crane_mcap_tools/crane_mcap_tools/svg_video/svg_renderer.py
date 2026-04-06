@@ -5,24 +5,24 @@
 """
 
 import logging
-from typing import Optional
 
 from .renderers import (
     CairoSvgRenderer,
     OutputFormat,
     ResvgPyRenderer,
-    RsvgCliRenderer,
     SvgRendererBase,
 )
 
 logger = logging.getLogger(__name__)
 
-# 後方互換性のため、SvgRendererをCairoSvgRendererのエイリアスとして維持
-SvgRenderer = CairoSvgRenderer
+_RENDERER_CLASSES = [
+    ResvgPyRenderer,  # 最速（推奨、pip install resvg-py）
+    CairoSvgRenderer,  # フォールバック（pip install cairosvg）
+]
 
 
 def create_renderer(
-    backend: Optional[str] = None,
+    backend: str | None = None,
     width: int = 1920,
     height: int = 1080,
     dpi: int = 96,
@@ -47,19 +47,12 @@ def create_renderer(
         ValueError: 指定されたバックエンドが利用不可能な場合
         RuntimeError: 利用可能なバックエンドが存在しない場合
     """
-    # 利用可能なレンダラークラスのリスト（優先度順）
-    renderer_classes = [
-        ResvgPyRenderer,  # 最速（推奨、pip install resvg-py）
-        RsvgCliRenderer,  # 高速（apt install librsvg2-bin）
-        CairoSvgRenderer,  # フォールバック（pip install cairosvg）
-    ]
-
     # バックエンド名 -> クラスのマッピング
-    backend_map = {cls.get_name(): cls for cls in renderer_classes}
+    backend_map = {cls.get_name(): cls for cls in _RENDERER_CLASSES}
 
     if backend is None or backend == "auto":
         # 自動選択: 利用可能な最初のレンダラーを使用
-        for renderer_cls in renderer_classes:
+        for renderer_cls in _RENDERER_CLASSES:
             if renderer_cls.is_available():
                 logger.info(f"Using {renderer_cls.get_name()} renderer (auto-selected)")
                 return renderer_cls(width, height, dpi, output_format)
@@ -93,13 +86,7 @@ def list_available_backends() -> list[tuple[str, bool, str]]:
     Returns:
         list[tuple[str, bool, str]]: (バックエンド名, 利用可能?, 説明) のリスト
     """
-    renderer_classes = [
-        ResvgPyRenderer,  # 最速（推奨、pip install resvg-py）
-        RsvgCliRenderer,  # 高速（apt install librsvg2-bin）
-        CairoSvgRenderer,  # フォールバック（pip install cairosvg）
-    ]
-
     return [
         (cls.get_name(), cls.is_available(), cls.get_description())
-        for cls in renderer_classes
+        for cls in _RENDERER_CLASSES
     ]
