@@ -7,6 +7,7 @@
 #include "msg_extractors.hpp"
 
 #include <cmath>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 
@@ -39,18 +40,48 @@ struct FlatValueMap
     }
   }
 
-  // 完全パス（先頭の /topic/ から始まる）で数値を返す
+  // 完全パスで各型の値を返す
   double get_d_exact(const std::string & path, double def = 0.0) const
   {
     auto it = numeric.find(path);
     return it != numeric.end() ? it->second : def;
   }
+  int32_t get_i32(const std::string & path) const
+  {
+    return static_cast<int32_t>(get_d_exact(path));
+  }
+  uint32_t get_u32(const std::string & path) const
+  {
+    return static_cast<uint32_t>(get_d_exact(path));
+  }
+  float get_f(const std::string & path) const { return static_cast<float>(get_d_exact(path)); }
+  uint8_t get_u8(const std::string & path) const { return static_cast<uint8_t>(get_d_exact(path)); }
+  bool get_b(const std::string & path) const { return get_d_exact(path) != 0.0; }
 
-  // 完全パスで文字列を返す
   std::string get_s_exact(const std::string & path, const std::string & def = "") const
   {
     auto it = text.find(path);
     return it != text.end() ? it->second : def;
+  }
+
+  // keys を順に検索し最初に見つかった非ゼロ値を返す
+  std::optional<double> find_first_nonzero(std::initializer_list<std::string> keys) const
+  {
+    for (const auto & k : keys) {
+      auto it = numeric.find(k);
+      if (it != numeric.end() && it->second != 0.0) return it->second;
+    }
+    return std::nullopt;
+  }
+
+  // keys を順に検索し最初に見つかった値を返す（ゼロ含む）
+  std::optional<double> find_first(std::initializer_list<std::string> keys) const
+  {
+    for (const auto & k : keys) {
+      auto it = numeric.find(k);
+      if (it != numeric.end()) return it->second;
+    }
+    return std::nullopt;
   }
 
   // 配列の要素数をカウント（プレフィックス "/<field>." を持つキーの最大インデックス+1）
@@ -177,46 +208,37 @@ RobotCommands extract_robot_commands(const RosMsgParser::FlatMessage & flat)
 
   for (size_t i = 0; i < n; ++i) {
     auto & cmd = rc.robot_commands[i];
-    cmd.robot_id =
-      static_cast<uint8_t>(m.get_d_exact(FlatValueMap::arr_path(cmds_prefix, i, "robot_id")));
-    cmd.kick_power =
-      static_cast<float>(m.get_d_exact(FlatValueMap::arr_path(cmds_prefix, i, "kick_power")));
-    cmd.dribble_power =
-      static_cast<float>(m.get_d_exact(FlatValueMap::arr_path(cmds_prefix, i, "dribble_power")));
-    cmd.stop_flag = m.get_d_exact(FlatValueMap::arr_path(cmds_prefix, i, "stop_flag")) != 0.0;
-    cmd.chip_enable = m.get_d_exact(FlatValueMap::arr_path(cmds_prefix, i, "chip_enable")) != 0.0;
-    cmd.planner_name = m.get_s_exact(FlatValueMap::arr_path(cmds_prefix, i, "planner_name"));
+    auto ap = [&](const std::string & f) { return FlatValueMap::arr_path(cmds_prefix, i, f); };
+    cmd.robot_id = m.get_u8(ap("robot_id"));
+    cmd.kick_power = m.get_f(ap("kick_power"));
+    cmd.dribble_power = m.get_f(ap("dribble_power"));
+    cmd.stop_flag = m.get_b(ap("stop_flag"));
+    cmd.chip_enable = m.get_b(ap("chip_enable"));
+    cmd.planner_name = m.get_s_exact(ap("planner_name"));
 
-    // planning_factors
-    const std::string pf_prefix = FlatValueMap::arr_path(cmds_prefix, i, "planning_factors");
-    size_t n_pf = m.count_array(pf_prefix);
-    cmd.planning_factors.resize(n_pf);
-    for (size_t j = 0; j < n_pf; ++j) {
+    const std::string pf_prefix = ap("planning_factors");
+    cmd.planning_factors.resize(m.count_array(pf_prefix));
+    for (size_t j = 0; j < cmd.planning_factors.size(); ++j) {
       cmd.planning_factors[j].name = m.get_s_exact(FlatValueMap::arr_path(pf_prefix, j, "name"));
       cmd.planning_factors[j].value = m.get_s_exact(FlatValueMap::arr_path(pf_prefix, j, "value"));
     }
 
-    // position_target_mode
-    const std::string pos_prefix = FlatValueMap::arr_path(cmds_prefix, i, "position_target_mode");
-    size_t n_pos = m.count_array(pos_prefix);
-    cmd.position_target_mode.resize(n_pos);
-    for (size_t j = 0; j < n_pos; ++j) {
+    const std::string pos_prefix = ap("position_target_mode");
+    cmd.position_target_mode.resize(m.count_array(pos_prefix));
+    for (size_t j = 0; j < cmd.position_target_mode.size(); ++j) {
       cmd.position_target_mode[j].target_x =
-        static_cast<float>(m.get_d_exact(FlatValueMap::arr_path(pos_prefix, j, "target_x")));
+        m.get_f(FlatValueMap::arr_path(pos_prefix, j, "target_x"));
       cmd.position_target_mode[j].target_y =
-        static_cast<float>(m.get_d_exact(FlatValueMap::arr_path(pos_prefix, j, "target_y")));
+        m.get_f(FlatValueMap::arr_path(pos_prefix, j, "target_y"));
     }
 
-    // polar_velocity_target_mode
-    const std::string vel_prefix =
-      FlatValueMap::arr_path(cmds_prefix, i, "polar_velocity_target_mode");
-    size_t n_vel = m.count_array(vel_prefix);
-    cmd.polar_velocity_target_mode.resize(n_vel);
-    for (size_t j = 0; j < n_vel; ++j) {
-      cmd.polar_velocity_target_mode[j].target_velocity_r = static_cast<float>(
-        m.get_d_exact(FlatValueMap::arr_path(vel_prefix, j, "target_velocity_r")));
-      cmd.polar_velocity_target_mode[j].target_velocity_theta = static_cast<float>(
-        m.get_d_exact(FlatValueMap::arr_path(vel_prefix, j, "target_velocity_theta")));
+    const std::string vel_prefix = ap("polar_velocity_target_mode");
+    cmd.polar_velocity_target_mode.resize(m.count_array(vel_prefix));
+    for (size_t j = 0; j < cmd.polar_velocity_target_mode.size(); ++j) {
+      cmd.polar_velocity_target_mode[j].target_velocity_r =
+        m.get_f(FlatValueMap::arr_path(vel_prefix, j, "target_velocity_r"));
+      cmd.polar_velocity_target_mode[j].target_velocity_theta =
+        m.get_f(FlatValueMap::arr_path(vel_prefix, j, "target_velocity_theta"));
     }
   }
 
@@ -232,10 +254,9 @@ GameAnalysis extract_game_analysis(const RosMsgParser::FlatMessage & flat)
   const std::string p = topic_prefix(flat);
 
   GameAnalysis ga;
-  ga.recommended_attacker_id = static_cast<int32_t>(m.get_d_exact(p + "/recommended_attacker_id"));
-  ga.attacker_suitability_score =
-    static_cast<float>(m.get_d_exact(p + "/attacker_suitability_score"));
-  ga.pass_target_id = static_cast<int32_t>(m.get_d_exact(p + "/pass_target_id"));
+  ga.recommended_attacker_id = m.get_i32(p + "/recommended_attacker_id");
+  ga.attacker_suitability_score = m.get_f(p + "/attacker_suitability_score");
+  ga.pass_target_id = m.get_i32(p + "/pass_target_id");
   return ga;
 }
 
@@ -280,7 +301,7 @@ LogMessage extract_log_message(const RosMsgParser::FlatMessage & flat)
   const std::string p = topic_prefix(flat);
 
   LogMessage log;
-  log.level = static_cast<uint8_t>(m.get_d_exact(p + "/level"));
+  log.level = m.get_u8(p + "/level");
   log.name = m.get_s_exact(p + "/name");
   log.msg = m.get_s_exact(p + "/msg");
   return log;
@@ -294,36 +315,27 @@ Referee extract_referee(const RosMsgParser::FlatMessage & flat)
   m.build(flat);
   const std::string p = topic_prefix(flat);
 
+  auto fill_team = [&](TeamInfo & ti, const std::string & cp) {
+    ti.name = m.get_s_exact(cp + "/name");
+    ti.score = m.get_u32(cp + "/score");
+    ti.yellow_cards = m.get_u32(cp + "/yellow_cards");
+    ti.red_cards = m.get_u32(cp + "/red_cards");
+    ti.foul_counter = m.get_u32(cp + "/foul_counter");
+    ti.goalkeeper = m.get_u32(cp + "/goalkeeper");
+  };
+
   Referee ref;
-  ref.command_value = static_cast<int32_t>(m.get_d_exact(p + "/command/value"));
-  ref.command_counter = static_cast<uint32_t>(m.get_d_exact(p + "/command_counter"));
-  ref.stage_value = static_cast<int32_t>(m.get_d_exact(p + "/stage/value"));
-  ref.has_field = static_cast<uint32_t>(m.get_d_exact(p + "/has_field"));
-  ref.current_action_time_remaining =
-    static_cast<int32_t>(m.get_d_exact(p + "/current_action_time_remaining"));
-
-  // yellow
-  ref.yellow.name = m.get_s_exact(p + "/yellow/name");
-  ref.yellow.score = static_cast<uint32_t>(m.get_d_exact(p + "/yellow/score"));
-  ref.yellow.yellow_cards = static_cast<uint32_t>(m.get_d_exact(p + "/yellow/yellow_cards"));
-  ref.yellow.red_cards = static_cast<uint32_t>(m.get_d_exact(p + "/yellow/red_cards"));
-  ref.yellow.foul_counter = static_cast<uint32_t>(m.get_d_exact(p + "/yellow/foul_counter"));
-  ref.yellow.goalkeeper = static_cast<uint32_t>(m.get_d_exact(p + "/yellow/goalkeeper"));
-
-  // blue
-  ref.blue.name = m.get_s_exact(p + "/blue/name");
-  ref.blue.score = static_cast<uint32_t>(m.get_d_exact(p + "/blue/score"));
-  ref.blue.yellow_cards = static_cast<uint32_t>(m.get_d_exact(p + "/blue/yellow_cards"));
-  ref.blue.red_cards = static_cast<uint32_t>(m.get_d_exact(p + "/blue/red_cards"));
-  ref.blue.foul_counter = static_cast<uint32_t>(m.get_d_exact(p + "/blue/foul_counter"));
-  ref.blue.goalkeeper = static_cast<uint32_t>(m.get_d_exact(p + "/blue/goalkeeper"));
-
+  ref.command_value = m.get_i32(p + "/command/value");
+  ref.command_counter = m.get_u32(p + "/command_counter");
+  ref.stage_value = m.get_i32(p + "/stage/value");
+  ref.has_field = m.get_u32(p + "/has_field");
+  ref.current_action_time_remaining = m.get_i32(p + "/current_action_time_remaining");
+  fill_team(ref.yellow, p + "/yellow");
+  fill_team(ref.blue, p + "/blue");
   // designated_position（has_field にかかわらず値を読む。表示側でフラグチェック）
-  ref.designated_position_x = static_cast<float>(m.get_d_exact(p + "/designated_position/x"));
-  ref.designated_position_y = static_cast<float>(m.get_d_exact(p + "/designated_position/y"));
-
-  // next_command
-  ref.next_command_value = static_cast<int32_t>(m.get_d_exact(p + "/next_command/value"));
+  ref.designated_position_x = m.get_f(p + "/designated_position/x");
+  ref.designated_position_y = m.get_f(p + "/designated_position/y");
+  ref.next_command_value = m.get_i32(p + "/next_command/value");
 
   // game_events
   const std::string ge_prefix = p + "/game_events";
@@ -332,128 +344,94 @@ Referee extract_referee(const RosMsgParser::FlatMessage & flat)
 
   for (size_t i = 0; i < n_ge; ++i) {
     auto & ge = ref.game_events[i];
-    ge.type_value =
-      static_cast<int32_t>(m.get_d_exact(FlatValueMap::arr_path(ge_prefix, i, "type/value")));
+    ge.type_value = m.get_i32(FlatValueMap::arr_path(ge_prefix, i, "type/value"));
 
-    // event サブフィールドを共通フィールドにマッピング
-    // 全サブフィールドが存在するため type_value で選択的に読み出す
+    // 全サブフィールドが存在するため、各フィールドは複数候補パスから最初の有効値を採用
     const std::string ev = FlatValueMap::arr_path(ge_prefix, i, "event");
 
-    // by_team（複数のイベント種別で共通）
-    // いずれかのサブメッセージの by_team/value を探す（最初に見つかったものを使用）
-    for (const auto & sub : {
-           ev + "/bot_crash_unique/by_team/value",
-           ev + "/bot_crash_unique_skipped/by_team/value",
-           ev + "/bot_too_fast_in_stop/by_team/value",
-           ev + "/bot_pushed_bot/by_team/value",
-           ev + "/bot_pushed_bot_skipped/by_team/value",
-           ev + "/bot_dribbled_ball_too_far/by_team/value",
-           ev + "/keeper_held_ball/by_team/value",
-           ev + "/defender_in_defense_area/by_team/value",
-           ev + "/attacker_too_close_to_defense_area/by_team/value",
-           ev + "/attacker_touched_ball_in_defense_area/by_team/value",
-           ev + "/bot_held_ball_deliberately/by_team/value",
-           ev + "/bot_interfered_placement/by_team/value",
-           ev + "/attacker_double_touched_ball/by_team/value",
-           ev + "/bot_kicked_ball_too_fast/by_team/value",
-           ev + "/aimless_kick/by_team/value",
-         }) {
-      auto it = m.numeric.find(sub);
-      if (it != m.numeric.end() && it->second != 0.0) {
-        ge.by_team_value = static_cast<int32_t>(it->second);
-        break;
-      }
-    }
+    if (
+      auto v = m.find_first_nonzero({
+        ev + "/bot_crash_unique/by_team/value",
+        ev + "/bot_crash_unique_skipped/by_team/value",
+        ev + "/bot_too_fast_in_stop/by_team/value",
+        ev + "/bot_pushed_bot/by_team/value",
+        ev + "/bot_pushed_bot_skipped/by_team/value",
+        ev + "/bot_dribbled_ball_too_far/by_team/value",
+        ev + "/keeper_held_ball/by_team/value",
+        ev + "/defender_in_defense_area/by_team/value",
+        ev + "/attacker_too_close_to_defense_area/by_team/value",
+        ev + "/attacker_touched_ball_in_defense_area/by_team/value",
+        ev + "/bot_held_ball_deliberately/by_team/value",
+        ev + "/bot_interfered_placement/by_team/value",
+        ev + "/attacker_double_touched_ball/by_team/value",
+        ev + "/bot_kicked_ball_too_fast/by_team/value",
+        ev + "/aimless_kick/by_team/value",
+      }))
+      ge.by_team_value = static_cast<int32_t>(*v);
 
-    // violator（bot_crash_unique 系）
-    {
-      auto it = m.numeric.find(ev + "/bot_crash_unique/violator");
-      if (it == m.numeric.end()) it = m.numeric.find(ev + "/bot_crash_unique_skipped/violator");
-      if (it != m.numeric.end()) ge.violator = static_cast<uint32_t>(it->second);
-    }
+    if (
+      auto v = m.find_first(
+        {ev + "/bot_crash_unique/violator", ev + "/bot_crash_unique_skipped/violator"}))
+      ge.violator = static_cast<uint32_t>(*v);
 
-    // victim（bot_crash_unique 系）
-    {
-      auto it = m.numeric.find(ev + "/bot_crash_unique/victim");
-      if (it == m.numeric.end()) it = m.numeric.find(ev + "/bot_crash_unique_skipped/victim");
-      if (it != m.numeric.end()) ge.victim = static_cast<uint32_t>(it->second);
-    }
+    if (
+      auto v =
+        m.find_first({ev + "/bot_crash_unique/victim", ev + "/bot_crash_unique_skipped/victim"}))
+      ge.victim = static_cast<uint32_t>(*v);
+    if (ge.victim == 0)
+      if (
+        auto v =
+          m.find_first({ev + "/bot_pushed_bot/victim", ev + "/bot_pushed_bot_skipped/victim"}))
+        ge.victim = static_cast<uint32_t>(*v);
 
-    // victim for bot_pushed_bot
-    {
-      auto it = m.numeric.find(ev + "/bot_pushed_bot/victim");
-      if (it == m.numeric.end()) it = m.numeric.find(ev + "/bot_pushed_bot_skipped/victim");
-      if (it != m.numeric.end() && ge.victim == 0) ge.victim = static_cast<uint32_t>(it->second);
-    }
-
-    // by_bot（複数種別）
-    for (const auto & key : {
-           ev + "/bot_too_fast_in_stop/by_bot",
-           ev + "/bot_dribbled_ball_too_far/by_bot",
-           ev + "/defender_in_defense_area/by_bot",
-           ev + "/attacker_too_close_to_defense_area/by_bot",
-           ev + "/attacker_touched_ball_in_defense_area/by_bot",
-           ev + "/bot_held_ball_deliberately/by_bot",
-           ev + "/bot_interfered_placement/by_bot",
-           ev + "/attacker_double_touched_ball/by_bot",
-           ev + "/bot_kicked_ball_too_fast/by_bot",
-           ev + "/aimless_kick/by_bot",
-         }) {
-      auto it = m.numeric.find(key);
-      if (it != m.numeric.end() && it->second != 0.0) {
-        ge.by_bot = static_cast<uint32_t>(it->second);
-        break;
-      }
-    }
+    if (
+      auto v = m.find_first_nonzero({
+        ev + "/bot_too_fast_in_stop/by_bot",
+        ev + "/bot_dribbled_ball_too_far/by_bot",
+        ev + "/defender_in_defense_area/by_bot",
+        ev + "/attacker_too_close_to_defense_area/by_bot",
+        ev + "/attacker_touched_ball_in_defense_area/by_bot",
+        ev + "/bot_held_ball_deliberately/by_bot",
+        ev + "/bot_interfered_placement/by_bot",
+        ev + "/attacker_double_touched_ball/by_bot",
+        ev + "/bot_kicked_ball_too_fast/by_bot",
+        ev + "/aimless_kick/by_bot",
+      }))
+      ge.by_bot = static_cast<uint32_t>(*v);
 
     // location（bot_crash_unique 優先、次いで各種イベント）
-    for (const auto & [x_key, y_key] : std::vector<std::pair<std::string, std::string>>{
-           {ev + "/bot_crash_unique/location/x", ev + "/bot_crash_unique/location/y"},
-           {ev + "/bot_too_fast_in_stop/location/x", ev + "/bot_too_fast_in_stop/location/y"},
-           {ev + "/bot_pushed_bot/location/x", ev + "/bot_pushed_bot/location/y"},
-           {ev + "/bot_pushed_bot_skipped/location/x", ev + "/bot_pushed_bot_skipped/location/y"},
-           {ev + "/keeper_held_ball/location/x", ev + "/keeper_held_ball/location/y"},
-           {ev + "/defender_in_defense_area/location/x",
-            ev + "/defender_in_defense_area/location/y"},
-           {ev + "/attacker_too_close_to_defense_area/location/x",
-            ev + "/attacker_too_close_to_defense_area/location/y"},
-           {ev + "/attacker_touched_ball_in_defense_area/location/x",
-            ev + "/attacker_touched_ball_in_defense_area/location/y"},
-           {ev + "/bot_held_ball_deliberately/location/x",
-            ev + "/bot_held_ball_deliberately/location/y"},
-           {ev + "/attacker_double_touched_ball/location/x",
-            ev + "/attacker_double_touched_ball/location/y"},
-           {ev + "/aimless_kick/location/x", ev + "/aimless_kick/location/y"},
+    for (const auto & sub : {
+           std::string("bot_crash_unique"),
+           std::string("bot_too_fast_in_stop"),
+           std::string("bot_pushed_bot"),
+           std::string("bot_pushed_bot_skipped"),
+           std::string("keeper_held_ball"),
+           std::string("defender_in_defense_area"),
+           std::string("attacker_too_close_to_defense_area"),
+           std::string("attacker_touched_ball_in_defense_area"),
+           std::string("bot_held_ball_deliberately"),
+           std::string("attacker_double_touched_ball"),
+           std::string("aimless_kick"),
          }) {
-      auto xi = m.numeric.find(x_key);
-      auto yi = m.numeric.find(y_key);
+      auto xi = m.numeric.find(ev + "/" + sub + "/location/x");
+      auto yi = m.numeric.find(ev + "/" + sub + "/location/y");
       if (
         xi != m.numeric.end() &&
         (xi->second != 0.0 || (yi != m.numeric.end() && yi->second != 0.0))) {
         ge.location_x = static_cast<float>(xi->second);
-        ge.location_y = (yi != m.numeric.end()) ? static_cast<float>(yi->second) : 0.0f;
+        ge.location_y = yi != m.numeric.end() ? static_cast<float>(yi->second) : 0.0f;
         break;
       }
     }
 
-    // crash_speed
-    {
-      auto it = m.numeric.find(ev + "/bot_crash_unique/crash_speed");
-      if (it == m.numeric.end()) it = m.numeric.find(ev + "/bot_crash_unique_skipped/crash_speed");
-      if (it != m.numeric.end()) ge.crash_speed = static_cast<float>(it->second);
-    }
-
-    // speed（bot_too_fast_in_stop）
-    {
-      auto it = m.numeric.find(ev + "/bot_too_fast_in_stop/speed");
-      if (it != m.numeric.end()) ge.speed = static_cast<float>(it->second);
-    }
-
-    // duration（keeper_held_ball）
-    {
-      auto it = m.numeric.find(ev + "/keeper_held_ball/duration");
-      if (it != m.numeric.end()) ge.duration = static_cast<float>(it->second);
-    }
+    if (
+      auto v = m.find_first(
+        {ev + "/bot_crash_unique/crash_speed", ev + "/bot_crash_unique_skipped/crash_speed"}))
+      ge.crash_speed = static_cast<float>(*v);
+    if (auto v = m.find_first({ev + "/bot_too_fast_in_stop/speed"}))
+      ge.speed = static_cast<float>(*v);
+    if (auto v = m.find_first({ev + "/keeper_held_ball/duration"}))
+      ge.duration = static_cast<float>(*v);
   }
 
   return ref;
