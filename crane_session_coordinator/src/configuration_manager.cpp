@@ -150,7 +150,8 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         pm.positive_side = pm_node["positive_side"] ? pm_node["positive_side"].as<bool>() : true;
         pm.kick_prohibition =
           pm_node["kick_prohibition"] ? pm_node["kick_prohibition"].as<bool>() : false;
-        pm.reverse_attack = pm_node["reverse_attack"] ? pm_node["reverse_attack"].as<bool>() : false;
+        pm.reverse_attack =
+          pm_node["reverse_attack"] ? pm_node["reverse_attack"].as<bool>() : false;
         practice_mode_map_[situation_name] = pm;
         ss << "PRACTICE_MODE : enabled=" << (pm.enabled ? "true" : "false")
            << " positive_side=" << (pm.positive_side ? "true" : "false")

@@ -429,10 +429,9 @@ double Attacker::calculatePassScore(const Point & target)
   score -= std::clamp(own_goal_angle_width / (M_PI / 12.), 0.0, 0.5);
 
   // 攻撃対象ゴールに近いときはスコアを上げる
-  double normed_distance_to_their_goal =
-    ((target - world_model()->getAttackGoalCenter()).norm() -
-     (world_model()->fieldSize().x() * 0.5)) /
-    (world_model()->fieldSize().x() * 0.5);
+  double normed_distance_to_their_goal = ((target - world_model()->getAttackGoalCenter()).norm() -
+                                          (world_model()->fieldSize().x() * 0.5)) /
+                                         (world_model()->fieldSize().x() * 0.5);
   score *= (1.0 - normed_distance_to_their_goal);
 
   // パスがブロックされているかチェックし、ブロックされていたら諦め、近くにいるときはスコアを下げる
