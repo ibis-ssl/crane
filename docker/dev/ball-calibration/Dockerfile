@@ -5,7 +5,6 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY crane_msgs /app/crane_msgs
 COPY *.py /app/
 COPY web /app/web
 

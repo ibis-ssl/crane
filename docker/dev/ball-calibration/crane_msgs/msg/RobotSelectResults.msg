@@ -1,1 +1,0 @@
-RobotSelectResult[] results
