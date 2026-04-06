@@ -59,30 +59,14 @@ inline void to_json(nlohmann::json & j, const Event & v)
   };
 }
 
-// RobotState
-inline void to_json(nlohmann::json & j, const RobotState & v)
-{
-  j = {
-    {"t", v.t},
-    {"robot_id", v.robot_id},
-    {"x", v.x},
-    {"y", v.y},
-    {"theta", v.theta},
-    {"vx", v.vx},
-    {"vy", v.vy},
-    {"speed", v.speed},
-    {"dist_to_ball", v.dist_to_ball},
-    {"detected", v.detected},
-  };
-}
-
-// BallState
-inline void to_json(nlohmann::json & j, const BallState & v)
-{
-  j = {
-    {"t", v.t}, {"x", v.x}, {"y", v.y}, {"vx", v.vx}, {"vy", v.vy}, {"speed", v.speed},
-  };
-}
+// RobotState / BallState
+// clang-format off
+// clang-format off
+// NOLINTNEXTLINE(whitespace/line_length)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RobotState, t, robot_id, x, y, theta, vx, vy, speed, dist_to_ball, detected)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BallState, t, x, y, vx, vy, speed)
+// clang-format on
+// clang-format on
 
 // ControlSnapshot
 inline void to_json(nlohmann::json & j, const ControlSnapshot & v)
@@ -123,18 +107,11 @@ inline void to_json(nlohmann::json & j, const FactorTransition & v)
   };
 }
 
-// RefereeSnapshot::TeamSnapshot
-inline void to_json(nlohmann::json & j, const RefereeSnapshot::TeamSnapshot & v)
-{
-  j = {
-    {"name", v.name},
-    {"score", v.score},
-    {"yellow_cards", v.yellow_cards},
-    {"red_cards", v.red_cards},
-    {"foul_counter", v.foul_counter},
-    {"goalkeeper", v.goalkeeper},
-  };
-}
+// TeamInfo (= RefereeSnapshot::TeamSnapshot)
+// clang-format off
+// NOLINTNEXTLINE(whitespace/line_length)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TeamInfo, name, score, yellow_cards, red_cards, foul_counter, goalkeeper)
+// clang-format on
 
 // RefereeSnapshot
 inline void to_json(nlohmann::json & j, const RefereeSnapshot & v)

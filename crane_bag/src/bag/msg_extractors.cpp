@@ -23,21 +23,22 @@ namespace
 /// 構築コストを避けるため、呼び出し元が毎回再構築せずに再利用できるよう設計。
 struct FlatValueMap
 {
-  std::unordered_map<std::string, double> numeric;    // path -> double
-  std::unordered_map<std::string, std::string> text;  // path -> string
+  std::unordered_map<std::string, double> numeric;
+  std::unordered_map<std::string, std::string> text;
+  std::string prefix;
 
-  void build(const RosMsgParser::FlatMessage & flat)
+  explicit FlatValueMap(const RosMsgParser::FlatMessage & flat)
   {
-    numeric.clear();
-    text.clear();
-    for (const auto & [fv, var] : flat.value) {
-      std::string key = fv.toStdString();
-      numeric[key] = var.convert<double>();
-    }
-    for (const auto & [fv, s] : flat.name) {
-      std::string key = fv.toStdString();
-      text[key] = s;
-    }
+    auto find_prefix = [](const std::string & path) {
+      auto pos = path.find('/', 1);
+      return pos != std::string::npos ? path.substr(0, pos) : path;
+    };
+    if (!flat.value.empty())
+      prefix = find_prefix(flat.value[0].first.toStdString());
+    else if (!flat.name.empty())
+      prefix = find_prefix(flat.name[0].first.toStdString());
+    for (const auto & [fv, var] : flat.value) numeric[fv.toStdString()] = var.convert<double>();
+    for (const auto & [fv, s] : flat.name) text[fv.toStdString()] = s;
   }
 
   // 完全パスで各型の値を返す
@@ -115,32 +116,14 @@ struct FlatValueMap
   }
 };
 
-// ─── トピック名からプレフィックスを生成 ────────────────────────────────────────
-// FlatMessage のフィールドパスは "<topic_name>/<field>" 形式
-// topic_name が "/world_model" の場合 prefix は "/world_model"
-
-std::string topic_prefix(const RosMsgParser::FlatMessage & flat)
-{
-  if (flat.value.empty() && flat.name.empty()) return "";
-  if (!flat.value.empty()) {
-    const std::string path = flat.value[0].first.toStdString();
-    auto pos = path.find('/', 1);  // 先頭の / をスキップして次の / を探す
-    return pos != std::string::npos ? path.substr(0, pos) : path;
-  }
-  const std::string path = flat.name[0].first.toStdString();
-  auto pos = path.find('/', 1);
-  return pos != std::string::npos ? path.substr(0, pos) : path;
-}
-
 }  // namespace
 
 // ─── WorldModel ───────────────────────────────────────────────────────────────
 
 WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   WorldModel wm;
 
@@ -183,9 +166,8 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
 
 PlaySituation extract_play_situation(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   PlaySituation ps;
   ps.command_name = m.get_s_exact(p + "/command/name");
@@ -197,9 +179,8 @@ PlaySituation extract_play_situation(const RosMsgParser::FlatMessage & flat)
 
 RobotCommands extract_robot_commands(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   RobotCommands rc;
   const std::string cmds_prefix = p + "/robot_commands";
@@ -249,9 +230,8 @@ RobotCommands extract_robot_commands(const RosMsgParser::FlatMessage & flat)
 
 GameAnalysis extract_game_analysis(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   GameAnalysis ga;
   ga.recommended_attacker_id = m.get_i32(p + "/recommended_attacker_id");
@@ -264,9 +244,8 @@ GameAnalysis extract_game_analysis(const RosMsgParser::FlatMessage & flat)
 
 RobotSelectResults extract_robot_select_results(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   RobotSelectResults rsr;
   const std::string results_prefix = p + "/results";
@@ -296,9 +275,8 @@ RobotSelectResults extract_robot_select_results(const RosMsgParser::FlatMessage 
 
 LogMessage extract_log_message(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   LogMessage log;
   log.level = m.get_u8(p + "/level");
@@ -311,9 +289,8 @@ LogMessage extract_log_message(const RosMsgParser::FlatMessage & flat)
 
 Referee extract_referee(const RosMsgParser::FlatMessage & flat)
 {
-  FlatValueMap m;
-  m.build(flat);
-  const std::string p = topic_prefix(flat);
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
 
   auto fill_team = [&](TeamInfo & ti, const std::string & cp) {
     ti.name = m.get_s_exact(cp + "/name");

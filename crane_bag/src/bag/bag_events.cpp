@@ -270,7 +270,20 @@ std::string foul_description(const GameEventInfo & ge)
         buf, sizeof(buf), "%s: %s violator=%u victim=%u at (%.2f,%.2f)", type_name.c_str(),
         team_name(ge.by_team_value).c_str(), ge.violator, ge.victim, ge.location_x, ge.location_y);
       return buf;
+    case GameEventType::DEFENDER_IN_DEFENSE_AREA:
+    case GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY:
+    case GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
+    case GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
+    case GameEventType::BOT_HELD_BALL_DELIBERATELY:
+    case GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL:
+    case GameEventType::AIMLESS_KICK:
+      std::snprintf(
+        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
+        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
+      return buf;
     case GameEventType::BOT_DRIBBLED_BALL_TOO_FAR:
+    case GameEventType::BOT_INTERFERED_PLACEMENT:
+    case GameEventType::BOT_KICKED_BALL_TOO_FAST:
       std::snprintf(
         buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
         ge.by_bot);
@@ -279,47 +292,6 @@ std::string foul_description(const GameEventInfo & ge)
       std::snprintf(
         buf, sizeof(buf), "%s: %s at (%.2f,%.2f) duration=%.2fs", type_name.c_str(),
         team_name(ge.by_team_value).c_str(), ge.location_x, ge.location_y, ge.duration);
-      return buf;
-    case GameEventType::DEFENDER_IN_DEFENSE_AREA:
-    case GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
-      return buf;
-    case GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
-      return buf;
-    case GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
-      return buf;
-    case GameEventType::BOT_HELD_BALL_DELIBERATELY:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
-      return buf;
-    case GameEventType::BOT_INTERFERED_PLACEMENT:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
-        ge.by_bot);
-      return buf;
-    case GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
-      return buf;
-    case GameEventType::BOT_KICKED_BALL_TOO_FAST:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u", type_name.c_str(), team_name(ge.by_team_value).c_str(),
-        ge.by_bot);
-      return buf;
-    case GameEventType::AIMLESS_KICK:
-      std::snprintf(
-        buf, sizeof(buf), "%s: %s bot=%u at (%.2f,%.2f)", type_name.c_str(),
-        team_name(ge.by_team_value).c_str(), ge.by_bot, ge.location_x, ge.location_y);
       return buf;
     default:
       return type_name;
@@ -368,30 +340,17 @@ std::vector<Event> detect_events(const BagData & data, const std::vector<std::st
   };
 
   std::vector<Event> all;
-  if (has(EVENT_PLAY)) {
-    auto v = detect_play_transitions(data);
+  auto append_if = [&](const char * type, auto fn) {
+    if (!has(type)) return;
+    auto v = fn();
     all.insert(all.end(), v.begin(), v.end());
-  }
-  if (has(EVENT_ROLE)) {
-    auto v = detect_role_changes(data);
-    all.insert(all.end(), v.begin(), v.end());
-  }
-  if (has(EVENT_KICK)) {
-    auto v = detect_kick_events(data);
-    all.insert(all.end(), v.begin(), v.end());
-  }
-  if (has(EVENT_BALL_SPEED)) {
-    auto v = detect_ball_speed_spikes(data);
-    all.insert(all.end(), v.begin(), v.end());
-  }
-  if (has(EVENT_GOAL)) {
-    auto v = detect_goals(data);
-    all.insert(all.end(), v.begin(), v.end());
-  }
-  if (has(EVENT_FOUL)) {
-    auto v = detect_fouls(data);
-    all.insert(all.end(), v.begin(), v.end());
-  }
+  };
+  append_if(EVENT_PLAY, [&] { return detect_play_transitions(data); });
+  append_if(EVENT_ROLE, [&] { return detect_role_changes(data); });
+  append_if(EVENT_KICK, [&] { return detect_kick_events(data); });
+  append_if(EVENT_BALL_SPEED, [&] { return detect_ball_speed_spikes(data); });
+  append_if(EVENT_GOAL, [&] { return detect_goals(data); });
+  append_if(EVENT_FOUL, [&] { return detect_fouls(data); });
 
   std::sort(all.begin(), all.end(), [](const Event & a, const Event & b) {
     return a.timestamp_ns < b.timestamp_ns;
