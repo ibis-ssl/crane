@@ -25,7 +25,17 @@ ament_auto_add_executable(crane_bag
   src/bag/bag_tracking.cpp
   src/bag/bag_control.cpp
   src/bag/bag_referee.cpp
+  src/bag/msg_extractors.cpp
 )
 target_include_directories(crane_bag PRIVATE src/bag)
+# rosx_introspectionライブラリはnonstd::span_lite::spanでコンパイルされているため、
+# C++20のstd::spanが選択されるとABIミスマッチが発生する。
+# span_CONFIG_SELECT_SPAN=1 でnonstd実装を強制する。
+target_compile_definitions(crane_bag PRIVATE span_CONFIG_SELECT_SPAN=1)
+target_link_libraries(crane_bag
+  rosx_introspection::rosx_introspection
+  mcap_vendor::mcap
+  magic_enum::magic_enum
+)
 
 ament_auto_package()

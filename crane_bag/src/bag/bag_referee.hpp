@@ -25,15 +25,7 @@ struct RefereeSnapshot
   int32_t stage_value;
   uint32_t command_counter;
 
-  struct TeamSnapshot
-  {
-    std::string name;
-    uint32_t score;
-    uint32_t yellow_cards;
-    uint32_t red_cards;
-    uint32_t foul_counter;
-    uint32_t goalkeeper;
-  };
+  using TeamSnapshot = TeamInfo;
   TeamSnapshot yellow;
   TeamSnapshot blue;
 
