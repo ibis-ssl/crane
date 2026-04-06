@@ -8,7 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <map>
+#include <magic_enum/magic_enum.hpp>
 #include <set>
 #include <sstream>
 #include <unordered_set>
@@ -17,64 +17,33 @@
 namespace crane::bag
 {
 
-// ─── GameEventType 定数（robocup_ssl_msgs::msg::GameEventType と同じ値）────────
+// ─── GameEventType / Team（robocup_ssl_msgs と同じ値）────────────────────────
 
-namespace GameEventType
-{
-constexpr int32_t UNKNOWN_GAME_EVENT_TYPE = 0;
-constexpr int32_t BALL_LEFT_FIELD_TOUCH_LINE = 6;
-constexpr int32_t BALL_LEFT_FIELD_GOAL_LINE = 7;
-constexpr int32_t AIMLESS_KICK = 11;
-constexpr int32_t ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA = 19;
-constexpr int32_t DEFENDER_IN_DEFENSE_AREA = 31;
-constexpr int32_t BOUNDARY_CROSSING = 41;
-constexpr int32_t KEEPER_HELD_BALL = 13;
-constexpr int32_t BOT_DRIBBLED_BALL_TOO_FAR = 17;
-constexpr int32_t BOT_PUSHED_BOT = 24;
-constexpr int32_t BOT_HELD_BALL_DELIBERATELY = 26;
-constexpr int32_t BOT_TIPPED_OVER = 27;
-constexpr int32_t ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA = 15;
-constexpr int32_t BOT_KICKED_BALL_TOO_FAST = 18;
-constexpr int32_t BOT_CRASH_UNIQUE = 22;
-constexpr int32_t BOT_CRASH_DRAWN = 21;
-constexpr int32_t DEFENDER_TOO_CLOSE_TO_KICK_POINT = 29;
-constexpr int32_t BOT_TOO_FAST_IN_STOP = 28;
-constexpr int32_t BOT_INTERFERED_PLACEMENT = 20;
-constexpr int32_t POSSIBLE_GOAL = 39;
-constexpr int32_t GOAL = 8;
-constexpr int32_t INVALID_GOAL = 42;
-constexpr int32_t ATTACKER_DOUBLE_TOUCHED_BALL = 14;
-constexpr int32_t PLACEMENT_SUCCEEDED = 5;
-constexpr int32_t PENALTY_KICK_FAILED = 43;
-constexpr int32_t NO_PROGRESS_IN_GAME = 2;
-constexpr int32_t PLACEMENT_FAILED = 3;
-constexpr int32_t MULTIPLE_CARDS = 32;
-constexpr int32_t MULTIPLE_FOULS = 34;
-constexpr int32_t BOT_SUBSTITUTION = 37;
-constexpr int32_t TOO_MANY_ROBOTS = 38;
-constexpr int32_t CHALLENGE_FLAG = 44;
-constexpr int32_t EMERGENCY_STOP = 45;
-constexpr int32_t UNSPORTING_BEHAVIOR_MINOR = 35;
-constexpr int32_t UNSPORTING_BEHAVIOR_MAJOR = 36;
-constexpr int32_t PREPARED = 1;
-constexpr int32_t INDIRECT_GOAL = 9;
-constexpr int32_t CHIPPED_GOAL = 10;
-constexpr int32_t KICK_TIMEOUT = 12;
-constexpr int32_t ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA = 16;
-constexpr int32_t ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED = 40;
-constexpr int32_t BOT_CRASH_UNIQUE_SKIPPED = 23;
-constexpr int32_t BOT_PUSHED_BOT_SKIPPED = 25;
-constexpr int32_t DEFENDER_IN_DEFENSE_AREA_PARTIALLY = 30;
-constexpr int32_t MULTIPLE_PLACEMENT_FAILURES = 33;
-}  // namespace GameEventType
+// clang-format off
+enum class GameEventType : int32_t {
+  UNKNOWN_GAME_EVENT_TYPE = 0,  PREPARED = 1,             NO_PROGRESS_IN_GAME = 2,
+  PLACEMENT_FAILED = 3,         PLACEMENT_SUCCEEDED = 5,  BALL_LEFT_FIELD_TOUCH_LINE = 6,
+  BALL_LEFT_FIELD_GOAL_LINE = 7, GOAL = 8,                INDIRECT_GOAL = 9,
+  CHIPPED_GOAL = 10,            AIMLESS_KICK = 11,        KICK_TIMEOUT = 12,
+  KEEPER_HELD_BALL = 13,        ATTACKER_DOUBLE_TOUCHED_BALL = 14,
+  ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA = 15,
+  ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA = 16,
+  BOT_DRIBBLED_BALL_TOO_FAR = 17, BOT_KICKED_BALL_TOO_FAST = 18,
+  ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA = 19, BOT_INTERFERED_PLACEMENT = 20,
+  BOT_CRASH_DRAWN = 21,         BOT_CRASH_UNIQUE = 22,    BOT_CRASH_UNIQUE_SKIPPED = 23,
+  BOT_PUSHED_BOT = 24,          BOT_PUSHED_BOT_SKIPPED = 25,
+  BOT_HELD_BALL_DELIBERATELY = 26, BOT_TIPPED_OVER = 27, BOT_TOO_FAST_IN_STOP = 28,
+  DEFENDER_TOO_CLOSE_TO_KICK_POINT = 29,   DEFENDER_IN_DEFENSE_AREA_PARTIALLY = 30,
+  DEFENDER_IN_DEFENSE_AREA = 31, MULTIPLE_CARDS = 32,     MULTIPLE_PLACEMENT_FAILURES = 33,
+  MULTIPLE_FOULS = 34,          UNSPORTING_BEHAVIOR_MINOR = 35,
+  UNSPORTING_BEHAVIOR_MAJOR = 36, BOT_SUBSTITUTION = 37, TOO_MANY_ROBOTS = 38,
+  POSSIBLE_GOAL = 39,           ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED = 40,
+  BOUNDARY_CROSSING = 41,       INVALID_GOAL = 42,        PENALTY_KICK_FAILED = 43,
+  CHALLENGE_FLAG = 44,          EMERGENCY_STOP = 45,
+};
+// clang-format on
 
-// Team 定数（robocup_ssl_msgs::msg::Team と同じ値）
-namespace Team
-{
-constexpr int32_t UNKNOWN = 0;
-constexpr int32_t YELLOW = 1;
-constexpr int32_t BLUE = 2;
-}  // namespace Team
+enum class Team : int32_t { UNKNOWN = 0, YELLOW = 1, BLUE = 2 };
 
 // ─── 既存の実装（変更少）────────────────────────────────────────────────────────
 
@@ -232,65 +201,16 @@ std::vector<Event> detect_goals(const BagData & data)
 
 std::string game_event_type_to_string(int32_t v)
 {
-  static const std::map<int32_t, const char *> m = {
-    {GameEventType::UNKNOWN_GAME_EVENT_TYPE, "UNKNOWN_GAME_EVENT_TYPE"},
-    {GameEventType::BALL_LEFT_FIELD_TOUCH_LINE, "BALL_LEFT_FIELD_TOUCH_LINE"},
-    {GameEventType::BALL_LEFT_FIELD_GOAL_LINE, "BALL_LEFT_FIELD_GOAL_LINE"},
-    {GameEventType::AIMLESS_KICK, "AIMLESS_KICK"},
-    {GameEventType::ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA, "ATTACKER_TOO_CLOSE_TO_DEFENSE_AREA"},
-    {GameEventType::DEFENDER_IN_DEFENSE_AREA, "DEFENDER_IN_DEFENSE_AREA"},
-    {GameEventType::BOUNDARY_CROSSING, "BOUNDARY_CROSSING"},
-    {GameEventType::KEEPER_HELD_BALL, "KEEPER_HELD_BALL"},
-    {GameEventType::BOT_DRIBBLED_BALL_TOO_FAR, "BOT_DRIBBLED_BALL_TOO_FAR"},
-    {GameEventType::BOT_PUSHED_BOT, "BOT_PUSHED_BOT"},
-    {GameEventType::BOT_HELD_BALL_DELIBERATELY, "BOT_HELD_BALL_DELIBERATELY"},
-    {GameEventType::BOT_TIPPED_OVER, "BOT_TIPPED_OVER"},
-    {GameEventType::ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA, "ATTACKER_TOUCHED_BALL_IN_DEFENSE_AREA"},
-    {GameEventType::BOT_KICKED_BALL_TOO_FAST, "BOT_KICKED_BALL_TOO_FAST"},
-    {GameEventType::BOT_CRASH_UNIQUE, "BOT_CRASH_UNIQUE"},
-    {GameEventType::BOT_CRASH_DRAWN, "BOT_CRASH_DRAWN"},
-    {GameEventType::DEFENDER_TOO_CLOSE_TO_KICK_POINT, "DEFENDER_TOO_CLOSE_TO_KICK_POINT"},
-    {GameEventType::BOT_TOO_FAST_IN_STOP, "BOT_TOO_FAST_IN_STOP"},
-    {GameEventType::BOT_INTERFERED_PLACEMENT, "BOT_INTERFERED_PLACEMENT"},
-    {GameEventType::POSSIBLE_GOAL, "POSSIBLE_GOAL"},
-    {GameEventType::GOAL, "GOAL"},
-    {GameEventType::INVALID_GOAL, "INVALID_GOAL"},
-    {GameEventType::ATTACKER_DOUBLE_TOUCHED_BALL, "ATTACKER_DOUBLE_TOUCHED_BALL"},
-    {GameEventType::PLACEMENT_SUCCEEDED, "PLACEMENT_SUCCEEDED"},
-    {GameEventType::PENALTY_KICK_FAILED, "PENALTY_KICK_FAILED"},
-    {GameEventType::NO_PROGRESS_IN_GAME, "NO_PROGRESS_IN_GAME"},
-    {GameEventType::PLACEMENT_FAILED, "PLACEMENT_FAILED"},
-    {GameEventType::MULTIPLE_CARDS, "MULTIPLE_CARDS"},
-    {GameEventType::MULTIPLE_FOULS, "MULTIPLE_FOULS"},
-    {GameEventType::BOT_SUBSTITUTION, "BOT_SUBSTITUTION"},
-    {GameEventType::TOO_MANY_ROBOTS, "TOO_MANY_ROBOTS"},
-    {GameEventType::CHALLENGE_FLAG, "CHALLENGE_FLAG"},
-    {GameEventType::EMERGENCY_STOP, "EMERGENCY_STOP"},
-    {GameEventType::UNSPORTING_BEHAVIOR_MINOR, "UNSPORTING_BEHAVIOR_MINOR"},
-    {GameEventType::UNSPORTING_BEHAVIOR_MAJOR, "UNSPORTING_BEHAVIOR_MAJOR"},
-    {GameEventType::PREPARED, "PREPARED"},
-    {GameEventType::INDIRECT_GOAL, "INDIRECT_GOAL"},
-    {GameEventType::CHIPPED_GOAL, "CHIPPED_GOAL"},
-    {GameEventType::KICK_TIMEOUT, "KICK_TIMEOUT"},
-    {GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA,
-     "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA"},
-    {GameEventType::ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED,
-     "ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED"},
-    {GameEventType::BOT_CRASH_UNIQUE_SKIPPED, "BOT_CRASH_UNIQUE_SKIPPED"},
-    {GameEventType::BOT_PUSHED_BOT_SKIPPED, "BOT_PUSHED_BOT_SKIPPED"},
-    {GameEventType::DEFENDER_IN_DEFENSE_AREA_PARTIALLY, "DEFENDER_IN_DEFENSE_AREA_PARTIALLY"},
-    {GameEventType::MULTIPLE_PLACEMENT_FAILURES, "MULTIPLE_PLACEMENT_FAILURES"},
-  };
-  auto it = m.find(v);
-  return it != m.end() ? it->second : "GAME_EVENT(" + std::to_string(v) + ")";
+  auto e = magic_enum::enum_cast<GameEventType>(v);
+  return e ? std::string(magic_enum::enum_name(*e)) : "GAME_EVENT(" + std::to_string(v) + ")";
 }
 
 namespace
 {
 
-const std::unordered_set<int32_t> & foul_event_types()
+const std::unordered_set<GameEventType> & foul_event_types()
 {
-  static const std::unordered_set<int32_t> s = {
+  static const std::unordered_set<GameEventType> s = {
     GameEventType::BOT_PUSHED_BOT,
     GameEventType::BOT_PUSHED_BOT_SKIPPED,
     GameEventType::BOT_HELD_BALL_DELIBERATELY,
@@ -322,9 +242,8 @@ const std::unordered_set<int32_t> & foul_event_types()
 
 std::string team_name(int32_t team_value)
 {
-  if (team_value == Team::YELLOW) return "YELLOW";
-  if (team_value == Team::BLUE) return "BLUE";
-  return "UNKNOWN";
+  auto t = magic_enum::enum_cast<Team>(team_value);
+  return t ? std::string(magic_enum::enum_name(*t)) : "UNKNOWN";
 }
 
 std::string foul_description(const GameEventInfo & ge)
@@ -332,7 +251,7 @@ std::string foul_description(const GameEventInfo & ge)
   const std::string type_name = game_event_type_to_string(ge.type_value);
   char buf[256];
 
-  switch (ge.type_value) {
+  switch (static_cast<GameEventType>(ge.type_value)) {
     case GameEventType::BOT_CRASH_UNIQUE:
     case GameEventType::BOT_CRASH_UNIQUE_SKIPPED:
       std::snprintf(
@@ -420,7 +339,7 @@ std::vector<Event> detect_fouls(const BagData & data)
   for (const auto & tm : data.referees) {
     const auto & msg = tm.msg;
     for (const auto & ge : msg.game_events) {
-      if (foul_event_types().find(ge.type_value) == foul_event_types().end()) continue;
+      if (!foul_event_types().count(static_cast<GameEventType>(ge.type_value))) continue;
 
       auto key = std::make_pair(ge.type_value, msg.command_counter);
       if (seen.count(key)) continue;

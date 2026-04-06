@@ -35,6 +35,7 @@ target_compile_definitions(crane_bag PRIVATE span_CONFIG_SELECT_SPAN=1)
 target_link_libraries(crane_bag
   rosx_introspection::rosx_introspection
   mcap_vendor::mcap
+  magic_enum::magic_enum
 )
 
 ament_auto_package()

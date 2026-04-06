@@ -6,45 +6,36 @@
 
 #include "bag_referee.hpp"
 
-#include <map>
+#include <magic_enum/magic_enum.hpp>
 
 namespace crane::bag
 {
 
+// ─── Referee コマンド / ステージ（robocup_ssl_msgs と同じ値）─────────────────
+
+// clang-format off
+enum class RefereeCommand : int32_t {
+  HALT = 0,              STOP = 1,              NORMAL_START = 2,         FORCE_START = 3,
+  PREPARE_KICKOFF_YELLOW = 4, PREPARE_KICKOFF_BLUE = 5,
+  PREPARE_PENALTY_YELLOW = 6, PREPARE_PENALTY_BLUE = 7,
+  DIRECT_FREE_YELLOW = 8,     DIRECT_FREE_BLUE = 9,
+  INDIRECT_FREE_YELLOW = 10,  INDIRECT_FREE_BLUE = 11,
+  TIMEOUT_YELLOW = 12,        TIMEOUT_BLUE = 13,
+  GOAL_YELLOW = 14,           GOAL_BLUE = 15,
+  BALL_PLACEMENT_YELLOW = 16, BALL_PLACEMENT_BLUE = 17,
+};
+
+enum class RefereeStage : int32_t {
+  NORMAL_FIRST_HALF_PRE = 0,  NORMAL_FIRST_HALF = 1,  NORMAL_HALF_TIME = 2,
+  NORMAL_SECOND_HALF_PRE = 3, NORMAL_SECOND_HALF = 4, EXTRA_TIME_BREAK = 5,
+  EXTRA_FIRST_HALF_PRE = 6,   EXTRA_FIRST_HALF = 7,   EXTRA_HALF_TIME = 8,
+  EXTRA_SECOND_HALF_PRE = 9,  EXTRA_SECOND_HALF = 10, PENALTY_SHOOTOUT_BREAK = 11,
+  PENALTY_SHOOTOUT = 12,      POST_GAME = 13,
+};
+// clang-format on
+
 namespace
 {
-
-// ─── Referee コマンド文字列ルックアップ ────────────────────────────────────────
-// robocup_ssl_msgs::msg::RefereeCommand / RefereeStage の整数定数と同じ値
-
-const std::map<int, std::string> referee_command_map = {
-  {0, "HALT"},
-  {1, "STOP"},
-  {2, "NORMAL_START"},
-  {3, "FORCE_START"},
-  {4, "PREPARE_KICKOFF_YELLOW"},
-  {5, "PREPARE_KICKOFF_BLUE"},
-  {6, "PREPARE_PENALTY_YELLOW"},
-  {7, "PREPARE_PENALTY_BLUE"},
-  {8, "DIRECT_FREE_YELLOW"},
-  {9, "DIRECT_FREE_BLUE"},
-  {10, "INDIRECT_FREE_YELLOW"},
-  {11, "INDIRECT_FREE_BLUE"},
-  {12, "TIMEOUT_YELLOW"},
-  {13, "TIMEOUT_BLUE"},
-  {14, "GOAL_YELLOW"},
-  {15, "GOAL_BLUE"},
-  {16, "BALL_PLACEMENT_YELLOW"},
-  {17, "BALL_PLACEMENT_BLUE"},
-};
-
-const std::map<int, std::string> stage_map = {
-  {0, "NORMAL_FIRST_HALF_PRE"},  {1, "NORMAL_FIRST_HALF"},  {2, "NORMAL_HALF_TIME"},
-  {3, "NORMAL_SECOND_HALF_PRE"}, {4, "NORMAL_SECOND_HALF"}, {5, "EXTRA_TIME_BREAK"},
-  {6, "EXTRA_FIRST_HALF_PRE"},   {7, "EXTRA_FIRST_HALF"},   {8, "EXTRA_HALF_TIME"},
-  {9, "EXTRA_SECOND_HALF_PRE"},  {10, "EXTRA_SECOND_HALF"}, {11, "PENALTY_SHOOTOUT_BREAK"},
-  {12, "PENALTY_SHOOTOUT"},      {13, "POST_GAME"},
-};
 
 RefereeSnapshot make_snapshot(const TimestampedMsg<Referee> & tm, int64_t bag_start_ns)
 {
@@ -108,14 +99,14 @@ std::vector<RefereeSnapshot> sample_referee(const BagData & data, double interva
 
 std::string command_to_string(int32_t cmd)
 {
-  auto it = referee_command_map.find(cmd);
-  return it != referee_command_map.end() ? it->second : "UNKNOWN";
+  auto e = magic_enum::enum_cast<RefereeCommand>(cmd);
+  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
 }
 
 std::string stage_to_string(int32_t stage)
 {
-  auto it = stage_map.find(stage);
-  return it != stage_map.end() ? it->second : "UNKNOWN";
+  auto e = magic_enum::enum_cast<RefereeStage>(stage);
+  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
 }
 
 }  // namespace crane::bag
