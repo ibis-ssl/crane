@@ -29,31 +29,24 @@ $ARGUMENTS
 
 ### Step 0: Rosbag前処理（zstd圧縮対応）
 
-`crane_bag` を実行する前に、rosbagディレクトリを正常な状態にする。
-rosbag2ライブラリが `.mcap.zstd` を直接 mcap プラグインで開こうとしてエラーになるため、必ず以下のbashを実行すること。
+`crane_bag` は `mcap::McapReader` で `.mcap` を直接読むため `metadata.yaml` は不要。
+`.mcap.zstd` 形式で収録されている場合のみ、zstd を展開してから実行すること。
 
 ```bash
 BAG_DIR="<rosbag_path>"
 
-# .mcap.zstd があるが .mcap がない場合、展開する
+# .mcap.zstd があるが .mcap がない場合のみ展開
 for zst in "$BAG_DIR"/*.mcap.zstd; do
   [ -f "$zst" ] || continue
   mcap="${zst%.zstd}"
-  if [ ! -f "$mcap" ]; then
-    echo "zstd展開中: $(basename "$zst")"
-    zstd -d "$zst" -o "$mcap"
-  fi
+  [ -f "$mcap" ] && continue
+  echo "zstd展開中: $(basename "$zst")"
+  zstd -d "$zst" -o "$mcap"
 done
-
-# metadata.yaml の compression 設定を修正（.mcap.zstd を指したままだと読めない）
-META="$BAG_DIR/metadata.yaml"
-if [ -f "$META" ] && grep -q 'compression_format: zstd' "$META"; then
-  sed -i 's/compression_format: zstd/compression_format: ""/' "$META"
-  sed -i 's/compression_mode: FILE/compression_mode: NONE/' "$META"
-  sed -i 's/\.mcap\.zstd/.mcap/g' "$META"
-  echo "metadata.yaml を更新しました（圧縮設定を解除）"
-fi
 ```
+
+> `.mcap` ファイルが既に存在する場合は Step 0 をスキップしてよい。
+> `crane_bag` にディレクトリを渡すと内部の `.mcap` ファイルを自動検出する。
 
 ### Step 1: Bag情報の確認
 
