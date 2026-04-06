@@ -4,11 +4,10 @@
 """
 
 import logging
-import math
 from typing import Any
 
 from .extractor import AnnotationContext, WorldModelSnapshot
-from ..bag_analysis.metrics import distance_2d
+from ..bag_analysis.metrics import distance_2d, speed_2d, speed_3d
 
 logger = logging.getLogger(__name__)
 
@@ -134,10 +133,7 @@ class MCAPToolsHandler:
             "trajectory": trajectory,
             "total_distance": self._calculate_trajectory_distance(trajectory),
             "max_speed": max(
-                (
-                    math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-                    for v in [t["velocity"] for t in trajectory]
-                ),
+                (speed_3d(*v) for v in [t["velocity"] for t in trajectory]),
                 default=0.0,
             ),
         }
@@ -176,9 +172,11 @@ class MCAPToolsHandler:
 
             if robot_data:
                 vx, vy = robot_data["velocity"]
-                speed = math.sqrt(vx**2 + vy**2)
                 speed_history.append(
-                    {"timestamp_sec": snapshot.timestamp_ns / 1e9, "speed": speed}
+                    {
+                        "timestamp_sec": snapshot.timestamp_ns / 1e9,
+                        "speed": speed_2d(vx, vy),
+                    }
                 )
 
         if speed_history:
@@ -230,7 +228,7 @@ class MCAPToolsHandler:
 
         for robot, is_ours in robots:
             rx, ry = robot["position"]
-            distance = math.sqrt((ball_pos[0] - rx) ** 2 + (ball_pos[1] - ry) ** 2)
+            distance = distance_2d(ball_pos[0], ball_pos[1], rx, ry)
 
             if distance < min_distance:
                 min_distance = distance
@@ -253,9 +251,11 @@ class MCAPToolsHandler:
         speed_history = []
         for snapshot in self.world_model_snapshots:
             vx, vy, vz = snapshot.ball_velocity
-            speed = math.sqrt(vx**2 + vy**2 + vz**2)
             speed_history.append(
-                {"timestamp_sec": snapshot.timestamp_ns / 1e9, "speed": speed}
+                {
+                    "timestamp_sec": snapshot.timestamp_ns / 1e9,
+                    "speed": speed_3d(vx, vy, vz),
+                }
             )
 
         if speed_history:
