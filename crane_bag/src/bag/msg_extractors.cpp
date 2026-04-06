@@ -85,7 +85,7 @@ struct FlatValueMap
     return std::nullopt;
   }
 
-  // 配列の要素数をカウント（プレフィックス "/<field>." を持つキーの最大インデックス+1）
+  // 配列の要素数をカウント（rosx_introspectionは "prefix[N]/field" 形式でキーを生成する）
   size_t count_array(const std::string & prefix) const
   {
     size_t max_idx = 0;
@@ -94,11 +94,11 @@ struct FlatValueMap
     auto scan_key = [&](const std::string & k) {
       if (k.size() <= prefix.size() || k.compare(0, prefix.size(), prefix) != 0) return;
       size_t start = prefix.size();
-      if (k[start] != '.') return;
-      size_t end = k.find('/', start + 1);
-      if (end == std::string::npos) end = k.size();
+      if (k[start] != '[') return;
+      size_t close = k.find(']', start + 1);
+      if (close == std::string::npos) return;
       try {
-        size_t idx = std::stoull(k.substr(start + 1, end - start - 1));
+        size_t idx = std::stoull(k.substr(start + 1, close - start - 1));
         if (idx >= max_idx) max_idx = idx + 1;
         found = true;
       } catch (...) {
@@ -109,10 +109,10 @@ struct FlatValueMap
     return found ? max_idx : 0;
   }
 
-  // 配列要素の完全パスを生成するヘルパー
+  // 配列要素の完全パスを生成するヘルパー（rosx_introspectionの "prefix[N]/field" 形式）
   static std::string arr_path(const std::string & prefix, size_t idx, const std::string & field)
   {
-    return prefix + "." + std::to_string(idx) + "/" + field;
+    return prefix + "[" + std::to_string(idx) + "]/" + field;
   }
 };
 
@@ -262,7 +262,7 @@ RobotSelectResults extract_robot_select_results(const RosMsgParser::FlatMessage 
     for (size_t j = 0; j < n_robots; ++j) {
       // selected_robots の要素はプリミティブ (uint8) → "selected_robots.j" にサブフィールドなし
       // rosx_introspectionはプリミティブ配列要素を "array.j" として格納する
-      const std::string elem_key = robots_prefix + "." + std::to_string(j);
+      const std::string elem_key = robots_prefix + "[" + std::to_string(j) + "]";
       auto it = m.numeric.find(elem_key);
       r.selected_robots[j] = (it != m.numeric.end()) ? static_cast<uint8_t>(it->second) : 0;
     }

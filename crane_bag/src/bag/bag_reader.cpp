@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <mcap/reader.hpp>
+#include <regex>
 #include <rosx_introspection/deserializer.hpp>
 #include <rosx_introspection/ros_parser.hpp>
 #include <rosx_introspection/ros_type.hpp>
@@ -120,21 +121,10 @@ BagData BagReader::read(
   data.info = populate_bag_info(bag_path, reader);
 
   // --- rosx_introspection パーサを構築 ---
-  // 対象トピックのチャンネルに対してのみパーサを登録
+  // readSummary() のスキーマID対応は bagによっては不正確なため、
+  // メッセージイテレーション中に view.schema から直接登録する。
   RosMsgParser::ParsersCollection<RosMsgParser::FastCDR_Deserializer> parsers;
-
-  for (const auto & [ch_id, ch] : reader.channels()) {
-    if (target_topics().find(ch->topic) == target_topics().end()) continue;
-
-    auto schema_it = reader.schemas().find(ch->schemaId);
-    if (schema_it == reader.schemas().end()) continue;
-
-    const auto & schema = *schema_it->second;
-    if (schema.encoding != "ros2msg") continue;
-
-    std::string definition = schema_data_to_string(schema);
-    parsers.registerParser(ch->topic, RosMsgParser::ROSType(schema.name), definition);
-  }
+  std::unordered_set<std::string> registered_topics;
 
   // --- 時間範囲フィルタを設定 ---
   mcap::Timestamp start_ts = 0;
@@ -153,19 +143,32 @@ BagData BagReader::read(
     const std::string & topic = view.channel->topic;
     if (targets.find(topic) == targets.end()) continue;
 
+    // 初回出現時にパーサを登録（view.schema はチャンネルに紐付く正確なスキーマ）
+    if (registered_topics.find(topic) == registered_topics.end()) {
+      if (view.schema && view.schema->encoding == "ros2msg") {
+        std::string definition = schema_data_to_string(*view.schema);
+        // rosx_introspection は bounded sequence 記法 [<=N] を isArray=false に誤パースする。
+        // [] (unbounded) に正規化して可変長シーケンスとして正しく扱わせる。
+        definition = std::regex_replace(definition, std::regex(R"(\[<=\d+\])"), "[]");
+        parsers.registerParser(topic, RosMsgParser::ROSType(view.schema->name), definition);
+        registered_topics.insert(topic);
+      }
+    }
+
     const uint8_t * raw = reinterpret_cast<const uint8_t *>(view.message.data);
     size_t raw_size = view.message.dataSize;
+    if (raw_size == 0) continue;
 
-    // ROS2 CDR encapsulation header（4バイト: 00 01 00 00）をスキップ
-    if (raw_size < 4) continue;
-    RosMsgParser::Span<const uint8_t> buf(raw + 4, raw_size - 4);
-
-    const RosMsgParser::FlatMessage * flat = parsers.deserialize(topic, buf);
-    if (!flat) continue;
+    // FastCDR_Deserializer が DDS_CDR モードで encapsulation header（00 01 00 00）を
+    // 自前で読み込む。スキップせずそのまま渡す。
+    RosMsgParser::Span<const uint8_t> buf(raw, raw_size);
 
     int64_t ts = static_cast<int64_t>(view.message.logTime);
 
     try {
+      const RosMsgParser::FlatMessage * flat = parsers.deserialize(topic, buf);
+      if (!flat) continue;
+
       if (topic == "/play_situation") {
         data.play_situations.push_back({ts, extract_play_situation(*flat)});
       } else if (topic == "/world_model") {
