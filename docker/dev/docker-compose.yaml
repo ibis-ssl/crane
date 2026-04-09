@@ -24,16 +24,19 @@ services:
       - HTTP_TIMEOUT_SEC=0.8
     restart: unless-stopped
 
-  grsim:
-    image: ghcr.io/ibis-ssl/grsim:latest
-    container_name: grsim
+  erforce-sim:
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    container_name: erforce-sim
     network_mode: host
-    command: |
-      grSim --headless -platform offscreen
-    volumes:
-      - ./grsim.xml:/home/default/.grsim.xml:rw
-    tty: true
-    stdin_open: true
+    entrypoint: ["tini", "--"]
+    command: >
+      ./bin/simulator-cli
+      -g 2020B
+      --realism None
+      --ibis-use-referee
+      --ibis-feedback-team-name ibis
+      --ibis-feedback-hz 125
+      --ibis-referee-port 11003
     restart: "no"
     profiles:
       - sim
