@@ -59,12 +59,22 @@ def send_pi_request(robot_id: int, method: str, path: str) -> tuple[bool, str]:
 
 def get_robot_status(robot_id: int) -> dict:
     ok, body = send_pi_request(robot_id, "GET", "/status")
-    return {
+    result: dict = {
         "robot_id": robot_id,
         "ip": robot_ip(robot_id),
         "success": ok,
         "status": parse_status(ok, body),
     }
+    # Pi が返す追加フィールド（voltage, temperatures, error_id, error_info 等）をパススルー
+    if ok and body:
+        try:
+            body_json = json.loads(body)
+            for key, value in body_json.items():
+                if key not in result:
+                    result[key] = value
+        except json.JSONDecodeError:
+            pass
+    return result
 
 
 def control_robot(robot_id: int, command: str) -> dict:
@@ -82,12 +92,22 @@ def control_robot(robot_id: int, command: str) -> dict:
         }
     method, path = command_map[command]
     ok, body = send_pi_request(robot_id, method, path)
-    return {
+    result: dict = {
         "robot_id": robot_id,
         "command": command,
         "success": ok,
         "status": parse_status(ok, body),
     }
+    # Pi が返す追加フィールドをパススルー
+    if ok and body:
+        try:
+            body_json = json.loads(body)
+            for key, value in body_json.items():
+                if key not in result:
+                    result[key] = value
+        except json.JSONDecodeError:
+            pass
+    return result
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -124,6 +144,16 @@ class Handler(BaseHTTPRequestHandler):
             content_type = "application/javascript; charset=utf-8"
         elif target.suffix == ".css":
             content_type = "text/css; charset=utf-8"
+        elif target.suffix == ".svg":
+            content_type = "image/svg+xml"
+        elif target.suffix == ".woff2":
+            content_type = "font/woff2"
+        elif target.suffix == ".woff":
+            content_type = "font/woff"
+        elif target.suffix == ".ttf":
+            content_type = "font/ttf"
+        elif target.suffix == ".ico":
+            content_type = "image/x-icon"
 
         data = target.read_bytes()
         self.send_response(HTTPStatus.OK)
