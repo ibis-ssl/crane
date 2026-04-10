@@ -10,23 +10,16 @@
 #include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
-#include <optional>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/game_event.hpp>
-#include <robocup_ssl_msgs/msg/game_event_one_of_event.hpp>
-#include <robocup_ssl_msgs/msg/team.hpp>
 #include <unordered_map>
 #include <vector>
 
-#include "crane_game_analyzer/event_memory.hpp"
 #include "crane_game_analyzer/kick_event_detector.hpp"
 #include "crane_game_analyzer/metrics/metric_engine.hpp"
-#include "crane_game_analyzer/ronar_event_detector.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -254,41 +247,9 @@ private:
   std::unique_ptr<metrics::MetricEngine> metric_engine_;
   std::deque<crane_msgs::msg::BallInfo> ball_history_;
 
-  // RONARイベント検出システム
-  std::unique_ptr<RonarEventDetector> ronar_event_detector_;
-  rclcpp::Publisher<crane_msgs::msg::RonarEvent>::SharedPtr ronar_events_pub_;
-
   // キックイベント検出システム
   std::unique_ptr<KickEventDetector> kick_event_detector_;
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
-
-  // イベントメモリシステム
-  std::unique_ptr<EventMemory> event_memory_;
-
-  // PlaySituation 購読
-  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub_;
-  std::optional<uint8_t> last_play_situation_command_;
-
-  // GameEvent (autoref) 購読
-  rclcpp::Subscription<robocup_ssl_msgs::msg::GameEvent>::SharedPtr game_event_sub_;
-  std::optional<robocup_ssl_msgs::msg::GameEvent> last_game_event_;
-
-  // チーム名
-  std::string our_team_name_;
-  std::string their_team_name_;
-
-  auto detectAndPublishRonarEvents() -> void;
-
-  // PlaySituation イベント処理
-  auto onPlaySituationChanged(const crane_msgs::msg::PlaySituation & msg) -> void;
-  auto createPlaySituationEvent(uint8_t event_type, const crane_msgs::msg::PlaySituation & msg)
-    -> crane_msgs::msg::RonarEvent;
-
-  // GameEvent (autoref) イベント処理
-  auto onGameEvent(const robocup_ssl_msgs::msg::GameEvent & msg) -> void;
-
-  // ヘルパー関数
-  auto getTeamName(const robocup_ssl_msgs::msg::Team & team) -> std::string;
 };
 }  // namespace crane
 
