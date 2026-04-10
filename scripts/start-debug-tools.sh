@@ -12,6 +12,6 @@ COMPOSE_FILE="$REPO_ROOT/docker/dev/docker-compose.yaml"
 echo "=== robot-manager を起動中 ==="
 docker compose -f "$COMPOSE_FILE" up -d robot-manager
 echo "robot-manager 起動完了"
-echo "  URL: http://localhost:8090"
+echo "  URL: http://localhost:8092"
 echo ""
 echo "停止するには: ./scripts/stop-debug-tools.sh"

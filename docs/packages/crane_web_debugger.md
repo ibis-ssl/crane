@@ -53,11 +53,10 @@ ROS 2とブラウザを接続するブリッジノード。
 
 ## ロボット管理画面の分離
 
-`robot_manager` は ROS 非依存の独立アプリとして `docker/dev/robot-manager/`
-へ分離されました。`docker/dev/docker-compose.yaml` から
-`robot-manager` コンテナとして起動します。
+`robot_manager` は ROS 非依存の独立アプリとして [ibis-ssl/Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) リポジトリへ移動しました。
+`docker/dev/docker-compose.yaml` から `robot-manager` コンテナとして起動します（イメージは `ghcr.io/ibis-ssl/robot-manager:latest`）。
 
-- URL: `http://localhost:8090`
+- URL: `http://localhost:8092`
 - 機能: Start/Stop/Status（Pi HTTP API経由）
 - ROSトピック由来の表示（world_model/control_targets等）は含みません
 

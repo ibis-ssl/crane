@@ -11,8 +11,7 @@ services:
     restart: unless-stopped
 
   robot-manager:
-    build:
-      context: ./robot-manager
+    image: ghcr.io/ibis-ssl/robot-manager:latest
     container_name: crane-robot-manager
     network_mode: host
     environment:
@@ -22,6 +21,7 @@ services:
       - ROBOT_IP_OFFSET=100
       - ROBOT_PORT=8000
       - HTTP_TIMEOUT_SEC=0.8
+      - BACK_URL=http://localhost:8090
     restart: unless-stopped
 
   erforce-sim:
