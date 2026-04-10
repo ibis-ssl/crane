@@ -8,12 +8,14 @@
 
 #include <algorithm>
 #include <boost/stacktrace.hpp>
-#include <crane_local_planner/visualization_helpers.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstdint>
+#include <iomanip>
 #include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <sstream>
 
 // cspell: ignore OBST
 
@@ -24,6 +26,29 @@ namespace
 auto pointChanged(const Point & before, const Point & after, double epsilon = 1e-4) -> bool
 {
   return (before - after).norm() > epsilon;
+}
+
+void drawRobotRadiusWithSpeed(
+  const std::shared_ptr<VisualizerMessageBuilder> & visualizer, Point center, double radius,
+  double speed, const std::string & color = "yellow", double circle_opacity = 0.2,
+  double text_opacity = 0.5, double stroke_width = 10.0, double font_size = 50.0)
+{
+  visualizer->circle()
+    .center(center)
+    .radius(radius)
+    .stroke(color, circle_opacity)
+    .strokeWidth(stroke_width)
+    .build();
+
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2) << speed << "m/s";
+  visualizer->text()
+    .position(center + Vector2(0, radius + 0.07))
+    .text(ss.str())
+    .fontSize(font_size)
+    .textAnchor("middle")
+    .fill(color, text_opacity)
+    .build();
 }
 }  // namespace
 
