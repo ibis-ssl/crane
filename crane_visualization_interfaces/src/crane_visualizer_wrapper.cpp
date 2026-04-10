@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_msg_wrappers/crane_visualizer_wrapper.hpp"
+#include "crane_visualization_interfaces/crane_visualizer_wrapper.hpp"
 
 namespace crane
 {

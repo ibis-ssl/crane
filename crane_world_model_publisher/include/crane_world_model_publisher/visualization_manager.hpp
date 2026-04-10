@@ -12,10 +12,10 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <array>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <functional>
 #include <memory>

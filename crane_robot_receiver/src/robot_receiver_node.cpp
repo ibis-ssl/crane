@@ -8,10 +8,10 @@
 #include <boost/thread.hpp>
 #include <cmath>
 #include <crane_comm/unicast.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <format>
 #include <limits>

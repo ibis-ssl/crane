@@ -7,13 +7,13 @@
 #ifndef CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
 #define CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/kick_prediction_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
 #include <crane_msgs/msg/kick_prediction_trace.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
 #include <queue>
 

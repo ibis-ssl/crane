@@ -2,7 +2,7 @@
 
 > 最終更新: 2025年6月（JapanOpen2025運用後のAPIに対応）
 
-このドキュメントでは、`crane_msg_wrappers/crane_visualizer_wrapper.hpp` が提供する最新の可視化APIと、`crane_visualization_aggregator` を使った描画パイプラインを解説します。
+このドキュメントでは、`crane_visualization_interfaces/crane_visualizer_wrapper.hpp` が提供する最新の可視化APIと、`crane_visualization_interfaces` の集約ノードを使った描画パイプラインを解説します。
 
 ## コンポーネント概要
 
@@ -10,19 +10,19 @@
   レイヤー単位でSVGプリミティブを生成するビルダークラス。フィールド座標（m）で渡した値を自動的にSVG座標（mm・Y軸反転）へ変換します。
 - **CraneVisualizerBuffer**  
   各ビルダーから集めた描画更新を `/visualizer_svgs`（`SvgUpdates`）として送信。`activate(node)` を一度呼ぶだけで利用可能です。
-- **crane_visualization_aggregator**  
+- **visualization_aggregator_node**（`crane_visualization_interfaces` パッケージ内）
   `/visualizer_svgs` を集約し、5秒ごとに `/aggregated_svgs`（`SvgSnapshot`）を配信。Foxglove・Webビューア・録画再生はこのスナップショット＋差分更新を組み合わせて描画します。
 
 ```text
 VisualizerMessageBuilder ─┐
                           ├─ CraneVisualizerBuffer → /visualizer_svgs (SvgUpdates)
-VisualizerMessageBuilder ─┘             └─ crane_visualization_aggregator → /aggregated_svgs (SvgSnapshot, 5s周期)
+VisualizerMessageBuilder ─┘             └─ visualization_aggregator_node → /aggregated_svgs (SvgSnapshot, 5s周期)
 ```
 
 ## 基本セットアップ
 
 ```cpp
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 
 class MyNode : public rclcpp::Node {
 public:
@@ -133,7 +133,7 @@ visualizer->circle().raii()
 
 - `visualizer->clear()` / `clearBuffer()` を使うと未送信の描画を破棄できます。
 - `CraneVisualizerBuffer::clear(layer)` / `clear()` は未送信の `SvgUpdates` を削除します。
-- `crane_visualization_aggregator` は 5000ms ごとに `/aggregated_svgs` を送信します。巻き戻し再生時に描画が欠ける場合は、この周期を短くするか `replace` を定期的に送ると安定します。
+- `visualization_aggregator_node` は 5000ms ごとに `/aggregated_svgs` を送信します。巻き戻し再生時に描画が欠ける場合は、この周期を短くするか `replace` を定期的に送ると安定します。
 
 ## 実践的なコード例
 

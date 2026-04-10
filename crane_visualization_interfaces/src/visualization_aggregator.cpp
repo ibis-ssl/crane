@@ -10,13 +10,11 @@
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/string.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
 #include <unordered_map>
 
-/** crane_visualization_interfaces/msg/SvgLayerSnapshot.msg
-string layer
-string[] svg_primitives
- */
+namespace crane
+{
 
 struct LayerState
 {
@@ -27,7 +25,8 @@ struct LayerState
 class VisualizationAggregator : public rclcpp::Node
 {
 public:
-  VisualizationAggregator() : Node("visualization_aggregator")
+  explicit VisualizationAggregator(const rclcpp::NodeOptions & options)
+  : Node("visualization_aggregator", options)
   {
     updates_sub_ = create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
       "/visualizer_svgs", rclcpp::SensorDataQoS(),
@@ -106,10 +105,6 @@ private:
   uint32_t seq_ = 0;
 };
 
-auto main(int argc, char ** argv) -> int
-{
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<VisualizationAggregator>());
-  rclcpp::shutdown();
-  return 0;
-}
+}  // namespace crane
+
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::VisualizationAggregator)

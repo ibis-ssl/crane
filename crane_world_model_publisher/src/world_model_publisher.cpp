@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>

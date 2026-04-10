@@ -13,9 +13,9 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>

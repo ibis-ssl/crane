@@ -8,12 +8,12 @@
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
 #include <algorithm>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>

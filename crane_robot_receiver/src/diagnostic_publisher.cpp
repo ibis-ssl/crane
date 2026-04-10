@@ -7,11 +7,11 @@
 #include <fmt/format.h>
 
 #include <cmath>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/diagnostic_publisher.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <map>
