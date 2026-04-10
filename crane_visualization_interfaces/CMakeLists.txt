@@ -100,6 +100,7 @@ ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rosidl_default_runtime
   rclcpp
+  rclcpp_components
   crane_geometry
   Eigen3
   builtin_interfaces
