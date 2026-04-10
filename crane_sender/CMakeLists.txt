@@ -27,7 +27,7 @@ include_directories(
         ${Boost_INCLUDE_DIRS}
 )
 
-ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp src/broadcast_command_sender.cpp)
+ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
 
 add_library(crane_sender_base STATIC src/sender_base.cpp)
 set_target_properties(crane_sender_base PROPERTIES POSITION_INDEPENDENT_CODE ON)

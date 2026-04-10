@@ -115,7 +115,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
         command.current_velocity.y = robot->vel.linear.y();             // フィールド座標系
         command.current_velocity.theta = robot->vel.omega;
         command.target_theta += theta_offset;  // theta_offset適用
-        command.kick_power = kick_power_calculator.getKickPower(command);
+        command.kick_power = getKickPower(command);
         commands.robot_commands.push_back(command);
       } catch (const std::exception & e) {
         dropped_command_count_last_cycle_++;
