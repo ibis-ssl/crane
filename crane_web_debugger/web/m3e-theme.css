@@ -698,6 +698,30 @@ details.m3-expansion .m3-expansion__body {
   box-shadow: 0 0 8px var(--md-sys-color-success);
 }
 
+/* ===== OFFLINE BANNER ===== */
+.m3-offline-banner {
+  display: none;
+  align-items: center;
+  gap: var(--md-sys-spacing-sm);
+  background-color: var(--md-sys-color-warning-container);
+  color: var(--md-sys-color-on-warning);
+  padding: 10px var(--md-sys-spacing-lg);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.m3-offline-banner.visible {
+  display: flex;
+}
+
+.m3-offline-banner .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
 
 /* ===== SIDE SHEET ===== */
 .m3-side-sheet {

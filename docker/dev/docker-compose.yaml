@@ -1,4 +1,14 @@
 services:
+  web-debugger:
+    build:
+      context: ../..
+      dockerfile: docker/dev/web-debugger/Dockerfile
+    container_name: crane-web-debugger
+    network_mode: host
+    environment:
+      - HTTP_PORT=8090
+    restart: unless-stopped
+
   ball-calibration:
     build:
       context: ./ball-calibration

@@ -9,7 +9,6 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>ament_index_cpp</depend>
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_msgs</depend>
@@ -18,12 +17,6 @@
   <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
-  <exec_depend>python3-fastapi</exec_depend>
-  <exec_depend>python3-numpy</exec_depend>
-  <exec_depend>python3-pydantic</exec_depend>
-  <exec_depend>python3-uvicorn</exec_depend>
-  <exec_depend>python3-yaml</exec_depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
 

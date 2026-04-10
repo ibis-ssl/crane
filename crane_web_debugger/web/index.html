@@ -199,6 +199,7 @@
         </h2>
         <div class="tool-grid">
             <a href="/viewer.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="viewer-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon">map</span>
                 <div class="tool-card__title">Main Viewer</div>
                 <div class="tool-card__desc">
@@ -213,6 +214,7 @@
             </a>
 
             <a href="/robot_telemetry.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="telemetry-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon">show_chart</span>
                 <div class="tool-card__title">Robot Telemetry</div>
                 <div class="tool-card__desc">
@@ -227,6 +229,7 @@
             </a>
 
             <a href="/annotation/index.html" class="tool-card">
+                <span class="m3-badge m3-badge--success tool-card__badge">offline対応</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sticky_note_2</span>
                 <div class="tool-card__title">Annotation Tool</div>
                 <div class="tool-card__desc">
@@ -241,6 +244,7 @@
             </a>
 
             <a href="/robot_manager.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="robot-manager-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon">memory</span>
                 <div class="tool-card__title">Robot Manager</div>
                 <div class="tool-card__desc">
@@ -255,6 +259,7 @@
             </a>
 
             <a href="/robot_test.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="robot-test-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">precision_manufacturing</span>
                 <div class="tool-card__title">Robot Test</div>
                 <div class="tool-card__desc">
@@ -372,20 +377,44 @@
               checkUrl: `http://${host}:8765` },
         ];
 
-        function checkConnection() {
-            const ws = new WebSocket(`ws://${host}:8091`);
+        const CRANE_DEPENDENT_BADGES = [
+            'viewer-crane-badge',
+            'telemetry-crane-badge',
+            'robot-manager-crane-badge',
+            'robot-test-crane-badge',
+        ];
+
+        function setCraneStatus(connected) {
             const dot = document.getElementById('connection-dot');
             const text = document.getElementById('status-text');
+            dot.classList.toggle('connected', connected);
+            text.textContent = connected
+                ? `WebSocket connected (${host}:8091)`
+                : 'WebSocket disconnected';
+            CRANE_DEPENDENT_BADGES.forEach(id => {
+                const badge = document.getElementById(id);
+                if (!badge) return;
+                if (connected) {
+                    badge.textContent = 'crane: online';
+                    badge.className = 'm3-badge m3-badge--success tool-card__badge';
+                } else {
+                    badge.textContent = 'crane: offline';
+                    badge.className = 'm3-badge m3-badge--error tool-card__badge';
+                }
+            });
+        }
+
+        function checkConnection() {
+            const ws = new WebSocket(`ws://${host}:8091`);
 
             ws.onopen = () => {
-                dot.classList.add('connected');
-                text.textContent = `WebSocket connected (${host}:8091)`;
+                setCraneStatus(true);
                 ws.close();
             };
 
-            ws.onerror = () => {
-                dot.classList.remove('connected');
-                text.textContent = 'WebSocket disconnected';
+            ws.onerror = () => setCraneStatus(false);
+            ws.onclose = () => {
+                // Schedule next check (only if it never opened)
             };
         }
 
@@ -424,6 +453,7 @@
         setupExternalToolLinks();
         checkAllExternalTools();
         setInterval(checkAllExternalTools, 30000);
+        setInterval(checkConnection, 10000);
     </script>
 </body>
 </html>
