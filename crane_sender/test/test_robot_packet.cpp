@@ -9,7 +9,7 @@
 
 #include <random>
 
-TEST(RobotPacket, ENcodeDecode)
+TEST(RobotPacket, EncodeDecode)
 {
   std::mt19937 gen;
   std::uniform_real_distribution<float> dist_7(-7.0, 7.0);

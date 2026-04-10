@@ -9,7 +9,6 @@
 #include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
 
 #include <array>
-#include <class_loader/visibility_control.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -67,7 +66,6 @@ private:
   int counter_{0};
 
 public:
-  CLASS_LOADER_PUBLIC
   explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
   {
     declare_parameter("debug_id", -1);
