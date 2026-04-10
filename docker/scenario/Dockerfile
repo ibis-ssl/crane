@@ -1,7 +1,6 @@
 FROM ghcr.io/ibis-ssl/crane:base
 
 ENV ROS_OVERLAY=/root/ibis_ws
-ENV PATH=$PATH:/usr/local/go/bin
 WORKDIR $ROS_OVERLAY/src
 SHELL ["/bin/bash", "-c"]
 
@@ -17,10 +16,9 @@ ENV PATH="/usr/lib/ccache:${PATH}" \
 
 COPY dependency_*.repos crane/
 
-RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
-
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    vcs import . < crane/dependency_${ROS_DISTRO}.repos && \
     apt-get update && \
     apt-get install -y ros-${ROS_DISTRO}-rosidl-cmake ros-${ROS_DISTRO}-rosidl-default-generators && \
     rosdep update && \
@@ -33,13 +31,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     rosdep install -riy --from-paths crane
 
-RUN ccache -sv
-
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     cd .. && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --cmake-args '-DCMAKE_BUILD_TYPE=Release'
-
-RUN ccache -sv
-
-RUN cd .. && rm -rf build/ log/
+    colcon build --cmake-args '-DCMAKE_BUILD_TYPE=Release' && \
+    ccache -s && \
+    rm -rf build/ log/ && \
+    cd src && rm -rf * && mkdir crane

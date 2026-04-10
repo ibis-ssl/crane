@@ -1,4 +1,3 @@
-version: "3.1"
 services:
   erforce-sim:
     image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
