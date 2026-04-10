@@ -48,12 +48,12 @@ extern "C" {
 
 #include <array>
 #include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/diagnostic_helper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
-#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
@@ -87,7 +87,7 @@ private:
 
   std::unique_ptr<WorldModelDataProvider> data_provider_;
 
-  diagnostic_updater::Updater diagnostic_updater_;
+  DiagnosticHelper diagnostic_helper_;
 
   DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
