@@ -68,6 +68,7 @@ function connectWebSocket() {
 function setWsStatus(connected) {
     const dot = document.getElementById('ws-dot');
     const text = document.getElementById('ws-status-text');
+    const banner = document.getElementById('offline-banner');
     if (connected) {
         dot.className = 'm3-connection-dot connected';
         text.textContent = 'connected';
@@ -75,6 +76,7 @@ function setWsStatus(connected) {
         dot.className = 'm3-connection-dot';
         text.textContent = 'disconnected';
     }
+    if (banner) banner.classList.toggle('visible', !connected);
 }
 
 // ---- Message Handlers -----------------------------------------------------

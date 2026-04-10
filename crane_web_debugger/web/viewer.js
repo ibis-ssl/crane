@@ -708,8 +708,10 @@ class CraneViewer {
     updateConnectionStatus(connected) {
         const dot = document.getElementById('connection-dot');
         const label = document.getElementById('connection-label');
+        const banner = document.getElementById('offline-banner');
         if (dot) dot.classList.toggle('connected', connected);
         if (label) label.textContent = connected ? 'connected' : 'disconnected';
+        if (banner) banner.classList.toggle('visible', !connected);
     }
 
     renderRobotCards() {

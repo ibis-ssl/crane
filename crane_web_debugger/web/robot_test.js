@@ -647,8 +647,10 @@ class RobotTestController {
     setStatus(connected) {
         const dot = document.getElementById('status-dot');
         const label = document.getElementById('status-label');
+        const banner = document.getElementById('offline-banner');
         if (dot) dot.classList.toggle('connected', connected);
         if (label) label.textContent = connected ? 'connected' : 'disconnected';
+        if (banner) banner.classList.toggle('visible', !connected);
     }
 
     // ---- UI イベント ----
