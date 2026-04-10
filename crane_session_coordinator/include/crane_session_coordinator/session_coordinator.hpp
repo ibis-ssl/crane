@@ -28,9 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "command_aggregator.hpp"
 #include "configuration_manager.hpp"
-#include "diagnostics_reporter.hpp"
 #include "robot_allocator.hpp"
 #include "session_registry.hpp"
 #include "visibility_control.h"
@@ -53,17 +51,19 @@ private:
 
   auto onWorldModelUpdate() -> void;
 
+  auto collectCommands() -> crane_msgs::msg::RobotCommands;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
 
   std::shared_ptr<SessionRegistry> session_registry_;
 
-  std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
-
-  std::unique_ptr<CommandAggregator> command_aggregator_;
-
   std::unique_ptr<RobotAllocator> robot_allocator_;
+
+  rclcpp::Time last_planning_time_;
+
+  int planning_count_ = 0;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
