@@ -185,8 +185,6 @@ limitations under the License.
     <param name="multicast_port" value="$(var referee_port_final)"/>
   </node>
 
-  <node pkg="robocup_ssl_comm" exec="grsim_node"/>
-
   <!-- ============================================================ -->
   <!-- モニタリング/診断系 -->
   <!-- ============================================================ -->

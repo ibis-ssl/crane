@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import os
+import signal
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -189,6 +191,13 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     server = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), Handler)
     print(f"robot-manager listening on http://0.0.0.0:{HTTP_PORT}")
+
+    def handle_signal(signum, frame):
+        threading.Thread(target=server.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+
     server.serve_forever()
 
 
