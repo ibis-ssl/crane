@@ -33,7 +33,9 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   position_commands_pub(this, "/control_targets", 1, 50., 70.),
   robot_select_results_pub(
     create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10)),
-  diagnostic_updater_(this)
+  diagnostic_helper_(
+    this, "session_controller", "ai_planner/planning_cycle", this,
+    &SessionCoordinatorComponent::updateDiagnostics)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -100,11 +102,6 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
         get_logger(), "Received game_analysis: recommended_attacker_id=%d",
         latest_game_analysis_.recommended_attacker_id);
     });
-
-  // 診断Updater設定
-  diagnostic_updater_.setHardwareID("session_controller");
-  diagnostic_updater_.add(
-    "ai_planner/planning_cycle", this, &SessionCoordinatorComponent::updateDiagnostics);
 }
 
 auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
@@ -183,7 +180,7 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
 
   // 診断情報を更新
   diagnostics_reporter_->recordCycle();
-  diagnostic_updater_.force_update();
+  diagnostic_helper_.forceUpdate();
 }
 
 auto SessionCoordinatorComponent::updateDiagnostics(

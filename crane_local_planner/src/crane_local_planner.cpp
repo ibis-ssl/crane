@@ -168,7 +168,7 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
     publishFallback();
   }
   // 診断情報を更新
-  diagnostic_updater_.force_update();
+  diagnostic_helper_.forceUpdate();
 }
 
 auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)

@@ -32,7 +32,9 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider_(std::make_unique<WorldModelDataProvider>(*this)),
-  diagnostic_updater_(this),
+  diagnostic_helper_(
+    this, "world_model_publisher", "vision/processing", this,
+    &WorldModelPublisherComponent::updateDiagnostics),
   pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
@@ -81,11 +83,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   RCLCPP_INFO(get_logger(), "  time_step: %.2f s", slack_config.time_step);
   RCLCPP_INFO(get_logger(), "  slack_time_offset: %.2f s", slack_config.slack_time_offset);
 
-  // 診断Updater設定
-  diagnostic_updater_.setHardwareID("world_model_publisher");
-  diagnostic_updater_.add(
-    "vision/processing", this, &WorldModelPublisherComponent::updateDiagnostics);
-
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     bool available = data_provider_->available();
@@ -116,7 +113,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     }
 
     // 診断情報を更新
-    diagnostic_updater_.force_update();
+    diagnostic_helper_.forceUpdate();
   });
 }
 

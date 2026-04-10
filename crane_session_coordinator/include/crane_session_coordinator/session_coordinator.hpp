@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/diagnostic_helper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
@@ -18,7 +19,6 @@
 #include <crane_sessions/session_base.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
-#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -96,7 +96,7 @@ private:
   VisualizerMessageBuilder::SharedPtr visualizer =
     std::make_shared<VisualizerMessageBuilder>("coordinator");
 
-  diagnostic_updater::Updater diagnostic_updater_;
+  DiagnosticHelper diagnostic_helper_;
 
   std::string prev_session_name_;
 };

@@ -8,11 +8,11 @@
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
 #include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/diagnostic_helper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
-#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -87,7 +87,9 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options),
     commands_pub(this, "/robot_commands", 10, 50., 70.),
-    diagnostic_updater_(this)
+    diagnostic_helper_(
+      this, "local_planner", "local_planner/path_planning", this,
+      &LocalPlannerComponent::updateDiagnostics)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
@@ -118,11 +120,6 @@ public:
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackPositionCommands, this, std::placeholders::_1));
-
-    // 診断Updater設定
-    diagnostic_updater_.setHardwareID("local_planner");
-    diagnostic_updater_.add(
-      "local_planner/path_planning", this, &LocalPlannerComponent::updateDiagnostics);
   }
 
   auto callbackPositionCommands(const crane_msgs::msg::RobotCommands &) -> void;
@@ -142,7 +139,7 @@ private:
 
   KickPowerCalculator kick_power_calculator;
 
-  diagnostic_updater::Updater diagnostic_updater_;
+  DiagnosticHelper diagnostic_helper_;
 
   size_t dropped_command_count_last_cycle_ = 0;
   size_t dropped_command_count_total_ = 0;
