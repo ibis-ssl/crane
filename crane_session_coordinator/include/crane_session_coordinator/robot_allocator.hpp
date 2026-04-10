@@ -9,6 +9,9 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
+#include <crane_physics/allocation_cost.hpp>
+#include <crane_physics/robot_info.hpp>
+#include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -17,11 +20,27 @@
 
 #include "allocation_state.hpp"
 #include "configuration_manager.hpp"
-#include "global_robot_allocator.hpp"
 #include "session_registry.hpp"
 
 namespace crane
 {
+
+/**
+ * @brief Sessionのロボット要求情報
+ */
+struct SessionRequirement
+{
+  std::string name;
+  int priority;
+  int max_robots;
+  std::function<double(const std::shared_ptr<RobotInfo> &)> suitability_func;
+
+  SessionRequirement(
+    std::string n, int p, int max_r, std::function<double(const std::shared_ptr<RobotInfo> &)> func)
+  : name(std::move(n)), priority(p), max_robots(max_r), suitability_func(std::move(func))
+  {
+  }
+};
 
 /**
  * @brief ロボットをプランナーに割り当てる管理クラス
@@ -78,6 +97,12 @@ public:
   const AllocationCostConfig & getAllocationCostConfig() const { return allocation_cost_config_; }
 
 private:
+  auto allocateRobotsGreedy(
+    const std::vector<SessionRequirement> & requirements,
+    const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
+    const AllocationState & prev_state, const AllocationCostConfig & config)
+    -> std::unordered_map<std::string, std::vector<uint8_t>>;
+
   std::shared_ptr<ConfigurationManager> config_manager_;
   std::shared_ptr<SessionRegistry> session_registry_;
   rclcpp::Logger logger_;
@@ -85,8 +110,6 @@ private:
   std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
   std::string prev_assignment_log_;
 
-  // 全体最適化用メンバ
-  std::unique_ptr<GlobalRobotAllocator> global_allocator_;
   AllocationState allocation_state_;
   AllocationCostConfig allocation_cost_config_;
 };

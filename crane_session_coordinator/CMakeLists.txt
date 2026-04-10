@@ -23,17 +23,11 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_session_coordinator.cpp
   src/configuration_manager.cpp
   src/session_registry.cpp
-  src/diagnostics_reporter.cpp
-  src/command_aggregator.cpp
   src/robot_allocator.cpp
-  src/global_robot_allocator.cpp
   include/crane_session_coordinator/session_coordinator.hpp
   include/crane_session_coordinator/configuration_manager.hpp
   include/crane_session_coordinator/session_registry.hpp
-  include/crane_session_coordinator/diagnostics_reporter.hpp
-  include/crane_session_coordinator/command_aggregator.hpp
   include/crane_session_coordinator/robot_allocator.hpp
-  include/crane_session_coordinator/global_robot_allocator.hpp
   include/crane_session_coordinator/allocation_state.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 

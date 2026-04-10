@@ -42,21 +42,4 @@ auto SessionRegistry::getOrCreatePlanner(
   return result_planner;
 }
 
-auto SessionRegistry::getAllPlanners() const -> const std::vector<SessionBase::SharedPtr> &
-{
-  return active_sessions_;
-}
-
-auto SessionRegistry::addPlanner(const SessionBase::SharedPtr & session) -> void
-{
-  active_sessions_.push_back(session);
-}
-
-auto SessionRegistry::clear() -> void { active_sessions_.clear(); }
-
-auto SessionRegistry::setPlanners(const std::vector<SessionBase::SharedPtr> & sessions) -> void
-{
-  active_sessions_ = sessions;
-}
-
 }  // namespace crane
