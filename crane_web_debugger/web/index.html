@@ -243,8 +243,8 @@
                 </ul>
             </a>
 
-            <a href="/robot_manager.html" class="tool-card">
-                <span class="m3-badge tool-card__badge" id="robot-manager-crane-badge">crane: offline</span>
+            <a href="#" target="_blank" class="tool-card" id="robot-manager-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="robot-manager-status">checking...</span>
                 <span class="material-symbols-outlined tool-card__icon">memory</span>
                 <div class="tool-card__title">Robot Manager</div>
                 <div class="tool-card__desc">
@@ -254,7 +254,7 @@
                     <li><span class="material-symbols-outlined">check</span> Real-time battery & temperature monitoring</li>
                     <li><span class="material-symbols-outlined">check</span> Error state details</li>
                     <li><span class="material-symbols-outlined">check</span> Pi start/stop control</li>
-                    <li><span class="material-symbols-outlined">check</span> Ping & communication quality</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8092 (Orion_CM4)</li>
                 </ul>
             </a>
 
@@ -371,6 +371,7 @@
             { id: 'game-controller',   url: `http://${host}:8081` },
             { id: 'vision-client',     url: `http://${host}:8082` },
             { id: 'status-board',      url: `http://${host}:8083` },
+            { id: 'robot-manager',     url: `http://${host}:8092` },
             { id: 'ball-calibration',  url: `http://${host}:8093` },
             { id: 'foxglove',
               url: `https://app.foxglove.dev/?ds=foxglove-websocket&ds.url=ws://${host}:8765`,
@@ -380,7 +381,6 @@
         const CRANE_DEPENDENT_BADGES = [
             'viewer-crane-badge',
             'telemetry-crane-badge',
-            'robot-manager-crane-badge',
             'robot-test-crane-badge',
         ];
 

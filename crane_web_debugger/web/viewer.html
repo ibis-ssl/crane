@@ -266,7 +266,7 @@
         <li><a href="/">
           <span class="material-symbols-outlined icon-sm">home</span>Portal
         </a></li>
-        <li><a href="/robot_manager.html">
+        <li><a href="#" id="robot-manager-nav-link">
           <span class="material-symbols-outlined icon-sm">tune</span>Robot Manager
         </a></li>
         <li><a href="/annotation/index.html">
@@ -379,5 +379,9 @@
   </div>
 
   <script src="viewer.js"></script>
+  <script>
+    document.getElementById('robot-manager-nav-link').href =
+      `http://${window.location.hostname}:8092`;
+  </script>
 </body>
 </html>
