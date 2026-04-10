@@ -9,7 +9,6 @@
 
 #include <chrono>
 #include <crane_comm/diagnosed_publisher.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
@@ -17,6 +16,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_sessions/session_base.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>

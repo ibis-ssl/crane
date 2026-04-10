@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -17,6 +16,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <functional>
 #include <memory>
 #include <range/v3/range/conversion.hpp>

@@ -8,9 +8,9 @@
 #define CRANE_SESSIONS__MARKER_FUNCTIONS_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/marker.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>

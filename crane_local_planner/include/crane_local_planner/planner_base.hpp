@@ -7,10 +7,10 @@
 #ifndef CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_
 #define CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
 
 namespace crane

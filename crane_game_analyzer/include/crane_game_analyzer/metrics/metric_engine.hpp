@@ -7,7 +7,7 @@
 #ifndef CRANE_GAME_ANALYZER__METRICS__METRIC_ENGINE_HPP_
 #define CRANE_GAME_ANALYZER__METRICS__METRIC_ENGINE_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <unordered_map>

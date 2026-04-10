@@ -7,7 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__VISUALIZATION_HELPERS_HPP_
 #define CRANE_LOCAL_PLANNER__VISUALIZATION_HELPERS_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <iomanip>
 #include <sstream>
 
