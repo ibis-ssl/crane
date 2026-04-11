@@ -566,9 +566,8 @@ auto WorldModelDataProvider::processDetectionFrame(
     const auto & balls = detection.balls();
     size_t idx = 0;
     if (latest_practice_mode.enabled && balls.size() > 1) {
-      idx = selectClosestBallToOurGoal(balls, [](const auto & b) {
-        return std::make_pair(b.x() / 1000.0, b.y() / 1000.0);
-      });
+      idx = selectClosestBallToOurGoal(
+        balls, [](const auto & b) { return std::make_pair(b.x() / 1000.0, b.y() / 1000.0); });
     }
     updateVisionBallState(balls.at(static_cast<int>(idx)));
   }

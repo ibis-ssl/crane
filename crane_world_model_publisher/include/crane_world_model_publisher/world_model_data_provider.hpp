@@ -12,10 +12,8 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <cmath>
-#include <limits>
-
 #include <Eigen/Dense>
+#include <cmath>
 #include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
@@ -28,6 +26,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -302,8 +301,7 @@ private:
 
   // 半面練習モード: 自陣ゴールに最も近いボールのインデックスを返す
   template <typename BallContainer, typename PosExtractor>
-  auto selectClosestBallToOurGoal(const BallContainer & balls, PosExtractor pos_fn) const
-    -> size_t
+  auto selectClosestBallToOurGoal(const BallContainer & balls, PosExtractor pos_fn) const -> size_t
   {
     if (balls.size() <= 1) return 0;
     const double our_goal_x = on_positive_half ? game_data.field_w / 2.0 : -game_data.field_w / 2.0;
