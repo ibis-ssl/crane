@@ -12,4 +12,4 @@ EXPOSE 8090
 
 ENV HTTP_PORT=8090
 
-CMD ["sh", "-c", "python3 /app/app.py --host 0.0.0.0 --port ${HTTP_PORT} --web-root /app/web"]
+CMD ["sh", "-c", "exec python3 /app/app.py --host 0.0.0.0 --port ${HTTP_PORT} --web-root /app/web"]
