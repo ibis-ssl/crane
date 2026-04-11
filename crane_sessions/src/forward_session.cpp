@@ -23,7 +23,7 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
     goal_line_x - world_model->penaltyAreaSize().x() - PENALTY_AREA_MARGIN;
   const double penalty_side_y = world_model->penaltyAreaSize().y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
-  const double ball_x_abs = world_model->ball().pos.x() * (-world_model->getOurSideSign());
+  const double ball_x_abs = world_model->ball().pos.x() * (-world_model->getAttackSideSign());
   const double back_x = std::clamp(ball_x_abs - 1.0, -goal_line_x + 1.0, goal_line_x - 3.0);
 
   auto push_line = [&](Point p1, Point p2) {
@@ -44,10 +44,10 @@ auto ForwardSession::createForwardLines() const -> std::vector<Segment>
   push_line(Point(back_x, mid_line_y), Point(penalty_front_x, mid_line_y));
   push_line(Point(back_x, -mid_line_y), Point(penalty_front_x, -mid_line_y));
 
-  // 攻めの方向に応じて符号を調整
+  // 攻めの方向に応じて符号を調整（練習モードreverse_attack対応）
   for (auto & line : forward_lines) {
-    line.first.x() = -world_model->getOurSideSign() * line.first.x();
-    line.second.x() = -world_model->getOurSideSign() * line.second.x();
+    line.first.x() = -world_model->getAttackSideSign() * line.first.x();
+    line.second.x() = -world_model->getAttackSideSign() * line.second.x();
   }
 
   return forward_lines;

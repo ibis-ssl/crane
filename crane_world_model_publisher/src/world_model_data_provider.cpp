@@ -200,6 +200,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   node.declare_parameter("is_emplace_positive_side", true);
   is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
 
+  // 半面練習モード: session coordinator からの /practice_mode トピックを購読
+  sub_practice_mode = node.create_subscription<crane_msgs::msg::PracticeMode>(
+    "/practice_mode", 1,
+    [this](const crane_msgs::msg::PracticeMode & msg) { latest_practice_mode = msg; });
+
   sub_referee = node.create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == game_data.team_name) {
@@ -272,7 +277,14 @@ auto WorldModelDataProvider::on_udp_timer() -> void
         if (packet.has_detection()) {
           // Vision ボール生データは常に更新（isBallTrulyLostFromDribblerのクロスリファレンス用）
           if (!packet.detection().balls().empty()) {
-            updateVisionBallState(packet.detection().balls().at(0));
+            const auto & balls = packet.detection().balls();
+            size_t idx = 0;
+            if (latest_practice_mode.enabled && balls.size() > 1) {
+              idx = selectClosestBallToOurGoal(balls, [](const auto & b) {
+                return std::make_pair(b.x() / 1000.0, b.y() / 1000.0);
+              });
+            }
+            updateVisionBallState(balls.at(static_cast<int>(idx)));
             integrateBallInfo();
           }
           if (use_udp_detection_) {
@@ -368,6 +380,9 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.our_goalie_id = game_data.our_goalie_id;
   msg.their_goalie_id = game_data.their_goalie_id;
   msg.play_situation = latest_play_situation;
+
+  // 半面練習モード設定（session coordinator から /practice_mode トピック経由）
+  msg.practice_mode = latest_practice_mode;
 
   // Get ball data directly from local data
   if (has_vision_updated_ || has_tracked_frame_updated_) {
@@ -555,8 +570,13 @@ auto WorldModelDataProvider::processDetectionFrame(
 
   // ボール検出処理
   if (!detection.balls().empty()) {
-    const auto & ssl_ball = detection.balls().at(0);
-    updateVisionBallState(ssl_ball);
+    const auto & balls = detection.balls();
+    size_t idx = 0;
+    if (latest_practice_mode.enabled && balls.size() > 1) {
+      idx = selectClosestBallToOurGoal(
+        balls, [](const auto & b) { return std::make_pair(b.x() / 1000.0, b.y() / 1000.0); });
+    }
+    updateVisionBallState(balls.at(static_cast<int>(idx)));
   }
 
   // Vision/Tracker状態を統合してball_info_を更新
@@ -703,8 +723,13 @@ auto WorldModelDataProvider::processTrackedFrame(
 
   // ボール情報の処理
   if (!tracked_frame.balls.empty()) {
-    const auto & tracked_ball = tracked_frame.balls[0];  // 最初のボールをプライマリとする
-    updateTrackerBallState(tracked_ball);
+    size_t idx = 0;
+    if (latest_practice_mode.enabled && tracked_frame.balls.size() > 1) {
+      idx = selectClosestBallToOurGoal(tracked_frame.balls, [](const auto & b) {
+        return std::make_pair(static_cast<double>(b.pos.x), static_cast<double>(b.pos.y));
+      });
+    }
+    updateTrackerBallState(tracked_frame.balls[idx]);
   }
 
   // Vision/Tracker状態を統合してball_info_を更新

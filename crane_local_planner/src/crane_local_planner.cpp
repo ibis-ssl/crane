@@ -105,6 +105,15 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
         auto & pos_mode = command.position_target_mode.front();
         pos_mode.target_x = target_x;
         pos_mode.target_y = target_y;
+
+        // 半面練習モード: 移動範囲をレフェリー信号基準の自陣側にクランプ
+        if (world_model->isPracticeModeEnabled()) {
+          if (world_model->onPositiveHalf()) {
+            pos_mode.target_x = std::max(pos_mode.target_x, 0.0f);
+          } else {
+            pos_mode.target_x = std::min(pos_mode.target_x, 0.0f);
+          }
+        }
         pos_mode.position_tolerance = raw_pos_mode.position_tolerance;
         pos_mode.speed_limit_at_target = raw_pos_mode.speed_limit_at_target;
         auto robot = world_model->getOurRobot(command.robot_id);

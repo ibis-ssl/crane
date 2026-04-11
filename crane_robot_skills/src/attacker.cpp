@@ -95,15 +95,15 @@ void Attacker::initialize()
     command->setMaxVelocity("AttackerState::FORCED_PASS", 2.0);
     if (pass_receiver_id) {
       auto pass_receiver_pos = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-      if (pass_receiver_pos.x() * world_model()->getOurSideSign() > 0.) {
-        // 自陣にいるときは強制的に敵ゴールを目標に設定
-        kick_target = world_model()->getTheirGoalCenter();
+      if (pass_receiver_pos.x() * world_model()->getAttackSideSign() > 0.) {
+        // 自陣にいるときは強制的に攻撃対象ゴールを目標に設定
+        kick_target = world_model()->getAttackGoalCenter();
       } else {
         // 敵陣に適当なロボットがいる場合はパス
         kick_target = pass_receiver_pos;
       }
     } else {
-      kick_target = world_model()->getTheirGoalCenter();
+      kick_target = world_model()->getAttackGoalCenter();
     }
     kick_skill.setParameter("target", kick_target);
     Segment kick_line{world_model()->ball().pos, kick_target};
@@ -187,21 +187,21 @@ void Attacker::initialize()
         10.0 * M_PI / 180., robot()->pose.pos, world_model(), visualizer);
       Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
       Segment goal_line;
-      goal_line.first << world_model()->getTheirGoalCenter().x(),
+      goal_line.first << world_model()->getAttackGoalCenter().x(),
         -world_model()->fieldSize().y() * 0.5;
-      goal_line.second << world_model()->getTheirGoalCenter().x(),
+      goal_line.second << world_model()->getAttackGoalCenter().x(),
         world_model()->fieldSize().y() * 0.5;
       if (
         auto intersection_points = getIntersections(shoot_line, goal_line);
         intersection_points.empty()) {
-        return world_model()->getTheirGoalCenter();
+        return world_model()->getAttackGoalCenter();
       } else {
         return intersection_points.front();
       }
     }();
 
     auto [best_angle, goal_angle_width] =
-      world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
+      world_model()->getLargestAttackGoalAngleRangeFromPoint(robot()->pose.pos);
     double angle_diff_deg =
       std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
       180.0 / M_PI;
@@ -303,7 +303,7 @@ void Attacker::initialize()
     }
 
     double x_diff_with_their_goal =
-      std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball().pos.x());
+      std::abs(world_model()->getAttackGoalCenter().x() - world_model()->ball().pos.x());
 
     using boost::math::constants::degree;
     if (goal_angle_width > GOAL_ANGLE_THRESHOLD_RAD) {
@@ -330,7 +330,7 @@ void Attacker::initialize()
       x_diff_with_their_goal >= world_model()->fieldSize().x() * 0.5) {
       // MOVE_BALL_TO_OPPONENT_HALF
       printTextOnRobot("KICK::MOVE_BALL_TO_OPPONENT_HALF");
-      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+      kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", true);
       kick_skill.setParameter("use_target_chip_distance", true);
       kick_skill.setParameter("target_chip_distance", CHIP_KICK_DISTANCE);
@@ -339,7 +339,7 @@ void Attacker::initialize()
     } else {
       // FINAL_GUARD: ゴール角度が不十分なのでチップキックで前方クリア
       printTextOnRobot("KICK::FINAL_GUARD");
-      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+      kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", true);
       kick_skill.setParameter("use_target_chip_distance", true);
       kick_skill.setParameter("target_chip_distance", CHIP_KICK_DISTANCE);
@@ -397,7 +397,8 @@ bool Attacker::shouldUseChipKick(const Point & target)
 
 double Attacker::evaluateGoalAngle(const Point & position)
 {
-  auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(position);
+  auto [best_angle, goal_angle_width] =
+    world_model()->getLargestAttackGoalAngleRangeFromPoint(position);
   return goal_angle_width;
 }
 
@@ -419,13 +420,16 @@ double Attacker::calculatePassScore(const Point & target)
   double goal_angle_width = evaluateGoalAngle(target);
   score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
 
-  // 自ゴールから遠いほうが良い
+  // 自ゴールから遠いほうが良い（reverse_attack時は攻撃対象ゴールの反対側）
+  auto defense_goal_posts = world_model()->isPracticeReverseAttack()
+                              ? world_model()->getTheirGoalPosts()
+                              : world_model()->getOurGoalPosts();
   auto [best_angle, own_goal_angle_width] =
-    world_model()->getLargestGoalAngleRangeFromPoint(target, world_model()->getOurGoalPosts(), {});
+    world_model()->getLargestGoalAngleRangeFromPoint(target, defense_goal_posts, {});
   score -= std::clamp(own_goal_angle_width / (M_PI / 12.), 0.0, 0.5);
 
-  // 敵ゴールに近いときはスコアを上げる
-  double normed_distance_to_their_goal = ((target - world_model()->getTheirGoalCenter()).norm() -
+  // 攻撃対象ゴールに近いときはスコアを上げる
+  double normed_distance_to_their_goal = ((target - world_model()->getAttackGoalCenter()).norm() -
                                           (world_model()->fieldSize().x() * 0.5)) /
                                          (world_model()->fieldSize().x() * 0.5);
   score *= (1.0 - normed_distance_to_their_goal);

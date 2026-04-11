@@ -7,6 +7,7 @@
 #ifndef CRANE_SESSION_COORDINATOR__CONFIGURATION_MANAGER_HPP_
 #define CRANE_SESSION_COORDINATOR__CONFIGURATION_MANAGER_HPP_
 
+#include <crane_msgs/msg/practice_mode.hpp>
 #include <filesystem>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -77,12 +78,23 @@ public:
   auto updateEventMapping(const std::string & event_name, const std::string & situation_name)
     -> void;
 
+  /**
+   * @brief 指定situationの練習モード設定を取得
+   * @param situation_name セッション名
+   * @return PracticeModeメッセージ（練習モード未設定の場合はデフォルト=disabled）
+   */
+  auto getPracticeModeForSituation(const std::string & situation_name) const
+    -> crane_msgs::msg::PracticeMode;
+
 private:
   // イベント名 → セッション名のマッピング
   std::unordered_map<std::string, std::string> event_map_;
 
   // セッション名 → SessionSlotリストのマッピング
   std::unordered_map<std::string, std::vector<SessionSlot>> robot_selection_priority_map_;
+
+  // セッション名 → 練習モード設定のマッピング
+  std::unordered_map<std::string, crane_msgs::msg::PracticeMode> practice_mode_map_;
 
   rclcpp::Logger logger_;
 

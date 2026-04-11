@@ -42,7 +42,7 @@ Status SubAttacker::update()
     Segment short_ball_line = world_model()->ball().getTrajectorySegmentByTime(3.0);
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
-    double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
+    double dot_dir = (world_model()->getAttackGoalCenter() - world_model()->ball().pos)
                        .dot(world_model()->ball().vel);
     // ボールがロボットを追い越そうとしているか
     double dot_inter = (result.closest_point - short_ball_line.first)
