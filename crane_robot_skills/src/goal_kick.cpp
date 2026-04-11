@@ -30,8 +30,8 @@ Status GoalKick::update()
     Segment segment{
       world_model()->ball().pos, world_model()->ball().pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
-      Point(world_model()->getTheirGoalCenter().x(), world_model()->fieldSize().y() * 0.5),
-      Point(world_model()->getTheirGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
+      Point(world_model()->getAttackGoalCenter().x(), world_model()->fieldSize().y() * 0.5),
+      Point(world_model()->getAttackGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
       visualizer->arrow(
         world_model()->ball().pos, (intersections.front() - world_model()->ball().pos).normalized(),
@@ -54,21 +54,22 @@ double GoalKick::getBestAngleToShootFromPoint(
   const WorldModelWrapper::SharedPtr & world_model,
   const VisualizerMessageBuilder::SharedPtr & visualizer)
 {
-  auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(from_point);
+  auto [best_angle, goal_angle_width] =
+    world_model->getLargestAttackGoalAngleRangeFromPoint(from_point);
   auto intersection_positive = [&]() {
     double angle = best_angle + goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
+      Point(world_model->getAttackGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getAttackGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
   auto intersection_negative = [&]() {
     double angle = best_angle - goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
+      Point(world_model->getAttackGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getAttackGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
 
@@ -86,7 +87,7 @@ double GoalKick::getBestAngleToShootFromPoint(
     if (goal_angle_width < 0.) {
       // ゴールが見えない場合はgoal_angle_widthが負になる
       // その場合は相手ゴール中心を狙う
-      return getAngle(world_model->getTheirGoalCenter() - from_point);
+      return getAngle(world_model->getAttackGoalCenter() - from_point);
     }
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う

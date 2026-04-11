@@ -7,9 +7,11 @@
 #ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/practice_mode.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/ball_info.hpp>
 #include <crane_physics/robot_info.hpp>
@@ -101,6 +103,59 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   [[nodiscard]] auto hasUpdated() const { return has_updated; }
 
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
+
+  // === 半面練習モード ===
+  [[nodiscard]] auto practiceMode() const -> const crane_msgs::msg::PracticeMode &
+  {
+    return latest_msg.practice_mode;
+  }
+  [[nodiscard]] auto isPracticeModeEnabled() const { return latest_msg.practice_mode.enabled; }
+  [[nodiscard]] auto isPracticeKickProhibited() const
+  {
+    return latest_msg.practice_mode.enabled && latest_msg.practice_mode.kick_prohibition;
+  }
+  [[nodiscard]] auto isPracticeKickProhibitedFor(const std::string & skill_name) const
+  {
+    if (!isPracticeKickProhibited()) {
+      return false;
+    }
+    const auto & allowed = latest_msg.practice_mode.kick_allowed_skills;
+    return std::find(allowed.begin(), allowed.end(), skill_name) == allowed.end();
+  }
+  [[nodiscard]] auto isPracticeReverseAttack() const
+  {
+    return latest_msg.practice_mode.enabled && latest_msg.practice_mode.reverse_attack;
+  }
+  [[nodiscard]] auto isPracticeNormalSpeed() const
+  {
+    return latest_msg.practice_mode.enabled && latest_msg.practice_mode.use_normal_speed;
+  }
+
+  /// @brief 攻撃対象ゴール中心を取得（練習モード reverse_attack 時は自陣ゴール）
+  /// @note DF/ゴーリーはこのメソッドを使わず getOurGoalCenter() を直接使うこと
+  [[nodiscard]] auto getAttackGoalCenter() const -> Point
+  {
+    return isPracticeReverseAttack() ? getOurGoalCenter() : getTheirGoalCenter();
+  }
+
+  /// @brief 攻撃対象ゴールポストを取得（練習モード reverse_attack 時は自陣ゴール）
+  [[nodiscard]] auto getAttackGoalPosts() const -> std::pair<Point, Point>
+  {
+    return isPracticeReverseAttack() ? getOurGoalPosts() : getTheirGoalPosts();
+  }
+
+  /// @brief 攻撃対象ゴールラインを取得（練習モード reverse_attack 時は自陣ゴール）
+  [[nodiscard]] auto getAttackGoalLine() const -> Segment
+  {
+    return isPracticeReverseAttack() ? getOurGoalLine() : getTheirGoalLine();
+  }
+
+  /// @brief 攻撃方向の符号を取得（練習モード reverse_attack 時は反転）
+  /// @note FW/アタッカー系のみ使用。DF/ゴーリーは getOurSideSign() を使うこと
+  [[nodiscard]] auto getAttackSideSign() const
+  {
+    return isPracticeReverseAttack() ? -getOurSideSign() : getOurSideSign();
+  }
 
   auto addCallback(std::function<void(void)> && callback_func) -> void
   {
@@ -234,6 +289,18 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   {
     return getLargestGoalAngleRangeFromPoint(
       from, getOurGoalPosts(), ours_.robotsWhere().available().get());
+  }
+
+  /// @brief 攻撃方向を考慮したゴール角度範囲を取得（練習モード reverse_attack 対応）
+  [[nodiscard]] auto getLargestAttackGoalAngleRangeFromPoint(const Point from) const
+    -> GoalAngleRange
+  {
+    if (isPracticeReverseAttack()) {
+      return getLargestGoalAngleRangeFromPoint(
+        from, getOurGoalPosts(), ours_.robotsWhere().available().get());
+    }
+    return getLargestGoalAngleRangeFromPoint(
+      from, getTheirGoalPosts(), theirs_.robotsWhere().available().get());
   }
 
   struct SlackTimeResult

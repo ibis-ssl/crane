@@ -317,7 +317,9 @@ auto RVO2Planner::computePreferredVelocityStage(
 
   const double max_brk = planning_deceleration;
   addMaxVelocityFactor(command, "RVO2Planner::max_vel from parameter", MAX_VEL);
-  if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+  if (
+    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+    !world_model->isPracticeNormalSpeed()) {
     addMaxVelocityFactor(command, "RVO2Planner STOP制限", STOP_STATE_MAX_VELOCITY);
   }
   ctx.max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
@@ -499,7 +501,9 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   }
 
   const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  if (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP) {
+  if (
+    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+    !world_model->isPracticeNormalSpeed()) {
     for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, STOP_STATE_MAX_VELOCITY);
     }

@@ -13,10 +13,12 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
+#include <cmath>
 #include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/practice_mode.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -24,6 +26,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -259,6 +262,9 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
+  rclcpp::Subscription<crane_msgs::msg::PracticeMode>::SharedPtr sub_practice_mode;
+  crane_msgs::msg::PracticeMode latest_practice_mode;
+
   robocup_ssl_msgs::msg::TrackedFrame latest_tracked_frame;
   bool has_tracked_frame_updated_;
 
@@ -292,6 +298,25 @@ private:
   auto updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
   auto updateTrackerBallState(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> void;
   auto integrateBallInfo() -> void;
+
+  // 半面練習モード: 自陣ゴールに最も近いボールのインデックスを返す
+  template <typename BallContainer, typename PosExtractor>
+  auto selectClosestBallToOurGoal(const BallContainer & balls, PosExtractor pos_fn) const -> size_t
+  {
+    if (balls.size() <= 1) return 0;
+    const double our_goal_x = on_positive_half ? game_data.field_w / 2.0 : -game_data.field_w / 2.0;
+    size_t best = 0;
+    double best_dist = std::numeric_limits<double>::max();
+    for (size_t i = 0; i < static_cast<size_t>(balls.size()); ++i) {
+      auto [bx, by] = pos_fn(balls[static_cast<int>(i)]);
+      double dist = std::hypot(bx - our_goal_x, by);
+      if (dist < best_dist) {
+        best_dist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
 
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;

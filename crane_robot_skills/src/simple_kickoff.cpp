@@ -26,7 +26,7 @@ Status SimpleKickOff::update()
     return Status::RUNNING;
   }
 
-  kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+  kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
   return kick_skill.run();
 }
 }  // namespace crane::skills

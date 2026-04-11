@@ -180,6 +180,33 @@ situations:
     sessions:
       - name: wing_formation
         max_robots: 20
+  HALF_FIELD_PRACTICE:
+    description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり・レフェリー信号基準）
+    practice_mode:
+      enabled: true
+      kick_prohibition: true
+      reverse_attack: true
+      use_normal_speed: true
+      kick_allowed_skills:
+        - goalie_skill
+        - defender
+    sessions:
+      - name: goalie_skill
+        max_robots: 1
+      - name: attacker_skill
+        max_robots: 1
+      - name: defender
+        max_robots: 3
+        params:
+          reduced_robots: 1
+      - name: pass_receive
+        max_robots: 1
+      - name: sub_attacker_skill
+        max_robots: 1
+      - name: marker
+        max_robots: 2
+      - name: forward
+        max_robots: 20
 events:
   - name: HALT
     situation: HALT
