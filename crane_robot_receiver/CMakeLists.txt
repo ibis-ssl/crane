@@ -49,8 +49,16 @@ target_link_libraries(grsim_robot_status_node
 add_backward(grsim_robot_status_node)
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_add_gtest(
+    test_robot_feedback_protocol
+    test/test_robot_feedback_protocol.cpp
+  )
+  target_include_directories(test_robot_feedback_protocol PRIVATE include)
+  ament_target_dependencies(test_robot_feedback_protocol rclcpp)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

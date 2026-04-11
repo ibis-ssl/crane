@@ -38,11 +38,26 @@ public:
   }
 
   // asioスレッドから呼ばれる
-  void onReceive(const std::vector<char> & buf, size_t /*size*/)
+  void onReceive(const std::vector<char> & buf, size_t size)
   {
     auto stamp = clock.now();
-    RobotFeedback new_packet = parseBuffer(buf, stamp);
     std::lock_guard<std::mutex> lock(mutex_);
+    if (size != protocol::PACKET_SIZE || buf.size() < protocol::PACKET_SIZE) {
+      ++size_mismatch_count_;
+      ++invalid_packet_count_;
+      return;
+    }
+    if (
+      protocol::readRawByte(buf, protocol::offset::SYNC_0) != protocol::SYNC_0_VALUE ||
+      protocol::readRawByte(buf, protocol::offset::SYNC_1) != protocol::SYNC_1_VALUE) {
+      ++sync_error_count_;
+      ++invalid_packet_count_;
+      return;
+    }
+
+    RobotFeedback new_packet = parseBuffer(buf, stamp);
+    updateCounterStatsLocked(new_packet.counter);
+    ++valid_packet_count_;
     packet_queue_.push_back(new_packet);
     receive_timestamps_.push_back(stamp);
   }
@@ -51,6 +66,9 @@ public:
   auto getLatestFeedback() -> std::optional<RobotFeedback>
   {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (last_output_) {
+      applyPacketStatsLocked(*last_output_);
+    }
     if (packet_queue_.empty()) {
       return last_output_;
     }
@@ -67,6 +85,10 @@ public:
     result.error_info = latest.error_info;
     result.error_value = latest.error_value;
     result.ball_sensor = latest.ball_sensor;
+    result.camera_pos_x_div2 = latest.camera_pos_x_div2;
+    result.camera_pos_y = latest.camera_pos_y;
+    result.camera_radius_div4 = latest.camera_radius_div4;
+    result.camera_fps = latest.camera_fps;
     result.check_ver = latest.check_ver;
     result.values = latest.values;
     std::copy(
@@ -104,6 +126,7 @@ public:
       result.voltage[i] = sum_voltage[i] / n;
     }
 
+    applyPacketStatsLocked(result);
     packet_queue_.clear();
     last_output_ = result;
     return last_output_;
@@ -121,6 +144,12 @@ public:
   {
     float packet_frequency_hz = 0.f;
     IntervalStats interval;
+    uint32_t valid_packet_count = 0;
+    uint32_t invalid_packet_count = 0;
+    uint32_t sync_error_count = 0;
+    uint32_t checksum_error_count = 0;
+    uint32_t size_mismatch_count = 0;
+    uint32_t counter_jump_count = 0;
   };
 
   // 周波数と受信間隔統計を1回のロックでまとめて取得する
@@ -133,6 +162,12 @@ public:
     if (receive_timestamps_.size() >= 2) {
       result.interval = computeIntervalStatsLocked();
     }
+    result.valid_packet_count = valid_packet_count_;
+    result.invalid_packet_count = invalid_packet_count_;
+    result.sync_error_count = sync_error_count_;
+    result.checksum_error_count = checksum_error_count_;
+    result.size_mismatch_count = size_mismatch_count_;
+    result.counter_jump_count = counter_jump_count_;
     return result;
   }
 
@@ -191,7 +226,11 @@ private:
     feedback.odom_speed[0] = protocol::readFloat(buf, protocol::offset::ODOM_SPEED_X);
     feedback.odom_speed[1] = protocol::readFloat(buf, protocol::offset::ODOM_SPEED_Y);
 
-    feedback.check_ver = protocol::readByte(buf, protocol::offset::CHECK_VER);
+    feedback.camera_pos_x_div2 = protocol::readByte(buf, protocol::offset::CAMERA_POS_X_DIV2);
+    feedback.camera_pos_y = protocol::readByte(buf, protocol::offset::CAMERA_POS_Y);
+    feedback.camera_radius_div4 = protocol::readByte(buf, protocol::offset::CAMERA_RADIUS_DIV4);
+    feedback.camera_fps = protocol::readByte(buf, protocol::offset::CAMERA_FPS);
+    feedback.check_ver = feedback.camera_pos_x_div2;
 
     // マウスセンサー
     feedback.mouse_odom[0] = protocol::readFloat(buf, protocol::offset::MOUSE_ODOM_X);
@@ -201,12 +240,36 @@ private:
 
     // デバッグ値
     feedback.values.clear();
-    for (size_t i = protocol::offset::DEBUG_VALUES_START;
-         i < protocol::DEBUG_VALUES_END - protocol::FLOAT_SIZE; i += protocol::FLOAT_SIZE) {
-      feedback.values.push_back(protocol::readFloat(buf, static_cast<int>(i)));
+    feedback.values.reserve(protocol::TX_VALUE_COUNT);
+    for (size_t i = 0; i < protocol::TX_VALUE_COUNT; ++i) {
+      const int offset =
+        protocol::offset::DEBUG_VALUES_START + static_cast<int>(i * protocol::FLOAT_SIZE);
+      feedback.values.push_back(protocol::readFloat(buf, offset));
     }
 
     return feedback;
+  }
+
+  void updateCounterStatsLocked(uint8_t counter)
+  {
+    if (has_last_counter_) {
+      const auto expected = static_cast<uint8_t>(last_counter_ + 1);
+      if (counter != expected) {
+        ++counter_jump_count_;
+      }
+    }
+    has_last_counter_ = true;
+    last_counter_ = counter;
+  }
+
+  void applyPacketStatsLocked(RobotFeedback & feedback) const
+  {
+    feedback.valid_packet_count = valid_packet_count_;
+    feedback.invalid_packet_count = invalid_packet_count_;
+    feedback.sync_error_count = sync_error_count_;
+    feedback.checksum_error_count = checksum_error_count_;
+    feedback.size_mismatch_count = size_mismatch_count_;
+    feedback.counter_jump_count = counter_jump_count_;
   }
 
   // mutex_ を保持した状態で呼ぶこと
@@ -249,6 +312,14 @@ private:
   std::vector<RobotFeedback> packet_queue_;
   std::optional<RobotFeedback> last_output_;
   std::deque<rclcpp::Time> receive_timestamps_;
+  uint32_t valid_packet_count_ = 0;
+  uint32_t invalid_packet_count_ = 0;
+  uint32_t sync_error_count_ = 0;
+  uint32_t checksum_error_count_ = 0;
+  uint32_t size_mismatch_count_ = 0;
+  uint32_t counter_jump_count_ = 0;
+  bool has_last_counter_ = false;
+  uint8_t last_counter_ = 0;
   rclcpp::Clock clock;
 };
 
@@ -313,7 +384,15 @@ public:
           robot_feedback_msg.receive_interval_min_ms = s.interval.min_ms;
           robot_feedback_msg.receive_interval_max_ms = s.interval.max_ms;
           robot_feedback_msg.receive_interval_stddev_ms = s.interval.stddev_ms;
+          robot_feedback_msg.valid_packet_count = s.valid_packet_count;
+          robot_feedback_msg.invalid_packet_count = s.invalid_packet_count;
+          robot_feedback_msg.sync_error_count = s.sync_error_count;
+          robot_feedback_msg.checksum_error_count = s.checksum_error_count;
+          robot_feedback_msg.size_mismatch_count = s.size_mismatch_count;
+          robot_feedback_msg.counter_jump_count = s.counter_jump_count;
         }
+        robot_feedback_msg.feedback_age_ms =
+          static_cast<float>((now - robot_feedback->received_stamp).nanoseconds() * 1e-6);
         robot_feedback_msg.counter = robot_feedback->counter;
         robot_feedback_msg.kick_state = robot_feedback->kick_state;
         robot_feedback_msg.temperatures.assign(
@@ -339,6 +418,10 @@ public:
           robot_feedback->mouse_vel.begin(), robot_feedback->mouse_vel.end());
         robot_feedback_msg.voltage.assign(
           robot_feedback->voltage.begin(), robot_feedback->voltage.end());
+        robot_feedback_msg.camera_pos_x_div2 = robot_feedback->camera_pos_x_div2;
+        robot_feedback_msg.camera_pos_y = robot_feedback->camera_pos_y;
+        robot_feedback_msg.camera_radius_div4 = robot_feedback->camera_radius_div4;
+        robot_feedback_msg.camera_fps = robot_feedback->camera_fps;
         robot_feedback_msg.check_ver = robot_feedback->check_ver;
         robot_feedback_msg.values = robot_feedback->values;
         msg.feedback.push_back(robot_feedback_msg);

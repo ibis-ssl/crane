@@ -73,8 +73,9 @@ private:
   // 診断情報更新コールバック関数
   auto communicationDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,
-    const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time, bool sim_mode)
-    -> void;
+    const crane_msgs::msg::PingStatusArray & ping_msg,
+    const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+    bool sim_mode) -> void;
 
   auto batteryDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,

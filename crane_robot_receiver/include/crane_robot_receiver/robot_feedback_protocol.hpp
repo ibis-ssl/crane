@@ -20,13 +20,19 @@ namespace crane::robot_receiver
 // ロボットフィードバックプロトコル定数
 namespace protocol
 {
-// バッファサイズ
+// パケットサイズ
+constexpr size_t PACKET_SIZE = 128;
+
+// 受信バッファサイズ
 constexpr size_t BUFFER_SIZE = 2048;
-constexpr size_t DEBUG_VALUES_END = 128;
+constexpr size_t TX_VALUE_COUNT = 14;
 
 // バイトオフセット定義
 namespace offset
 {
+constexpr int SYNC_0 = 0;
+constexpr int SYNC_1 = 1;
+constexpr int CHECKSUM = 2;
 constexpr int COUNTER = 3;
 
 constexpr int YAW_ANGLE = 4;
@@ -64,7 +70,10 @@ constexpr int ODOM_Y = 48;
 constexpr int ODOM_SPEED_X = 52;
 constexpr int ODOM_SPEED_Y = 56;
 
-constexpr int CHECK_VER = 60;
+constexpr int CAMERA_POS_X_DIV2 = 60;
+constexpr int CAMERA_POS_Y = 61;
+constexpr int CAMERA_RADIUS_DIV4 = 62;
+constexpr int CAMERA_FPS = 63;
 
 constexpr int MOUSE_ODOM_X = 64;
 constexpr int MOUSE_ODOM_Y = 68;
@@ -72,12 +81,55 @@ constexpr int MOUSE_VEL_X = 72;
 constexpr int MOUSE_VEL_Y = 76;
 
 constexpr int DEBUG_VALUES_START = 64;
+constexpr int RESERVED_START = 120;
 }  // namespace offset
 
 // 定数値
 constexpr float MOTOR_CURRENT_SCALE = 10.0f;
 constexpr int KICK_STATE_SCALE = 10;
 constexpr int FLOAT_SIZE = 4;
+constexpr uint8_t SYNC_0_VALUE = 0xAB;
+constexpr uint8_t SYNC_1_VALUE = 0xEA;
+
+struct PacketValidationResult
+{
+  bool size_valid = false;
+  bool sync_valid = false;
+  bool checksum_valid = false;
+
+  [[nodiscard]] auto valid() const -> bool { return size_valid && sync_valid && checksum_valid; }
+};
+
+template <typename BufferT>
+inline auto readRawByte(const BufferT & buffer, size_t offset) -> uint8_t
+{
+  return static_cast<uint8_t>(buffer[offset]);
+}
+
+template <typename BufferT>
+inline auto computeChecksum(const BufferT & buffer) -> uint8_t
+{
+  uint32_t checksum = 0;
+  for (size_t i = offset::COUNTER; i < PACKET_SIZE; ++i) {
+    checksum += readRawByte(buffer, i);
+  }
+  return static_cast<uint8_t>(checksum & 0xFF);
+}
+
+template <typename BufferT>
+inline auto validatePacket(const BufferT & buffer) -> PacketValidationResult
+{
+  PacketValidationResult result;
+  result.size_valid = buffer.size() == PACKET_SIZE;
+  if (!result.size_valid) {
+    return result;
+  }
+
+  result.sync_valid = readRawByte(buffer, offset::SYNC_0) == SYNC_0_VALUE &&
+                      readRawByte(buffer, offset::SYNC_1) == SYNC_1_VALUE;
+  result.checksum_valid = readRawByte(buffer, offset::CHECKSUM) == computeChecksum(buffer);
+  return result;
+}
 
 // バッファ読み取りヘルパー関数 (std::memcpyを使用)
 inline auto readFloat(const std::vector<uint8_t> & buffer, int offset) -> float
@@ -155,6 +207,28 @@ struct RobotFeedback
   std::array<float, 2> mouse_vel = {0.0f, 0.0f};
 
   std::array<float, 2> voltage = {0.0f, 0.0f};
+
+  float feedback_age_ms = 0.0f;
+
+  uint32_t valid_packet_count = 0;
+
+  uint32_t invalid_packet_count = 0;
+
+  uint32_t sync_error_count = 0;
+
+  uint32_t checksum_error_count = 0;
+
+  uint32_t size_mismatch_count = 0;
+
+  uint32_t counter_jump_count = 0;
+
+  uint8_t camera_pos_x_div2 = 0;
+
+  uint8_t camera_pos_y = 0;
+
+  uint8_t camera_radius_div4 = 0;
+
+  uint8_t camera_fps = 0;
 
   uint8_t check_ver = 0;
 

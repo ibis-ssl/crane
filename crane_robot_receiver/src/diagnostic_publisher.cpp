@@ -79,14 +79,16 @@ auto RobotData::initializeDiagnostics(
 
   // 通信状態の診断
   updater->add(
-    diagnostic_prefix + "communication", [this, node, world_model, sim_mode, latest_ping_msg](
-                                           diagnostic_updater::DiagnosticStatusWrapper & stat) {
+    diagnostic_prefix + "communication",
+    [this, node, world_model, sim_mode, latest_ping_msg,
+     latest_feedback_msg](diagnostic_updater::DiagnosticStatusWrapper & stat) {
       if (!isRobotDetected(*world_model)) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
         removeError("communication");
         return;
       }
-      communicationDiagnosticCallback(stat, *latest_ping_msg, node->now(), sim_mode);
+      communicationDiagnosticCallback(
+        stat, *latest_ping_msg, *latest_feedback_msg, node->now(), sim_mode);
     });
 
   // バッテリー状態の診断
@@ -122,27 +124,62 @@ auto RobotData::initializeDiagnostics(
 
 auto RobotData::communicationDiagnosticCallback(
   diagnostic_updater::DiagnosticStatusWrapper & stat,
-  const crane_msgs::msg::PingStatusArray & ping_msg, const rclcpp::Time & now_time, bool sim_mode)
-  -> void
+  const crane_msgs::msg::PingStatusArray & ping_msg,
+  const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
+  bool sim_mode) -> void
 {
   auto ping = ranges::find_if(ping_msg.ping, [this](const crane_msgs::msg::PingStatus & msg) {
     return msg.robot_id == robot_id;
   });
+  auto feedback = ranges::find_if(
+    feedback_msg.feedback,
+    [this](const crane_msgs::msg::RobotFeedback & msg) { return msg.robot_id == robot_id; });
+
+  constexpr double FEEDBACK_WARN_AGE_MS = 100.0;
+  constexpr double FEEDBACK_ERROR_AGE_MS = 250.0;
+  constexpr double FEEDBACK_WARN_RATE_HZ = 20.0;
+  constexpr double FEEDBACK_ERROR_RATE_HZ = 5.0;
+
+  if (feedback != feedback_msg.feedback.end()) {
+    std::string message = "Robot feedback healthy";
+    int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+
+    if (
+      feedback->feedback_age_ms > FEEDBACK_ERROR_AGE_MS ||
+      feedback->packet_frequency_hz < FEEDBACK_ERROR_RATE_HZ) {
+      message = "Robot feedback degraded";
+      level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+    } else if (
+      feedback->feedback_age_ms > FEEDBACK_WARN_AGE_MS ||
+      feedback->packet_frequency_hz < FEEDBACK_WARN_RATE_HZ) {
+      message = "Robot feedback warning";
+      level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
+    }
+
+    stat.summary(level, message);
+    stat.add("feedback_age_ms", feedback->feedback_age_ms);
+    stat.add("feedback_packet_frequency_hz", feedback->packet_frequency_hz);
+    stat.add("feedback_valid_packet_count", feedback->valid_packet_count);
+    stat.add("feedback_invalid_packet_count", feedback->invalid_packet_count);
+    stat.add("feedback_sync_error_count", feedback->sync_error_count);
+    stat.add("feedback_checksum_error_count", feedback->checksum_error_count);
+    stat.add("feedback_size_mismatch_count", feedback->size_mismatch_count);
+    stat.add("feedback_counter_jump_count", feedback->counter_jump_count);
+    if (ping != ping_msg.ping.end()) {
+      stat.add("ping_ms", ping->ping_ms);
+    }
+
+    if (level > 0) {
+      updateErrorMap("communication", message, level, now_time);
+    } else {
+      removeError("communication");
+    }
+    return;
+  }
 
   if (ping != ping_msg.ping.end()) {
-    std::string message;
-    int level;
-
-    if (ping->ping_ms > 50.0) {
-      message = "Ping time high";
-      level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-    } else if (ping->ping_ms > 10.0) {
-      message = "Communication latency medium";
-      level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
-    } else {
-      message = "Communication OK";
-      level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-    }
+    std::string message = "Ping available, robot feedback missing";
+    int level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
 
     stat.summary(level, message);
     stat.add("ping_ms", ping->ping_ms);
@@ -162,7 +199,7 @@ auto RobotData::communicationDiagnosticCallback(
       removeError("communication");
     } else {
       // 実機環境ではERROR
-      std::string message = "No ping data received";
+      std::string message = "No robot telemetry received";
       int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
       stat.summary(level, message);
       updateErrorMap("communication", message, level, now_time);
