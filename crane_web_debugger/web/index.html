@@ -199,6 +199,7 @@
         </h2>
         <div class="tool-grid">
             <a href="/viewer.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="viewer-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon">map</span>
                 <div class="tool-card__title">Main Viewer</div>
                 <div class="tool-card__desc">
@@ -213,6 +214,7 @@
             </a>
 
             <a href="/robot_telemetry.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="telemetry-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon">show_chart</span>
                 <div class="tool-card__title">Robot Telemetry</div>
                 <div class="tool-card__desc">
@@ -227,6 +229,7 @@
             </a>
 
             <a href="/annotation/index.html" class="tool-card">
+                <span class="m3-badge m3-badge--success tool-card__badge">offline対応</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sticky_note_2</span>
                 <div class="tool-card__title">Annotation Tool</div>
                 <div class="tool-card__desc">
@@ -240,7 +243,8 @@
                 </ul>
             </a>
 
-            <a href="/robot_manager.html" class="tool-card">
+            <a href="#" target="_blank" class="tool-card" id="robot-manager-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="robot-manager-status">checking...</span>
                 <span class="material-symbols-outlined tool-card__icon">memory</span>
                 <div class="tool-card__title">Robot Manager</div>
                 <div class="tool-card__desc">
@@ -250,11 +254,12 @@
                     <li><span class="material-symbols-outlined">check</span> Real-time battery & temperature monitoring</li>
                     <li><span class="material-symbols-outlined">check</span> Error state details</li>
                     <li><span class="material-symbols-outlined">check</span> Pi start/stop control</li>
-                    <li><span class="material-symbols-outlined">check</span> Ping & communication quality</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8092 (Orion_CM4)</li>
                 </ul>
             </a>
 
             <a href="/robot_test.html" class="tool-card">
+                <span class="m3-badge tool-card__badge" id="robot-test-crane-badge">crane: offline</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">precision_manufacturing</span>
                 <div class="tool-card__title">Robot Test</div>
                 <div class="tool-card__desc">
@@ -327,18 +332,18 @@
             Analysis & Calibration
         </h2>
         <div class="tool-grid" style="padding-bottom: var(--md-sys-spacing-lg);">
-            <a href="/ball-calibration/" class="tool-card" id="ball-calibration-card">
-                <span class="m3-badge m3-badge--success tool-card__badge" id="ball-calibration-status">integrated</span>
+            <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
+                <span class="m3-badge m3-badge--secondary tool-card__badge" id="ball-calibration-status">checking...</span>
                 <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sports_soccer</span>
                 <div class="tool-card__title">Ball Calibration UI</div>
                 <div class="tool-card__desc">
-                    Interactive ball physics model parameter optimization (Human-in-the-Loop)
+                    Interactive ball physics model parameter optimization (mcap input, Human-in-the-Loop)
                 </div>
                 <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Trajectory data loading & visualization</li>
+                    <li><span class="material-symbols-outlined">check</span> mcap rosbag direct upload</li>
                     <li><span class="material-symbols-outlined">check</span> Auto deceleration parameter optimization</li>
                     <li><span class="material-symbols-outlined">check</span> Real-time prediction trajectory preview</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Path: /ball-calibration/</li>
+                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8093</li>
                 </ul>
             </a>
 
@@ -363,28 +368,53 @@
         const host = window.location.hostname;
 
         const EXTERNAL_TOOLS = [
-            { id: 'game-controller', url: `http://${host}:8081` },
-            { id: 'vision-client',   url: `http://${host}:8082` },
-            { id: 'status-board',    url: `http://${host}:8083` },
+            { id: 'game-controller',   url: `http://${host}:8081` },
+            { id: 'vision-client',     url: `http://${host}:8082` },
+            { id: 'status-board',      url: `http://${host}:8083` },
+            { id: 'robot-manager',     url: `http://${host}:8092` },
+            { id: 'ball-calibration',  url: `http://${host}:8093` },
             { id: 'foxglove',
               url: `https://app.foxglove.dev/?ds=foxglove-websocket&ds.url=ws://${host}:8765`,
               checkUrl: `http://${host}:8765` },
         ];
 
-        function checkConnection() {
-            const ws = new WebSocket(`ws://${host}:8091`);
+        const CRANE_DEPENDENT_BADGES = [
+            'viewer-crane-badge',
+            'telemetry-crane-badge',
+            'robot-test-crane-badge',
+        ];
+
+        function setCraneStatus(connected) {
             const dot = document.getElementById('connection-dot');
             const text = document.getElementById('status-text');
+            dot.classList.toggle('connected', connected);
+            text.textContent = connected
+                ? `WebSocket connected (${host}:8091)`
+                : 'WebSocket disconnected';
+            CRANE_DEPENDENT_BADGES.forEach(id => {
+                const badge = document.getElementById(id);
+                if (!badge) return;
+                if (connected) {
+                    badge.textContent = 'crane: online';
+                    badge.className = 'm3-badge m3-badge--success tool-card__badge';
+                } else {
+                    badge.textContent = 'crane: offline';
+                    badge.className = 'm3-badge m3-badge--error tool-card__badge';
+                }
+            });
+        }
+
+        function checkConnection() {
+            const ws = new WebSocket(`ws://${host}:8091`);
 
             ws.onopen = () => {
-                dot.classList.add('connected');
-                text.textContent = `WebSocket connected (${host}:8091)`;
+                setCraneStatus(true);
                 ws.close();
             };
 
-            ws.onerror = () => {
-                dot.classList.remove('connected');
-                text.textContent = 'WebSocket disconnected';
+            ws.onerror = () => setCraneStatus(false);
+            ws.onclose = () => {
+                // Schedule next check (only if it never opened)
             };
         }
 
@@ -423,6 +453,7 @@
         setupExternalToolLinks();
         checkAllExternalTools();
         setInterval(checkAllExternalTools, 30000);
+        setInterval(checkConnection, 10000);
     </script>
 </body>
 </html>

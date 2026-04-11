@@ -1,11 +1,17 @@
-version: "3.1"
 services:
-  grsim:
-    image: ghcr.io/ssl-roots/docker_images/grsim:main
-    container_name: grsim
+  erforce-sim:
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    container_name: erforce-sim
     network_mode: host
-    command: |
-      grSim --headless -platform offscreen
+    entrypoint: ["tini", "--"]
+    command: >
+      ./build/bin/simulator-cli
+      -g 2020B
+      --realism None
+      --ibis-use-referee
+      --ibis-feedback-team-name ibis
+      --ibis-feedback-hz 125
+      --ibis-referee-port 11003
     tty: true
     stdin_open: true
     restart: "no"

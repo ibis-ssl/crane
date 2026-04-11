@@ -51,24 +51,33 @@ public:
    * @brief 現在アクティブな全プランナーを取得
    * @return プランナーリスト（読み取り専用）
    */
-  auto getAllPlanners() const -> const std::vector<SessionBase::SharedPtr> &;
+  auto getAllPlanners() const -> const std::vector<SessionBase::SharedPtr> &
+  {
+    return active_sessions_;
+  }
 
   /**
    * @brief プランナーを追加
    * @param session 追加するプランナー
    */
-  auto addPlanner(const SessionBase::SharedPtr & session) -> void;
+  auto addPlanner(const SessionBase::SharedPtr & session) -> void
+  {
+    active_sessions_.push_back(session);
+  }
 
   /**
    * @brief 全プランナーをクリア
    */
-  auto clear() -> void;
+  auto clear() -> void { active_sessions_.clear(); }
 
   /**
    * @brief プランナーリストを置き換え
    * @param tactics 新しいプランナーリスト
    */
-  auto setPlanners(const std::vector<SessionBase::SharedPtr> & tactics) -> void;
+  auto setPlanners(const std::vector<SessionBase::SharedPtr> & tactics) -> void
+  {
+    active_sessions_ = tactics;
+  }
 
 private:
   // 現在アクティブなプランナーのリスト

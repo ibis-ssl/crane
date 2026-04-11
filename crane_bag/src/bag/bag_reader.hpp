@@ -6,20 +6,14 @@
 
 #pragma once
 
-#include <chrono>
-#include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/play_situation.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
-#include <crane_msgs/msg/robot_select_results.hpp>
-#include <crane_msgs/msg/world_model.hpp>
 #include <limits>
 #include <map>
 #include <optional>
-#include <rcl_interfaces/msg/log.hpp>
-#include <robocup_ssl_msgs/msg/referee.hpp>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "bag_types.hpp"
 
 namespace crane::bag
 {
@@ -39,9 +33,9 @@ struct TimestampedMsg
 struct BagInfo
 {
   std::string path;
-  double duration_sec;
-  int64_t start_time_ns;
-  int64_t end_time_ns;
+  double duration_sec = 0.0;
+  int64_t start_time_ns = 0;
+  int64_t end_time_ns = 0;
   std::map<std::string, size_t> topic_counts;
   std::map<std::string, std::string> topic_types;
 };
@@ -49,14 +43,14 @@ struct BagInfo
 struct BagData
 {
   BagInfo info;
-  std::vector<TimestampedMsg<crane_msgs::msg::PlaySituation>> play_situations;
-  std::vector<TimestampedMsg<crane_msgs::msg::WorldModel>> world_models;
-  std::vector<TimestampedMsg<crane_msgs::msg::RobotCommands>> control_targets;
-  std::vector<TimestampedMsg<crane_msgs::msg::RobotCommands>> robot_commands;
-  std::vector<TimestampedMsg<crane_msgs::msg::GameAnalysis>> game_analyses;
-  std::vector<TimestampedMsg<crane_msgs::msg::RobotSelectResults>> robot_select_results;
-  std::vector<TimestampedMsg<rcl_interfaces::msg::Log>> rosout;
-  std::vector<TimestampedMsg<robocup_ssl_msgs::msg::Referee>> referees;
+  std::vector<TimestampedMsg<PlaySituation>> play_situations;
+  std::vector<TimestampedMsg<WorldModel>> world_models;
+  std::vector<TimestampedMsg<RobotCommands>> control_targets;
+  std::vector<TimestampedMsg<RobotCommands>> robot_commands;
+  std::vector<TimestampedMsg<GameAnalysis>> game_analyses;
+  std::vector<TimestampedMsg<RobotSelectResults>> robot_select_results;
+  std::vector<TimestampedMsg<LogMessage>> rosout;
+  std::vector<TimestampedMsg<Referee>> referees;
 
   /// 指定間隔でサンプリングしたポインタ列を返す
   template <typename MsgT>
@@ -65,7 +59,7 @@ struct BagData
   {
     std::vector<const TimestampedMsg<MsgT> *> result;
     int64_t interval_ns = static_cast<int64_t>(interval_sec * 1e9);
-    int64_t last_ns = 0;  // タイムスタンプはエポックからのns（>>0）なので最初は必ず通過
+    int64_t last_ns = 0;
     for (const auto & m : msgs) {
       if (m.timestamp_ns - last_ns >= interval_ns) {
         result.push_back(&m);

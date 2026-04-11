@@ -13,6 +13,7 @@
 #include <range/v3/view/join.hpp>
 #include <range/v3/view/transform.hpp>
 #include <sstream>
+#include <unordered_set>
 
 namespace crane
 {
@@ -20,10 +21,7 @@ namespace crane
 RobotAllocator::RobotAllocator(
   std::shared_ptr<ConfigurationManager> config_manager,
   std::shared_ptr<SessionRegistry> tactic_registry, rclcpp::Logger logger)
-: config_manager_(config_manager),
-  session_registry_(tactic_registry),
-  logger_(logger),
-  global_allocator_(std::make_unique<GlobalRobotAllocator>(logger))
+: config_manager_(config_manager), session_registry_(tactic_registry), logger_(logger)
 {
 }
 
@@ -74,8 +72,8 @@ auto RobotAllocator::allocate(
       suitability_func);
   }
 
-  // GlobalRobotAllocatorで割当を実行
-  auto allocation = global_allocator_->allocate(
+  // グリーディ方式でロボットを割当
+  auto allocation = allocateRobotsGreedy(
     requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
 
   // 割当結果を適用
@@ -199,6 +197,80 @@ auto RobotAllocator::logAssignmentIfChanged(const std::string & current_assignme
     }
     prev_assignment_log_ = current_assignment;
   }
+}
+
+auto RobotAllocator::allocateRobotsGreedy(
+  const std::vector<SessionRequirement> & requirements,
+  const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
+  const AllocationState & prev_state, const AllocationCostConfig & config)
+  -> std::unordered_map<std::string, std::vector<uint8_t>>
+{
+  std::unordered_map<std::string, std::vector<uint8_t>> result;
+
+  if (available_robots.empty()) {
+    RCLCPP_WARN(logger_, "利用可能なロボットがありません");
+    return result;
+  }
+
+  auto sorted_requirements = requirements;
+  std::ranges::sort(
+    sorted_requirements, [](const auto & a, const auto & b) { return a.priority < b.priority; });
+
+  auto remaining_robots = available_robots;
+
+  for (const auto & req : sorted_requirements) {
+    if (remaining_robots.empty()) {
+      RCLCPP_WARN(logger_, "Session「%s」に割り当てるロボットが不足しています", req.name.c_str());
+      break;
+    }
+
+    // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
+    std::vector<std::pair<uint8_t, double>> robot_scores;
+    for (const auto & robot_id : remaining_robots) {
+      auto robot = world_model->getOurRobot(robot_id);
+      double score = req.suitability_func(robot);
+      if (prev_state.wasAssignedTo(robot_id, req.name)) {
+        score -= config.hysteresis_bonus;
+      }
+      robot_scores.emplace_back(robot_id, score);
+    }
+
+    std::ranges::sort(
+      robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
+
+    int num_to_allocate = std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
+
+    std::vector<uint8_t> assigned_robots;
+    for (int i = 0; i < num_to_allocate; ++i) {
+      assigned_robots.push_back(robot_scores[i].first);
+    }
+
+    result[req.name] = assigned_robots;
+
+    const std::unordered_set<uint8_t> assigned_set(assigned_robots.begin(), assigned_robots.end());
+    std::erase_if(
+      remaining_robots, [&assigned_set](uint8_t id) { return assigned_set.count(id) > 0; });
+
+    RCLCPP_DEBUG_STREAM(
+      logger_, "Session「" << req.name << "」に" << assigned_robots.size()
+                           << "ロボットを割り当て: " << assigned_robots);
+  }
+
+  if (!remaining_robots.empty()) {
+    RCLCPP_WARN(
+      logger_, "%zu台のロボットがどのセッションにも割り当てられませんでした: %s",
+      remaining_robots.size(),
+      [&]() {
+        std::string ids;
+        for (auto id : remaining_robots) {
+          ids += std::to_string(id) + " ";
+        }
+        return ids;
+      }()
+        .c_str());
+  }
+
+  return result;
 }
 
 }  // namespace crane

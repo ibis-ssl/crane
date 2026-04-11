@@ -2,21 +2,17 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_bag</name>
-  <version>1.0.300</version>
-  <description>C++ Rosbag解析CLIツール</description>
+  <version>1.0.321</version>
+  <description>C++ Rosbag解析CLIツール（mcap埋め込みメッセージ定義を使った動的デシリアライズ）</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>crane_msg_wrappers</depend>
-  <depend>crane_msgs</depend>
-  <depend>crane_robot_skills</depend>
-  <depend>libgoogle-glog-dev</depend>
+  <depend>magic_enum</depend>
+  <depend>mcap_vendor</depend>
   <depend>nlohmann-json-dev</depend>
-  <depend>robocup_ssl_msgs</depend>
-  <depend>rosbag2_cpp</depend>
-  <depend>rosidl_runtime_cpp</depend>
+  <depend>rosx_introspection</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ball Calibration UI - ibis-ssl</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .drop-zone {
+      border: 2px dashed #2d4a7a;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      background-color: #0f2744;
+    }
+    .drop-zone.dragover {
+      border-color: #533483;
+      background-color: #1e3a5f;
+    }
+    .drop-zone i {
+      font-size: 2rem;
+      color: #2d4a7a;
+      margin-bottom: 0.5rem;
+    }
+    .drop-zone.dragover i {
+      color: #533483;
+    }
+    .upload-progress {
+      height: 4px;
+      background-color: #2d4a7a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      background-color: #533483;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<nav class="navbar navbar-dark navbar-custom">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-bold">
+      <i class="fas fa-futbol me-2"></i>Ball Calibration UI
+    </span>
+    <span class="text-light small opacity-75">ibis-ssl / Human-in-the-Loop パラメータ最適化</span>
+  </div>
+</nav>
+
+<div class="container-fluid py-3">
+  <!-- タブナビゲーション -->
+  <ul class="nav nav-tabs mb-3" id="mainTabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#tab-data">
+        <i class="fas fa-folder-open me-1"></i>データ読込 &amp; 選択
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-optimize">
+        <i class="fas fa-sliders me-1"></i>最適化 &amp; 調整
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-verify">
+        <i class="fas fa-chart-line me-1"></i>可視化 &amp; 検証
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-export">
+        <i class="fas fa-file-export me-1"></i>エクスポート
+      </a>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ===== タブ1: データ読込 & 選択 ===== -->
+    <div class="tab-pane fade show active" id="tab-data">
+      <div class="row g-3">
+        <!-- 左: ファイル読み込み + 軌道テーブル -->
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-folder-open me-1"></i>mcap ファイルの読み込み
+            </div>
+            <div class="card-body">
+              <!-- パス直接指定（メイン） -->
+              <div class="mb-2">
+                <label class="form-label small fw-bold mb-1">ファイルパスを指定</label>
+                <div class="input-group">
+                  <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
+                    placeholder="/home/user/bags/calibration.mcap">
+                  <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
+                    <i class="fas fa-folder-open me-1"></i>読み込む
+                  </button>
+                </div>
+                <div class="form-text">コンテナからアクセスできるパスを指定 (/home 以下が参照可能)</div>
+              </div>
+
+              <!-- ファイルアップロード（サブオプション） -->
+              <div>
+                <a class="small text-muted" data-bs-toggle="collapse" href="#uploadCollapse" role="button">
+                  <i class="fas fa-upload me-1"></i>ファイルをアップロードする場合はこちら
+                </a>
+                <div class="collapse" id="uploadCollapse">
+                  <div class="mt-2">
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                      <div><i class="fas fa-cloud-upload-alt"></i></div>
+                      <div class="fw-bold mt-1">クリックまたはドラッグ&amp;ドロップ</div>
+                      <div class="text-muted small mt-1">対応形式: .mcap / .db3</div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".mcap,.db3" style="display:none" onchange="onFileSelected(this)">
+                    <div class="upload-progress mt-2 d-none" id="uploadProgress">
+                      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="loadStatus" class="mt-2 small text-muted"></div>
+            </div>
+          </div>
+
+          <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-list me-1"></i>軌道一覧</span>
+              <div>
+                <span id="trajectoryCount" class="badge bg-secondary me-2">0件</span>
+                <button class="btn btn-sm btn-outline-secondary me-1" onclick="selectAll(true)">全選択</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="selectAll(false)">全解除</button>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-dark sticky-top">
+                    <tr>
+                      <th style="width:40px"><input type="checkbox" id="checkAll" onchange="selectAll(this.checked)"></th>
+                      <th>Event ID</th>
+                      <th>Kick Power</th>
+                      <th>種類</th>
+                      <th>データ数</th>
+                      <th>継続時間 (s)</th>
+                      <th>最大速度 (m/s)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trajectoryTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右: プレビューチャート -->
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-header">
+              <i class="fas fa-chart-area me-1"></i>軌道プレビュー
+              <span id="previewEventId" class="badge bg-info ms-2 d-none"></span>
+            </div>
+            <div class="card-body">
+              <div id="previewXY" style="height: 220px;"></div>
+              <div id="previewVT" style="height: 220px; margin-top: 8px;"></div>
+              <div id="previewEmpty" class="text-center text-muted py-5">
+                <i class="fas fa-mouse-pointer fa-2x mb-2 d-block"></i>
+                軌道を選択するとプレビューが表示されます
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== タブ2: 最適化 & 調整 ===== -->
+    <div class="tab-pane fade" id="tab-optimize">
+      <div class="row g-3">
+        <!-- 最適化設定パネル -->
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-cog me-1"></i>最適化パラメータ</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">最小軌道継続時間 (s)</label>
+                <input type="number" id="cfgMinDuration" class="form-control form-control-sm"
+                  value="0.5" min="0.1" max="5.0" step="0.1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-bold">最小R²閾値</label>
+                <input type="number" id="cfgMinR2" class="form-control form-control-sm"
+                  value="0.6" min="0.0" max="1.0" step="0.05">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-bold">最小データ点数</label>
+                <input type="number" id="cfgMinPoints" class="form-control form-control-sm"
+                  value="10" min="3" max="100" step="1">
+              </div>
+              <button class="btn btn-primary w-100" onclick="runOptimization()" id="optimizeBtn">
+                <i class="fas fa-play me-1"></i>最適化実行
+              </button>
+              <div id="optimizeSpinner" class="text-center mt-2 d-none">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <span class="ms-2 small">最適化中...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最適化結果サマリー -->
+          <div class="card mt-3" id="resultSummaryCard" style="display:none!important;">
+            <div class="card-header"><i class="fas fa-check-circle text-success me-1"></i>最適化結果</div>
+            <div class="card-body">
+              <div class="row g-2 text-center">
+                <div class="col-6">
+                  <div class="stat-card">
+                    <div class="stat-value" id="resultDecel">-</div>
+                    <div class="stat-label">減速度 (m/s²)</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="stat-card">
+                    <div class="stat-value" id="resultRMSE">-</div>
+                    <div class="stat-label">RMSE</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="stat-card">
+                    <div class="stat-value" id="resultR2">-</div>
+                    <div class="stat-label">R²</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="stat-card">
+                    <div class="stat-value" id="resultUsed">-</div>
+                    <div class="stat-label">有効軌道</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手動調整パネル -->
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-hand-pointer me-1"></i>手動パラメータ調整</div>
+            <div class="card-body">
+              <div class="mb-4">
+                <label class="form-label fw-bold">
+                  転がり減速度 (deceleration):
+                  <span id="decelValue" class="badge bg-primary ms-1">0.70</span> m/s²
+                </label>
+                <input type="range" class="form-range" id="decelSlider"
+                  min="0.10" max="2.00" step="0.01" value="0.70"
+                  oninput="onDecelChange(this.value)">
+                <div class="d-flex justify-content-between small text-muted">
+                  <span>0.10</span><span>2.00</span>
+                </div>
+              </div>
+
+              <hr>
+
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">キックパワー-速度マッピング (手動上書き)</h6>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="resetKickOverrides()">
+                    リセット
+                  </button>
+                </div>
+                <div id="kickMappingTable" class="text-muted small">
+                  最適化を実行するとマッピングが表示されます
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== タブ3: 可視化 & 検証 ===== -->
+    <div class="tab-pane fade" id="tab-verify">
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-chart-line me-1"></i>速度 - 時間グラフ (実測 vs 予測)
+            </div>
+            <div class="card-body">
+              <div id="vtChart" style="height: 380px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-dot-circle me-1"></i>キックパワー vs 初速度
+            </div>
+            <div class="card-body">
+              <div id="powerVelocityChart" style="height: 380px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-table me-1"></i>軌道別精度</div>
+            <div class="card-body p-0">
+              <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-dark sticky-top">
+                    <tr>
+                      <th>Event ID</th>
+                      <th>Kick Power</th>
+                      <th>推定初速度 (m/s)</th>
+                      <th>R²</th>
+                      <th>継続時間 (s)</th>
+                      <th>信頼区間 (95%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accuracyTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== タブ4: エクスポート ===== -->
+    <div class="tab-pane fade" id="tab-export">
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-file-code me-1"></i>エクスポート</div>
+            <div class="card-body">
+              <p class="small text-muted">
+                最適化結果を <code>calibrated_ball_physics.yaml</code> としてダウンロードします。
+              </p>
+              <button class="btn btn-success w-100 mb-2" onclick="downloadYaml()">
+                <i class="fas fa-download me-1"></i>YAMLをダウンロード
+              </button>
+              <button class="btn btn-outline-secondary w-100" onclick="refreshPreview()">
+                <i class="fas fa-sync me-1"></i>プレビュー更新
+              </button>
+              <div id="exportStatus" class="mt-2"></div>
+            </div>
+          </div>
+
+          <div class="card mt-3">
+            <div class="card-header"><i class="fas fa-rocket me-1"></i>launch用配列</div>
+            <div class="card-body">
+              <pre id="launchArrays" class="bg-dark text-light p-2 rounded small" style="font-size:11px;">-</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-header"><i class="fas fa-eye me-1"></i>YAMLプレビュー</div>
+            <div class="card-body p-0">
+              <textarea id="yamlPreview" class="form-control font-monospace border-0 rounded-0"
+                style="height: 500px; font-size: 12px; background: #1e1e1e; color: #d4d4d4;"
+                readonly placeholder="最適化を実行するとプレビューが表示されます"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+</div><!-- /container-fluid -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_visualization_interfaces</name>
-  <version>1.0.300</version>
-  <description>Message types for CON-SAI visualization</description>
+  <version>1.0.321</version>
+  <description>Message types and visualization builder/aggregator for crane SVG visualization</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
@@ -13,6 +13,9 @@
   <build_depend>rosidl_default_generators</build_depend>
 
   <depend>builtin_interfaces</depend>
+  <depend>crane_geometry</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
 
   <exec_depend>rosidl_default_runtime</exec_depend>

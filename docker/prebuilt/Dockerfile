@@ -21,5 +21,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 RUN cd .. && \
     source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release' && \
+    colcon build --cmake-args '-DCMAKE_BUILD_TYPE=Release' && \
+    rm -rf build/ log/ && \
     cd src && rm -rf * && mkdir crane

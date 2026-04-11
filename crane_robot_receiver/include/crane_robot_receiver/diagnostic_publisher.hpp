@@ -7,11 +7,11 @@
 #ifndef CRANE_ROBOT_RECEIVER__DIAGNOSTIC_PUBLISHER_HPP_
 #define CRANE_ROBOT_RECEIVER__DIAGNOSTIC_PUBLISHER_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_errors.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <diagnostic_updater/publisher.hpp>

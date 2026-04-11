@@ -266,7 +266,7 @@
         <li><a href="/">
           <span class="material-symbols-outlined icon-sm">home</span>Portal
         </a></li>
-        <li><a href="/robot_manager.html">
+        <li><a href="#" id="robot-manager-nav-link">
           <span class="material-symbols-outlined icon-sm">tune</span>Robot Manager
         </a></li>
         <li><a href="/annotation/index.html">
@@ -275,6 +275,12 @@
       </ul>
     </div>
   </nav>
+
+  <!-- Offline banner -->
+  <div class="m3-offline-banner" id="offline-banner">
+    <span class="material-symbols-outlined">wifi_off</span>
+    crane WebSocket未接続 (port 8091) — craneが起動すると自動で再接続します
+  </div>
 
   <!-- Main layout -->
   <div class="main-container">
@@ -373,5 +379,9 @@
   </div>
 
   <script src="viewer.js"></script>
+  <script>
+    document.getElementById('robot-manager-nav-link').href =
+      `http://${window.location.hostname}:8092`;
+  </script>
 </body>
 </html>

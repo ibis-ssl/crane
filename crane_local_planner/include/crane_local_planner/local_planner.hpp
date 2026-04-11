@@ -8,11 +8,11 @@
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
 #include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/diagnostic_helper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
-#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -25,61 +25,6 @@
 namespace crane
 {
 
-struct KickPowerCalculator
-{
-private:
-  // KickerModel統合（すべてのキック計算用）
-  std::shared_ptr<KickerModel> kicker_model;
-
-public:
-  auto initialize(rclcpp::Node & node) -> void
-  {
-    // KickerModel初期化（YAML設定ファイルから読み込み）
-    node.declare_parameter<std::string>("kicker_physics_config", "");
-    std::string kicker_config_path = node.get_parameter("kicker_physics_config").as_string();
-
-    try {
-      if (!kicker_config_path.empty()) {
-        // YAML設定ファイルからKickerModelを作成
-        kicker_model = createKickerModelFromYAML(kicker_config_path);
-        RCLCPP_INFO(
-          node.get_logger(), "KickerModel initialized from YAML: %s", kicker_config_path.c_str());
-      } else {
-        // デフォルト設定でKickerModelを作成
-        kicker_model = createDefaultKickerModel();
-        RCLCPP_INFO(node.get_logger(), "KickerModel initialized with default values");
-      }
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(node.get_logger(), "KickerModel initialization failed: %s", e.what());
-      throw std::runtime_error("Failed to initialize KickerModel: " + std::string(e.what()));
-    }
-  }
-
-  auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
-  {
-    if (not command.local_planner_config.kick_power_override) {
-      return command.kick_power;
-    }
-
-    // KickerModelを使用（必須）
-    if (!kicker_model) {
-      throw std::runtime_error("KickerModel is not initialized");
-    }
-
-    try {
-      if (command.chip_enable) {
-        return kicker_model->calculateChipKickPower(
-          command.local_planner_config.target_chip_distance);
-      } else {
-        return kicker_model->calculateStraightKickPower(
-          command.local_planner_config.target_kick_ball_speed);
-      }
-    } catch (const std::exception & e) {
-      throw std::runtime_error("KickerModel calculation failed: " + std::string(e.what()));
-    }
-  }
-};
-
 class LocalPlannerComponent : public rclcpp::Node
 {
 public:
@@ -87,12 +32,29 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options),
     commands_pub(this, "/robot_commands", 10, 50., 70.),
-    diagnostic_updater_(this)
+    diagnostic_helper_(
+      this, "local_planner", "local_planner/path_planning", this,
+      &LocalPlannerComponent::updateDiagnostics)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
 
-    kick_power_calculator.initialize(*this);
+    // KickerModel初期化（YAML設定ファイルから読み込み）
+    declare_parameter<std::string>("kicker_physics_config", "");
+    std::string kicker_config_path = get_parameter("kicker_physics_config").as_string();
+    try {
+      if (!kicker_config_path.empty()) {
+        kicker_model_ = createKickerModelFromYAML(kicker_config_path);
+        RCLCPP_INFO(
+          get_logger(), "KickerModel initialized from YAML: %s", kicker_config_path.c_str());
+      } else {
+        kicker_model_ = createDefaultKickerModel();
+        RCLCPP_INFO(get_logger(), "KickerModel initialized with default values");
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(get_logger(), "KickerModel initialization failed: %s", e.what());
+      throw std::runtime_error("Failed to initialize KickerModel: " + std::string(e.what()));
+    }
 
     crane::CraneVisualizerBuffer::activate(*this);
 
@@ -118,11 +80,6 @@ public:
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackPositionCommands, this, std::placeholders::_1));
-
-    // 診断Updater設定
-    diagnostic_updater_.setHardwareID("local_planner");
-    diagnostic_updater_.add(
-      "local_planner/path_planning", this, &LocalPlannerComponent::updateDiagnostics);
   }
 
   auto callbackPositionCommands(const crane_msgs::msg::RobotCommands &) -> void;
@@ -140,9 +97,9 @@ private:
 
   double theta_offset = 0.;
 
-  KickPowerCalculator kick_power_calculator;
+  std::shared_ptr<KickerModel> kicker_model_;
 
-  diagnostic_updater::Updater diagnostic_updater_;
+  DiagnosticHelper diagnostic_helper_;
 
   size_t dropped_command_count_last_cycle_ = 0;
   size_t dropped_command_count_total_ = 0;
@@ -151,6 +108,27 @@ private:
 
   auto aggregateStates(const std::vector<crane_msgs::msg::NamedString> & planning_factors) const
     -> std::string;
+
+  auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
+  {
+    if (not command.local_planner_config.kick_power_override) {
+      return command.kick_power;
+    }
+    if (!kicker_model_) {
+      throw std::runtime_error("KickerModel is not initialized");
+    }
+    try {
+      if (command.chip_enable) {
+        return kicker_model_->calculateChipKickPower(
+          command.local_planner_config.target_chip_distance);
+      } else {
+        return kicker_model_->calculateStraightKickPower(
+          command.local_planner_config.target_kick_ball_speed);
+      }
+    } catch (const std::exception & e) {
+      throw std::runtime_error("KickerModel calculation failed: " + std::string(e.what()));
+    }
+  }
 };
 
 }  // namespace crane

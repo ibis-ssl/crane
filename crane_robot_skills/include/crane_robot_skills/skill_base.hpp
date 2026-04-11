@@ -7,9 +7,9 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <format>
 #include <functional>
 #include <memory>

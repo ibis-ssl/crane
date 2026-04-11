@@ -7,11 +7,15 @@
 #include "bag_reader.hpp"
 
 #include <filesystem>
-#include <rclcpp/serialization.hpp>
-#include <rosbag2_cpp/reader.hpp>
-#include <rosbag2_storage/storage_filter.hpp>
-#include <rosbag2_storage/storage_options.hpp>
+#include <mcap/reader.hpp>
+#include <regex>
+#include <rosx_introspection/deserializer.hpp>
+#include <rosx_introspection/ros_parser.hpp>
+#include <rosx_introspection/ros_type.hpp>
+#include <stdexcept>
 #include <unordered_set>
+
+#include "msg_extractors.hpp"
 
 namespace crane::bag
 {
@@ -20,39 +24,27 @@ namespace
 {
 
 /// bag_path がディレクトリの場合、その中の .mcap ファイルを探して返す。
-std::string resolve_bag_uri(const std::string & bag_path)
+std::string resolve_mcap_path(const std::string & bag_path)
 {
   std::filesystem::path p(bag_path);
   if (std::filesystem::is_directory(p)) {
     for (const auto & entry : std::filesystem::directory_iterator(p)) {
       if (entry.path().extension() == ".mcap") {
-        return p.string();
+        return entry.path().string();
       }
     }
+    throw std::runtime_error("ディレクトリ内に .mcap ファイルが見つかりません: " + bag_path);
   }
   return bag_path;
 }
 
-rosbag2_storage::StorageOptions make_storage_options(const std::string & uri)
+/// mcap::Schema の data（ByteArray）を文字列に変換
+std::string schema_data_to_string(const mcap::Schema & schema)
 {
-  rosbag2_storage::StorageOptions opts;
-  opts.uri = uri;
-  return opts;
+  return std::string(reinterpret_cast<const char *>(schema.data.data()), schema.data.size());
 }
 
-template <typename MsgT>
-void deserialize_and_push(
-  const std::shared_ptr<rosbag2_storage::SerializedBagMessage> & bag_message,
-  std::vector<TimestampedMsg<MsgT>> & out)
-{
-  rclcpp::SerializedMessage serialized(*bag_message->serialized_data);
-  rclcpp::Serialization<MsgT> ser;
-  MsgT msg;
-  ser.deserialize_message(&serialized, &msg);
-  out.push_back({bag_message->recv_timestamp, std::move(msg)});
-}
-
-/// 対象トピックのセット（bag_reader.cpp 内で共有）
+/// 対象トピックのセット
 const std::unordered_set<std::string> & target_topics()
 {
   static const std::unordered_set<std::string> s = {
@@ -62,101 +54,144 @@ const std::unordered_set<std::string> & target_topics()
   return s;
 }
 
-/// BagMetadata からメタ情報を収集する共通処理
-BagInfo collect_bag_info(
-  const std::string & bag_path, const rosbag2_storage::BagMetadata & meta,
-  const std::vector<rosbag2_storage::TopicMetadata> & topic_types_vec)
+/// readSummary 済みの McapReader から BagInfo を構築する共通ロジック
+BagInfo populate_bag_info(const std::string & bag_path, const mcap::McapReader & reader)
 {
-  std::map<std::string, std::string> topic_types;
-  for (const auto & t : topic_types_vec) {
-    topic_types[t.name] = t.type;
+  BagInfo info;
+  info.path = bag_path;
+
+  const auto & stats = reader.statistics();
+  if (stats.has_value()) {
+    info.start_time_ns = static_cast<int64_t>(stats->messageStartTime);
+    int64_t end_ns = static_cast<int64_t>(stats->messageEndTime);
+    info.end_time_ns = end_ns;
+    info.duration_sec = static_cast<double>(end_ns - info.start_time_ns) / 1e9;
+    for (const auto & [ch_id, count] : stats->channelMessageCounts) {
+      auto ch_it = reader.channels().find(ch_id);
+      if (ch_it != reader.channels().end()) {
+        info.topic_counts[ch_it->second->topic] += count;
+      }
+    }
   }
 
-  std::map<std::string, size_t> topic_counts;
-  for (const auto & t : meta.topics_with_message_count) {
-    topic_counts[t.topic_metadata.name] = t.message_count;
+  for (const auto & [ch_id, ch] : reader.channels()) {
+    auto it = reader.schemas().find(ch->schemaId);
+    if (it != reader.schemas().end()) {
+      info.topic_types[ch->topic] = it->second->name;
+    }
   }
 
-  int64_t start_ns =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(meta.starting_time.time_since_epoch())
-      .count();
-  int64_t duration_ns = meta.duration.count();
-
-  return BagInfo{
-    bag_path,
-    static_cast<double>(duration_ns) / 1e9,
-    start_ns,
-    start_ns + duration_ns,
-    std::move(topic_counts),
-    std::move(topic_types),
-  };
+  return info;
 }
 
 }  // namespace
 
 BagInfo BagReader::read_info(const std::string & bag_path)
 {
-  std::string uri = resolve_bag_uri(bag_path);
-  rosbag2_cpp::Reader reader;
-  reader.open(make_storage_options(uri));
-  // get_metadata() はメッセージを読まずにメタデータYAMLから取得
-  return collect_bag_info(bag_path, reader.get_metadata(), reader.get_all_topics_and_types());
+  const std::string mcap_path = resolve_mcap_path(bag_path);
+
+  mcap::McapReader reader;
+  auto status = reader.open(mcap_path);
+  if (!status.ok()) {
+    throw std::runtime_error(
+      "mcapファイルを開けません: " + mcap_path + " (" + status.message + ")");
+  }
+
+  (void)reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
+  BagInfo info = populate_bag_info(bag_path, reader);
+  reader.close();
+  return info;
 }
 
 BagData BagReader::read(
   const std::string & bag_path, std::optional<std::pair<double, double>> time_range)
 {
-  std::string uri = resolve_bag_uri(bag_path);
+  const std::string mcap_path = resolve_mcap_path(bag_path);
 
-  // メタデータからBagInfoを取得（メッセージ読み込みなし）
-  rosbag2_cpp::Reader meta_reader;
-  meta_reader.open(make_storage_options(uri));
-  BagInfo bag_info =
-    collect_bag_info(bag_path, meta_reader.get_metadata(), meta_reader.get_all_topics_and_types());
-  // meta_reader はここでスコープを抜けてclose
-
-  // 時間範囲フィルタをストレージレベルで指定（読み込みループ外で制限）
-  auto storage_opts = make_storage_options(uri);
-  if (time_range) {
-    auto [ns_start, ns_end] = make_ns_range(bag_info.start_time_ns, time_range);
-    storage_opts.start_time_ns = ns_start;
-    storage_opts.end_time_ns = ns_end;
+  mcap::McapReader reader;
+  auto open_status = reader.open(mcap_path);
+  if (!open_status.ok()) {
+    throw std::runtime_error(
+      "mcapファイルを開けません: " + mcap_path + " (" + open_status.message + ")");
   }
 
-  rosbag2_cpp::Reader reader;
-  reader.open(storage_opts);
-
-  // トピックフィルタ（7トピック以外はストレージレベルでスキップ）
-  rosbag2_storage::StorageFilter filter;
-  filter.topics = std::vector<std::string>(target_topics().begin(), target_topics().end());
-  reader.set_filter(filter);
+  (void)reader.readSummary(mcap::ReadSummaryMethod::AllowFallbackScan);
 
   BagData data;
-  data.info = std::move(bag_info);
+  data.info = populate_bag_info(bag_path, reader);
 
-  // ワンパスで直接デシリアライズ（RawMsg バッファなし）
-  while (reader.has_next()) {
-    auto bag_msg = reader.read_next();
-    const auto & topic = bag_msg->topic_name;
-    if (topic == "/play_situation") {
-      deserialize_and_push(bag_msg, data.play_situations);
-    } else if (topic == "/world_model") {
-      deserialize_and_push(bag_msg, data.world_models);
-    } else if (topic == "/control_targets") {
-      deserialize_and_push(bag_msg, data.control_targets);
-    } else if (topic == "/robot_commands") {
-      deserialize_and_push(bag_msg, data.robot_commands);
-    } else if (topic == "/game_analysis") {
-      deserialize_and_push(bag_msg, data.game_analyses);
-    } else if (topic == "/robot_select_results") {
-      deserialize_and_push(bag_msg, data.robot_select_results);
-    } else if (topic == "/rosout") {
-      deserialize_and_push(bag_msg, data.rosout);
-    } else if (topic == "/referee") {
-      deserialize_and_push(bag_msg, data.referees);
+  // --- rosx_introspection パーサを構築 ---
+  // readSummary() のスキーマID対応は bagによっては不正確なため、
+  // メッセージイテレーション中に view.schema から直接登録する。
+  RosMsgParser::ParsersCollection<RosMsgParser::FastCDR_Deserializer> parsers;
+  std::unordered_set<std::string> registered_topics;
+
+  // --- 時間範囲フィルタを設定 ---
+  mcap::Timestamp start_ts = 0;
+  mcap::Timestamp end_ts = mcap::MaxTime;
+  if (time_range && data.info.start_time_ns != 0) {
+    int64_t bag_start = data.info.start_time_ns;
+    start_ts =
+      static_cast<mcap::Timestamp>(bag_start + static_cast<int64_t>(time_range->first * 1e9));
+    end_ts =
+      static_cast<mcap::Timestamp>(bag_start + static_cast<int64_t>(time_range->second * 1e9));
+  }
+
+  // --- メッセージをワンパスで読み込み ---
+  const auto & targets = target_topics();
+  for (const auto & view : reader.readMessages(start_ts, end_ts)) {
+    const std::string & topic = view.channel->topic;
+    if (targets.find(topic) == targets.end()) continue;
+
+    // 初回出現時にパーサを登録（view.schema はチャンネルに紐付く正確なスキーマ）
+    if (registered_topics.find(topic) == registered_topics.end()) {
+      if (view.schema && view.schema->encoding == "ros2msg") {
+        std::string definition = schema_data_to_string(*view.schema);
+        // rosx_introspection は bounded sequence 記法 [<=N] を isArray=false に誤パースする。
+        // [] (unbounded) に正規化して可変長シーケンスとして正しく扱わせる。
+        definition = std::regex_replace(definition, std::regex(R"(\[<=\d+\])"), "[]");
+        parsers.registerParser(topic, RosMsgParser::ROSType(view.schema->name), definition);
+        registered_topics.insert(topic);
+      }
+    }
+
+    const uint8_t * raw = reinterpret_cast<const uint8_t *>(view.message.data);
+    size_t raw_size = view.message.dataSize;
+    if (raw_size == 0) continue;
+
+    // FastCDR_Deserializer が DDS_CDR モードで encapsulation header（00 01 00 00）を
+    // 自前で読み込む。スキップせずそのまま渡す。
+    RosMsgParser::Span<const uint8_t> buf(raw, raw_size);
+
+    int64_t ts = static_cast<int64_t>(view.message.logTime);
+
+    try {
+      const RosMsgParser::FlatMessage * flat = parsers.deserialize(topic, buf);
+      if (!flat) continue;
+
+      if (topic == "/play_situation") {
+        data.play_situations.push_back({ts, extract_play_situation(*flat)});
+      } else if (topic == "/world_model") {
+        data.world_models.push_back({ts, extract_world_model(*flat)});
+      } else if (topic == "/control_targets") {
+        data.control_targets.push_back({ts, extract_robot_commands(*flat)});
+      } else if (topic == "/robot_commands") {
+        data.robot_commands.push_back({ts, extract_robot_commands(*flat)});
+      } else if (topic == "/game_analysis") {
+        data.game_analyses.push_back({ts, extract_game_analysis(*flat)});
+      } else if (topic == "/robot_select_results") {
+        data.robot_select_results.push_back({ts, extract_robot_select_results(*flat)});
+      } else if (topic == "/rosout") {
+        data.rosout.push_back({ts, extract_log_message(*flat)});
+      } else if (topic == "/referee") {
+        data.referees.push_back({ts, extract_referee(*flat)});
+      }
+    } catch (const std::exception &) {
+      // デシリアライズ失敗は静かにスキップ（古いbagでのフィールド不足等）
     }
   }
 
+  reader.close();
   return data;
 }
 

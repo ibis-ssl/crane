@@ -9,7 +9,7 @@
 
 #include <chrono>
 #include <crane_comm/diagnosed_publisher.hpp>
-#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_comm/diagnostic_helper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
@@ -18,8 +18,8 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_sessions/session_base.hpp>
+#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
-#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -29,9 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "command_aggregator.hpp"
 #include "configuration_manager.hpp"
-#include "diagnostics_reporter.hpp"
 #include "robot_allocator.hpp"
 #include "session_registry.hpp"
 #include "visibility_control.h"
@@ -54,17 +52,19 @@ private:
 
   auto onWorldModelUpdate() -> void;
 
+  auto collectCommands() -> crane_msgs::msg::RobotCommands;
+
   WorldModelWrapper::SharedPtr world_model;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
 
   std::shared_ptr<SessionRegistry> session_registry_;
 
-  std::unique_ptr<DiagnosticsReporter> diagnostics_reporter_;
-
-  std::unique_ptr<CommandAggregator> command_aggregator_;
-
   std::unique_ptr<RobotAllocator> robot_allocator_;
+
+  rclcpp::Time last_planning_time_;
+
+  int planning_count_ = 0;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
@@ -99,7 +99,7 @@ private:
   VisualizerMessageBuilder::SharedPtr visualizer =
     std::make_shared<VisualizerMessageBuilder>("coordinator");
 
-  diagnostic_updater::Updater diagnostic_updater_;
+  DiagnosticHelper diagnostic_helper_;
 
   std::string prev_session_name_;
 };

@@ -9,7 +9,6 @@
 
 #include <rvo2_vendor/RVO/RVO.h>
 
-#include <chrono>
 #include <crane_comm/parameter_with_event.hpp>
 #include <crane_msg_wrappers/velocity_plan_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -18,7 +17,6 @@
 #include <crane_physics/pid_controller.hpp>
 #include <memory>
 #include <optional>
-#include <unordered_map>
 
 #include "penalty_avoidance_helper.hpp"
 #include "planner_base.hpp"
@@ -179,19 +177,10 @@ private:
   double PENALTY_AREA_OFFSET = 0.1;       // ペナルティエリア判定マージン [m]（グローバル回避用）
   double PENALTY_AREA_OFFSET_STOP = 0.3;  // ペナルティエリア判定マージン [m]（STOP時）
   double PENALTY_AREA_SURROUNDING_OFFSET = 0.2;         // 角回避の余白 [m]
-  double PENALTY_AREA_SIDE_LOCK_SECONDS = 0.6;          // 回避側の固定時間 [s]
-  double PENALTY_AREA_SIDE_SWITCH_MARGIN = 0.25;        // 切替に必要な距離差 [m]
   bool PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING = true;  // 横断時に強制迂回
   float PENALTY_AREA_TIME_HORIZON_OBST = 0.5f;          // RVO2障害物回避の時間ホライズン [s]
 
   bool penalty_area_obstacles_initialized = false;
-
-  struct PenaltyBypassLockState
-  {
-    PenaltyBypassSide side = PenaltyBypassSide::TOP;
-    std::chrono::steady_clock::time_point expires_at = std::chrono::steady_clock::time_point::min();
-  };
-  mutable std::unordered_map<uint16_t, PenaltyBypassLockState> penalty_bypass_lock_states_;
 
   // 加速度は減速度の何倍にするかという係数
   ParameterWithEvent<double> acceleration_factor;

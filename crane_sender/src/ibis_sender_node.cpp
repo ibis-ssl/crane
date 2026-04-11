@@ -4,12 +4,15 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include <robocup_ssl_msgs/grSim_Commands.pb.h>
 #include <robocup_ssl_msgs/grSim_Packet.pb.h>
 #include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
 
 #include <array>
-#include <class_loader/visibility_control.hpp>
+#include <boost/asio.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -23,12 +26,20 @@
 
 #include "crane_comm/udp_sender.hpp"
 #include "crane_geometry/geometry_operations.hpp"
-#include "crane_sender/broadcast_command_sender.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
 namespace crane
 {
+
+// 通信設定の定数
+namespace CommConfig
+{
+constexpr int DEFAULT_PORT = 12345;
+constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
+constexpr int AI_CMD_V2_SIZE = 64;
+constexpr int AI_CMD_V2_ROBOT_NUM = 11;
+}  // namespace CommConfig
 
 // 送信パケット種別
 enum class PacketType { IBIS, SSL, GRSIM };
@@ -43,8 +54,10 @@ private:
 
   PacketType packet_type_{PacketType::IBIS};
 
-  // IBIS type
-  std::shared_ptr<BroadcastCommandSender> broadcast_sender_;
+  // IBIS type: ブロードキャスト送信用ソケット
+  boost::asio::io_service broadcast_io_service_;
+  boost::asio::ip::udp::endpoint broadcast_endpoint_;
+  boost::asio::ip::udp::socket broadcast_socket_;
 
   // SSL type
   std::unique_ptr<UDPSender> ssl_blue_sender_;
@@ -67,8 +80,10 @@ private:
   int counter_{0};
 
 public:
-  CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options)
+  : SenderBase("ibis_sender", options),
+    broadcast_socket_(
+      broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
@@ -125,7 +140,31 @@ public:
           packet_type_str.c_str());
       }
       packet_type_ = PacketType::IBIS;
-      broadcast_sender_ = std::make_shared<BroadcastCommandSender>(target_address, target_port);
+
+      try {
+        // ブロードキャスト許可フラグを設定
+        broadcast_socket_.set_option(boost::asio::socket_base::broadcast(true));
+        RCLCPP_INFO(get_logger(), "✓ SO_BROADCAST flag set");
+
+        broadcast_endpoint_ = boost::asio::ip::udp::endpoint(
+          boost::asio::ip::address::from_string(target_address), target_port);
+
+        // インターフェース情報の確認（デバッグ用）
+        checkNetworkInterfaces();
+
+        RCLCPP_INFO(get_logger(), "【Real Robot Broadcast Mode Initialized】");
+        RCLCPP_INFO(get_logger(), "  Target Address: %s:%d", target_address.c_str(), target_port);
+        RCLCPP_INFO(
+          get_logger(), "  Resolved Endpoint: %s:%d",
+          broadcast_endpoint_.address().to_string().c_str(), broadcast_endpoint_.port());
+        RCLCPP_INFO(
+          get_logger(), "  Local Socket: %s:%d",
+          broadcast_socket_.local_endpoint().address().to_string().c_str(),
+          broadcast_socket_.local_endpoint().port());
+      } catch (std::exception & e) {
+        RCLCPP_ERROR(get_logger(), "❌ Broadcast Socket Init Error: %s", e.what());
+      }
+
       RCLCPP_INFO(
         get_logger(), "ibis_sender_node started [packet_type=ibis] (%s:%d)", target_address.c_str(),
         target_port);
@@ -133,6 +172,55 @@ public:
   }
 
 private:
+  void checkNetworkInterfaces() const
+  {
+    struct ifaddrs * interfaces = nullptr;
+
+    RCLCPP_INFO(get_logger(), "🌐 Available Network Interfaces:");
+
+    if (getifaddrs(&interfaces) == -1) {
+      RCLCPP_ERROR(get_logger(), "❌ Failed to get network interface info");
+      return;
+    }
+
+    for (struct ifaddrs * ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+      if (ifa->ifa_addr == nullptr) continue;
+
+      // IPv4アドレスのみ表示
+      if (ifa->ifa_addr->sa_family == AF_INET) {
+        struct sockaddr_in * addr_in = reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr);
+        char ip_str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(addr_in->sin_addr), ip_str, INET_ADDRSTRLEN);
+
+        // ブロードキャストアドレス情報も取得
+        char broadcast_str[INET_ADDRSTRLEN] = "N/A";
+        if (ifa->ifa_flags & IFF_BROADCAST && ifa->ifa_broadaddr) {
+          struct sockaddr_in * broadcast_in =
+            reinterpret_cast<struct sockaddr_in *>(ifa->ifa_broadaddr);
+          inet_ntop(AF_INET, &(broadcast_in->sin_addr), broadcast_str, INET_ADDRSTRLEN);
+        }
+
+        std::string log_msg = "  Interface: " + std::string(ifa->ifa_name) +
+                              " IP: " + std::string(ip_str) +
+                              " Broadcast: " + std::string(broadcast_str);
+
+        // インターフェースの状態を表示
+        if (ifa->ifa_flags & IFF_UP) log_msg += " [UP]";
+        if (ifa->ifa_flags & IFF_RUNNING) log_msg += " [RUNNING]";
+        if (ifa->ifa_flags & IFF_BROADCAST) log_msg += " [BROADCAST]";
+
+        RCLCPP_INFO(get_logger(), "%s", log_msg.c_str());
+
+        // 設定されたブロードキャストアドレスとの照合
+        if (std::string(broadcast_str) == CommConfig::BROADCAST_ADDRESS) {
+          RCLCPP_INFO(get_logger(), "    ✅ Matches configured broadcast address!");
+        }
+      }
+    }
+
+    freeifaddrs(interfaces);
+  }
+
   // IBIS バイナリパケット生成
   RobotCommandV2 createRobotPacket(
     const crane_msgs::msg::RobotCommand & command, int counter,
@@ -360,7 +448,24 @@ private:
       }
     }
 
-    broadcast_sender_->sendBroadcastPackets(robot_packets, counter_);
+    // パケット組み立て
+    char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
+    for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
+      int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
+      broadcast_buf[offset] = static_cast<char>(i);
+      memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
+    }
+
+    // パケット送信
+    try {
+      broadcast_socket_.send_to(boost::asio::buffer(broadcast_buf), broadcast_endpoint_);
+    } catch (boost::system::system_error & e) {
+      RCLCPP_ERROR(get_logger(), "❌ Packet Send Error (boost): %s", e.what());
+      RCLCPP_ERROR(get_logger(), "  Error Code: %d", e.code().value());
+      RCLCPP_ERROR(get_logger(), "  Error Message: %s", e.code().message().c_str());
+    } catch (std::exception & e) {
+      RCLCPP_ERROR(get_logger(), "❌ Packet Send Exception: %s", e.what());
+    }
   }
 
 public:

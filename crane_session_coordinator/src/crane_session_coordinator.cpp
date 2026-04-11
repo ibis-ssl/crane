@@ -33,7 +33,9 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   position_commands_pub(this, "/control_targets", 1, 50., 70.),
   robot_select_results_pub(
     create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10)),
-  diagnostic_updater_(this)
+  diagnostic_helper_(
+    this, "session_controller", "ai_planner/planning_cycle", this,
+    &SessionCoordinatorComponent::updateDiagnostics)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -49,12 +51,7 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   // プランナー管理の初期化
   session_registry_ = std::make_shared<SessionRegistry>();
 
-  // 診断レポーターの初期化
-  diagnostics_reporter_ =
-    std::make_unique<DiagnosticsReporter>(get_clock(), session_registry_, get_logger());
-
-  // コマンドアグリゲーターの初期化
-  command_aggregator_ = std::make_unique<CommandAggregator>(session_registry_);
+  last_planning_time_ = get_clock()->now();
 
   // ロボット割当マネージャーの初期化
   robot_allocator_ =
@@ -102,11 +99,6 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
         get_logger(), "Received game_analysis: recommended_attacker_id=%d",
         latest_game_analysis_.recommended_attacker_id);
     });
-
-  // 診断Updater設定
-  diagnostic_updater_.setHardwareID("session_controller");
-  diagnostic_updater_.add(
-    "ai_planner/planning_cycle", this, &SessionCoordinatorComponent::updateDiagnostics);
 }
 
 auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
@@ -181,21 +173,88 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
   }
 
   // コマンド収集と構築
-  auto msg = command_aggregator_->collectCommands(world_model, now(), latest_game_analysis_);
+  auto msg = collectCommands();
 
   position_commands_pub.publish(msg);
   visualizer->flush();
   CraneVisualizerBuffer::publish();
 
   // 診断情報を更新
-  diagnostics_reporter_->recordCycle();
-  diagnostic_updater_.force_update();
+  planning_count_++;
+  last_planning_time_ = now();
+  diagnostic_helper_.forceUpdate();
 }
 
 auto SessionCoordinatorComponent::updateDiagnostics(
   diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
 {
-  diagnostics_reporter_->updateDiagnostics(stat, world_model_ready, world_model);
+  if (!world_model_ready) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::WARN, "Waiting for world model to be ready");
+    return;
+  }
+
+  auto time_since_last_planning = (now() - last_planning_time_).seconds();
+
+  if (time_since_last_planning > 1.0) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planning not running (no update for >1s)");
+  } else if (time_since_last_planning > 0.5) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::WARN,
+      "Planning update slow (>0.5s since last update)");
+  } else {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Planning is running normally");
+  }
+
+  stat.add("time_since_last_planning", time_since_last_planning);
+  stat.add("planning_count", planning_count_);
+  stat.add("active_planners", static_cast<int>(session_registry_->getAllPlanners().size()));
+  stat.add(
+    "available_robots",
+    static_cast<int>(world_model->ours().robotsWhere().available().getIds().size()));
+}
+
+auto SessionCoordinatorComponent::collectCommands() -> crane_msgs::msg::RobotCommands
+{
+  crane_msgs::msg::RobotCommands msg;
+
+  // メタデータを設定
+  msg.header = world_model->getMsg().header;
+  msg.on_positive_half = world_model->onPositiveHalf();
+  msg.is_yellow = world_model->isYellow();
+  msg.delay_checkpoints = world_model->getDelayCheckpoints();
+  msg.header.stamp = now();
+  DelayMonitorWrapper::addDelayCheckpoint(
+    msg.delay_checkpoints, "session_controller_end", "strategy_computed");
+
+  // 全プランナーからコマンドを収集
+  for (const auto & session : session_registry_->getAllPlanners()) {
+    session->setGameAnalysis(latest_game_analysis_);
+
+    auto robot_count = session->getRobots().size();
+    auto commands_msg = session->getPositionCommands();
+    auto command_count = commands_msg.robot_commands.size();
+
+    if (robot_count > 0 && command_count == 0) {
+      RCLCPP_WARN(
+        get_logger(),
+        "Session「%s」にロボット %zu 台が割り当てられていますが、コマンドが0件生成されました",
+        session->name.c_str(), robot_count);
+    }
+
+    msg.robot_commands.insert(
+      msg.robot_commands.end(), commands_msg.robot_commands.begin(),
+      commands_msg.robot_commands.end());
+  }
+
+  // ロボット優先度を設定（値が高いほど優先度が高い）
+  uint8_t robot_priority = 100;
+  for (auto & position_command : msg.robot_commands) {
+    position_command.local_planner_config.priority = --robot_priority;
+  }
+
+  return msg;
 }
 }  // namespace crane
 

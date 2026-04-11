@@ -12,7 +12,6 @@
 #include <sys/time.h>
 
 #include <algorithm>
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
@@ -240,21 +239,10 @@ private:
 class WebSocketDebugServer : public rclcpp::Node
 {
 public:
-  WebSocketDebugServer() : Node("websocket_debug_server"), port_(8090), websocket_port_(8091)
+  WebSocketDebugServer() : Node("websocket_debug_server"), websocket_port_(8091)
   {
-    this->declare_parameter("port", 8090);
     this->declare_parameter("websocket_port", 8091);
-    port_ = this->get_parameter("port").as_int();
     websocket_port_ = this->get_parameter("websocket_port").as_int();
-
-    // Get package share directory for static files
-    try {
-      package_share_dir_ = ament_index_cpp::get_package_share_directory("crane_web_debugger");
-      web_root_ = package_share_dir_ + "/web";
-    } catch (const std::exception & e) {
-      RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());
-      web_root_ = "./web";
-    }
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
@@ -399,9 +387,6 @@ public:
     // Start servers
     startServers();
 
-    RCLCPP_INFO(this->get_logger(), "WebSocket Debug Server starting on port %d", port_);
-    RCLCPP_INFO(this->get_logger(), "Web root directory: %s", web_root_.c_str());
-    RCLCPP_INFO(this->get_logger(), "HTTP: http://localhost:%d", port_);
     RCLCPP_INFO(this->get_logger(), "WebSocket: ws://localhost:%d", websocket_port_);
   }
 
@@ -410,9 +395,6 @@ public:
 private:
   void startServers()
   {
-    // Start HTTP server in separate thread
-    http_thread_ = std::thread([this]() { this->runHttpServer(); });
-
     // Start WebSocket server in separate thread
     websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
   }
@@ -421,37 +403,8 @@ private:
   {
     running_ = false;
 
-    if (http_thread_.joinable()) {
-      http_thread_.join();
-    }
     if (websocket_thread_.joinable()) {
       websocket_thread_.join();
-    }
-  }
-
-  void runHttpServer()
-  {
-    // Check if web directory exists
-    if (!std::filesystem::exists(web_root_)) {
-      RCLCPP_ERROR(this->get_logger(), "Web directory not found: %s", web_root_.c_str());
-      return;
-    }
-
-    const std::string app_path = package_share_dir_.empty()
-                                   ? "./web_server/app.py"
-                                   : package_share_dir_ + "/web_server/app.py";
-    if (!std::filesystem::exists(app_path)) {
-      RCLCPP_ERROR(this->get_logger(), "Unified HTTP app not found: %s", app_path.c_str());
-      return;
-    }
-
-    std::string command = "python3 \"" + app_path + "\" --host 0.0.0.0 --port " +
-                          std::to_string(port_) + " --web-root \"" + web_root_ + "\" 2>/dev/null";
-    RCLCPP_INFO(
-      this->get_logger(), "Starting unified HTTP server (web root: %s)", web_root_.c_str());
-    int result = system(command.c_str());
-    if (result != 0) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to start HTTP server, exit code: %d", result);
     }
   }
 
@@ -1358,11 +1311,7 @@ private:
   std::mutex control_targets_mutex_;
 
   // Server components
-  std::thread http_thread_;
   std::thread websocket_thread_;
-  std::string package_share_dir_;
-  std::string web_root_;
-  int port_;
   int websocket_port_;
   std::atomic<bool> running_{true};
 

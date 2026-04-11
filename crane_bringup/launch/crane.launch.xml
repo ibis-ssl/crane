@@ -185,8 +185,6 @@ limitations under the License.
     <param name="multicast_port" value="$(var referee_port_final)"/>
   </node>
 
-  <node pkg="robocup_ssl_comm" exec="grsim_node"/>
-
   <!-- ============================================================ -->
   <!-- モニタリング/診断系 -->
   <!-- ============================================================ -->
@@ -204,7 +202,7 @@ limitations under the License.
   <node pkg="crane_web_debugger" exec="crane_websocket_server" output="screen"/>
 
   <!-- 可視化情報の集約 -->
-  <node pkg="crane_visualization_aggregator" exec="crane_visualization_aggregator_node" output="screen"/>
+  <node pkg="crane_visualization_interfaces" exec="visualization_aggregator_node" output="screen"/>
 
   <!-- ワールドモデル（世界状態の推定と管理） -->
   <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node" output="screen">
@@ -261,7 +259,7 @@ limitations under the License.
   <!-- 除外: /diagnostics（/diagnostics_aggで代替）, **/process_time, /parameter_events, /events/write_split -->
   <group if="$(var record)">
     <executable
-      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /rosout /aggregated_svgs /diagnostics_agg /ronar_events /ping /visualizer_svgs"
+      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
     />
   </group>
 

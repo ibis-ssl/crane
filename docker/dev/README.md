@@ -35,8 +35,9 @@
 
 **注3**: `robot-manager` は Docker Compose サービスとして常時定義されています。
 
-- URL: <http://localhost:8090>
+- URL: <http://localhost:8092>
 - `--no-debug` オプションで無効化可能（`robot-manager` のみ停止）
+- イメージは [ibis-ssl/Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) リポジトリで管理・ビルドされます（`ghcr.io/ibis-ssl/robot-manager:latest`）
 
 ### robot-manager の手動操作
 
