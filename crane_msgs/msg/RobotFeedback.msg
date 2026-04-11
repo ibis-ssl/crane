@@ -5,6 +5,14 @@ float32 receive_interval_mean_ms
 float32 receive_interval_min_ms
 float32 receive_interval_max_ms
 float32 receive_interval_stddev_ms
+float32 feedback_age_ms
+
+uint32 valid_packet_count
+uint32 invalid_packet_count
+uint32 sync_error_count
+uint32 checksum_error_count
+uint32 size_mismatch_count
+uint32 counter_jump_count
 
 uint8 counter
 
@@ -74,7 +82,11 @@ float32[] mouse_vel
 
 float32[] voltage
 
-uint8 check_ver
+uint8 camera_pos_x_div2
+uint8 camera_pos_y
+uint8 camera_radius_div4
+uint8 camera_fps
+uint8 check_ver  # legacy alias of camera_pos_x_div2
 
 uint8 VALUES_MOUSE_ODOM_1=0
 uint8 VALUES_MOUSE_ODOM_2=1

@@ -180,6 +180,7 @@ private:
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];  // [our_team, their_team]
   FieldGeometry field_geometry_;
   bool has_vision_updated_;
+  int feedback_stale_timeout_ms_{100};
 
   // エラー継続時間を算出するためのトラッキング用構造体
   struct ErrorTracker

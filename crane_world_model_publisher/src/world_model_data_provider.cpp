@@ -47,11 +47,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   node.declare_parameter("tracker_address", std::string("224.5.23.2"));
   node.declare_parameter("tracker_port", 10010);
   node.declare_parameter("use_udp_detection", false);
+  node.declare_parameter("feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
 
   config_.vision_address = node.get_parameter("vision_address").get_value<std::string>();
   config_.vision_port = node.get_parameter("vision_port").get_value<int>();
   config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
   use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
+  feedback_stale_timeout_ms_ = node.get_parameter("feedback_stale_timeout_ms").get_value<int>();
 
   // Initialize UDP receivers
 
@@ -410,6 +412,11 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     for (auto & robot : vision_robots) {
       if (auto it = feedback_map.find(robot.id); it != feedback_map.end()) {
         const auto & feedback = *it->second;
+        const auto feedback_age_ms =
+          (current_time - rclcpp::Time(feedback.received_stamp)).seconds() * 1000.0;
+        if (feedback_age_ms > static_cast<double>(feedback_stale_timeout_ms_)) {
+          continue;
+        }
 
         // feedbackデータを含むRobotInfoを作成
         crane_msgs::msg::RobotInfo feedback_robot;
