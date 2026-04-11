@@ -337,7 +337,7 @@ void Attacker::initialize()
       command->disableBallAvoidance();
       return kick_skill.run();
     } else {
-      // FINAL_GUARD: ゴール角度が不十分なのでチップキッ���で前方クリア
+      // FINAL_GUARD: ゴール角度が不十分なのでチップキックで前方クリア
       printTextOnRobot("KICK::FINAL_GUARD");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", true);
@@ -416,11 +416,11 @@ double Attacker::calculatePassScore(const Point & target)
     score += std::clamp((pass_distance - 1.0) * 0.5, 0.0, 2.0);
   }
 
-  // パ��先のゴールチャンスが大き��場合はスコアを上げ���(30度以上で最大0.5上昇)
+  // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
   double goal_angle_width = evaluateGoalAngle(target);
   score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
 
-  // 自��ールから遠い���うが良い（reverse_attack時は攻撃対象ゴールの反対側）
+  // 自ゴールから遠いほうが良い（reverse_attack時は攻撃対象ゴールの反対側）
   auto defense_goal_posts = world_model()->isPracticeReverseAttack()
                               ? world_model()->getTheirGoalPosts()
                               : world_model()->getOurGoalPosts();
