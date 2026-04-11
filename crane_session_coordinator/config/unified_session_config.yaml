@@ -181,36 +181,14 @@ situations:
       - name: wing_formation
         max_robots: 20
   HALF_FIELD_PRACTICE:
-    description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり）
+    description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり・レフェリー信号基準）
     practice_mode:
       enabled: true
-      positive_side: true
       kick_prohibition: true
       reverse_attack: true
-    sessions:
-      - name: goalie_skill
-        max_robots: 1
-      - name: attacker_skill
-        max_robots: 1
-      - name: defender
-        max_robots: 3
-        params:
-          reduced_robots: 1
-      - name: pass_receive
-        max_robots: 1
-      - name: sub_attacker_skill
-        max_robots: 1
-      - name: marker
-        max_robots: 2
-      - name: forward
-        max_robots: 20
-  HALF_FIELD_PRACTICE_NEGATIVE:
-    description: 半面練習モード・負側（FW逆方向攻撃・キック禁止・移動制限あり）
-    practice_mode:
-      enabled: true
-      positive_side: false
-      kick_prohibition: true
-      reverse_attack: true
+      kick_allowed_skills:
+        - goalie_skill
+        - defender
     sessions:
       - name: goalie_skill
         max_robots: 1

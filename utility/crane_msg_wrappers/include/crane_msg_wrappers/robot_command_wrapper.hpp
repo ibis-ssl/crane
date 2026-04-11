@@ -128,7 +128,7 @@ public:
 
   auto kickWithChip(double power) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }
@@ -140,7 +140,7 @@ public:
 
   auto kickStraight(double power) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }
@@ -152,7 +152,7 @@ public:
 
   auto setKickStraightTargetSpeed(double speed_mps) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }
@@ -164,7 +164,7 @@ public:
 
   auto setKickWithChipTargetDistance(double distance) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }
@@ -176,7 +176,7 @@ public:
 
   auto kickStraightToStopAt(double stop_distance) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }
@@ -194,7 +194,7 @@ public:
 
   auto kickStraightWithInitialSpeed(double initial_speed) -> RobotCommandWrapper &
   {
-    if (world_model->isPracticeKickProhibited()) {
+    if (world_model->isPracticeKickProhibitedFor(name)) {
       latest_msg.kick_power = 0.0;
       return *this;
     }

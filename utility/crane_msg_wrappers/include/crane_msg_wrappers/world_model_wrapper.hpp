@@ -7,6 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
@@ -112,6 +113,14 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   [[nodiscard]] auto isPracticeKickProhibited() const
   {
     return latest_msg.practice_mode.enabled && latest_msg.practice_mode.kick_prohibition;
+  }
+  [[nodiscard]] auto isPracticeKickProhibitedFor(const std::string & skill_name) const
+  {
+    if (!isPracticeKickProhibited()) {
+      return false;
+    }
+    const auto & allowed = latest_msg.practice_mode.kick_allowed_skills;
+    return std::find(allowed.begin(), allowed.end(), skill_name) == allowed.end();
   }
   [[nodiscard]] auto isPracticeReverseAttack() const
   {

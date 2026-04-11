@@ -13,3 +13,7 @@ bool kick_prohibition false
 # true: FW/アタッカーの攻撃方向を反転（自陣ゴール方向に攻める）
 # DF/ゴーリーには影響しない
 bool reverse_attack false
+
+# kick_prohibition=true 時でもキックを許可するスキル名リスト
+# 例: ["goalie_skill"] → ゴーリーのみキック許可
+string[] kick_allowed_skills

@@ -106,9 +106,9 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
         pos_mode.target_x = target_x;
         pos_mode.target_y = target_y;
 
-        // 半面練習モード: 移動範囲をプレイ側の半面にクランプ
+        // 半面練習モード: 移動範囲をレフェリー信号基準の自陣側にクランプ
         if (world_model->isPracticeModeEnabled()) {
-          if (world_model->practiceMode().positive_side) {
+          if (world_model->onPositiveHalf()) {
             pos_mode.target_x = std::max(pos_mode.target_x, 0.0f);
           } else {
             pos_mode.target_x = std::min(pos_mode.target_x, 0.0f);

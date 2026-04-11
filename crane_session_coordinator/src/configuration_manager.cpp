@@ -152,11 +152,25 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
           pm_node["kick_prohibition"] ? pm_node["kick_prohibition"].as<bool>() : false;
         pm.reverse_attack =
           pm_node["reverse_attack"] ? pm_node["reverse_attack"].as<bool>() : false;
+        if (pm_node["kick_allowed_skills"]) {
+          for (const auto & skill_node : pm_node["kick_allowed_skills"]) {
+            pm.kick_allowed_skills.push_back(skill_node.as<std::string>());
+          }
+        }
         practice_mode_map_[situation_name] = pm;
         ss << "PRACTICE_MODE : enabled=" << (pm.enabled ? "true" : "false")
            << " positive_side=" << (pm.positive_side ? "true" : "false")
            << " kick_prohibition=" << (pm.kick_prohibition ? "true" : "false")
-           << " reverse_attack=" << (pm.reverse_attack ? "true" : "false") << "\n";
+           << " reverse_attack=" << (pm.reverse_attack ? "true" : "false");
+        if (!pm.kick_allowed_skills.empty()) {
+          ss << " kick_allowed_skills=[";
+          for (size_t i = 0; i < pm.kick_allowed_skills.size(); ++i) {
+            if (i > 0) ss << ", ";
+            ss << pm.kick_allowed_skills[i];
+          }
+          ss << "]";
+        }
+        ss << "\n";
       }
 
       ss << "----------------------------------------";
