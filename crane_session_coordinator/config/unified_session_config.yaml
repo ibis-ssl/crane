@@ -186,6 +186,7 @@ situations:
       enabled: true
       kick_prohibition: true
       reverse_attack: true
+      use_normal_speed: true
       kick_allowed_skills:
         - goalie_skill
         - defender

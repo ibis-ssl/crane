@@ -17,3 +17,6 @@ bool reverse_attack false
 # kick_prohibition=true 時でもキックを許可するスキル名リスト
 # 例: ["goalie_skill"] → ゴーリーのみキック許可
 string[] kick_allowed_skills
+
+# true: STOP中でも通常速度で動作する（STOP速度制限を無視）
+bool use_normal_speed true

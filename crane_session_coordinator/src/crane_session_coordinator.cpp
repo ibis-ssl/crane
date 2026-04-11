@@ -88,6 +88,8 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [this](const std_msgs::msg::String & msg) {
       config_manager_->updateEventMapping("INJECTION", msg.data);
+      // マッピング更新後に即座にassignを実行（タイミング問題を回避）
+      assign("INJECTION");
     });
 
   practice_mode_pub = create_publisher<crane_msgs::msg::PracticeMode>("/practice_mode", 1);

@@ -126,6 +126,10 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   {
     return latest_msg.practice_mode.enabled && latest_msg.practice_mode.reverse_attack;
   }
+  [[nodiscard]] auto isPracticeNormalSpeed() const
+  {
+    return latest_msg.practice_mode.enabled && latest_msg.practice_mode.use_normal_speed;
+  }
 
   /// @brief 攻撃対象ゴール中心を取得（練習モード reverse_attack 時は自陣ゴール）
   /// @note DF/ゴーリーはこのメソッドを使わず getOurGoalCenter() を直接使うこと
