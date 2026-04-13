@@ -30,6 +30,14 @@ auto Forward::update() -> Status
     return Status::RUNNING;
   }
 
+  // front_point == back_point（点指定モード）: 1Dサンプリングをスキップして直接追従
+  if (line_length < 1e-4) {
+    command->setTargetPosition(front_point)
+      .lookAtBall()
+      .setMaxVelocity("Forward::max_vel", max_vel);
+    return Status::RUNNING;
+  }
+
   max_ball_distance = std::max(max_ball_distance, 0.1);
 
   // front_point -> back_pointの0.1mごとのポイントを生成
