@@ -27,8 +27,10 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
@@ -104,6 +106,14 @@ struct TrackerBallState
   bool detected{false};
 };
 
+// ボールセンサヒント（外部から通知される味方ロボットのボールセンサ情報）
+struct BallSensorHint
+{
+  uint32_t robot_id{0};
+  Eigen::Vector2d position{Eigen::Vector2d::Zero()};
+  rclcpp::Time stamp{};
+};
+
 class WorldModelDataProvider
 {
 public:
@@ -149,6 +159,17 @@ public:
   [[nodiscard]] auto getLastVisionTCapture() const -> double { return last_t_capture_; }
   [[nodiscard]] auto getLastVisionTSent() const -> double { return last_t_sent_; }
   auto setOurTeamColor(TeamColor color) -> void { our_team_color_ = color; }
+
+  /// 味方ロボットのボールセンサ反応を通知する（フォールバック推定に使用）
+  auto setBallSensorHint(uint32_t robot_id, Eigen::Vector2d pos, rclcpp::Time stamp) -> void
+  {
+    // 複数台反応している場合は最新のものを採用（同時刻なら robot_id 小さい方を優先）
+    if (
+      !ball_sensor_hint_ || stamp > ball_sensor_hint_->stamp ||
+      (stamp == ball_sensor_hint_->stamp && robot_id < ball_sensor_hint_->robot_id)) {
+      ball_sensor_hint_ = BallSensorHint{robot_id, pos, stamp};
+    }
+  }
 
   [[nodiscard]] auto getLatestPlaySituation() const -> const crane_msgs::msg::PlaySituation &
   {
@@ -208,6 +229,14 @@ private:
   // ボール状態管理（Vision/Tracker分離）
   VisionBallState vision_ball_state_;
   TrackerBallState tracker_ball_state_;
+
+  // フォールバック推定用
+  Eigen::Vector3d last_known_ball_position_{Eigen::Vector3d::Zero()};
+  rclcpp::Time last_known_ball_stamp_{};
+  bool last_known_ball_valid_{false};
+  std::optional<uint32_t> last_known_ball_camera_id_;
+  std::optional<BallSensorHint> ball_sensor_hint_;
+  std::map<uint32_t, Eigen::Vector3d> camera_positions_;  // camera_id → world position (m)
 
   rclcpp::TimerBase::SharedPtr udp_timer;
   rclcpp::TimerBase::SharedPtr status_check_timer_;
@@ -296,9 +325,11 @@ private:
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
 
   // ボール状態更新メソッド（Vision/Tracker分離）
-  auto updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball) -> void;
+  auto updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball, uint32_t camera_id)
+    -> void;
   auto updateTrackerBallState(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> void;
   auto integrateBallInfo() -> void;
+  auto estimateFallbackBall(const rclcpp::Time & now) -> void;
 
   // 半面練習モード: 自陣ゴールに最も近いボールのインデックスを返す
   template <typename BallContainer, typename PosExtractor>
