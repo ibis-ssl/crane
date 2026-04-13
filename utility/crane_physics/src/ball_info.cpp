@@ -216,6 +216,22 @@ void Ball::toMsg(BallInfoMsg & msg) const
   msg.physics_config.height_threshold = config.height_threshold;
   msg.physics_config.speed_threshold = config.speed_threshold;
   msg.physics_config.stop_threshold = config.stop_threshold;
+
+  // Fallback 推定情報
+  if (fallback && fallback->source != FallbackSource::NONE) {
+    msg.fallback_available = true;
+    msg.fallback_source = static_cast<uint8_t>(fallback->source);
+    msg.fallback_position.x = fallback->pos.x();
+    msg.fallback_position.y = fallback->pos.y();
+    msg.fallback_position.z = 0.0;
+    msg.fallback_confidence = fallback->confidence;
+    msg.fallback_occluder_robot_id = fallback->occluder_robot_id;
+  } else {
+    msg.fallback_available = false;
+    msg.fallback_source = static_cast<uint8_t>(FallbackSource::NONE);
+    msg.fallback_confidence = 0.0f;
+    msg.fallback_occluder_robot_id = 0;
+  }
 }
 
 template <typename BallInfoMsg>
@@ -248,6 +264,18 @@ void Ball::fromMsg(const BallInfoMsg & msg)
 
   // BallPhysicsModel設定から物理モデルを設定
   updatePhysicsConfigFromMsg(msg.physics_config);
+
+  // Fallback 推定情報
+  if (msg.fallback_available && msg.fallback_source != BallInfoMsg::FALLBACK_NONE) {
+    FallbackEstimate fb;
+    fb.source = static_cast<FallbackSource>(msg.fallback_source);
+    fb.pos = Point(msg.fallback_position.x, msg.fallback_position.y);
+    fb.confidence = msg.fallback_confidence;
+    fb.occluder_robot_id = msg.fallback_occluder_robot_id;
+    fallback = fb;
+  } else {
+    fallback = std::nullopt;
+  }
 }
 
 // 明示的なテンプレートインスタンス化

@@ -170,18 +170,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr wo
 
 auto WorldModelPublisherComponent::updateBallContact() -> void
 {
-  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-
-  // ローカルセンサーの情報でボール情報を更新
+  auto now = this->now();
   auto friend_robots = wrapper_->ours().robotsWhere().available().get();
   for (std::size_t i = 0; i < friend_robots.size(); i++) {
     auto robot = friend_robots[i];
-    // ビジョンがボールを見失っているときに
-    // ボールセンサが反応している間は、接触しているものとみなす。
     if (robot->getBallSensorAvailable(now) && not wrapper_->ball().detected) {
-      // ビジョンはボール見失っているけどロボットが保持しているので、
-      // ロボットの座標にボールがあることにする
-      wrapper_->overwriteBallPos(robot->kicker_center());
+      const auto kicker_pos = robot->kicker_center();
+      data_provider_->setBallSensorHint(
+        static_cast<uint32_t>(robot->id), Eigen::Vector2d(kicker_pos.x(), kicker_pos.y()), now);
     }
   }
 }

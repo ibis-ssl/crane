@@ -284,7 +284,9 @@ auto WorldModelDataProvider::on_udp_timer() -> void
                 return std::make_pair(b.x() / 1000.0, b.y() / 1000.0);
               });
             }
-            updateVisionBallState(balls.at(static_cast<int>(idx)));
+            updateVisionBallState(
+              balls.at(static_cast<int>(idx)),
+              static_cast<uint32_t>(packet.detection().camera_id()));
             integrateBallInfo();
           }
           if (use_udp_detection_) {
@@ -576,7 +578,8 @@ auto WorldModelDataProvider::processDetectionFrame(
       idx = selectClosestBallToOurGoal(
         balls, [](const auto & b) { return std::make_pair(b.x() / 1000.0, b.y() / 1000.0); });
     }
-    updateVisionBallState(balls.at(static_cast<int>(idx)));
+    updateVisionBallState(
+      balls.at(static_cast<int>(idx)), static_cast<uint32_t>(detection.camera_id()));
   }
 
   // Vision/Tracker状態を統合してball_info_を更新
@@ -593,6 +596,19 @@ auto WorldModelDataProvider::processGeometryData(const robocup_ssl::SSL_Geometry
 {
   convertFieldGeometry(geometry);
 
+  // カメラ位置をキャッシュ（occlusion shadow 推定に使用）
+  for (int i = 0; i < geometry.calib_size(); ++i) {
+    const auto & calib = geometry.calib(i);
+    if (
+      calib.has_derived_camera_world_tx() && calib.has_derived_camera_world_ty() &&
+      calib.has_derived_camera_world_tz()) {
+      // mm → m 変換
+      camera_positions_[static_cast<uint32_t>(calib.camera_id())] = Eigen::Vector3d(
+        calib.derived_camera_world_tx() / 1000.0, calib.derived_camera_world_ty() / 1000.0,
+        calib.derived_camera_world_tz() / 1000.0);
+    }
+  }
+
   if (geometry_visualization_callback_) {
     geometry_visualization_callback_(geometry, false);  // half_court_mode = false
   }
@@ -600,8 +616,100 @@ auto WorldModelDataProvider::processGeometryData(const robocup_ssl::SSL_Geometry
   return true;
 }
 
-auto WorldModelDataProvider::updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball)
-  -> void
+auto WorldModelDataProvider::estimateFallbackBall(const rclcpp::Time & now) -> void
+{
+  constexpr double kBallSensorTimeoutSec = 0.2;
+  constexpr double kLastKnownTimeoutSec = 2.0;
+  // ロボット半径(0.09m) + ボール半径(0.0215m) の合計でオクルージョン判定
+  constexpr double kOcclusionShadowRadius = 0.09 + 0.0215;
+
+  auto setFallback = [&](
+                       uint8_t source, const Eigen::Vector2d & pos, float conf, uint32_t occluder,
+                       const rclcpp::Time & stamp) {
+    ball_info_.fallback_available = true;
+    ball_info_.fallback_source = source;
+    ball_info_.fallback_position.x = pos.x();
+    ball_info_.fallback_position.y = pos.y();
+    ball_info_.fallback_position.z = 0.0;
+    ball_info_.fallback_confidence = conf;
+    ball_info_.fallback_occluder_robot_id = occluder;
+    ball_info_.fallback_stamp = stamp;
+  };
+
+  auto clearFallback = [&]() {
+    ball_info_.fallback_available = false;
+    ball_info_.fallback_source = crane_msgs::msg::BallInfo::FALLBACK_NONE;
+    ball_info_.fallback_confidence = 0.0f;
+    ball_info_.fallback_occluder_robot_id = 0;
+    ball_info_.fallback_stamp = now;
+  };
+
+  // 優先度 1: 物理センサ反応は最も信頼度が高い
+  if (ball_sensor_hint_) {
+    if ((now - ball_sensor_hint_->stamp).seconds() <= kBallSensorTimeoutSec) {
+      setFallback(
+        crane_msgs::msg::BallInfo::FALLBACK_BALL_SENSOR, ball_sensor_hint_->position, 0.9f,
+        ball_sensor_hint_->robot_id, ball_sensor_hint_->stamp);
+      return;
+    }
+    ball_sensor_hint_ = std::nullopt;
+  }
+
+  if (!last_known_ball_valid_) {
+    clearFallback();
+    return;
+  }
+
+  double last_known_age = (now - last_known_ball_stamp_).seconds();
+
+  // 優先度 2: カメラの視線がロボットで遮られている場合、ボールは最終観測位置にある可能性が高い
+  if (last_known_ball_camera_id_ && last_known_age <= kLastKnownTimeoutSec) {
+    auto cam_it = camera_positions_.find(*last_known_ball_camera_id_);
+    if (cam_it != camera_positions_.end()) {
+      const Eigen::Vector3d & cam3d = cam_it->second;
+      Eigen::Vector2d cam_xy(cam3d.x(), cam3d.y());
+      Eigen::Vector2d ball_xy(last_known_ball_position_.x(), last_known_ball_position_.y());
+      Eigen::Vector2d ray = ball_xy - cam_xy;
+      double ray_len = ray.norm();
+
+      if (ray_len > 1e-6) {
+        Eigen::Vector2d ray_dir = ray / ray_len;
+        for (int team = 0; team < 2; ++team) {
+          for (const auto & robot_info : robot_info_[team]) {
+            if (!robot_info.available_vision && !robot_info.available_tracker) continue;
+            Eigen::Vector2d robot_xy(robot_info.pose.x, robot_info.pose.y);
+            double t = (robot_xy - cam_xy).dot(ray_dir) / ray_len;
+            if (t <= 0.0 || t >= 1.0) continue;
+            double dist_to_ray = (robot_xy - (cam_xy + t * ray)).norm();
+            if (dist_to_ray < kOcclusionShadowRadius) {
+              float conf =
+                static_cast<float>(std::max(0.3, 1.0 - last_known_age / kLastKnownTimeoutSec));
+              setFallback(
+                crane_msgs::msg::BallInfo::FALLBACK_OCCLUSION_SHADOW, ball_xy, conf,
+                static_cast<uint32_t>(robot_info.id), last_known_ball_stamp_);
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 優先度 3: 最終観測位置（信頼度は時間とともに線形減衰）
+  if (last_known_age <= kLastKnownTimeoutSec) {
+    float conf = static_cast<float>(std::max(0.0, 1.0 - last_known_age / kLastKnownTimeoutSec));
+    setFallback(
+      crane_msgs::msg::BallInfo::FALLBACK_LAST_KNOWN,
+      Eigen::Vector2d(last_known_ball_position_.x(), last_known_ball_position_.y()), conf, 0,
+      last_known_ball_stamp_);
+    return;
+  }
+
+  clearFallback();
+}
+
+auto WorldModelDataProvider::updateVisionBallState(
+  const robocup_ssl::SSL_DetectionBall & ssl_ball, uint32_t camera_id) -> void
 {
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
@@ -625,6 +733,12 @@ auto WorldModelDataProvider::updateVisionBallState(const robocup_ssl::SSL_Detect
   vision_ball_state_.raw_position.x = x;
   vision_ball_state_.raw_position.y = y;
   vision_ball_state_.raw_position.z = z;
+
+  // フォールバック用: 最終観測情報を記録
+  last_known_ball_position_ = Eigen::Vector3d(x, y, z);
+  last_known_ball_stamp_ = now;
+  last_known_ball_valid_ = true;
+  last_known_ball_camera_id_ = camera_id;
 
   RCLCPP_DEBUG(node.get_logger(), "Vision ball updated at (%.3f, %.3f, %.3f)", x, y, z);
 }
@@ -861,11 +975,29 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
     ball_info_.tracker.pos.z = tracker_ball_state_.position.z();
   }
 
+  // Tracker はカメラ統合済みなので特定カメラに帰属しない → occlusion 推定には使えない
+  if (tracker_ball_state_.detected) {
+    last_known_ball_position_ = tracker_ball_state_.position;
+    last_known_ball_stamp_ = now;
+    last_known_ball_valid_ = true;
+    last_known_ball_camera_id_ = std::nullopt;
+  }
+
   // ボール状態の決定
   if (ball_info_.velocity_norm < 0.1) {
     ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
   } else {
     ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;
+  }
+
+  if (!ball_info_.detected) {
+    estimateFallbackBall(now);
+  } else {
+    ball_info_.fallback_available = false;
+    ball_info_.fallback_source = crane_msgs::msg::BallInfo::FALLBACK_NONE;
+    ball_info_.fallback_confidence = 0.0f;
+    ball_info_.fallback_stamp = now;
+    ball_info_.fallback_occluder_robot_id = 0;
   }
 }
 

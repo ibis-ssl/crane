@@ -65,6 +65,21 @@ struct Ball
     FLYING,
   } state;
 
+  enum class FallbackSource : uint8_t {
+    NONE = 0,
+    LAST_KNOWN = 1,
+    BALL_SENSOR = 2,
+    OCCLUSION_SHADOW = 3,
+  };
+
+  struct FallbackEstimate
+  {
+    FallbackSource source{FallbackSource::NONE};
+    Point pos{Point::Zero()};
+    float confidence{0.0f};
+    uint32_t occluder_robot_id{0};
+  };
+
   Point pos;
 
   double pos_z;
@@ -74,6 +89,16 @@ struct Ball
   double vel_z;
 
   bool detected;
+
+  std::optional<FallbackEstimate> fallback;
+
+  /// フォールバック opt-in 用: 呼び出し側は main pos/detected を変えずにフォールバックを利用できる
+  [[nodiscard]] auto effectivePos() const -> Point
+  {
+    if (detected) return pos;
+    if (fallback && fallback->source != FallbackSource::NONE) return fallback->pos;
+    return pos;
+  }
 
   // 統合された物理モデル（必須、常に有効）
   // 注：shared_ptrを使用する理由：
