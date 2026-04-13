@@ -11,9 +11,13 @@
 
 namespace crane
 {
-auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::RobotCommands & msg)
-  -> void
+auto LocalPlannerComponent::processLatestCommands() -> void
 {
+  if (!latest_commands_) {
+    return;
+  }
+  const auto & msg = *latest_commands_;
+
   if (!planner) {
     return;
   }
@@ -167,13 +171,12 @@ auto LocalPlannerComponent::callbackPositionCommands(const crane_msgs::msg::Robo
   } catch (const std::exception & e) {
     RCLCPP_ERROR_THROTTLE(
       get_logger(), *get_clock(), 1000,
-      "Unhandled exception in local_planner callback. Publishing empty /robot_commands: %s",
-      e.what());
+      "Unhandled exception in local_planner timer. Publishing empty /robot_commands: %s", e.what());
     publishFallback();
   } catch (...) {
     RCLCPP_ERROR_THROTTLE(
       get_logger(), *get_clock(), 1000,
-      "Unhandled unknown exception in local_planner callback. Publishing empty /robot_commands");
+      "Unhandled unknown exception in local_planner timer. Publishing empty /robot_commands");
     publishFallback();
   }
   // 診断情報を更新
