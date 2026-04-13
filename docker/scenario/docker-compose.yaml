@@ -10,7 +10,6 @@ services:
       --realism None
       --ibis-use-referee
       --ibis-feedback-team-name ibis
-      --ibis-feedback-hz 125
       --ibis-referee-port 11003
     tty: true
     stdin_open: true
