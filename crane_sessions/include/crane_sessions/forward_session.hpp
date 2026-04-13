@@ -32,8 +32,6 @@ public:
   {
   }
 
-  auto createForwardLines() const -> std::vector<Segment>;
-
   auto calculatePositionCommand(const std::vector<RobotIdentifier> & robots)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
@@ -53,20 +51,31 @@ public:
   int getDesiredRobotNumber(int max_robots) const override
   {
     // Forwardはcatch-allセッションとして余剰ロボットを全て受け入れる
-    // ライン数よりロボット数が多い場合はforward_session.cppで既存ラインを循環割当する
     return max_robots;
   }
 
 protected:
-  void onRobotsChanged() override
-  {
-    forward_skills.clear();
-    forward_line_assignments.clear();
-  }
+  void onRobotsChanged() override { forward_skills.clear(); }
 
 private:
+  /// @brief 攻撃エリアの候補点グリッドを生成する（PA内・フィールド外を除外済み）
+  auto computeCandidatePoints() const -> std::vector<Point>;
+
+  /**
+   * @brief 候補点のスコアを計算する（乗算合成）
+   * @param p 評価候補点
+   * @param robot_pos 自ロボット現在位置
+   * @param forward_positions 全フォワードロボットの現在位置（自分含む）
+   * @param available_enemies 利用可能な敵ロボットリスト
+   */
+  auto scorePoint(
+    const Point & p, const Point & robot_pos, const std::vector<Point> & forward_positions,
+    const RobotList & available_enemies) const -> double;
+
   std::vector<std::shared_ptr<skills::Forward>> forward_skills;
-  std::vector<int> forward_line_assignments;
+
+  /// ロボットIDごとの前回選択目標点（ヒステリシス用）
+  std::unordered_map<uint8_t, Point> last_targets_;
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__FORWARD_SESSION_HPP_
