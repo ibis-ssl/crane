@@ -38,36 +38,30 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    // フォワードライン（敵ゴール前）に近いロボットを優先
-    auto wm = world_model;  // shared_ptrをコピー
+    auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      // 敵ゴール位置に近いほど適している（敵陣ペナルティエリア迂回を考慮）
       return estimatePenaltyAwareDistance(
         robot->pose.pos, wm->getTheirGoalCenter(), wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
         wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
 
-  int getDesiredRobotNumber(int max_robots) const override
-  {
-    // Forwardはcatch-allセッションとして余剰ロボットを全て受け入れる
-    return max_robots;
-  }
+  int getDesiredRobotNumber(int max_robots) const override { return max_robots; }
 
 protected:
-  void onRobotsChanged() override { forward_skills.clear(); }
+  void onRobotsChanged() override
+  {
+    forward_skills.clear();
+    // ロボット構成が変わった場合はヒステリシス状態もリセット
+    last_targets_.clear();
+    last_scores_.clear();
+  }
 
 private:
   /// @brief 攻撃エリアの候補点グリッドを生成する（PA内・フィールド外を除外済み）
   auto computeCandidatePoints() const -> std::vector<Point>;
 
-  /**
-   * @brief 候補点のスコアを計算する（乗算合成）
-   * @param p 評価候補点
-   * @param robot_pos 自ロボット現在位置
-   * @param forward_positions 全フォワードロボットの現在位置（自分含む）
-   * @param available_enemies 利用可能な敵ロボットリスト
-   */
+  /// @brief 候補点のスコアを計算する（乗算合成）
   auto scorePoint(
     const Point & p, const Point & robot_pos, const std::vector<Point> & forward_positions,
     const RobotList & available_enemies) const -> double;
@@ -76,6 +70,9 @@ private:
 
   /// ロボットIDごとの前回選択目標点（ヒステリシス用）
   std::unordered_map<uint8_t, Point> last_targets_;
+
+  /// ロボットIDごとの前回目標点の生スコア（ヒステリシス判定の再計算を省く）
+  std::unordered_map<uint8_t, double> last_scores_;
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__FORWARD_SESSION_HPP_
