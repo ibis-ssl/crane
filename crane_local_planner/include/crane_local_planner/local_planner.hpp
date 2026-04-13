@@ -13,8 +13,8 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
-#include <functional>
 #include <memory>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <string>
@@ -79,15 +79,25 @@ public:
 
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
-      std::bind(&LocalPlannerComponent::callbackPositionCommands, this, std::placeholders::_1));
+      [this](const crane_msgs::msg::RobotCommands & msg) { latest_commands_ = msg; });
+
+    declare_parameter("update_rate_hz", 60.0);
+    const auto update_rate_hz = get_parameter("update_rate_hz").as_double();
+    update_timer_ = create_wall_timer(
+      std::chrono::microseconds(static_cast<int64_t>(1e6 / update_rate_hz)),
+      [this]() { processLatestCommands(); });
   }
 
-  auto callbackPositionCommands(const crane_msgs::msg::RobotCommands &) -> void;
+  auto processLatestCommands() -> void;
 
   auto updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat) -> void;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
+
+  rclcpp::TimerBase::SharedPtr update_timer_;
+
+  std::optional<crane_msgs::msg::RobotCommands> latest_commands_;
 
   DiagnosedPublisher<crane_msgs::msg::RobotCommands> commands_pub;
 
