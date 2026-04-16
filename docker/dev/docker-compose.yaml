@@ -41,8 +41,8 @@ services:
     entrypoint: ["tini", "--"]
     command: >
       ./bin/simulator-cli
-      -g 2020B
-      --realism None
+      -g 2023
+      --realism Realistic
       --ibis-use-referee
       --ibis-feedback-team-name ibis
       --ibis-referee-port 11003
