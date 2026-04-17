@@ -22,7 +22,8 @@ auto ForwardSession::computeCandidatePoints() const -> std::vector<Point>
 {
   const double goal_line_x = world_model->fieldSize().x() * 0.5;
   const double field_half_width = world_model->fieldSize().y() * 0.5;
-  constexpr double PA_MARGIN = 0.3;
+  const double PA_MARGIN =
+    needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value) ? 0.4 : 0.3;
   constexpr double FIELD_MARGIN = 0.2;
   constexpr double ATTACK_HALFLINE_THRESHOLD = 0.3;
   constexpr double GRID_STEP = 0.5;

@@ -32,5 +32,21 @@ auto getSituationCommandText(uint32_t id) -> std::string;
 auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
 auto getSituationCommandTextList() -> std::vector<std::string>;
+
+// STOP/セットプレイ中（INPLAY/HALT/HALF_TIME/POST_GAME以外）に相手PAへの拡大マージンが必要か
+// SSL Rule 5.2.4: STOP・フリーキック中は攻撃側ロボットが相手PAから0.2m以上離れていなければならない
+inline auto needsExpandedPenaltyAreaOffset(uint8_t cmd) -> bool
+{
+  using PS = crane_msgs::msg::PlaySituation;
+  switch (cmd) {
+    case PS::INPLAY:
+    case PS::HALT:
+    case PS::HALF_TIME:
+    case PS::POST_GAME:
+      return false;
+    default:
+      return true;
+  }
+}
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
