@@ -48,7 +48,21 @@ services:
       --ibis-referee-port 11003
     restart: "no"
     profiles:
-      - sim
+      - sim-erforce
+
+  grsim:
+    image: ghcr.io/ibis-ssl/grsim:latest
+    container_name: grsim
+    network_mode: host
+    command: |
+      grSim --headless -platform offscreen
+    volumes:
+      - ./grsim.xml:/home/default/.grsim.xml:rw
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles:
+      - sim-grsim
 
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:latest
@@ -83,7 +97,8 @@ services:
       - 224.5.23.1:11003
     network_mode: host
     profiles:
-      - sim
+      - sim-erforce
+      - sim-grsim
 
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0

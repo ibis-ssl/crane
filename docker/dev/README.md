@@ -9,15 +9,21 @@
 リポジトリルートから以下のコマンドを実行します。
 
 ```bash
-# シミュレーション環境(デフォルト) + ssl-log-recorder自動起動
+# シミュレーション環境(デフォルト: ER-Force) + ssl-log-recorder自動起動
 ./scripts/docker-dev.sh
+
+# シミュレーション環境(grSim)
+./scripts/docker-dev.sh --sim grsim
+
+# シミュレーション環境(ER-Force、明示指定)
+./scripts/docker-dev.sh --sim erforce
 
 # 実機環境 + ssl-log-recorder自動起動
 ./scripts/docker-dev.sh real
 
 # バックグラウンド起動
 ./scripts/docker-dev.sh -d
-./scripts/docker-dev.sh real -d
+./scripts/docker-dev.sh --sim grsim -d
 
 # robot-manager なしで起動
 ./scripts/docker-dev.sh --no-debug
@@ -54,8 +60,11 @@
 ### Docker Composeコマンドでの直接起動
 
 ```bash
-# シミュレーション環境
-docker compose -f docker/dev/docker-compose.yaml --profile sim up
+# シミュレーション環境(ER-Force)
+docker compose -f docker/dev/docker-compose.yaml --profile sim-erforce up
+
+# シミュレーション環境(grSim)
+docker compose -f docker/dev/docker-compose.yaml --profile sim-grsim up
 
 # 実機環境
 VISION_PORT=10006 docker compose -f docker/dev/docker-compose.yaml up
@@ -66,10 +75,11 @@ docker compose -f docker/dev/docker-compose.yaml down
 
 ## sim/real の差分
 
-| 項目 | sim | real |
-|------|-----|------|
-| Vision ポート | 10020 | 10006 |
-| ssl-status-board | 有効 | 無効 |
+| 項目 | sim (ER-Force) | sim (grSim) | real |
+|------|----------------|-------------|------|
+| Vision ポート | 10020 | 10020 | 10006 |
+| ssl-status-board | 有効 | 有効 | 無効 |
+| profile | `sim-erforce` | `sim-grsim` | なし |
 
 環境変数 `VISION_PORT` とDocker Composeの `profiles` 機能を使用して切り替えています。
 
@@ -81,6 +91,8 @@ docker compose -f docker/dev/docker-compose.yaml down
 - **autoref-tigers**: Tigers Mannheimのオートレフェリー
 - **voicevox**: 音声合成エンジン
 - **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
+- **erforce-sim**: ER-Forceシミュレータ（`sim-erforce` profile時のみ）
+- **grsim**: grSimシミュレータ（`sim-grsim` profile時のみ）
 
 ## 設定ファイル
 
