@@ -123,7 +123,7 @@ BagData BagReader::read(
   // --- rosx_introspection パーサを構築 ---
   // readSummary() のスキーマID対応は bagによっては不正確なため、
   // メッセージイテレーション中に view.schema から直接登録する。
-  RosMsgParser::ParsersCollection<RosMsgParser::FastCDR_Deserializer> parsers;
+  RosMsgParser::ParsersCollection<RosMsgParser::ROS2_Deserializer> parsers;
   std::unordered_set<std::string> registered_topics;
 
   // --- 時間範囲フィルタを設定 ---
@@ -159,8 +159,8 @@ BagData BagReader::read(
     size_t raw_size = view.message.dataSize;
     if (raw_size == 0) continue;
 
-    // FastCDR_Deserializer が DDS_CDR モードで encapsulation header（00 01 00 00）を
-    // 自前で読み込む。スキップせずそのまま渡す。
+    // ROS2_Deserializer (CDR) が encapsulation header（00 01 00 00）を自前で読み込む。
+    // スキップせずそのまま渡す。
     RosMsgParser::Span<const uint8_t> buf(raw, raw_size);
 
     int64_t ts = static_cast<int64_t>(view.message.logTime);

@@ -968,15 +968,12 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
   }
 
   // Tracker情報の更新（常にTrackerの生データを保持）
+  // Tracker はカメラ統合済みなので特定カメラに帰属しない → occlusion 推定には使えない
   if (tracker_ball_state_.detected) {
     ball_info_.tracker.stamp = tracker_ball_state_.last_detect_time;
     ball_info_.tracker.pos.x = tracker_ball_state_.position.x();
     ball_info_.tracker.pos.y = tracker_ball_state_.position.y();
     ball_info_.tracker.pos.z = tracker_ball_state_.position.z();
-  }
-
-  // Tracker はカメラ統合済みなので特定カメラに帰属しない → occlusion 推定には使えない
-  if (tracker_ball_state_.detected) {
     last_known_ball_position_ = tracker_ball_state_.position;
     last_known_ball_stamp_ = now;
     last_known_ball_valid_ = true;
