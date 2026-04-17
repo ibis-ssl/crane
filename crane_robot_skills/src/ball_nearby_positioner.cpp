@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
 
 namespace crane::skills
@@ -84,12 +84,7 @@ auto BallNearByPositioner::update() -> Status
 
   auto avoidEnemyPenaltyArea = [&](Point & point) {
     const auto cmd = world_model()->getMsg().play_situation.command.value;
-    using PS = crane_msgs::msg::PlaySituation;
-    // INPLAY/HALT/HALF_TIME/POST_GAME以外（セットプレイ中）は拡大マージンを使用
-    // rvo2_planner の needsExpandedPenaltyAreaOffset() と同等の判定
-    const bool is_setplay =
-      (cmd != PS::INPLAY && cmd != PS::HALT && cmd != PS::HALF_TIME && cmd != PS::POST_GAME);
-    const double penalty_offset = is_setplay ? 0.2 : 0.15;
+    const double penalty_offset = needsExpandedPenaltyAreaOffset(cmd) ? 0.35 : 0.15;
 
     if (world_model()->point_checker.isEnemyPenaltyArea(point, penalty_offset)) {
       const auto their_penalty_area = world_model()->getTheirPenaltyArea();

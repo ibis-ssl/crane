@@ -8,6 +8,7 @@
 #define CRANE_SESSIONS__FORWARD_SESSION_HPP_
 
 #include <algorithm>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_physics/penalty_aware_distance.hpp>

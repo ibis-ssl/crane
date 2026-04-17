@@ -10,6 +10,7 @@
 #include <rvo2_vendor/RVO/RVO.h>
 
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/velocity_plan_tracker.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -61,23 +62,6 @@ public:
     -> crane_msgs::msg::RobotCommands override;
 
   auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
-
-  // セットプレイ中（INPLAY/HALT以外）かどうかを判定する。
-  // STOP_PRE_*（値60-66）、FREE_KICK、BALL_PLACEMENT等が該当し、
-  // これらの状態では敵ペナルティエリアへの離隔マージンを拡大する。
-  static auto needsExpandedPenaltyAreaOffset(uint8_t cmd) -> bool
-  {
-    using PS = crane_msgs::msg::PlaySituation;
-    switch (cmd) {
-      case PS::INPLAY:
-      case PS::HALT:
-      case PS::HALF_TIME:
-      case PS::POST_GAME:
-        return false;
-      default:
-        return true;
-    }
-  }
 
 private:
   struct PreprocessContext
@@ -175,7 +159,7 @@ private:
 
   // ペナルティエリア回避パラメータ
   double PENALTY_AREA_OFFSET = 0.1;       // ペナルティエリア判定マージン [m]（グローバル回避用）
-  double PENALTY_AREA_OFFSET_STOP = 0.3;  // ペナルティエリア判定マージン [m]（STOP時）
+  double PENALTY_AREA_OFFSET_STOP = 0.4;  // ペナルティエリア判定マージン [m]（STOP時）
   double PENALTY_AREA_SURROUNDING_OFFSET = 0.2;         // 角回避の余白 [m]
   bool PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING = true;  // 横断時に強制迂回
   float PENALTY_AREA_TIME_HORIZON_OBST = 0.5f;          // RVO2障害物回避の時間ホライズン [s]
