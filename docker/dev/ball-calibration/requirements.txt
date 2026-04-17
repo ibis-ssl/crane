@@ -4,3 +4,6 @@ numpy
 pyyaml
 python-multipart
 rosbags
+scipy
+scikit-learn
+pytest

@@ -65,6 +65,12 @@ def _build_doc(
         "trajectories_analyzed": result.trajectories_analyzed,
         "trajectories_used": result.trajectories_used,
     }
+    if result.aggregate_stats is not None:
+        agg = result.aggregate_stats
+        calibration_info["deceleration_ci_low"] = agg.ci_decel[0]
+        calibration_info["deceleration_ci_high"] = agg.ci_decel[1]
+        calibration_info["aggregation_method"] = agg.method
+        calibration_info["inlier_trajectory_ratio"] = agg.inlier_trajectory_ratio
     if include_timestamp:
         calibration_info = {"timestamp": int(time.time()), **calibration_info}
 

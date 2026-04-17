@@ -11,6 +11,7 @@ from models import (
     KickPowerVelocityPair,
     OptimizationConfig,
     OptimizationResult,
+    PerTrajectoryFit,
     PredictedTrajectory,
     TrajectoryData,
 )
@@ -81,7 +82,7 @@ def filter_quality_data(
                 valid = False
                 break
             max_vel = max(max_vel, v)
-        if not valid or max_vel < 0.5:
+        if not valid or max_vel < config.min_max_velocity:
             continue
 
         filtered.append(traj)
@@ -266,43 +267,200 @@ def run_optimization(
                 trimmed.append(traj)
         trajectories = trimmed
 
-    # 品質フィルタリング
-    filtered = filter_quality_data(trajectories, config)
+    # 品質フィルタリング（linear では kick_power > 0 必須、ロバスト系は kick_power=0 も許容）
+    if config.algorithm == "linear":
+        filtered = filter_quality_data(trajectories, config)
+    else:
+        filtered = _filter_quality_data_relaxed(trajectories, config)
     result.trajectories_used = len(filtered)
 
     if len(filtered) < 3:
         logger.error("有効な軌道データが不足: %d個 (最低3個必要)", len(filtered))
         return result
 
-    # グローバル減速度最適化
-    decel, rmse = optimize_global_deceleration(filtered, config)
-    if decel <= 0.0:
-        logger.error("グローバル減速度最適化に失敗")
-        return result
-    result.global_deceleration = decel
+    if config.algorithm == "linear":
+        # 従来のグリッドサーチ
+        decel, rmse = optimize_global_deceleration(filtered, config)
+        if decel <= 0.0:
+            logger.error("グローバル減速度最適化に失敗")
+            return result
+        result.global_deceleration = decel
 
-    # 個別軌道の初速度推定
-    kick_data = []
-    total_rmse = 0.0
-    for traj in filtered:
-        pair = estimate_initial_velocity(traj, config)
-        if pair.fitting_r_squared >= config.min_fitting_r_squared:
-            kick_data.append(pair)
-            total_rmse += 1.0 - pair.fitting_r_squared
+        kick_data = []
+        total_rmse = 0.0
+        for traj in filtered:
+            pair = estimate_initial_velocity(traj, config)
+            if pair.fitting_r_squared >= config.min_fitting_r_squared:
+                kick_data.append(pair)
+                total_rmse += 1.0 - pair.fitting_r_squared
 
-    result.kick_data = kick_data
-    n = len(kick_data)
-    result.global_rmse = total_rmse / n if n > 0 else 1.0
-    result.global_r_squared = 1.0 - result.global_rmse
-    result.power_velocity_summary = generate_kick_power_mapping(kick_data)
-    result.success = n >= 3
+        result.kick_data = kick_data
+        n = len(kick_data)
+        result.global_rmse = total_rmse / n if n > 0 else 1.0
+        result.global_r_squared = 1.0 - result.global_rmse
+        result.power_velocity_summary = generate_kick_power_mapping(kick_data)
+        result.success = n >= 3
+    else:
+        # ロバスト推定パイプライン
+        result = _run_robust_optimization(filtered, config, result)
 
     logger.info(
         "最適化完了: decel=%.4f, RMSE=%.4f, キックデータ=%d個",
         result.global_deceleration,
         result.global_rmse,
-        n,
+        len(result.kick_data),
     )
+    return result
+
+
+def _filter_quality_data_relaxed(
+    trajectories: list[TrajectoryData],
+    config: OptimizationConfig,
+) -> list[TrajectoryData]:
+    """kick_power=0 の軌道も含む緩いフィルタ（ロバスト系アルゴリズム用）."""
+    filtered = []
+    for traj in trajectories:
+        if traj.is_chip_kick:
+            continue
+        if len(traj.time_points) < config.min_data_points_per_trajectory:
+            continue
+        if traj.kick_power < 0.0 or traj.kick_power > 1.0:
+            continue
+        if traj.duration < config.min_trajectory_duration:
+            continue
+
+        max_vel = 0.0
+        valid = True
+        for v in traj.velocities:
+            if v < 0.0 or v > 20.0:
+                valid = False
+                break
+            max_vel = max(max_vel, v)
+        if not valid or max_vel < config.min_max_velocity:
+            continue
+
+        filtered.append(traj)
+    return filtered
+
+
+def _run_robust_optimization(
+    filtered: list[TrajectoryData],
+    config: OptimizationConfig,
+    result: OptimizationResult,
+) -> OptimizationResult:
+    """ロバスト推定パイプライン（Huber/RANSAC/非線形 Huber）."""
+    from aggregate import aggregate_deceleration
+    from robust_fit import FitResult, bootstrap_ci, pick_fit_fn
+
+    fit_fn = pick_fit_fn(
+        config.algorithm,
+        config.physics_model,
+        epsilon=config.huber_epsilon,
+        residual_threshold=config.ransac_residual_threshold,
+    )
+
+    fits: list[FitResult] = []
+    per_traj: list[PerTrajectoryFit] = []
+    n_points_list: list[int] = []
+    kick_data: list[KickPowerVelocityPair] = []
+
+    for traj in filtered:
+        t_arr = np.array(traj.time_points)
+        v_arr = np.array(traj.velocities)
+        fit = fit_fn(t_arr, v_arr)
+
+        rejection_reason = fit.rejection_reason
+        rejected = fit.rejected
+
+        # ロバスト推定では内点率のみで棄却（R² は情報として残すが棄却基準にしない）
+        if not rejected:
+            if fit.inlier_ratio < config.min_inlier_ratio:
+                rejected = True
+                rejection_reason = (
+                    f"内点率不足: {fit.inlier_ratio:.2f} < {config.min_inlier_ratio}"
+                )
+            elif fit.deceleration <= 0.0:
+                rejected = True
+                rejection_reason = "減速度が非正"
+
+        # ブートストラップ CI（有効な軌道のみ）
+        ci_v0 = (fit.v0, fit.v0)
+        ci_decel = (fit.deceleration, fit.deceleration)
+        if not rejected and config.bootstrap_n > 0 and len(t_arr) >= 5:
+            v0_samples, decel_samples = bootstrap_ci(
+                t_arr, v_arr, fit_fn, n_boot=config.bootstrap_n
+            )
+            if v0_samples:
+                ci_v0 = (
+                    float(np.percentile(v0_samples, 2.5)),
+                    float(np.percentile(v0_samples, 97.5)),
+                )
+                ci_decel = (
+                    float(np.percentile(decel_samples, 2.5)),
+                    float(np.percentile(decel_samples, 97.5)),
+                )
+
+        per_traj.append(
+            PerTrajectoryFit(
+                event_id=traj.event_id,
+                method=fit.method,
+                v0=fit.v0,
+                deceleration=fit.deceleration,
+                r_squared=fit.r_squared,
+                rmse=fit.rmse,
+                inlier_ratio=fit.inlier_ratio,
+                weights=fit.weights,
+                residuals=fit.residuals,
+                ci_v0=ci_v0,
+                ci_decel=ci_decel,
+                rejected=rejected,
+                rejection_reason=rejection_reason,
+            )
+        )
+        fits.append(fit)
+        n_points_list.append(len(traj.time_points))
+
+        if not rejected and fit.v0 > 0.0:
+            pair = KickPowerVelocityPair(
+                event_id=traj.event_id,
+                kick_power=traj.kick_power,
+                estimated_initial_velocity=fit.v0,
+                is_chip_kick=traj.is_chip_kick,
+                fitting_r_squared=fit.r_squared,
+                trajectory_duration=traj.duration,
+                confidence_lower=ci_v0[0],
+                confidence_upper=ci_v0[1],
+                inlier_ratio=fit.inlier_ratio,
+                method=fit.method,
+            )
+            kick_data.append(pair)
+
+    result.per_trajectory_fits = per_traj
+
+    # 集約
+    agg_stats = aggregate_deceleration(
+        fits,
+        n_points_list,
+        method=config.aggregation_method,
+        bootstrap_n=config.bootstrap_n,
+    )
+    result.aggregate_stats = agg_stats
+    result.global_deceleration = agg_stats.deceleration
+
+    result.kick_data = kick_data
+    n = len(kick_data)
+    if n > 0:
+        valid_fits = [f for f in fits if not f.rejected]
+        result.global_rmse = (
+            float(np.mean([f.rmse for f in valid_fits])) if valid_fits else 1.0
+        )
+        result.global_r_squared = (
+            float(np.mean([f.r_squared for f in valid_fits])) if valid_fits else 0.0
+        )
+    result.power_velocity_summary = generate_kick_power_mapping(kick_data)
+    # ロバスト推定では aggregate_stats の n_trajectories で success を判定
+    result.success = agg_stats.n_trajectories >= 1 and agg_stats.deceleration > 0.0
+
     return result
 
 

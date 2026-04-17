@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from mcap_extractor import extract_trajectories_from_mcap
+from models import KickDetectorConfig
 from models import (
     LoadPathRequest,
     ManualParamsRequest,
@@ -55,11 +56,15 @@ def _find_trajectory(event_id: int) -> TrajectoryData:
     )
 
 
-def _store_trajectories(trajectories: list[TrajectoryData], filename: str) -> dict:
+def _store_trajectories(
+    trajectories: list[TrajectoryData], filename: str, path: str | None = None
+) -> dict:
     _state["trajectories"] = trajectories
     _state["optimization_result"] = None
     _state["kick_power_overrides"] = {}
     _state["current_deceleration"] = 0.7
+    if path:
+        _state["current_path"] = path
     return {"loaded": len(trajectories), "filename": filename}
 
 
@@ -89,12 +94,22 @@ async def load_path(req: LoadPathRequest) -> dict:
     path = Path(req.path)
     if not path.exists():
         raise HTTPException(status_code=400, detail=f"ファイルが見つかりません: {path}")
-    if path.suffix.lower() not in {".mcap", ".db3"}:
+    if path.is_dir():
+        # ディレクトリ指定の場合は最初の mcap を探す
+        mcap_files = sorted(path.glob("*.mcap"))
+        if not mcap_files:
+            raise HTTPException(
+                status_code=400, detail=f"mcap ファイルが見つかりません: {path}"
+            )
+        path = mcap_files[0]
+    elif path.suffix.lower() not in {".mcap", ".db3"}:
         raise HTTPException(
             status_code=400, detail="対応ファイル形式: .mcap または .db3"
         )
 
-    return _store_trajectories(extract_trajectories_from_mcap(path), path.name)
+    return _store_trajectories(
+        extract_trajectories_from_mcap(path), path.name, str(path)
+    )
 
 
 @app.post("/api/upload")
@@ -166,8 +181,45 @@ async def optimize(req: OptimizeRequest) -> OptimizationResult:
     )
 
     _state["optimization_result"] = result
-    _state["current_deceleration"] = result.global_deceleration
+    if result.global_deceleration > 0.0:
+        _state["current_deceleration"] = result.global_deceleration
     return result
+
+
+@app.post("/api/reload")
+async def reload_trajectories(kick_detector: KickDetectorConfig | None = None) -> dict:
+    """キック検出設定を変えて現在の bag から再抽出する."""
+    current_path: str | None = _state.get("current_path")
+    if not current_path:
+        raise HTTPException(status_code=400, detail="bag が読み込まれていません")
+    path = Path(current_path)
+    trajectories = extract_trajectories_from_mcap(path, kick_cfg=kick_detector)
+    return _store_trajectories(trajectories, path.name)
+
+
+@app.get("/api/bootstrap/{event_id}")
+async def get_bootstrap(event_id: int, n_boot: int = 300) -> dict:
+    """指定軌道のブートストラップ分布を返す (UI ヒストグラム用)."""
+    from robust_fit import bootstrap_ci, pick_fit_fn
+    import numpy as np
+
+    result: OptimizationResult | None = _state["optimization_result"]
+    if result is None:
+        raise HTTPException(status_code=400, detail="最適化が完了していません")
+
+    traj = _find_trajectory(event_id)
+    config = OptimizationConfig()
+
+    fit_fn = pick_fit_fn(config.algorithm, config.physics_model)
+    t_arr = np.array(traj.time_points)
+    v_arr = np.array(traj.velocities)
+    v0_samples, decel_samples = bootstrap_ci(t_arr, v_arr, fit_fn, n_boot=n_boot)
+
+    return {
+        "event_id": event_id,
+        "v0_samples": v0_samples,
+        "decel_samples": decel_samples,
+    }
 
 
 @app.post("/api/predict")

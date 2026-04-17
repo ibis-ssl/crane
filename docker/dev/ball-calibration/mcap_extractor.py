@@ -12,7 +12,8 @@ import math
 from collections import deque
 from pathlib import Path
 
-from models import TrajectoryData
+from kick_detector import KickEvent, detect_kick_events
+from models import KickDetectorConfig, TrajectoryData
 
 logger = logging.getLogger(__name__)
 
@@ -107,18 +108,22 @@ def _build_typestore(bag_path: Path, reader) -> object:
     return typestore
 
 
-def _extract_ball_and_command_data(bag_path: Path) -> tuple[list, list, float, float]:
+def _extract_ball_and_command_data(
+    bag_path: Path,
+) -> tuple[list, list, list, float, float]:
     """mcapファイルからボールデータとロボットコマンドデータを抽出する.
 
     Returns:
         ball_data: list of (timestamp_ns, pos_x, pos_y, pos_z, vel_x, vel_y, vel_z, state, detected)
         command_data: list of (timestamp_ns, kick_power, chip_enable)
+        robot_data: list of (timestamp_ns, team, robot_id, pos_x, pos_y)
         field_length_half, field_width_half: フィールドサイズ [m]
     """
     from rosbags.rosbag2 import Reader
 
     ball_data: list[tuple] = []
     command_data: list[tuple] = []
+    robot_data: list[tuple] = []
 
     pos_history: deque[tuple[float, float]] = deque(maxlen=5)
     vel_history: deque[tuple[float, float]] = deque(maxlen=5)
@@ -237,6 +242,31 @@ def _extract_ball_and_command_data(bag_path: Path) -> tuple[list, list, float, f
                             )
                         )
 
+                        # ロボット位置を収集（所有者判定用）
+                        try:
+                            for robot in getattr(msg, "robots_blue", []):
+                                robot_data.append(
+                                    (
+                                        timestamp_ns,
+                                        "blue",
+                                        int(robot.id),
+                                        float(robot.pose.x),
+                                        float(robot.pose.y),
+                                    )
+                                )
+                            for robot in getattr(msg, "robots_yellow", []):
+                                robot_data.append(
+                                    (
+                                        timestamp_ns,
+                                        "yellow",
+                                        int(robot.id),
+                                        float(robot.pose.x),
+                                        float(robot.pose.y),
+                                    )
+                                )
+                        except Exception:
+                            pass  # ロボット情報がなくても処理続行
+
                     except Exception as e:
                         logger.debug("world_model デシリアライズエラー: %s", e)
 
@@ -260,43 +290,12 @@ def _extract_ball_and_command_data(bag_path: Path) -> tuple[list, list, float, f
         raise
 
     logger.info(
-        "データ抽出完了: ボールデータ %d 点, ロボットコマンド %d 件",
+        "データ抽出完了: ボールデータ %d 点, ロボットコマンド %d 件, ロボット位置 %d 件",
         len(ball_data),
         len(command_data),
+        len(robot_data),
     )
-    return ball_data, command_data, field_length_half, field_width_half
-
-
-def _detect_kick_events(ball_data: list[tuple]) -> list[tuple[int, float, float]]:
-    """キックイベントを検出する（スライディングウィンドウ方式）.
-
-    Returns:
-        list of (timestamp_ns, pos_x, pos_y)
-    """
-    kick_events: list[tuple[int, float, float]] = []
-
-    if len(ball_data) < REQUIRED_STATIONARY_FRAMES + 1:
-        return kick_events
-
-    # 連続静止フレーム数をスライディングウィンドウで追跡
-    stationary_count = 0
-    for entry in ball_data:
-        ts, sx, sy, _, vx, vy, _, _, _ = entry
-        speed = math.hypot(vx, vy)
-
-        if speed < MAX_PRE_KICK_SPEED:
-            stationary_count += 1
-        else:
-            # 十分な静止フレームの後に速度が MIN_KICK_SPEED を超えたらキックイベント
-            if (
-                stationary_count >= REQUIRED_STATIONARY_FRAMES
-                and speed > MIN_KICK_SPEED
-            ):
-                kick_events.append((ts, sx, sy))
-            stationary_count = 0
-
-    logger.info("キックイベント検出: %d 件", len(kick_events))
-    return kick_events
+    return ball_data, command_data, robot_data, field_length_half, field_width_half
 
 
 def _is_field_inside(
@@ -368,6 +367,27 @@ def _extract_trajectory(
             elif elapsed - stationary_start_ts > _STATIONARY_DURATION and has_movement:
                 break
 
+        # 直近 0.4s ウィンドウで速度が低く R² が低い場合に終了（減速傾向消失）
+        if has_movement and elapsed > 0.4 and len(trajectory) >= 8:
+            window_pts = [
+                p for p in trajectory if elapsed - (p[0] - kick_ts) * 1e-9 <= 0.4
+            ]
+            if len(window_pts) >= 4:
+                w_spd = [p[3] for p in window_pts]
+                w_t = [(p[0] - window_pts[0][0]) * 1e-9 for p in window_pts]
+                mean_w = sum(w_spd) / len(w_spd)
+                ss_tot = sum((v - mean_w) ** 2 for v in w_spd)
+                if ss_tot > 1e-6 and mean_w < 0.2:
+                    a_w = sum(
+                        (t - sum(w_t) / len(w_t)) * (v - mean_w)
+                        for t, v in zip(w_t, w_spd)
+                    ) / sum((t - sum(w_t) / len(w_t)) ** 2 for t in w_t)
+                    b_w = mean_w - a_w * (sum(w_t) / len(w_t))
+                    ss_res = sum((v - (a_w * t + b_w)) ** 2 for t, v in zip(w_t, w_spd))
+                    r2_window = 1.0 - ss_res / ss_tot
+                    if r2_window < 0.3:
+                        break
+
     # 停止直前の微動データを末尾からトリム（停止点から5cm以内の点を除去）
     if has_movement and trajectory:
         stop_x, stop_y = trajectory[-1][1], trajectory[-1][2]
@@ -431,11 +451,14 @@ def _trajectory_to_data(
     )
 
 
-def extract_trajectories_from_mcap(mcap_path: Path) -> list[TrajectoryData]:
+def extract_trajectories_from_mcap(
+    mcap_path: Path,
+    kick_cfg: KickDetectorConfig | None = None,
+) -> list[TrajectoryData]:
     """mcapファイルからキャリブレーション用軌道データを抽出する."""
     logger.info("mcap抽出開始: %s", mcap_path)
 
-    ball_data, command_data, field_length_half, field_width_half = (
+    ball_data, command_data, robot_data, field_length_half, field_width_half = (
         _extract_ball_and_command_data(mcap_path)
     )
 
@@ -443,7 +466,11 @@ def extract_trajectories_from_mcap(mcap_path: Path) -> list[TrajectoryData]:
         logger.warning("ボールデータが抽出できませんでした")
         return []
 
-    kick_events = _detect_kick_events(ball_data)
+    kick_events: list[KickEvent] = detect_kick_events(
+        ball_data,
+        robot_data if robot_data else None,
+        kick_cfg,
+    )
     if not kick_events:
         logger.warning("キックイベントが検出されませんでした")
         return []
@@ -456,7 +483,8 @@ def extract_trajectories_from_mcap(mcap_path: Path) -> list[TrajectoryData]:
     trajectories: list[TrajectoryData] = []
     event_id = 0
 
-    for kick_ts, _, _ in kick_events:
+    for event in kick_events:
+        kick_ts = event.ts_ns
         # bisect で5秒ウィンドウ内のコマンドを絞り込んで最近接を探す
         lo = bisect.bisect_left(cmd_timestamps, kick_ts - _MATCH_WINDOW_NS)
         hi = bisect.bisect_right(cmd_timestamps, kick_ts + _MATCH_WINDOW_NS)
@@ -468,10 +496,11 @@ def extract_trajectories_from_mcap(mcap_path: Path) -> list[TrajectoryData]:
                 best_dt = dt
                 best_cmd = (kick_power, chip_enable)
 
+        # コマンドが見つからない場合は kick_power=0（コマンドなしとして推定継続）
         if best_cmd is None:
-            continue
-
-        kick_power, is_chip_kick = best_cmd
+            kick_power, is_chip_kick = 0.0, False
+        else:
+            kick_power, is_chip_kick = best_cmd
 
         raw_traj, has_movement = _extract_trajectory(
             ball_data, timestamps, kick_ts, field_length_half, field_width_half
