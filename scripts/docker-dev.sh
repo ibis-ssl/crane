@@ -1,13 +1,14 @@
 #!/bin/bash
 # Docker開発環境の起動スクリプト
 # Usage:
-#   ./scripts/docker-dev.sh [sim|real] [--no-debug] [docker-compose-args...]
+#   ./scripts/docker-dev.sh [sim|real] [--sim erforce|grsim] [--no-debug] [docker-compose-args...]
 #
 # Examples:
-#   ./scripts/docker-dev.sh           # sim環境 + ssl-log-recorder
-#   ./scripts/docker-dev.sh -d        # sim環境(バックグラウンド)
-#   ./scripts/docker-dev.sh --no-debug  # robot-managerなし
-#   ./scripts/docker-dev.sh down      # 停止
+#   ./scripts/docker-dev.sh                     # sim環境(ER-Force) + ssl-log-recorder
+#   ./scripts/docker-dev.sh --sim grsim         # sim環境(grSim)
+#   ./scripts/docker-dev.sh -d                  # sim環境(バックグラウンド)
+#   ./scripts/docker-dev.sh --no-debug          # robot-managerなし
+#   ./scripts/docker-dev.sh down                # 停止
 
 set -e
 
@@ -20,6 +21,7 @@ COMPOSE_FILE="docker/dev/docker-compose.yaml"
 
 # 引数解析
 MODE="sim"
+SIM="erforce"
 ENABLE_ROBOT_MANAGER=true
 DOCKER_ARGS=()
 
@@ -32,6 +34,14 @@ while [[ $# -gt 0 ]]; do
     sim)
         MODE="sim"
         shift
+        ;;
+    --sim)
+        SIM="$2"
+        if [[ $SIM != "erforce" && $SIM != "grsim" ]]; then
+            echo "エラー: --sim には erforce または grsim を指定してください" >&2
+            exit 1
+        fi
+        shift 2
         ;;
     --no-debug)
         ENABLE_ROBOT_MANAGER=false
@@ -84,6 +94,9 @@ COMPOSE_COMMAND="$(detect_compose_command)"
 
 echo "=== Docker開発環境 ==="
 echo "モード: $MODE"
+if [[ $MODE == "sim" ]]; then
+    echo "シミュレータ: $SIM"
+fi
 echo "robot-manager: $ENABLE_ROBOT_MANAGER"
 echo "compose command: $COMPOSE_COMMAND"
 echo "Compose file: $COMPOSE_FILE"
@@ -96,7 +109,7 @@ fi
 
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
-    docker compose -f "$COMPOSE_FILE" --profile sim "${DOCKER_ARGS[@]}"
+    docker compose -f "$COMPOSE_FILE" --profile "sim-${SIM}" "${DOCKER_ARGS[@]}"
 else
     # 実機環境(Visionポート変更、status-board無効)
     VISION_PORT=10006 REFEREE_PORT=10003 TRACKER_PORT=10010 docker compose -f "$COMPOSE_FILE" "${DOCKER_ARGS[@]}"
