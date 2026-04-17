@@ -33,12 +33,14 @@ struct FlatValueMap
       auto pos = path.find('/', 1);
       return pos != std::string::npos ? path.substr(0, pos) : path;
     };
-    if (!flat.value.empty())
-      prefix = find_prefix(flat.value[0].first.toStdString());
-    else if (!flat.name.empty())
-      prefix = find_prefix(flat.name[0].first.toStdString());
-    for (const auto & [fv, var] : flat.value) numeric[fv.toStdString()] = var.convert<double>();
-    for (const auto & [fv, s] : flat.name) text[fv.toStdString()] = s;
+    if (!flat.value.empty()) prefix = find_prefix(flat.value[0].first.toStdString());
+    for (const auto & [fv, var] : flat.value) {
+      if (var.getTypeID() == RosMsgParser::STRING) {
+        text[fv.toStdString()] = var.extract<std::string>();
+      } else {
+        numeric[fv.toStdString()] = var.convert<double>();
+      }
+    }
   }
 
   // 完全パスで各型の値を返す
