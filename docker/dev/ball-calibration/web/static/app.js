@@ -66,6 +66,103 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ===== ファイルブラウザ =====
+let _fbModal = null;
+let _fbSelectedPath = null;
+
+async function openFileBrowser() {
+  _fbSelectedPath = null;
+  document.getElementById('fbSelectedPath').textContent = '';
+  document.getElementById('fbSelectBtn').disabled = true;
+
+  if (!_fbModal) {
+    _fbModal = new bootstrap.Modal(document.getElementById('fileBrowserModal'));
+  }
+  _fbModal.show();
+
+  const startPath = document.getElementById('pathInput').value.trim() || '/home';
+  await _fbBrowse(startPath);
+}
+
+async function _fbBrowse(path) {
+  document.getElementById('fbStatus').textContent = '読み込み中...';
+  document.getElementById('fbTableBody').innerHTML = '';
+  document.getElementById('fbBreadcrumb').textContent = path;
+  try {
+    const data = await apiGet(`/api/browse?path=${encodeURIComponent(path)}`);
+    _fbRender(data);
+  } catch (e) {
+    document.getElementById('fbStatus').textContent = `エラー: ${e.message}`;
+  }
+}
+
+function _fbRender(data) {
+  const tbody = document.getElementById('fbTableBody');
+  tbody.innerHTML = '';
+  document.getElementById('fbBreadcrumb').textContent = data.current;
+  document.getElementById('fbStatus').textContent =
+    `${data.dirs.length} フォルダ / ${data.files.length} ファイル`;
+
+  const mkRow = (icon, iconColor, name, onClick, style = '') => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.style.cssText += style;
+    tr.innerHTML = `<td style="padding:6px 10px;">
+      <i class="${icon}" style="color:${iconColor}; width:18px;"></i>
+      <span class="ms-2 font-monospace small">${name}</span>
+    </td>`;
+    tr.addEventListener('click', onClick);
+    return tr;
+  };
+
+  if (data.parent) {
+    tbody.appendChild(mkRow(
+      'fas fa-level-up-alt', '#90caf9', '.. (上へ)',
+      () => _fbBrowse(data.parent),
+    ));
+  }
+
+  for (const dir of data.dirs) {
+    tbody.appendChild(mkRow(
+      'fas fa-folder', '#ffd54f', dir.name,
+      () => _fbBrowse(dir.path),
+    ));
+  }
+
+  for (const file of data.files) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    const tr = mkRow(
+      'fas fa-file-alt', '#a5d6a7', `${file.name}  (${sizeMB} MB)`,
+      () => _fbSelectFile(file.path),
+    );
+    tbody.appendChild(tr);
+  }
+
+  if (data.dirs.length === 0 && data.files.length === 0 && !data.parent) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="text-muted small p-3">ファイルが見つかりません</td>';
+    tbody.appendChild(tr);
+  }
+}
+
+function _fbSelectFile(path) {
+  _fbSelectedPath = path;
+  document.getElementById('fbSelectedPath').textContent = path;
+  document.getElementById('fbSelectBtn').disabled = false;
+
+  // 行のハイライト
+  document.querySelectorAll('#fbTableBody tr').forEach(tr => {
+    tr.style.backgroundColor = tr.querySelector('span')?.textContent.trim().startsWith(path.split('/').pop())
+      ? '#1e3a5f' : '';
+  });
+}
+
+function confirmFileSelection() {
+  if (!_fbSelectedPath) return;
+  document.getElementById('pathInput').value = _fbSelectedPath;
+  if (_fbModal) _fbModal.hide();
+}
+
 async function loadFromPath() {
   const path = document.getElementById('pathInput').value.trim();
   if (!path) {

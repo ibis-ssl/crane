@@ -98,6 +98,9 @@
                 <div class="input-group">
                   <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
                     placeholder="/home/user/bags/calibration.mcap">
+                  <button class="btn btn-outline-secondary btn-sm" onclick="openFileBrowser()" title="ファイルを参照">
+                    <i class="fas fa-folder me-1"></i>参照
+                  </button>
                   <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
                     <i class="fas fa-folder-open me-1"></i>読み込む
                   </button>
@@ -374,6 +377,38 @@
 
   </div><!-- /tab-content -->
 </div><!-- /container-fluid -->
+
+<!-- ===== ファイルブラウザ モーダル ===== -->
+<div class="modal fade" id="fileBrowserModal" tabindex="-1" aria-labelledby="fileBrowserLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:#0f2744; color:#e0e0e0; border-color:#2d4a7a;">
+      <div class="modal-header" style="border-color:#2d4a7a;">
+        <h6 class="modal-title" id="fileBrowserLabel">
+          <i class="fas fa-folder-open me-2"></i>ファイルを選択
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-2">
+        <!-- パンくずリスト -->
+        <div id="fbBreadcrumb" class="small font-monospace mb-2 px-1" style="word-break:break-all; color:#90caf9;"></div>
+        <!-- ファイル一覧 -->
+        <div id="fbList" style="max-height:420px; overflow-y:auto; border:1px solid #2d4a7a; border-radius:6px;">
+          <table class="table table-sm mb-0" style="background:#0a1929; color:#e0e0e0;">
+            <tbody id="fbTableBody"></tbody>
+          </table>
+        </div>
+        <div id="fbStatus" class="small text-muted mt-1 px-1"></div>
+      </div>
+      <div class="modal-footer" style="border-color:#2d4a7a;">
+        <span class="me-auto small font-monospace text-info" id="fbSelectedPath" style="word-break:break-all;"></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-primary btn-sm" id="fbSelectBtn" disabled onclick="confirmFileSelection()">
+          <i class="fas fa-check me-1"></i>選択
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>

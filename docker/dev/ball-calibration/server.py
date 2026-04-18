@@ -88,6 +88,38 @@ async def healthz() -> dict:
     return {"ok": True, "service": "ball-calibration"}
 
 
+@app.get("/api/browse")
+async def browse(path: str = "/") -> dict:
+    """サーバー上のディレクトリを一覧する（ファイルブラウザ用）."""
+    base = Path(path).resolve()
+    if not base.exists() or not base.is_dir():
+        raise HTTPException(
+            status_code=400, detail=f"ディレクトリが見つかりません: {path}"
+        )
+
+    mcap_exts = {".mcap", ".db3"}
+    dirs, files = [], []
+    try:
+        for entry in sorted(base.iterdir()):
+            if entry.name.startswith("."):
+                continue
+            if entry.is_dir():
+                dirs.append({"name": entry.name, "path": str(entry)})
+            elif entry.suffix.lower() in mcap_exts:
+                files.append(
+                    {
+                        "name": entry.name,
+                        "path": str(entry),
+                        "size": entry.stat().st_size,
+                    }
+                )
+    except PermissionError:
+        pass
+
+    parent = str(base.parent) if base != base.parent else None
+    return {"current": str(base), "parent": parent, "dirs": dirs, "files": files}
+
+
 @app.post("/api/load_path")
 async def load_path(req: LoadPathRequest) -> dict:
     """サーバー上のmcapファイルパスを直接指定して軌道データを読み込む."""
