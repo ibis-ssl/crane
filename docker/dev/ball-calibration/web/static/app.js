@@ -23,6 +23,11 @@ const PLOT_LAYOUT_BASE = {
   yaxis: { gridcolor: '#1e3a5f', zerolinecolor: '#2d4a7a' },
 };
 
+const timelineState = {
+  range: null,         // [start_s, end_s]
+  totalDuration: 0,
+};
+
 // ===== API ヘルパー =====
 async function apiPost(url, body) {
   const res = await fetch(url, {
@@ -82,6 +87,7 @@ async function loadFromPath() {
     const result = await apiPost('/api/load_path', { path });
     showStatus('loadStatus', `完了: ${result.loaded} 件の軌道データを抽出 (${result.filename})`, 'success');
     await refreshTrajectoryList();
+    await loadTimeline();
   } catch (e) {
     showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
   }
@@ -104,8 +110,6 @@ async function refreshTrajectoryList() {
       <td><input type="checkbox" class="row-check" data-id="${t.event_id}" checked
         onchange="onRowCheck(${t.event_id}, this.checked)"></td>
       <td>${t.event_id}${hasRange ? ' <i class="fas fa-cut text-warning" title="時間範囲選択中"></i>' : ''}</td>
-      <td>${t.kick_power.toFixed(2)}</td>
-      <td><span class="badge ${t.is_chip_kick ? 'bg-warning text-dark' : 'bg-info'}">${t.is_chip_kick ? 'チップ' : 'ストレート'}</span></td>
       <td>${t.data_points}</td>
       <td>${t.duration.toFixed(2)}</td>
       <td>${t.max_velocity.toFixed(2)}</td>
@@ -294,7 +298,6 @@ async function runOptimization() {
     state.predictedData = predResult.trajectories;
 
     document.getElementById('verifyCard').style.removeProperty('display');
-    document.getElementById('pvCard').style.removeProperty('display');
     document.getElementById('accuracyCard').style.removeProperty('display');
 
     renderVerifyCharts();
@@ -323,7 +326,7 @@ function renderVerifyCharts() {
     vtTraces.push({
       x: traj.time_points, y: traj.actual_velocities,
       mode: 'markers', marker: { size: 3, color, opacity: 0.6 },
-      name: `#${traj.event_id} (p=${traj.kick_power.toFixed(2)})`,
+      name: `#${traj.event_id}`,
       legendgroup: `g${traj.event_id}`,
       showlegend: true,
     });
@@ -346,40 +349,6 @@ function renderVerifyCharts() {
     margin: { ...PLOT_LAYOUT_BASE.margin, t: 35 },
   }, { responsive: true });
 
-  if (state.optimizationResult && state.optimizationResult.kick_data) {
-    const pwVel = state.optimizationResult.kick_data.filter(k => !k.is_chip_kick);
-    const pvTrace = [{
-      x: pwVel.map(k => k.kick_power),
-      y: pwVel.map(k => k.estimated_initial_velocity),
-      mode: 'markers',
-      marker: { size: 6, color: '#a8d8ea', opacity: 0.8 },
-      text: pwVel.map(k => `#${k.event_id}<br>R²=${k.fitting_r_squared.toFixed(3)}`),
-      hovertemplate: '%{text}<br>power=%{x:.2f}<br>v0=%{y:.3f} m/s<extra></extra>',
-      name: '推定初速度',
-    }];
-
-    const summary = state.optimizationResult.power_velocity_summary;
-    if (summary) {
-      const items = Object.entries(summary).sort();
-      pvTrace.push({
-        x: items.map(([k]) => parseInt(k.replace('power_', '')) / 100),
-        y: items.map(([, v]) => v),
-        mode: 'lines+markers',
-        line: { color: '#e8a838', width: 2 },
-        marker: { size: 6, color: '#e8a838' },
-        name: '平均マッピング',
-      });
-    }
-
-    Plotly.newPlot('powerVelocityChart', pvTrace, {
-      ...PLOT_LAYOUT_BASE,
-      title: { text: 'Kick Power vs 初速度', font: { size: 11 } },
-      xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: 'キックパワー' },
-      yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '初速度 (m/s)' },
-      legend: { font: { size: 8 }, bgcolor: '#0f2744' },
-      margin: { l: 45, r: 10, t: 30, b: 40 },
-    }, { responsive: true });
-  }
 }
 
 function renderAccuracyTable() {
@@ -387,16 +356,17 @@ function renderAccuracyTable() {
   const tbody = document.getElementById('accuracyTable');
   tbody.innerHTML = '';
 
-  state.optimizationResult.kick_data.forEach(k => {
-    const r2Color = k.fitting_r_squared >= 0.8 ? 'text-success' :
-      k.fitting_r_squared >= 0.6 ? 'text-warning' : 'text-danger';
+  const fits = state.optimizationResult.per_trajectory_fits || [];
+  fits.forEach(k => {
+    if (k.rejected) return;
+    const r2Color = k.r_squared >= 0.8 ? 'text-success' :
+      k.r_squared >= 0.6 ? 'text-warning' : 'text-danger';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${k.event_id}</td>
-      <td>${k.kick_power.toFixed(2)}</td>
-      <td class="font-monospace">${k.estimated_initial_velocity.toFixed(4)}</td>
-      <td class="font-monospace ${r2Color}">${k.fitting_r_squared.toFixed(4)}</td>
-      <td>${k.trajectory_duration.toFixed(2)}</td>
+      <td class="font-monospace">${k.v0.toFixed(4)}</td>
+      <td class="font-monospace ${r2Color}">${k.r_squared.toFixed(4)}</td>
+      <td>${(k.ci_v0 ? ((k.ci_v0[1] - k.ci_v0[0]) / 2).toFixed(2) : '-')}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -406,14 +376,7 @@ function renderAccuracyTable() {
 
 async function refreshPreview() {
   try {
-    const data = await apiGet('/api/export/preview');
-    const la = data.launch_arrays;
-    if (la && la.straight_kick_power_array) {
-      document.getElementById('launchArrays').textContent =
-        `straight_kick_power_array: [${la.straight_kick_power_array.join(', ')}]\n` +
-        `straight_kick_speed_array:  [${la.straight_kick_speed_array.join(', ')}]`;
-      document.getElementById('launchArraysCard').style.removeProperty('display');
-    }
+    await apiGet('/api/export/preview');
   } catch (e) {
     console.error('プレビュー更新エラー:', e);
   }
@@ -442,6 +405,126 @@ async function downloadYaml() {
     span.className = 'text-success';
     span.textContent = '✓ calibrated_ball_physics.yaml をダウンロードしました';
     status.replaceChildren(span);
+  } catch (e) {
+    const span = document.createElement('span');
+    span.className = 'text-danger';
+    span.textContent = `エラー: ${e.message}`;
+    status.replaceChildren(span);
+  }
+}
+
+// ===== ログ全体タイムライン =====
+
+async function loadTimeline() {
+  const chartEl = document.getElementById('timelineChart');
+  const emptyEl = document.getElementById('timelineEmpty');
+  const controlsEl = document.getElementById('timelineControls');
+  const statusEl = document.getElementById('timelineStatus');
+
+  try {
+    const data = await apiGet('/api/timeline');
+    if (!data.time_points || data.time_points.length === 0) {
+      emptyEl.style.display = '';
+      controlsEl.classList.add('d-none');
+      statusEl.textContent = '';
+      return;
+    }
+
+    timelineState.totalDuration = data.total_duration;
+    timelineState.range = null;
+
+    emptyEl.style.display = 'none';
+    controlsEl.classList.remove('d-none');
+    statusEl.textContent =
+      `${data.downsampled_to} / ${data.total_samples} 点 (${data.total_duration.toFixed(1)}s)`;
+
+    Plotly.newPlot('timelineChart', [{
+      x: data.time_points,
+      y: data.velocities,
+      mode: 'lines',
+      line: { color: '#a8d8ea', width: 1 },
+      name: 'ボール速度',
+      hovertemplate: 't=%{x:.3f}s<br>v=%{y:.3f}m/s<extra></extra>',
+    }], {
+      ...PLOT_LAYOUT_BASE,
+      dragmode: 'select',
+      selectdirection: 'h',
+      xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
+      yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
+      margin: { l: 45, r: 15, t: 10, b: 40 },
+      shapes: [],
+    }, {
+      responsive: true,
+      displayModeBar: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ['lasso2d', 'autoScale2d', 'toggleSpikelines'],
+    });
+
+    chartEl.on('plotly_selected', onTimelineSelected);
+    chartEl.on('plotly_deselect', () => {
+      timelineState.range = null;
+      updateTimelineRangeUI();
+      Plotly.relayout('timelineChart', { shapes: [] });
+    });
+
+    updateTimelineRangeUI();
+  } catch (e) {
+    console.error('タイムライン読み込みエラー:', e);
+    statusEl.textContent = `エラー: ${e.message}`;
+  }
+}
+
+function onTimelineSelected(ev) {
+  if (!ev || !ev.range) return;
+  const [x0, x1] = ev.range.x;
+  const start = Math.min(x0, x1);
+  const end = Math.max(x0, x1);
+  timelineState.range = [start, end];
+  Plotly.relayout('timelineChart', { shapes: [makeRangeShape([start, end])] });
+  updateTimelineRangeUI();
+}
+
+function updateTimelineRangeUI() {
+  const badge = document.getElementById('timelineRangeBadge');
+  const btn = document.getElementById('addTrajBtn');
+  if (timelineState.range) {
+    const [a, b] = timelineState.range;
+    badge.textContent = `${a.toFixed(3)}s ~ ${b.toFixed(3)}s (${(b - a).toFixed(3)}s)`;
+    badge.classList.remove('bg-secondary');
+    badge.classList.add('bg-warning', 'text-dark');
+    btn.disabled = false;
+  } else {
+    badge.textContent = '未選択';
+    badge.classList.remove('bg-warning', 'text-dark');
+    badge.classList.add('bg-secondary');
+    btn.disabled = true;
+  }
+}
+
+function clearTimelineSelection() {
+  timelineState.range = null;
+  Plotly.relayout('timelineChart', { shapes: [] });
+  try { Plotly.restyle('timelineChart', { selectedpoints: [null] }); } catch (_) { /* noop */ }
+  updateTimelineRangeUI();
+  document.getElementById('addTrajStatus').replaceChildren();
+}
+
+async function addTrajectoryFromTimeline() {
+  if (!timelineState.range) return;
+  const [start, end] = timelineState.range;
+  const status = document.getElementById('addTrajStatus');
+
+  try {
+    const res = await apiPost('/api/add_trajectory', {
+      start_time: start,
+      end_time: end,
+    });
+    const span = document.createElement('span');
+    span.className = 'text-success';
+    span.textContent =
+      `✓ 軌道 #${res.event_id} を追加 (${res.data_points}点, ${res.duration.toFixed(2)}s, 最大速度 ${res.max_velocity.toFixed(2)}m/s)`;
+    status.replaceChildren(span);
+    await refreshTrajectoryList();
   } catch (e) {
     const span = document.createElement('span');
     span.className = 'text-danger';

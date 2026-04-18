@@ -15,9 +15,9 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from mcap_extractor import extract_trajectories_from_mcap
-from models import KickDetectorConfig
+from ssl_log_extractor import extract_ball_timeline_and_trajectories
 from models import (
+    AddTrajectoryRequest,
     LoadPathRequest,
     ManualParamsRequest,
     OptimizationConfig,
@@ -28,11 +28,7 @@ from models import (
     TrajectoryInfo,
 )
 from optimizer import compute_predicted_trajectories, run_optimization
-from yaml_exporter import (
-    build_launch_array_preview,
-    build_yaml_preview,
-    build_yaml_string,
-)
+from yaml_exporter import build_yaml_preview, build_yaml_string
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +37,8 @@ _state: dict[str, Any] = {
     "trajectories": [],
     "optimization_result": None,
     "current_deceleration": 0.7,
-    "kick_power_overrides": {},
+    "raw_ball_data": [],
+    "timeline_origin_ns": None,
 }
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
@@ -57,14 +54,19 @@ def _find_trajectory(event_id: int) -> TrajectoryData:
 
 
 def _store_trajectories(
-    trajectories: list[TrajectoryData], filename: str, path: str | None = None
+    trajectories: list[TrajectoryData],
+    filename: str,
+    path: str | None = None,
+    ball_data: list[tuple] | None = None,
 ) -> dict:
     _state["trajectories"] = trajectories
     _state["optimization_result"] = None
-    _state["kick_power_overrides"] = {}
     _state["current_deceleration"] = 0.7
     if path:
         _state["current_path"] = path
+    if ball_data is not None:
+        _state["raw_ball_data"] = ball_data
+        _state["timeline_origin_ns"] = ball_data[0][0] if ball_data else None
     return {"loaded": len(trajectories), "filename": filename}
 
 
@@ -94,15 +96,14 @@ async def file_dialog(start_path: str = "/home") -> dict:
     import asyncio
 
     start = Path(start_path)
-    # ディレクトリの場合は末尾 / を付けて zenity に渡すと初期ディレクトリになる
     filename_arg = f"--filename={start}/" if start.is_dir() else f"--filename={start}"
 
     try:
         proc = await asyncio.create_subprocess_exec(
             "zenity",
             "--file-selection",
-            "--title=mcap ファイルを選択",
-            "--file-filter=MCAP / DB3 (*.mcap *.db3) | *.mcap *.db3",
+            "--title=SSL ログを選択",
+            "--file-filter=SSL Log (*.log.gz) | *.log.gz",
             filename_arg,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -125,14 +126,13 @@ async def file_dialog(start_path: str = "/home") -> dict:
 
 @app.get("/api/browse")
 async def browse(path: str = "/") -> dict:
-    """サーバー上のディレクトリを一覧する（ファイルブラウザ用）."""
+    """サーバー上のディレクトリを一覧する."""
     base = Path(path).resolve()
     if not base.exists() or not base.is_dir():
         raise HTTPException(
             status_code=400, detail=f"ディレクトリが見つかりません: {path}"
         )
 
-    mcap_exts = {".mcap", ".db3"}
     dirs, files = [], []
     try:
         for entry in sorted(base.iterdir()):
@@ -140,7 +140,7 @@ async def browse(path: str = "/") -> dict:
                 continue
             if entry.is_dir():
                 dirs.append({"name": entry.name, "path": str(entry)})
-            elif entry.suffix.lower() in mcap_exts:
+            elif entry.name.endswith(".log.gz"):
                 files.append(
                     {
                         "name": entry.name,
@@ -157,48 +157,34 @@ async def browse(path: str = "/") -> dict:
 
 @app.post("/api/load_path")
 async def load_path(req: LoadPathRequest) -> dict:
-    """サーバー上のmcapファイルパスを直接指定して軌道データを読み込む."""
+    """SSL ログファイルパスを直接指定して軌道データを読み込む."""
     path = Path(req.path)
     if not path.exists():
         raise HTTPException(status_code=400, detail=f"ファイルが見つかりません: {path}")
-    if path.is_dir():
-        # ディレクトリ指定の場合は最初の mcap を探す
-        mcap_files = sorted(path.glob("*.mcap"))
-        if not mcap_files:
-            raise HTTPException(
-                status_code=400, detail=f"mcap ファイルが見つかりません: {path}"
-            )
-        path = mcap_files[0]
-    elif path.suffix.lower() not in {".mcap", ".db3"}:
-        raise HTTPException(
-            status_code=400, detail="対応ファイル形式: .mcap または .db3"
-        )
+    if not path.name.endswith(".log.gz"):
+        raise HTTPException(status_code=400, detail="対応ファイル形式: .log.gz")
 
-    return _store_trajectories(
-        extract_trajectories_from_mcap(path), path.name, str(path)
-    )
+    trajectories, ball_data = extract_ball_timeline_and_trajectories(path)
+    return _store_trajectories(trajectories, path.name, str(path), ball_data)
 
 
 @app.post("/api/upload")
-async def upload_mcap(file: UploadFile) -> dict:
-    """mcapファイルをアップロードして軌道データを抽出する."""
+async def upload_log(file: UploadFile) -> dict:
+    """SSL ログファイルをアップロードして軌道データを抽出する."""
     filename = file.filename or "upload"
-    suffix = Path(filename).suffix.lower()
-    if suffix not in {".mcap", ".db3"}:
-        raise HTTPException(
-            status_code=400, detail="対応ファイル形式: .mcap または .db3"
-        )
+    if not filename.endswith(".log.gz"):
+        raise HTTPException(status_code=400, detail="対応ファイル形式: .log.gz")
 
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".log.gz", delete=False) as tmp:
         tmp_path = Path(tmp.name)
         shutil.copyfileobj(file.file, tmp)
 
     try:
-        trajectories = extract_trajectories_from_mcap(tmp_path)
+        trajectories, ball_data = extract_ball_timeline_and_trajectories(tmp_path)
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    return _store_trajectories(trajectories, filename)
+    return _store_trajectories(trajectories, filename, ball_data=ball_data)
 
 
 @app.get("/api/trajectories")
@@ -206,8 +192,6 @@ async def get_trajectories() -> list[TrajectoryInfo]:
     return [
         TrajectoryInfo(
             event_id=t.event_id,
-            kick_power=t.kick_power,
-            is_chip_kick=t.is_chip_kick,
             data_points=len(t.time_points),
             duration=t.duration,
             max_velocity=t.max_velocity,
@@ -221,8 +205,6 @@ async def get_trajectory(event_id: int) -> dict:
     traj = _find_trajectory(event_id)
     return {
         "event_id": traj.event_id,
-        "kick_power": traj.kick_power,
-        "is_chip_kick": traj.is_chip_kick,
         "time_points": traj.time_points,
         "positions_x": traj.positions_x,
         "positions_y": traj.positions_y,
@@ -253,15 +235,100 @@ async def optimize(req: OptimizeRequest) -> OptimizationResult:
     return result
 
 
-@app.post("/api/reload")
-async def reload_trajectories(kick_detector: KickDetectorConfig | None = None) -> dict:
-    """キック検出設定を変えて現在の bag から再抽出する."""
-    current_path: str | None = _state.get("current_path")
-    if not current_path:
-        raise HTTPException(status_code=400, detail="bag が読み込まれていません")
-    path = Path(current_path)
-    trajectories = extract_trajectories_from_mcap(path, kick_cfg=kick_detector)
-    return _store_trajectories(trajectories, path.name)
+@app.get("/api/timeline")
+async def get_timeline(max_points: int = 4000) -> dict:
+    """ログ全体のボール速度時系列を返す（表示用にダウンサンプリング）."""
+    import math as _math
+
+    raw = _state.get("raw_ball_data") or []
+    origin_ns = _state.get("timeline_origin_ns")
+    if not raw or origin_ns is None:
+        return {"time_points": [], "velocities": [], "total_duration": 0.0}
+
+    step = max(1, len(raw) // max_points)
+
+    time_points: list[float] = []
+    velocities: list[float] = []
+    for i in range(0, len(raw), step):
+        ts, _x, _y, _z, vx, vy, *_ = raw[i]
+        time_points.append((ts - origin_ns) * 1e-9)
+        velocities.append(_math.hypot(vx, vy))
+
+    total_duration = (raw[-1][0] - origin_ns) * 1e-9
+    return {
+        "time_points": time_points,
+        "velocities": velocities,
+        "total_duration": total_duration,
+        "total_samples": len(raw),
+        "downsampled_to": len(time_points),
+    }
+
+
+@app.post("/api/add_trajectory")
+async def add_trajectory(req: AddTrajectoryRequest) -> dict:
+    """タイムライン上で手動選択した時刻範囲を軌道として追加する."""
+    import math as _math
+
+    raw = _state.get("raw_ball_data") or []
+    origin_ns = _state.get("timeline_origin_ns")
+    if not raw or origin_ns is None:
+        raise HTTPException(
+            status_code=400, detail="タイムラインが読み込まれていません"
+        )
+    if req.end_time <= req.start_time:
+        raise HTTPException(
+            status_code=400, detail="end_time は start_time より大きくしてください"
+        )
+
+    start_ns = int(origin_ns + req.start_time * 1e9)
+    end_ns = int(origin_ns + req.end_time * 1e9)
+
+    sub = [
+        (ts, x, y, _math.hypot(vx, vy))
+        for (ts, x, y, _z, vx, vy, *_) in raw
+        if start_ns <= ts <= end_ns
+    ]
+    if len(sub) < 3:
+        raise HTTPException(
+            status_code=400, detail=f"選択範囲の点数が不足しています: {len(sub)} 点"
+        )
+
+    existing_ids = [t.event_id for t in _state["trajectories"]]
+    new_id = max(existing_ids, default=-1) + 1
+
+    t0_ns = sub[0][0]
+    time_points = [(ts - t0_ns) * 1e-9 for ts, *_ in sub]
+    positions_x = [x for _, x, _, _ in sub]
+    positions_y = [y for _, _, y, _ in sub]
+    velocities = [v for *_, v in sub]
+
+    new_traj = TrajectoryData(
+        event_id=new_id,
+        time_points=time_points,
+        positions_x=positions_x,
+        positions_y=positions_y,
+        velocities=velocities,
+    )
+    _state["trajectories"].append(new_traj)
+    return {
+        "event_id": new_id,
+        "data_points": len(time_points),
+        "duration": new_traj.duration,
+        "max_velocity": new_traj.max_velocity,
+    }
+
+
+@app.delete("/api/trajectory/{event_id}")
+async def delete_trajectory(event_id: int) -> dict:
+    """軌道を削除する."""
+    trajectories: list[TrajectoryData] = _state["trajectories"]
+    before = len(trajectories)
+    _state["trajectories"] = [t for t in trajectories if t.event_id != event_id]
+    if len(_state["trajectories"]) == before:
+        raise HTTPException(
+            status_code=404, detail=f"event_id={event_id} が見つかりません"
+        )
+    return {"deleted": event_id, "remaining": len(_state["trajectories"])}
 
 
 @app.get("/api/bootstrap/{event_id}")
@@ -311,18 +378,15 @@ async def predict(req: PredictRequest) -> dict:
 
 @app.get("/api/export/download")
 async def export_download() -> StreamingResponse:
-    """キャリブレーション結果をYAMLファイルとしてダウンロードする."""
+    """キャリブレーション結果を YAML ファイルとしてダウンロードする."""
     result: OptimizationResult | None = _state["optimization_result"]
     if result is None or not result.success:
         raise HTTPException(status_code=400, detail="最適化が完了していません")
 
-    overrides = _state["kick_power_overrides"] or {}
     decel = _state.get("current_deceleration")
-
     yaml_text = build_yaml_string(
         result,
         deceleration_override=decel if decel != result.global_deceleration else None,
-        kick_power_overrides=overrides if overrides else None,
     )
 
     return StreamingResponse(
@@ -338,22 +402,15 @@ async def export_download() -> StreamingResponse:
 async def export_preview() -> dict:
     result: OptimizationResult | None = _state["optimization_result"]
     if result is None or not result.success:
-        return {"yaml": "", "launch_arrays": {}}
+        return {"yaml": ""}
 
-    overrides = _state["kick_power_overrides"] or {}
     decel = _state.get("current_deceleration")
-
     return {
         "yaml": build_yaml_preview(
             result,
             deceleration_override=decel
             if decel != result.global_deceleration
             else None,
-            kick_power_overrides=overrides if overrides else None,
-        ),
-        "launch_arrays": build_launch_array_preview(
-            result,
-            kick_power_overrides=overrides if overrides else None,
         ),
     }
 
@@ -364,7 +421,6 @@ async def current_params() -> dict:
     return {
         "optimization_result": result.model_dump() if result else None,
         "current_deceleration": _state["current_deceleration"],
-        "kick_power_overrides": _state["kick_power_overrides"],
     }
 
 
@@ -372,8 +428,6 @@ async def current_params() -> dict:
 async def update_manual_params(req: ManualParamsRequest) -> dict:
     if req.deceleration is not None:
         _state["current_deceleration"] = req.deceleration
-    if req.kick_power_overrides is not None:
-        _state["kick_power_overrides"] = req.kick_power_overrides
     return {"success": True}
 
 

@@ -26,15 +26,30 @@ body {
   color: #a8d8ea;
 }
 
-/* カラムスクロール */
+/* カラムスクロール (上半分 3 カラム) */
 .col-scroll {
-  max-height: calc(100vh - 60px);
+  max-height: calc(55vh - 40px);
   overflow-y: auto;
 }
 
 .traj-table-scroll {
-  max-height: calc(100vh - 300px);
+  max-height: calc(55vh - 220px);
   overflow-y: auto;
+}
+
+/* タイムラインカード (下半分) */
+.timeline-card {
+  margin-top: 8px;
+}
+
+.form-check-input {
+  background-color: #0f2744;
+  border-color: #2d4a7a;
+}
+
+.form-check-input:checked {
+  background-color: #533483;
+  border-color: #533483;
 }
 
 /* テーブル */

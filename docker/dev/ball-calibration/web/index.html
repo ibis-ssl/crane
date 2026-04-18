@@ -28,12 +28,12 @@
 
       <div class="card">
         <div class="card-header">
-          <i class="fas fa-folder-open me-1"></i>mcap ファイルの読み込み
+          <i class="fas fa-folder-open me-1"></i>SSL 公式ログの読み込み
         </div>
         <div class="card-body">
           <div class="input-group mb-2">
             <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
-              placeholder="/home/user/bags/calibration.mcap">
+              placeholder="/home/user/logs/match.log.gz">
             <button class="btn btn-outline-secondary btn-sm" onclick="openSystemFileDialog()" title="参照">
               <i class="fas fa-folder"></i>
             </button>
@@ -41,7 +41,7 @@
               <i class="fas fa-folder-open me-1"></i>読み込む
             </button>
           </div>
-          <div class="form-text mb-1">「参照」でzenityファイル選択ダイアログを開きます</div>
+          <div class="form-text mb-1">「参照」で .log.gz ファイル選択ダイアログを開きます</div>
           <div id="loadStatus" class="small text-muted"></div>
         </div>
       </div>
@@ -62,8 +62,6 @@
                 <tr>
                   <th style="width:36px"><input type="checkbox" id="checkAll" onchange="selectAll(this.checked)"></th>
                   <th>ID</th>
-                  <th>Power</th>
-                  <th>種類</th>
                   <th>点数</th>
                   <th>秒</th>
                   <th>最大速度</th>
@@ -181,14 +179,6 @@
         </div>
       </div>
 
-      <!-- Power vs Velocity チャート -->
-      <div class="card mt-2" id="pvCard" style="display:none!important;">
-        <div class="card-header"><i class="fas fa-dot-circle me-1"></i>キックパワー vs 初速度</div>
-        <div class="card-body p-1">
-          <div id="powerVelocityChart" style="height: 180px;"></div>
-        </div>
-      </div>
-
       <!-- 精度テーブル -->
       <div class="card mt-2" id="accuracyCard" style="display:none!important;">
         <div class="card-header"><i class="fas fa-table me-1"></i>軌道別精度</div>
@@ -198,10 +188,9 @@
               <thead class="table-dark sticky-top">
                 <tr>
                   <th>ID</th>
-                  <th>Power</th>
                   <th>v₀ (m/s)</th>
                   <th>R²</th>
-                  <th>秒</th>
+                  <th>CI±</th>
                 </tr>
               </thead>
               <tbody id="accuracyTable"></tbody>
@@ -227,6 +216,48 @@
 
     </div>
 
+  </div>
+
+  <!-- ===== ログ全体タイムライン (下半分フル幅) ===== -->
+  <div class="row g-2 mt-1">
+    <div class="col-12">
+      <div class="card timeline-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-stream me-1"></i>ログ全体タイムライン (ボール速度)</span>
+          <span id="timelineStatus" class="small text-muted"></span>
+        </div>
+        <div class="card-body py-2">
+          <div id="timelineChart" style="height: 240px;"></div>
+          <div id="timelineEmpty" class="text-center text-muted py-4">
+            <i class="fas fa-clock fa-2x mb-2 d-block"></i>
+            SSL ログを読み込むとボール速度の全体タイムラインが表示されます
+          </div>
+          <div id="timelineControls" class="d-none mt-2">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold mb-1">選択範囲</label>
+                <div id="timelineRangeBadge" class="badge bg-secondary font-monospace">未選択</div>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-success btn-sm w-100" onclick="addTrajectoryFromTimeline()" id="addTrajBtn" disabled>
+                  <i class="fas fa-plus me-1"></i>軌道として追加
+                </button>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearTimelineSelection()">
+                  <i class="fas fa-times me-1"></i>選択クリア
+                </button>
+              </div>
+            </div>
+            <div class="form-text mt-1">
+              <i class="fas fa-info-circle me-1"></i>
+              モードバー: Box Select = 範囲選択 / Zoom = 拡大 / Pan = 移動 / Home = リセット
+            </div>
+            <div id="addTrajStatus" class="small mt-1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
