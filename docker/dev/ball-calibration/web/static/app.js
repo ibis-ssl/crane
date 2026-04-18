@@ -66,7 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ===== ファイルブラウザ =====
+// ===== システムファイルダイアログ（zenity） =====
+async function openSystemFileDialog() {
+  const currentPath = document.getElementById('pathInput').value.trim() || '/home';
+  showStatus('loadStatus', 'ファイル選択ダイアログを開いています...', 'info');
+  try {
+    const data = await apiGet(`/api/file_dialog?start_path=${encodeURIComponent(currentPath)}`);
+    document.getElementById('pathInput').value = data.path;
+    showStatus('loadStatus', `選択: ${data.path}`, 'secondary');
+    // ファイルが選択されたら自動で読み込む
+    await loadFromPath();
+  } catch (e) {
+    if (e.message.includes('キャンセル')) {
+      showStatus('loadStatus', '', '');
+    } else {
+      showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
+    }
+  }
+}
+
+// ===== ファイルブラウザ（サーバーサイドモーダル） =====
 let _fbModal = null;
 let _fbSelectedPath = null;
 

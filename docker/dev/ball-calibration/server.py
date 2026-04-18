@@ -88,6 +88,41 @@ async def healthz() -> dict:
     return {"ok": True, "service": "ball-calibration"}
 
 
+@app.get("/api/file_dialog")
+async def file_dialog(start_path: str = "/home") -> dict:
+    """zenity でシステムネイティブのファイル選択ダイアログを開き、選択パスを返す."""
+    import asyncio
+
+    start = Path(start_path)
+    # ディレクトリの場合は末尾 / を付けて zenity に渡すと初期ディレクトリになる
+    filename_arg = f"--filename={start}/" if start.is_dir() else f"--filename={start}"
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "zenity",
+            "--file-selection",
+            "--title=mcap ファイルを選択",
+            "--file-filter=MCAP / DB3 (*.mcap *.db3) | *.mcap *.db3",
+            filename_arg,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=120)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500, detail="zenity がインストールされていません"
+        )
+    except asyncio.TimeoutError:
+        proc.kill()
+        raise HTTPException(status_code=408, detail="タイムアウト")
+
+    if proc.returncode != 0:
+        raise HTTPException(status_code=400, detail="キャンセルされました")
+
+    selected = stdout.decode().strip()
+    return {"path": selected}
+
+
 @app.get("/api/browse")
 async def browse(path: str = "/") -> dict:
     """サーバー上のディレクトリを一覧する（ファイルブラウザ用）."""

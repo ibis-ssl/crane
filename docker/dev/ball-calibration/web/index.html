@@ -92,38 +92,37 @@
               <i class="fas fa-folder-open me-1"></i>mcap ファイルの読み込み
             </div>
             <div class="card-body">
-              <!-- ファイル選択（システムダイアログ） -->
-              <div class="mb-3">
-                <input type="file" id="fileInput" accept=".mcap,.db3" style="display:none" onchange="onFileSelected(this)">
-                <div class="drop-zone" id="dropZone"
-                  onclick="document.getElementById('fileInput').click()">
-                  <div><i class="fas fa-folder-open"></i></div>
-                  <div class="fw-bold mt-1">クリックしてファイルを選択</div>
-                  <div class="text-muted small mt-1">または .mcap / .db3 をドラッグ&amp;ドロップ</div>
+              <!-- パス入力 + システムダイアログ選択 -->
+              <div class="mb-2">
+                <div class="input-group">
+                  <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
+                    placeholder="/home/user/bags/calibration.mcap">
+                  <button class="btn btn-outline-secondary btn-sm" onclick="openSystemFileDialog()" title="ファイルを参照">
+                    <i class="fas fa-folder me-1"></i>参照
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
+                    <i class="fas fa-folder-open me-1"></i>読み込む
+                  </button>
                 </div>
-                <div class="upload-progress mt-2 d-none" id="uploadProgress">
-                  <div class="upload-progress-bar" id="uploadProgressBar"></div>
-                </div>
+                <div class="form-text">「参照」でシステムのファイル選択ダイアログを開きます</div>
               </div>
 
-              <!-- パス直接指定（サーバー上の大容量ファイル用） -->
+              <!-- ファイルアップロード（サブオプション） -->
               <div>
-                <a class="small text-muted" data-bs-toggle="collapse" href="#pathCollapse" role="button">
-                  <i class="fas fa-keyboard me-1"></i>サーバーパスを直接指定する場合はこちら
+                <a class="small text-muted" data-bs-toggle="collapse" href="#uploadCollapse" role="button">
+                  <i class="fas fa-upload me-1"></i>ファイルをアップロードする場合はこちら
                 </a>
-                <div class="collapse" id="pathCollapse">
+                <div class="collapse" id="uploadCollapse">
                   <div class="mt-2">
-                    <div class="input-group">
-                      <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
-                        placeholder="/home/user/bags/calibration.mcap">
-                      <button class="btn btn-outline-secondary btn-sm" onclick="openFileBrowser()" title="ファイルを参照">
-                        <i class="fas fa-folder me-1"></i>参照
-                      </button>
-                      <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
-                        <i class="fas fa-folder-open me-1"></i>読み込む
-                      </button>
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                      <div><i class="fas fa-cloud-upload-alt"></i></div>
+                      <div class="fw-bold mt-1">クリックまたはドラッグ&amp;ドロップ</div>
+                      <div class="text-muted small mt-1">対応形式: .mcap / .db3</div>
                     </div>
-                    <div class="form-text">コンテナからアクセスできるパスを指定</div>
+                    <input type="file" id="fileInput" accept=".mcap,.db3" style="display:none" onchange="onFileSelected(this)">
+                    <div class="upload-progress mt-2 d-none" id="uploadProgress">
+                      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                    </div>
                   </div>
                 </div>
               </div>
