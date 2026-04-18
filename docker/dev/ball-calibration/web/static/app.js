@@ -9,9 +9,8 @@ const state = {
   trajectories: [],
   selectedIds: new Set(),
   previewId: null,
+  timeRanges: {},       // { [eventId]: [start, end] }
   optimizationResult: null,
-  currentDecel: 0.70,
-  kickOverrides: {},
   predictedData: [],
 };
 
@@ -47,26 +46,14 @@ async function apiGet(url) {
   return res.json();
 }
 
-async function apiPut(url, body) {
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(res.statusText);
-  return res.json();
-}
+// ===== ファイル読み込み =====
 
-// ===== タブ1: ファイル読み込み =====
-
-// パス指定による読み込み
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pathInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') loadFromPath();
   });
 });
 
-// ===== システムファイルダイアログ（zenity） =====
 async function openSystemFileDialog() {
   const currentPath = document.getElementById('pathInput').value.trim() || '/home';
   showStatus('loadStatus', 'ファイル選択ダイアログを開いています...', 'info');
@@ -74,7 +61,6 @@ async function openSystemFileDialog() {
     const data = await apiGet(`/api/file_dialog?start_path=${encodeURIComponent(currentPath)}`);
     document.getElementById('pathInput').value = data.path;
     showStatus('loadStatus', `選択: ${data.path}`, 'secondary');
-    // ファイルが選択されたら自動で読み込む
     await loadFromPath();
   } catch (e) {
     if (e.message.includes('キャンセル')) {
@@ -83,103 +69,6 @@ async function openSystemFileDialog() {
       showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
     }
   }
-}
-
-// ===== ファイルブラウザ（サーバーサイドモーダル） =====
-let _fbModal = null;
-let _fbSelectedPath = null;
-
-async function openFileBrowser() {
-  _fbSelectedPath = null;
-  document.getElementById('fbSelectedPath').textContent = '';
-  document.getElementById('fbSelectBtn').disabled = true;
-
-  if (!_fbModal) {
-    _fbModal = new bootstrap.Modal(document.getElementById('fileBrowserModal'));
-  }
-  _fbModal.show();
-
-  const startPath = document.getElementById('pathInput').value.trim() || '/home';
-  await _fbBrowse(startPath);
-}
-
-async function _fbBrowse(path) {
-  document.getElementById('fbStatus').textContent = '読み込み中...';
-  document.getElementById('fbTableBody').innerHTML = '';
-  document.getElementById('fbBreadcrumb').textContent = path;
-  try {
-    const data = await apiGet(`/api/browse?path=${encodeURIComponent(path)}`);
-    _fbRender(data);
-  } catch (e) {
-    document.getElementById('fbStatus').textContent = `エラー: ${e.message}`;
-  }
-}
-
-function _fbRender(data) {
-  const tbody = document.getElementById('fbTableBody');
-  tbody.innerHTML = '';
-  document.getElementById('fbBreadcrumb').textContent = data.current;
-  document.getElementById('fbStatus').textContent =
-    `${data.dirs.length} フォルダ / ${data.files.length} ファイル`;
-
-  const mkRow = (icon, iconColor, name, onClick, style = '') => {
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.style.cssText += style;
-    tr.innerHTML = `<td style="padding:6px 10px;">
-      <i class="${icon}" style="color:${iconColor}; width:18px;"></i>
-      <span class="ms-2 font-monospace small">${name}</span>
-    </td>`;
-    tr.addEventListener('click', onClick);
-    return tr;
-  };
-
-  if (data.parent) {
-    tbody.appendChild(mkRow(
-      'fas fa-level-up-alt', '#90caf9', '.. (上へ)',
-      () => _fbBrowse(data.parent),
-    ));
-  }
-
-  for (const dir of data.dirs) {
-    tbody.appendChild(mkRow(
-      'fas fa-folder', '#ffd54f', dir.name,
-      () => _fbBrowse(dir.path),
-    ));
-  }
-
-  for (const file of data.files) {
-    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-    const tr = mkRow(
-      'fas fa-file-alt', '#a5d6a7', `${file.name}  (${sizeMB} MB)`,
-      () => _fbSelectFile(file.path),
-    );
-    tbody.appendChild(tr);
-  }
-
-  if (data.dirs.length === 0 && data.files.length === 0 && !data.parent) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td class="text-muted small p-3">ファイルが見つかりません</td>';
-    tbody.appendChild(tr);
-  }
-}
-
-function _fbSelectFile(path) {
-  _fbSelectedPath = path;
-  document.getElementById('fbSelectedPath').textContent = path;
-  document.getElementById('fbSelectBtn').disabled = false;
-
-  // 行のハイライト
-  document.querySelectorAll('#fbTableBody tr').forEach(tr => {
-    tr.style.backgroundColor = tr.querySelector('span')?.textContent.trim().startsWith(path.split('/').pop())
-      ? '#1e3a5f' : '';
-  });
-}
-
-function confirmFileSelection() {
-  if (!_fbSelectedPath) return;
-  document.getElementById('pathInput').value = _fbSelectedPath;
-  if (_fbModal) _fbModal.hide();
 }
 
 async function loadFromPath() {
@@ -198,68 +87,7 @@ async function loadFromPath() {
   }
 }
 
-// ドラッグ&ドロップ設定
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) uploadFile(file);
-});
-
-function onFileSelected(input) {
-  if (input.files[0]) uploadFile(input.files[0]);
-}
-
-async function uploadFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext !== 'mcap' && ext !== 'db3') {
-    showStatus('loadStatus', '対応形式: .mcap または .db3', 'warning');
-    return;
-  }
-
-  showStatus('loadStatus', `アップロード中: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)...`, 'info');
-
-  const progress = document.getElementById('uploadProgress');
-  const bar = document.getElementById('uploadProgressBar');
-  progress.classList.remove('d-none');
-  bar.style.width = '30%';
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    bar.style.width = '60%';
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-    bar.style.width = '90%';
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || res.statusText);
-    }
-
-    const result = await res.json();
-    bar.style.width = '100%';
-    showStatus('loadStatus', `完了: ${result.loaded} 件の軌道データを抽出 (${file.name})`, 'success');
-    await refreshTrajectoryList();
-  } catch (e) {
-    showStatus('loadStatus', `エラー: ${e.message}`, 'danger');
-  } finally {
-    setTimeout(() => {
-      progress.classList.add('d-none');
-      bar.style.width = '0%';
-    }, 800);
-    // reset file input
-    document.getElementById('fileInput').value = '';
-  }
-}
+// ===== 軌道一覧 =====
 
 async function refreshTrajectoryList() {
   state.trajectories = await apiGet('/api/trajectories');
@@ -269,12 +97,13 @@ async function refreshTrajectoryList() {
   tbody.innerHTML = '';
 
   state.trajectories.forEach(t => {
+    const hasRange = !!state.timeRanges[t.event_id];
     const tr = document.createElement('tr');
     tr.dataset.eventId = t.event_id;
     tr.innerHTML = `
       <td><input type="checkbox" class="row-check" data-id="${t.event_id}" checked
         onchange="onRowCheck(${t.event_id}, this.checked)"></td>
-      <td>${t.event_id}</td>
+      <td>${t.event_id}${hasRange ? ' <i class="fas fa-cut text-warning" title="時間範囲選択中"></i>' : ''}</td>
       <td>${t.kick_power.toFixed(2)}</td>
       <td><span class="badge ${t.is_chip_kick ? 'bg-warning text-dark' : 'bg-info'}">${t.is_chip_kick ? 'チップ' : 'ストレート'}</span></td>
       <td>${t.data_points}</td>
@@ -288,6 +117,49 @@ async function refreshTrajectoryList() {
   });
 
   document.getElementById('trajectoryCount').textContent = `${state.trajectories.length}件`;
+}
+
+// ===== 軌道プレビュー & 時間範囲選択 =====
+
+function makeRangeShape([x0, x1]) {
+  return {
+    type: 'rect', xref: 'x', yref: 'paper',
+    x0, x1, y0: 0, y1: 1,
+    fillcolor: '#533483', opacity: 0.25, line: { width: 0 },
+  };
+}
+
+function updateTimeRangeBadge(eventId) {
+  const range = state.timeRanges[eventId];
+  const info = document.getElementById('timeRangeInfo');
+  if (range) {
+    document.getElementById('timeRangeBadge').textContent =
+      `${range[0].toFixed(3)}s ~ ${range[1].toFixed(3)}s`;
+    info.classList.remove('d-none');
+  } else {
+    info.classList.add('d-none');
+  }
+}
+
+function resetCurrentTimeRange() {
+  if (state.previewId === null) return;
+  delete state.timeRanges[state.previewId];
+  Plotly.relayout('previewVT', { shapes: [] });
+  updateTimeRangeBadge(state.previewId);
+  updateTrajectoryRowIcon(state.previewId, false);
+}
+
+function updateTrajectoryRowIcon(eventId, hasRange) {
+  const tr = document.querySelector(`#trajectoryTable tr[data-event-id="${eventId}"]`);
+  if (!tr) return;
+  const idCell = tr.querySelector('td:nth-child(2)');
+  if (!idCell) return;
+  const icon = idCell.querySelector('i');
+  if (hasRange && !icon) {
+    idCell.insertAdjacentHTML('beforeend', ' <i class="fas fa-cut text-warning" title="時間範囲選択中"></i>');
+  } else if (!hasRange && icon) {
+    icon.remove();
+  }
 }
 
 async function showTrajectoryPreview(eventId) {
@@ -318,19 +190,43 @@ async function showTrajectoryPreview(eventId) {
       margin: { ...PLOT_LAYOUT_BASE.margin, t: 25 },
     }, { displayModeBar: false, responsive: true });
 
+    const existing = state.timeRanges[eventId];
+    const vtLayout = {
+      ...PLOT_LAYOUT_BASE,
+      title: { text: '速度 - 時間 (ドラッグで範囲選択)', font: { size: 12 } },
+      dragmode: 'select',
+      selectdirection: 'h',
+      xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
+      yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
+      margin: { ...PLOT_LAYOUT_BASE.margin, t: 35 },
+      shapes: existing ? [makeRangeShape(existing)] : [],
+    };
+
     Plotly.newPlot('previewVT', [{
       x: d.time_points, y: d.velocities,
       mode: 'lines+markers',
       marker: { size: 4, color: '#e8a838' },
       line: { color: '#e8a838', width: 2 },
       name: '速度',
-    }], {
-      ...PLOT_LAYOUT_BASE,
-      title: { text: '速度 - 時間', font: { size: 12 } },
-      xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
-      yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
-      margin: { ...PLOT_LAYOUT_BASE.margin, t: 25 },
-    }, { displayModeBar: false, responsive: true });
+    }], vtLayout, { displayModeBar: false, responsive: true });
+
+    const vt = document.getElementById('previewVT');
+    vt.on('plotly_selected', (ev) => {
+      if (!ev || !ev.range) return;
+      const [x0, x1] = ev.range.x;
+      state.timeRanges[eventId] = [x0, x1];
+      Plotly.relayout('previewVT', { shapes: [makeRangeShape([x0, x1])] });
+      updateTimeRangeBadge(eventId);
+      updateTrajectoryRowIcon(eventId, true);
+    });
+    vt.on('plotly_doubleclick', () => {
+      delete state.timeRanges[eventId];
+      Plotly.relayout('previewVT', { shapes: [] });
+      updateTimeRangeBadge(eventId);
+      updateTrajectoryRowIcon(eventId, false);
+    });
+
+    updateTimeRangeBadge(eventId);
 
   } catch (e) {
     console.error('プレビューエラー:', e);
@@ -352,7 +248,7 @@ function selectAll(checked) {
   document.getElementById('checkAll').checked = checked;
 }
 
-// ===== タブ2: 最適化 & 調整 =====
+// ===== 最適化 =====
 
 async function runOptimization() {
   const btn = document.getElementById('optimizeBtn');
@@ -367,14 +263,21 @@ async function runOptimization() {
       min_data_points_per_trajectory: parseInt(document.getElementById('cfgMinPoints').value),
     };
 
+    // 選択済み軌道のみ time_ranges を送信
+    const timeRangesPayload = {};
+    for (const id of state.selectedIds) {
+      if (state.timeRanges[id]) timeRangesPayload[id] = state.timeRanges[id];
+    }
+
     const result = await apiPost('/api/optimize', {
       enabled_event_ids: [...state.selectedIds],
+      time_ranges: Object.keys(timeRangesPayload).length ? timeRangesPayload : null,
       config,
     });
 
     state.optimizationResult = result;
-    state.currentDecel = result.global_deceleration;
 
+    // 結果サマリー表示
     const card = document.getElementById('resultSummaryCard');
     card.style.removeProperty('display');
     document.getElementById('resultDecel').textContent = result.global_deceleration.toFixed(4);
@@ -383,11 +286,20 @@ async function runOptimization() {
     document.getElementById('resultUsed').textContent =
       `${result.trajectories_used} / ${result.trajectories_analyzed}`;
 
-    document.getElementById('decelSlider').value = result.global_deceleration;
-    document.getElementById('decelValue').textContent = result.global_deceleration.toFixed(2);
+    // 検証チャート・精度テーブルを自動描画
+    const predResult = await apiPost('/api/predict', {
+      deceleration: result.global_deceleration,
+      event_ids: state.selectedIds.size > 0 ? [...state.selectedIds] : null,
+    });
+    state.predictedData = predResult.trajectories;
 
-    renderKickMappingTable(result.power_velocity_summary);
-    await updatePredictions();
+    document.getElementById('verifyCard').style.removeProperty('display');
+    document.getElementById('pvCard').style.removeProperty('display');
+    document.getElementById('accuracyCard').style.removeProperty('display');
+
+    renderVerifyCharts();
+    renderAccuracyTable();
+    await refreshPreview();
 
   } catch (e) {
     alert(`最適化エラー: ${e.message}`);
@@ -397,75 +309,7 @@ async function runOptimization() {
   }
 }
 
-function renderKickMappingTable(summary) {
-  const container = document.getElementById('kickMappingTable');
-  if (!summary || Object.keys(summary).length === 0) {
-    container.innerHTML = '<span class="text-muted small">マッピングデータなし</span>';
-    return;
-  }
-
-  let html = '<div class="table-responsive"><table class="table table-sm mb-0">';
-  html += '<thead class="table-dark"><tr><th>キックパワー</th><th>推定初速度 (m/s)</th><th>手動上書き</th></tr></thead><tbody>';
-
-  Object.entries(summary).sort().forEach(([key, vel]) => {
-    const power = (parseInt(key.replace('power_', '')) / 100).toFixed(2);
-    const override = state.kickOverrides[key] !== undefined ? state.kickOverrides[key] : '';
-    html += `<tr>
-      <td>${power}</td>
-      <td class="font-monospace">${vel.toFixed(4)}</td>
-      <td><input type="number" class="form-control form-control-sm" style="width:100px"
-        step="0.01" placeholder="${vel.toFixed(4)}" value="${override}"
-        data-key="${key}" onchange="onKickOverrideChange('${key}', this.value)"></td>
-    </tr>`;
-  });
-
-  html += '</tbody></table></div>';
-  container.innerHTML = html;
-}
-
-function onKickOverrideChange(key, value) {
-  if (value === '' || value === null) {
-    delete state.kickOverrides[key];
-  } else {
-    state.kickOverrides[key] = parseFloat(value);
-  }
-  apiPut('/api/manual_params', { kick_power_overrides: state.kickOverrides });
-}
-
-function resetKickOverrides() {
-  state.kickOverrides = {};
-  if (state.optimizationResult) {
-    renderKickMappingTable(state.optimizationResult.power_velocity_summary);
-  }
-  apiPut('/api/manual_params', { kick_power_overrides: {} });
-}
-
-const _onDecelChangeDebounced = debounce(async (value) => {
-  state.currentDecel = parseFloat(value);
-  await apiPut('/api/manual_params', { deceleration: state.currentDecel });
-  await updatePredictions();
-}, 200);
-
-function onDecelChange(value) {
-  document.getElementById('decelValue').textContent = parseFloat(value).toFixed(2);
-  _onDecelChangeDebounced(value);
-}
-
-async function updatePredictions() {
-  try {
-    const result = await apiPost('/api/predict', {
-      deceleration: state.currentDecel,
-      event_ids: state.selectedIds.size > 0 ? [...state.selectedIds] : null,
-    });
-    state.predictedData = result.trajectories;
-    renderVerifyCharts();
-    renderAccuracyTable();
-  } catch (e) {
-    console.error('予測エラー:', e);
-  }
-}
-
-// ===== タブ3: 可視化 & 検証 =====
+// ===== 検証チャート =====
 
 function renderVerifyCharts() {
   if (!state.predictedData || state.predictedData.length === 0) return;
@@ -492,13 +336,14 @@ function renderVerifyCharts() {
     });
   });
 
+  const decel = state.optimizationResult ? state.optimizationResult.global_deceleration : 0;
   Plotly.newPlot('vtChart', vtTraces, {
     ...PLOT_LAYOUT_BASE,
-    title: { text: `速度 vs 時間 (decel = ${state.currentDecel.toFixed(3)} m/s²)`, font: { size: 13 } },
+    title: { text: `速度 vs 時間 (decel = ${decel.toFixed(3)} m/s²)`, font: { size: 12 } },
     xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
     yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
     legend: { font: { size: 9 }, bgcolor: '#0f2744', bordercolor: '#2d4a7a' },
-    margin: { ...PLOT_LAYOUT_BASE.margin, t: 40 },
+    margin: { ...PLOT_LAYOUT_BASE.margin, t: 35 },
   }, { responsive: true });
 
   if (state.optimizationResult && state.optimizationResult.kick_data) {
@@ -507,7 +352,7 @@ function renderVerifyCharts() {
       x: pwVel.map(k => k.kick_power),
       y: pwVel.map(k => k.estimated_initial_velocity),
       mode: 'markers',
-      marker: { size: 7, color: '#a8d8ea', opacity: 0.8 },
+      marker: { size: 6, color: '#a8d8ea', opacity: 0.8 },
       text: pwVel.map(k => `#${k.event_id}<br>R²=${k.fitting_r_squared.toFixed(3)}`),
       hovertemplate: '%{text}<br>power=%{x:.2f}<br>v0=%{y:.3f} m/s<extra></extra>',
       name: '推定初速度',
@@ -521,18 +366,18 @@ function renderVerifyCharts() {
         y: items.map(([, v]) => v),
         mode: 'lines+markers',
         line: { color: '#e8a838', width: 2 },
-        marker: { size: 8, color: '#e8a838' },
+        marker: { size: 6, color: '#e8a838' },
         name: '平均マッピング',
       });
     }
 
     Plotly.newPlot('powerVelocityChart', pvTrace, {
       ...PLOT_LAYOUT_BASE,
-      title: { text: 'Kick Power vs 初速度', font: { size: 13 } },
+      title: { text: 'Kick Power vs 初速度', font: { size: 11 } },
       xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: 'キックパワー' },
       yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '初速度 (m/s)' },
-      legend: { font: { size: 9 }, bgcolor: '#0f2744' },
-      margin: { ...PLOT_LAYOUT_BASE.margin, t: 40 },
+      legend: { font: { size: 8 }, bgcolor: '#0f2744' },
+      margin: { l: 45, r: 10, t: 30, b: 40 },
     }, { responsive: true });
   }
 }
@@ -552,24 +397,22 @@ function renderAccuracyTable() {
       <td class="font-monospace">${k.estimated_initial_velocity.toFixed(4)}</td>
       <td class="font-monospace ${r2Color}">${k.fitting_r_squared.toFixed(4)}</td>
       <td>${k.trajectory_duration.toFixed(2)}</td>
-      <td class="font-monospace small">[${k.confidence_lower.toFixed(3)}, ${k.confidence_upper.toFixed(3)}]</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// ===== タブ4: エクスポート =====
+// ===== エクスポート =====
 
 async function refreshPreview() {
   try {
     const data = await apiGet('/api/export/preview');
-    document.getElementById('yamlPreview').value = data.yaml || '';
-
     const la = data.launch_arrays;
     if (la && la.straight_kick_power_array) {
       document.getElementById('launchArrays').textContent =
         `straight_kick_power_array: [${la.straight_kick_power_array.join(', ')}]\n` +
         `straight_kick_speed_array:  [${la.straight_kick_speed_array.join(', ')}]`;
+      document.getElementById('launchArraysCard').style.removeProperty('display');
     }
   } catch (e) {
     console.error('プレビュー更新エラー:', e);
@@ -617,23 +460,3 @@ function showStatus(elementId, message, type) {
   span.textContent = message;
   el.replaceChildren(span);
 }
-
-function debounce(fn, ms) {
-  let timer;
-  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
-}
-
-// タブ切り替え時に可視化を更新
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('shown.bs.tab', e => {
-      const target = e.target.getAttribute('href');
-      if (target === '#tab-verify') {
-        renderVerifyCharts();
-        renderAccuracyTable();
-      } else if (target === '#tab-export') {
-        refreshPreview();
-      }
-    });
-  });
-});

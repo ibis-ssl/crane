@@ -26,27 +26,15 @@ body {
   color: #a8d8ea;
 }
 
-/* タブ */
-.nav-tabs {
-  border-bottom: 1px solid #2d4a7a;
+/* カラムスクロール */
+.col-scroll {
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
 }
 
-.nav-tabs .nav-link {
-  color: #8899aa;
-  border: 1px solid transparent;
-  padding: 0.5rem 1.2rem;
-}
-
-.nav-tabs .nav-link:hover {
-  color: #a8d8ea;
-  border-color: #2d4a7a;
-  background-color: #1e3a5f;
-}
-
-.nav-tabs .nav-link.active {
-  color: #ffffff;
-  background-color: #0f3460;
-  border-color: #533483 #533483 #0f3460;
+.traj-table-scroll {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
 }
 
 /* テーブル */
@@ -135,15 +123,6 @@ body {
   font-size: 0.7rem;
   color: #778899;
   margin-top: 2px;
-}
-
-/* スライダー */
-.form-range::-webkit-slider-thumb {
-  background-color: #533483;
-}
-
-.form-range::-webkit-slider-runnable-track {
-  background-color: #2d4a7a;
 }
 
 /* バッジ */
