@@ -3,4 +3,7 @@ uvicorn[standard]
 numpy
 pyyaml
 python-multipart
-rosbags
+protobuf>=4.21,<6
+scipy
+scikit-learn
+pytest

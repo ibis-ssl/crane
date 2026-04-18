@@ -83,6 +83,8 @@ docker/match-vs-tigers/results/
 
 # Protocol Buffers generated files
 docker/match-vs-tigers/proto/**/*_pb2.py
+docker/dev/ball-calibration/proto/
+docker/dev/ball-calibration/ssl_proto/
 
 # Test scripts
 docker/match-vs-tigers/scripts/test_*.py

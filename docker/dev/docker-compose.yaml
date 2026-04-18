@@ -16,8 +16,10 @@ services:
     network_mode: host
     environment:
       - HTTP_PORT=8093
+      - DISPLAY=${DISPLAY}
     volumes:
       - /home:/home:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
     restart: unless-stopped
 
   robot-manager:
