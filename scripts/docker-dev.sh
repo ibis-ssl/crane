@@ -107,6 +107,12 @@ if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]]; the
     DOCKER_ARGS+=(--scale robot-manager=0)
 fi
 
+case "$COMPOSE_COMMAND" in
+build | up | create)
+    "$REPO_ROOT/docker/dev/ball-calibration/scripts/sync_proto.sh"
+    ;;
+esac
+
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
     docker compose -f "$COMPOSE_FILE" --profile "sim-${SIM}" "${DOCKER_ARGS[@]}"
