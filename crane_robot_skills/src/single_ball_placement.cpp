@@ -283,17 +283,11 @@ void SingleBallPlacement::initialize()
     Point approach = computeAroundBallApproachTargetDynamic(
       ball_pos, placement_target, robot()->pose.pos, INTERVAL, MAX_INTERVAL);
 
-    // フィールド境界内にクランプ（壁際での回り込みスタックを防ぐ）
-    constexpr double field_margin = 0.05;  // 5cmマージン
-    const double max_x = world_model()->fieldSize().x() * 0.5 - field_margin;
-    const double max_y = world_model()->fieldSize().y() * 0.5 - field_margin;
-    approach.x() = std::clamp(approach.x(), -max_x, max_x);
-    approach.y() = std::clamp(approach.y(), -max_y, max_y);
-
     command->setTargetPosition(approach, 0.0);
     command->lookAtFrom(placement_target, ball_pos);
     command->disablePlacementAvoidance();
     command->disableGoalAreaAvoidance();
+    command->disableFieldBoundary();
     command->dribble(0.0);
     command->setOmegaLimit(10.0);
 
@@ -327,6 +321,7 @@ void SingleBallPlacement::initialize()
   addStateFunction(static_cast<int>(SingleBallPlacementStates::PASS_TO_TARGET), [this]() {
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
+    command->disableFieldBoundary();
     command->setMaxVelocity("SingleBallPlacementStates::PASS_TO_TARGET", 0.2);
     command->setMaxAcceleration("SingleBallPlacementStates::PASS_TO_TARGET", 1.0);
     auto placement_target = getPlacementTarget();
@@ -347,6 +342,7 @@ void SingleBallPlacement::initialize()
   addStateFunction(static_cast<int>(SingleBallPlacementStates::CONTACT_BALL), [this]() {
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
+    command->disableFieldBoundary();
     command->setMaxVelocity("SingleBallPlacementStates::CONTACT_BALL", 0.2);
     command->setMaxAcceleration("SingleBallPlacementStates::CONTACT_BALL", 1.0);
     auto placement_target = getPlacementTarget();
