@@ -147,10 +147,10 @@ limitations under the License.
       <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
       <param name="update_rate_hz" value="120.0"/>
-      <param name="straight_kick_power_array" value="[0.0, 0.4, 1.0, 1.0]"/>
+      <param name="straight_kick_power_array" value="[0.0, 0.3, 0.6, 1.0]"/>
       <param name="straight_kick_speed_array" value="[0.0, 2.0, 4.0, 7.5]"/>
-      <param name="chip_kick_power_array" value="[0.0, 0.8, 1.0]"/>
-      <param name="chip_kick_distance_array" value="[0.0, 0.5, 1.5]"/>
+      <param name="chip_kick_power_array" value="[0.0, 0.5, 0.8]"/>
+      <param name="chip_kick_distance_array" value="[0.0, 1.5, 2.5]"/>
     </node>
   </group>
 
