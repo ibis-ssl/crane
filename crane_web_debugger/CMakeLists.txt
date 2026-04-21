@@ -28,9 +28,12 @@ ament_auto_add_executable(crane_websocket_server
 # Find dependencies for WebSocket server
 find_package(OpenSSL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(Protobuf REQUIRED)
+
+include_directories(${robocup_ssl_msgs_INCLUDE_DIRS})
 
 # Link libraries for WebSocket server
-target_link_libraries(crane_websocket_server ${Boost_LIBRARIES})
+target_link_libraries(crane_websocket_server ${Boost_LIBRARIES} ${robocup_ssl_msgs_LIBRARIES})
 if(TARGET OpenSSL::SSL)
   target_link_libraries(crane_websocket_server OpenSSL::SSL OpenSSL::Crypto)
 else()

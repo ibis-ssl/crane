@@ -247,6 +247,93 @@
       margin-top: 6px;
       font-size: 0.75rem;
     }
+
+    /* Game control panel */
+    .gc-row {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+
+    .gc-btn {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.66rem !important;
+      padding: 3px 2px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gc-btn--halt {
+      background-color: var(--md-sys-color-error) !important;
+      color: var(--md-sys-color-on-error) !important;
+    }
+
+    .gc-btn--yellow {
+      background-color: #d4a700 !important;
+      color: #000 !important;
+      border-color: #d4a700 !important;
+    }
+
+    .gc-btn--blue {
+      background-color: #1d4ed8 !important;
+      color: #fff !important;
+      border-color: #1d4ed8 !important;
+    }
+
+    .gc-score-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    #gc-score {
+      font-size: 1.0rem;
+      font-weight: 700;
+      color: var(--md-sys-color-primary);
+      text-align: center;
+      flex: 1;
+    }
+
+    .gc-team-label {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+      margin: 3px 0 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Sim control panel */
+    #btn-sim-edit.active {
+      background-color: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
+    }
+
+    .btn-place-ball.active {
+      outline: 2px solid #fff;
+      outline-offset: 1px;
+    }
+
+    .sim-selected-label {
+      font-size: 0.72rem;
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 3px 0;
+    }
+
+    .m3-text-input {
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-xs, 4px);
+      color: var(--md-sys-color-on-surface);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .m3-text-input:focus {
+      border-color: var(--md-sys-color-primary);
+    }
   </style>
 </head>
 <body>
@@ -329,6 +416,87 @@
             </div>
             <div id="layer-list">
               <!-- Populated by viewer.js -->
+            </div>
+          </div>
+        </details>
+
+        <!-- Game Control -->
+        <div class="m3-section-title">Game Control</div>
+        <details class="m3-expansion" id="gc-accordion" open>
+          <summary>
+            <span class="material-symbols-outlined icon-sm m3-text-primary">sports</span>
+            Game Controller
+            <span class="m3-connection-dot" id="gc-connection-dot" style="margin-left:auto;flex-shrink:0;"></span>
+          </summary>
+          <div class="m3-expansion__body">
+            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-bottom:4px;">
+              Stage: <span id="gc-stage">-</span> &nbsp;|&nbsp; Cmd: <span id="gc-command">-</span>
+            </div>
+            <!-- Score -->
+            <div class="gc-score-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow" onclick="window.craneViewer?.gcClient.updateGoals('YELLOW',-1)" title="Yellow score -1">－</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow" onclick="window.craneViewer?.gcClient.updateGoals('YELLOW',1)" title="Yellow score +1">＋</button>
+              <span id="gc-score">0 : 0</span>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue" onclick="window.craneViewer?.gcClient.updateGoals('BLUE',-1)" title="Blue score -1">－</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue" onclick="window.craneViewer?.gcClient.updateGoals('BLUE',1)" title="Blue score +1">＋</button>
+            </div>
+            <!-- Main commands -->
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt" onclick="window.craneViewer?.gcClient.newCommand('HALT')">HALT</button>
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" onclick="window.craneViewer?.gcClient.newCommand('STOP')">STOP</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" onclick="window.craneViewer?.gcClient.newCommand('FORCE_START')">FORCE</button>
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" onclick="window.craneViewer?.gcClient.newCommand('NORMAL_START')">START</button>
+            </div>
+            <!-- Yellow team commands -->
+            <div class="gc-team-label">Yellow</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow" onclick="window.craneViewer?.gcClient.newCommand('DIRECT','YELLOW')">FREE KICK</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow" onclick="window.craneViewer?.gcClient.newCommand('KICKOFF','YELLOW')">KICKOFF</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow btn-place-ball" id="btn-place-ball-yellow" onclick="window.craneViewer?.activateBallPlacement('YELLOW')">PLACE</button>
+            </div>
+            <!-- Blue team commands -->
+            <div class="gc-team-label">Blue</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue" onclick="window.craneViewer?.gcClient.newCommand('DIRECT','BLUE')">FREE KICK</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue" onclick="window.craneViewer?.gcClient.newCommand('KICKOFF','BLUE')">KICKOFF</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue btn-place-ball" id="btn-place-ball-blue" onclick="window.craneViewer?.activateBallPlacement('BLUE')">PLACE</button>
+            </div>
+            <!-- Cards -->
+            <div class="gc-team-label">Cards</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="color:#d4a700;border-color:#d4a700;" onclick="window.craneViewer?.gcClient.addYellowCard('YELLOW')" title="Yellow card for Yellow">Y🟨</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="color:#ef4444;border-color:#ef4444;" onclick="window.craneViewer?.gcClient.addRedCard('YELLOW')" title="Red card for Yellow">Y🟥</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="color:#d4a700;border-color:#d4a700;" onclick="window.craneViewer?.gcClient.addYellowCard('BLUE')" title="Yellow card for Blue">B🟨</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="color:#ef4444;border-color:#ef4444;" onclick="window.craneViewer?.gcClient.addRedCard('BLUE')" title="Red card for Blue">B🟥</button>
+            </div>
+            <!-- Next Stage -->
+            <div class="gc-row" style="margin-top:2px;">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:1;" onclick="window.craneViewer?.gcClient.nextStage()">Next Stage ▶</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Simulation Control -->
+        <div class="m3-section-title">Sim Control</div>
+        <details class="m3-expansion" id="sim-accordion">
+          <summary>
+            <span class="material-symbols-outlined icon-sm m3-text-primary">precision_manufacturing</span>
+            Simulation Control
+          </summary>
+          <div class="m3-expansion__body">
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" id="btn-sim-edit" onclick="window.craneViewer?.toggleSimEditMode()">Sim Edit</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" onclick="window.craneViewer?.resetBallToCenter()">Reset Ball</button>
+            </div>
+            <div class="sim-selected-label">Selected: <span id="sim-selected-label">mode off</span></div>
+            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-top:4px;margin-bottom:2px;">Sim endpoint (UDP)</div>
+            <div style="display:flex;gap:3px;align-items:center;">
+              <input type="text" id="sim-host-input" value="127.0.0.1" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
+              <input type="number" id="sim-port-input" value="10300" class="m3-text-input" style="flex:1;font-size:0.68rem;padding:3px 5px;min-width:0;">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:0 0 auto;padding:3px 8px !important;" onclick="window.craneViewer?.applySimEndpoint()">Set</button>
+            </div>
+            <div style="font-size:0.62rem;color:var(--md-sys-color-on-surface-variant);margin-top:3px;">
+              Click: select &nbsp;|&nbsp; Dblclick/Enter: teleport &nbsp;|&nbsp; Esc: cancel
             </div>
           </div>
         </details>
