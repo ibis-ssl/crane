@@ -1,11 +1,79 @@
 'use strict';
 
+// ---- GameControlClient: ssl-game-controller WebSocket API (/api/control) クライアント ----
+class GameControlClient {
+    constructor() {
+        this.ws = null;
+        this.state = null;
+        this.onStateChange = null;
+        this._host = null;
+    }
+
+    connect(host) {
+        this._host = host;
+        const url = `ws://${host}:8081/api/control`;
+        try { this.ws = new WebSocket(url); } catch { this._reconnect(); return; }
+        this.ws.onopen = () => this._setIndicator(true);
+        this.ws.onmessage = (e) => {
+            try {
+                const msg = JSON.parse(e.data);
+                if (msg.matchState !== undefined) {
+                    this.state = msg.matchState;
+                    this.onStateChange?.(this.state);
+                }
+            } catch { /* ignore parse errors */ }
+        };
+        this.ws.onclose = () => { this._setIndicator(false); this._reconnect(); };
+        this.ws.onerror = () => this._setIndicator(false);
+    }
+
+    _reconnect() { setTimeout(() => this.connect(this._host), 5000); }
+
+    _setIndicator(ok) {
+        document.getElementById('gc-connection-dot')?.classList.toggle('connected', ok);
+    }
+
+    _sendChange(change) {
+        if (this.ws?.readyState === WebSocket.OPEN)
+            this.ws.send(JSON.stringify({ change }));
+    }
+
+    _sendInput(input) {
+        if (this.ws?.readyState === WebSocket.OPEN)
+            this.ws.send(JSON.stringify(input));
+    }
+
+    newCommand(type, forTeam = 'UNKNOWN') {
+        this._sendChange({ newCommandChange: { command: { type, forTeam } } });
+    }
+
+    setBallPlacementPos(x, y) {
+        this._sendChange({ setBallPlacementPosChange: { pos: { x, y } } });
+    }
+
+    addYellowCard(team) { this._sendChange({ addYellowCardChange: { forTeam: team } }); }
+    addRedCard(team) { this._sendChange({ addRedCardChange: { forTeam: team } }); }
+
+    updateGoals(team, delta) {
+        const current = this.state?.teamState?.[team]?.goals ?? 0;
+        this._sendChange({
+            updateTeamStateChange: { forTeam: team, goals: Math.max(0, current + delta) }
+        });
+    }
+
+    nextStage() {
+        const ca = this.state?.continueActions?.[0];
+        if (ca) this._sendInput({ continueAction: ca });
+    }
+}
+
 // ---- 定数 ----
 const CONTROL_MODE_SHORT = { 0: 'CAM', 1: 'POS', 2: 'VEL', 3: 'POL' };
 const CONTROL_MODE_LONG = {
     0: 'LOCAL_CAMERA', 1: 'POSITION_TARGET', 2: 'SIMPLE_VELOCITY', 3: 'POLAR_VELOCITY'
 };
 const ROBOT_HIT_RADIUS_M = 0.15;
+const BALL_HIT_RADIUS_M = 0.08;
 const VB_X = -6000, VB_Y = -4500, VB_W = 12000, VB_H = 9000;
 
 // ---- SVG属性regex生成ヘルパー ----
@@ -326,6 +394,31 @@ class CanvasRenderer {
             }
         }
 
+        // Sim edit mode: 選択オブジェクトのオーバーレイ
+        if (v.simEditMode && v.simSelectedObj) {
+            const obj = v.simSelectedObj;
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            ctx.lineWidth = 22;
+            ctx.setLineDash([45, 25]);
+            if (obj.type === 'ball') {
+                ctx.strokeStyle = '#ff8800';
+                ctx.beginPath();
+                ctx.arc(v.ballPos.x * 1000, -v.ballPos.y * 1000, ROBOT_HIT_RADIUS_M * 900, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                const source = (obj.yellow === v.isYellow) ? v.robotsOurs : v.robotsTheirs;
+                const robot = source[obj.id];
+                if (robot) {
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.beginPath();
+                    ctx.arc(robot.x * 1000, -robot.y * 1000, ROBOT_HIT_RADIUS_M * 1000, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
         ctx.restore();
 
         // データなし表示
@@ -484,7 +577,7 @@ class CanvasRenderer {
         // 逆ユーザーパン/ズーム
         const mmX = (svgX - v.panOffset.x) / v.zoomLevel;
         const mmY = (svgY - v.panOffset.y) / v.zoomLevel;
-        return { x: mmX / 1000, y: mmY / 1000 };
+        return { x: mmX / 1000, y: -mmY / 1000 };
     }
 
     // ピクセルデルタ → SVG座標デルタ（パン操作用）
@@ -514,12 +607,24 @@ class CraneViewer {
         this.flushIntervalMs = 50;
 
         this.robotsOurs = {};
+        this.robotsTheirs = {};
         this.controlTargets = {};
 
         this.moveMode = false;
         this.selectedRobotId = null;
         this.isYellow = false;
         this.onPositiveHalf = false;
+
+        // Sim / GC integration
+        this.ballPos = { x: 0, y: 0 };
+        this.simEditMode = false;
+        this.simSelectedObj = null; // null | {type:'ball'} | {type:'robot', id, yellow, theta}
+        this.placeBallPending = null; // null | 'YELLOW' | 'BLUE'
+        this.gcClient = new GameControlClient();
+        this._dragStartX = 0;
+        this._dragStartY = 0;
+        this._dragMoved = false;
+        this._lastMouseField = { x: 0, y: 0 };
 
         this.robotUpdateTimer = null;
         this.parser = new SvgPrimitiveParser();
@@ -534,6 +639,8 @@ class CraneViewer {
         this.setupWebSocket();
         this.setupEventListeners();
         this.updateConnectionStatus(false);
+        this.gcClient.connect(window.location.hostname);
+        this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
     }
 
     setupWebSocket() {
@@ -666,12 +773,18 @@ class CraneViewer {
     handleWorldModel(data) {
         if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
         if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
+        if (data.ball) this.ballPos = { x: data.ball.x, y: data.ball.y };
         if (data.robots_ours) {
             this.robotsOurs = {};
             for (const robot of data.robots_ours) this.robotsOurs[robot.id] = robot;
         }
+        if (data.robots_theirs) {
+            this.robotsTheirs = {};
+            for (const robot of data.robots_theirs) this.robotsTheirs[robot.id] = robot;
+        }
         this.scheduleRobotUpdate();
         if (this.moveMode && this.selectedRobotId !== null) this.renderer?.invalidate();
+        if (this.simEditMode) this.renderer?.invalidate();
     }
 
     handleControlTargets(data) {
@@ -840,6 +953,133 @@ class CraneViewer {
         return closest;
     }
 
+    _nearestRobot(robotMap, fieldX, fieldY) {
+        let id = null, dist = ROBOT_HIT_RADIUS_M;
+        for (const [k, r] of Object.entries(robotMap)) {
+            const d = Math.hypot(r.x - fieldX, r.y - fieldY);
+            if (d < dist) { dist = d; id = Number(k); }
+        }
+        return id !== null ? { id, dist } : null;
+    }
+
+    simSelectAt(fieldX, fieldY) {
+        const candidates = [];
+        const ourHit = this._nearestRobot(this.robotsOurs, fieldX, fieldY);
+        const theirHit = this._nearestRobot(this.robotsTheirs, fieldX, fieldY);
+        const ballDist = Math.hypot(this.ballPos.x - fieldX, this.ballPos.y - fieldY);
+
+        if (ourHit) candidates.push({ kind: 'our', dist: ourHit.dist, id: ourHit.id });
+        if (ballDist < BALL_HIT_RADIUS_M) candidates.push({ kind: 'ball', dist: ballDist });
+        if (theirHit) candidates.push({ kind: 'their', dist: theirHit.dist, id: theirHit.id });
+
+        // 最短距離の候補を選ぶ。同距離は ball > our > their の優先度
+        candidates.sort((a, b) => {
+            if (Math.abs(a.dist - b.dist) > 1e-6) return a.dist - b.dist;
+            const rank = { ball: 0, our: 1, their: 2 };
+            return rank[a.kind] - rank[b.kind];
+        });
+
+        const best = candidates[0] ?? null;
+        if (!best) {
+            this.simSelectedObj = null;
+        } else if (best.kind === 'ball') {
+            this.simSelectedObj = { type: 'ball' };
+        } else if (best.kind === 'our') {
+            const r = this.robotsOurs[best.id];
+            this.simSelectedObj = { type: 'robot', id: best.id, yellow: this.isYellow, theta: r?.theta ?? 0 };
+        } else {
+            const r = this.robotsTheirs[best.id];
+            this.simSelectedObj = { type: 'robot', id: best.id, yellow: !this.isYellow, theta: r?.theta ?? 0 };
+        }
+        this._updateSimLabel();
+        this.renderer?.invalidate();
+    }
+
+    simTeleportTo(fieldX, fieldY) {
+        if (!this.simSelectedObj) return;
+        const obj = this.simSelectedObj;
+        if (obj.type === 'ball') {
+            this.websocket?.send(JSON.stringify({ type: 'sim_teleport_ball', x: fieldX, y: fieldY, vx: 0, vy: 0 }));
+        } else {
+            this.websocket?.send(JSON.stringify({
+                type: 'sim_teleport_robot',
+                id: obj.id,
+                team: obj.yellow ? 'yellow' : 'blue',
+                x: fieldX, y: fieldY,
+                orientation_deg: (obj.theta ?? 0) * 180 / Math.PI
+            }));
+        }
+    }
+
+    resetBallToCenter() {
+        this.websocket?.send(JSON.stringify({ type: 'sim_teleport_ball', x: 0, y: 0, vx: 0, vy: 0 }));
+    }
+
+    applySimEndpoint() {
+        const host = document.getElementById('sim-host-input')?.value || '127.0.0.1';
+        const port = parseInt(document.getElementById('sim-port-input')?.value || '10300', 10);
+        this.websocket?.send(JSON.stringify({ type: 'sim_set_endpoint', host, port }));
+    }
+
+    toggleSimEditMode() {
+        this.simEditMode = !this.simEditMode;
+        const btn = document.getElementById('btn-sim-edit');
+        const canvas = document.getElementById('field-canvas');
+        if (this.simEditMode) {
+            if (this.moveMode) this.deactivateMoveMode();
+            this.cancelBallPlacement();
+            this.simSelectedObj = null;
+            btn?.classList.add('active');
+            if (canvas) canvas.style.cursor = 'crosshair';
+        } else {
+            this.simSelectedObj = null;
+            btn?.classList.remove('active');
+            if (canvas) canvas.style.cursor = 'grab';
+        }
+        this._updateSimLabel();
+        this.renderer?.invalidate();
+    }
+
+    activateBallPlacement(team) {
+        if (this.simEditMode) this.toggleSimEditMode();
+        this.cancelBallPlacement();
+        this.placeBallPending = team;
+        const canvas = document.getElementById('field-canvas');
+        if (canvas) canvas.style.cursor = 'crosshair';
+        document.getElementById(`btn-place-ball-${team.toLowerCase()}`)?.classList.add('active');
+    }
+
+    cancelBallPlacement() {
+        if (!this.placeBallPending) return;
+        const team = this.placeBallPending;
+        this.placeBallPending = null;
+        document.getElementById('field-canvas').style.cursor =
+            this.simEditMode ? 'crosshair' : 'grab';
+        document.getElementById(`btn-place-ball-${team.toLowerCase()}`)?.classList.remove('active');
+    }
+
+    _updateSimLabel() {
+        const el = document.getElementById('sim-selected-label');
+        if (!el) return;
+        if (!this.simEditMode) { el.textContent = 'mode off'; return; }
+        if (!this.simSelectedObj) { el.textContent = 'click to select'; return; }
+        const obj = this.simSelectedObj;
+        el.textContent = obj.type === 'ball' ? 'Ball' : `${obj.yellow ? 'Yellow' : 'Blue'} #${obj.id}`;
+    }
+
+    updateGcPanel(state) {
+        if (!state) return;
+        const ts = state.teamState ?? {};
+        const y = ts['YELLOW'] ?? {};
+        const b = ts['BLUE'] ?? {};
+        const scoreEl = document.getElementById('gc-score');
+        if (scoreEl) scoreEl.textContent = `${y.goals ?? 0} : ${b.goals ?? 0}`;
+        const stageEl = document.getElementById('gc-stage');
+        if (stageEl) stageEl.textContent = (state.stage ?? '-').replace('NORMAL_', '').replace('_', ' ');
+        const cmdEl = document.getElementById('gc-command');
+        if (cmdEl) cmdEl.textContent = state.command?.type ?? '-';
+    }
+
     activateMoveMode() {
         this.moveMode = true;
         document.getElementById('btn-move-mode')?.classList.add('active');
@@ -906,6 +1146,9 @@ class CraneViewer {
 
         canvas.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
+            this._dragStartX = e.clientX;
+            this._dragStartY = e.clientY;
+            this._dragMoved = false;
             if (e.shiftKey && this.moveMode) {
                 const fp = this.clientToFieldCoords(e.clientX, e.clientY);
                 const hitId = this.findRobotAtPosition(fp.x, fp.y);
@@ -920,11 +1163,14 @@ class CraneViewer {
             } else {
                 this.isPanning = true;
                 this.lastPanPoint = { x: e.clientX, y: e.clientY };
-                canvas.style.cursor = 'grabbing';
+                if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'grabbing';
             }
         });
 
         canvas.addEventListener('mousemove', (e) => {
+            const dx = e.clientX - this._dragStartX, dy = e.clientY - this._dragStartY;
+            if (Math.hypot(dx, dy) > 5) this._dragMoved = true;
+            this._lastMouseField = this.clientToFieldCoords(e.clientX, e.clientY);
             if (!this.isPanning) return;
             if (this.renderer) {
                 const d = this.renderer.pixelDeltaToSvgDelta(
@@ -938,14 +1184,47 @@ class CraneViewer {
             this.renderer?.invalidate();
         });
 
-        canvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('mouseup', (e) => {
             this.isPanning = false;
-            canvas.style.cursor = 'grab';
+            if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'grab';
+            if (!this._dragMoved) {
+                const fp = this.clientToFieldCoords(e.clientX, e.clientY);
+                if (this.placeBallPending) {
+                    const team = this.placeBallPending;
+                    this.cancelBallPlacement();
+                    this.gcClient.setBallPlacementPos(fp.x, fp.y);
+                    this.gcClient.newCommand('BALL_PLACEMENT', team);
+                } else if (this.simEditMode) {
+                    this.simSelectAt(fp.x, fp.y);
+                }
+            }
         });
+
+        canvas.addEventListener('dblclick', (e) => {
+            if (!this.simEditMode || !this.simSelectedObj) return;
+            if (this._dragMoved) return;
+            const fp = this.clientToFieldCoords(e.clientX, e.clientY);
+            this.simTeleportTo(fp.x, fp.y);
+        });
+
         canvas.addEventListener('mouseleave', () => {
             this.isPanning = false;
-            canvas.style.cursor = 'default';
+            if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'default';
         });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (this.placeBallPending) { this.cancelBallPlacement(); return; }
+                if (this.simEditMode) { this.toggleSimEditMode(); return; }
+                if (this.moveMode) { this.deactivateMoveMode(); return; }
+                this.gcClient.newCommand('HALT');
+                return;
+            }
+            if (e.key === 'Enter' && this.simEditMode && this.simSelectedObj) {
+                this.simTeleportTo(this._lastMouseField.x, this._lastMouseField.y);
+            }
+        });
+
         canvas.style.cursor = 'grab';
     }
 }

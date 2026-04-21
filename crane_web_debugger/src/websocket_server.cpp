@@ -8,6 +8,8 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+#include <robocup_ssl_msgs/ssl_gc_common.pb.h>
+#include <robocup_ssl_msgs/ssl_simulation_control.pb.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 
@@ -15,6 +17,7 @@
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <crane_msgs/msg/human_annotation.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
@@ -39,6 +42,66 @@
 #include <thread>
 
 using json = nlohmann::json;
+
+// ---- SSL Simulation Protocol UDP sender ----
+class SslSimulationSender
+{
+public:
+  SslSimulationSender()
+  : socket_(io_ctx_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  {
+    setEndpoint("127.0.0.1", 10300);
+  }
+
+  void setEndpoint(const std::string & host, int port)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boost::asio::ip::udp::resolver resolver(io_ctx_);
+    auto endpoints = resolver.resolve(host, std::to_string(port));
+    endpoint_ = *endpoints.begin();
+  }
+
+  void sendTeleportBall(float x, float y, float vx = 0.0f, float vy = 0.0f)
+  {
+    robocup_ssl::SimulatorCommand cmd;
+    auto * ball = cmd.mutable_control()->mutable_teleport_ball();
+    ball->set_x(x);
+    ball->set_y(y);
+    ball->set_vx(vx);
+    ball->set_vy(vy);
+    sendCmd(cmd);
+  }
+
+  void sendTeleportRobot(int id, bool yellow, float x, float y, float orientation_rad, bool present)
+  {
+    robocup_ssl::SimulatorCommand cmd;
+    auto * robot = cmd.mutable_control()->add_teleport_robot();
+    robot->mutable_id()->set_id(static_cast<uint32_t>(id));
+    robot->mutable_id()->set_team(yellow ? robocup_ssl::YELLOW : robocup_ssl::BLUE);
+    robot->set_x(x);
+    robot->set_y(y);
+    robot->set_orientation(orientation_rad);
+    robot->set_present(present);
+    sendCmd(cmd);
+  }
+
+private:
+  void sendCmd(const robocup_ssl::SimulatorCommand & cmd)
+  {
+    std::string data;
+    if (!cmd.SerializeToString(&data)) return;
+    std::lock_guard<std::mutex> lock(mutex_);
+    try {
+      socket_.send_to(boost::asio::buffer(data), endpoint_);
+    } catch (...) {
+    }
+  }
+
+  boost::asio::io_context io_ctx_;
+  boost::asio::ip::udp::socket socket_;
+  boost::asio::ip::udp::endpoint endpoint_;
+  std::mutex mutex_;
+};
 
 // Simple WebSocket frame implementation
 struct WebSocketFrame
@@ -513,6 +576,14 @@ private:
         handleDeactivateRobotTest(connection);
       } else if (type == "robot_test_target") {
         handleRobotTestTarget(connection, request);
+      } else if (type == "sim_teleport_ball") {
+        handleSimTeleportBall(connection, request);
+      } else if (type == "sim_teleport_robot") {
+        handleSimTeleportRobot(connection, request);
+      } else if (type == "sim_remove_robot") {
+        handleSimRemoveRobot(connection, request);
+      } else if (type == "sim_set_endpoint") {
+        handleSimSetEndpoint(connection, request);
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
         connection->sendMessage(error_response.dump());
@@ -1195,6 +1266,61 @@ private:
     connection->sendMessage(result.dump());
   }
 
+  void handleSimTeleportBall(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    float x = static_cast<float>(request.value("x", 0.0));
+    float y = static_cast<float>(request.value("y", 0.0));
+    float vx = static_cast<float>(request.value("vx", 0.0));
+    float vy = static_cast<float>(request.value("vy", 0.0));
+    sim_sender_.sendTeleportBall(x, y, vx, vy);
+    RCLCPP_DEBUG(this->get_logger(), "Sim teleport ball to (%.2f, %.2f)", x, y);
+    json result = {{"type", "sim_result"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleSimTeleportRobot(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    int id = request.value("id", 0);
+    std::string team = request.value("team", "blue");
+    bool yellow = (team == "yellow");
+    float x = static_cast<float>(request.value("x", 0.0));
+    float y = static_cast<float>(request.value("y", 0.0));
+    float orientation_deg = static_cast<float>(request.value("orientation_deg", 0.0));
+    float orientation_rad = orientation_deg * static_cast<float>(M_PI) / 180.0f;
+    bool present = request.value("present", true);
+    sim_sender_.sendTeleportRobot(id, yellow, x, y, orientation_rad, present);
+    RCLCPP_DEBUG(
+      this->get_logger(), "Sim teleport robot %s #%d to (%.2f, %.2f)", team.c_str(), id, x, y);
+    json result = {{"type", "sim_result"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleSimRemoveRobot(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    int id = request.value("id", 0);
+    std::string team = request.value("team", "blue");
+    bool yellow = (team == "yellow");
+    sim_sender_.sendTeleportRobot(id, yellow, 0.0f, 0.0f, 0.0f, false);
+    json result = {{"type", "sim_result"}, {"success", true}};
+    connection->sendMessage(result.dump());
+  }
+
+  void handleSimSetEndpoint(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    std::string host = request.value("host", "127.0.0.1");
+    int port = request.value("port", 10300);
+    try {
+      sim_sender_.setEndpoint(host, port);
+      RCLCPP_INFO(this->get_logger(), "Sim endpoint updated to %s:%d", host.c_str(), port);
+      json result = {
+        {"type", "sim_endpoint_set"}, {"success", true}, {"host", host}, {"port", port}};
+      connection->sendMessage(result.dump());
+    } catch (const std::exception & e) {
+      json error = {{"type", "error"}, {"message", std::string("Invalid endpoint: ") + e.what()}};
+      connection->sendMessage(error.dump());
+    }
+  }
+
   void handleRobotControl(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     int robot_id = request.value("robot_id", -1);
@@ -1339,6 +1465,9 @@ private:
   std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> pending_svg_updates_;
   std::mutex svg_updates_mutex_;
   rclcpp::TimerBase::SharedPtr svg_updates_timer_;
+
+  // Simulation control UDP sender
+  SslSimulationSender sim_sender_;
 };
 
 int main(int argc, char ** argv)
