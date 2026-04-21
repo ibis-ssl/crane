@@ -6,6 +6,26 @@
 
 ### ローカルホストでマルチキャスト
 
+Docker 開発環境（`network_mode: host`）では、ホスト内で完結する UDP multicast
+（SSL Vision/Referee/Tracker、ROS 2 DDS など）を正しく疎通させるために、
+lo インターフェイスのマルチキャスト有効化と `224.0.0.0/4` のループバック向けルートが必要。
+
+一括で適用するヘルパーを用意している:
+
+```bash
+./scripts/setup-multicast.sh
+```
+
+このスクリプトは冪等で、以下を実行する（sudo パスワードの入力が必要）:
+
+- `sudo ip link set multicast on lo`
+- `sudo ip route replace 224.0.0.0/4 dev lo`
+
+**OS 再起動で失われる**ので、再起動後に `erforce-sim | Sending UDP datagram failed`
+や `ssl-game-controller | messageGen unresponsive` が出たら再実行すること。
+
+手動で個別に実行したい場合は:
+
 ```bash
 sudo ip link set multicast on lo
 ```
