@@ -14,6 +14,10 @@ from fastapi.staticfiles import StaticFiles
 def create_app(web_root: Path) -> FastAPI:
     app = FastAPI(title="Crane Web Debugger HTTP")
 
+    fonts_dir = Path(os.environ.get("FONTS_DIR", "/app/fonts"))
+    if fonts_dir.is_dir():
+        app.mount("/fonts", StaticFiles(directory=str(fonts_dir)), name="fonts")
+
     app.mount(
         "/",
         StaticFiles(directory=str(web_root), html=True, follow_symlink=True),

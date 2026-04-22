@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY crane_web_debugger/web_server/app.py /app/
 COPY crane_web_debugger/web /app/web
-RUN python3 /app/web/download_fonts.py
+RUN python3 /app/web/download_fonts.py --output-dir /app/fonts
 
 EXPOSE 8090
 
