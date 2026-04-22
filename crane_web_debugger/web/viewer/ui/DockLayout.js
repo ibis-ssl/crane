@@ -2,8 +2,8 @@ const STORAGE_KEY = 'cv.dockLayout.v1';
 
 const DEFAULT_LAYOUT = {
     v: 1,
-    sizes: { left: 300, right: 260, bottom: 0 },
-    collapsed: { left: false, right: false, bottom: true },
+    sizes: { left: 300, right: 260, bottom: 44 },
+    collapsed: { left: false, right: false, bottom: false },
 };
 
 export class DockLayout {

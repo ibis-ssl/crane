@@ -7,6 +7,8 @@ import { GameControlClient } from './ws/GameControlClient.js';
 import { DockLayout } from './ui/DockLayout.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { Sparkline, MetricRing } from './ui/Sparkline.js';
+import { RingBuffer } from './replay/RingBuffer.js';
+import { TimeScrubber } from './ui/TimeScrubber.js';
 
 class CraneViewer {
     constructor() {
@@ -52,6 +54,9 @@ class CraneViewer {
         this._sparklines = null;        // [Sparkline] for current detail panel
         this._sparklineRaf = null;
         this._detailRobotId = null;
+        this._replayMode = false;
+        this.ringBuffer = new RingBuffer();
+        this.timeScrubber = null;
 
         this.robotUpdateTimer = null;
         this.parser = new SvgPrimitiveParser();
@@ -78,6 +83,8 @@ class CraneViewer {
         this.setupDelegatedListeners();
         this.setupLogPanelControls();
         document.getElementById('btn-robot-detail-close')?.addEventListener('click', () => this.closeRobotDetail());
+        const tsContainer = document.getElementById('time-scrubber-container');
+        if (tsContainer) this.timeScrubber = new TimeScrubber(tsContainer, this.ringBuffer, this);
         this.updateConnectionStatus(false);
         this.gcClient.connect(window.location.hostname);
         this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
@@ -130,6 +137,12 @@ class CraneViewer {
     }
 
     handleSvgData(data) {
+        if (this._replayMode) {
+            // リプレイ中は RingBuffer にのみ tee
+            const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
+            this.ringBuffer.addDelta(tsMs, 'svg_data', data);
+            return;
+        }
         this.layerStore.clear();
         if (data.layers) {
             for (const layer of data.layers) {
@@ -141,12 +154,24 @@ class CraneViewer {
                 });
             }
         }
+        // キーフレームとして保存
+        const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
+        this.ringBuffer.addKeyframe(tsMs, {
+            layerStore: this.layerStore,
+            robotsOurs: this.robotsOurs,
+            robotsTheirs: this.robotsTheirs,
+            ball: this.ballPos,
+            controlTargets: this.controlTargets,
+        });
         this.renderer?.invalidate();
         this.updateLayerList();
         this.updateStats();
     }
 
     handleSvgUpdate(data) {
+        const tsMs = Date.now();
+        this.ringBuffer.addDelta(tsMs, 'svg_update', data);
+        if (this._replayMode) return;
         if (Array.isArray(data.updates) && data.updates.length > 0) {
             this.pendingUpdateBatch.push(...data.updates);
         }
@@ -222,6 +247,10 @@ class CraneViewer {
     }
 
     handleWorldModel(data) {
+        const tsMs = data.timestamp ? data.timestamp * 1e-6 : Date.now();
+        this.ringBuffer.addDelta(tsMs, 'world_model', data);
+        if (this._replayMode) return;
+
         if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
         if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
         if (data.ball) this.ballPos = { x: data.ball.x, y: data.ball.y };
@@ -274,6 +303,9 @@ class CraneViewer {
     }
 
     handleControlTargets(data) {
+        const tsMs = Date.now();
+        this.ringBuffer.addDelta(tsMs, 'control_targets', data);
+        if (this._replayMode) return;
         if (data.commands) {
             this.controlTargets = {};
             for (const cmd of data.commands) this.controlTargets[cmd.robot_id] = cmd;
