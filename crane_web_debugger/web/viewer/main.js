@@ -6,6 +6,7 @@ import { ThemeTokens } from './renderer/ThemeTokens.js';
 import { GameControlClient } from './ws/GameControlClient.js';
 import { DockLayout } from './ui/DockLayout.js';
 import { LogPanel } from './ui/LogPanel.js';
+import { Sparkline, MetricRing } from './ui/Sparkline.js';
 
 class CraneViewer {
     constructor() {
@@ -47,6 +48,10 @@ class CraneViewer {
         this._keysDown = new Set();
         this._keyboardLoopRunning = false;
         this.robotFeedback = {};
+        this._robotMetrics = new Map(); // id -> { posX, posY, vel }
+        this._sparklines = null;        // [Sparkline] for current detail panel
+        this._sparklineRaf = null;
+        this._detailRobotId = null;
 
         this.robotUpdateTimer = null;
         this.parser = new SvgPrimitiveParser();
@@ -72,6 +77,7 @@ class CraneViewer {
         this.setupEventListeners();
         this.setupDelegatedListeners();
         this.setupLogPanelControls();
+        document.getElementById('btn-robot-detail-close')?.addEventListener('click', () => this.closeRobotDetail());
         this.updateConnectionStatus(false);
         this.gcClient.connect(window.location.hostname);
         this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
@@ -247,6 +253,21 @@ class CraneViewer {
             }
         }
 
+        // MetricRing 更新 (sparkline 用)
+        if (data.robots_ours) {
+            for (const robot of data.robots_ours) {
+                if (!this._robotMetrics.has(robot.id)) {
+                    this._robotMetrics.set(robot.id, {
+                        posX: new MetricRing(180), posY: new MetricRing(180), vel: new MetricRing(180),
+                    });
+                }
+                const m = this._robotMetrics.get(robot.id);
+                m.posX.push(robot.x ?? 0);
+                m.posY.push(robot.y ?? 0);
+                m.vel.push(Math.hypot(robot.vx ?? 0, robot.vy ?? 0));
+            }
+        }
+
         this.scheduleRobotUpdate();
         if (this.moveMode && this.selectedRobotId !== null) this.renderer?.invalidate();
         if (this.simEditMode) this.renderer?.invalidate();
@@ -286,6 +307,12 @@ class CraneViewer {
         this.robotUpdateTimer = setTimeout(() => {
             this.robotUpdateTimer = null;
             this.renderRobotCards();
+            // 詳細パネルが開いていれば更新
+            if (this._detailRobotId !== null) {
+                const robot = this.robotsOurs[this._detailRobotId];
+                const cmd = this.controlTargets[this._detailRobotId];
+                if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
+            }
         }, 500);
     }
 
@@ -323,49 +350,100 @@ class CraneViewer {
         const robot = this.robotsOurs[id];
         const cmd = this.controlTargets[id];
         if (!robot) return;
-        const modal = document.getElementById('robot-detail-modal');
-        const scrim = document.getElementById('robot-detail-scrim');
-        if (!modal) return;
+
+        const panel = document.getElementById('robot-detail-inline');
+        if (!panel) return;
+
+        this._detailRobotId = id;
+        this._renderDetailPanel(id, robot, cmd);
+        panel.classList.add('visible');
+
+        this._startSparklineLoop(id);
+    }
+
+    _renderDetailPanel(id, robot, cmd) {
+        const panel = document.getElementById('robot-detail-inline');
+        if (!panel) return;
         const modeName = cmd ? (CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`) : '--';
-        document.getElementById('robot-detail-title').textContent = `Robot ${id}`;
         let targetHtml = '';
         if (cmd?.position_target_mode) {
-            targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(3)}, ${cmd.position_target_mode.target_y?.toFixed(3)})</td></tr>`;
+            targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(2)}, ${cmd.position_target_mode.target_y?.toFixed(2)})</td></tr>`;
         } else if (cmd?.simple_velocity_target_mode) {
-            targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(3)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(3)})</td></tr>`;
+            targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(2)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(2)})</td></tr>`;
         }
-        document.getElementById('robot-detail-body').innerHTML = `
-            <table class="m3-data-table m3-data-table--borderless m3-mb-sm"><tbody>
-                <tr><td style="width:6em">Control Mode</td><td>${modeName}</td></tr>
+        panel.innerHTML = `
+            <div class="rd-title">Robot ${id}</div>
+            <table><tbody>
+                <tr><td>Mode</td><td>${modeName}</td></tr>
                 <tr><td>Planner</td><td>${cmd?.planner_name || '--'}</td></tr>
-                <tr><td>Est. X</td><td>${robot.x?.toFixed(3)} m</td></tr>
-                <tr><td>Est. Y</td><td>${robot.y?.toFixed(3)} m</td></tr>
-                <tr><td>Est. θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
-                <tr><td>Vel Vx</td><td>${robot.vx?.toFixed(3)} m/s</td></tr>
-                <tr><td>Vel Vy</td><td>${robot.vy?.toFixed(3)} m/s</td></tr>
+                <tr><td>FSM</td><td>${cmd?.planning_factors?.[0]?.name || '--'}</td></tr>
+                <tr><td>Pos</td><td>(${robot.x?.toFixed(3)}, ${robot.y?.toFixed(3)}) m</td></tr>
+                <tr><td>θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
+                <tr><td>Vel</td><td>(${robot.vx?.toFixed(3)}, ${robot.vy?.toFixed(3)}) m/s</td></tr>
                 <tr><td>ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
-                <tr><td>Vision X</td><td>${robot.vision_x?.toFixed(3) ?? '--'}</td></tr>
-                <tr><td>Vision Y</td><td>${robot.vision_y?.toFixed(3) ?? '--'}</td></tr>
                 ${targetHtml}
                 <tr><td>Target θ</td><td>${cmd?.target_theta?.toFixed(3) ?? '--'}</td></tr>
             </tbody></table>
-            <a href="/robot_telemetry.html?id=${id}" class="m3-btn m3-btn--filled m3-btn--sm m3-w-full">
-                <span class="material-symbols-outlined icon-sm">show_chart</span> Open Telemetry
-            </a>
+            <div style="margin-top:4px;">
+                <a href="/robot_telemetry.html?id=${id}" class="m3-btn m3-btn--outlined m3-btn--sm" style="font-size:0.65rem;padding:2px 8px;">
+                    <span class="material-symbols-outlined icon-sm">show_chart</span> Telemetry
+                </a>
+            </div>
         `;
-        modal.classList.add('open');
-        if (scrim) scrim.classList.add('open');
-        window.__closeRobotDialog = () => {
-            modal.classList.remove('open');
-            if (scrim) scrim.classList.remove('open');
-        };
-        const onKey = (e) => {
-            if (e.key === 'Escape') {
-                window.__closeRobotDialog();
-                document.removeEventListener('keydown', onKey);
+    }
+
+    _startSparklineLoop(id) {
+        this._stopSparklineLoop();
+        const container = document.getElementById('robot-sparklines');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const tokens = this.themeTokens.get() ?? {};
+        const sparkData = [
+            { label: 'Pos X', color: tokens.hudAccent ?? '#D0BCFF' },
+            { label: 'Pos Y', color: tokens.teamYellow ?? '#C49000' },
+            { label: '|Vel|', color: tokens.moveOverlay ?? '#B5EAD7' },
+        ];
+
+        this._sparklines = sparkData.map(({ label, color }) => {
+            const row = document.createElement('div');
+            row.className = 'sparkline-row';
+            const lbl = document.createElement('span');
+            lbl.className = 'sparkline-label';
+            lbl.textContent = label;
+            row.appendChild(lbl);
+            container.appendChild(row);
+            return new Sparkline(row, { width: 100, height: 22, color });
+        });
+
+        const keys = ['posX', 'posY', 'vel'];
+        const loop = () => {
+            if (this._detailRobotId !== id) return;
+            const metrics = this._robotMetrics.get(id);
+            const tokens2 = this.themeTokens.get() ?? {};
+            if (metrics) {
+                keys.forEach((key, i) => {
+                    this._sparklines[i].setSeries([{ color: sparkData[i].color, data: metrics[key].latest(60) }]);
+                    this._sparklines[i].render(tokens2);
+                });
             }
+            this._sparklineRaf = requestAnimationFrame(loop);
         };
-        document.addEventListener('keydown', onKey);
+        this._sparklineRaf = requestAnimationFrame(loop);
+    }
+
+    _stopSparklineLoop() {
+        if (this._sparklineRaf) { cancelAnimationFrame(this._sparklineRaf); this._sparklineRaf = null; }
+        this._sparklines = null;
+        this._detailRobotId = null;
+    }
+
+    closeRobotDetail() {
+        const panel = document.getElementById('robot-detail-inline');
+        panel?.classList.remove('visible');
+        const container = document.getElementById('robot-sparklines');
+        if (container) container.innerHTML = '';
+        this._stopSparklineLoop();
     }
 
     updateLayerList() {

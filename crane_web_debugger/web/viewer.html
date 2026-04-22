@@ -436,6 +436,59 @@
       cursor: default;
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
+
+    /* Robot Detail inline panel */
+    #robot-detail-inline {
+      display: none;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+    }
+
+    #robot-detail-inline.visible { display: block; }
+
+    #robot-detail-inline .rd-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--md-sys-color-primary);
+      margin-bottom: 4px;
+    }
+
+    #robot-detail-inline table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+    }
+
+    #robot-detail-inline td {
+      padding: 1px 4px;
+      color: var(--md-sys-color-on-surface-variant);
+      vertical-align: top;
+    }
+
+    #robot-detail-inline td:first-child {
+      color: var(--md-sys-color-on-surface-variant);
+      white-space: nowrap;
+      width: 5.5em;
+    }
+
+    #robot-detail-inline td:last-child {
+      color: var(--md-sys-color-on-surface);
+    }
+
+    /* Sparkline row */
+    .sparkline-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .sparkline-label {
+      font-size: 0.6rem;
+      color: var(--md-sys-color-on-surface-variant);
+      min-width: 4em;
+    }
   </style>
 </head>
 <body>
@@ -663,6 +716,21 @@
             <!-- Populated by viewer/main.js -->
           </div>
         </div>
+      </div>
+
+      <!-- Robot Detail Inline Panel -->
+      <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
+        <div class="right-dock-section-header">
+          <span class="material-symbols-outlined icon-sm">smart_toy</span>
+          Robot Detail
+          <button class="m3-icon-btn m3-icon-btn--sm" id="btn-robot-detail-close" title="パネルを閉じる" style="margin-left:auto;">
+            <span class="material-symbols-outlined icon-sm">close</span>
+          </button>
+        </div>
+        <div id="robot-detail-inline">
+          <!-- Populated by main.js -->
+        </div>
+        <div id="robot-sparklines"></div>
       </div>
 
       <!-- Log Panel -->
