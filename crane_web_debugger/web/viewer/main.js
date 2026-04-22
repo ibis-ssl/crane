@@ -4,6 +4,8 @@ import { CanvasRenderer } from './renderer/CanvasRenderer.js';
 import { FieldLayer } from './renderer/FieldLayer.js';
 import { ThemeTokens } from './renderer/ThemeTokens.js';
 import { GameControlClient } from './ws/GameControlClient.js';
+import { DockLayout } from './ui/DockLayout.js';
+import { LogPanel } from './ui/LogPanel.js';
 
 class CraneViewer {
     constructor() {
@@ -46,6 +48,8 @@ class CraneViewer {
         this.fieldLayer = new FieldLayer();
         this.themeTokens = new ThemeTokens();
         this.renderer = null;
+        this.dockLayout = null;
+        this.logPanel = null;
 
         this.init();
     }
@@ -56,8 +60,13 @@ class CraneViewer {
             this.renderer = new CanvasRenderer(canvas, this, this.fieldLayer, this.themeTokens);
         }
         this.themeTokens.mount(() => this.renderer?.invalidate());
+        this.dockLayout = new DockLayout();
+        const logBody = document.getElementById('log-panel-body');
+        if (logBody) this.logPanel = new LogPanel(logBody);
         this.setupWebSocket();
         this.setupEventListeners();
+        this.setupDelegatedListeners();
+        this.setupLogPanelControls();
         this.updateConnectionStatus(false);
         this.gcClient.connect(window.location.hostname);
         this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
@@ -67,17 +76,27 @@ class CraneViewer {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.hostname}:8091`;
         this.websocket = new WebSocket(wsUrl);
-        this.websocket.onopen = () => this.updateConnectionStatus(true);
+        this.websocket.onopen = () => {
+            this.updateConnectionStatus(true);
+            this.logPanel?.appendLog('info', 'WS', `接続 ${wsUrl}`);
+        };
         this.websocket.onmessage = (event) => {
-            try { this.handleMessage(JSON.parse(event.data)); } catch (e) { console.error('メッセージ解析エラー:', e); }
+            try { this.handleMessage(JSON.parse(event.data)); } catch (e) {
+                console.error('メッセージ解析エラー:', e);
+                this.logPanel?.appendLog('error', 'WS', `メッセージ解析エラー: ${e.message}`);
+            }
         };
         this.websocket.onclose = () => {
             this.updateConnectionStatus(false);
+            this.logPanel?.appendLog('warn', 'WS', '切断 — 3秒後に再接続');
             setTimeout(() => {
                 if (!this.websocket || this.websocket.readyState === WebSocket.CLOSED) this.setupWebSocket();
             }, 3000);
         };
-        this.websocket.onerror = () => this.updateConnectionStatus(false);
+        this.websocket.onerror = () => {
+            this.updateConnectionStatus(false);
+            this.logPanel?.appendLog('error', 'WS', '接続エラー');
+        };
     }
 
     handleMessage(data) {
@@ -588,6 +607,72 @@ class CraneViewer {
     _closeHaltDialog() {
         const dlg = document.getElementById('halt-confirm-dialog');
         if (dlg) dlg.style.display = 'none';
+    }
+
+    setupDelegatedListeners() {
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const team = btn.dataset.team;
+            const type = btn.dataset.type;
+
+            switch (action) {
+                case 'gc-command':
+                    this.gcClient.newCommand(type, team || 'UNKNOWN');
+                    this.logPanel?.appendLog('action', 'GC', `command ${type}${team ? ' for ' + team : ''}`);
+                    break;
+                case 'gc-goals': {
+                    const delta = parseInt(btn.dataset.delta ?? '0', 10);
+                    this.gcClient.updateGoals(team, delta);
+                    this.logPanel?.appendLog('action', 'GC', `goals ${team} ${delta >= 0 ? '+' : ''}${delta}`);
+                    break;
+                }
+                case 'gc-card-yellow':
+                    this.gcClient.addYellowCard(team);
+                    this.logPanel?.appendLog('action', 'GC', `yellow card for ${team}`);
+                    break;
+                case 'gc-card-red':
+                    this.gcClient.addRedCard(team);
+                    this.logPanel?.appendLog('action', 'GC', `red card for ${team}`);
+                    break;
+                case 'gc-next-stage':
+                    this.gcClient.nextStage();
+                    this.logPanel?.appendLog('action', 'GC', 'next stage');
+                    break;
+                case 'ball-place':
+                    this.activateBallPlacement(team);
+                    this.logPanel?.appendLog('action', 'GC', `ball placement mode: ${team}`);
+                    break;
+                case 'sim-edit':
+                    this.toggleSimEditMode();
+                    break;
+                case 'sim-reset-ball':
+                    this.resetBallToCenter();
+                    this.logPanel?.appendLog('action', 'Sim', 'ball reset to center');
+                    break;
+                case 'sim-set-endpoint':
+                    this.applySimEndpoint();
+                    this.logPanel?.appendLog('action', 'Sim', 'endpoint updated');
+                    break;
+            }
+        });
+    }
+
+    setupLogPanelControls() {
+        document.getElementById('btn-log-clear')?.addEventListener('click', () => {
+            this.logPanel?.clear();
+        });
+        document.querySelectorAll('.log-level-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const active = [...document.querySelectorAll('.log-level-cb:checked')].map(c => c.dataset.level);
+                this.logPanel?.setLevelFilter(active);
+            });
+        });
+        const textFilter = document.getElementById('log-text-filter');
+        textFilter?.addEventListener('input', () => {
+            this.logPanel?.setTextFilter(textFilter.value);
+        });
     }
 
     setupEventListeners() {

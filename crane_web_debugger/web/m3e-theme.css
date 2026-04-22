@@ -61,6 +61,12 @@
   --md-sys-color-field-turf: #0E3D10;
   --md-sys-color-field-grid: #1D5A22;
 
+  /* --- Color: Team (GC パネルのチームカラーボタン用) --- */
+  --md-sys-color-team-yellow: #C49000;
+  --md-sys-color-on-team-yellow: #1A1200;
+  --md-sys-color-team-blue: #1D4ED8;
+  --md-sys-color-on-team-blue: #FFFFFF;
+
   /* --- Typography --- */
   --md-sys-typescale-font-family: 'Roboto', 'Noto Sans JP', system-ui, sans-serif;
   --md-sys-typescale-mono-font-family: 'Roboto Mono', 'Courier New', monospace;
