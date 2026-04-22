@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_web_debugger</name>
-  <version>1.0.343</version>
+  <version>1.0.344</version>
   <description>WebSocketデバッグサーバーとWebフロントエンド</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
