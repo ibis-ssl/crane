@@ -29,15 +29,18 @@ services:
 
   ball-calibration:
     build:
-      context: ./ball-calibration
+      context: ../..
+      dockerfile: docker/dev/ball-calibration/Dockerfile
     container_name: crane-ball-calibration
     network_mode: host
     environment:
       - HTTP_PORT=8093
       - DISPLAY=${DISPLAY}
+      - BACK_URL=http://localhost:8090
     volumes:
       - /home:/home:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ../../crane_web_debugger/web/shared:/app/web/shared:ro
     restart: unless-stopped
 
   robot-manager:

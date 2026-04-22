@@ -4,265 +4,261 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ball Calibration UI - ibis-ssl</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/fonts/noto-sans-jp.css">
+  <link rel="stylesheet" href="/fonts/roboto.css">
+  <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
+  <link rel="stylesheet" href="/shared/theme/m3e-theme.css">
+  <link rel="stylesheet" href="/shared/nav/crane-nav.css">
+  <script type="module" src="/shared/nav/crane-nav.js"></script>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </head>
 <body>
 
-<!-- ヘッダー -->
-<nav class="navbar navbar-dark navbar-custom">
-  <div class="container-fluid">
-    <span class="navbar-brand fw-bold">
-      <i class="fas fa-futbol me-2"></i>Ball Calibration UI
-    </span>
-    <span class="text-light small opacity-75">ibis-ssl / Human-in-the-Loop パラメータ最適化</span>
-  </div>
-</nav>
+<crane-nav active="ball-calibration"></crane-nav>
 
-<div class="container-fluid py-2">
-  <div class="row g-2">
+<div class="bc-layout">
 
-    <!-- ===== 左カラム: ファイル読込 & 軌道一覧 ===== -->
-    <div class="col-lg-3 col-scroll">
+  <!-- ===== 左カラム: ファイル読込 & 軌道一覧 ===== -->
+  <div class="bc-col bc-col--left">
 
-      <div class="card">
-        <div class="card-header">
-          <i class="fas fa-folder-open me-1"></i>SSL 公式ログの読み込み
+    <div class="m3-card m3-card--outlined">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">folder_open</span>
+        SSL 公式ログの読み込み
+      </div>
+      <div class="bc-card-body">
+        <div class="m3-flex m3-gap-xs m3-mb-sm">
+          <input type="text" id="pathInput" class="bc-input m3-text-mono"
+            placeholder="/home/user/logs/match.log.gz">
+          <button class="m3-btn m3-btn--outlined m3-btn--sm" onclick="openSystemFileDialog()" title="参照">
+            <span class="material-symbols-outlined icon-sm">folder</span>
+          </button>
+          <button class="m3-btn m3-btn--filled m3-btn--sm" onclick="loadFromPath()">
+            <span class="material-symbols-outlined icon-sm">folder_open</span>読み込む
+          </button>
         </div>
-        <div class="card-body">
-          <div class="input-group mb-2">
-            <input type="text" id="pathInput" class="form-control form-control-sm font-monospace"
-              placeholder="/home/user/logs/match.log.gz">
-            <button class="btn btn-outline-secondary btn-sm" onclick="openSystemFileDialog()" title="参照">
-              <i class="fas fa-folder"></i>
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="loadFromPath()">
-              <i class="fas fa-folder-open me-1"></i>読み込む
-            </button>
-          </div>
-          <div class="form-text mb-1">「参照」で .log.gz ファイル選択ダイアログを開きます</div>
-          <div id="loadStatus" class="small text-muted"></div>
+        <div class="m3-body-small m3-text-on-surface-variant m3-mb-xs">「参照」で .log.gz ファイル選択ダイアログを開きます</div>
+        <div id="loadStatus" class="m3-body-small"></div>
+      </div>
+    </div>
+
+    <div class="m3-card m3-card--outlined m3-mt-sm">
+      <div class="bc-card-header m3-justify-between">
+        <span class="m3-flex m3-items-center m3-gap-xs">
+          <span class="material-symbols-outlined icon-sm">list</span>軌道一覧
+        </span>
+        <div class="m3-flex m3-gap-xs m3-items-center">
+          <span id="trajectoryCount" class="m3-badge m3-badge--secondary">0件</span>
+          <button class="m3-btn m3-btn--sm m3-btn--outlined" onclick="selectAll(true)">全選択</button>
+          <button class="m3-btn m3-btn--sm m3-btn--outlined" onclick="selectAll(false)">全解除</button>
         </div>
       </div>
+      <div class="bc-card-body m3-p-0">
+        <div class="traj-table-scroll">
+          <table class="m3-data-table m3-data-table--compact bc-traj-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" class="m3-checkbox" id="checkAll" onchange="selectAll(this.checked)"></th>
+                <th>ID</th>
+                <th>点数</th>
+                <th>秒</th>
+                <th>最大速度</th>
+              </tr>
+            </thead>
+            <tbody id="trajectoryTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
-      <div class="card mt-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-list me-1"></i>軌道一覧</span>
+  </div>
+
+  <!-- ===== 中カラム: 軌道プレビュー & 時間範囲選択 ===== -->
+  <div class="bc-col bc-col--center">
+
+    <div class="m3-card m3-card--outlined">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">area_chart</span>
+        軌道プレビュー
+        <span id="previewEventId" class="m3-badge m3-badge--primary m3-hidden"></span>
+      </div>
+      <div class="bc-card-body">
+        <div id="previewXY" style="height: 200px;"></div>
+        <div id="previewVT" style="height: 260px; margin-top: 8px;"></div>
+        <div id="previewEmpty" class="m3-text-center m3-text-on-surface-variant bc-empty-state">
+          <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px;">mouse</span>
+          左の軌道一覧をクリックするとプレビューが表示されます
+        </div>
+        <div id="timeRangeInfo" class="m3-mt-sm m3-hidden">
+          <span class="m3-chip">
+            <span class="material-symbols-outlined" style="font-size:14px;">content_cut</span>
+            選択範囲:
+          </span>
+          <span id="timeRangeBadge" class="m3-badge m3-badge--warning m3-text-mono m3-ms-auto"></span>
+          <button class="m3-btn m3-btn--sm m3-btn--text" onclick="resetCurrentTimeRange()">
+            <span class="material-symbols-outlined icon-sm">close</span>リセット
+          </button>
+          <div class="m3-body-small m3-text-on-surface-variant m3-mt-xs">V-tグラフ上をドラッグで範囲選択 / ダブルクリックでリセット</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== 右カラム: 最適化 & 検証 & エクスポート ===== -->
+  <div class="bc-col bc-col--right">
+
+    <!-- 最適化パラメータ -->
+    <div class="m3-card m3-card--outlined">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">settings</span>最適化パラメータ
+      </div>
+      <div class="bc-card-body">
+        <div class="bc-param-grid m3-mb-sm">
           <div>
-            <span id="trajectoryCount" class="badge bg-secondary me-2">0件</span>
-            <button class="btn btn-sm btn-outline-secondary me-1" onclick="selectAll(true)">全選択</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="selectAll(false)">全解除</button>
+            <label class="bc-label">最小継続時間 (s)</label>
+            <input type="number" id="cfgMinDuration" class="bc-input"
+              value="0.5" min="0.1" max="5.0" step="0.1">
+          </div>
+          <div>
+            <label class="bc-label">最小R²</label>
+            <input type="number" id="cfgMinR2" class="bc-input"
+              value="0.6" min="0.0" max="1.0" step="0.05">
+          </div>
+          <div>
+            <label class="bc-label">最小点数</label>
+            <input type="number" id="cfgMinPoints" class="bc-input"
+              value="10" min="3" max="100" step="1">
           </div>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive traj-table-scroll">
-            <table class="table table-sm table-hover mb-0">
-              <thead class="table-dark sticky-top">
-                <tr>
-                  <th style="width:36px"><input type="checkbox" id="checkAll" onchange="selectAll(this.checked)"></th>
-                  <th>ID</th>
-                  <th>点数</th>
-                  <th>秒</th>
-                  <th>最大速度</th>
-                </tr>
-              </thead>
-              <tbody id="trajectoryTable"></tbody>
-            </table>
-          </div>
+        <button class="m3-btn m3-btn--filled m3-w-full" onclick="runOptimization()" id="optimizeBtn">
+          <span class="material-symbols-outlined icon-sm">play_arrow</span>最適化実行
+        </button>
+        <div id="optimizeSpinner" class="m3-text-center m3-mt-sm m3-hidden">
+          <span class="bc-spinner"></span>
+          <span class="m3-body-small m3-ms-auto">最適化中...</span>
         </div>
       </div>
-
     </div>
 
-    <!-- ===== 中カラム: 軌道プレビュー & 時間範囲選択 ===== -->
-    <div class="col-lg-5 col-scroll">
-
-      <div class="card">
-        <div class="card-header">
-          <i class="fas fa-chart-area me-1"></i>軌道プレビュー
-          <span id="previewEventId" class="badge bg-info ms-2 d-none"></span>
-        </div>
-        <div class="card-body">
-          <div id="previewXY" style="height: 200px;"></div>
-          <div id="previewVT" style="height: 260px; margin-top: 8px;"></div>
-          <div id="previewEmpty" class="text-center text-muted py-5">
-            <i class="fas fa-mouse-pointer fa-2x mb-2 d-block"></i>
-            左の軌道一覧をクリックするとプレビューが表示されます
+    <!-- 最適化結果サマリー -->
+    <div class="m3-card m3-card--outlined m3-mt-sm m3-hidden" id="resultSummaryCard">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm m3-text-success">check_circle</span>最適化結果
+      </div>
+      <div class="bc-card-body">
+        <div class="bc-stat-grid">
+          <div class="bc-stat">
+            <div class="bc-stat__value" id="resultDecel">-</div>
+            <div class="bc-stat__label">Decel (m/s²)</div>
           </div>
-          <!-- 時間範囲表示 -->
-          <div id="timeRangeInfo" class="mt-2 d-none">
-            <span class="badge bg-secondary me-1"><i class="fas fa-cut me-1"></i>選択範囲:</span>
-            <span id="timeRangeBadge" class="badge bg-warning text-dark font-monospace"></span>
-            <button class="btn btn-sm btn-outline-secondary ms-2 py-0" onclick="resetCurrentTimeRange()">
-              <i class="fas fa-times me-1"></i>リセット
-            </button>
-            <div class="form-text mt-1">V-tグラフ上をドラッグで範囲選択 / ダブルクリックでリセット</div>
+          <div class="bc-stat">
+            <div class="bc-stat__value" id="resultRMSE">-</div>
+            <div class="bc-stat__label">RMSE</div>
+          </div>
+          <div class="bc-stat">
+            <div class="bc-stat__value" id="resultR2">-</div>
+            <div class="bc-stat__label">R²</div>
+          </div>
+          <div class="bc-stat">
+            <div class="bc-stat__value" id="resultUsed">-</div>
+            <div class="bc-stat__label">有効軌道</div>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- ===== 右カラム: 最適化 & 検証 & エクスポート ===== -->
-    <div class="col-lg-4 col-scroll">
+    <!-- V-t検証チャート -->
+    <div class="m3-card m3-card--outlined m3-mt-sm m3-hidden" id="verifyCard">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">show_chart</span>速度 - 時間 (実測 vs 予測)
+      </div>
+      <div class="bc-card-body m3-p-xs">
+        <div id="vtChart" style="height: 280px;"></div>
+      </div>
+    </div>
 
-      <!-- 最適化パラメータ -->
-      <div class="card">
-        <div class="card-header"><i class="fas fa-cog me-1"></i>最適化パラメータ</div>
-        <div class="card-body">
-          <div class="row g-2 mb-2">
-            <div class="col-4">
-              <label class="form-label small fw-bold">最小継続時間 (s)</label>
-              <input type="number" id="cfgMinDuration" class="form-control form-control-sm"
-                value="0.5" min="0.1" max="5.0" step="0.1">
-            </div>
-            <div class="col-4">
-              <label class="form-label small fw-bold">最小R²</label>
-              <input type="number" id="cfgMinR2" class="form-control form-control-sm"
-                value="0.6" min="0.0" max="1.0" step="0.05">
-            </div>
-            <div class="col-4">
-              <label class="form-label small fw-bold">最小点数</label>
-              <input type="number" id="cfgMinPoints" class="form-control form-control-sm"
-                value="10" min="3" max="100" step="1">
-            </div>
-          </div>
-          <button class="btn btn-primary w-100" onclick="runOptimization()" id="optimizeBtn">
-            <i class="fas fa-play me-1"></i>最適化実行
-          </button>
-          <div id="optimizeSpinner" class="text-center mt-2 d-none">
-            <div class="spinner-border spinner-border-sm text-primary"></div>
-            <span class="ms-2 small">最適化中...</span>
-          </div>
+    <!-- 精度テーブル -->
+    <div class="m3-card m3-card--outlined m3-mt-sm m3-hidden" id="accuracyCard">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">table_chart</span>軌道別精度
+      </div>
+      <div class="bc-card-body m3-p-0" style="max-height: 220px; overflow-y: auto;">
+        <table class="m3-data-table m3-data-table--compact">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>v₀ (m/s)</th>
+              <th>R²</th>
+              <th>CI±</th>
+            </tr>
+          </thead>
+          <tbody id="accuracyTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- エクスポート -->
+    <div class="m3-card m3-card--outlined m3-mt-sm">
+      <div class="bc-card-header">
+        <span class="material-symbols-outlined icon-sm">file_export</span>エクスポート
+      </div>
+      <div class="bc-card-body">
+        <button class="m3-btn m3-btn--filled m3-btn--success m3-w-full m3-mb-sm" onclick="downloadYaml()">
+          <span class="material-symbols-outlined icon-sm">download</span>calibrated_ball_physics.yaml をダウンロード
+        </button>
+        <div id="exportStatus" class="m3-body-small m3-mb-sm"></div>
+        <div id="launchArraysCard" class="m3-hidden">
+          <div class="m3-label-small m3-text-on-surface-variant m3-mb-xs">launch 用配列:</div>
+          <pre id="launchArrays" class="bc-pre"></pre>
         </div>
       </div>
-
-      <!-- 最適化結果サマリー -->
-      <div class="card mt-2" id="resultSummaryCard" style="display:none!important;">
-        <div class="card-header"><i class="fas fa-check-circle text-success me-1"></i>最適化結果</div>
-        <div class="card-body py-2">
-          <div class="row g-2 text-center">
-            <div class="col-3">
-              <div class="stat-card">
-                <div class="stat-value" id="resultDecel">-</div>
-                <div class="stat-label">Decel (m/s²)</div>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="stat-card">
-                <div class="stat-value" id="resultRMSE">-</div>
-                <div class="stat-label">RMSE</div>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="stat-card">
-                <div class="stat-value" id="resultR2">-</div>
-                <div class="stat-label">R²</div>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="stat-card">
-                <div class="stat-value" id="resultUsed">-</div>
-                <div class="stat-label">有効軌道</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- V-t検証チャート -->
-      <div class="card mt-2" id="verifyCard" style="display:none!important;">
-        <div class="card-header"><i class="fas fa-chart-line me-1"></i>速度 - 時間 (実測 vs 予測)</div>
-        <div class="card-body p-1">
-          <div id="vtChart" style="height: 280px;"></div>
-        </div>
-      </div>
-
-      <!-- 精度テーブル -->
-      <div class="card mt-2" id="accuracyCard" style="display:none!important;">
-        <div class="card-header"><i class="fas fa-table me-1"></i>軌道別精度</div>
-        <div class="card-body p-0">
-          <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
-            <table class="table table-sm table-hover mb-0">
-              <thead class="table-dark sticky-top">
-                <tr>
-                  <th>ID</th>
-                  <th>v₀ (m/s)</th>
-                  <th>R²</th>
-                  <th>CI±</th>
-                </tr>
-              </thead>
-              <tbody id="accuracyTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- エクスポート -->
-      <div class="card mt-2">
-        <div class="card-header"><i class="fas fa-file-export me-1"></i>エクスポート</div>
-        <div class="card-body">
-          <button class="btn btn-success w-100 mb-2" onclick="downloadYaml()">
-            <i class="fas fa-download me-1"></i>calibrated_ball_physics.yaml をダウンロード
-          </button>
-          <div id="exportStatus" class="small mb-2"></div>
-          <div id="launchArraysCard" style="display:none!important;">
-            <div class="small text-muted fw-bold mb-1">launch 用配列:</div>
-            <pre id="launchArrays" class="bg-dark text-light p-2 rounded small mb-0" style="font-size:10px;"></pre>
-          </div>
-        </div>
-      </div>
-
     </div>
 
   </div>
 
-  <!-- ===== ログ全体タイムライン (下半分フル幅) ===== -->
-  <div class="row g-2 mt-1">
-    <div class="col-12">
-      <div class="card timeline-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-stream me-1"></i>ログ全体タイムライン (ボール速度)</span>
-          <span id="timelineStatus" class="small text-muted"></span>
-        </div>
-        <div class="card-body py-2">
-          <div id="timelineChart" style="height: 240px;"></div>
-          <div id="timelineEmpty" class="text-center text-muted py-4">
-            <i class="fas fa-clock fa-2x mb-2 d-block"></i>
-            SSL ログを読み込むとボール速度の全体タイムラインが表示されます
+</div>
+
+<!-- ===== ログ全体タイムライン (下半分フル幅) ===== -->
+<div class="bc-timeline-row">
+  <div class="m3-card m3-card--outlined bc-timeline-card">
+    <div class="bc-card-header m3-justify-between">
+      <span class="m3-flex m3-items-center m3-gap-xs">
+        <span class="material-symbols-outlined icon-sm">timeline</span>
+        ログ全体タイムライン (ボール速度)
+      </span>
+      <span id="timelineStatus" class="m3-body-small m3-text-on-surface-variant"></span>
+    </div>
+    <div class="bc-card-body">
+      <div id="timelineChart" style="height: 240px;"></div>
+      <div id="timelineEmpty" class="m3-text-center m3-text-on-surface-variant bc-empty-state">
+        <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px;">schedule</span>
+        SSL ログを読み込むとボール速度の全体タイムラインが表示されます
+      </div>
+      <div id="timelineControls" class="m3-hidden m3-mt-sm">
+        <div class="bc-timeline-controls">
+          <div>
+            <label class="bc-label">選択範囲</label>
+            <div id="timelineRangeBadge" class="m3-badge m3-badge--secondary m3-text-mono">未選択</div>
           </div>
-          <div id="timelineControls" class="d-none mt-2">
-            <div class="row g-2 align-items-end">
-              <div class="col-md-4">
-                <label class="form-label small fw-bold mb-1">選択範囲</label>
-                <div id="timelineRangeBadge" class="badge bg-secondary font-monospace">未選択</div>
-              </div>
-              <div class="col-md-4">
-                <button class="btn btn-success btn-sm w-100" onclick="addTrajectoryFromTimeline()" id="addTrajBtn" disabled>
-                  <i class="fas fa-plus me-1"></i>軌道として追加
-                </button>
-              </div>
-              <div class="col-md-4">
-                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearTimelineSelection()">
-                  <i class="fas fa-times me-1"></i>選択クリア
-                </button>
-              </div>
-            </div>
-            <div class="form-text mt-1">
-              <i class="fas fa-info-circle me-1"></i>
-              モードバー: Box Select = 範囲選択 / Zoom = 拡大 / Pan = 移動 / Home = リセット
-            </div>
-            <div id="addTrajStatus" class="small mt-1"></div>
-          </div>
+          <button class="m3-btn m3-btn--filled m3-btn--success" onclick="addTrajectoryFromTimeline()" id="addTrajBtn" disabled>
+            <span class="material-symbols-outlined icon-sm">add</span>軌道として追加
+          </button>
+          <button class="m3-btn m3-btn--outlined" onclick="clearTimelineSelection()">
+            <span class="material-symbols-outlined icon-sm">close</span>選択クリア
+          </button>
         </div>
+        <div class="m3-body-small m3-text-on-surface-variant m3-mt-xs">
+          <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">info</span>
+          モードバー: Box Select = 範囲選択 / Zoom = 拡大 / Pan = 移動 / Home = リセット
+        </div>
+        <div id="addTrajStatus" class="m3-body-small m3-mt-xs"></div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

@@ -15,12 +15,12 @@ const state = {
 };
 
 const PLOT_LAYOUT_BASE = {
-  paper_bgcolor: '#0f2744',
-  plot_bgcolor: '#0a1929',
-  font: { color: '#e0e0e0', size: 11 },
+  paper_bgcolor: '#141C2E',
+  plot_bgcolor: '#0D1117',
+  font: { color: '#E2E4E8', size: 11 },
   margin: { l: 45, r: 15, t: 30, b: 40 },
-  xaxis: { gridcolor: '#1e3a5f', zerolinecolor: '#2d4a7a' },
-  yaxis: { gridcolor: '#1e3a5f', zerolinecolor: '#2d4a7a' },
+  xaxis: { gridcolor: '#2D3748', zerolinecolor: '#4A5568' },
+  yaxis: { gridcolor: '#2D3748', zerolinecolor: '#4A5568' },
 };
 
 const timelineState = {
@@ -107,9 +107,9 @@ async function refreshTrajectoryList() {
     const tr = document.createElement('tr');
     tr.dataset.eventId = t.event_id;
     tr.innerHTML = `
-      <td><input type="checkbox" class="row-check" data-id="${t.event_id}" checked
+      <td><input type="checkbox" class="m3-checkbox row-check" data-id="${t.event_id}" checked
         onchange="onRowCheck(${t.event_id}, this.checked)"></td>
-      <td>${t.event_id}${hasRange ? ' <i class="fas fa-cut text-warning" title="時間範囲選択中"></i>' : ''}</td>
+      <td>${t.event_id}${hasRange ? ' <span class="material-symbols-outlined m3-text-warning" style="font-size:14px;vertical-align:middle;" title="時間範囲選択中">content_cut</span>' : ''}</td>
       <td>${t.data_points}</td>
       <td>${t.duration.toFixed(2)}</td>
       <td>${t.max_velocity.toFixed(2)}</td>
@@ -129,7 +129,7 @@ function makeRangeShape([x0, x1]) {
   return {
     type: 'rect', xref: 'x', yref: 'paper',
     x0, x1, y0: 0, y1: 1,
-    fillcolor: '#533483', opacity: 0.25, line: { width: 0 },
+    fillcolor: '#4F378B', opacity: 0.25, line: { width: 0 },
   };
 }
 
@@ -139,9 +139,9 @@ function updateTimeRangeBadge(eventId) {
   if (range) {
     document.getElementById('timeRangeBadge').textContent =
       `${range[0].toFixed(3)}s ~ ${range[1].toFixed(3)}s`;
-    info.classList.remove('d-none');
+    info.classList.remove('m3-hidden');
   } else {
-    info.classList.add('d-none');
+    info.classList.add('m3-hidden');
   }
 }
 
@@ -158,9 +158,9 @@ function updateTrajectoryRowIcon(eventId, hasRange) {
   if (!tr) return;
   const idCell = tr.querySelector('td:nth-child(2)');
   if (!idCell) return;
-  const icon = idCell.querySelector('i');
+  const icon = idCell.querySelector('span.material-symbols-outlined');
   if (hasRange && !icon) {
-    idCell.insertAdjacentHTML('beforeend', ' <i class="fas fa-cut text-warning" title="時間範囲選択中"></i>');
+    idCell.insertAdjacentHTML('beforeend', ' <span class="material-symbols-outlined m3-text-warning" style="font-size:14px;vertical-align:middle;" title="時間範囲選択中">content_cut</span>');
   } else if (!hasRange && icon) {
     icon.remove();
   }
@@ -174,8 +174,8 @@ async function showTrajectoryPreview(eventId) {
 
   const badge = document.getElementById('previewEventId');
   badge.textContent = `Event #${eventId}`;
-  badge.classList.remove('d-none');
-  document.getElementById('previewEmpty').style.display = 'none';
+  badge.classList.remove('m3-hidden');
+  document.getElementById('previewEmpty').classList.add('m3-hidden');
 
   try {
     const d = await apiGet(`/api/trajectory/${eventId}`);
@@ -183,8 +183,8 @@ async function showTrajectoryPreview(eventId) {
     Plotly.newPlot('previewXY', [{
       x: d.positions_x, y: d.positions_y,
       mode: 'lines+markers',
-      marker: { size: 4, color: '#a8d8ea' },
-      line: { color: '#533483', width: 2 },
+      marker: { size: 4, color: '#A0C4FF' },
+      line: { color: '#4F378B', width: 2 },
       name: 'XY軌跡',
     }], {
       ...PLOT_LAYOUT_BASE,
@@ -209,8 +209,8 @@ async function showTrajectoryPreview(eventId) {
     Plotly.newPlot('previewVT', [{
       x: d.time_points, y: d.velocities,
       mode: 'lines+markers',
-      marker: { size: 4, color: '#e8a838' },
-      line: { color: '#e8a838', width: 2 },
+      marker: { size: 4, color: '#FFA726' },
+      line: { color: '#FFA726', width: 2 },
       name: '速度',
     }], vtLayout, { displayModeBar: false, responsive: true });
 
@@ -258,7 +258,7 @@ async function runOptimization() {
   const btn = document.getElementById('optimizeBtn');
   const spinner = document.getElementById('optimizeSpinner');
   btn.disabled = true;
-  spinner.classList.remove('d-none');
+  spinner.classList.remove('m3-hidden');
 
   try {
     const config = {
@@ -283,7 +283,7 @@ async function runOptimization() {
 
     // 結果サマリー表示
     const card = document.getElementById('resultSummaryCard');
-    card.style.removeProperty('display');
+    card.classList.remove('m3-hidden');
     document.getElementById('resultDecel').textContent = result.global_deceleration.toFixed(4);
     document.getElementById('resultRMSE').textContent = result.global_rmse.toFixed(4);
     document.getElementById('resultR2').textContent = result.global_r_squared.toFixed(4);
@@ -297,8 +297,8 @@ async function runOptimization() {
     });
     state.predictedData = predResult.trajectories;
 
-    document.getElementById('verifyCard').style.removeProperty('display');
-    document.getElementById('accuracyCard').style.removeProperty('display');
+    document.getElementById('verifyCard').classList.remove('m3-hidden');
+    document.getElementById('accuracyCard').classList.remove('m3-hidden');
 
     renderVerifyCharts();
     renderAccuracyTable();
@@ -308,7 +308,7 @@ async function runOptimization() {
     alert(`最適化エラー: ${e.message}`);
   } finally {
     btn.disabled = false;
-    spinner.classList.add('d-none');
+    spinner.classList.add('m3-hidden');
   }
 }
 
@@ -317,7 +317,7 @@ async function runOptimization() {
 function renderVerifyCharts() {
   if (!state.predictedData || state.predictedData.length === 0) return;
 
-  const colors = ['#a8d8ea', '#e8a838', '#ff6b6b', '#6bcb77', '#c77dff',
+  const colors = ['#A0C4FF', '#FFA726', '#FFB4AB', '#66BB6A', '#D0BCFF',
     '#4cc9f0', '#f72585', '#b5e48c', '#fca311', '#64dfdf'];
 
   const vtTraces = [];
@@ -345,7 +345,7 @@ function renderVerifyCharts() {
     title: { text: `速度 vs 時間 (decel = ${decel.toFixed(3)} m/s²)`, font: { size: 12 } },
     xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
     yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
-    legend: { font: { size: 9 }, bgcolor: '#0f2744', bordercolor: '#2d4a7a' },
+    legend: { font: { size: 9 }, bgcolor: '#141C2E', bordercolor: '#2D3748' },
     margin: { ...PLOT_LAYOUT_BASE.margin, t: 35 },
   }, { responsive: true });
 
@@ -359,13 +359,13 @@ function renderAccuracyTable() {
   const fits = state.optimizationResult.per_trajectory_fits || [];
   fits.forEach(k => {
     if (k.rejected) return;
-    const r2Color = k.r_squared >= 0.8 ? 'text-success' :
-      k.r_squared >= 0.6 ? 'text-warning' : 'text-danger';
+    const r2Color = k.r_squared >= 0.8 ? 'm3-text-success' :
+      k.r_squared >= 0.6 ? 'm3-text-warning' : 'm3-text-error';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${k.event_id}</td>
-      <td class="font-monospace">${k.v0.toFixed(4)}</td>
-      <td class="font-monospace ${r2Color}">${k.r_squared.toFixed(4)}</td>
+      <td class="m3-text-mono">${k.v0.toFixed(4)}</td>
+      <td class="m3-text-mono ${r2Color}">${k.r_squared.toFixed(4)}</td>
       <td>${(k.ci_v0 ? ((k.ci_v0[1] - k.ci_v0[0]) / 2).toFixed(2) : '-')}</td>
     `;
     tbody.appendChild(tr);
@@ -402,12 +402,12 @@ async function downloadYaml() {
     URL.revokeObjectURL(url);
 
     const span = document.createElement('span');
-    span.className = 'text-success';
+    span.className = 'm3-text-success';
     span.textContent = '✓ calibrated_ball_physics.yaml をダウンロードしました';
     status.replaceChildren(span);
   } catch (e) {
     const span = document.createElement('span');
-    span.className = 'text-danger';
+    span.className = 'm3-text-error';
     span.textContent = `エラー: ${e.message}`;
     status.replaceChildren(span);
   }
@@ -424,8 +424,8 @@ async function loadTimeline() {
   try {
     const data = await apiGet('/api/timeline');
     if (!data.time_points || data.time_points.length === 0) {
-      emptyEl.style.display = '';
-      controlsEl.classList.add('d-none');
+      emptyEl.classList.remove('m3-hidden');
+      controlsEl.classList.add('m3-hidden');
       statusEl.textContent = '';
       return;
     }
@@ -433,8 +433,8 @@ async function loadTimeline() {
     timelineState.totalDuration = data.total_duration;
     timelineState.range = null;
 
-    emptyEl.style.display = 'none';
-    controlsEl.classList.remove('d-none');
+    emptyEl.classList.add('m3-hidden');
+    controlsEl.classList.remove('m3-hidden');
     statusEl.textContent =
       `${data.downsampled_to} / ${data.total_samples} 点 (${data.total_duration.toFixed(1)}s)`;
 
@@ -442,7 +442,7 @@ async function loadTimeline() {
       x: data.time_points,
       y: data.velocities,
       mode: 'lines',
-      line: { color: '#a8d8ea', width: 1 },
+      line: { color: '#A0C4FF', width: 1 },
       name: 'ボール速度',
       hovertemplate: 't=%{x:.3f}s<br>v=%{y:.3f}m/s<extra></extra>',
     }], {
@@ -490,13 +490,13 @@ function updateTimelineRangeUI() {
   if (timelineState.range) {
     const [a, b] = timelineState.range;
     badge.textContent = `${a.toFixed(3)}s ~ ${b.toFixed(3)}s (${(b - a).toFixed(3)}s)`;
-    badge.classList.remove('bg-secondary');
-    badge.classList.add('bg-warning', 'text-dark');
+    badge.classList.remove('m3-badge--secondary');
+    badge.classList.add('m3-badge--warning');
     btn.disabled = false;
   } else {
     badge.textContent = '未選択';
-    badge.classList.remove('bg-warning', 'text-dark');
-    badge.classList.add('bg-secondary');
+    badge.classList.remove('m3-badge--warning');
+    badge.classList.add('m3-badge--secondary');
     btn.disabled = true;
   }
 }
@@ -520,14 +520,14 @@ async function addTrajectoryFromTimeline() {
       end_time: end,
     });
     const span = document.createElement('span');
-    span.className = 'text-success';
+    span.className = 'm3-text-success';
     span.textContent =
       `✓ 軌道 #${res.event_id} を追加 (${res.data_points}点, ${res.duration.toFixed(2)}s, 最大速度 ${res.max_velocity.toFixed(2)}m/s)`;
     status.replaceChildren(span);
     await refreshTrajectoryList();
   } catch (e) {
     const span = document.createElement('span');
-    span.className = 'text-danger';
+    span.className = 'm3-text-error';
     span.textContent = `エラー: ${e.message}`;
     status.replaceChildren(span);
   }
@@ -535,11 +535,14 @@ async function addTrajectoryFromTimeline() {
 
 // ===== ユーティリティ =====
 
+const _M3_TYPE = { danger: 'error', secondary: 'on-surface-variant' };
+
 function showStatus(elementId, message, type) {
   const el = document.getElementById(elementId);
   if (!el) return;
   const span = document.createElement('span');
-  span.className = `text-${type}`;
+  const m3Type = _M3_TYPE[type] || type;
+  span.className = m3Type ? `m3-text-${m3Type}` : '';
   span.textContent = message;
   el.replaceChildren(span);
 }

@@ -38,18 +38,22 @@ ROS 2とブラウザを接続するブリッジノード。
 
 ### Webフロントエンド
 
-- SVGビジュアライゼーション表示
-- デバッグUI統合ポータル
-- Ball Calibration UI（`/ball-calibration/`）
+Material 3 Expressive ダークテーマを採用した統合デバッグポータル。
 
-### Ball Calibration API
+| ページ | URL | 概要 |
+|--------|-----|------|
+| Viewer | `/` | ES module 構成の Dock レイアウト + HUD + Replay（デフォルトページ） |
+| Robot Telemetry | `/robot_telemetry.html` | ロボット別予測/実測プロット |
+| Robot Test | `/robot_test.html` | インタラクティブ動作テスト |
+| Annotation | `/annotation/` | タイムスタンプ付きメモ録画 PWA |
 
-- `POST /ball-calibration/api/load`
-- `GET /ball-calibration/api/trajectories`
-- `GET /ball-calibration/api/trajectory/{event_id}`
-- `POST /ball-calibration/api/optimize`
-- `POST /ball-calibration/api/predict`
-- `POST /ball-calibration/api/export`
+**共通アセット**: `web/shared/` に以下を配置。`ball-calibration` コンテナへは docker-compose の `volumes` で read-only マウントして共有。
+
+- `shared/theme/m3e-theme.css` — Material 3 Expressive デザイントークン + コンポーネント
+- `shared/nav/crane-nav.js` — `<crane-nav active="...">` Custom Element（全 UI で共通ナビバーを提供）
+- `shared/nav/crane-nav.css` — ナビバー補助スタイル（active 強調・横スクロール）
+- `shared/util/portal-links.js` — UI 間 URL 生成ヘルパ（ES module）
+- `shared/` 配下はフォントと同様に `download_fonts.py` でローカル調達済み (`web/fonts/`)
 
 ## ロボット管理画面の分離
 
@@ -88,6 +92,8 @@ ros2 run crane_web_debugger crane_websocket_server
 
 ## 最近の開発状況
 
+- **2026年4月**: Web UI デザイン統一 — M3 Expressive テーマを `web/shared/` に共通化し、ball-calibration へ展開。全ページに共通ナビバー (`<crane-nav>`) を導入
+- **2026年2月（PR #1344）**: Crane Viewer フルリデザイン（ES module 分割・Dock レイアウト・HUD・Replay）
 - **2026年2月（PR #1232）**: `crane_debug_tools`から分割・独立パッケージ化
 - **2026年2月（PR #1247）**: ロボット管理画面の追加
 - **2026年2月（PR #1246）**: `/aggregated_svgs` レイヤー名の整理・統一

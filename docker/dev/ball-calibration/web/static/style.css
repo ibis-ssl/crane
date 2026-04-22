@@ -1,175 +1,205 @@
-/* Ball Calibration UI カスタムスタイル */
+/* Ball Calibration UI — M3 Expressive ベースのカスタムレイアウト */
 
+/* ===== 全体レイアウト ===== */
 body {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-/* ナビゲーションバー */
-.navbar-custom {
-  background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-  border-bottom: 1px solid #533483;
+/* 3 カラム + タイムラインのメイングリッド */
+.bc-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.3fr;
+  gap: var(--md-sys-spacing-sm);
+  padding: var(--md-sys-spacing-sm);
+  flex: 1;
+  min-height: 0;
 }
 
-/* カード */
-.card {
-  background-color: #16213e;
-  border: 1px solid #2d4a7a;
-  color: #e0e0e0;
+.bc-col {
+  max-height: calc(55vh - 48px); /* 48px は crane-nav の高さ */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-sm);
 }
 
-.card-header {
-  background-color: #0f3460;
-  border-bottom: 1px solid #2d4a7a;
+@media (max-width: 1024px) {
+  .bc-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+  .bc-col--right {
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .bc-layout {
+    grid-template-columns: 1fr;
+  }
+  .bc-col {
+    max-height: none;
+  }
+}
+
+/* ===== タイムライン行 (フル幅) ===== */
+.bc-timeline-row {
+  padding: 0 var(--md-sys-spacing-sm) var(--md-sys-spacing-sm);
+}
+
+.bc-timeline-card .bc-card-body {
+  padding: var(--md-sys-spacing-sm);
+}
+
+/* ===== カードコンポーネント ===== */
+.bc-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-xs);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-md);
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #a8d8ea;
+  color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-surface-container);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-lg) var(--md-sys-shape-lg) 0 0;
 }
 
-/* カラムスクロール (上半分 3 カラム) */
-.col-scroll {
-  max-height: calc(55vh - 40px);
-  overflow-y: auto;
+.bc-card-body {
+  padding: var(--md-sys-spacing-md);
 }
 
+/* ===== フォーム要素 ===== */
+.bc-input {
+  appearance: none;
+  width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-sm);
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  transition: border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+}
+
+.bc-input:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 1px var(--md-sys-color-primary);
+}
+
+.bc-input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.6;
+}
+
+.bc-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-bottom: 4px;
+}
+
+/* 最適化パラメータの 3 カラムグリッド */
+.bc-param-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--md-sys-spacing-sm);
+}
+
+/* ===== 軌道テーブル ===== */
 .traj-table-scroll {
-  max-height: calc(55vh - 220px);
+  max-height: calc(55vh - 320px);
   overflow-y: auto;
 }
 
-/* タイムラインカード (下半分) */
-.timeline-card {
-  margin-top: 8px;
-}
-
-.form-check-input {
-  background-color: #0f2744;
-  border-color: #2d4a7a;
-}
-
-.form-check-input:checked {
-  background-color: #533483;
-  border-color: #533483;
-}
-
-/* テーブル */
-.table {
-  color: #e0e0e0;
-}
-
-.table-dark {
-  --bs-table-bg: #0a1929;
-}
-
-.table-hover tbody tr:hover {
-  background-color: #1e3a5f;
-  color: #ffffff;
+.bc-traj-table tbody tr {
   cursor: pointer;
 }
 
-.table tbody tr.selected-row {
-  background-color: #1e3a5f;
-  border-left: 3px solid #533483;
+.bc-traj-table tbody tr.selected-row {
+  background-color: var(--md-sys-color-primary-container);
+  border-left: 3px solid var(--md-sys-color-primary);
 }
 
-/* フォーム要素 */
-.form-control,
-.form-select {
-  background-color: #0f2744;
-  border-color: #2d4a7a;
-  color: #e0e0e0;
+.bc-traj-table tbody tr.selected-row td {
+  color: var(--md-sys-color-on-primary-container);
 }
 
-.form-control:focus,
-.form-select:focus {
-  background-color: #0f2744;
-  border-color: #533483;
-  color: #ffffff;
-  box-shadow: 0 0 0 0.2rem rgba(83, 52, 131, 0.25);
+/* ===== 統計カード ===== */
+.bc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--md-sys-spacing-xs);
+  text-align: center;
 }
 
-.form-control::placeholder {
-  color: #556677;
+.bc-stat {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-md);
+  padding: var(--md-sys-spacing-sm) var(--md-sys-spacing-xs);
 }
 
-/* ボタン */
-.btn-primary {
-  background-color: #533483;
-  border-color: #533483;
-}
-
-.btn-primary:hover {
-  background-color: #6a42a0;
-  border-color: #6a42a0;
-}
-
-.btn-success {
-  background-color: #1a7a4a;
-  border-color: #1a7a4a;
-}
-
-.btn-outline-secondary {
-  color: #8899aa;
-  border-color: #2d4a7a;
-}
-
-.btn-outline-secondary:hover {
-  color: #ffffff;
-  background-color: #2d4a7a;
-  border-color: #2d4a7a;
-}
-
-/* 統計カード */
-.stat-card {
-  background-color: #0f2744;
-  border: 1px solid #2d4a7a;
-  border-radius: 8px;
-  padding: 0.6rem 0.4rem;
-}
-
-.stat-value {
-  font-size: 1.4rem;
+.bc-stat__value {
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #a8d8ea;
-  font-family: 'Courier New', monospace;
+  color: var(--md-sys-color-primary);
+  font-family: var(--md-sys-typescale-mono-font-family);
 }
 
-.stat-label {
-  font-size: 0.7rem;
-  color: #778899;
+.bc-stat__label {
+  font-size: 0.6875rem;
+  color: var(--md-sys-color-on-surface-variant);
   margin-top: 2px;
 }
 
-/* バッジ */
-.badge {
-  font-size: 0.75rem;
+/* ===== スピナー ===== */
+.bc-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--md-sys-color-surface-container-highest);
+  border-top-color: var(--md-sys-color-primary);
+  border-radius: 50%;
+  animation: bc-spin 0.7s linear infinite;
 }
 
-/* フォントモノスペース */
-.font-monospace {
-  font-family: 'Courier New', Courier, monospace;
+@keyframes bc-spin {
+  to { transform: rotate(360deg); }
 }
 
-/* スクロールバー */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ===== タイムラインコントロール ===== */
+.bc-timeline-controls {
+  display: flex;
+  gap: var(--md-sys-spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-::-webkit-scrollbar-track {
-  background: #0a1929;
+/* ===== プリ表示 (launch 配列) ===== */
+.bc-pre {
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-sm);
+  padding: var(--md-sys-spacing-sm);
+  font-size: 0.6875rem;
+  font-family: var(--md-sys-typescale-mono-font-family);
+  overflow-x: auto;
+  margin: 0;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #2d4a7a;
-  border-radius: 3px;
+/* ===== 空状態テキスト ===== */
+.bc-empty-state {
+  padding: var(--md-sys-spacing-xl) var(--md-sys-spacing-lg);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #533483;
-}
-
-/* Plotlyチャートの背景 */
+/* ===== Plotly チャートの背景を透過 ===== */
 .js-plotly-plot .plotly {
   background-color: transparent !important;
 }
