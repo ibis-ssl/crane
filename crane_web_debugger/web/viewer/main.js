@@ -7,7 +7,7 @@ import { GameControlClient } from './ws/GameControlClient.js';
 import { DockLayout } from './ui/DockLayout.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { Sparkline, MetricRing } from './ui/Sparkline.js';
-import { RingBuffer } from './replay/RingBuffer.js';
+import { RingBuffer, indexBy, applyLayerUpdate } from './replay/RingBuffer.js';
 import { TimeScrubber } from './ui/TimeScrubber.js';
 
 class CraneViewer {
@@ -46,6 +46,7 @@ class CraneViewer {
         this._haltPending = false;
         this._haltTimer = null;
         this._hoveredRobotId = null;
+        this._hoveredTooltipId = null;
         this._multiSelect = new Set();
         this._keysDown = new Set();
         this._keyboardLoopRunning = false;
@@ -154,7 +155,6 @@ class CraneViewer {
                 });
             }
         }
-        // キーフレームとして保存
         const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
         this.ringBuffer.addKeyframe(tsMs, {
             layerStore: this.layerStore,
@@ -202,14 +202,14 @@ class CraneViewer {
             const entry = byLayer.get(layer);
             if (op === 'replace') {
                 entry.operation = 'replace';
-                entry.svg_primitives = [...prim];
+                entry.svg_primitives = prim;
             } else if (op === 'clear') {
                 entry.operation = 'clear';
                 entry.svg_primitives = [];
             } else if (op === 'append') {
                 if (entry.operation === 'clear') {
                     entry.operation = 'replace';
-                    entry.svg_primitives = [...prim];
+                    entry.svg_primitives = prim;
                 } else {
                     if (!entry.operation) entry.operation = 'append';
                     entry.svg_primitives.push(...prim);
@@ -223,26 +223,10 @@ class CraneViewer {
         if (!Array.isArray(updates) || updates.length === 0) return;
         for (const upd of updates) {
             const op = (upd.operation || '').toLowerCase();
-            const prims = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
-            const existing = this.layerStore.get(upd.layer);
-            if (op === 'replace') {
+            if (op === 'replace' || (op === 'append' && !this.layerStore.has(upd.layer))) {
                 this._registerLayer(upd.layer);
-                this.layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
-            } else if (op === 'append') {
-                if (existing) {
-                    existing.primitives.push(...prims);
-                    existing.dirty = true;
-                } else {
-                    this._registerLayer(upd.layer);
-                    this.layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
-                }
-            } else if (op === 'clear') {
-                if (existing) {
-                    existing.primitives = []; existing.commands = []; existing.dirty = false;
-                } else {
-                    this.layerStore.set(upd.layer, { primitives: [], commands: [], dirty: false });
-                }
             }
+            applyLayerUpdate(this.layerStore, upd);
         }
     }
 
@@ -254,14 +238,8 @@ class CraneViewer {
         if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
         if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
         if (data.ball) this.ballPos = { x: data.ball.x, y: data.ball.y };
-        if (data.robots_ours) {
-            this.robotsOurs = {};
-            for (const robot of data.robots_ours) this.robotsOurs[robot.id] = robot;
-        }
-        if (data.robots_theirs) {
-            this.robotsTheirs = {};
-            for (const robot of data.robots_theirs) this.robotsTheirs[robot.id] = robot;
-        }
+        if (data.robots_ours) this.robotsOurs = indexBy(data.robots_ours, 'id');
+        if (data.robots_theirs) this.robotsTheirs = indexBy(data.robots_theirs, 'id');
 
         // field_info 動的 viewBox: フィールドサイズが変わった時だけ zoom リセット
         if (data.field_info) {
@@ -282,7 +260,6 @@ class CraneViewer {
             }
         }
 
-        // MetricRing 更新 (sparkline 用)
         if (data.robots_ours) {
             for (const robot of data.robots_ours) {
                 if (!this._robotMetrics.has(robot.id)) {
@@ -306,16 +283,13 @@ class CraneViewer {
         const tsMs = Date.now();
         this.ringBuffer.addDelta(tsMs, 'control_targets', data);
         if (this._replayMode) return;
-        if (data.commands) {
-            this.controlTargets = {};
-            for (const cmd of data.commands) this.controlTargets[cmd.robot_id] = cmd;
-        }
+        if (data.commands) this.controlTargets = indexBy(data.commands, 'robot_id');
         this.scheduleRobotUpdate();
     }
 
     handleRobotCommands(data) {
         if (data.commands && Object.keys(this.controlTargets).length === 0) {
-            for (const cmd of data.commands) this.controlTargets[cmd.robot_id] = cmd;
+            this.controlTargets = indexBy(data.commands, 'robot_id');
             this.scheduleRobotUpdate();
         }
     }
@@ -339,7 +313,6 @@ class CraneViewer {
         this.robotUpdateTimer = setTimeout(() => {
             this.robotUpdateTimer = null;
             this.renderRobotCards();
-            // 詳細パネルが開いていれば更新
             if (this._detailRobotId !== null) {
                 const robot = this.robotsOurs[this._detailRobotId];
                 const cmd = this.controlTargets[this._detailRobotId];
@@ -563,24 +536,36 @@ class CraneViewer {
             ].join(';');
             document.body.appendChild(tt);
         }
-        if (robotId === null) { tt.style.display = 'none'; return; }
+        if (robotId === null) {
+            tt.style.display = 'none';
+            this._hoveredTooltipId = null;
+            return;
+        }
 
         const robot = this.robotsOurs[robotId];
-        const cmd = this.controlTargets[robotId];
-        if (!robot) { tt.style.display = 'none'; return; }
+        if (!robot) {
+            tt.style.display = 'none';
+            this._hoveredTooltipId = null;
+            return;
+        }
 
-        const fsm = cmd?.planning_factors?.[0]?.name ?? '--';
-        const planner = cmd?.planner_name ?? '--';
-        tt.innerHTML = `
-            <b>Robot ${robotId}</b><br>
-            Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)}) θ=${robot.theta?.toFixed(2)}<br>
-            FSM: ${fsm}<br>
-            Planner: ${planner}
-        `;
         const pos = this.fieldToClientCoords(robot.x, robot.y);
         tt.style.left = (pos.x + 16) + 'px';
         tt.style.top = (pos.y - 16) + 'px';
         tt.style.display = 'block';
+
+        if (this._hoveredTooltipId !== robotId) {
+            this._hoveredTooltipId = robotId;
+            const cmd = this.controlTargets[robotId];
+            const fsm = cmd?.planning_factors?.[0]?.name ?? '--';
+            const planner = cmd?.planner_name ?? '--';
+            tt.innerHTML = `
+                <b>Robot ${robotId}</b><br>
+                Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)}) θ=${robot.theta?.toFixed(2)}<br>
+                FSM: ${fsm}<br>
+                Planner: ${planner}
+            `;
+        }
     }
 
     _startKeyboardLoop() {
@@ -602,15 +587,7 @@ class CraneViewer {
     }
 
     findRobotAtPosition(fieldX, fieldY) {
-        let closest = null;
-        let minDist = ROBOT_HIT_RADIUS_M;
-        for (const [id, robot] of Object.entries(this.robotsOurs)) {
-            const dx = robot.x - fieldX;
-            const dy = robot.y - fieldY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDist) { minDist = dist; closest = Number(id); }
-        }
-        return closest;
+        return this._nearestRobot(this.robotsOurs, fieldX, fieldY)?.id ?? null;
     }
 
     _nearestRobot(robotMap, fieldX, fieldY) {
@@ -729,14 +706,14 @@ class CraneViewer {
     updateGcPanel(state) {
         if (!state) return;
         const ts = state.teamState ?? {};
-        const y = ts['YELLOW'] ?? {};
-        const b = ts['BLUE'] ?? {};
+        const y = ts.YELLOW ?? {};
+        const b = ts.BLUE ?? {};
         const scoreEl = document.getElementById('gc-score');
         if (scoreEl) scoreEl.textContent = `${y.goals ?? 0} : ${b.goals ?? 0}`;
         const stageEl = document.getElementById('gc-stage');
-        if (stageEl) stageEl.textContent = (state.stage ?? '-').replace('NORMAL_', '').replace('_', ' ');
+        if (stageEl) stageEl.textContent = (state.stage ?? '--').replace('NORMAL_', '').replace('_', ' ');
         const cmdEl = document.getElementById('gc-command');
-        if (cmdEl) cmdEl.textContent = state.command?.type ?? '-';
+        if (cmdEl) cmdEl.textContent = state.command?.type ?? '--';
     }
 
     activateMoveMode() {
@@ -930,7 +907,6 @@ class CraneViewer {
             this._dragStartY = e.clientY;
             this._dragMoved = false;
             if (e.ctrlKey) {
-                // Ctrl+Click: マルチセレクト (後処理は mouseup で行う)
                 return;
             }
             if (e.shiftKey && this.moveMode) {
@@ -975,7 +951,6 @@ class CraneViewer {
             if (!this._dragMoved) {
                 const fp = this.clientToFieldCoords(e.clientX, e.clientY);
                 if (e.ctrlKey) {
-                    // Ctrl+Click: マルチセレクト切り替え
                     const hitId = this.findRobotAtPosition(fp.x, fp.y);
                     if (hitId !== null) {
                         if (this._multiSelect.has(hitId)) this._multiSelect.delete(hitId);

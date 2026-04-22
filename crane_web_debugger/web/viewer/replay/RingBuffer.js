@@ -3,6 +3,27 @@
 
 const DEFAULT_WINDOW_MS = 60_000;
 
+export function indexBy(arr, keyName) {
+    const map = {};
+    for (const item of arr) map[item[keyName]] = item;
+    return map;
+}
+
+export function applyLayerUpdate(layerStore, upd) {
+    const op = (upd.operation || '').toLowerCase();
+    const prims = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
+    const existing = layerStore.get(upd.layer);
+    if (op === 'replace') {
+        layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
+    } else if (op === 'append') {
+        if (existing) { existing.primitives.push(...prims); existing.dirty = true; }
+        else layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
+    } else if (op === 'clear') {
+        if (existing) { existing.primitives = []; existing.commands = []; existing.dirty = false; }
+        else layerStore.set(upd.layer, { primitives: [], commands: [], dirty: false });
+    }
+}
+
 export class RingBuffer {
     constructor(windowMs = DEFAULT_WINDOW_MS) {
         this.windowMs = windowMs;
@@ -53,37 +74,16 @@ export class RingBuffer {
     _applyDelta(state, d) {
         switch (d.type) {
             case 'world_model':
-                if (d.data.robots_ours) {
-                    state.robotsOurs = {};
-                    for (const r of d.data.robots_ours) state.robotsOurs[r.id] = r;
-                }
-                if (d.data.robots_theirs) {
-                    state.robotsTheirs = {};
-                    for (const r of d.data.robots_theirs) state.robotsTheirs[r.id] = r;
-                }
+                if (d.data.robots_ours) state.robotsOurs = indexBy(d.data.robots_ours, 'id');
+                if (d.data.robots_theirs) state.robotsTheirs = indexBy(d.data.robots_theirs, 'id');
                 if (d.data.ball) state.ball = d.data.ball;
                 break;
             case 'control_targets':
-                if (d.data.commands) {
-                    state.controlTargets = {};
-                    for (const c of d.data.commands) state.controlTargets[c.robot_id] = c;
-                }
+                if (d.data.commands) state.controlTargets = indexBy(d.data.commands, 'robot_id');
                 break;
             case 'svg_update':
                 if (!Array.isArray(d.data.updates)) break;
-                for (const upd of d.data.updates) {
-                    const op = (upd.operation || '').toLowerCase();
-                    const prims = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
-                    const existing = state.layerStore.get(upd.layer);
-                    if (op === 'replace') {
-                        state.layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
-                    } else if (op === 'append') {
-                        if (existing) { existing.primitives.push(...prims); existing.dirty = true; }
-                        else state.layerStore.set(upd.layer, { primitives: [...prims], commands: [], dirty: true });
-                    } else if (op === 'clear') {
-                        if (existing) { existing.primitives = []; existing.commands = []; existing.dirty = false; }
-                    }
-                }
+                for (const upd of d.data.updates) applyLayerUpdate(state.layerStore, upd);
                 break;
         }
     }
