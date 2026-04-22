@@ -98,58 +98,6 @@
       transition: none;
     }
 
-    /* Robot cards */
-    #robot-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
-      margin-bottom: var(--md-sys-spacing-sm);
-    }
-
-    .robot-card {
-      background-color: var(--md-sys-color-surface-container-high);
-      border: 1px solid var(--md-sys-color-outline-variant);
-      border-radius: var(--md-sys-shape-sm);
-      padding: 4px 2px;
-      text-align: center;
-      cursor: pointer;
-      transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
-                  border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
-      min-width: 0;
-    }
-
-    .robot-card:hover {
-      background-color: var(--md-sys-color-surface-container-highest);
-      border-color: var(--md-sys-color-primary);
-    }
-
-    .robot-card.active {
-      background-color: var(--md-sys-color-primary-container);
-      border-color: var(--md-sys-color-primary);
-    }
-
-    .robot-card .robot-id {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--md-sys-color-on-surface);
-      line-height: 1.2;
-    }
-
-    .robot-card .robot-planner {
-      font-size: 0.55rem;
-      color: var(--md-sys-color-on-surface-variant);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
-
-    .robot-card .robot-mode {
-      font-size: 0.55rem;
-      color: var(--md-sys-color-primary);
-      line-height: 1.2;
-    }
-
     #btn-move-mode.active {
       background-color: var(--md-sys-color-warning);
       color: var(--md-sys-color-on-warning);
@@ -444,6 +392,7 @@
       display: none;
       padding: 6px 8px;
       font-size: 0.75rem;
+      overflow-y: auto;
     }
 
     #robot-detail-inline.visible { display: block; }
@@ -452,7 +401,31 @@
       font-weight: 700;
       font-size: 0.85rem;
       color: var(--md-sys-color-primary);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #robot-detail-inline .rd-telem-link {
+      color: var(--md-sys-color-on-surface-variant);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+
+    #robot-detail-inline .rd-telem-link:hover { opacity: 1; }
+
+    #robot-detail-inline .rd-section-title {
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--md-sys-color-on-surface-variant);
+      margin: 6px 0 2px;
+      padding-bottom: 2px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
 
     #robot-detail-inline table {
@@ -468,7 +441,6 @@
     }
 
     #robot-detail-inline td:first-child {
-      color: var(--md-sys-color-on-surface-variant);
       white-space: nowrap;
       width: 5.5em;
     }
@@ -477,19 +449,30 @@
       color: var(--md-sys-color-on-surface);
     }
 
-    /* Sparkline row */
-    .sparkline-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-top: 1px solid var(--md-sys-color-outline-variant);
+    /* severity colors */
+    #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning,  #F9A825) !important; }
+    #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error,    #B3261E) !important; font-weight: 600; }
+    #robot-detail-inline .rd-ok    { color: var(--md-sys-color-on-surface); }
+
+    /* availability chips */
+    .rd-chip {
+      display: inline-block;
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      border-radius: 10px;
+      margin-right: 2px;
+      font-weight: 600;
     }
 
-    .sparkline-label {
-      font-size: 0.6rem;
-      color: var(--md-sys-color-on-surface-variant);
-      min-width: 4em;
+    .rd-chip--ok {
+      background: var(--md-sys-color-tertiary-container, #FFD8E4);
+      color: var(--md-sys-color-on-tertiary-container, #31111D);
+    }
+
+    .rd-chip--ng {
+      background: var(--md-sys-color-surface-container-highest, #E6E0E9);
+      color: var(--md-sys-color-on-surface-variant, #49454F);
+      opacity: 0.6;
     }
   </style>
 </head>
@@ -529,12 +512,6 @@
             <span class="info-label">Stage</span>
             <span class="info-value" id="game-stage">-</span>
           </div>
-        </div>
-
-        <!-- Robot cards -->
-        <div class="m3-section-title">Robots</div>
-        <div id="robot-cards-grid">
-          <!-- Populated by viewer/main.js -->
         </div>
 
         <!-- Game Control -->
@@ -709,7 +686,6 @@
         <div id="robot-detail-inline">
           <!-- Populated by main.js -->
         </div>
-        <div id="robot-sparklines"></div>
       </div>
 
       <!-- Log Panel -->
@@ -741,19 +717,6 @@
       <div id="time-scrubber-container" style="height:100%;"></div>
     </div>
 
-  </div>
-
-  <!-- Robot detail dialog -->
-  <div class="m3-dialog-scrim" id="robot-detail-scrim" onclick="window.__closeRobotDialog?.()"></div>
-  <div class="m3-dialog" id="robot-detail-modal" style="max-width:340px;">
-    <div class="m3-dialog__header">
-      <span class="m3-dialog__title" id="robot-detail-title">Robot</span>
-      <button class="m3-icon-btn m3-icon-btn--sm" onclick="window.__closeRobotDialog?.()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-    <div class="m3-dialog__body" id="robot-detail-body" style="font-size:0.8rem;">
-    </div>
   </div>
 
   <script type="module" src="viewer/main.js"></script>

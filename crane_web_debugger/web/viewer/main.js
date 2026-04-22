@@ -1,4 +1,9 @@
-import { CONTROL_MODE_SHORT, CONTROL_MODE_LONG, ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './renderer/constants.js';
+import { ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './renderer/constants.js';
+import {
+    formatPlannerName, getFsmState, getControlModeLong,
+    formatLatencyRich, formatVoltage, formatTemperature,
+    formatKickState, formatErrorBadge, availabilityChips,
+} from './renderer/formatters.js';
 import { SvgPrimitiveParser } from './renderer/SvgPrimitiveParser.js';
 import { CanvasRenderer } from './renderer/CanvasRenderer.js';
 import { FieldLayer } from './renderer/FieldLayer.js';
@@ -6,7 +11,7 @@ import { ThemeTokens } from './renderer/ThemeTokens.js';
 import { GameControlClient } from './ws/GameControlClient.js';
 import { DockLayout } from './ui/DockLayout.js';
 import { LogPanel } from './ui/LogPanel.js';
-import { Sparkline, MetricRing } from './ui/Sparkline.js';
+import { MetricRing } from './ui/Sparkline.js';
 import { RingBuffer, indexBy, applyLayerUpdate } from './replay/RingBuffer.js';
 import { TimeScrubber } from './ui/TimeScrubber.js';
 
@@ -51,10 +56,9 @@ class CraneViewer {
         this._keysDown = new Set();
         this._keyboardLoopRunning = false;
         this.robotFeedback = {};
+        this._feedbackTimestamp = {};  // { robot_id: Date.now() } - 警告バッジのstale判定用
         this.latencyEstimation = {};   // { robot_id: { source: { latency_ms, correlation, ... } } }
         this._robotMetrics = new Map(); // id -> { posX, posY, vel }
-        this._sparklines = null;        // [Sparkline] for current detail panel
-        this._sparklineRaf = null;
         this._detailRobotId = null;
         this._replayMode = false;
         this.ringBuffer = new RingBuffer();
@@ -316,8 +320,13 @@ class CraneViewer {
 
     handleRobotFeedback(data) {
         if (data.feedback) {
-            for (const fb of data.feedback) this.robotFeedback[fb.robot_id] = fb;
+            const now = Date.now();
+            for (const fb of data.feedback) {
+                this.robotFeedback[fb.robot_id] = fb;
+                this._feedbackTimestamp[fb.robot_id] = now;
+            }
         }
+        if (this._detailRobotId !== null) this.scheduleRobotUpdate();
     }
 
     handleGameInfo(data) {
@@ -332,7 +341,6 @@ class CraneViewer {
         if (this.robotUpdateTimer) return;
         this.robotUpdateTimer = setTimeout(() => {
             this.robotUpdateTimer = null;
-            this.renderRobotCards();
             if (this._detailRobotId !== null) {
                 const robot = this.robotsOurs[this._detailRobotId];
                 const cmd = this.controlTargets[this._detailRobotId];
@@ -350,24 +358,11 @@ class CraneViewer {
         if (banner) banner.classList.toggle('visible', !connected);
     }
 
-    renderRobotCards() {
-        const container = document.getElementById('robot-cards-grid');
-        if (!container) return;
-        const ids = Object.keys(this.robotsOurs).map(Number).sort((a, b) => a - b);
-        if (ids.length === 0) {
-            container.innerHTML = '<div style="font-size:0.7rem;color:var(--md-sys-color-on-surface-variant);text-align:center;grid-column:span 4;padding:8px;">No robot data</div>';
-            return;
-        }
-        container.innerHTML = '';
-        for (const id of ids) {
-            const cmd = this.controlTargets[id];
-            const modeName = cmd ? (CONTROL_MODE_SHORT[cmd.control_mode] ?? `M${cmd.control_mode}`) : '--';
-            const plannerName = cmd?.planner_name || '--';
-            const card = document.createElement('div');
-            card.className = 'robot-card';
-            card.innerHTML = `<div class="robot-id">${id}</div><div class="robot-mode">${modeName}</div><div class="robot-planner" title="${plannerName}">${plannerName}</div>`;
-            card.addEventListener('click', () => this.showRobotDetail(id));
-            container.appendChild(card);
+    toggleRobotDetail(id) {
+        if (this._detailRobotId === id) {
+            this.closeRobotDetail();
+        } else {
+            this.showRobotDetail(id);
         }
     }
 
@@ -382,104 +377,101 @@ class CraneViewer {
         this._detailRobotId = id;
         this._renderDetailPanel(id, robot, cmd);
         panel.classList.add('visible');
-
-        this._startSparklineLoop(id);
+        this.renderer?.invalidate();
     }
 
     _renderDetailPanel(id, robot, cmd) {
         const panel = document.getElementById('robot-detail-inline');
         if (!panel) return;
-        const modeName = cmd ? (CONTROL_MODE_LONG[cmd.control_mode] ?? `MODE_${cmd.control_mode}`) : '--';
-        let targetHtml = '';
-        if (cmd?.position_target_mode) {
-            targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(2)}, ${cmd.position_target_mode.target_y?.toFixed(2)})</td></tr>`;
-        } else if (cmd?.simple_velocity_target_mode) {
-            targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(2)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(2)})</td></tr>`;
-        }
-        const latEst = this.latencyEstimation[id] ?? {};
-        const latRows = ['world_model', 'robot_feedback'].flatMap(src => {
-            const e = latEst[src];
-            if (!e) return [];
-            const ms  = e.latency_ms != null ? `${e.latency_ms.toFixed(1)} ms` : 'N/A';
-            const corr = `${(e.correlation * 100).toFixed(1)}%`;
-            const label = src === 'world_model' ? 'WM latency' : 'HW latency';
-            return [`<tr><td>${label}</td><td>${ms} <span style="opacity:0.6;font-size:0.85em">(r=${corr})</span></td></tr>`];
-        }).join('');
 
-        panel.innerHTML = `
-            <div class="rd-title">Robot ${id}</div>
+        // --- Command section ---
+        let commandHtml = '';
+        if (cmd) {
+            let targetHtml = '';
+            if (cmd.position_target_mode) {
+                targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(2)}, ${cmd.position_target_mode.target_y?.toFixed(2)})</td></tr>`;
+            } else if (cmd.simple_velocity_target_mode) {
+                targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(2)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(2)})</td></tr>`;
+            }
+            commandHtml = `
+                <div class="rd-section-title">Command</div>
+                <table><tbody>
+                    <tr><td>Mode</td><td>${getControlModeLong(cmd)}</td></tr>
+                    <tr><td>Planner</td><td>${formatPlannerName(cmd.planner_name)}</td></tr>
+                    <tr><td>FSM</td><td>${getFsmState(cmd) ?? '--'}</td></tr>
+                    ${targetHtml}
+                    <tr><td>Target θ</td><td>${cmd.target_theta?.toFixed(3) ?? '--'}</td></tr>
+                </tbody></table>`;
+        }
+
+        // --- State section ---
+        const chips = availabilityChips(robot);
+        const chipHtml = ['vision', 'feedback', 'tracker'].map(k =>
+            `<span class="rd-chip ${chips[k] ? 'rd-chip--ok' : 'rd-chip--ng'}">${k}</span>`
+        ).join('');
+        const stateHtml = `
+            <div class="rd-section-title">State</div>
             <table><tbody>
-                <tr><td>Mode</td><td>${modeName}</td></tr>
-                <tr><td>Planner</td><td>${cmd?.planner_name || '--'}</td></tr>
-                <tr><td>FSM</td><td>${cmd?.planning_factors?.[0]?.name || '--'}</td></tr>
                 <tr><td>Pos</td><td>(${robot.x?.toFixed(3)}, ${robot.y?.toFixed(3)}) m</td></tr>
                 <tr><td>θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
                 <tr><td>Vel</td><td>(${robot.vx?.toFixed(3)}, ${robot.vy?.toFixed(3)}) m/s</td></tr>
                 <tr><td>ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
-                ${targetHtml}
-                <tr><td>Target θ</td><td>${cmd?.target_theta?.toFixed(3) ?? '--'}</td></tr>
-                ${latRows}
-            </tbody></table>
-            <div style="margin-top:4px;">
-                <a href="/robot_telemetry.html?id=${id}" class="m3-btn m3-btn--outlined m3-btn--sm" style="font-size:0.65rem;padding:2px 8px;">
-                    <span class="material-symbols-outlined icon-sm">show_chart</span> Telemetry
+                ${robot.acceleration_x != null ? `<tr><td>Accel</td><td>(${robot.acceleration_x?.toFixed(2)}, ${robot.acceleration_y?.toFixed(2)}, ${robot.acceleration_theta?.toFixed(2)})</td></tr>` : ''}
+                <tr><td>Avail</td><td>${chipHtml}</td></tr>
+            </tbody></table>`;
+
+        // --- Feedback section ---
+        let feedbackHtml = '';
+        const fb = this.robotFeedback[id];
+        if (fb) {
+            const volt = formatVoltage(fb.voltage);
+            const temp = formatTemperature(fb.temperatures);
+            const err = formatErrorBadge(fb);
+            const tempTitle = fb.temperatures ? fb.temperatures.map((t, i) => `[${i}] ${t.toFixed(0)}°C`).join(' ') : '';
+            feedbackHtml = `
+                <div class="rd-section-title">Feedback</div>
+                <table><tbody>
+                    <tr><td>Voltage</td><td class="rd-${volt.severity}">${volt.text}</td></tr>
+                    <tr><td>Temp</td><td class="rd-${temp.severity}" title="${tempTitle}">${temp.text}</td></tr>
+                    <tr><td>Packet</td><td class="${(fb.packet_frequency_hz ?? 0) < 80 ? 'rd-warn' : ''}">${fb.packet_frequency_hz?.toFixed(0) ?? 'N/A'} Hz</td></tr>
+                    <tr><td>Kick</td><td>${formatKickState(fb.kick_state)}</td></tr>
+                    <tr><td>Ball</td><td>${fb.ball_sensor ? '●' : '○'}</td></tr>
+                    <tr><td>Error</td><td class="${err ? 'rd-crit' : ''}">${err ? `id=${fb.error_id} ${fb.error_info ?? ''}` : 'none'}</td></tr>
+                    ${fb.motor_current ? `<tr><td>Motor I</td><td>[${fb.motor_current.map(v => v.toFixed(1)).join(', ')}]</td></tr>` : ''}
+                </tbody></table>`;
+        }
+
+        // --- Latency section ---
+        const latEst = this.latencyEstimation[id] ?? {};
+        const latRows = ['world_model', 'robot_feedback'].flatMap(src => {
+            const e = latEst[src];
+            if (!e) return [];
+            const label = src === 'world_model' ? 'WM' : 'HW';
+            const high = e.latency_ms > 100;
+            return [`<tr><td>${label}</td><td class="${high ? 'rd-warn' : ''}">${formatLatencyRich(e)}</td></tr>`];
+        }).join('');
+        const latencyHtml = latRows ? `
+            <div class="rd-section-title">Latency</div>
+            <table><tbody>${latRows}</tbody></table>` : '';
+
+        panel.innerHTML = `
+            <div class="rd-title">Robot ${id}
+                <a href="/robot_telemetry.html?id=${id}" target="_blank" class="rd-telem-link" title="Telemetry を別タブで開く">
+                    <span class="material-symbols-outlined icon-sm">open_in_new</span>
                 </a>
             </div>
+            ${commandHtml}
+            ${stateHtml}
+            ${feedbackHtml}
+            ${latencyHtml}
         `;
-    }
-
-    _startSparklineLoop(id) {
-        this._stopSparklineLoop();
-        const container = document.getElementById('robot-sparklines');
-        if (!container) return;
-        container.innerHTML = '';
-
-        const tokens = this.themeTokens.get() ?? {};
-        const sparkData = [
-            { label: 'Pos X', color: tokens.hudAccent ?? '#D0BCFF' },
-            { label: 'Pos Y', color: tokens.teamYellow ?? '#C49000' },
-            { label: '|Vel|', color: tokens.moveOverlay ?? '#B5EAD7' },
-        ];
-
-        this._sparklines = sparkData.map(({ label, color }) => {
-            const row = document.createElement('div');
-            row.className = 'sparkline-row';
-            const lbl = document.createElement('span');
-            lbl.className = 'sparkline-label';
-            lbl.textContent = label;
-            row.appendChild(lbl);
-            container.appendChild(row);
-            return new Sparkline(row, { width: 100, height: 22, color });
-        });
-
-        const keys = ['posX', 'posY', 'vel'];
-        const loop = () => {
-            if (this._detailRobotId !== id) return;
-            const metrics = this._robotMetrics.get(id);
-            const tokens2 = this.themeTokens.get() ?? {};
-            if (metrics) {
-                keys.forEach((key, i) => {
-                    this._sparklines[i].setSeries([{ color: sparkData[i].color, data: metrics[key].latest(60) }]);
-                    this._sparklines[i].render(tokens2);
-                });
-            }
-            this._sparklineRaf = requestAnimationFrame(loop);
-        };
-        this._sparklineRaf = requestAnimationFrame(loop);
-    }
-
-    _stopSparklineLoop() {
-        if (this._sparklineRaf) { cancelAnimationFrame(this._sparklineRaf); this._sparklineRaf = null; }
-        this._sparklines = null;
-        this._detailRobotId = null;
     }
 
     closeRobotDetail() {
         const panel = document.getElementById('robot-detail-inline');
         panel?.classList.remove('visible');
-        const container = document.getElementById('robot-sparklines');
-        if (container) container.innerHTML = '';
-        this._stopSparklineLoop();
+        this._detailRobotId = null;
+        this.renderer?.invalidate();
     }
 
     updateLayerList() {
@@ -995,6 +987,14 @@ class CraneViewer {
                     this.gcClient.newCommand('BALL_PLACEMENT', team);
                 } else if (this.simEditMode) {
                     this.simSelectAt(fp.x, fp.y);
+                } else if (!e.shiftKey && !this.moveMode) {
+                    // 通常クリック: ロボットをクリックで Detail トグル、空所クリックで閉じる
+                    const hitId = this.findRobotAtPosition(fp.x, fp.y);
+                    if (hitId !== null) {
+                        this.toggleRobotDetail(hitId);
+                    } else {
+                        this.closeRobotDetail();
+                    }
                 }
             }
         });
@@ -1023,6 +1023,7 @@ class CraneViewer {
                 if (this.placeBallPending) { this.cancelBallPlacement(); return; }
                 if (this.simEditMode) { this.toggleSimEditMode(); return; }
                 if (this.moveMode) { this.deactivateMoveMode(); return; }
+                if (this._detailRobotId !== null) { this.closeRobotDetail(); return; }
                 if (this._multiSelect.size > 0) { this._multiSelect.clear(); this.renderer?.invalidate(); return; }
                 // モード外の Escape → 確認ダイアログ付き HALT
                 this._requestHalt();
