@@ -51,6 +51,7 @@ class CraneViewer {
         this._keysDown = new Set();
         this._keyboardLoopRunning = false;
         this.robotFeedback = {};
+        this.latencyEstimation = {};   // { robot_id: { source: { latency_ms, correlation, ... } } }
         this._robotMetrics = new Map(); // id -> { posX, posY, vel }
         this._sparklines = null;        // [Sparkline] for current detail panel
         this._sparklineRaf = null;
@@ -125,9 +126,28 @@ class CraneViewer {
             case 'world_model':     this.handleWorldModel(data); break;
             case 'control_targets': this.handleControlTargets(data); break;
             case 'robot_commands':  this.handleRobotCommands(data); break;
-            case 'robot_feedback':  this.handleRobotFeedback(data); break;
-            case 'game_info':       this.handleGameInfo(data); break;
+            case 'robot_feedback':     this.handleRobotFeedback(data); break;
+            case 'game_info':          this.handleGameInfo(data); break;
+            case 'latency_estimation': this.handleLatencyEstimation(data); break;
         }
+    }
+
+    handleLatencyEstimation(data) {
+        if (!data.estimations) return;
+        for (const est of data.estimations) {
+            if (!this.latencyEstimation[est.robot_id]) this.latencyEstimation[est.robot_id] = {};
+            this.latencyEstimation[est.robot_id][est.source] = {
+                latency_ms:   est.latency_ms,
+                correlation:  est.correlation,
+                samples_used: est.samples_used,
+            };
+        }
+        if (this._detailRobotId !== null) {
+            const robot = this.robotsOurs[this._detailRobotId];
+            const cmd   = this.controlTargets[this._detailRobotId];
+            if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
+        }
+        this.renderer?.invalidate();
     }
 
     _registerLayer(name) {
@@ -376,6 +396,16 @@ class CraneViewer {
         } else if (cmd?.simple_velocity_target_mode) {
             targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(2)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(2)})</td></tr>`;
         }
+        const latEst = this.latencyEstimation[id] ?? {};
+        const latRows = ['world_model', 'robot_feedback'].flatMap(src => {
+            const e = latEst[src];
+            if (!e) return [];
+            const ms  = e.latency_ms != null ? `${e.latency_ms.toFixed(1)} ms` : 'N/A';
+            const corr = `${(e.correlation * 100).toFixed(1)}%`;
+            const label = src === 'world_model' ? 'WM latency' : 'HW latency';
+            return [`<tr><td>${label}</td><td>${ms} <span style="opacity:0.6;font-size:0.85em">(r=${corr})</span></td></tr>`];
+        }).join('');
+
         panel.innerHTML = `
             <div class="rd-title">Robot ${id}</div>
             <table><tbody>
@@ -388,6 +418,7 @@ class CraneViewer {
                 <tr><td>ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
                 ${targetHtml}
                 <tr><td>Target θ</td><td>${cmd?.target_theta?.toFixed(3) ?? '--'}</td></tr>
+                ${latRows}
             </tbody></table>
             <div style="margin-top:4px;">
                 <a href="/robot_telemetry.html?id=${id}" class="m3-btn m3-btn--outlined m3-btn--sm" style="font-size:0.65rem;padding:2px 8px;">

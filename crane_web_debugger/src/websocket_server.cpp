@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cmath>
 #include <crane_msgs/msg/human_annotation.hpp>
+#include <crane_msgs/msg/latency_estimation_array.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/position_target_mode.hpp>
@@ -375,6 +376,26 @@ public:
       "/diagnostics_agg", 10, [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
         broadcastDiagnostics(msg);
       });
+
+    // Latency estimation subscription (cached, broadcast at 10Hz via timer)
+    latency_estimation_sub_ = this->create_subscription<crane_msgs::msg::LatencyEstimationArray>(
+      "/latency_estimation", 10,
+      [this](const crane_msgs::msg::LatencyEstimationArray::SharedPtr msg) {
+        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
+        latest_latency_estimation_ = msg;
+        latency_estimation_updated_ = true;
+      });
+
+    latency_estimation_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
+      crane_msgs::msg::LatencyEstimationArray::SharedPtr msg;
+      {
+        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
+        if (!latency_estimation_updated_ || !latest_latency_estimation_) return;
+        msg = latest_latency_estimation_;
+        latency_estimation_updated_ = false;
+      }
+      broadcastLatencyEstimation(msg);
+    });
 
     // 100ms timer for robot_feedback broadcast (10Hz throttle)
     robot_feedback_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
@@ -1082,6 +1103,22 @@ private:
     broadcastToAll(data.dump());
   }
 
+  void broadcastLatencyEstimation(const crane_msgs::msg::LatencyEstimationArray::SharedPtr msg)
+  {
+    json data = {{"type", "latency_estimation"}, {"estimations", json::array()}};
+    for (const auto & est : msg->estimations) {
+      const float lms = est.latency_ms;
+      data["estimations"].push_back(
+        {{"robot_id", est.robot_id},
+         {"source", est.source},
+         {"latency_ms", std::isnan(lms) ? json(nullptr) : json(lms)},
+         {"correlation", est.correlation},
+         {"samples_used", est.samples_used},
+         {"cmd_stddev", est.cmd_stddev}});
+    }
+    broadcastToAll(data.dump());
+  }
+
   // Simple blocking HTTP client with connect/read/write timeouts
   static std::pair<bool, std::string> sendHttpRequest(
     const std::string & host, int port, const std::string & method, const std::string & path,
@@ -1435,6 +1472,13 @@ private:
   crane_msgs::msg::RobotCommands::SharedPtr latest_control_targets_;
   bool control_targets_updated_{false};
   std::mutex control_targets_mutex_;
+
+  // Latency estimation monitoring
+  rclcpp::Subscription<crane_msgs::msg::LatencyEstimationArray>::SharedPtr latency_estimation_sub_;
+  rclcpp::TimerBase::SharedPtr latency_estimation_timer_;
+  crane_msgs::msg::LatencyEstimationArray::SharedPtr latest_latency_estimation_;
+  bool latency_estimation_updated_{false};
+  std::mutex latency_estimation_mutex_;
 
   // Server components
   std::thread websocket_thread_;

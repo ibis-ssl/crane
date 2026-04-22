@@ -5,6 +5,7 @@ const ARROW_HEAD_HALF_ANGLE = Math.PI / 6; // 30°
 const ARROW_LINE_W = 18;
 const FSM_Y = 170;               // mm below center in SVG space (+Y = down)
 const PLANNER_Y = 260;
+const LATENCY_Y = 360;
 const DRIBBLER_R = 15;
 const DRIBBLER_Y = 30;           // mm below center (front LED position)
 
@@ -24,7 +25,8 @@ export class RobotHud {
             this._drawHalo(ctx, cx, cy, id, primary, multi, hover, tokens);
             this._drawArrow(ctx, cx, cy, theta, cmd, tokens);
             this._drawDribblerLed(ctx, cx, cy, id, viewer, tokens);
-            if (cmd) this._drawLabels(ctx, cx, cy, cmd, tokens);
+            const latEst = viewer.latencyEstimation?.[id];
+            if (cmd) this._drawLabels(ctx, cx, cy, cmd, tokens, latEst);
         }
     }
 
@@ -105,10 +107,11 @@ export class RobotHud {
         ctx.restore();
     }
 
-    _drawLabels(ctx, cx, cy, cmd, tokens) {
+    _drawLabels(ctx, cx, cy, cmd, tokens, latEst) {
         const fsm = cmd.planning_factors?.[0]?.name ?? '';
         const planner = cmd.planner_name ?? '';
-        if (!fsm && !planner) return;
+        const wmEst = latEst?.world_model;
+        if (!fsm && !planner && !wmEst) return;
 
         ctx.save();
         ctx.textAlign = 'center';
@@ -127,6 +130,13 @@ export class RobotHud {
             ctx.fillStyle = tokens.noDataText ?? '#8C929A';
             ctx.textBaseline = 'top';
             ctx.fillText(name, cx, cy + PLANNER_Y);
+        }
+        if (wmEst?.latency_ms != null) {
+            const latStr = `${wmEst.latency_ms.toFixed(0)}ms`;
+            ctx.font = '56px sans-serif';
+            ctx.fillStyle = tokens.tertiaryContainer ?? '#F4DFF0';
+            ctx.textBaseline = 'top';
+            ctx.fillText(latStr, cx, cy + LATENCY_Y);
         }
         ctx.restore();
     }
