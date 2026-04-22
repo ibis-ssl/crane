@@ -1,5 +1,6 @@
 import { ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './constants.js';
 import { svgArcToCanvas } from './SvgPathUtils.js';
+import { RobotHud } from './RobotHud.js';
 
 export class CanvasRenderer {
     constructor(canvas, viewer, fieldLayer, themeTokens) {
@@ -12,6 +13,7 @@ export class CanvasRenderer {
         this._rafId = null;
         this._dpr = window.devicePixelRatio || 1;
 
+        this._robotHud = new RobotHud();
         this._resizeObserver = new ResizeObserver(() => this._onResize());
         this._resizeObserver.observe(canvas.parentElement);
         this._onResize();
@@ -96,6 +98,9 @@ export class CanvasRenderer {
                 this._drawCmd(ctx, cmd);
             }
         }
+
+        // ロボット HUD (方向矢印/FSM/planner/ハロー/ドリブラーLED)
+        this._robotHud.draw(ctx, v, tokens);
 
         // ロボット移動モードのオーバーレイ (M3トークン使用)
         if (v.moveMode && v.selectedRobotId !== null) {

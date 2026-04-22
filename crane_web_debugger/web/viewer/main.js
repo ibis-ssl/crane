@@ -42,6 +42,11 @@ class CraneViewer {
         this._lastMouseField = { x: 0, y: 0 };
         this._haltPending = false;
         this._haltTimer = null;
+        this._hoveredRobotId = null;
+        this._multiSelect = new Set();
+        this._keysDown = new Set();
+        this._keyboardLoopRunning = false;
+        this.robotFeedback = {};
 
         this.robotUpdateTimer = null;
         this.parser = new SvgPrimitiveParser();
@@ -106,6 +111,7 @@ class CraneViewer {
             case 'world_model':     this.handleWorldModel(data); break;
             case 'control_targets': this.handleControlTargets(data); break;
             case 'robot_commands':  this.handleRobotCommands(data); break;
+            case 'robot_feedback':  this.handleRobotFeedback(data); break;
             case 'game_info':       this.handleGameInfo(data); break;
         }
     }
@@ -261,6 +267,12 @@ class CraneViewer {
         }
     }
 
+    handleRobotFeedback(data) {
+        if (data.feedback) {
+            for (const fb of data.feedback) this.robotFeedback[fb.robot_id] = fb;
+        }
+    }
+
     handleGameInfo(data) {
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
         set('score-our', data.our_score ?? 0);
@@ -398,6 +410,85 @@ class CraneViewer {
 
     clientToFieldCoords(clientX, clientY) {
         return this.renderer ? this.renderer.clientToFieldCoords(clientX, clientY) : { x: 0, y: 0 };
+    }
+
+    fieldToClientCoords(fieldX, fieldY) {
+        if (!this.renderer) return { x: 0, y: 0 };
+        const { vs, ox, oy } = this.renderer._getVP();
+        const fl = this.fieldLayer;
+        const svgX = (fieldX * 1000 - fl.vbX + this.panOffset.x) * this.zoomLevel;
+        const svgY = (-fieldY * 1000 - fl.vbY + this.panOffset.y) * this.zoomLevel;
+        const rect = this.renderer.canvas.getBoundingClientRect();
+        return { x: rect.left + svgX * vs + ox, y: rect.top + svgY * vs + oy };
+    }
+
+    _updateHover(fieldX, fieldY) {
+        let closest = null;
+        let minDist = ROBOT_HIT_RADIUS_M * 2; // ホバー検出半径は選択より広め
+        for (const [id, robot] of Object.entries(this.robotsOurs)) {
+            const d = Math.hypot(robot.x - fieldX, robot.y - fieldY);
+            if (d < minDist) { minDist = d; closest = Number(id); }
+        }
+        if (closest !== this._hoveredRobotId) {
+            this._hoveredRobotId = closest;
+            this.renderer?.invalidate();
+        }
+        this._updateTooltip(closest);
+    }
+
+    _updateTooltip(robotId) {
+        let tt = document.getElementById('robot-hover-tooltip');
+        if (!tt) {
+            tt = document.createElement('div');
+            tt.id = 'robot-hover-tooltip';
+            tt.style.cssText = [
+                'position:fixed', 'pointer-events:none', 'z-index:500',
+                'background:var(--md-sys-color-surface-container-high)',
+                'color:var(--md-sys-color-on-surface)',
+                'border:1px solid var(--md-sys-color-outline-variant)',
+                'border-radius:var(--md-sys-shape-sm)',
+                'padding:6px 10px', 'font-size:0.72rem',
+                'box-shadow:var(--md-sys-elevation-2)',
+                'white-space:nowrap', 'display:none',
+            ].join(';');
+            document.body.appendChild(tt);
+        }
+        if (robotId === null) { tt.style.display = 'none'; return; }
+
+        const robot = this.robotsOurs[robotId];
+        const cmd = this.controlTargets[robotId];
+        if (!robot) { tt.style.display = 'none'; return; }
+
+        const fsm = cmd?.planning_factors?.[0]?.name ?? '--';
+        const planner = cmd?.planner_name ?? '--';
+        tt.innerHTML = `
+            <b>Robot ${robotId}</b><br>
+            Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)}) θ=${robot.theta?.toFixed(2)}<br>
+            FSM: ${fsm}<br>
+            Planner: ${planner}
+        `;
+        const pos = this.fieldToClientCoords(robot.x, robot.y);
+        tt.style.left = (pos.x + 16) + 'px';
+        tt.style.top = (pos.y - 16) + 'px';
+        tt.style.display = 'block';
+    }
+
+    _startKeyboardLoop() {
+        if (this._keyboardLoopRunning) return;
+        this._keyboardLoopRunning = true;
+        const PAN_SPEED = 80;
+        const loop = () => {
+            if (this._keysDown.size === 0) { this._keyboardLoopRunning = false; return; }
+            const fast = this._keysDown.has('Shift');
+            const speed = PAN_SPEED * (fast ? 3 : 1);
+            if (this._keysDown.has('a') || this._keysDown.has('ArrowLeft'))  this.panOffset.x += speed;
+            if (this._keysDown.has('d') || this._keysDown.has('ArrowRight')) this.panOffset.x -= speed;
+            if (this._keysDown.has('w') || this._keysDown.has('ArrowUp'))    this.panOffset.y += speed;
+            if (this._keysDown.has('s') || this._keysDown.has('ArrowDown'))  this.panOffset.y -= speed;
+            this.renderer?.invalidate();
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
     }
 
     findRobotAtPosition(fieldX, fieldY) {
@@ -728,6 +819,10 @@ class CraneViewer {
             this._dragStartX = e.clientX;
             this._dragStartY = e.clientY;
             this._dragMoved = false;
+            if (e.ctrlKey) {
+                // Ctrl+Click: マルチセレクト (後処理は mouseup で行う)
+                return;
+            }
             if (e.shiftKey && this.moveMode) {
                 const fp = this.clientToFieldCoords(e.clientX, e.clientY);
                 const hitId = this.findRobotAtPosition(fp.x, fp.y);
@@ -750,6 +845,7 @@ class CraneViewer {
             const dx = e.clientX - this._dragStartX, dy = e.clientY - this._dragStartY;
             if (Math.hypot(dx, dy) > 5) this._dragMoved = true;
             this._lastMouseField = this.clientToFieldCoords(e.clientX, e.clientY);
+            this._updateHover(this._lastMouseField.x, this._lastMouseField.y);
             if (!this.isPanning) return;
             if (this.renderer) {
                 const d = this.renderer.pixelDeltaToSvgDelta(
@@ -768,7 +864,15 @@ class CraneViewer {
             if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'grab';
             if (!this._dragMoved) {
                 const fp = this.clientToFieldCoords(e.clientX, e.clientY);
-                if (this.placeBallPending) {
+                if (e.ctrlKey) {
+                    // Ctrl+Click: マルチセレクト切り替え
+                    const hitId = this.findRobotAtPosition(fp.x, fp.y);
+                    if (hitId !== null) {
+                        if (this._multiSelect.has(hitId)) this._multiSelect.delete(hitId);
+                        else this._multiSelect.add(hitId);
+                        this.renderer?.invalidate();
+                    }
+                } else if (this.placeBallPending) {
                     const team = this.placeBallPending;
                     this.cancelBallPlacement();
                     this.gcClient.setBallPlacementPos(fp.x, fp.y);
@@ -789,20 +893,42 @@ class CraneViewer {
         canvas.addEventListener('mouseleave', () => {
             this.isPanning = false;
             if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'default';
+            this._hoveredRobotId = null;
+            this._updateTooltip(null);
+            this.renderer?.invalidate();
         });
 
         document.addEventListener('keydown', (e) => {
+            // テキスト入力中はパン無効
+            const tag = document.activeElement?.tagName;
+            const isInput = tag === 'INPUT' || tag === 'TEXTAREA';
+
             if (e.key === 'Escape') {
                 if (this.placeBallPending) { this.cancelBallPlacement(); return; }
                 if (this.simEditMode) { this.toggleSimEditMode(); return; }
                 if (this.moveMode) { this.deactivateMoveMode(); return; }
+                if (this._multiSelect.size > 0) { this._multiSelect.clear(); this.renderer?.invalidate(); return; }
                 // モード外の Escape → 確認ダイアログ付き HALT
                 this._requestHalt();
                 return;
             }
             if (e.key === 'Enter' && this.simEditMode && this.simSelectedObj) {
                 this.simTeleportTo(this._lastMouseField.x, this._lastMouseField.y);
+                return;
             }
+            // WASD / 矢印 パン
+            if (!isInput) {
+                const panKeys = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'Shift'];
+                if (panKeys.includes(e.key)) {
+                    e.preventDefault();
+                    this._keysDown.add(e.key);
+                    this._startKeyboardLoop();
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            this._keysDown.delete(e.key);
         });
 
         canvas.style.cursor = 'grab';
