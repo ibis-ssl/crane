@@ -144,6 +144,11 @@ situations:
         max_robots: 1
       - name: emplace_robot
         max_robots: 19
+  LATENCY_MEASUREMENT:
+    description: Latency measurement using sinusoidal theta command and cross-correlation analysis
+    sessions:
+      - name: latency_measurement
+        max_robots: 20
   emplace_robot:
     description: emplace_robot
     sessions:
