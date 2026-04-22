@@ -22,7 +22,7 @@ UA = (
 )
 
 FONTS = {
-    "material-symbols": {
+    "material-symbols-outlined": {
         "url": (
             "https://fonts.googleapis.com/css2"
             "?family=Material+Symbols+Outlined"
