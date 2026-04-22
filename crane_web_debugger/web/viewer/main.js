@@ -133,6 +133,42 @@ class CraneViewer {
             case 'robot_feedback':     this.handleRobotFeedback(data); break;
             case 'game_info':          this.handleGameInfo(data); break;
             case 'latency_estimation': this.handleLatencyEstimation(data); break;
+            case 'situations_list':          this.handleSituationsList(data); break;
+            case 'session_injection_current': this.handleSessionInjectionCurrent(data); break;
+        }
+    }
+
+    handleSituationsList(data) {
+        const sel = document.getElementById('session-select');
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '';
+        for (const name of (data.items || [])) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === current) opt.selected = true;
+            sel.appendChild(opt);
+        }
+        if (!sel.options.length) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No situations loaded';
+            sel.appendChild(opt);
+        }
+    }
+
+    handleSessionInjectionCurrent(data) {
+        const currentEl = document.getElementById('session-current');
+        if (currentEl) currentEl.textContent = data.name || '-';
+        const historyEl = document.getElementById('session-history');
+        if (!historyEl) return;
+        historyEl.innerHTML = '';
+        for (const entry of (data.history || [])) {
+            const li = document.createElement('li');
+            const t = new Date(entry.timestamp_ms).toLocaleTimeString();
+            li.textContent = `${t}  ${entry.name}`;
+            historyEl.appendChild(li);
         }
     }
 
@@ -855,6 +891,25 @@ class CraneViewer {
                 case 'sim-set-endpoint':
                     this.applySimEndpoint();
                     this.logPanel?.appendLog('action', 'Sim', 'endpoint updated');
+                    break;
+                case 'session-inject-select': {
+                    const name = document.getElementById('session-select')?.value;
+                    if (!name) break;
+                    this.websocket?.send(JSON.stringify({type: 'session_inject', name}));
+                    this.logPanel?.appendLog('action', 'Session', `inject ${name}`);
+                    break;
+                }
+                case 'session-inject-custom': {
+                    const inp = document.getElementById('session-custom-input');
+                    const name = (inp?.value || '').trim();
+                    if (!name) break;
+                    this.websocket?.send(JSON.stringify({type: 'session_inject', name}));
+                    this.logPanel?.appendLog('action', 'Session', `inject(custom) ${name}`);
+                    break;
+                }
+                case 'session-clear':
+                    this.websocket?.send(JSON.stringify({type: 'session_clear'}));
+                    this.logPanel?.appendLog('action', 'Session', 'clear → HALT');
                     break;
             }
         });
