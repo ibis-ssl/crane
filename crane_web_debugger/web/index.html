@@ -617,6 +617,35 @@
           </div>
         </details>
 
+        <!-- Session Control -->
+        <div class="m3-section-title">Session Control</div>
+        <details class="m3-expansion" id="session-accordion">
+          <summary>
+            <span class="material-symbols-outlined icon-sm m3-text-primary">flowsheet</span>
+            Session Injection
+          </summary>
+          <div class="m3-expansion__body">
+            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-bottom:4px;">
+              Current: <span id="session-current" style="font-weight:600;color:var(--md-sys-color-primary);">-</span>
+            </div>
+            <div style="display:flex;gap:3px;align-items:center;margin-bottom:3px;">
+              <select id="session-select" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;"></select>
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" data-action="session-inject-select">Inject</button>
+            </div>
+            <div style="display:flex;gap:3px;align-items:center;margin-bottom:3px;">
+              <input type="text" id="session-custom-input" placeholder="custom name"
+                     class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" data-action="session-inject-custom">Send</button>
+            </div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
+                      data-action="session-clear" style="flex:1;">Clear Injection (HALT)</button>
+            </div>
+            <div style="font-size:0.62rem;color:var(--md-sys-color-on-surface-variant);margin-top:4px;">Recent:</div>
+            <ul id="session-history" style="font-size:0.65rem;margin:2px 0 0;padding-left:14px;max-height:64px;overflow-y:auto;list-style:disc;"></ul>
+          </div>
+        </details>
+
       </div>
     </aside>
 

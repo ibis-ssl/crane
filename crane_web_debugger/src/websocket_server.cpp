@@ -12,8 +12,10 @@
 #include <robocup_ssl_msgs/ssl_simulation_control.pb.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
@@ -29,6 +31,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
+#include <deque>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <filesystem>
 #include <fstream>
@@ -357,6 +360,20 @@ public:
       this->create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
     session_injection_pub_ =
       this->create_publisher<std_msgs::msg::String>("/session_injection", 10);
+    session_injection_sub_ = this->create_subscription<std_msgs::msg::String>(
+      "/session_injection", 10, [this](const std_msgs::msg::String::SharedPtr msg) {
+        {
+          std::lock_guard<std::mutex> lock(injection_mutex_);
+          current_injection_ = msg->data;
+          auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now().time_since_epoch())
+                      .count();
+          injection_history_.push_front({msg->data, ms});
+          while (injection_history_.size() > 5) injection_history_.pop_back();
+        }
+        broadcastSessionInjectionCurrent();
+      });
+    loadSituationNames();
     robot_test_target_pub_ =
       this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
 
@@ -552,6 +569,23 @@ private:
     // 接続確立時にPiステータスを取得・送信
     pollAllPiStatus();
 
+    // 接続確立時にsituation一覧と現在のinjection状態を送信
+    handleListSituations(connection);
+    {
+      json history_json = json::array();
+      std::string current;
+      {
+        std::lock_guard<std::mutex> lock(injection_mutex_);
+        current = current_injection_;
+        for (const auto & [n, ts] : injection_history_) {
+          history_json.push_back({{"name", n}, {"timestamp_ms", ts}});
+        }
+      }
+      json state_msg = {
+        {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
+      connection->sendMessage(state_msg.dump());
+    }
+
     // Message processing loop
     while (connection->isConnected() && running_) {
       std::string message = connection->receiveMessage();
@@ -605,6 +639,17 @@ private:
         handleSimRemoveRobot(connection, request);
       } else if (type == "sim_set_endpoint") {
         handleSimSetEndpoint(connection, request);
+      } else if (type == "list_situations") {
+        handleListSituations(connection);
+      } else if (type == "session_inject") {
+        handleSessionInject(connection, request);
+      } else if (type == "session_clear") {
+        std_msgs::msg::String injection_msg;
+        injection_msg.data = "HALT";
+        session_injection_pub_->publish(injection_msg);
+        RCLCPP_INFO(this->get_logger(), "Session injection cleared (HALT)");
+        json result = {{"type", "session_inject_result"}, {"success", true}, {"name", "HALT"}};
+        connection->sendMessage(result.dump());
       } else {
         json error_response = {{"type", "error"}, {"message", "Unknown request type: " + type}};
         connection->sendMessage(error_response.dump());
@@ -1187,6 +1232,66 @@ private:
     }
   }
 
+  void loadSituationNames()
+  {
+    try {
+      auto share_dir = ament_index_cpp::get_package_share_directory("crane_session_coordinator");
+      std::string config_path = share_dir + "/config/unified_session_config.yaml";
+      YAML::Node config = YAML::LoadFile(config_path);
+      std::lock_guard<std::mutex> lock(injection_mutex_);
+      cached_situation_names_.clear();
+      if (config["situations"]) {
+        for (auto it = config["situations"].begin(); it != config["situations"].end(); ++it) {
+          cached_situation_names_.push_back(it->first.as<std::string>());
+        }
+      }
+      RCLCPP_INFO(
+        this->get_logger(), "Loaded %zu situations from config", cached_situation_names_.size());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(), "Failed to load situation names: %s", e.what());
+    }
+  }
+
+  void handleListSituations(std::shared_ptr<WebSocketConnection> connection)
+  {
+    json items = json::array();
+    {
+      std::lock_guard<std::mutex> lock(injection_mutex_);
+      for (const auto & name : cached_situation_names_) {
+        items.push_back(name);
+      }
+    }
+    json response = {{"type", "situations_list"}, {"items", items}};
+    connection->sendMessage(response.dump());
+  }
+
+  void handleSessionInject(std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    std::string name = request.value("name", "HALT");
+    std_msgs::msg::String injection_msg;
+    injection_msg.data = name;
+    session_injection_pub_->publish(injection_msg);
+    RCLCPP_INFO(this->get_logger(), "Session injected: %s", name.c_str());
+    json result = {{"type", "session_inject_result"}, {"success", true}, {"name", name}};
+    connection->sendMessage(result.dump());
+  }
+
+  void broadcastSessionInjectionCurrent()
+  {
+    json history_json = json::array();
+    std::string current;
+    {
+      std::lock_guard<std::mutex> lock(injection_mutex_);
+      current = current_injection_;
+      for (const auto & [n, ts] : injection_history_) {
+        history_json.push_back({{"name", n}, {"timestamp_ms", ts}});
+      }
+    }
+    json msg = {
+      {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
+    broadcastToAll(msg.dump());
+  }
+
   void handleActivateMoveMode(std::shared_ptr<WebSocketConnection> connection)
   {
     std_msgs::msg::String injection_msg;
@@ -1449,6 +1554,11 @@ private:
   rclcpp::Publisher<crane_msgs::msg::HumanAnnotation>::SharedPtr annotation_pub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr move_command_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub_;
+  std::vector<std::string> cached_situation_names_;
+  std::string current_injection_{"HALT"};
+  std::deque<std::pair<std::string, int64_t>> injection_history_;
+  std::mutex injection_mutex_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
 
   // Cached world model state for move commands
