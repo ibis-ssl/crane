@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/fonts/roboto.css">
   <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
   <link rel="stylesheet" href="m3e-theme.css">
+  <link rel="stylesheet" href="/shared/nav/crane-nav.css">
+  <script type="module" src="/shared/nav/crane-nav.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -17,29 +19,6 @@
     body {
       display: flex;
       flex-direction: column;
-    }
-
-    #header-bar {
-      display: flex;
-      align-items: center;
-      gap: var(--md-sys-spacing-md);
-      padding: 6px var(--md-sys-spacing-md);
-      background: var(--md-sys-color-surface-container);
-      border-bottom: 1px solid var(--md-sys-color-outline-variant);
-      flex-shrink: 0;
-      font-size: 0.85rem;
-    }
-    #header-bar .title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--md-sys-color-on-surface);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #header-bar .title .material-symbols-outlined {
-      color: var(--md-sys-color-primary);
-      font-size: 20px;
     }
 
     #main-content {
@@ -211,23 +190,18 @@
   </style>
 </head>
 <body>
-  <!-- Header bar -->
-  <div id="header-bar">
-    <a href="/" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:var(--md-sys-color-on-surface-variant);font-size:0.8rem;">
-      <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>
-      Portal
-    </a>
-    <div class="title">
-      <span class="material-symbols-outlined">precision_manufacturing</span>
-      Robot Test
-    </div>
-    <div style="flex:1"></div>
-    <div id="mode-status">INACTIVE</div>
-    <div class="m3-connection-status" style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);">
-      <span class="m3-connection-dot" id="status-dot"></span>
-      <span id="status-label">connecting...</span>
-    </div>
-  </div>
+  <crane-nav active="robot-test"></crane-nav>
+  <script>
+    (function () {
+      const statusEl = document.getElementById('crane-nav-status');
+      if (statusEl) {
+        statusEl.innerHTML =
+          '<div id="mode-status">INACTIVE</div>' +
+          '<span class="m3-connection-dot" id="status-dot"></span>' +
+          '<span style="font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);" id="status-label">connecting...</span>';
+      }
+    })();
+  </script>
 
   <!-- Offline banner -->
   <div class="m3-offline-banner" id="offline-banner">

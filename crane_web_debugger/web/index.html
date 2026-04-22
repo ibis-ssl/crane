@@ -1,458 +1,774 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crane Debug Tools Portal</title>
-    <link rel="stylesheet" href="/fonts/noto-sans-jp.css">
-    <link rel="stylesheet" href="/fonts/roboto.css">
-    <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
-    <link rel="stylesheet" href="m3e-theme.css">
-    <style>
-        body {
-            min-height: 100vh;
-            padding: var(--md-sys-spacing-lg) 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crane Viewer</title>
+  <link rel="stylesheet" href="/fonts/noto-sans-jp.css">
+  <link rel="stylesheet" href="/fonts/roboto.css">
+  <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
+  <link rel="stylesheet" href="m3e-theme.css">
+  <link rel="stylesheet" href="/shared/nav/crane-nav.css">
+  <script type="module" src="/shared/nav/crane-nav.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
 
-        .portal-header {
-            background-color: var(--md-sys-color-surface-container);
-            border-radius: var(--md-sys-shape-xl);
-            padding: var(--md-sys-spacing-lg);
-            margin-bottom: var(--md-sys-spacing-lg);
-            box-shadow: var(--md-sys-elevation-2);
-        }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
 
-        .portal-header h1 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: var(--md-sys-spacing-sm);
-        }
+    /* ===== Dock Layout ===== */
+    .dock-container {
+      display: grid;
+      flex: 1;
+      overflow: hidden;
+      grid-template-columns: var(--dock-left-w, 300px) 4px 1fr 4px var(--dock-right-w, 260px);
+      grid-template-rows: 1fr var(--dock-bottom-h, 0px);
+      grid-template-areas:
+        "left ls main rs right"
+        "bottom bottom bottom bottom bottom";
+      --dock-left-w: 300px;
+      --dock-right-w: 260px;
+      --dock-bottom-h: 0px;
+    }
 
-        .portal-header h1 .material-symbols-outlined {
-            font-size: 32px;
-            color: var(--md-sys-color-primary);
-        }
+    /* Splitter */
+    .dock-splitter {
+      background: var(--md-sys-color-outline-variant);
+      cursor: col-resize;
+      transition: background var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .dock-splitter[data-target="left"] { grid-area: ls; }
+    .dock-splitter[data-target="right"] { grid-area: rs; }
+    .dock-splitter:hover, .dock-splitter:active { background: var(--md-sys-color-primary); }
 
-        .portal-header p {
-            color: var(--md-sys-color-on-surface-variant);
-            font-size: 0.875rem;
-            margin-top: 4px;
-        }
+    /* Dock panels */
+    #dock-left {
+      grid-area: left;
+      background-color: var(--md-sys-color-surface-container);
+      border-right: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
 
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--md-sys-spacing-sm);
-            font-size: 0.8125rem;
-            color: var(--md-sys-color-on-surface-variant);
-        }
+    #dock-right {
+      grid-area: right;
+      background-color: var(--md-sys-color-surface-container);
+      border-left: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
 
-        .section-title {
-            color: var(--md-sys-color-primary);
-            font-size: 0.8125rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: var(--md-sys-spacing-md);
-            margin-top: var(--md-sys-spacing-xl);
-            display: flex;
-            align-items: center;
-            gap: var(--md-sys-spacing-sm);
-        }
+    #dock-bottom {
+      grid-area: bottom;
+      background-color: var(--md-sys-color-surface-container-low);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+      overflow: hidden;
+    }
 
-        .section-title .material-symbols-outlined {
-            font-size: 20px;
-        }
+    .dock-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 2px 4px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      flex-shrink: 0;
+      min-height: 28px;
+    }
 
-        .tool-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--md-sys-spacing-md);
-        }
+    .dock-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--md-sys-spacing-sm);
+    }
 
-        @media (max-width: 768px) {
-            .tool-grid { grid-template-columns: 1fr; }
-        }
+    /* Collapsed dock: アイコンストライプ */
+    #dock-left:has(> .dock-header [data-dock-toggle="left"]) {
+      transition: none;
+    }
 
-        .tool-grid--3col {
-            grid-template-columns: repeat(3, 1fr);
-        }
+    /* Robot cards */
+    #robot-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: var(--md-sys-spacing-sm);
+    }
 
-        @media (max-width: 768px) {
-            .tool-grid--3col { grid-template-columns: 1fr; }
-        }
+    .robot-card {
+      background-color: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      padding: 4px 2px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+                  border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+      min-width: 0;
+    }
 
-        .tool-card {
-            background-color: var(--md-sys-color-surface-container-low);
-            border-radius: var(--md-sys-shape-lg);
-            padding: var(--md-sys-spacing-lg);
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            box-shadow: var(--md-sys-elevation-1);
-            position: relative;
-            transition: box-shadow var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard),
-                        transform var(--md-sys-motion-duration-medium) var(--md-sys-motion-spring),
-                        border-radius var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard),
-                        background-color var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
-        }
+    .robot-card:hover {
+      background-color: var(--md-sys-color-surface-container-highest);
+      border-color: var(--md-sys-color-primary);
+    }
 
-        .tool-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--md-sys-elevation-4);
-            border-radius: var(--md-sys-shape-xl);
-            background-color: var(--md-sys-color-surface-container);
-            color: inherit;
-        }
+    .robot-card.active {
+      background-color: var(--md-sys-color-primary-container);
+      border-color: var(--md-sys-color-primary);
+    }
 
-        .tool-card:active {
-            transform: translateY(-2px) scale(0.99);
-        }
+    .robot-card .robot-id {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      line-height: 1.2;
+    }
 
-        .tool-card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
+    .robot-card .robot-planner {
+      font-size: 0.55rem;
+      color: var(--md-sys-color-on-surface-variant);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
 
-        .tool-card__icon {
-            font-size: 40px;
-            margin-bottom: var(--md-sys-spacing-sm);
-            color: var(--md-sys-color-primary);
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 48;
-        }
+    .robot-card .robot-mode {
+      font-size: 0.55rem;
+      color: var(--md-sys-color-primary);
+      line-height: 1.2;
+    }
 
-        .tool-card__icon--tertiary {
-            color: var(--md-sys-color-tertiary);
-        }
+    #btn-move-mode.active {
+      background-color: var(--md-sys-color-warning);
+      color: var(--md-sys-color-on-warning);
+    }
 
-        .tool-card__title {
-            font-size: 1.125rem;
-            font-weight: 500;
-            margin-bottom: var(--md-sys-spacing-xs);
-        }
+    /* Game info */
+    #game-info-panel {
+      background-color: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      padding: var(--md-sys-spacing-sm);
+      margin-bottom: var(--md-sys-spacing-sm);
+      font-size: 0.8rem;
+    }
 
-        .tool-card__desc {
-            color: var(--md-sys-color-on-surface-variant);
-            font-size: 0.8125rem;
-            margin-bottom: var(--md-sys-spacing-md);
-            line-height: 1.5;
-        }
+    #game-info-panel .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
 
-        .tool-card__features {
-            list-style: none;
-            font-size: 0.8125rem;
-            color: var(--md-sys-color-on-surface-variant);
-        }
+    #game-info-panel .info-label {
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
 
-        .tool-card__features li {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-        }
+    #game-info-panel .info-value {
+      color: var(--md-sys-color-on-surface);
+      font-weight: 600;
+    }
 
-        .tool-card__features li .material-symbols-outlined {
-            font-size: 16px;
-            color: var(--md-sys-color-success);
-        }
+    #score-display {
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--md-sys-color-primary);
+      padding: 4px 0;
+    }
 
-        .tool-card__features li .material-symbols-outlined.icon-info {
-            color: var(--md-sys-color-info);
-        }
+    #play-situation { color: var(--md-sys-color-warning); }
 
-        .tool-card__badge {
-            position: absolute;
-            top: var(--md-sys-spacing-md);
-            right: var(--md-sys-spacing-md);
-        }
-    </style>
+    /* Main content area */
+    #main-content {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: var(--md-sys-color-surface);
+      min-width: 0;
+    }
+
+    /* SVG field viewer */
+    #svg-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--md-sys-color-surface-dim);
+    }
+
+    #field-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Zoom toolbar */
+    .zoom-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px var(--md-sys-spacing-sm);
+      background: var(--md-sys-color-surface-dim);
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      flex-shrink: 0;
+    }
+
+    .zoom-toolbar .divider {
+      border-left: 1px solid var(--md-sys-color-outline);
+      height: 20px;
+      margin: 0 4px;
+    }
+
+    /* Layer control */
+    .layer-controls-top {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    #layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .layer-item label {
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--md-sys-color-on-surface-variant);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Log panel */
+    #log-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 8px;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.7rem;
+    }
+
+    .log-panel-filter {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 4px 6px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .log-panel-filter label {
+      font-size: 0.65rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #log-text-filter {
+      flex: 1;
+      min-width: 60px;
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-xs);
+      color: var(--md-sys-color-on-surface);
+      outline: none;
+    }
+
+    .log-entry {
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .log-entry[data-level="error"] { color: var(--md-sys-color-error); }
+    .log-entry[data-level="warn"]  { color: var(--md-sys-color-warning); }
+    .log-entry[data-level="info"]  { color: var(--md-sys-color-on-surface-variant); }
+    .log-entry[data-level="action"]{ color: var(--md-sys-color-primary); }
+    .log-entry[data-level="metric"]{ color: var(--md-sys-color-tertiary); }
+
+    /* Game control panel */
+    .gc-row {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+
+    .gc-btn {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.66rem !important;
+      padding: 3px 2px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gc-btn--halt {
+      background-color: var(--md-sys-color-error) !important;
+      color: var(--md-sys-color-on-error) !important;
+    }
+
+    .gc-btn--yellow {
+      background-color: var(--md-sys-color-team-yellow) !important;
+      color: var(--md-sys-color-on-team-yellow) !important;
+      border-color: var(--md-sys-color-team-yellow) !important;
+    }
+
+    .gc-btn--blue {
+      background-color: var(--md-sys-color-team-blue) !important;
+      color: var(--md-sys-color-on-team-blue) !important;
+      border-color: var(--md-sys-color-team-blue) !important;
+    }
+
+    .gc-btn--card-yellow {
+      color: var(--md-sys-color-team-yellow) !important;
+      border-color: var(--md-sys-color-team-yellow) !important;
+    }
+
+    .gc-btn--card-red {
+      color: var(--md-sys-color-error) !important;
+      border-color: var(--md-sys-color-error) !important;
+    }
+
+    .gc-score-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    #gc-score {
+      font-size: 1.0rem;
+      font-weight: 700;
+      color: var(--md-sys-color-primary);
+      text-align: center;
+      flex: 1;
+    }
+
+    .gc-team-label {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+      margin: 3px 0 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Sim control panel */
+    #btn-sim-edit.active {
+      background-color: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
+    }
+
+    .btn-place-ball.active {
+      outline: 2px solid #fff;
+      outline-offset: 1px;
+    }
+
+    .sim-selected-label {
+      font-size: 0.72rem;
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 3px 0;
+    }
+
+    .m3-text-input {
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-xs, 4px);
+      color: var(--md-sys-color-on-surface);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
+
+    /* Right dock: panel header */
+    .right-dock-section {
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right-dock-section:last-child { border-bottom: none; flex: 1; }
+
+    .right-dock-section-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--md-sys-color-on-surface-variant);
+      flex-shrink: 0;
+      cursor: default;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    /* Robot Detail inline panel */
+    #robot-detail-inline {
+      display: none;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+    }
+
+    #robot-detail-inline.visible { display: block; }
+
+    #robot-detail-inline .rd-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--md-sys-color-primary);
+      margin-bottom: 4px;
+    }
+
+    #robot-detail-inline table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+    }
+
+    #robot-detail-inline td {
+      padding: 1px 4px;
+      color: var(--md-sys-color-on-surface-variant);
+      vertical-align: top;
+    }
+
+    #robot-detail-inline td:first-child {
+      color: var(--md-sys-color-on-surface-variant);
+      white-space: nowrap;
+      width: 5.5em;
+    }
+
+    #robot-detail-inline td:last-child {
+      color: var(--md-sys-color-on-surface);
+    }
+
+    /* Sparkline row */
+    .sparkline-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .sparkline-label {
+      font-size: 0.6rem;
+      color: var(--md-sys-color-on-surface-variant);
+      min-width: 4em;
+    }
+  </style>
 </head>
 <body>
-    <div class="m3-container">
-        <!-- Header -->
-        <div class="portal-header">
-            <div class="m3-flex m3-justify-between m3-items-center">
-                <div>
-                    <h1>
-                        <span class="material-symbols-outlined">smart_toy</span>
-                        Crane Debug Tools Portal
-                    </h1>
-                    <p>RoboCup SSL robot control debug tool portal</p>
-                </div>
-                <div class="connection-status" id="connection-status">
-                    <span class="m3-connection-dot" id="connection-dot"></span>
-                    <span id="status-text">connecting...</span>
-                </div>
+
+  <crane-nav active="viewer"></crane-nav>
+
+  <!-- Offline banner -->
+  <div class="m3-offline-banner" id="offline-banner">
+    <span class="material-symbols-outlined">wifi_off</span>
+    crane WebSocket未接続 (port 8091) — craneが起動すると自動で再接続します
+  </div>
+
+  <!-- Dock Container -->
+  <div class="dock-container">
+
+    <!-- Left Dock -->
+    <aside id="dock-left">
+      <div class="dock-header">
+        <button class="m3-icon-btn m3-icon-btn--sm" data-dock-toggle="left" title="左パネルを折り畳む/展開する">
+          <span class="material-symbols-outlined icon-sm">chevron_left</span>
+        </button>
+      </div>
+      <div class="dock-scroll">
+
+        <!-- Game info panel -->
+        <div class="m3-section-title">Game Info</div>
+        <div id="game-info-panel">
+          <div id="score-display">
+            <span id="score-our">0</span> : <span id="score-their">0</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Situation</span>
+            <span class="info-value" id="play-situation">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Stage</span>
+            <span class="info-value" id="game-stage">-</span>
+          </div>
+        </div>
+
+        <!-- Robot cards -->
+        <div class="m3-section-title">Robots</div>
+        <div id="robot-cards-grid">
+          <!-- Populated by viewer/main.js -->
+        </div>
+
+        <!-- Game Control -->
+        <div class="m3-section-title">Game Control</div>
+        <details class="m3-expansion" id="gc-accordion" open>
+          <summary>
+            <span class="material-symbols-outlined icon-sm m3-text-primary">sports</span>
+            Game Controller
+            <span class="m3-connection-dot" id="gc-connection-dot" style="margin-left:auto;flex-shrink:0;"></span>
+          </summary>
+          <div class="m3-expansion__body">
+            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-bottom:4px;">
+              Stage: <span id="gc-stage">-</span> &nbsp;|&nbsp; Cmd: <span id="gc-command">-</span>
             </div>
+            <!-- Score -->
+            <div class="gc-score-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+                data-action="gc-goals" data-team="YELLOW" data-delta="-1" title="Yellow score -1">－</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+                data-action="gc-goals" data-team="YELLOW" data-delta="1" title="Yellow score +1">＋</button>
+              <span id="gc-score">0 : 0</span>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+                data-action="gc-goals" data-team="BLUE" data-delta="-1" title="Blue score -1">－</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+                data-action="gc-goals" data-team="BLUE" data-delta="1" title="Blue score +1">＋</button>
+            </div>
+            <!-- Main commands -->
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
+                data-action="gc-command" data-type="HALT">HALT</button>
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
+                data-action="gc-command" data-type="STOP">STOP</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
+                data-action="gc-command" data-type="FORCE_START">FORCE</button>
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
+                data-action="gc-command" data-type="NORMAL_START">START</button>
+            </div>
+            <!-- Yellow team commands -->
+            <div class="gc-team-label">Yellow</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+                data-action="gc-command" data-type="DIRECT" data-team="YELLOW">FREE KICK</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+                data-action="gc-command" data-type="KICKOFF" data-team="YELLOW">KICKOFF</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow btn-place-ball" id="btn-place-ball-yellow"
+                data-action="ball-place" data-team="YELLOW">PLACE</button>
+            </div>
+            <!-- Blue team commands -->
+            <div class="gc-team-label">Blue</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+                data-action="gc-command" data-type="DIRECT" data-team="BLUE">FREE KICK</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+                data-action="gc-command" data-type="KICKOFF" data-team="BLUE">KICKOFF</button>
+              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue btn-place-ball" id="btn-place-ball-blue"
+                data-action="ball-place" data-team="BLUE">PLACE</button>
+            </div>
+            <!-- Cards -->
+            <div class="gc-team-label">Cards</div>
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
+                data-action="gc-card-yellow" data-team="YELLOW" title="Yellow card for Yellow">Y🟨</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
+                data-action="gc-card-red" data-team="YELLOW" title="Red card for Yellow">Y🟥</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
+                data-action="gc-card-yellow" data-team="BLUE" title="Yellow card for Blue">B🟨</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
+                data-action="gc-card-red" data-team="BLUE" title="Red card for Blue">B🟥</button>
+            </div>
+            <!-- Next Stage -->
+            <div class="gc-row" style="margin-top:2px;">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:1;"
+                data-action="gc-next-stage">Next Stage ▶</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Simulation Control -->
+        <div class="m3-section-title">Sim Control</div>
+        <details class="m3-expansion" id="sim-accordion">
+          <summary>
+            <span class="material-symbols-outlined icon-sm m3-text-primary">precision_manufacturing</span>
+            Simulation Control
+          </summary>
+          <div class="m3-expansion__body">
+            <div class="gc-row">
+              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" id="btn-sim-edit"
+                data-action="sim-edit">Sim Edit</button>
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
+                data-action="sim-reset-ball">Reset Ball</button>
+            </div>
+            <div class="sim-selected-label">Selected: <span id="sim-selected-label">mode off</span></div>
+            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-top:4px;margin-bottom:2px;">Sim endpoint (UDP)</div>
+            <div style="display:flex;gap:3px;align-items:center;">
+              <input type="text" id="sim-host-input" value="127.0.0.1" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
+              <input type="number" id="sim-port-input" value="10300" class="m3-text-input" style="flex:1;font-size:0.68rem;padding:3px 5px;min-width:0;">
+              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:0 0 auto;padding:3px 8px !important;"
+                data-action="sim-set-endpoint">Set</button>
+            </div>
+            <div style="font-size:0.62rem;color:var(--md-sys-color-on-surface-variant);margin-top:3px;">
+              Click: select &nbsp;|&nbsp; Dblclick/Enter: teleport &nbsp;|&nbsp; Esc: cancel
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </aside>
+
+    <!-- Left Splitter -->
+    <div class="dock-splitter" data-target="left" data-axis="v" title="左パネルをリサイズ"></div>
+
+    <!-- Main Canvas Area -->
+    <main id="main-content">
+
+      <!-- Zoom toolbar -->
+      <div class="zoom-toolbar">
+        <button id="btn-zoom-in" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_in</span></button>
+        <button id="btn-zoom-out" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_out</span></button>
+        <button id="btn-zoom-reset" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">fit_screen</span></button>
+        <span class="divider"></span>
+        <button id="btn-move-mode" class="m3-icon-btn m3-icon-btn--sm" title="Robot move mode (Shift+click to select/move)"><span class="material-symbols-outlined icon-sm">open_with</span></button>
+        <span class="m3-text-on-surface-variant m3-label-small" id="move-status">Selected: <span id="selected-robot-label">--</span></span>
+        <span class="m3-text-on-surface-variant m3-label-small" style="margin-left:8px;">
+          Layers: <span id="layer-count">0</span> | Primitives: <span id="prim-count">0</span>
+        </span>
+      </div>
+
+      <!-- Canvas field viewer -->
+      <div id="svg-container">
+        <canvas id="field-canvas"></canvas>
+      </div>
+
+    </main>
+
+    <!-- Right Splitter -->
+    <div class="dock-splitter" data-target="right" data-axis="v" title="右パネルをリサイズ"></div>
+
+    <!-- Right Dock -->
+    <aside id="dock-right">
+      <div class="dock-header">
+        <button class="m3-icon-btn m3-icon-btn--sm" data-dock-toggle="right" title="右パネルを折り畳む/展開する">
+          <span class="material-symbols-outlined icon-sm">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Layer Control -->
+      <div class="right-dock-section" style="flex-shrink:0;">
+        <div class="right-dock-section-header">
+          <span class="material-symbols-outlined icon-sm">layers</span>
+          Layers
         </div>
-
-        <!-- Crane Debug Tools -->
-        <h2 class="section-title">
-            <span class="material-symbols-outlined">build</span>
-            Crane Debug Tools
-        </h2>
-        <div class="tool-grid">
-            <a href="/viewer.html" class="tool-card">
-                <span class="m3-badge tool-card__badge" id="viewer-crane-badge">crane: offline</span>
-                <span class="material-symbols-outlined tool-card__icon">map</span>
-                <div class="tool-card__title">Main Viewer</div>
-                <div class="tool-card__desc">
-                    SVG field visualization + robot status overview
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> SVG layered field rendering</li>
-                    <li><span class="material-symbols-outlined">check</span> Robot card list (planner/mode)</li>
-                    <li><span class="material-symbols-outlined">check</span> Zoom & pan controls</li>
-                    <li><span class="material-symbols-outlined">check</span> Game info & score display</li>
-                </ul>
-            </a>
-
-            <a href="/robot_telemetry.html" class="tool-card">
-                <span class="m3-badge tool-card__badge" id="telemetry-crane-badge">crane: offline</span>
-                <span class="material-symbols-outlined tool-card__icon">show_chart</span>
-                <div class="tool-card__title">Robot Telemetry</div>
-                <div class="tool-card__desc">
-                    Per-robot prediction/actual plots & telemetry analysis
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Estimated/Vision/Target position comparison</li>
-                    <li><span class="material-symbols-outlined">check</span> Velocity & angle prediction graphs</li>
-                    <li><span class="material-symbols-outlined">check</span> Velocity correction logs</li>
-                    <li><span class="material-symbols-outlined">check</span> Robot ID switching (?id=N)</li>
-                </ul>
-            </a>
-
-            <a href="/annotation/index.html" class="tool-card">
-                <span class="m3-badge m3-badge--success tool-card__badge">offline対応</span>
-                <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sticky_note_2</span>
-                <div class="tool-card__title">Annotation Tool</div>
-                <div class="tool-card__desc">
-                    Match-time memo recording with timestamped annotations (PWA)
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Real-time memo recording</li>
-                    <li><span class="material-symbols-outlined">check</span> Automatic timestamp tagging</li>
-                    <li><span class="material-symbols-outlined">check</span> PWA offline support</li>
-                    <li><span class="material-symbols-outlined">check</span> Match analysis & review</li>
-                </ul>
-            </a>
-
-            <a href="#" target="_blank" class="tool-card" id="robot-manager-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="robot-manager-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon">memory</span>
-                <div class="tool-card__title">Robot Manager</div>
-                <div class="tool-card__desc">
-                    Hardware status monitoring & boot control (voltage, temp, errors, ping)
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Real-time battery & temperature monitoring</li>
-                    <li><span class="material-symbols-outlined">check</span> Error state details</li>
-                    <li><span class="material-symbols-outlined">check</span> Pi start/stop control</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8092 (Orion_CM4)</li>
-                </ul>
-            </a>
-
-            <a href="/robot_test.html" class="tool-card">
-                <span class="m3-badge tool-card__badge" id="robot-test-crane-badge">crane: offline</span>
-                <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">precision_manufacturing</span>
-                <div class="tool-card__title">Robot Test</div>
-                <div class="tool-card__desc">
-                    Interactive robot movement testing with real-time velocity plots
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Click to select robot & set destination</li>
-                    <li><span class="material-symbols-outlined">check</span> Max velocity & acceleration sliders</li>
-                    <li><span class="material-symbols-outlined">check</span> Speed norm plot (Cmd/Est/Odom/Mouse)</li>
-                    <li><span class="material-symbols-outlined">check</span> session_injection driven test mode</li>
-                </ul>
-            </a>
+        <div style="padding:6px;">
+          <div class="layer-controls-top">
+            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-select-all">All</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-deselect-all">None</button>
+          </div>
+          <div id="layer-list">
+            <!-- Populated by viewer/main.js -->
+          </div>
         </div>
+      </div>
 
-        <!-- SSL Infrastructure -->
-        <h2 class="section-title">
-            <span class="material-symbols-outlined">hub</span>
-            SSL Infrastructure
-        </h2>
-        <div class="tool-grid tool-grid--3col">
-            <a href="#" target="_blank" class="tool-card" id="game-controller-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="game-controller-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon">flag</span>
-                <div class="tool-card__title">SSL Game Controller</div>
-                <div class="tool-card__desc">
-                    Official RoboCup SSL game controller (referee system)
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Match progression management</li>
-                    <li><span class="material-symbols-outlined">check</span> Referee command issuing</li>
-                    <li><span class="material-symbols-outlined">check</span> Score & time management</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8081</li>
-                </ul>
-            </a>
-
-            <a href="#" target="_blank" class="tool-card" id="vision-client-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="vision-client-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon">videocam</span>
-                <div class="tool-card__title">SSL Vision Client</div>
-                <div class="tool-card__desc">
-                    Visualize & monitor vision data from SSL-Vision
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Real-time vision data display</li>
-                    <li><span class="material-symbols-outlined">check</span> Per-camera data check</li>
-                    <li><span class="material-symbols-outlined">check</span> Robot & ball position monitoring</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8082</li>
-                </ul>
-            </a>
-
-            <a href="#" target="_blank" class="tool-card" id="status-board-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="status-board-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon">tv</span>
-                <div class="tool-card__title">SSL Status Board</div>
-                <div class="tool-card__desc">
-                    Real-time match status display board
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Real-time referee info display</li>
-                    <li><span class="material-symbols-outlined">check</span> Team, score & card status</li>
-                    <li><span class="material-symbols-outlined">check</span> Match progression monitoring</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8083 (sim profile)</li>
-                </ul>
-            </a>
+      <!-- Robot Detail Inline Panel -->
+      <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
+        <div class="right-dock-section-header">
+          <span class="material-symbols-outlined icon-sm">smart_toy</span>
+          Robot Detail
+          <button class="m3-icon-btn m3-icon-btn--sm" id="btn-robot-detail-close" title="パネルを閉じる" style="margin-left:auto;">
+            <span class="material-symbols-outlined icon-sm">close</span>
+          </button>
         </div>
-
-        <!-- Analysis & Calibration -->
-        <h2 class="section-title">
-            <span class="material-symbols-outlined">science</span>
-            Analysis & Calibration
-        </h2>
-        <div class="tool-grid" style="padding-bottom: var(--md-sys-spacing-lg);">
-            <a href="#" target="_blank" class="tool-card" id="ball-calibration-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="ball-calibration-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon tool-card__icon--tertiary">sports_soccer</span>
-                <div class="tool-card__title">Ball Calibration UI</div>
-                <div class="tool-card__desc">
-                    Interactive ball physics model parameter optimization (mcap input, Human-in-the-Loop)
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> mcap rosbag direct upload</li>
-                    <li><span class="material-symbols-outlined">check</span> Auto deceleration parameter optimization</li>
-                    <li><span class="material-symbols-outlined">check</span> Real-time prediction trajectory preview</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> Port: 8093</li>
-                </ul>
-            </a>
-
-            <a href="#" target="_blank" class="tool-card" id="foxglove-card">
-                <span class="m3-badge m3-badge--secondary tool-card__badge" id="foxglove-status">checking...</span>
-                <span class="material-symbols-outlined tool-card__icon">analytics</span>
-                <div class="tool-card__title">Foxglove Studio</div>
-                <div class="tool-card__desc">
-                    Web-based real-time visualization & analysis of ROS2 topics
-                </div>
-                <ul class="tool-card__features">
-                    <li><span class="material-symbols-outlined">check</span> Multi-panel custom layout</li>
-                    <li><span class="material-symbols-outlined">check</span> Log, TF & image integrated view</li>
-                    <li><span class="material-symbols-outlined">check</span> Real-time ROS2 topic visualization</li>
-                    <li><span class="material-symbols-outlined icon-info">info</span> WebSocket: Port 8765</li>
-                </ul>
-            </a>
+        <div id="robot-detail-inline">
+          <!-- Populated by main.js -->
         </div>
+        <div id="robot-sparklines"></div>
+      </div>
+
+      <!-- Log Panel -->
+      <div class="right-dock-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="right-dock-section-header">
+          <span class="material-symbols-outlined icon-sm">terminal</span>
+          Log
+          <button class="m3-icon-btn m3-icon-btn--sm" id="btn-log-clear" title="ログをクリア" style="margin-left:auto;">
+            <span class="material-symbols-outlined icon-sm">delete_sweep</span>
+          </button>
+        </div>
+        <div class="log-panel-filter">
+          <label title="Info"><input type="checkbox" class="log-level-cb" data-level="info" checked> I</label>
+          <label title="Warn"><input type="checkbox" class="log-level-cb" data-level="warn" checked> W</label>
+          <label title="Error"><input type="checkbox" class="log-level-cb" data-level="error" checked> E</label>
+          <label title="Action"><input type="checkbox" class="log-level-cb" data-level="action" checked> A</label>
+          <label title="Metric"><input type="checkbox" class="log-level-cb" data-level="metric" checked> M</label>
+          <input type="text" id="log-text-filter" placeholder="検索…">
+        </div>
+        <div id="log-panel-body">
+          <!-- Populated by LogPanel.js -->
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Bottom Dock (TimeScrubber) -->
+    <div id="dock-bottom" style="height:var(--dock-bottom-h,0px);overflow:hidden;">
+      <div id="time-scrubber-container" style="height:100%;"></div>
     </div>
 
-    <script>
-        const host = window.location.hostname;
+  </div>
 
-        const EXTERNAL_TOOLS = [
-            { id: 'game-controller',   url: `http://${host}:8081` },
-            { id: 'vision-client',     url: `http://${host}:8082` },
-            { id: 'status-board',      url: `http://${host}:8083` },
-            { id: 'robot-manager',     url: `http://${host}:8092` },
-            { id: 'ball-calibration',  url: `http://${host}:8093` },
-            { id: 'foxglove',
-              url: `https://app.foxglove.dev/?ds=foxglove-websocket&ds.url=ws://${host}:8765`,
-              checkUrl: `http://${host}:8765` },
-        ];
+  <!-- Robot detail dialog -->
+  <div class="m3-dialog-scrim" id="robot-detail-scrim" onclick="window.__closeRobotDialog?.()"></div>
+  <div class="m3-dialog" id="robot-detail-modal" style="max-width:340px;">
+    <div class="m3-dialog__header">
+      <span class="m3-dialog__title" id="robot-detail-title">Robot</span>
+      <button class="m3-icon-btn m3-icon-btn--sm" onclick="window.__closeRobotDialog?.()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="m3-dialog__body" id="robot-detail-body" style="font-size:0.8rem;">
+    </div>
+  </div>
 
-        const CRANE_DEPENDENT_BADGES = [
-            'viewer-crane-badge',
-            'telemetry-crane-badge',
-            'robot-test-crane-badge',
-        ];
-
-        function setCraneStatus(connected) {
-            const dot = document.getElementById('connection-dot');
-            const text = document.getElementById('status-text');
-            dot.classList.toggle('connected', connected);
-            text.textContent = connected
-                ? `WebSocket connected (${host}:8091)`
-                : 'WebSocket disconnected';
-            CRANE_DEPENDENT_BADGES.forEach(id => {
-                const badge = document.getElementById(id);
-                if (!badge) return;
-                if (connected) {
-                    badge.textContent = 'crane: online';
-                    badge.className = 'm3-badge m3-badge--success tool-card__badge';
-                } else {
-                    badge.textContent = 'crane: offline';
-                    badge.className = 'm3-badge m3-badge--error tool-card__badge';
-                }
-            });
-        }
-
-        function checkConnection() {
-            const ws = new WebSocket(`ws://${host}:8091`);
-
-            ws.onopen = () => {
-                setCraneStatus(true);
-                ws.close();
-            };
-
-            ws.onerror = () => setCraneStatus(false);
-            ws.onclose = () => {
-                // Schedule next check (only if it never opened)
-            };
-        }
-
-        async function checkExternalTool(checkUrl, card, badge) {
-            try {
-                await fetch(checkUrl, {
-                    mode: 'no-cors',
-                    signal: AbortSignal.timeout(3000)
-                });
-                badge.textContent = 'available';
-                badge.className = 'm3-badge m3-badge--success tool-card__badge';
-                card.classList.remove('disabled');
-            } catch (error) {
-                badge.textContent = 'unavailable';
-                badge.className = 'm3-badge m3-badge--error tool-card__badge';
-                card.classList.add('disabled');
-            }
-        }
-
-        function setupExternalToolLinks() {
-            EXTERNAL_TOOLS.forEach(tool => {
-                const card = document.getElementById(`${tool.id}-card`);
-                if (card) card.href = tool.url;
-            });
-        }
-
-        function checkAllExternalTools() {
-            EXTERNAL_TOOLS.forEach(tool => {
-                const card = document.getElementById(`${tool.id}-card`);
-                const badge = document.getElementById(`${tool.id}-status`);
-                checkExternalTool(tool.checkUrl || tool.url, card, badge);
-            });
-        }
-
-        checkConnection();
-        setupExternalToolLinks();
-        checkAllExternalTools();
-        setInterval(checkAllExternalTools, 30000);
-        setInterval(checkConnection, 10000);
-    </script>
+  <script type="module" src="viewer/main.js"></script>
+  <script>
+    // crane-nav 内のステータスエリアに接続インジケータを配置
+    (function () {
+      const statusEl = document.getElementById('crane-nav-status');
+      if (statusEl) {
+        statusEl.innerHTML =
+          '<span class="m3-inline-flex m3-items-center m3-gap-xs" id="connection-indicator">' +
+          '<span class="m3-connection-dot" id="connection-dot"></span>' +
+          '<span class="m3-body-small m3-text-on-surface-variant" id="connection-label">disconnected</span>' +
+          '</span>';
+      }
+    })();
+  </script>
 </body>
 </html>

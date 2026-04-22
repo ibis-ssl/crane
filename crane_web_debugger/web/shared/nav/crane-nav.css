@@ -1,0 +1,29 @@
+/* crane-nav 専用補助スタイル (m3e-theme.css の変数に依存) */
+
+/* ナビリンクリストを横スクロール可能にする */
+.crane-nav .crane-nav__links {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none; /* Firefox */
+}
+
+.crane-nav .crane-nav__links::-webkit-scrollbar {
+  display: none;
+}
+
+/* アクティブページのリンクをプライマリカラーで強調 */
+.crane-nav .crane-nav__links a.active {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.crane-nav .crane-nav__links a.active .material-symbols-outlined {
+  color: var(--md-sys-color-primary);
+}
+
+/* ラベルを狭い画面で非表示にする */
+@media (max-width: 900px) {
+  .crane-nav .crane-nav__label {
+    display: none;
+  }
+}

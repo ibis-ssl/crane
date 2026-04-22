@@ -85,14 +85,32 @@ docker compose -f docker/dev/docker-compose.yaml down
 
 ## サービス一覧
 
+- **web-debugger**: Crane デバッグ統合ポータル（ポータル/Viewer/Telemetry/Robot Test/Annotation）
+- **ball-calibration**: ボール物理パラメータ最適化 UI（SSL ログ入力）
+- **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
 - **ssl-game-controller**: RoboCup SSLのゲームコントローラー
 - **ssl-vision-client**: SSL Vision クライアント
 - **ssl-status-board**: ステータスボード(simのみ)
 - **autoref-tigers**: Tigers Mannheimのオートレフェリー
 - **voicevox**: 音声合成エンジン
-- **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
 - **erforce-sim**: ER-Forceシミュレータ（`sim-erforce` profile時のみ）
 - **grsim**: grSimシミュレータ（`sim-grsim` profile時のみ）
+
+## Web UI ポート一覧
+
+| サービス | URL | 説明 |
+|---------|-----|------|
+| web-debugger (Viewer) | <http://localhost:8090/> | フィールドビジュアライザ（デフォルトページ） |
+| web-debugger (Telemetry) | <http://localhost:8090/robot_telemetry.html> | ロボットテレメトリ |
+| web-debugger (Robot Test) | <http://localhost:8090/robot_test.html> | ロボット動作テスト |
+| web-debugger (Annotation) | <http://localhost:8090/annotation/> | 試合アノテーション (PWA) |
+| ball-calibration | <http://localhost:8093/> | ボール物理キャリブレーション |
+| robot-manager | <http://localhost:8092/> | ロボットハードウェア管理 |
+| ssl-game-controller | <http://localhost:8081/> | SSL ゲームコントローラー |
+| ssl-vision-client | <http://localhost:8082/> | SSL ビジョンクライアント |
+| ssl-status-board | <http://localhost:8083/> | ステータスボード |
+
+各ページの上部に共通ナビゲーションバーが表示され、ページ間を直接移動できます。
 
 ## 設定ファイル
 

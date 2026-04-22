@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/fonts/roboto.css">
   <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
   <link rel="stylesheet" href="m3e-theme.css">
+  <link rel="stylesheet" href="/shared/nav/crane-nav.css">
+  <script type="module" src="/shared/nav/crane-nav.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -201,23 +203,19 @@
 </head>
 <body>
 
-  <!-- Top App Bar -->
-  <nav class="m3-top-app-bar">
-    <a href="/viewer.html" class="m3-btn m3-btn--sm m3-btn--outlined" style="padding:4px 12px;">
-      <span class="material-symbols-outlined icon-sm">arrow_back</span> Viewer
-    </a>
-    <div class="m3-top-app-bar__title">
-      <span class="material-symbols-outlined">show_chart</span>
-      Robot Telemetry
-    </div>
-    <div class="m3-top-app-bar__actions">
-      <label for="robot-selector" class="m3-text-on-surface-variant m3-body-small">Robot ID:</label>
-      <select id="robot-selector" class="m3-select" style="width:80px;">
-      </select>
-      <span class="m3-connection-dot" id="status-dot"></span>
-      <span class="m3-body-small m3-text-on-surface-variant" id="status-label">disconnected</span>
-    </div>
-  </nav>
+  <crane-nav active="telemetry"></crane-nav>
+  <script>
+    (function () {
+      const statusEl = document.getElementById('crane-nav-status');
+      if (statusEl) {
+        statusEl.innerHTML =
+          '<label for="robot-selector" class="m3-text-on-surface-variant m3-body-small">Robot ID:</label>' +
+          '<select id="robot-selector" class="m3-select" style="width:80px;"></select>' +
+          '<span class="m3-connection-dot" id="status-dot"></span>' +
+          '<span class="m3-body-small m3-text-on-surface-variant" id="status-label">disconnected</span>';
+      }
+    })();
+  </script>
 
   <!-- Offline banner -->
   <div class="m3-offline-banner" id="offline-banner">

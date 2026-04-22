@@ -72,6 +72,14 @@ def _store_trajectories(
 
 app = FastAPI(title="Ball Calibration UI")
 
+shared_dir = WEB_DIR / "shared"
+if shared_dir.exists():
+    app.mount("/shared", StaticFiles(directory=str(shared_dir)), name="shared")
+
+fonts_dir = Path(os.environ.get("FONTS_DIR", "/app/fonts"))
+if fonts_dir.is_dir():
+    app.mount("/fonts", StaticFiles(directory=str(fonts_dir)), name="fonts")
+
 static_dir = WEB_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

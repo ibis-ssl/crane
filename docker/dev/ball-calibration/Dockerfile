@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/
+COPY docker/dev/ball-calibration/requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # proto/ から Python protobuf モジュールを生成
-COPY proto /tmp/ssl_proto
+COPY docker/dev/ball-calibration/proto /tmp/ssl_proto
 RUN mkdir -p /app/ssl_proto && \
     protoc -I /tmp/ssl_proto --python_out=/app/ssl_proto \
         /tmp/ssl_proto/ssl_vision_wrapper_tracked.proto \
@@ -24,10 +24,14 @@ RUN mkdir -p /app/ssl_proto && \
     touch /app/ssl_proto/__init__.py && \
     rm -rf /tmp/ssl_proto
 
-COPY *.py /app/
-COPY web /app/web
-COPY tests /app/tests
-COPY scripts /app/scripts
+COPY docker/dev/ball-calibration/*.py /app/
+COPY docker/dev/ball-calibration/web /app/web
+COPY docker/dev/ball-calibration/tests /app/tests
+COPY docker/dev/ball-calibration/scripts /app/scripts
+
+# フォントをビルド時にイメージへ焼き込む (web-debugger と同じスクリプトを共用)
+COPY crane_web_debugger/web/download_fonts.py /tmp/download_fonts.py
+RUN python3 /tmp/download_fonts.py --output-dir /app/fonts && rm /tmp/download_fonts.py
 
 EXPOSE 8090
 
