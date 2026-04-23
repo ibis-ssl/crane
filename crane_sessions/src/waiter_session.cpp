@@ -16,6 +16,8 @@ WaiterSession::calculatePositionCommand(const std::vector<RobotIdentifier> & rob
     auto command =
       std::make_shared<crane::PositionCommandWrapper>("waiter_planner", robot_id.id, world_model);
     command->stopHere();
+    command->disableAnyAreaAvoidance();
+    command->disableCollisionAvoidance();
     robot_commands.emplace_back(command->getMsg());
   }
   return {SessionBase::Status::RUNNING, robot_commands};

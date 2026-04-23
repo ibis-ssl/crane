@@ -385,6 +385,9 @@ auto RVO2Planner::applyPenaltyAreaBrakingConstraint(
   PreprocessContext & ctx, const Box & area, const crane_msgs::msg::RobotCommand & command) const
   -> void
 {
+  if (world_model->getMsg().play_situation.command.value == crane_msgs::msg::PlaySituation::HALT) {
+    return;
+  }
   const double penalty_area_offset =
     needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
       ? PENALTY_AREA_OFFSET_STOP
@@ -753,7 +756,9 @@ auto RVO2Planner::adjustForFieldBoundary(
 auto RVO2Planner::adjustForPenaltyAreaAvoidance(
   Point & target_pos, const Point & current_pos, crane_msgs::msg::RobotCommand & command) -> void
 {
-  if (not command.local_planner_config.disable_goal_area_avoidance) {
+  if (
+    not command.local_planner_config.disable_goal_area_avoidance &&
+    world_model->getMsg().play_situation.command.value != crane_msgs::msg::PlaySituation::HALT) {
     const double penalty_area_offset =
       needsExpandedPenaltyAreaOffset(world_model->getMsg().play_situation.command.value)
         ? PENALTY_AREA_OFFSET_STOP
