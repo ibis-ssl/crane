@@ -179,8 +179,6 @@ public:
 
   void sendMessage(const std::string & message)
   {
-    if (!connected_) return;
-
     std::lock_guard<std::mutex> lock(send_mutex_);
 
     if (!connected_) return;
