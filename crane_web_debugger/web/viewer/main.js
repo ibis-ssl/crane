@@ -568,6 +568,7 @@ class CraneViewer {
         let closest = null;
         let minDist = ROBOT_HIT_RADIUS_M * 2; // ホバー検出半径は選択より広め
         for (const [id, robot] of Object.entries(this.robotsOurs)) {
+            if (!robot.available_vision && !robot.available_tracker) continue;
             const d = Math.hypot(robot.x - fieldX, robot.y - fieldY);
             if (d < minDist) { minDist = d; closest = Number(id); }
         }
@@ -652,6 +653,9 @@ class CraneViewer {
     _nearestRobot(robotMap, fieldX, fieldY) {
         let id = null, dist = ROBOT_HIT_RADIUS_M;
         for (const [k, r] of Object.entries(robotMap)) {
+            // availability フラグがない（相手チーム等）場合はフィルタしない
+            const hasFlags = r.available_vision !== undefined || r.available_tracker !== undefined;
+            if (hasFlags && !r.available_vision && !r.available_tracker) continue;
             const d = Math.hypot(r.x - fieldX, r.y - fieldY);
             if (d < dist) { dist = d; id = Number(k); }
         }

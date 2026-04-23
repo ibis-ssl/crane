@@ -38,6 +38,7 @@ export class RobotHud {
         const zoom = viewer.zoomLevel ?? 1.0;
 
         for (const [idStr, robot] of Object.entries(viewer.robotsOurs)) {
+            if (!robot.available_vision && !robot.available_tracker) continue;
             const id = Number(idStr);
             const cx = robot.x * 1000;
             const cy = -robot.y * 1000;
