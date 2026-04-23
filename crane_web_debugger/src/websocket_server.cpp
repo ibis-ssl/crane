@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <atomic>
 #include <boost/asio.hpp>
 #include <cctype>
 #include <chrono>
@@ -126,6 +127,10 @@ public:
   {
   }
 
+  // コピー/ムーブ禁止（mutexはコピー不可）
+  WebSocketConnection(const WebSocketConnection &) = delete;
+  WebSocketConnection & operator=(const WebSocketConnection &) = delete;
+
   bool handshake()
   {
     try {
@@ -174,6 +179,10 @@ public:
 
   void sendMessage(const std::string & message)
   {
+    if (!connected_) return;
+
+    std::lock_guard<std::mutex> lock(send_mutex_);
+
     if (!connected_) return;
 
     try {
@@ -300,7 +309,8 @@ private:
   }
 
   std::shared_ptr<boost::asio::ip::tcp::socket> socket_;
-  bool connected_;
+  std::atomic<bool> connected_;
+  std::mutex send_mutex_;
 };
 
 class WebSocketDebugServer : public rclcpp::Node
