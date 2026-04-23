@@ -162,6 +162,7 @@ class FieldRenderer {
 
         // 敵ロボット描画（灰色）
         for (const [id, robot] of Object.entries(c.robotsTheirs)) {
+            if (!robot.available_vision && !robot.available_tracker) continue;
             this._drawRobot(ctx, robot, Number(id), '#888888', null);
         }
 
