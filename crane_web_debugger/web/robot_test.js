@@ -167,15 +167,16 @@ class FieldRenderer {
 
         // 味方ロボット描画
         for (const [id, robot] of Object.entries(c.robotsOurs)) {
+            if (!robot.available_vision && !robot.available_tracker) continue;
             const color = c.isYellow ? '#FFD700' : '#4488FF';
             this._drawRobot(ctx, robot, Number(id), color, c.selectedRobotId);
         }
 
         // 選択ハイライト（破線円）
-        if (c.selectedRobotId !== null && c.robotsOurs[c.selectedRobotId]) {
-            const robot = c.robotsOurs[c.selectedRobotId];
-            const svgX = robot.x * 1000;
-            const svgY = -robot.y * 1000;
+        const selRobot = c.selectedRobotId !== null ? c.robotsOurs[c.selectedRobotId] : null;
+        if (selRobot && (selRobot.available_vision || selRobot.available_tracker)) {
+            const svgX = selRobot.x * 1000;
+            const svgY = -selRobot.y * 1000;
             ctx.save();
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 20;
@@ -621,6 +622,7 @@ class RobotTestController {
         let closest = null;
         let minDist = ROBOT_HIT_RADIUS_M;
         for (const [id, robot] of Object.entries(this.robotsOurs)) {
+            if (!robot.available_vision && !robot.available_tracker) continue;
             const dx = robot.x - fieldX;
             const dy = robot.y - fieldY;
             const dist = Math.sqrt(dx * dx + dy * dy);
