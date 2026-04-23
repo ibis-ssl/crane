@@ -850,10 +850,11 @@ auto WorldModelDataProvider::processTrackedFrame(
   integrateBallInfo();
 
   // ロボット情報の処理
-  // 全チーム・全ロボットIDをリセット
+  // 全チーム・全ロボットIDをリセット（trackerフレーム毎にvision/tracker両フラグをクリア）
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     for (auto & robot : robot_info_[team_idx]) {
       robot.available_vision = false;
+      robot.available_tracker = false;
     }
   }
 
