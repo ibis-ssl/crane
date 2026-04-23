@@ -324,9 +324,18 @@ public:
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        latest_world_model_ = msg;
-        world_model_updated_ = true;
+        bool first_msg = false;
+        {
+          std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+          first_msg = (latest_world_model_ == nullptr);
+          latest_world_model_ = msg;
+          world_model_updated_ = true;
+        }
+        // 初回受信時は全クライアントへ即座にブロードキャスト（10Hzタイマー待ち不要）
+        if (first_msg) {
+          RCLCPP_INFO(this->get_logger(), "world_model 初回受信 - 即座にブロードキャスト");
+          broadcastWorldModel(msg);
+        }
       });
 
     robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
