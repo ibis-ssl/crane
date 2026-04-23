@@ -554,6 +554,18 @@ private:
       }
     }
 
+    // 接続確立時に最新の世界モデルを送信
+    {
+      crane_msgs::msg::WorldModel::SharedPtr wm_msg;
+      {
+        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+        wm_msg = latest_world_model_;
+      }
+      if (wm_msg) {
+        sendWorldModelToConnection(connection, wm_msg);
+      }
+    }
+
     // 接続確立時に最新のロボットフィードバックを送信
     {
       crane_msgs::msg::RobotFeedbackArray::SharedPtr fb_msg;
@@ -695,14 +707,8 @@ private:
     return delay_analysis;
   }
 
-  void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  static std::string createWorldModelMessage(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
-    {
-      std::lock_guard<std::mutex> lock(world_model_cache_mutex_);
-      cached_is_yellow_ = msg->is_yellow;
-      cached_on_positive_half_ = msg->on_positive_half;
-    }
-
     json world_model = {
       {"type", "world_model"},
       {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
@@ -770,7 +776,27 @@ private:
         compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
     }
 
-    broadcastToAll(world_model.dump());
+    return world_model.dump();
+  }
+
+  void sendWorldModelToConnection(
+    std::shared_ptr<WebSocketConnection> connection,
+    const crane_msgs::msg::WorldModel::SharedPtr msg)
+  {
+    if (connection->isConnected()) {
+      connection->sendMessage(createWorldModelMessage(msg));
+    }
+  }
+
+  void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  {
+    {
+      std::lock_guard<std::mutex> lock(world_model_cache_mutex_);
+      cached_is_yellow_ = msg->is_yellow;
+      cached_on_positive_half_ = msg->on_positive_half;
+    }
+
+    broadcastToAll(createWorldModelMessage(msg));
   }
 
   static json robotCommandToJson(const crane_msgs::msg::RobotCommand & cmd)
