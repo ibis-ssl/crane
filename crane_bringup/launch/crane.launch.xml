@@ -133,7 +133,7 @@ limitations under the License.
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
       <param name="rvo_radius" value="0.15"/>
       <param name="velocity_damping_gain" value="0.0"/>
-      <param name="update_rate_hz" value="120.0"/>
+      <param name="update_rate_hz" value="0.0"/>
       <!-- KickerModel統合：YAML設定ファイルから読み込み -->
       <param name="kicker_physics_config" value="$(find-pkg-share crane_world_model_publisher)/config/kicker_physics.yaml"/>
     </node>
