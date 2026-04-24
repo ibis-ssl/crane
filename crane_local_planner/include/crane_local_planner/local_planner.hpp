@@ -82,8 +82,7 @@ public:
     const bool callback_driven = update_rate_hz <= 0.0;
 
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/control_targets", 10,
-      [this, callback_driven](const crane_msgs::msg::RobotCommands & msg) {
+      "/control_targets", 10, [this, callback_driven](const crane_msgs::msg::RobotCommands & msg) {
         latest_commands_ = msg;
         if (callback_driven) {
           processLatestCommands();
