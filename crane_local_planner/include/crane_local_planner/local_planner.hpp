@@ -77,15 +77,29 @@ public:
       theta_offset = 0.;
     }
 
-    control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/control_targets", 10,
-      [this](const crane_msgs::msg::RobotCommands & msg) { latest_commands_ = msg; });
-
     declare_parameter("update_rate_hz", 60.0);
     const auto update_rate_hz = get_parameter("update_rate_hz").as_double();
-    update_timer_ = create_wall_timer(
-      std::chrono::microseconds(static_cast<int64_t>(1e6 / update_rate_hz)),
-      [this]() { processLatestCommands(); });
+    const bool callback_driven = update_rate_hz <= 0.0;
+
+    control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/control_targets", 10, [this, callback_driven](const crane_msgs::msg::RobotCommands & msg) {
+        latest_commands_ = msg;
+        if (callback_driven) {
+          processLatestCommands();
+        }
+      });
+
+    if (callback_driven) {
+      RCLCPP_INFO(
+        get_logger(),
+        "update_rate_hz=%.3f (<=0): timer disabled, driving processLatestCommands() from "
+        "/control_targets callback.",
+        update_rate_hz);
+    } else {
+      update_timer_ = create_wall_timer(
+        std::chrono::microseconds(static_cast<int64_t>(1e6 / update_rate_hz)),
+        [this]() { processLatestCommands(); });
+    }
   }
 
   auto processLatestCommands() -> void;
