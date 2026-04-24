@@ -40,6 +40,7 @@
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <rclcpp/parameter_client.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <set>
 #include <sstream>
@@ -393,6 +394,8 @@ public:
     loadSituationNames();
     robot_test_target_pub_ =
       this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
+    local_planner_params_client_ =
+      std::make_shared<rclcpp::AsyncParametersClient>(this, "local_planner");
 
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -660,6 +663,8 @@ private:
         handleDeactivateRobotTest(connection);
       } else if (type == "robot_test_target") {
         handleRobotTestTarget(connection, request);
+      } else if (type == "set_planner_param") {
+        handleSetPlannerParam(connection, request);
       } else if (type == "sim_teleport_ball") {
         handleSimTeleportBall(connection, request);
       } else if (type == "sim_teleport_robot") {
@@ -1451,6 +1456,44 @@ private:
     connection->sendMessage(result.dump());
   }
 
+  void handleSetPlannerParam(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    std::vector<rclcpp::Parameter> params;
+    if (request.contains("velocity_damping_gain")) {
+      double v = std::clamp(request.value("velocity_damping_gain", 0.5), 0.0, 2.0);
+      params.emplace_back("velocity_damping_gain", v);
+    }
+    if (params.empty()) {
+      json err = {{"type", "error"}, {"message", "no known param"}};
+      connection->sendMessage(err.dump());
+      return;
+    }
+    if (!local_planner_params_client_->service_is_ready()) {
+      RCLCPP_WARN(this->get_logger(), "local_planner parameter service not ready");
+      json err = {
+        {"type", "set_planner_param_result"}, {"success", false}, {"message", "not ready"}};
+      connection->sendMessage(err.dump());
+      return;
+    }
+    local_planner_params_client_->set_parameters(
+      params, [this](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>>
+                       future) {
+        try {
+          for (const auto & r : future.get()) {
+            if (!r.successful) {
+              RCLCPP_WARN(
+                this->get_logger(), "set param failed: %s", r.reason.c_str());
+            }
+          }
+        } catch (const std::exception & e) {
+          RCLCPP_WARN(this->get_logger(), "set param exception: %s", e.what());
+        }
+      });
+    json ok = {{"type", "set_planner_param_result"}, {"success", true}};
+    connection->sendMessage(ok.dump());
+  }
+
   void handleSimTeleportBall(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     float x = static_cast<float>(request.value("x", 0.0));
@@ -1603,6 +1646,7 @@ private:
   std::deque<std::pair<std::string, int64_t>> injection_history_;
   std::mutex injection_mutex_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
+  rclcpp::AsyncParametersClient::SharedPtr local_planner_params_client_;
 
   // Cached world model state for move commands
   bool cached_is_yellow_{false};

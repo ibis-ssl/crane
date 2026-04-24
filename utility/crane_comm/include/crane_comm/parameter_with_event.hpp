@@ -39,19 +39,17 @@ struct ParameterWithEvent
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
-        if (p.get_type() == PARAMETER_TYPE && callback) {
-          if constexpr (std::is_same_v<T, bool>) {
-            value = p.as_bool();
-          } else if constexpr (std::is_same_v<T, int>) {
-            value = p.as_int();
-          } else if constexpr (std::is_same_v<T, double>) {
-            value = p.as_double();
-          } else if constexpr (std::is_same_v<T, std::string>) {
-            value = p.as_string();
-          }
-
-          callback(value);
+        if (p.get_type() != PARAMETER_TYPE) return;
+        if constexpr (std::is_same_v<T, bool>) {
+          value = p.as_bool();
+        } else if constexpr (std::is_same_v<T, int>) {
+          value = p.as_int();
+        } else if constexpr (std::is_same_v<T, double>) {
+          value = p.as_double();
+        } else if constexpr (std::is_same_v<T, std::string>) {
+          value = p.as_string();
         }
+        if (callback) callback(value);
       });
   }
 
@@ -74,7 +72,7 @@ struct ParameterWithEvent
 
   std::function<void(T)> callback;
 
-  auto getValue() -> T { return value; }
+  auto getValue() const -> T { return value; }
 
   T value;
 

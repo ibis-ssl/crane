@@ -171,7 +171,7 @@ private:
 
   // D成分ゲイン: 現在速度に比例したダンピング項のゲイン
   // target_vel = position_error - velocity_damping_gain * current_vel
-  double velocity_damping_gain = 0.5;
+  ParameterWithEvent<double> velocity_damping_gain;
 
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 

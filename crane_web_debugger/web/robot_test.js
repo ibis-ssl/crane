@@ -382,6 +382,8 @@ class RobotTestController {
         this.maxVelocity = 2.0;
         this.maxAcceleration = 2.5;
         this.targetThetaDeg = 0;
+        this.velocityDampingGain = 0.5;
+        this._dampingSendTimer = null;
 
         // チャートバッファ
         this.startTime = null;
@@ -610,6 +612,13 @@ class RobotTestController {
             `(${this.targetPos.x.toFixed(2)}, ${this.targetPos.y.toFixed(2)})`;
     }
 
+    sendPlannerParam() {
+        this.wsSend({
+            type: 'set_planner_param',
+            velocity_damping_gain: this.velocityDampingGain,
+        });
+    }
+
     selectRobot(id) {
         this.selectedRobotId = id;
         document.getElementById('selected-robot-id').textContent = id !== null ? String(id) : '--';
@@ -681,6 +690,15 @@ class RobotTestController {
         thetaInput?.addEventListener('change', () => {
             this.targetThetaDeg = parseFloat(thetaInput.value) || 0;
             this.sendTarget();
+        });
+
+        const dampingSlider = document.getElementById('slider-damping-gain');
+        const dampingDisplay = document.getElementById('display-damping-gain');
+        dampingSlider?.addEventListener('input', () => {
+            this.velocityDampingGain = parseFloat(dampingSlider.value);
+            if (dampingDisplay) dampingDisplay.textContent = this.velocityDampingGain.toFixed(2);
+            if (this._dampingSendTimer) clearTimeout(this._dampingSendTimer);
+            this._dampingSendTimer = setTimeout(() => this.sendPlannerParam(), 100);
         });
     }
 

@@ -54,7 +54,8 @@ void drawRobotRadiusWithSpeed(
 
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
 : LocalPlannerBase("rvo2_local_planner", node),
-  acceleration_factor("acceleration_factor", node, 1.5)
+  acceleration_factor("acceleration_factor", node, 1.5),
+  velocity_damping_gain("velocity_damping_gain", node, 0.5)
 {
   node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
   RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -113,9 +114,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
-
-  node.declare_parameter("velocity_damping_gain", velocity_damping_gain);
-  velocity_damping_gain = node.get_parameter("velocity_damping_gain").as_double();
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
@@ -332,7 +330,7 @@ auto RVO2Planner::computePreferredVelocityStage(
   ctx.target_vel << brk_vel(position_diff.x()), brk_vel(position_diff.y());
 
   const Vector2 current_vel(command.current_velocity.x, command.current_velocity.y);
-  ctx.target_vel -= velocity_damping_gain * current_vel;
+  ctx.target_vel -= velocity_damping_gain.getValue() * current_vel;
 
   if (position_diff.norm() > 0.01 && ctx.target_vel.dot(position_diff) < 0.0) {
     ctx.target_vel.setZero();
