@@ -129,7 +129,7 @@ services:
       - --vision-port
       - "${VISION_PORT:-10020}"
       - --tracker-port
-      - "${TRACKER_PORT:-11010}"
+      - "11010"
       - --gc-port
       - "${REFEREE_PORT:-11003}"
     network_mode: host
