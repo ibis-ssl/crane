@@ -104,6 +104,7 @@ services:
 
   ssl-vision-client:
     image: ghcr.io/ibis-ssl/ssl-vision-client:develop
+    # image: robocupssl/ssl-vision-client
     command:
       - -address
       - :8082
@@ -123,18 +124,29 @@ services:
       - sim-erforce
       - sim-grsim
 
-  autoref-tigers:
-    image: tigersmannheim/auto-referee:1.2.0
-    command:
-      - --active # active mode (connect to GC)
-      - --headless
-      - --visionAddress
-      - 224.5.23.2:${VISION_PORT:-10020}
-      - --refereeAddress
-      - 224.5.23.1:11003
-      - --trackerAddress
-      - 224.5.23.2:11010
+  # autoref-tigers:
+  #   image: tigersmannheim/auto-referee:1.2.0
+  #   command:
+  #     - --active # active mode (connect to GC)
+  #     - --headless
+  #     - --visionAddress
+  #     - 224.5.23.2:${VISION_PORT:-10020}
+  #     - --refereeAddress
+  #     - 224.5.23.1:11003
+  #     - --trackerAddress
+  #     - 224.5.23.2:11010
+  #   network_mode: host
+  autoref-erforce:
+    image: roboticserlangen/autoref:2025.1.0
     network_mode: host
+    command:
+      - --vision-port
+      - ${VISION_PORT:-10020}
+      - --tracker-port
+      - "11010"
+      - --gc-port
+      - "11003"
+    restart: unless-stopped
 
   ssl-log-recorder:
     image: robocupssl/ssl-log-recorder:latest

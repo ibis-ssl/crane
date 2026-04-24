@@ -1,8 +1,8 @@
 {
-  "visionPort": 10020,
+  "visionPort": 10006,
   "trackedPort": 11010,
   "refereePort": 11003,
   "simAddress": "127.0.0.1",
-  "autoBallPlacementEnabled": true,
-  "autoCenterAfterGoalEnabled": true
+  "autoBallPlacementEnabled": false,
+  "autoCenterAfterGoalEnabled": false
 }
