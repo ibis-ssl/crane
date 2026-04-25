@@ -37,14 +37,6 @@ void KickOld::initialize()
   setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
 
-  receive_skill.setParameter("dribble_power", 0.3);
-  receive_skill.setParameter("enable_software_bumper", false);
-  receive_skill.setParameter("policy", std::string("min_slack"));
-  receive_skill.setParameter("enable_active_receive", true);
-  receive_skill.setParameter("enable_redirect", true);
-  receive_skill.setParameter("redirect_target", Point(0, 0));
-  receive_skill.setParameter("redirect_kick_power", 0.3);
-
   addStateFunction(s(S::ENTRY_POINT), [this]() {
     visualizer->text()
       .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
@@ -56,69 +48,6 @@ void KickOld::initialize()
   });
 
   addTransition(s(S::ENTRY_POINT), s(S::AROUND_BALL_AND_KICK), [this]() { return true; });
-
-  addStateFunction(s(S::POSITIVE_REDIRECT_KICK), [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text("KickOld::POSITIVE_REDIRECT_KICK")
-      .fill("white")
-      .fontSize(100)
-      .build();
-    const auto & ball_pos = world_model()->ball().pos;
-    command->lookAtFrom(getParameter<Point>("target"), ball_pos);
-
-    const auto & ball_vel_normed = world_model()->ball().vel.normalized();
-    Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.);
-    auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
-    if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
-      auto target_pos = [&]() -> Point {
-        if (distance < 0.1) {
-          return ball_pos + ball_vel_normed;
-        } else {
-          return closest_point + ball_vel_normed * distance;
-        }
-      }();
-      command->setDribblerTargetPosition(target_pos);
-      command->kickStraight(0.3);
-      command->disableBallAvoidance();
-    } else {
-      command->setTargetPosition(
-        closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
-    }
-
-    return Status::RUNNING;
-  });
-
-  addTransition(s(S::POSITIVE_REDIRECT_KICK), s(S::ENTRY_POINT), [this]() {
-    return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) ||
-           !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
-  });
-
-  addStateFunction(s(S::REDIRECT_KICK), [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text("KickOld::REDIRECT_KICK")
-      .fill("white")
-      .fontSize(100)
-      .build();
-    receive_skill.setParameter("target", getParameter<Point>("target"));
-    if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
-      receive_skill.setParameter("policy", std::string("closest"));
-    } else {
-      receive_skill.setParameter("policy", std::string("min_slack"));
-    }
-    command->disableBallAvoidance();
-    return receive_skill.update();
-  });
-
-  addTransition(s(S::REDIRECT_KICK), s(S::AROUND_BALL_AND_KICK), [this]() {
-    return !world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
-  });
-
-  addTransition(s(S::REDIRECT_KICK), s(S::ENTRY_POINT), [this]() {
-    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
-  });
 
   addStateFunction(s(S::AROUND_BALL_AND_KICK), [this]() {
     auto target = getParameter<Point>("target");
