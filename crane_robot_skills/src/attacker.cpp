@@ -337,12 +337,13 @@ void Attacker::initialize()
       command->disableBallAvoidance();
       return kick_skill.run();
     } else {
-      // FINAL_GUARD: ゴール角度が不十分なのでチップキックで前方クリア
+      // FINAL_GUARD: ゴール角度が不十分でも強ストレートでクリア
+      // チップキックはGK越えで直接ゴールに入るとファウルになるため使用不可
       printTextOnRobot("KICK::FINAL_GUARD");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
-      kick_skill.setParameter("chip_kick", true);
-      kick_skill.setParameter("use_target_chip_distance", true);
-      kick_skill.setParameter("target_chip_distance", CHIP_KICK_DISTANCE);
+      kick_skill.setParameter("chip_kick", false);
+      kick_skill.setParameter("use_target_kick_speed", true);
+      kick_skill.setParameter("target_kick_speed", 6.0);
       command->disableBallAvoidance();
       return kick_skill.run();
     }
