@@ -37,21 +37,49 @@
       min-height: 0;
     }
 
+    /* ---- Field container ---- */
     #field-container {
       flex: 1;
       min-width: 0;
       background: var(--md-sys-color-surface-container-low);
       border-radius: var(--md-sys-shape-md);
-      border: 1px solid var(--md-sys-color-outline-variant);
+      border: 2px solid var(--md-sys-color-outline-variant);
       position: relative;
       overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    #field-container.is-active {
+      border-color: var(--md-sys-color-tertiary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-tertiary) 20%, transparent);
+    }
+    #field-container.is-cursor-follow {
+      border-color: var(--md-sys-color-warning, #F9A825);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-warning, #F9A825) 20%, transparent);
+      animation: pulse-border 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-warning, #F9A825) 20%, transparent); }
+      50%       { box-shadow: 0 0 0 5px color-mix(in srgb, var(--md-sys-color-warning, #F9A825) 35%, transparent); }
     }
     #field-canvas {
       display: block;
       width: 100%;
       height: 100%;
     }
+    #hint-text {
+      position: absolute;
+      bottom: 6px;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      font-size: 0.68rem;
+      color: var(--md-sys-color-on-surface-variant);
+      text-align: center;
+      padding: 4px;
+      transition: opacity 0.2s;
+    }
 
+    /* ---- Controls panel ---- */
     #controls-panel {
       width: 280px;
       flex-shrink: 0;
@@ -106,20 +134,74 @@
       font-size: 0.8rem;
     }
 
+    /* ---- Mode status card ---- */
+    .mode-card {
+      border-radius: var(--md-sys-shape-sm);
+      padding: 10px 12px;
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      transition: background 0.25s, border-color 0.25s;
+    }
+    .mode-card--active {
+      background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 70%, transparent);
+      border-color: var(--md-sys-color-tertiary);
+    }
+    .mode-card--follow {
+      background: color-mix(in srgb, var(--md-sys-color-warning, #F9A825) 18%, var(--md-sys-color-surface-container-high) 82%);
+      border-color: var(--md-sys-color-warning, #F9A825);
+    }
+    .mode-card__header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--md-sys-color-on-surface);
+    }
+    .mode-card--active .mode-card__header { color: var(--md-sys-color-on-tertiary-container); }
+    .mode-card--follow .mode-card__header { color: var(--md-sys-color-on-surface); }
+    .mode-card__icon {
+      font-size: 16px;
+      font-variation-settings: 'FILL' 1;
+    }
+    .mode-card__sub {
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: var(--md-sys-color-on-surface-variant);
+      line-height: 1.3;
+    }
+    .mode-card--active .mode-card__sub { color: var(--md-sys-color-on-tertiary-container); opacity: 0.85; }
+
+    /* ---- Selected robot info ---- */
     .selected-robot-info {
       background: var(--md-sys-color-surface-container-high);
       border-radius: var(--md-sys-shape-sm);
       padding: 8px 10px;
       font-size: 0.8rem;
     }
+    .selected-robot-info .robot-id-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .selected-robot-info .robot-id-large {
       font-size: 1.5rem;
       font-weight: 700;
       color: var(--md-sys-color-primary);
       line-height: 1;
+      flex: 1;
     }
     .selected-robot-info .label {
       font-size: 0.7rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .selected-robot-info .target-row {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
       color: var(--md-sys-color-on-surface-variant);
     }
 
@@ -153,6 +235,7 @@
     .btn-group {
       display: flex;
       gap: 6px;
+      flex-direction: column;
     }
 
     #chart-row {
@@ -174,18 +257,6 @@
     #chart-speed {
       flex: 1;
       min-height: 0;
-    }
-
-    .hint-text {
-      font-size: 0.7rem;
-      color: var(--md-sys-color-on-surface-variant);
-      text-align: center;
-      padding: 4px;
-    }
-
-    .target-marker-label {
-      font-size: 0.7rem;
-      color: var(--md-sys-color-on-surface-variant);
     }
   </style>
 </head>
@@ -212,27 +283,39 @@
   <!-- Main content -->
   <div id="main-content">
     <div id="top-row">
+
       <!-- Field canvas -->
       <div id="field-container">
         <canvas id="field-canvas"></canvas>
-        <div class="hint-text" style="position:absolute;bottom:6px;left:0;right:0;pointer-events:none;">
-          クリック: ロボット選択 / 目的地設定 &nbsp;|&nbsp; ホイール: ズーム &nbsp;|&nbsp; ドラッグ: パン
-        </div>
+        <div id="hint-text">Activate を押すとロボット選択・操作が可能になります</div>
       </div>
 
       <!-- Controls panel -->
       <div id="controls-panel">
-        <!-- Mode control -->
+
+        <!-- Mode card -->
         <div>
           <div class="controls-section-title">Mode</div>
-          <div class="btn-group">
-            <button id="btn-activate" class="m3-btn m3-btn--filled m3-btn--sm" style="flex:1">
+          <div id="mode-card" class="mode-card">
+            <div class="mode-card__header">
+              <span class="material-symbols-outlined mode-card__icon" id="mode-card-icon">radio_button_unchecked</span>
+              <span id="mode-card-label">INACTIVE</span>
+            </div>
+            <div class="mode-card__sub" id="mode-card-sub">Activate を押してテストを開始</div>
+          </div>
+
+          <div class="btn-group" style="margin-top:8px;">
+            <button id="btn-activate" class="m3-btn m3-btn--filled m3-btn--sm" style="width:100%">
               <span class="material-symbols-outlined icon-sm">play_arrow</span>
               Activate
             </button>
-            <button id="btn-deactivate" class="m3-btn m3-btn--tonal m3-btn--sm" style="flex:1">
+            <button id="btn-deactivate" class="m3-btn m3-btn--error m3-btn--sm" style="width:100%;display:none">
               <span class="material-symbols-outlined icon-sm">stop</span>
               Deactivate
+            </button>
+            <button id="btn-cursor-follow" class="m3-btn m3-btn--tonal m3-btn--sm" style="width:100%;display:none">
+              <span class="material-symbols-outlined icon-sm">mouse</span>
+              Cursor Follow
             </button>
           </div>
         </div>
@@ -242,15 +325,24 @@
           <div class="controls-section-title">Selected Robot</div>
           <div class="selected-robot-info">
             <div class="label">Robot ID</div>
-            <div class="robot-id-large" id="selected-robot-id">--</div>
-            <div style="margin-top:6px;font-size:0.75rem;color:var(--md-sys-color-on-surface-variant);">
-              Target: <span id="target-pos-display">--</span>
+            <div class="robot-id-row">
+              <div class="robot-id-large" id="selected-robot-id">--</div>
+              <button id="btn-deselect" class="m3-icon-btn m3-icon-btn--sm" title="選択解除" style="display:none">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div class="target-row">
+              <span>Target:</span>
+              <span id="target-pos-display" style="flex:1">--</span>
+              <button id="btn-clear-target" class="m3-icon-btn m3-icon-btn--sm" title="ターゲット消去" style="display:none">
+                <span class="material-symbols-outlined">cancel</span>
+              </button>
             </div>
           </div>
         </div>
 
         <!-- Speed limits -->
-        <div>
+        <div id="sect-speed-limits" style="transition:opacity 0.2s">
           <div class="controls-section-title">Speed Limits</div>
           <div class="control-row">
             <label>Max Vel</label>
@@ -273,7 +365,7 @@
         </div>
 
         <!-- Target theta -->
-        <div>
+        <div id="sect-target-angle" style="transition:opacity 0.2s">
           <div class="controls-section-title">Target Angle</div>
           <div class="control-row">
             <label>Theta</label>
