@@ -314,14 +314,14 @@ void Attacker::initialize()
       goal_kick_skill.setParameter("target_kick_speed", 6.0);
       goal_kick_skill.setParameter("dribble_power", 0.2);
       return goal_kick_skill.run();
-    }else if (pass_receiver_id.has_value()) {
+    } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
       printTextOnRobot("KICK::STANDARD_PASS");
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
       kick_skill.setParameter("target", kick_target);
       configurePassKick(kick_target, kick_skill);
       return kick_skill.run();
-    }else if (goal_angle_width > LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0) {
+    } else if (goal_angle_width > LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0) {
       // LOW_CHANCE_GOAL_KICK
       printTextOnRobot("KICK::LOW_CHANCE_GOAL_KICK");
       return goal_kick_skill.run();
@@ -358,7 +358,7 @@ void Attacker::onPostUpdate()
   }
 }
 
-void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
+void Attacker::configurePassKick(const Point & target, KickOld & kick_skill)
 {
   auto pass_analysis = getPassAnalysis(
     world_model()->ball().pos, target, world_model()->theirs().robotsWhere().available().get());
