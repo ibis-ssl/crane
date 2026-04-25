@@ -11,7 +11,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
-#include <crane_robot_skills/kick.hpp>
+#include <crane_robot_skills/kick_old.hpp>
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
@@ -64,7 +64,7 @@ public:
 
   int forced_pass_receiver_id = -1;
 
-  Kick kick_skill;
+  KickOld kick_skill;
 
   GoalKick goal_kick_skill;
 
@@ -74,7 +74,7 @@ protected:
   void onPostUpdate() override;
 
 private:
-  void configurePassKick(const Point & target, Kick & kick_skill);
+  void configurePassKick(const Point & target, KickOld & kick_skill);
 
   // KICK状態の進捗タイムアウト用
   std::chrono::steady_clock::time_point kick_state_entry_time{};

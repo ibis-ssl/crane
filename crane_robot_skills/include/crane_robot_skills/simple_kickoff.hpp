@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <crane_robot_skills/kick.hpp>
+#include <crane_robot_skills/kick_old.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -33,7 +33,7 @@ public:
 
   Status update() override;
 
-  Kick kick_skill;
+  KickOld kick_skill;
 
 private:
   bool kicked = false;
