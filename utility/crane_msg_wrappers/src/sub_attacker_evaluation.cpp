@@ -69,7 +69,8 @@ double evaluateSubAttackerPosition(const Point & p, const WorldModelWrapper & wo
   // 自分とボールの延長線上にゴールがある場合は避ける
   Segment robot_to_ball_and_more{
     p, world_model.ball().pos + (world_model.ball().pos - p).normalized() * 10.0};
-  Segment goal_line{world_model.getAttackGoalPosts().first, world_model.getAttackGoalPosts().second};
+  Segment goal_line{
+    world_model.getAttackGoalPosts().first, world_model.getAttackGoalPosts().second};
   if (double distance = bg::distance(robot_to_ball_and_more, goal_line); distance < 1.0) {
     score *= distance;
   }

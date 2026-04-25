@@ -87,7 +87,8 @@ Status SubAttacker::update()
     }
     command->setTargetPosition(best_position);
     // ゴールとボールの中間方向を向く
-    auto [goal_angle, width] = world_model()->getLargestAttackGoalAngleRangeFromPoint(best_position);
+    auto [goal_angle, width] =
+      world_model()->getLargestAttackGoalAngleRangeFromPoint(best_position);
     auto to_goal = getNormVec(goal_angle);
     auto to_ball = (world_model()->ball().pos - best_position).normalized();
     command->setTargetTheta(getAngle(to_goal + to_ball));

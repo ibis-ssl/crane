@@ -40,7 +40,7 @@ situations:
     sessions:
       - name: goalie_skill
         max_robots: 1
-      - name: attacker_skill
+      - name: free_kicker_skill
         max_robots: 1
       - name: pass_receive
         max_robots: 1
@@ -202,6 +202,7 @@ situations:
         - goalie
         - attacker
         - defender
+        - free_kicker
     sessions:
       - name: goalie_skill
         max_robots: 1

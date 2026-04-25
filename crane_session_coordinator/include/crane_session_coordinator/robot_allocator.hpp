@@ -38,8 +38,7 @@ struct SessionRequirement
   std::vector<uint8_t> fixed_robots;
 
   SessionRequirement(
-    std::string n, int p, int max_r,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> func,
+    std::string n, int p, int max_r, std::function<double(const std::shared_ptr<RobotInfo> &)> func,
     std::vector<uint8_t> fixed = {})
   : name(std::move(n)),
     priority(p),

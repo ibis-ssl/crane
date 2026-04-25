@@ -20,6 +20,7 @@
 #include <crane_sessions/emplace_robot_session.hpp>
 #include <crane_sessions/formation_session.hpp>
 #include <crane_sessions/forward_session.hpp>
+#include <crane_sessions/free_kicker_skill_session.hpp>
 #include <crane_sessions/goalie_skill_session.hpp>
 #include <crane_sessions/latency_measurement_session.hpp>
 #include <crane_sessions/marker_session.hpp>
@@ -81,6 +82,7 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
     PLANNER_ENTRY("total_defense", TotalDefenseSession),
     PLANNER_ENTRY("emplace_robot", EmplaceRobotSession),
     PLANNER_ENTRY("forward", ForwardSession),
+    PLANNER_ENTRY("free_kicker_skill", FreeKickerSkillSession),
     PLANNER_ENTRY("second_threat_defender", SecondThreatDefenderSession),
     PLANNER_ENTRY("ball_calibration_data_collector", BallCalibrationDataCollectorSession),
     PLANNER_ENTRY("center_stop_kick", CenterStopKickSession),
