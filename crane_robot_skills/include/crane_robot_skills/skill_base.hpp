@@ -189,6 +189,9 @@ protected:
     msg.current_pose.x = robot()->pose.pos.x();
     msg.current_pose.y = robot()->pose.pos.y();
     msg.current_pose.theta = robot()->pose.theta;
+    // 各スキルが明示的にkick系メソッドを呼ばない限りキックしない不変条件を保証する
+    msg.chip_enable = false;
+    msg.kick_power = 0.0f;
   }
 
   void finalizeFrame(Status status)
