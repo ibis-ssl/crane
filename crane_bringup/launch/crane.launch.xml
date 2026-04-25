@@ -146,6 +146,7 @@ limitations under the License.
       <param name="max_vel" value="$(var max_vel)"/>
       <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
+      <param name="velocity_damping_gain" value="0.1"/>
       <param name="update_rate_hz" value="0.0"/>
       <param name="straight_kick_power_array" value="[0.0, 0.3, 0.6, 1.0]"/>
       <param name="straight_kick_speed_array" value="[0.0, 2.0, 4.0, 7.5]"/>
