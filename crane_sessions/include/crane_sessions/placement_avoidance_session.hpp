@@ -59,6 +59,15 @@ public:
              placement_area_opt.value().radius + offset;
     };
 
+    const auto cmd_value = world_model->getMsg().play_situation.command.value;
+    const bool is_their_placement =
+      cmd_value == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT;
+    const double pa_offset = needsExpandedPenaltyAreaOffset(cmd_value) ? 0.35 : 0.15;
+    auto isInEnemyPA = [&](const Point & p) -> bool {
+      if (!is_their_placement) return false;
+      return world_model->point_checker.isEnemyPenaltyArea(p, pa_offset);
+    };
+
     for (const auto & robot_id : robots) {
       auto robot = world_model->getOurRobot(robot_id.id);
       if (!robot) {
@@ -77,8 +86,10 @@ public:
         // 0.8m離れる
         target_position = closest_point + (current_position - closest_point).normalized() * 0.8;
 
-        if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
-          // 一番近いフィールド外のポイントがだめなので逆方向に0.8m離れる
+        if (
+          not world_model->point_checker.isFieldInside(target_position, 0.2) ||
+          isInEnemyPA(target_position)) {
+          // フィールド外または敵PAのポイントがだめなので逆方向に0.8m離れる
           target_position = closest_point + (closest_point - current_position).normalized() * 0.8;
 
           if (
@@ -97,7 +108,8 @@ public:
                 [&](const auto & target_candidate) {
                   return (
                     world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                    not isInPlacementArea(target_candidate, 0.1));
+                    not isInPlacementArea(target_candidate, 0.1) &&
+                    not isInEnemyPA(target_candidate));
                 });
               target != target_candidates.end()) {
               target_position = *target;
@@ -111,7 +123,7 @@ public:
               }
               auto valid = std::ranges::find_if(radial_candidates, [&](const auto & c) {
                 return world_model->point_checker.isFieldInside(c, 0.2) &&
-                       not isInPlacementArea(c, 0.1);
+                       not isInPlacementArea(c, 0.1) && not isInEnemyPA(c);
               });
               if (valid != radial_candidates.end()) {
                 target_position = *valid;
@@ -132,7 +144,12 @@ public:
       }
 
       command->setTargetPosition(target_position);
-      command->disableGoalAreaAvoidance().lookAtBall();
+      if (is_their_placement) {
+        command->enableGoalAreaAvoidance();
+      } else {
+        command->disableGoalAreaAvoidance();
+      }
+      command->lookAtBall();
       robot_commands.push_back(command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
