@@ -195,10 +195,12 @@ situations:
       kick_prohibition: true
       reverse_attack: true
       use_normal_speed: true
+      # スキル名は SkillInterface の command->name と完全一致比較される。
+      # 合成スキル(Attacker → 内部 KickOld/GoalKick 等)も親のスキル名で判定される。
       kick_allowed_skills:
-        - goalie_skill
+        - goalie
+        - attacker
         - defender
-        - attacker_skill
     sessions:
       - name: goalie_skill
         max_robots: 1
