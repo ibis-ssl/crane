@@ -14,9 +14,9 @@ situations:
       - name: attacker_skill
         max_robots: 1
       - name: defender
-        max_robots: 3
+        max_robots: 4
         params:
-          reduced_robots: 1
+          reduced_robots: 2
       - name: pass_receive
         max_robots: 1
       - name: sub_attacker_skill
@@ -25,7 +25,7 @@ situations:
         max_robots: 1
       - name: marker
         max_robots: 2
-      - name: forward
+      - name: waiter
         max_robots: 20
 
   OUR_BALL_PLACEMENT:
@@ -195,6 +195,7 @@ situations:
       kick_allowed_skills:
         - goalie_skill
         - defender
+        - attacker_skill
     sessions:
       - name: goalie_skill
         max_robots: 1

@@ -60,7 +60,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ロボット性能パラメータ -->
   <!-- ============================================================ -->
-  <arg name="max_vel" default="8.0" description="ロボットの最大速度 [m/s]"/>
+  <arg name="max_vel" default="4.0" description="ロボットの最大速度 [m/s]"/>
 
   <!-- Slack時間計算パラメータ -->
   <arg name="slack.robot_max_acceleration" default="2.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
@@ -81,7 +81,7 @@ limitations under the License.
   <arg name="robot_acceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
 
   <!-- 経路計画用の減速度パラメータ（実行側の90%以下に設定して計画と実行の不一致によるオーバーシュートを防止） -->
-  <arg name="planning_deceleration" default="1.5" description="減速計算用の減速度 [m/s^2]"/>
+  <arg name="planning_deceleration" default="1.0" description="減速計算用の減速度 [m/s^2]"/>
   <!-- 経路計画用の加速度パラメータ（加速フェーズ専用、減速度より高い値を設定可能） -->
   <arg name="planning_acceleration" default="3.0" description="加速フェーズの計画用加速度 [m/s^2]"/>
 
