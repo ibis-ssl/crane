@@ -7,6 +7,9 @@
 #ifndef CRANE_ROBOT_SKILLS__SIMPLE_KICKOFF_HPP_
 #define CRANE_ROBOT_SKILLS__SIMPLE_KICKOFF_HPP_
 
+#include <algorithm>
+#include <crane_geometry/vector2d_adapter.hpp>
+#include <crane_robot_skills/kick_old.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
@@ -25,6 +28,7 @@ public:
 
   Status update() override;
 
+  KickOld kick_skill;
   GoalKick goal_kick_skill;
 
 private:
