@@ -48,12 +48,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   node.declare_parameter("tracker_port", 10010);
   node.declare_parameter("use_udp_detection", false);
   node.declare_parameter("feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
+  node.declare_parameter("robot_vision_hold_sec", robot_vision_hold_sec_);
 
   config_.vision_address = node.get_parameter("vision_address").get_value<std::string>();
   config_.vision_port = node.get_parameter("vision_port").get_value<int>();
   config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
   use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
   feedback_stale_timeout_ms_ = node.get_parameter("feedback_stale_timeout_ms").get_value<int>();
+  robot_vision_hold_sec_ = node.get_parameter("robot_vision_hold_sec").get_value<double>();
 
   // Initialize UDP receivers
 
@@ -850,11 +852,16 @@ auto WorldModelDataProvider::processTrackedFrame(
   integrateBallInfo();
 
   // ロボット情報の処理
-  // 全チーム・全ロボットIDをリセット（trackerフレーム毎にvision/tracker両フラグをクリア）
+  // available_visionが継続してfalseになると、一時的なトラッカー欠落でもロボットがlost扱いになる。
+  // robot_vision_hold_sec_ 以内に検出されていたロボットは状態を維持し、超過後のみリセットする。
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     for (auto & robot : robot_info_[team_idx]) {
-      robot.available_vision = false;
-      robot.available_tracker = false;
+      if (!robot.available_vision) continue;
+      const double age = (now - rclcpp::Time(robot.vision.stamp)).seconds();
+      if (age < 0.0 || age > robot_vision_hold_sec_) {
+        robot.available_vision = false;
+        robot.available_tracker = false;
+      }
     }
   }
 
