@@ -60,9 +60,19 @@ auto ForwardSession::scorePoint(
   const auto & ball = world_model->ball();
   const auto their_goal_center = world_model->getAttackGoalCenter();
 
-  // 1. パス受取スコア（パスライン上の敵距離）
+  // 1. パス受取スコア（チップキック考慮済みパスライン上の敵距離）
+  //    ボール近傍 CHIP_KICK_CLEAR_RADIUS 以内の敵はチップで越せるため線分評価から除外する。
+  //    これによりコーナー等の長いパス線が、ボール直近の敵を理由に不当に減点されない。
+  constexpr double CHIP_KICK_CLEAR_RADIUS = 1.5;
+  RobotList chippable_filtered;
+  chippable_filtered.reserve(available_enemies.size());
+  for (const auto & enemy : available_enemies) {
+    if ((enemy->pose.pos - ball.pos).norm() > CHIP_KICK_CLEAR_RADIUS) {
+      chippable_filtered.push_back(enemy);
+    }
+  }
   auto nearest_enemy =
-    world_model->getNearestRobotWithDistanceFromSegment(Segment{ball.pos, p}, available_enemies);
+    world_model->getNearestRobotWithDistanceFromSegment(Segment{ball.pos, p}, chippable_filtered);
   if (nearest_enemy) {
     score *= std::clamp(nearest_enemy->distance, 0.2, 2.0) / 2.0;
   }
