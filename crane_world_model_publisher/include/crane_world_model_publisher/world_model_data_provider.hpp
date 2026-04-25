@@ -202,6 +202,7 @@ private:
   FieldGeometry field_geometry_;
   bool has_vision_updated_;
   int feedback_stale_timeout_ms_{100};
+  double robot_vision_hold_sec_{0.15};
 
   // エラー継続時間を算出するためのトラッキング用構造体
   struct ErrorTracker

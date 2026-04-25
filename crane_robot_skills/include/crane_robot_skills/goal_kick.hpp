@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_
 
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <crane_robot_skills/kick.hpp>
+#include <crane_robot_skills/kick_old.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
@@ -26,7 +26,7 @@ public:
 
   Status update() override;
 
-  Kick kick_skill;
+  KickOld kick_skill;
 
   static double getBestAngleToShootFromPoint(
     double minimum_angle_accuracy, const Point from_point,

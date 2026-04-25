@@ -358,7 +358,7 @@ void Attacker::onPostUpdate()
   }
 }
 
-void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
+void Attacker::configurePassKick(const Point & target, KickOld & kick_skill)
 {
   auto pass_analysis = getPassAnalysis(
     world_model()->ball().pos, target, world_model()->theirs().robotsWhere().available().get());

@@ -12,7 +12,7 @@ std::vector<Point> FormationSession::getWingFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
 
-  formation_points.emplace_back(0.6, 0.0);
+  formation_points.emplace_back(0.7, 0.0);
   formation_points.emplace_back(1.5, 1.2);
   formation_points.emplace_back(1.5, -1.2);
   formation_points.emplace_back(0.6, 2.4);
