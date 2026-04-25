@@ -93,7 +93,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- 機能フラグ -->
   <!-- ============================================================ -->
-  <arg name="speak" default="false" description="音声ノードの起動フラグ"/>
+  <arg name="speak" default="true" description="音声ノードの起動フラグ"/>
   <arg name="commentary" default="false" description="実況システムの起動フラグ"/>
   <arg name="record" default="true" description="rosbag記録フラグ"/>
   <arg name="emplace_robot_voice_announcement" default="true" description="ロボット退場時の音声アナウンス（true: 音声, false: ビープ音）"/>
