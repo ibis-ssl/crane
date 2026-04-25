@@ -42,7 +42,7 @@ public:
     auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
       return estimatePenaltyAwareDistance(
-        robot->pose.pos, wm->getTheirGoalCenter(), wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
+        robot->pose.pos, wm->getAttackGoalCenter(), wm->getOurPenaltyArea(), wm->getOurGoalCenter(),
         wm->getTheirPenaltyArea(), wm->getTheirGoalCenter(), wm->penaltyAreaSize());
     };
   }
