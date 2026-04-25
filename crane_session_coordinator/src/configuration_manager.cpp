@@ -107,6 +107,15 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         ss << "\tNAME       : " << session_capacity.session_name << "\n";
         ss << "\tMAX_ROBOTS : " << session_capacity.max_robots << "\n";
 
+        // fixed_robots の読み込み（存在する場合のみ）
+        // 指定されたIDは suitability 評価をスキップして優先割当される
+        if (session_node["fixed_robots"]) {
+          for (const auto & id_node : session_node["fixed_robots"]) {
+            session_capacity.fixed_robots.push_back(static_cast<uint8_t>(id_node.as<int>()));
+          }
+          ss << "\tFIXED_ROBOTS : " << session_capacity.fixed_robots.size() << " entries\n";
+        }
+
         // params の読み込み（存在する場合のみ）
         if (session_node["params"]) {
           for (const auto & param : session_node["params"]) {

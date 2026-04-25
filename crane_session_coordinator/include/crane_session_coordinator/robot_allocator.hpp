@@ -34,10 +34,18 @@ struct SessionRequirement
   int priority;
   int max_robots;
   std::function<double(const std::shared_ptr<RobotInfo> &)> suitability_func;
+  /// 固定割当ID。空でないとき suitability を無視してこのIDを優先取得する。
+  std::vector<uint8_t> fixed_robots;
 
   SessionRequirement(
-    std::string n, int p, int max_r, std::function<double(const std::shared_ptr<RobotInfo> &)> func)
-  : name(std::move(n)), priority(p), max_robots(max_r), suitability_func(std::move(func))
+    std::string n, int p, int max_r,
+    std::function<double(const std::shared_ptr<RobotInfo> &)> func,
+    std::vector<uint8_t> fixed = {})
+  : name(std::move(n)),
+    priority(p),
+    max_robots(max_r),
+    suitability_func(std::move(func)),
+    fixed_robots(std::move(fixed))
   {
   }
 };

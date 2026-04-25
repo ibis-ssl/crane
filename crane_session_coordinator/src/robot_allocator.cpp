@@ -69,7 +69,7 @@ auto RobotAllocator::allocate(
     requirements.emplace_back(
       session_capacity.session_name, priority++,
       effective_max,  // max_robots（動的に調整）
-      suitability_func);
+      suitability_func, session_capacity.fixed_robots);
   }
 
   // グリーディ方式でロボットを割当
@@ -224,25 +224,43 @@ auto RobotAllocator::allocateRobotsGreedy(
       break;
     }
 
-    // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
-    std::vector<std::pair<uint8_t, double>> robot_scores;
-    for (const auto & robot_id : remaining_robots) {
-      auto robot = world_model->getOurRobot(robot_id);
-      double score = req.suitability_func(robot);
-      if (prev_state.wasAssignedTo(robot_id, req.name)) {
-        score -= config.hysteresis_bonus;
-      }
-      robot_scores.emplace_back(robot_id, score);
-    }
-
-    std::ranges::sort(
-      robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
-
-    int num_to_allocate = std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
-
     std::vector<uint8_t> assigned_robots;
-    for (int i = 0; i < num_to_allocate; ++i) {
-      assigned_robots.push_back(robot_scores[i].first);
+
+    // fixed_robots 指定時は suitability を無視して指定IDを優先取得
+    if (!req.fixed_robots.empty()) {
+      const std::unordered_set<uint8_t> remaining_set(
+        remaining_robots.begin(), remaining_robots.end());
+      const int num_to_allocate = std::min(req.max_robots, static_cast<int>(req.fixed_robots.size()));
+      for (int i = 0; i < num_to_allocate; ++i) {
+        const uint8_t id = req.fixed_robots[i];
+        if (remaining_set.count(id) > 0) {
+          assigned_robots.push_back(id);
+        } else {
+          RCLCPP_WARN(
+            logger_, "Session「%s」の固定割当ID %d は利用不可のためスキップ", req.name.c_str(),
+            static_cast<int>(id));
+        }
+      }
+    } else {
+      // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
+      std::vector<std::pair<uint8_t, double>> robot_scores;
+      for (const auto & robot_id : remaining_robots) {
+        auto robot = world_model->getOurRobot(robot_id);
+        double score = req.suitability_func(robot);
+        if (prev_state.wasAssignedTo(robot_id, req.name)) {
+          score -= config.hysteresis_bonus;
+        }
+        robot_scores.emplace_back(robot_id, score);
+      }
+
+      std::ranges::sort(
+        robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
+
+      const int num_to_allocate =
+        std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
+      for (int i = 0; i < num_to_allocate; ++i) {
+        assigned_robots.push_back(robot_scores[i].first);
+      }
     }
 
     result[req.name] = assigned_robots;

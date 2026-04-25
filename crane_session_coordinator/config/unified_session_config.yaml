@@ -187,6 +187,9 @@ situations:
         max_robots: 20
   HALF_FIELD_PRACTICE:
     description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり・レフェリー信号基準）
+    # fixed_robots: 各セッションに固定で割り当てるロボットID。
+    # 練習中にディフェンダー/フォワード等のロール入替を防ぐため指定する。
+    # 実機構成に応じてIDは要調整。
     practice_mode:
       enabled: true
       kick_prohibition: true
@@ -199,18 +202,24 @@ situations:
     sessions:
       - name: goalie_skill
         max_robots: 1
+        fixed_robots: [0]
       - name: attacker_skill
         max_robots: 1
+        fixed_robots: [1]
       - name: defender
         max_robots: 3
+        fixed_robots: [2, 3, 4]
         params:
           reduced_robots: 1
       - name: pass_receive
         max_robots: 1
+        fixed_robots: [5]
       - name: sub_attacker_skill
         max_robots: 1
+        fixed_robots: [6]
       - name: marker
         max_robots: 2
+        fixed_robots: [7, 8]
       - name: forward
         max_robots: 20
 events:

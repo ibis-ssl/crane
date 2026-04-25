@@ -8,6 +8,7 @@
 #define CRANE_SESSION_COORDINATOR__CONFIGURATION_MANAGER_HPP_
 
 #include <crane_msgs/msg/practice_mode.hpp>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -25,6 +26,8 @@ struct SessionSlot
   std::string session_name;
   int max_robots;
   std::unordered_map<std::string, SessionParameterType> params;
+  /// セッションに固定で割り当てるロボットID。空なら従来通りsuitabilityで動的割当。
+  std::vector<uint8_t> fixed_robots;
 };
 
 /**
