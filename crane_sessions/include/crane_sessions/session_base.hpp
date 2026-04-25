@@ -177,6 +177,60 @@ public:
   }
 
   /**
+   * @brief このセッションが「固定ID割当モード」で動くことを宣言する
+   *
+   * 派生クラス（例: AttackerFixedSession）のコンストラクタで true を渡すことで、
+   * 「このセッションは YAML の fixed_robots: [...] に従って固定IDで動く」ことを
+   * 明示する。実際の固定IDは YAML から RobotAllocator 経由で setFixedRobots() に
+   * 流し込まれる（コードに固定IDを埋め込まない）。
+   */
+  void setUseFixedRobots(bool flag) { use_fixed_robots_ = flag; }
+
+  /**
+   * @brief 固定ID割当モードかどうか
+   */
+  bool usesFixedRobots() const { return use_fixed_robots_; }
+
+  /**
+   * @brief YAML 由来の固定割当ロボットIDを設定する（RobotAllocator が呼ぶ）
+   *
+   * 設定されたID列はそのまま allocator の固定割当処理に渡される。
+   * usesFixedRobots() が false のセッションでは利用されない。
+   */
+  void setFixedRobots(const std::vector<uint8_t> & ids) { fixed_robots_ = ids; }
+
+  /**
+   * @brief 固定割当ロボットIDを取得する（usesFixedRobots() が true のときに使われる）
+   */
+  const std::vector<uint8_t> & getFixedRobots() const { return fixed_robots_; }
+
+  /**
+   * @brief このセッションが「候補ロボットプール」を利用することを宣言する
+   *
+   * 派生クラス（例: AttackerHeatRotationSession）のコンストラクタで true を渡すことで、
+   * 「このセッションは YAML の candidate_robots: [...] を Session 内のロジックで
+   * 使う」ことを明示する。allocator は候補プールには関与しない。
+   */
+  void setUseCandidateRobots(bool flag) { use_candidate_robots_ = flag; }
+
+  /**
+   * @brief 候補ロボットプール利用モードかどうか
+   */
+  bool usesCandidateRobots() const { return use_candidate_robots_; }
+
+  /**
+   * @brief YAML 由来の候補ロボットIDプールを設定する（RobotAllocator が呼ぶ）
+   *
+   * Session 自身が suitability 関数等の中で参照する想定。allocator 自体は使わない。
+   */
+  void setCandidateRobots(const std::vector<uint8_t> & ids) { candidate_robots_ = ids; }
+
+  /**
+   * @brief 候補ロボットIDプールを取得する
+   */
+  const std::vector<uint8_t> & getCandidateRobots() const { return candidate_robots_; }
+
+  /**
    * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
    *
    * 各Sessionに適したロボットを評価するための関数を返す。
@@ -272,6 +326,14 @@ protected:
   WorldModelWrapper::SharedPtr world_model;
 
   std::unordered_map<std::string, SessionParameterType> session_params_;
+
+  bool use_fixed_robots_ = false;
+
+  bool use_candidate_robots_ = false;
+
+  std::vector<uint8_t> fixed_robots_;
+
+  std::vector<uint8_t> candidate_robots_;
 
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) = 0;

@@ -59,6 +59,50 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
+    // 固定ID割当モード（派生クラスで setUseFixedRobots(true)）と
+    // YAML の fixed_robots: の整合をチェックして反映する。
+    {
+      const bool session_uses_fixed = session->usesFixedRobots();
+      const bool yaml_has_fixed = !session_capacity.fixed_robots.empty();
+      if (session_uses_fixed && yaml_has_fixed) {
+        session->setFixedRobots(session_capacity.fixed_robots);
+      } else if (session_uses_fixed && !yaml_has_fixed) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' declares fixed-robot mode but YAML has no fixed_robots: "
+          "falling back to dynamic suitability allocation.",
+          session_capacity.session_name.c_str());
+      } else if (!session_uses_fixed && yaml_has_fixed) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' has fixed_robots in YAML but does not declare fixed-robot mode "
+          "(setUseFixedRobots(true) not called); the YAML setting is ignored.",
+          session_capacity.session_name.c_str());
+      }
+    }
+
+    // 候補ロボットプール（派生クラスで setUseCandidateRobots(true)）と
+    // YAML の candidate_robots: の整合をチェックして反映する。
+    // allocator は候補プールには関与せず、Session 側のロジックのみが使用する。
+    {
+      const bool session_uses_candidate = session->usesCandidateRobots();
+      const bool yaml_has_candidate = !session_capacity.candidate_robots.empty();
+      if (session_uses_candidate && yaml_has_candidate) {
+        session->setCandidateRobots(session_capacity.candidate_robots);
+      } else if (session_uses_candidate && !yaml_has_candidate) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' declares candidate-robots mode but YAML has no candidate_robots:.",
+          session_capacity.session_name.c_str());
+      } else if (!session_uses_candidate && yaml_has_candidate) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' has candidate_robots in YAML but does not declare candidate-robots "
+          "mode (setUseCandidateRobots(true) not called); the YAML setting is ignored.",
+          session_capacity.session_name.c_str());
+      }
+    }
+
     // 適性関数を取得
     auto suitability_func = session->getRobotSuitabilityFunc();
 
@@ -66,10 +110,12 @@ auto RobotAllocator::allocate(
     int desired = session->getDesiredRobotNumber(session_capacity.max_robots);
     int effective_max = std::min(desired, session_capacity.max_robots);
 
+    // usesFixedRobots() == false または YAML 未指定なら getFixedRobots() は空のまま
+    // → 動的 suitability 割当に fallback する。
     requirements.emplace_back(
       session_capacity.session_name, priority++,
       effective_max,  // max_robots（動的に調整）
-      suitability_func, session_capacity.fixed_robots);
+      suitability_func, session->getFixedRobots());
   }
 
   // グリーディ方式でロボットを割当

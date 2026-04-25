@@ -187,9 +187,12 @@ situations:
         max_robots: 20
   HALF_FIELD_PRACTICE:
     description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり・レフェリー信号基準）
-    # fixed_robots: 各セッションに固定で割り当てるロボットID。
-    # 練習中にディフェンダー/フォワード等のロール入替を防ぐため指定する。
-    # 実機構成に応じてIDは要調整。
+    # *_fixed セッションは派生クラス側で setUseFixedRobots(true) を立てており、
+    # 実際に固定するロボットIDはこの fixed_robots: [...] で指定する。
+    # （未指定だと WARN が出て動的割当に fallback する）
+    # attacker_heat_rotation は派生クラス側で setUseCandidateRobots(true) を立てており、
+    # candidate_robots: [...] で候補プールを与えると、モーター温度の低い1台を
+    # その候補内から自動選択する（allocator の割当アルゴリズムには影響しない）。
     practice_mode:
       enabled: true
       kick_prohibition: true
@@ -202,24 +205,29 @@ situations:
         - attacker
         - defender
     sessions:
-      - name: goalie_skill
+      - name: goalie_fixed
         max_robots: 1
         fixed_robots: [0]
-      - name: attacker_skill
+      - name: attacker_heat_rotation
         max_robots: 1
-        fixed_robots: [1]
-      - name: defender
+        # 候補プール。基本は同一ロボットを使い続け、最大モータ温度が
+        # rotation_trigger_celsius を超えた瞬間に候補内で最も冷えたロボットへ切替える。
+        candidate_robots: [1, 5, 9]
+        # しきい値（℃）。省略時は 60℃。
+        # params:
+        #   rotation_trigger_celsius: 65.0
+      - name: defender_fixed
         max_robots: 3
         fixed_robots: [2, 3, 4]
         params:
           reduced_robots: 1
-      - name: pass_receive
+      - name: pass_receive_fixed
         max_robots: 1
         fixed_robots: [5]
-      - name: sub_attacker_skill
+      - name: sub_attacker_fixed
         max_robots: 1
         fixed_robots: [6]
-      - name: marker
+      - name: marker_fixed
         max_robots: 2
         fixed_robots: [7, 8]
       - name: forward

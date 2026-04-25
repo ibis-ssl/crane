@@ -116,6 +116,15 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
           ss << "\tFIXED_ROBOTS : " << session_capacity.fixed_robots.size() << " entries\n";
         }
 
+        // candidate_robots の読み込み（存在する場合のみ）
+        // allocator は参照しない。Session 側のロジック（例: 熱ローテ）が使う。
+        if (session_node["candidate_robots"]) {
+          for (const auto & id_node : session_node["candidate_robots"]) {
+            session_capacity.candidate_robots.push_back(static_cast<uint8_t>(id_node.as<int>()));
+          }
+          ss << "\tCANDIDATE_ROBOTS : " << session_capacity.candidate_robots.size() << " entries\n";
+        }
+
         // params の読み込み（存在する場合のみ）
         if (session_node["params"]) {
           for (const auto & param : session_node["params"]) {

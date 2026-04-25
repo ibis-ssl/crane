@@ -10,20 +10,26 @@
 #include <unordered_map>
 
 // 全プランナーのインクルード（.cppファイルでのみ必要）
+#include <crane_sessions/attacker_fixed_session.hpp>
+#include <crane_sessions/attacker_heat_rotation_session.hpp>
 #include <crane_sessions/attacker_skill_session.hpp>
 #include <crane_sessions/ball_calibration_data_collector_session.hpp>
 #include <crane_sessions/ball_near_by_positioner_skill_session.hpp>
 #include <crane_sessions/ball_placement_skill_session.hpp>
 #include <crane_sessions/center_stop_kick_session.hpp>
+#include <crane_sessions/defender_fixed_session.hpp>
 #include <crane_sessions/defender_session.hpp>
 #include <crane_sessions/emplace_robot_session.hpp>
 #include <crane_sessions/formation_session.hpp>
 #include <crane_sessions/forward_session.hpp>
+#include <crane_sessions/goalie_fixed_session.hpp>
 #include <crane_sessions/goalie_skill_session.hpp>
 #include <crane_sessions/latency_measurement_session.hpp>
+#include <crane_sessions/marker_fixed_session.hpp>
 #include <crane_sessions/marker_session.hpp>
 #include <crane_sessions/our_free_kick_session.hpp>
 #include <crane_sessions/our_penalty_kick_session.hpp>
+#include <crane_sessions/pass_receiver_fixed_session.hpp>
 #include <crane_sessions/pass_receiver_session.hpp>
 #include <crane_sessions/passable_ball_placement_session.hpp>
 #include <crane_sessions/placement_avoidance_session.hpp>
@@ -32,6 +38,7 @@
 #include <crane_sessions/second_threat_defender_session.hpp>
 #include <crane_sessions/simple_kick_off_skill_session.hpp>
 #include <crane_sessions/simple_placer_session.hpp>
+#include <crane_sessions/sub_attacker_fixed_session.hpp>
 #include <crane_sessions/sub_attacker_skill_session.hpp>
 #include <crane_sessions/test_session.hpp>
 #include <crane_sessions/their_penalty_kick_session.hpp>
@@ -54,6 +61,8 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
 {
   static const std::unordered_map<std::string, SessionFactory> factory_map{
     PLANNER_ENTRY("attacker_skill", AttackerSkillSession),
+    PLANNER_ENTRY("attacker_fixed", AttackerFixedSession),
+    PLANNER_ENTRY("attacker_heat_rotation", AttackerHeatRotationSession),
     PLANNER_ENTRY("ball_nearby_positioner_skill", BallNearByPositionerSkillSession),
     PLANNER_ENTRY(
       "placement_target_nearby_positioner_skill", PlacementTargetNearByPositionerSkillSession),
@@ -62,14 +71,19 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
     PLANNER_ENTRY("passable_ball_placement", PassableBallPlacementSession),
     PLANNER_ENTRY("placement_target_placer", PlacementTargetPlacerSession),
     PLANNER_ENTRY("defender", DefenderSession),
+    PLANNER_ENTRY("defender_fixed", DefenderFixedSession),
     PLANNER_ENTRY("wing_formation", WingFormationSession),
     PLANNER_ENTRY("ibis_formation", IbisFormationSession),
     PLANNER_ENTRY("goalie_skill", GoalieSkillSession),
+    PLANNER_ENTRY("goalie_fixed", GoalieFixedSession),
     PLANNER_ENTRY("marker", MarkerSession),
+    PLANNER_ENTRY("marker_fixed", MarkerFixedSession),
     PLANNER_ENTRY("sub_attacker_skill", SubAttackerSkillSession),
+    PLANNER_ENTRY("sub_attacker_fixed", SubAttackerFixedSession),
     PLANNER_ENTRY("waiter", WaiterSession),
     PLANNER_ENTRY("our_penalty_kick", OurPenaltyKickSession),
     PLANNER_ENTRY("pass_receive", PassReceiverSession),
+    PLANNER_ENTRY("pass_receive_fixed", PassReceiverFixedSession),
     PLANNER_ENTRY("their_penalty_kick", TheirPenaltyKickSession),
     PLANNER_ENTRY("our_direct_free", OurDirectFreeKickSession),
     PLANNER_ENTRY("simple_kickoff", SimpleKickOffSkillSession),

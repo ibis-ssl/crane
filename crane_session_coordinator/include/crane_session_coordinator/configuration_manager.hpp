@@ -28,6 +28,9 @@ struct SessionSlot
   std::unordered_map<std::string, SessionParameterType> params;
   /// セッションに固定で割り当てるロボットID。空なら従来通りsuitabilityで動的割当。
   std::vector<uint8_t> fixed_robots;
+  /// セッション側のロジック（例: 熱ローテーション）で使う候補IDプール。
+  /// 割当アルゴリズムには影響を与えず、Sessionが自身のsuitability関数等で参照する。
+  std::vector<uint8_t> candidate_robots;
 };
 
 /**
