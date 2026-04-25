@@ -10,7 +10,7 @@ situations:
       - name: goalie_skill
         max_robots: 1
       - name: emplace_robot
-        max_robots: 1
+        max_robots: 20
       - name: attacker_skill
         max_robots: 1
       - name: defender
@@ -75,7 +75,7 @@ situations:
     description: STOP
     sessions:
       - name: emplace_robot
-        max_robots: 1
+        max_robots: 20
       - name: goalie_skill
         max_robots: 1
       - name: defender
