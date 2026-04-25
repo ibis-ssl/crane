@@ -59,24 +59,18 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
-    // 固定ID割当モード（派生クラスで setUseFixedRobots(true)）と
-    // YAML の fixed_robots: の整合をチェックして反映する。
+    // fixed_robots が指定されていれば session 側の宣言有無に関わらず反映する。
+    // allocator は fixed_robots の存在をもって固定候補ありとみなし、
+    // 固定IDを優先確保しつつ不足分は動的割当にフォールバックする。
     {
-      const bool session_uses_fixed = session->usesFixedRobots();
       const bool yaml_has_fixed = !session_capacity.fixed_robots.empty();
-      if (session_uses_fixed && yaml_has_fixed) {
+      if (yaml_has_fixed) {
         session->setFixedRobots(session_capacity.fixed_robots);
-      } else if (session_uses_fixed && !yaml_has_fixed) {
+      } else if (session_capacity.session_name == "attacker_heat_rotation") {
         RCLCPP_WARN(
           rclcpp::get_logger("RobotAllocator"),
-          "Session '%s' declares fixed-robot mode but YAML has no fixed_robots: "
-          "falling back to dynamic suitability allocation.",
-          session_capacity.session_name.c_str());
-      } else if (!session_uses_fixed && yaml_has_fixed) {
-        RCLCPP_WARN(
-          rclcpp::get_logger("RobotAllocator"),
-          "Session '%s' has fixed_robots in YAML but does not declare fixed-robot mode "
-          "(setUseFixedRobots(true) not called); the YAML setting is ignored.",
+          "Session '%s' has no fixed_robots: falling back to dynamic suitability allocation "
+          "within candidate_robots.",
           session_capacity.session_name.c_str());
       }
     }
@@ -110,12 +104,10 @@ auto RobotAllocator::allocate(
     int desired = session->getDesiredRobotNumber(session_capacity.max_robots);
     int effective_max = std::min(desired, session_capacity.max_robots);
 
-    // usesFixedRobots() == false または YAML 未指定なら getFixedRobots() は空のまま
-    // → 動的 suitability 割当に fallback する。
     requirements.emplace_back(
       session_capacity.session_name, priority++,
       effective_max,  // max_robots（動的に調整）
-      suitability_func, session->getFixedRobots());
+      suitability_func, session_capacity.fixed_robots);
   }
 
   // グリーディ方式でロボットを割当
@@ -272,13 +264,14 @@ auto RobotAllocator::allocateRobotsGreedy(
 
     std::vector<uint8_t> assigned_robots;
 
-    // fixed_robots 指定時は suitability を無視して指定IDを優先取得
+    // fixed_robots 指定時はそのIDを優先取得し、不足分は動的割当にフォールバックする
     if (!req.fixed_robots.empty()) {
       const std::unordered_set<uint8_t> remaining_set(
         remaining_robots.begin(), remaining_robots.end());
-      const int num_to_allocate = std::min(req.max_robots, static_cast<int>(req.fixed_robots.size()));
-      for (int i = 0; i < num_to_allocate; ++i) {
-        const uint8_t id = req.fixed_robots[i];
+      for (const uint8_t id : req.fixed_robots) {
+        if (static_cast<int>(assigned_robots.size()) >= req.max_robots) {
+          break;
+        }
         if (remaining_set.count(id) > 0) {
           assigned_robots.push_back(id);
         } else {
@@ -287,10 +280,23 @@ auto RobotAllocator::allocateRobotsGreedy(
             static_cast<int>(id));
         }
       }
-    } else {
+
+      if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
+        RCLCPP_DEBUG(
+          logger_,
+          "Session「%s」は固定割当 %zu 台を確保。残り %d 台は動的割当を使用",
+          req.name.c_str(), assigned_robots.size(), req.max_robots - assigned_robots.size());
+      }
+    }
+
+    if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
       // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
+      const std::unordered_set<uint8_t> assigned_set(assigned_robots.begin(), assigned_robots.end());
       std::vector<std::pair<uint8_t, double>> robot_scores;
       for (const auto & robot_id : remaining_robots) {
+        if (assigned_set.count(robot_id) > 0) {
+          continue;
+        }
         auto robot = world_model->getOurRobot(robot_id);
         double score = req.suitability_func(robot);
         if (prev_state.wasAssignedTo(robot_id, req.name)) {
@@ -302,8 +308,9 @@ auto RobotAllocator::allocateRobotsGreedy(
       std::ranges::sort(
         robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
 
-      const int num_to_allocate =
-        std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
+      const int num_to_allocate = std::min(
+        req.max_robots - static_cast<int>(assigned_robots.size()),
+        static_cast<int>(robot_scores.size()));
       for (int i = 0; i < num_to_allocate; ++i) {
         assigned_robots.push_back(robot_scores[i].first);
       }

@@ -177,30 +177,14 @@ public:
   }
 
   /**
-   * @brief このセッションが「固定ID割当モード」で動くことを宣言する
-   *
-   * 派生クラス（例: AttackerFixedSession）のコンストラクタで true を渡すことで、
-   * 「このセッションは YAML の fixed_robots: [...] に従って固定IDで動く」ことを
-   * 明示する。実際の固定IDは YAML から RobotAllocator 経由で setFixedRobots() に
-   * 流し込まれる（コードに固定IDを埋め込まない）。
-   */
-  void setUseFixedRobots(bool flag) { use_fixed_robots_ = flag; }
-
-  /**
-   * @brief 固定ID割当モードかどうか
-   */
-  bool usesFixedRobots() const { return use_fixed_robots_; }
-
-  /**
    * @brief YAML 由来の固定割当ロボットIDを設定する（RobotAllocator が呼ぶ）
    *
-   * 設定されたID列はそのまま allocator の固定割当処理に渡される。
-   * usesFixedRobots() が false のセッションでは利用されない。
+   * 設定されたID列は allocator の固定割当処理や Session 内部の補助ロジックから参照できる。
    */
   void setFixedRobots(const std::vector<uint8_t> & ids) { fixed_robots_ = ids; }
 
   /**
-   * @brief 固定割当ロボットIDを取得する（usesFixedRobots() が true のときに使われる）
+   * @brief 固定割当ロボットIDを取得する
    */
   const std::vector<uint8_t> & getFixedRobots() const { return fixed_robots_; }
 
@@ -326,8 +310,6 @@ protected:
   WorldModelWrapper::SharedPtr world_model;
 
   std::unordered_map<std::string, SessionParameterType> session_params_;
-
-  bool use_fixed_robots_ = false;
 
   bool use_candidate_robots_ = false;
 
