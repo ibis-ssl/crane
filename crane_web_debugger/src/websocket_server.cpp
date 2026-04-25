@@ -1456,8 +1456,7 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void handleSetPlannerParam(
-    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  void handleSetPlannerParam(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     std::vector<rclcpp::Parameter> params;
     if (request.contains("velocity_damping_gain")) {
@@ -1477,13 +1476,12 @@ private:
       return;
     }
     local_planner_params_client_->set_parameters(
-      params, [this](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>>
-                       future) {
+      params,
+      [this](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future) {
         try {
           for (const auto & r : future.get()) {
             if (!r.successful) {
-              RCLCPP_WARN(
-                this->get_logger(), "set param failed: %s", r.reason.c_str());
+              RCLCPP_WARN(this->get_logger(), "set param failed: %s", r.reason.c_str());
             }
           }
         } catch (const std::exception & e) {
