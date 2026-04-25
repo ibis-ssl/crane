@@ -21,7 +21,7 @@ namespace
 {
 constexpr double GOAL_ANGLE_THRESHOLD_DEG = 3.0;
 constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
-constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 2.0;
+constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 0.5;
 constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
 constexpr double BALL_CONTROL_DISTANCE = 1.0;
 constexpr double CHIP_KICK_DISTANCE = 2.0;
