@@ -64,56 +64,6 @@ void Attacker::initialize()
     });
 
   addTransition(
-    static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::FORCED_PASS),
-    [this]() -> bool {
-      // セットプレイのときは強制パス
-      auto game_command = world_model()->getMsg().play_situation.command.value;
-      // ボールの停止条件は、INPLAY切り替わりの遅延対策
-      if (
-        (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
-         game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
-        world_model()->ball().isStopped()) {
-        // pass_target_id が有効な場合のみパス先を設定（無い場合は FORCED_PASS で敵ゴールへキック）
-        if (world_model()->getMsg().game_analysis.pass_target_id >= 0) {
-          forced_pass_receiver_id =
-            static_cast<int>(world_model()->getMsg().game_analysis.pass_target_id);
-          pass_receiver_id = forced_pass_receiver_id;
-          auto receiver = world_model()->getOurRobot(pass_receiver_id.value());
-          kick_skill.setParameter("target", receiver->pose.pos);
-        }
-        return true;
-      } else {
-        return false;
-      }
-    });
-
-  // ----- ダブルタッチ防止の為、FORCED_PASS -> ENTRY_POINT の状態遷移は設けない ------- //
-
-  addStateFunction(static_cast<int>(AttackerState::FORCED_PASS), [this]() -> Status {
-    // パス
-    command->disableBallAvoidance();
-    command->setMaxVelocity("AttackerState::FORCED_PASS", 2.0);
-    if (pass_receiver_id) {
-      auto pass_receiver_pos = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-      if (pass_receiver_pos.x() * world_model()->getAttackSideSign() > 0.) {
-        // 自陣にいるときは強制的に攻撃対象ゴールを目標に設定
-        kick_target = world_model()->getAttackGoalCenter();
-      } else {
-        // 敵陣に適当なロボットがいる場合はパス
-        kick_target = pass_receiver_pos;
-      }
-    } else {
-      kick_target = world_model()->getAttackGoalCenter();
-    }
-    kick_skill.setParameter("target", kick_target);
-    Segment kick_line{world_model()->ball().pos, kick_target};
-    configurePassKick(kick_target, kick_skill);
-    kick_skill.run();
-
-    return Status::RUNNING;
-  });
-
-  addTransition(
     static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::RECEIVE),
     [this]() -> bool {
       // ボールが遠くにいて動いている場合にRECEIVEへ遷移する。
