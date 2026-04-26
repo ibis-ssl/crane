@@ -41,7 +41,7 @@ void FreeKicker::resetInternalState()
   last_pass_receiver_id_ = std::nullopt;
   approach_entry_time_ = std::nullopt;
   align_entry_time_ = std::nullopt;
-  align_target_locked_ = std::nullopt;
+  align_target_locked_ = Point::Zero();
 }
 
 void FreeKicker::initialize()
@@ -125,7 +125,7 @@ void FreeKicker::initialize()
                                           getParameter<double>("approach_distance");
     }
 
-    command->setTargetPosition(*align_target_locked_)
+    command->setTargetPosition(align_target_locked_)
       .lookAtFrom(kick_target_, world_model()->ball().pos)
       .setMaxVelocity("FreeKicker::ALIGN", getParameter<double>("align_max_velocity"))
       .disableBallAvoidance();
