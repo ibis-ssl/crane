@@ -79,6 +79,8 @@ private:
   std::optional<std::chrono::steady_clock::time_point> approach_entry_time_;
   std::optional<std::chrono::steady_clock::time_point> align_entry_time_;
 
+  std::optional<Point> align_target_locked_;
+
   int align_stable_count_ = 0;
 
   bool kick_actually_launched_ = false;

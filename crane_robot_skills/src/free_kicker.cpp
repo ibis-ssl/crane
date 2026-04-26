@@ -42,7 +42,7 @@ void FreeKicker::resetInternalState()
   align_stable_count_ = 0;
   approach_entry_time_ = std::nullopt;
   align_entry_time_ = std::nullopt;
-  kick_actually_launched_ = false;
+  align_target_locked_ = std::nullopt;
 }
 
 void FreeKicker::initialize()
@@ -51,12 +51,11 @@ void FreeKicker::initialize()
   setParameter("align_max_velocity", 0.6);
   setParameter("kick_max_velocity", 1.2);
   setParameter("approach_distance", 0.25);
-  setParameter("align_distance", 0.12);
   setParameter("approach_position_tolerance", 0.10);
-  setParameter("align_position_tolerance", 0.05);
+  setParameter("align_position_tolerance", 0.07);
   setParameter("align_speed_tolerance", 0.10);
   setParameter("align_omega_tolerance", 0.20);
-  setParameter("align_stable_frames", 5);
+  setParameter("align_stable_frames", 3);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
@@ -126,18 +125,18 @@ void FreeKicker::initialize()
       target_locked_ = true;
       align_entry_time_ = std::chrono::steady_clock::now();
       align_stable_count_ = 0;
+      // APPROACH 最終地点と整合させるため、進入時のボール位置を基準に1回だけ計算してロック
+      const Point ball_pos = world_model()->ball().pos;
+      align_target_locked_ = ball_pos - (kick_target_ - ball_pos).normalized() *
+                                          getParameter<double>("approach_distance");
     }
 
-    const Point ball_pos = world_model()->ball().pos;
-    const Point press_point =
-      ball_pos - (kick_target_ - ball_pos).normalized() * getParameter<double>("align_distance");
-
-    command->setTargetPosition(press_point)
-      .lookAtFrom(kick_target_, ball_pos)
+    command->setTargetPosition(*align_target_locked_)
+      .lookAtFrom(kick_target_, world_model()->ball().pos)
       .setMaxVelocity("FreeKicker::ALIGN", getParameter<double>("align_max_velocity"))
       .disableBallAvoidance();
 
-    double pos_error = (robot()->pose.pos - press_point).norm();
+    double pos_error = (robot()->pose.pos - *align_target_locked_).norm();
     double speed = robot()->vel.linear.norm();
     double omega = std::abs(robot()->vel.omega);
 
@@ -173,7 +172,7 @@ void FreeKicker::initialize()
 
     command
       ->setTargetPosition(
-        world_model()->ball().pos + (kick_target_ - world_model()->ball().pos).normalized() * 0.2)
+        world_model()->ball().pos + (kick_target_ - world_model()->ball().pos).normalized() * 0.1)
       .lookAtFrom(kick_target_, robot()->pose.pos)
       .setMaxVelocity("FreeKicker::KICK", getParameter<double>("kick_max_velocity"))
       .disableBallAvoidance();
@@ -188,8 +187,6 @@ void FreeKicker::initialize()
     return Status::RUNNING;
   });
   // KICK → ENTRY_POINT のリトライ遷移は意図的に設けない（ダブルタッチ防止）
-  // 同じ FINISH 遷移でも、ボールが意図方向に飛んだ場合は kick_actually_launched_=true、
-  // タイムアウトで諦めた場合は false にして外部 (Session) から判別できるようにする。
   addTransition(s(S::KICK), s(S::FINISH), [this]() -> bool {
     if (!kick_started_) return false;
 
@@ -198,19 +195,13 @@ void FreeKicker::initialize()
     using std::chrono::steady_clock;
     double elapsed =
       duration_cast<duration<double>>(steady_clock::now() - kick_started_time_).count();
-    if (elapsed > FK_KICK_TIMEOUT_SEC) {
-      kick_actually_launched_ = false;
-      return true;
-    }
+    if (elapsed > FK_KICK_TIMEOUT_SEC) return true;
 
     double ball_speed = world_model()->ball().vel.norm();
     if (ball_speed > FK_KICK_DETECT_VEL) {
       Vector2 ball_vel_dir = world_model()->ball().vel.normalized();
       Vector2 intended_dir = (kick_target_ - world_model()->ball().pos).normalized();
-      if (ball_vel_dir.dot(intended_dir) > FK_KICK_DIRECTION_COS_THRESHOLD) {
-        kick_actually_launched_ = true;
-        return true;
-      }
+      return ball_vel_dir.dot(intended_dir) > FK_KICK_DIRECTION_COS_THRESHOLD;
     }
     return false;
   });
