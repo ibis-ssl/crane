@@ -33,6 +33,20 @@ situations:
     sessions:
       - name: ball_placement_skill
         max_robots: 1
+        # 候補ロボット選択の重み。詳細は BallPlacementSkillSession を参照。
+        # スコア = clamped > 0 ? clamped + W_D * distance
+        #        : W_R * rotation_rank + W_D * distance     (clamped == 0 のローテ帯)
+        # ただし clamped = max(0, W_F * failures - W_S * successes)
+        # rotation_rank は上位 top_n 台内で last_seq 昇順の順位 (0=最古=最優先)。
+        # 上位 top_n 台のみが対象。それ以外は実質除外される。
+        # history_file_path を指定しなければ
+        # crane_session_coordinator/config/ball_placement_history.yaml が使われる。
+        params:
+          success_weight: 1.0
+          failure_weight: 2.0
+          distance_weight: 0.01
+          rotation_weight: 0.05
+          top_n_candidates: 3
       - name: ball_placement_avoidance
         max_robots: 20
   OUR_FREE_KICK:
