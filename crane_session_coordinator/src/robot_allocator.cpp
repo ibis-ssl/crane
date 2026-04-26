@@ -27,7 +27,8 @@ RobotAllocator::RobotAllocator(
 
 auto RobotAllocator::allocate(
   const std::string & session_name, std::vector<uint8_t> selectable_robot_ids,
-  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
+  const crane_msgs::msg::PlaySituation & current_play_situation)
   -> crane_msgs::msg::RobotSelectResults
 {
   auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(session_name);
@@ -168,6 +169,20 @@ auto RobotAllocator::allocate(
     }
   }
 
+  const std::unordered_set<SessionBase *> active_session_ptrs([&]() {
+    std::unordered_set<SessionBase *> ptrs;
+    for (const auto & session : session_registry_->getAllPlanners()) {
+      ptrs.insert(session.get());
+    }
+    return ptrs;
+  }());
+
+  for (const auto & previous_session : prev_available_planners) {
+    if (active_session_ptrs.count(previous_session.get()) == 0) {
+      previous_session->onDeactivated(current_play_situation);
+    }
+  }
+
   return results;
 }
 
@@ -282,10 +297,12 @@ auto RobotAllocator::allocateRobotsGreedy(
       }
 
       if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
+        const int remaining_dynamic_slots =
+          req.max_robots - static_cast<int>(assigned_robots.size());
         RCLCPP_DEBUG(
           logger_,
           "Session「%s」は固定割当 %zu 台を確保。残り %d 台は動的割当を使用",
-          req.name.c_str(), assigned_robots.size(), req.max_robots - assigned_robots.size());
+          req.name.c_str(), assigned_robots.size(), remaining_dynamic_slots);
       }
     }
 

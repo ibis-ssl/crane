@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
@@ -235,6 +236,14 @@ public:
    * @return 推奨ロボット数。デフォルトはmax_robots
    */
   virtual int getDesiredRobotNumber(int max_robots) const { return max_robots; }
+
+  /**
+   * @brief セッションがアクティブ集合から外れる直前のフック
+   *
+   * 最新の PlaySituation を受け取り、セッション固有の終了処理に使う。
+   * 例: AutoRef/Referee 信号に基づく履歴の確定。
+   */
+  virtual void onDeactivated(const crane_msgs::msg::PlaySituation &) {}
 
   /**
    * @brief GameAnalysisメッセージを設定する

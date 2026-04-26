@@ -8,6 +8,7 @@
 #define CRANE_SESSION_COORDINATOR__ROBOT_ALLOCATOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_physics/allocation_cost.hpp>
 #include <crane_physics/robot_info.hpp>
@@ -69,7 +70,8 @@ public:
    */
   auto allocate(
     const std::string & session_name, std::vector<uint8_t> selectable_robot_ids,
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
+    const crane_msgs::msg::PlaySituation & current_play_situation)
     -> crane_msgs::msg::RobotSelectResults;
 
   /**
