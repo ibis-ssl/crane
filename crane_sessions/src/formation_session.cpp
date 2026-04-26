@@ -98,7 +98,8 @@ FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
       command->setTargetTheta(target_theta);
       command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
       command->disableAnyAreaAvoidance();
-    });
+    },
+    0.03);
   return {SessionBase::Status::RUNNING, robot_commands};
 }
 }  // namespace crane
