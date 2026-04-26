@@ -36,6 +36,7 @@ void FreeKicker::resetInternalState()
   kick_started_ = false;
   target_locked_ = false;
   use_chip_ = false;
+  chip_distance_ = getParameter<double>("target_chip_distance");
   last_chose_shoot_ = false;
   last_pass_receiver_id_ = std::nullopt;
   align_stable_count_ = 0;
@@ -178,11 +179,9 @@ void FreeKicker::initialize()
     // 衝突回避は有効のまま（KickOld と異なる、フィールド外押し出し防止の肝）
 
     if (use_chip_) {
-      command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
-      command->kickWithChip(1.0);
+      command->setKickWithChipTargetDistance(chip_distance_);
     } else {
       command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
-      command->kickStraight(1.0);
     }
 
     return Status::RUNNING;
@@ -266,13 +265,19 @@ std::optional<Point> FreeKicker::selectPassTarget()
 
   auto teammates = wm->ours().robotsWhere().available().excludeGoalie().get();
 
+  // 自陣ロボ（敵半面にいないロボット）はパス先候補から除外
+  const double our_sign = wm->getOurSideSign();
+  teammates.erase(
+    std::remove_if(
+      teammates.begin(), teammates.end(),
+      [&](const auto & r) { return r->id == robot()->id || r->pose.pos.x() * our_sign > 0.0; }),
+    teammates.end());
+
   double best_score = FK_MIN_PASS_ACCEPT_SCORE;
   std::optional<uint8_t> best_id;
   Point best_pos = Point::Zero();
 
   for (const auto & teammate : teammates) {
-    if (teammate->id == robot()->id) continue;
-
     double score = calculatePassScore(teammate->pose.pos, enemies, best_enemy_slack);
 
     if (last_pass_receiver_id_ && teammate->id == last_pass_receiver_id_.value()) {
@@ -288,9 +293,12 @@ std::optional<Point> FreeKicker::selectPassTarget()
 
   if (best_id) {
     last_pass_receiver_id_ = best_id;
-    use_chip_ =
-      getPassAnalysis(ball_pos, best_pos, enemies, getParameter<double>("pass_obstacle_distance"))
-        .need_chip;
+    auto pass_analysis =
+      getPassAnalysis(ball_pos, best_pos, enemies, getParameter<double>("pass_obstacle_distance"));
+    use_chip_ = pass_analysis.need_chip;
+    if (use_chip_) {
+      chip_distance_ = pass_analysis.required_chip_distance + 0.2;
+    }
     return best_pos;
   }
 
@@ -367,6 +375,8 @@ Point FreeKicker::computeFallbackTarget()
   fallback.y() = std::clamp(ball_pos.y(), -field_half_y * 0.3, field_half_y * 0.3);
 
   use_chip_ = true;
+  chip_distance_ =
+    std::clamp((fallback - ball_pos).norm(), 1.0, getParameter<double>("pass_max_distance"));
   return fallback;
 }
 }  // namespace crane::skills

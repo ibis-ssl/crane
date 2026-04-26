@@ -64,6 +64,8 @@ private:
   bool last_chose_shoot_ = false;
   std::optional<uint8_t> last_pass_receiver_id_;
 
+  double chip_distance_ = 2.5;
+
   bool kick_started_ = false;
   std::chrono::steady_clock::time_point kick_started_time_{};
 

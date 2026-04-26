@@ -158,7 +158,7 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   /// @note FW/アタッカー系のみ使用。DF/ゴーリーは getOurSideSign() を使うこと
   [[nodiscard]] auto getAttackSideSign() const
   {
-    return isPracticeReverseAttack() ? -getOurSideSign() : getOurSideSign();
+    return isPracticeReverseAttack() ? getOurSideSign() : -getOurSideSign();
   }
 
   auto addCallback(std::function<void(void)> && callback_func) -> void

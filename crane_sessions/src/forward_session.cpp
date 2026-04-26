@@ -28,7 +28,7 @@ auto ForwardSession::computeCandidatePoints() const -> std::vector<Point>
   constexpr double ATTACK_HALFLINE_THRESHOLD = 0.3;
   constexpr double GRID_STEP = 0.5;
 
-  const double side_sign = -world_model->getAttackSideSign();
+  const double side_sign = world_model->getAttackSideSign();
   const double x_near = side_sign * 0.5;
   const double x_far = side_sign * (goal_line_x - 1.0);
   const double x_min = std::min(x_near, x_far);
