@@ -172,7 +172,7 @@ void FreeKicker::initialize()
 
     command
       ->setTargetPosition(
-        world_model()->ball().pos + (kick_target_ - world_model()->ball().pos).normalized() * 0.1)
+        world_model()->ball().pos + (kick_target_ - world_model()->ball().pos).normalized() * 0.2)
       .lookAtFrom(kick_target_, robot()->pose.pos)
       .setMaxVelocity("FreeKicker::KICK", getParameter<double>("kick_max_velocity"))
       .disableBallAvoidance();
