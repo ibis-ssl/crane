@@ -4,10 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <yaml-cpp/yaml.h>
+
+#include <cinttypes>
 #include <crane_sessions/ball_placement_history.hpp>
 #include <fstream>
 #include <rclcpp/rclcpp.hpp>
-#include <yaml-cpp/yaml.h>
 
 namespace crane
 {
@@ -60,8 +62,8 @@ void BallPlacementHistory::load()
 {
   if (!std::filesystem::exists(file_path_)) {
     RCLCPP_INFO(
-      rclcpp::get_logger("BallPlacementHistory"),
-      "履歴ファイルが存在しないため新規開始: %s", file_path_.c_str());
+      rclcpp::get_logger("BallPlacementHistory"), "履歴ファイルが存在しないため新規開始: %s",
+      file_path_.c_str());
     return;
   }
 
@@ -82,13 +84,12 @@ void BallPlacementHistory::load()
     }
     RCLCPP_INFO(
       rclcpp::get_logger("BallPlacementHistory"),
-      "履歴ファイル読み込み完了: %s (entries=%zu, next_seq=%lu)",
-      file_path_.c_str(), entries_.size(), static_cast<unsigned long>(next_seq_));
+      "履歴ファイル読み込み完了: %s (entries=%zu, next_seq=%" PRIu64 ")", file_path_.c_str(),
+      entries_.size(), static_cast<uint64_t>(next_seq_));
   } catch (const std::exception & ex) {
     RCLCPP_WARN(
       rclcpp::get_logger("BallPlacementHistory"),
-      "履歴ファイル読み込み失敗 (空状態で開始): %s, error=%s",
-      file_path_.c_str(), ex.what());
+      "履歴ファイル読み込み失敗 (空状態で開始): %s, error=%s", file_path_.c_str(), ex.what());
     entries_.clear();
     next_seq_ = 1;
   }
@@ -119,8 +120,8 @@ bool BallPlacementHistory::save() const
       std::ofstream ofs(tmp_path);
       if (!ofs) {
         RCLCPP_ERROR(
-          rclcpp::get_logger("BallPlacementHistory"),
-          "履歴ファイル書き込み失敗 (open): %s", tmp_path.c_str());
+          rclcpp::get_logger("BallPlacementHistory"), "履歴ファイル書き込み失敗 (open): %s",
+          tmp_path.c_str());
         return false;
       }
       ofs << root;
@@ -128,13 +129,12 @@ bool BallPlacementHistory::save() const
     std::filesystem::rename(tmp_path, file_path_);
     RCLCPP_INFO(
       rclcpp::get_logger("BallPlacementHistory"),
-      "履歴ファイル書き込み成功: %s (entries=%zu, next_seq=%lu)",
-      file_path_.c_str(), entries_.size(), static_cast<unsigned long>(next_seq_));
+      "履歴ファイル書き込み成功: %s (entries=%zu, next_seq=%" PRIu64 ")", file_path_.c_str(),
+      entries_.size(), static_cast<uint64_t>(next_seq_));
     return true;
   } catch (const std::exception & ex) {
     RCLCPP_ERROR(
-      rclcpp::get_logger("BallPlacementHistory"),
-      "履歴ファイル書き込み失敗: %s, error=%s",
+      rclcpp::get_logger("BallPlacementHistory"), "履歴ファイル書き込み失敗: %s, error=%s",
       file_path_.c_str(), ex.what());
     return false;
   }

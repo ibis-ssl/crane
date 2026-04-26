@@ -300,15 +300,15 @@ auto RobotAllocator::allocateRobotsGreedy(
         const int remaining_dynamic_slots =
           req.max_robots - static_cast<int>(assigned_robots.size());
         RCLCPP_DEBUG(
-          logger_,
-          "Session「%s」は固定割当 %zu 台を確保。残り %d 台は動的割当を使用",
+          logger_, "Session「%s」は固定割当 %zu 台を確保。残り %d 台は動的割当を使用",
           req.name.c_str(), assigned_robots.size(), remaining_dynamic_slots);
       }
     }
 
     if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
       // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
-      const std::unordered_set<uint8_t> assigned_set(assigned_robots.begin(), assigned_robots.end());
+      const std::unordered_set<uint8_t> assigned_set(
+        assigned_robots.begin(), assigned_robots.end());
       std::vector<std::pair<uint8_t, double>> robot_scores;
       for (const auto & robot_id : remaining_robots) {
         if (assigned_set.count(robot_id) > 0) {

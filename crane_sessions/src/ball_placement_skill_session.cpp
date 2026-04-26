@@ -64,8 +64,7 @@ auto BallPlacementSkillSession::getRobotSuitabilityFunc() const
     if (r->id == goalie_id) continue;
     distances.emplace_back(r->id, (r->pose.pos - ball_pos).norm());
   }
-  std::ranges::sort(
-    distances, [](const auto & a, const auto & b) { return a.second < b.second; });
+  std::ranges::sort(distances, [](const auto & a, const auto & b) { return a.second < b.second; });
 
   // 上位 N 台のID集合と、その中での last_seq 順のランク（0=最古=最優先）
   // 注: last_seq の絶対値を使うと長期的に W_R * last_seq が W_F を超えてしまい
@@ -98,9 +97,8 @@ auto BallPlacementSkillSession::getRobotSuitabilityFunc() const
     }
 
     const auto entry = history->get(robot->id);
-    const double raw =
-      w_failure * static_cast<double>(entry.failure) -
-      w_success * static_cast<double>(entry.success);
+    const double raw = w_failure * static_cast<double>(entry.failure) -
+                       w_success * static_cast<double>(entry.success);
     const double clamped = std::max(0.0, raw);
 
     if (clamped > 0.0) {
@@ -149,7 +147,8 @@ void BallPlacementSkillSession::onDeactivated(
 
   RCLCPP_INFO(
     rclcpp::get_logger("BallPlacementSkillSession"),
-    "ロボット %d のボールプレイスメント終了を検知したが、明示的な成否シグナルがないため履歴更新をスキップ",
+    "ロボット %d "
+    "のボールプレイスメント終了を検知したが、明示的な成否シグナルがないため履歴更新をスキップ",
     static_cast<int>(robot_id));
 }
 
@@ -171,9 +170,10 @@ std::string BallPlacementSkillSession::resolveHistoryFilePath() const
 
   // unified_session_config.yaml と同様に package_share_directory/config から解決する。
   // その上で symlink-install 環境では実体パスへ解決し、src 側のファイルを直接更新する。
-  const auto config_path = std::filesystem::path(
-    ament_index_cpp::get_package_share_directory("crane_session_coordinator")) /
-                           "config" / "ball_placement_history.yaml";
+  const auto config_path =
+    std::filesystem::path(
+      ament_index_cpp::get_package_share_directory("crane_session_coordinator")) /
+    "config" / "ball_placement_history.yaml";
   try {
     return std::filesystem::weakly_canonical(config_path).string();
   } catch (const std::exception &) {
@@ -191,34 +191,29 @@ std::optional<bool> BallPlacementSkillSession::extractPlacementResult(
 {
   std::optional<bool> result;
   for (const auto & game_event : current_play_situation.referee_raw.game_events) {
-    if (
-      game_event.type.value ==
-      robocup_ssl_msgs::msg::GameEventType::PLACEMENT_SUCCEEDED) {
+    if (game_event.type.value == robocup_ssl_msgs::msg::GameEventType::PLACEMENT_SUCCEEDED) {
       result = true;
-    } else if (
-      game_event.type.value ==
-      robocup_ssl_msgs::msg::GameEventType::PLACEMENT_FAILED) {
+    } else if (game_event.type.value == robocup_ssl_msgs::msg::GameEventType::PLACEMENT_FAILED) {
       result = false;
     }
   }
   return result;
 }
 
-void BallPlacementSkillSession::recordPlacementResult(
-  std::uint8_t robot_id, bool success) const
+void BallPlacementSkillSession::recordPlacementResult(std::uint8_t robot_id, bool success) const
 {
   ensureHistoryLoaded();
-  const bool saved = success ? history_->recordSuccess(robot_id) : history_->recordFailure(robot_id);
+  const bool saved =
+    success ? history_->recordSuccess(robot_id) : history_->recordFailure(robot_id);
   const char * result_text = success ? "成功" : "失敗";
   if (saved) {
     RCLCPP_INFO(
-      rclcpp::get_logger("BallPlacementSkillSession"),
-      "ロボット %d のプレイスメント%sを記録", static_cast<int>(robot_id), result_text);
+      rclcpp::get_logger("BallPlacementSkillSession"), "ロボット %d のプレイスメント%sを記録",
+      static_cast<int>(robot_id), result_text);
   } else {
     RCLCPP_WARN(
       rclcpp::get_logger("BallPlacementSkillSession"),
-      "ロボット %d のプレイスメント%s履歴の保存に失敗", static_cast<int>(robot_id),
-      result_text);
+      "ロボット %d のプレイスメント%s履歴の保存に失敗", static_cast<int>(robot_id), result_text);
   }
 }
 
