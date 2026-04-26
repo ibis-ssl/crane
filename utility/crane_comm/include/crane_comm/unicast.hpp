@@ -110,10 +110,28 @@ public:
           boost::system::error_code join_ec;
           socket_.set_option(join_device, join_ec);
           if (!join_ec) {
+            RCLCPP_DEBUG(
+              rclcpp::get_logger("crane_comm"), "マルチキャスト参加成功: %s on %s (%s)",
+              addr.to_string().c_str(), if_name.c_str(), ip);
             joined_interfaces.insert(if_name);
+          } else {
+            RCLCPP_WARN(
+              rclcpp::get_logger("crane_comm"), "マルチキャスト参加失敗: %s on %s (%s): %s",
+              addr.to_string().c_str(), if_name.c_str(), ip, join_ec.message().c_str());
           }
         }
         freeifaddrs(interfaces);
+        if (joined_interfaces.empty()) {
+          RCLCPP_ERROR(
+            rclcpp::get_logger("crane_comm"),
+            "マルチキャストグループ %s の参加に全インターフェースで失敗しました — "
+            "パケットは受信できません",
+            addr.to_string().c_str());
+        } else {
+          RCLCPP_INFO(
+            rclcpp::get_logger("crane_comm"), "マルチキャスト %s に参加済みインターフェース: %zu個",
+            addr.to_string().c_str(), joined_interfaces.size());
+        }
       } catch (std::exception & e) {
         RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "%s", e.what());
       }

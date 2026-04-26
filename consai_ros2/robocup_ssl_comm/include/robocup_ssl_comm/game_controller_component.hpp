@@ -17,6 +17,7 @@
 
 #include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
 
+#include <atomic>
 #include <crane_comm/unicast.hpp>
 #include <memory>
 #include <mutex>
@@ -46,12 +47,15 @@ private:
   std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
   rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::TimerBase::SharedPtr status_timer_;
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
   rclcpp::Publisher<robocup_ssl_msgs::msg::GameEvent>::SharedPtr pub_game_event;
 
   std::mutex latest_mutex_;
   std::optional<robocup_ssl::Referee> latest_packet_;
   std::vector<robocup_ssl_msgs::msg::GameEvent> previous_game_events_;
+
+  std::atomic<bool> packet_received_{false};
 };
 
 }  // namespace robocup_ssl_comm
