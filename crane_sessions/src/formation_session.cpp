@@ -97,6 +97,7 @@ FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
       // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
       command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
+      command->disableAnyAreaAvoidance();
     });
   return {SessionBase::Status::RUNNING, robot_commands};
 }
