@@ -108,10 +108,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     "penalty_area_force_waypoint_on_crossing", PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
   PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING =
     node.get_parameter("penalty_area_force_waypoint_on_crossing").as_bool();
-  node.declare_parameter("penalty_area_time_horizon_obst", PENALTY_AREA_TIME_HORIZON_OBST);
-  PENALTY_AREA_TIME_HORIZON_OBST =
-    static_cast<float>(node.get_parameter("penalty_area_time_horizon_obst").as_double());
-
   node.declare_parameter("enable_velocity_plan_trace", false);
   enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
 
@@ -128,34 +124,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   sub_feedback_array = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
     "/robot_feedback", 1,
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
-}
-
-auto RVO2Planner::initializePenaltyAreaObstacles() -> void
-{
-  // ペナルティエリアをRVO2のポリゴン障害物として登録する。
-  // processObstacles()呼び出し後は変更不可なので、フィールド情報確定後に一度だけ呼ぶ。
-  // 頂点は反時計回り（RVO2の仕様）で指定する。
-  const Box our_area = world_model->getOurPenaltyArea();
-  const Box their_area = world_model->getTheirPenaltyArea();
-  auto addBoxObstacle = [&](const Box & box) {
-    const float xmin = static_cast<float>(box.min_corner().x());
-    const float xmax = static_cast<float>(box.max_corner().x());
-    const float ymin = static_cast<float>(box.min_corner().y());
-    const float ymax = static_cast<float>(box.max_corner().y());
-    // 反時計回り: 左下 → 右下 → 右上 → 左上
-    rvo_sim->addObstacle({{xmin, ymin}, {xmax, ymin}, {xmax, ymax}, {xmin, ymax}});
-  };
-  addBoxObstacle(our_area);
-  addBoxObstacle(their_area);
-  rvo_sim->processObstacles();
-  penalty_area_obstacles_initialized = true;
-  RCLCPP_INFO(
-    rclcpp::get_logger("rvo2_local_planner"),
-    "Penalty area obstacles initialized (our: [%.2f,%.2f]x[%.2f,%.2f], "
-    "their: [%.2f,%.2f]x[%.2f,%.2f])",
-    our_area.min_corner().x(), our_area.max_corner().x(), our_area.min_corner().y(),
-    our_area.max_corner().y(), their_area.min_corner().x(), their_area.max_corner().x(),
-    their_area.min_corner().y(), their_area.max_corner().y());
 }
 
 auto RVO2Planner::getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const
@@ -488,19 +456,10 @@ auto RVO2Planner::applyRVOInputStage(
   rvo_sim->setAgentPosition(command.robot_id, toRVO(ctx.current_pose_position));
   rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(ctx.target_vel));
   rvo_sim->setAgentMaxSpeed(command.robot_id, ctx.max_vel);
-  rvo_sim->setAgentTimeHorizonObst(
-    command.robot_id, command.local_planner_config.disable_goal_area_avoidance
-                        ? 0.0f
-                        : PENALTY_AREA_TIME_HORIZON_OBST);
 }
 
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
-  // ペナルティエリアObstacleの遅延初期化（フィールド情報が確定してから一度だけ）
-  if (!penalty_area_obstacles_initialized && world_model->fieldSize().squaredNorm() > 0.01) {
-    initializePenaltyAreaObstacles();
-  }
-
   const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
   if (
     referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
