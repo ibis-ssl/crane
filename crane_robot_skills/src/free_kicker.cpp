@@ -18,7 +18,7 @@ namespace
 constexpr double FK_KICK_DETECT_VEL = 0.7;
 constexpr double FK_KICK_DIRECTION_COS_THRESHOLD = 0.7;
 constexpr double FK_APPROACH_PHASE_TIMEOUT = 6.0;
-constexpr double FK_ALIGN_PHASE_TIMEOUT = 4.0;
+constexpr double FK_ALIGN_WAIT_SEC = 1.0;
 constexpr double FK_KICK_TIMEOUT_SEC = 3.0;
 constexpr double FK_MIN_PASS_ACCEPT_SCORE = 0.4;
 constexpr double FK_PASS_HYSTERESIS_RATIO = 0.85;
@@ -39,7 +39,6 @@ void FreeKicker::resetInternalState()
   chip_distance_ = getParameter<double>("target_chip_distance");
   last_chose_shoot_ = false;
   last_pass_receiver_id_ = std::nullopt;
-  align_stable_count_ = 0;
   approach_entry_time_ = std::nullopt;
   align_entry_time_ = std::nullopt;
   align_target_locked_ = std::nullopt;
@@ -52,10 +51,6 @@ void FreeKicker::initialize()
   setParameter("kick_max_velocity", 1.2);
   setParameter("approach_distance", 0.25);
   setParameter("approach_position_tolerance", 0.10);
-  setParameter("align_position_tolerance", 0.07);
-  setParameter("align_speed_tolerance", 0.10);
-  setParameter("align_omega_tolerance", 0.20);
-  setParameter("align_stable_frames", 3);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
@@ -124,7 +119,6 @@ void FreeKicker::initialize()
     if (!align_entry_time_.has_value()) {
       target_locked_ = true;
       align_entry_time_ = std::chrono::steady_clock::now();
-      align_stable_count_ = 0;
       // APPROACH 最終地点と整合させるため、進入時のボール位置を基準に1回だけ計算してロック
       const Point ball_pos = world_model()->ball().pos;
       align_target_locked_ = ball_pos - (kick_target_ - ball_pos).normalized() *
@@ -136,32 +130,15 @@ void FreeKicker::initialize()
       .setMaxVelocity("FreeKicker::ALIGN", getParameter<double>("align_max_velocity"))
       .disableBallAvoidance();
 
-    double pos_error = (robot()->pose.pos - *align_target_locked_).norm();
-    double speed = robot()->vel.linear.norm();
-    double omega = std::abs(robot()->vel.omega);
-
-    bool stable = pos_error < getParameter<double>("align_position_tolerance") &&
-                  speed < getParameter<double>("align_speed_tolerance") &&
-                  omega < getParameter<double>("align_omega_tolerance");
-
-    if (stable) {
-      align_stable_count_++;
-    } else {
-      align_stable_count_ = 0;
-    }
-
     return Status::RUNNING;
   });
   addTransition(s(S::ALIGN), s(S::KICK), [this]() -> bool {
-    return align_stable_count_ >= getParameter<int>("align_stable_frames");
-  });
-  addTransition(s(S::ALIGN), s(S::ENTRY_POINT), [this]() -> bool {
     using std::chrono::duration;
     using std::chrono::duration_cast;
     using std::chrono::steady_clock;
     return align_entry_time_.has_value() &&
-           duration_cast<duration<double>>(steady_clock::now() - *align_entry_time_).count() >
-             FK_ALIGN_PHASE_TIMEOUT;
+           duration_cast<duration<double>>(steady_clock::now() - *align_entry_time_).count() >=
+             FK_ALIGN_WAIT_SEC;
   });
 
   addStateFunction(s(S::KICK), [this]() -> Status {
