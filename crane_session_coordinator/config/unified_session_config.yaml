@@ -37,6 +37,8 @@ situations:
         # スコア = clamped > 0 ? clamped + W_D * distance
         #        : W_R * rotation_rank + W_D * distance     (clamped == 0 のローテ帯)
         # ただし clamped = max(0, W_F * failures - W_S * successes)
+        # W_D: ボールからの距離に掛ける重み。小さいほど近いロボットを優先。
+        # W_F: 失敗回数に掛ける重み。大きいほど失敗履歴のあるロボットを避ける。
         # rotation_rank は上位 top_n 台内で last_seq 昇順の順位 (0=最古=最優先)。
         # 上位 top_n 台のみが対象。それ以外は実質除外される。
         # history_file_path を指定しなければ
