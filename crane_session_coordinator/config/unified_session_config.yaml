@@ -45,7 +45,7 @@ situations:
         # crane_session_coordinator/config/ball_placement_history.yaml が使われる。
         params:
           success_weight: 1.0
-          failure_weight: 2.0
+          failure_weight: 3.0
           distance_weight: 0.01
           rotation_weight: 0.05
           top_n_candidates: 3
