@@ -42,6 +42,13 @@ public:
     return static_cast<FreeKickerState>(SkillBaseWithState::getCurrentState());
   }
 
+  /// 直近の試行で実際にボールが意図方向へ高速発射されたか。
+  /// FINISH 状態到達時点で確定する: ball_speed > FK_KICK_DETECT_VEL かつ
+  /// 意図方向との cos が FK_KICK_DIRECTION_COS_THRESHOLD を超えていれば true、
+  /// FK_KICK_TIMEOUT_SEC タイムアウトで FINISH した場合は false。
+  /// 試行ごと(ENTRY_POINT 自己遷移時) に false にリセットされる。
+  bool kickActuallyLaunched() const { return kick_actually_launched_; }
+
 private:
   void initialize();
   static std::string getStateName(int s);
@@ -73,6 +80,8 @@ private:
   std::optional<std::chrono::steady_clock::time_point> align_entry_time_;
 
   int align_stable_count_ = 0;
+
+  bool kick_actually_launched_ = false;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__FREE_KICKER_HPP_

@@ -42,6 +42,7 @@ void FreeKicker::resetInternalState()
   align_stable_count_ = 0;
   approach_entry_time_ = std::nullopt;
   align_entry_time_ = std::nullopt;
+  kick_actually_launched_ = false;
 }
 
 void FreeKicker::initialize()
@@ -187,6 +188,8 @@ void FreeKicker::initialize()
     return Status::RUNNING;
   });
   // KICK → ENTRY_POINT のリトライ遷移は意図的に設けない（ダブルタッチ防止）
+  // 同じ FINISH 遷移でも、ボールが意図方向に飛んだ場合は kick_actually_launched_=true、
+  // タイムアウトで諦めた場合は false にして外部 (Session) から判別できるようにする。
   addTransition(s(S::KICK), s(S::FINISH), [this]() -> bool {
     if (!kick_started_) return false;
 
@@ -195,13 +198,19 @@ void FreeKicker::initialize()
     using std::chrono::steady_clock;
     double elapsed =
       duration_cast<duration<double>>(steady_clock::now() - kick_started_time_).count();
-    if (elapsed > FK_KICK_TIMEOUT_SEC) return true;
+    if (elapsed > FK_KICK_TIMEOUT_SEC) {
+      kick_actually_launched_ = false;
+      return true;
+    }
 
     double ball_speed = world_model()->ball().vel.norm();
     if (ball_speed > FK_KICK_DETECT_VEL) {
       Vector2 ball_vel_dir = world_model()->ball().vel.normalized();
       Vector2 intended_dir = (kick_target_ - world_model()->ball().pos).normalized();
-      return ball_vel_dir.dot(intended_dir) > FK_KICK_DIRECTION_COS_THRESHOLD;
+      if (ball_vel_dir.dot(intended_dir) > FK_KICK_DIRECTION_COS_THRESHOLD) {
+        kick_actually_launched_ = true;
+        return true;
+      }
     }
     return false;
   });

@@ -7,19 +7,19 @@
 #include <yaml-cpp/yaml.h>
 
 #include <cinttypes>
-#include <crane_sessions/ball_placement_history.hpp>
+#include <crane_sessions/skill_assignment_history.hpp>
 #include <fstream>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
-BallPlacementHistory::BallPlacementHistory(const std::filesystem::path & file_path)
+SkillAssignmentHistory::SkillAssignmentHistory(const std::filesystem::path & file_path)
 : file_path_(file_path)
 {
   load();
 }
 
-BallPlacementHistory::Entry BallPlacementHistory::get(std::uint8_t robot_id) const
+SkillAssignmentHistory::Entry SkillAssignmentHistory::get(std::uint8_t robot_id) const
 {
   auto it = entries_.find(robot_id);
   if (it == entries_.end()) {
@@ -28,7 +28,7 @@ BallPlacementHistory::Entry BallPlacementHistory::get(std::uint8_t robot_id) con
   return it->second;
 }
 
-bool BallPlacementHistory::recordSuccess(std::uint8_t robot_id)
+bool SkillAssignmentHistory::recordSuccess(std::uint8_t robot_id)
 {
   const auto previous_next_seq = next_seq_;
   auto & e = entries_[robot_id];
@@ -43,7 +43,7 @@ bool BallPlacementHistory::recordSuccess(std::uint8_t robot_id)
   return false;
 }
 
-bool BallPlacementHistory::recordFailure(std::uint8_t robot_id)
+bool SkillAssignmentHistory::recordFailure(std::uint8_t robot_id)
 {
   const auto previous_next_seq = next_seq_;
   auto & e = entries_[robot_id];
@@ -58,11 +58,11 @@ bool BallPlacementHistory::recordFailure(std::uint8_t robot_id)
   return false;
 }
 
-void BallPlacementHistory::load()
+void SkillAssignmentHistory::load()
 {
   if (!std::filesystem::exists(file_path_)) {
     RCLCPP_INFO(
-      rclcpp::get_logger("BallPlacementHistory"), "履歴ファイルが存在しないため新規開始: %s",
+      rclcpp::get_logger("SkillAssignmentHistory"), "履歴ファイルが存在しないため新規開始: %s",
       file_path_.c_str());
     return;
   }
@@ -83,19 +83,19 @@ void BallPlacementHistory::load()
       }
     }
     RCLCPP_INFO(
-      rclcpp::get_logger("BallPlacementHistory"),
+      rclcpp::get_logger("SkillAssignmentHistory"),
       "履歴ファイル読み込み完了: %s (entries=%zu, next_seq=%" PRIu64 ")", file_path_.c_str(),
       entries_.size(), static_cast<uint64_t>(next_seq_));
   } catch (const std::exception & ex) {
     RCLCPP_WARN(
-      rclcpp::get_logger("BallPlacementHistory"),
+      rclcpp::get_logger("SkillAssignmentHistory"),
       "履歴ファイル読み込み失敗 (空状態で開始): %s, error=%s", file_path_.c_str(), ex.what());
     entries_.clear();
     next_seq_ = 1;
   }
 }
 
-bool BallPlacementHistory::save() const
+bool SkillAssignmentHistory::save() const
 {
   try {
     YAML::Node root;
@@ -120,7 +120,7 @@ bool BallPlacementHistory::save() const
       std::ofstream ofs(tmp_path);
       if (!ofs) {
         RCLCPP_ERROR(
-          rclcpp::get_logger("BallPlacementHistory"), "履歴ファイル書き込み失敗 (open): %s",
+          rclcpp::get_logger("SkillAssignmentHistory"), "履歴ファイル書き込み失敗 (open): %s",
           tmp_path.c_str());
         return false;
       }
@@ -128,13 +128,13 @@ bool BallPlacementHistory::save() const
     }
     std::filesystem::rename(tmp_path, file_path_);
     RCLCPP_INFO(
-      rclcpp::get_logger("BallPlacementHistory"),
+      rclcpp::get_logger("SkillAssignmentHistory"),
       "履歴ファイル書き込み成功: %s (entries=%zu, next_seq=%" PRIu64 ")", file_path_.c_str(),
       entries_.size(), static_cast<uint64_t>(next_seq_));
     return true;
   } catch (const std::exception & ex) {
     RCLCPP_ERROR(
-      rclcpp::get_logger("BallPlacementHistory"), "履歴ファイル書き込み失敗: %s, error=%s",
+      rclcpp::get_logger("SkillAssignmentHistory"), "履歴ファイル書き込み失敗: %s, error=%s",
       file_path_.c_str(), ex.what());
     return false;
   }

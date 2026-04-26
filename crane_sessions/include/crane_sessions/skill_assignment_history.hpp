@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SESSIONS__BALL_PLACEMENT_HISTORY_HPP_
-#define CRANE_SESSIONS__BALL_PLACEMENT_HISTORY_HPP_
+#ifndef CRANE_SESSIONS__SKILL_ASSIGNMENT_HISTORY_HPP_
+#define CRANE_SESSIONS__SKILL_ASSIGNMENT_HISTORY_HPP_
 
 #include <cstdint>
 #include <filesystem>
@@ -13,16 +13,19 @@
 
 namespace crane
 {
-/// ボールプレイスメント割当の成功/失敗履歴を YAML ファイルに永続化する。
+/// 単一スキルへのロボット割当履歴を YAML ファイルに永続化する汎用ストア。
 ///
 /// プロセス再起動を跨いで「どのロボットが何回成功/失敗したか」「最後に
-/// 選ばれたのは何順目か」を覚えておき、`BallPlacementSkillSession` の
-/// suitability 関数がそれを読んでロボット選定に利用する。
+/// 選ばれたのは何順目か」を覚えておき、ローテーション付き suitability 関数
+/// (rotation_suitability.hpp) からロボット選定の根拠として参照される。
 ///
 /// last_seq はゼロ帯（成功支配で clamp された複数ロボット）でローテーションを
-/// 行うためのグローバル順番付けで、completion (SUCCESS/FAILURE) を記録する
-/// たびに `next_seq_` を払い出してそのロボットに記録する。
-class BallPlacementHistory
+/// 行うためのグローバル順番付けで、success/failure を記録するたびに
+/// `next_seq_` を払い出してそのロボットに記録する。
+///
+/// データ構造自体はスキル非依存なので、ボールプレイスメント・フリーキック等
+/// 別スキルごとに別ファイルパスでインスタンス化して使う。
+class SkillAssignmentHistory
 {
 public:
   struct Entry
@@ -32,7 +35,7 @@ public:
     std::uint64_t last_seq = 0;
   };
 
-  explicit BallPlacementHistory(const std::filesystem::path & file_path);
+  explicit SkillAssignmentHistory(const std::filesystem::path & file_path);
 
   Entry get(std::uint8_t robot_id) const;
 
@@ -53,4 +56,4 @@ private:
   std::uint64_t next_seq_ = 1;
 };
 }  // namespace crane
-#endif  // CRANE_SESSIONS__BALL_PLACEMENT_HISTORY_HPP_
+#endif  // CRANE_SESSIONS__SKILL_ASSIGNMENT_HISTORY_HPP_
