@@ -609,11 +609,21 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     double distance = std::hypot(
       original_pos_mode.target_x - robot->pose.pos.x(),
       original_pos_mode.target_y - robot->pose.pos.y());
+
+    const auto referee_cmd = world_model->getMsg().play_situation.referee_raw.command.value;
+    const bool is_stop_state = referee_cmd == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+                               !world_model->isPracticeNormalSpeed();
+    constexpr double STOP_STATE_POSITION_TOLERANCE = 0.03;
+    double effective_tolerance = original_pos_mode.position_tolerance;
+    if (is_stop_state) {
+      effective_tolerance = std::max(effective_tolerance, STOP_STATE_POSITION_TOLERANCE);
+    }
+
     addOrUpdatePlanningFactor(command, "RVO2DistanceToTarget", formatPlanningDouble(distance));
     addOrUpdatePlanningFactor(
-      command, "RVO2PositionTolerance", formatPlanningDouble(original_pos_mode.position_tolerance));
+      command, "RVO2PositionTolerance", formatPlanningDouble(effective_tolerance));
     ZeroVelocityReason zero_velocity_reason = ZeroVelocityReason::NONE;
-    if (distance < original_pos_mode.position_tolerance) {
+    if (distance < effective_tolerance) {
       vel = Velocity::Zero();
       zero_velocity_reason = ZeroVelocityReason::POSITION_TOLERANCE;
     }
