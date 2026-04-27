@@ -48,10 +48,10 @@ void FreeKicker::resetInternalState()
 void FreeKicker::initialize()
 {
   setParameter("approach_max_velocity", 1.5);
-  setParameter("align_max_velocity", 0.6);
-  setParameter("kick_max_velocity", 1.2);
+  setParameter("align_max_velocity", 0.3);
+  setParameter("kick_max_velocity", 0.5);
   setParameter("approach_distance", 0.25);
-  setParameter("approach_position_tolerance", 0.10);
+  setParameter("approach_position_tolerance", 0.03);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
