@@ -272,9 +272,13 @@ std::optional<Point> FreeKicker::selectPassTarget()
     last_pass_receiver_id_ = best_id;
     auto pass_analysis =
       getPassAnalysis(ball_pos, best_pos, enemies, getParameter<double>("pass_obstacle_distance"));
-    use_chip_ = pass_analysis.need_chip;
+    use_chip_ = true;
     if (use_chip_) {
-      chip_distance_ = pass_analysis.required_chip_distance + 0.2;
+      if (pass_analysis.required_chip_distance > 0.5) {
+        chip_distance_ = pass_analysis.required_chip_distance + 0.2;
+      } else {
+        chip_distance_ = 1.0;
+      }
     }
     return best_pos;
   }
