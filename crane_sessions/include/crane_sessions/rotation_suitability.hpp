@@ -41,8 +41,8 @@ struct RotationSuitabilityConfig
 ///
 /// `history` は遅延初期化された後の有効な shared_ptr を渡すこと。
 std::function<double(const std::shared_ptr<RobotInfo> &)> makeRotationSuitabilityFunc(
-  const WorldModelWrapper::SharedPtr & world_model,
-  std::shared_ptr<SkillAssignmentHistory> history, const RotationSuitabilityConfig & config);
+  const WorldModelWrapper::SharedPtr & world_model, std::shared_ptr<SkillAssignmentHistory> history,
+  const RotationSuitabilityConfig & config);
 
 }  // namespace crane
 #endif  // CRANE_SESSIONS__ROTATION_SUITABILITY_HPP_

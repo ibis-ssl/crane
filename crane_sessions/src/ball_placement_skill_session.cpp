@@ -67,10 +67,7 @@ void BallPlacementSkillSession::onBeforeSkillRun()
   }
 }
 
-void BallPlacementSkillSession::onRobotsChangedHook()
-{
-  initial_ball_placement_failures_.reset();
-}
+void BallPlacementSkillSession::onRobotsChangedHook() { initial_ball_placement_failures_.reset(); }
 
 std::uint32_t BallPlacementSkillSession::getCurrentBallPlacementFailures() const
 {

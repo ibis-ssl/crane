@@ -20,8 +20,8 @@ constexpr double NON_CANDIDATE_COST = 1e6;
 }  // namespace
 
 std::function<double(const std::shared_ptr<RobotInfo> &)> makeRotationSuitabilityFunc(
-  const WorldModelWrapper::SharedPtr & world_model,
-  std::shared_ptr<SkillAssignmentHistory> history, const RotationSuitabilityConfig & config)
+  const WorldModelWrapper::SharedPtr & world_model, std::shared_ptr<SkillAssignmentHistory> history,
+  const RotationSuitabilityConfig & config)
 {
   // 距離昇順で上位 N 台を事前計算する
   // （suitability_func は1ロボットずつ呼ばれるため、ランキング情報を lambda にキャプチャしておく）

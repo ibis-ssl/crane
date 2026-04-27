@@ -53,8 +53,7 @@ private:
 
   /// 試行開始以降に追加された game events のうち、FreeKick 失敗を示すものがあるか。
   bool hasOurFailureGameEvent(
-    const crane_msgs::msg::PlaySituation & current_play_situation,
-    std::size_t start_index) const;
+    const crane_msgs::msg::PlaySituation & current_play_situation, std::size_t start_index) const;
 };
 }  // namespace crane
 #endif  // CRANE_SESSIONS__FREE_KICKER_SKILL_SESSION_HPP_

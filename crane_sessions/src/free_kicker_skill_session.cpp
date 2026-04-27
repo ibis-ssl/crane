@@ -53,8 +53,7 @@ std::optional<bool> FreeKickerSkillSession::determineAssignmentResult(
 
 void FreeKickerSkillSession::onSkillStarted()
 {
-  initial_game_events_size_ =
-    world_model->getMsg().play_situation.referee_raw.game_events.size();
+  initial_game_events_size_ = world_model->getMsg().play_situation.referee_raw.game_events.size();
 }
 
 void FreeKickerSkillSession::onRobotsChangedHook() { initial_game_events_size_.reset(); }
