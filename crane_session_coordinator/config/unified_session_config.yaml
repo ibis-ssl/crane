@@ -58,6 +58,12 @@ situations:
         max_robots: 1
       - name: free_kicker_skill
         max_robots: 1
+        # params:
+        #   success_weight: 1.0
+        #   failure_weight: 3.0
+        #   distance_weight: 0.01
+        #   rotation_weight: 0.05
+        #   top_n_candidates: 3
       - name: pass_receive
         max_robots: 1
       - name: defender
