@@ -22,8 +22,6 @@ constexpr double FK_ALIGN_WAIT_SEC = 1.0;
 constexpr double FK_KICK_TIMEOUT_SEC = 3.0;
 constexpr double FK_MIN_PASS_ACCEPT_SCORE = 0.4;
 constexpr double FK_PASS_HYSTERESIS_RATIO = 0.85;
-constexpr double FK_APPROACH_ANGLE_TOLERANCE_RAD = 10.0 * M_PI / 180.0;
-constexpr double FK_APPROACH_SPEED_TOLERANCE = 0.3;
 }  // namespace
 
 std::string FreeKicker::getStateName(int s)
@@ -50,8 +48,8 @@ void FreeKicker::initialize()
   setParameter("approach_max_velocity", 1.5);
   setParameter("align_max_velocity", 0.3);
   setParameter("kick_max_velocity", 0.5);
-  setParameter("approach_distance", 0.25);
-  setParameter("approach_position_tolerance", 0.03);
+  setParameter("approach_distance", 0.15);
+  setParameter("approach_position_tolerance", 0.05);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
@@ -59,8 +57,6 @@ void FreeKicker::initialize()
   setParameter("pass_min_distance", 1.5);
   setParameter("pass_max_distance", 6.0);
   setParameter("enemy_slack_threshold", 0.3);
-  setParameter("ball_nearby_radius", 1.0);
-  setParameter("ball_nearby_speed", 0.5);
   setParameter("pass_defensive_half_penalty", 0.1);
   setParameter("pass_chip_bypass_distance", 1.5);
 
@@ -77,35 +73,30 @@ void FreeKicker::initialize()
   addStateFunction(s(S::APPROACH), [this]() -> Status {
     if (!approach_entry_time_.has_value()) {
       approach_entry_time_ = std::chrono::steady_clock::now();
-    }
-    if (!target_locked_) {
+      // standoff_ を安定させるため APPROACH 開始の 1 フレーム目でロック
       kick_target_ = selectKickTarget();
+      target_locked_ = true;
     }
 
     const Point ball_pos = world_model()->ball().pos;
-    const double approach_dist = getParameter<double>("approach_distance");
+    const double interval = getParameter<double>("approach_distance");
     standoff_ = computeAroundBallApproachTargetDynamic(
-      ball_pos, kick_target_, robot()->pose.pos, approach_dist, approach_dist * 1.5);
+      ball_pos, kick_target_, robot()->pose.pos, interval, interval * 4.0);
 
-    double max_vel = getParameter<double>("approach_max_velocity");
-    if ((robot()->pose.pos - ball_pos).norm() < getParameter<double>("ball_nearby_radius")) {
-      max_vel = std::min(max_vel, getParameter<double>("ball_nearby_speed"));
-    }
-    command->setTargetPosition(standoff_)
+    command->setMaxVelocity("FreeKicker::APPROACH", getParameter<double>("approach_max_velocity"))
+      .setTargetPosition(standoff_, 0.0)
       .lookAtFrom(kick_target_, ball_pos)
-      .setMaxVelocity("FreeKicker::APPROACH", max_vel);
+      .disableBallAvoidance()
+      .disablePlacementAvoidance()
+      .disableGoalAreaAvoidance()
+      .disableFieldBoundary()
+      .dribble(0.0)
+      .setOmegaLimit(10.0);
 
     return Status::RUNNING;
   });
   addTransition(s(S::APPROACH), s(S::ALIGN), [this]() -> bool {
-    const Point ball_pos = world_model()->ball().pos;
-    double pos_error = (robot()->pose.pos - standoff_).norm();
-    double angle_error =
-      std::abs(normalizeAngle(robot()->pose.theta - getAngle(kick_target_ - ball_pos)));
-    double speed = robot()->vel.linear.norm();
-
-    return pos_error < getParameter<double>("approach_position_tolerance") &&
-           angle_error < FK_APPROACH_ANGLE_TOLERANCE_RAD && speed < FK_APPROACH_SPEED_TOLERANCE;
+    return command->getTargetDistance() < getParameter<double>("approach_position_tolerance");
   });
   addTransition(s(S::APPROACH), s(S::ENTRY_POINT), [this]() -> bool {
     using std::chrono::duration;
