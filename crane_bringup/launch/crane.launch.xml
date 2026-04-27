@@ -75,7 +75,7 @@ limitations under the License.
   <!-- 加減速度パラメータ -->
   <!-- ============================================================ -->
   <!-- ロボット送信用の加速度パラメータ -->
-  <arg name="robot_acceleration.acceleration" default="4.0" description="加速時の加速度 [m/s^2]"/>
+  <arg name="robot_acceleration.acceleration" default="6.0" description="加速時の加速度 [m/s^2]"/>
   <arg name="robot_acceleration.deceleration_high" default="3.0" description="減速時・高速域の減速度 [m/s^2]"/>
   <arg name="robot_acceleration.deceleration_low" default="3.0" description="減速時・低速域の減速度 [m/s^2]"/>
   <arg name="robot_acceleration.velocity_threshold" default="1.0" description="高速域・低速域のしきい値 [m/s]"/>
