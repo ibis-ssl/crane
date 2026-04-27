@@ -60,7 +60,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ロボット性能パラメータ -->
   <!-- ============================================================ -->
-  <arg name="max_vel" default="4.0" description="ロボットの最大速度 [m/s]"/>
+  <arg name="max_vel" default="6.0" description="ロボットの最大速度 [m/s]"/>
 
   <!-- Slack時間計算パラメータ -->
   <arg name="slack.robot_max_acceleration" default="2.5" description="slack時間計算に用いるロボットの最大加速度 [m/s^2]"/>
