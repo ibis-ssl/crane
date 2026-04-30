@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_physics/position_assignments.hpp>
 #include <crane_utils/stream.hpp>
@@ -176,6 +177,17 @@ public:
     return default_value;
   }
 
+  void setFixedRobots(const std::vector<uint8_t> & ids) { fixed_robots_ = ids; }
+  const std::vector<uint8_t> & getFixedRobots() const { return fixed_robots_; }
+
+  void setUseCandidateRobots(bool flag) { use_candidate_robots_ = flag; }
+  bool usesCandidateRobots() const { return use_candidate_robots_; }
+
+  void setCandidateRobots(const std::vector<uint8_t> & ids) { candidate_robots_ = ids; }
+  const std::vector<uint8_t> & getCandidateRobots() const { return candidate_robots_; }
+
+  virtual void onDeactivated(const crane_msgs::msg::PlaySituation &) {}
+
   /**
    * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
    *
@@ -282,6 +294,9 @@ protected:
 
 private:
   crane_msgs::msg::GameAnalysis game_analysis_;
+  std::vector<uint8_t> fixed_robots_;
+  std::vector<uint8_t> candidate_robots_;
+  bool use_candidate_robots_ = false;
 };
 
 }  // namespace crane

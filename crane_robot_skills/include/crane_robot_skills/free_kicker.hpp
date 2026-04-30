@@ -42,6 +42,8 @@ public:
     return static_cast<FreeKickerState>(SkillBaseWithState::getCurrentState());
   }
 
+  bool kickActuallyLaunched() const { return kick_actually_launched_; }
+
 private:
   void initialize();
   static std::string getStateName(int s);
@@ -71,6 +73,8 @@ private:
   std::optional<std::chrono::steady_clock::time_point> align_entry_time_;
 
   int align_stable_count_ = 0;
+
+  bool kick_actually_launched_ = false;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__FREE_KICKER_HPP_
