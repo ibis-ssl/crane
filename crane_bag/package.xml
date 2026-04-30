@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_bag</name>
-  <version>1.0.355</version>
+  <version>1.0.356</version>
   <description>C++ Rosbag解析CLIツール（mcap埋め込みメッセージ定義を使った動的デシリアライズ）</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
