@@ -242,8 +242,8 @@ protected:
     const std::vector<RobotIdentifier> & robots, const std::vector<Point> & target_points,
     const std::string & command_name, const Point & look_at_point,
     const std::function<void(std::shared_ptr<PositionCommandWrapper> &)> & customize_command =
-      [](std::shared_ptr<PositionCommandWrapper> &) {})
-    -> std::vector<crane_msgs::msg::RobotCommand>
+      [](std::shared_ptr<PositionCommandWrapper> &) {},
+    double position_tolerance = -1.0) -> std::vector<crane_msgs::msg::RobotCommand>
   {
     if (robots.empty() || target_points.empty()) {
       return {};
@@ -267,7 +267,11 @@ protected:
       auto command =
         std::make_shared<PositionCommandWrapper>(command_name, robot_id->id, world_model);
 
-      command->setTargetPosition(target_point);
+      if (position_tolerance < 0.) {
+        command->setTargetPosition(target_point);
+      } else {
+        command->setTargetPosition(target_point, position_tolerance);
+      }
       command->setTargetTheta(getAngle(look_at_point - target_point));
 
       // カスタム設定を適用
@@ -285,6 +289,12 @@ protected:
 
   std::unordered_map<std::string, SessionParameterType> session_params_;
 
+  bool use_candidate_robots_ = false;
+
+  std::vector<uint8_t> fixed_robots_;
+
+  std::vector<uint8_t> candidate_robots_;
+
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
@@ -294,9 +304,6 @@ protected:
 
 private:
   crane_msgs::msg::GameAnalysis game_analysis_;
-  std::vector<uint8_t> fixed_robots_;
-  std::vector<uint8_t> candidate_robots_;
-  bool use_candidate_robots_ = false;
 };
 
 }  // namespace crane

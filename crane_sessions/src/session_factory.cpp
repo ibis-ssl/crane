@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 // 全プランナーのインクルード（.cppファイルでのみ必要）
+#include <crane_sessions/attacker_heat_rotation_session.hpp>
 #include <crane_sessions/attacker_skill_session.hpp>
 #include <crane_sessions/ball_calibration_data_collector_session.hpp>
 #include <crane_sessions/ball_near_by_positioner_skill_session.hpp>
@@ -54,6 +55,7 @@ namespace
 auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFactory> &
 {
   static const std::unordered_map<std::string, SessionFactory> factory_map{
+    PLANNER_ENTRY("attacker_heat_rotation", AttackerHeatRotationSession),
     PLANNER_ENTRY("attacker_skill", AttackerSkillSession),
     PLANNER_ENTRY("ball_nearby_positioner_skill", BallNearByPositionerSkillSession),
     PLANNER_ENTRY(

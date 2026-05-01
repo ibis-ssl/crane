@@ -123,7 +123,7 @@ auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
     try {
       auto results = robot_allocator_->allocate(
         session_name, world_model->ours().robotsWhere().available().getIds(), world_model,
-        static_cast<rclcpp::Node &>(*this));
+        static_cast<rclcpp::Node &>(*this), play_situation);
 
       // 結果をパブリッシュ
       robot_select_results_pub->publish(results);
