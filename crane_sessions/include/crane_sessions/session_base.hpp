@@ -350,9 +350,6 @@ protected:
 
 private:
   crane_msgs::msg::GameAnalysis game_analysis_;
-  std::vector<uint8_t> fixed_robots_;
-  std::vector<uint8_t> candidate_robots_;
-  bool use_candidate_robots_ = false;
 };
 
 }  // namespace crane
