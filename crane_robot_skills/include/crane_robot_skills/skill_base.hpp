@@ -105,8 +105,13 @@ public:
   : SkillInterface(std::forward<Args>(args)...)
   {
     this->name = name;
-    // commandはdelegating constructor内で空のnameで生成されるため、ここで正しいnameを設定する
-    this->command->name = name;
+    // 共有command（合成スキル）の場合は親スキル名を上書きしない。
+    // PracticeMode の kick_allowed_skills 判定が command->name に依存するため、
+    // 例えば Attacker(command) → 内部で KickOld(command) と合成しても
+    // command->name は親の "attacker" のまま保持する必要がある。
+    if (this->command->name.empty()) {
+      this->command->name = name;
+    }
     if (visualizer->layer == "skill/") {
       visualizer->layer = "skill/" + name;
     }
@@ -184,6 +189,9 @@ protected:
     msg.current_pose.x = robot()->pose.pos.x();
     msg.current_pose.y = robot()->pose.pos.y();
     msg.current_pose.theta = robot()->pose.theta;
+    // 各スキルが明示的にkick系メソッドを呼ばない限りキックしない不変条件を保証する
+    msg.chip_enable = false;
+    msg.kick_power = 0.0f;
   }
 
   void finalizeFrame(Status status)

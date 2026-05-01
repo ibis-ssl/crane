@@ -10,7 +10,7 @@ situations:
       - name: goalie_skill
         max_robots: 1
       - name: emplace_robot
-        max_robots: 1
+        max_robots: 20
       - name: attacker_skill
         max_robots: 1
       - name: defender
@@ -33,6 +33,22 @@ situations:
     sessions:
       - name: ball_placement_skill
         max_robots: 1
+        # 候補ロボット選択の重み。詳細は BallPlacementSkillSession を参照。
+        # スコア = clamped > 0 ? clamped + W_D * distance
+        #        : W_R * rotation_rank + W_D * distance     (clamped == 0 のローテ帯)
+        # ただし clamped = max(0, W_F * failures - W_S * successes)
+        # W_D: ボールからの距離に掛ける重み。小さいほど近いロボットを優先。
+        # W_F: 失敗回数に掛ける重み。大きいほど失敗履歴のあるロボットを避ける。
+        # rotation_rank は上位 top_n 台内で last_seq 昇順の順位 (0=最古=最優先)。
+        # 上位 top_n 台のみが対象。それ以外は実質除外される。
+        # history_file_path を指定しなければ
+        # crane_session_coordinator/config/ball_placement_history.yaml が使われる。
+        params:
+          success_weight: 1.0
+          failure_weight: 3.0
+          distance_weight: 0.01
+          rotation_weight: 0.05
+          top_n_candidates: 3
       - name: ball_placement_avoidance
         max_robots: 20
   OUR_FREE_KICK:
@@ -42,6 +58,12 @@ situations:
         max_robots: 1
       - name: free_kicker_skill
         max_robots: 1
+        # params:
+        #   success_weight: 1.0
+        #   failure_weight: 3.0
+        #   distance_weight: 0.01
+        #   rotation_weight: 0.05
+        #   top_n_candidates: 3
       - name: pass_receive
         max_robots: 1
       - name: defender
@@ -75,7 +97,7 @@ situations:
     description: STOP
     sessions:
       - name: emplace_robot
-        max_robots: 1
+        max_robots: 20
       - name: goalie_skill
         max_robots: 1
       - name: defender
@@ -187,29 +209,48 @@ situations:
         max_robots: 20
   HALF_FIELD_PRACTICE:
     description: 半面練習モード（FW逆方向攻撃・キック禁止・移動制限あり・レフェリー信号基準）
+    # fixed_robots: [...] を指定すると allocator が自動で固定候補として扱う。
+    # fixed_robots の数が max_robots より少ない場合、残りは動的割当で補完される。
+    # attacker_heat_rotation は candidate_robots: [...] を候補プールとして使う。
+    # fixed_robots を指定しない場合は WARN を出しつつ候補内で動的選択する。
     practice_mode:
       enabled: true
       kick_prohibition: true
       reverse_attack: true
       use_normal_speed: true
+      # スキル名は SkillInterface の command->name と完全一致比較される。
+      # 合成スキル(Attacker → 内部 KickOld/GoalKick 等)も親のスキル名で判定される。
       kick_allowed_skills:
-        - goalie_skill
+        - goalie
+        - attacker
         - defender
+        - free_kicker
     sessions:
       - name: goalie_skill
         max_robots: 1
-      - name: attacker_skill
+        fixed_robots: [0]
+      - name: attacker_heat_rotation
         max_robots: 1
+        # 候補プール。基本は同一ロボットを使い続け、最大モータ温度が
+        # rotation_trigger_celsius を超えた瞬間に候補内で最も冷えたロボットへ切替える。
+        candidate_robots: [1, 5, 9]
+        # しきい値（℃）。省略時は 60℃。
+        # params:
+        #   rotation_trigger_celsius: 65.0
       - name: defender
         max_robots: 3
+        fixed_robots: [2, 3, 4]
         params:
           reduced_robots: 1
       - name: pass_receive
         max_robots: 1
+        fixed_robots: [5]
       - name: sub_attacker_skill
         max_robots: 1
+        fixed_robots: [6]
       - name: marker
         max_robots: 2
+        fixed_robots: [7, 8]
       - name: forward
         max_robots: 20
 events:

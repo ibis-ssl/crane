@@ -27,7 +27,8 @@ RobotAllocator::RobotAllocator(
 
 auto RobotAllocator::allocate(
   const std::string & session_name, std::vector<uint8_t> selectable_robot_ids,
-  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
+  const crane_msgs::msg::PlaySituation & current_play_situation)
   -> crane_msgs::msg::RobotSelectResults
 {
   auto session_capacities_opt = config_manager_->getSessionCapacitiesForSituation(session_name);
@@ -59,6 +60,44 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
+    // fixed_robots が指定されていれば session 側の宣言有無に関わらず反映する。
+    // allocator は fixed_robots の存在をもって固定候補ありとみなし、
+    // 固定IDを優先確保しつつ不足分は動的割当にフォールバックする。
+    {
+      const bool yaml_has_fixed = !session_capacity.fixed_robots.empty();
+      if (yaml_has_fixed) {
+        session->setFixedRobots(session_capacity.fixed_robots);
+      } else if (session_capacity.session_name == "attacker_heat_rotation") {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' has no fixed_robots: falling back to dynamic suitability allocation "
+          "within candidate_robots.",
+          session_capacity.session_name.c_str());
+      }
+    }
+
+    // 候補ロボットプール（派生クラスで setUseCandidateRobots(true)）と
+    // YAML の candidate_robots: の整合をチェックして反映する。
+    // allocator は候補プールには関与せず、Session 側のロジックのみが使用する。
+    {
+      const bool session_uses_candidate = session->usesCandidateRobots();
+      const bool yaml_has_candidate = !session_capacity.candidate_robots.empty();
+      if (session_uses_candidate && yaml_has_candidate) {
+        session->setCandidateRobots(session_capacity.candidate_robots);
+      } else if (session_uses_candidate && !yaml_has_candidate) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' declares candidate-robots mode but YAML has no candidate_robots:.",
+          session_capacity.session_name.c_str());
+      } else if (!session_uses_candidate && yaml_has_candidate) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("RobotAllocator"),
+          "Session '%s' has candidate_robots in YAML but does not declare candidate-robots "
+          "mode (setUseCandidateRobots(true) not called); the YAML setting is ignored.",
+          session_capacity.session_name.c_str());
+      }
+    }
+
     // 適性関数を取得
     auto suitability_func = session->getRobotSuitabilityFunc();
 
@@ -69,7 +108,7 @@ auto RobotAllocator::allocate(
     requirements.emplace_back(
       session_capacity.session_name, priority++,
       effective_max,  // max_robots（動的に調整）
-      suitability_func);
+      suitability_func, session_capacity.fixed_robots);
   }
 
   // グリーディ方式でロボットを割当
@@ -127,6 +166,20 @@ auto RobotAllocator::allocate(
       result.selectable_robots = selectable_robot_ids;
       result.selected_robots = robot_ids;
       results.results.push_back(result);
+    }
+  }
+
+  const std::unordered_set<SessionBase *> active_session_ptrs([&]() {
+    std::unordered_set<SessionBase *> ptrs;
+    for (const auto & session : session_registry_->getAllPlanners()) {
+      ptrs.insert(session.get());
+    }
+    return ptrs;
+  }());
+
+  for (const auto & previous_session : prev_available_planners) {
+    if (active_session_ptrs.count(previous_session.get()) == 0) {
+      previous_session->onDeactivated(current_play_situation);
     }
   }
 
@@ -224,25 +277,60 @@ auto RobotAllocator::allocateRobotsGreedy(
       break;
     }
 
-    // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
-    std::vector<std::pair<uint8_t, double>> robot_scores;
-    for (const auto & robot_id : remaining_robots) {
-      auto robot = world_model->getOurRobot(robot_id);
-      double score = req.suitability_func(robot);
-      if (prev_state.wasAssignedTo(robot_id, req.name)) {
-        score -= config.hysteresis_bonus;
+    std::vector<uint8_t> assigned_robots;
+
+    // fixed_robots 指定時はそのIDを優先取得し、不足分は動的割当にフォールバックする
+    if (!req.fixed_robots.empty()) {
+      const std::unordered_set<uint8_t> remaining_set(
+        remaining_robots.begin(), remaining_robots.end());
+      for (const uint8_t id : req.fixed_robots) {
+        if (static_cast<int>(assigned_robots.size()) >= req.max_robots) {
+          break;
+        }
+        if (remaining_set.count(id) > 0) {
+          assigned_robots.push_back(id);
+        } else {
+          RCLCPP_WARN(
+            logger_, "Session「%s」の固定割当ID %d は利用不可のためスキップ", req.name.c_str(),
+            static_cast<int>(id));
+        }
       }
-      robot_scores.emplace_back(robot_id, score);
+
+      if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
+        const int remaining_dynamic_slots =
+          req.max_robots - static_cast<int>(assigned_robots.size());
+        RCLCPP_DEBUG(
+          logger_, "Session「%s」は固定割当 %zu 台を確保。残り %d 台は動的割当を使用",
+          req.name.c_str(), assigned_robots.size(), remaining_dynamic_slots);
+      }
     }
 
-    std::ranges::sort(
-      robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
+    if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
+      // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
+      const std::unordered_set<uint8_t> assigned_set(
+        assigned_robots.begin(), assigned_robots.end());
+      std::vector<std::pair<uint8_t, double>> robot_scores;
+      for (const auto & robot_id : remaining_robots) {
+        if (assigned_set.count(robot_id) > 0) {
+          continue;
+        }
+        auto robot = world_model->getOurRobot(robot_id);
+        double score = req.suitability_func(robot);
+        if (prev_state.wasAssignedTo(robot_id, req.name)) {
+          score -= config.hysteresis_bonus;
+        }
+        robot_scores.emplace_back(robot_id, score);
+      }
 
-    int num_to_allocate = std::min(req.max_robots, static_cast<int>(remaining_robots.size()));
+      std::ranges::sort(
+        robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
 
-    std::vector<uint8_t> assigned_robots;
-    for (int i = 0; i < num_to_allocate; ++i) {
-      assigned_robots.push_back(robot_scores[i].first);
+      const int num_to_allocate = std::min(
+        req.max_robots - static_cast<int>(assigned_robots.size()),
+        static_cast<int>(robot_scores.size()));
+      for (int i = 0; i < num_to_allocate; ++i) {
+        assigned_robots.push_back(robot_scores[i].first);
+      }
     }
 
     result[req.name] = assigned_robots;
