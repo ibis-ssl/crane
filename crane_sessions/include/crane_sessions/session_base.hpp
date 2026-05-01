@@ -177,6 +177,17 @@ public:
     return default_value;
   }
 
+  void setFixedRobots(const std::vector<uint8_t> & ids) { fixed_robots_ = ids; }
+  const std::vector<uint8_t> & getFixedRobots() const { return fixed_robots_; }
+
+  void setUseCandidateRobots(bool flag) { use_candidate_robots_ = flag; }
+  bool usesCandidateRobots() const { return use_candidate_robots_; }
+
+  void setCandidateRobots(const std::vector<uint8_t> & ids) { candidate_robots_ = ids; }
+  const std::vector<uint8_t> & getCandidateRobots() const { return candidate_robots_; }
+
+  virtual void onDeactivated(const crane_msgs::msg::PlaySituation &) {}
+
   /**
    * @brief YAML 由来の固定割当ロボットIDを設定する（RobotAllocator が呼ぶ）
    *
@@ -339,6 +350,9 @@ protected:
 
 private:
   crane_msgs::msg::GameAnalysis game_analysis_;
+  std::vector<uint8_t> fixed_robots_;
+  std::vector<uint8_t> candidate_robots_;
+  bool use_candidate_robots_ = false;
 };
 
 }  // namespace crane
