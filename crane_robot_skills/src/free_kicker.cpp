@@ -18,12 +18,10 @@ namespace
 constexpr double FK_KICK_DETECT_VEL = 0.7;
 constexpr double FK_KICK_DIRECTION_COS_THRESHOLD = 0.7;
 constexpr double FK_APPROACH_PHASE_TIMEOUT = 6.0;
-constexpr double FK_ALIGN_PHASE_TIMEOUT = 4.0;
+constexpr double FK_ALIGN_WAIT_SEC = 1.0;
 constexpr double FK_KICK_TIMEOUT_SEC = 3.0;
 constexpr double FK_MIN_PASS_ACCEPT_SCORE = 0.4;
 constexpr double FK_PASS_HYSTERESIS_RATIO = 0.85;
-constexpr double FK_APPROACH_ANGLE_TOLERANCE_RAD = 10.0 * M_PI / 180.0;
-constexpr double FK_APPROACH_SPEED_TOLERANCE = 0.3;
 }  // namespace
 
 std::string FreeKicker::getStateName(int s)
@@ -36,26 +34,22 @@ void FreeKicker::resetInternalState()
   kick_started_ = false;
   target_locked_ = false;
   use_chip_ = false;
+  chip_distance_ = getParameter<double>("target_chip_distance");
   last_chose_shoot_ = false;
   last_pass_receiver_id_ = std::nullopt;
-  align_stable_count_ = 0;
   approach_entry_time_ = std::nullopt;
   align_entry_time_ = std::nullopt;
+  align_target_locked_ = Point::Zero();
   kick_actually_launched_ = false;
 }
 
 void FreeKicker::initialize()
 {
   setParameter("approach_max_velocity", 1.5);
-  setParameter("align_max_velocity", 0.6);
-  setParameter("kick_max_velocity", 1.2);
-  setParameter("approach_distance", 0.25);
-  setParameter("align_distance", 0.12);
-  setParameter("approach_position_tolerance", 0.10);
-  setParameter("align_position_tolerance", 0.05);
-  setParameter("align_speed_tolerance", 0.10);
-  setParameter("align_omega_tolerance", 0.20);
-  setParameter("align_stable_frames", 5);
+  setParameter("align_max_velocity", 0.3);
+  setParameter("kick_max_velocity", 0.5);
+  setParameter("approach_distance", 0.15);
+  setParameter("approach_position_tolerance", 0.05);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
@@ -63,8 +57,6 @@ void FreeKicker::initialize()
   setParameter("pass_min_distance", 1.5);
   setParameter("pass_max_distance", 6.0);
   setParameter("enemy_slack_threshold", 0.3);
-  setParameter("ball_nearby_radius", 1.0);
-  setParameter("ball_nearby_speed", 0.5);
   setParameter("pass_defensive_half_penalty", 0.1);
   setParameter("pass_chip_bypass_distance", 1.5);
 
@@ -81,35 +73,30 @@ void FreeKicker::initialize()
   addStateFunction(s(S::APPROACH), [this]() -> Status {
     if (!approach_entry_time_.has_value()) {
       approach_entry_time_ = std::chrono::steady_clock::now();
-    }
-    if (!target_locked_) {
+      // standoff_ を安定させるため APPROACH 開始の 1 フレーム目でロック
       kick_target_ = selectKickTarget();
+      target_locked_ = true;
     }
 
     const Point ball_pos = world_model()->ball().pos;
-    const double approach_dist = getParameter<double>("approach_distance");
+    const double interval = getParameter<double>("approach_distance");
     standoff_ = computeAroundBallApproachTargetDynamic(
-      ball_pos, kick_target_, robot()->pose.pos, approach_dist, approach_dist * 1.5);
+      ball_pos, kick_target_, robot()->pose.pos, interval, interval * 4.0);
 
-    double max_vel = getParameter<double>("approach_max_velocity");
-    if ((robot()->pose.pos - ball_pos).norm() < getParameter<double>("ball_nearby_radius")) {
-      max_vel = std::min(max_vel, getParameter<double>("ball_nearby_speed"));
-    }
-    command->setTargetPosition(standoff_)
+    command->setMaxVelocity("FreeKicker::APPROACH", getParameter<double>("approach_max_velocity"))
+      .setTargetPosition(standoff_, 0.0)
       .lookAtFrom(kick_target_, ball_pos)
-      .setMaxVelocity("FreeKicker::APPROACH", max_vel);
+      .disableBallAvoidance()
+      .disablePlacementAvoidance()
+      .disableGoalAreaAvoidance()
+      .disableFieldBoundary()
+      .dribble(0.0)
+      .setOmegaLimit(10.0);
 
     return Status::RUNNING;
   });
   addTransition(s(S::APPROACH), s(S::ALIGN), [this]() -> bool {
-    const Point ball_pos = world_model()->ball().pos;
-    double pos_error = (robot()->pose.pos - standoff_).norm();
-    double angle_error =
-      std::abs(normalizeAngle(robot()->pose.theta - getAngle(kick_target_ - ball_pos)));
-    double speed = robot()->vel.linear.norm();
-
-    return pos_error < getParameter<double>("approach_position_tolerance") &&
-           angle_error < FK_APPROACH_ANGLE_TOLERANCE_RAD && speed < FK_APPROACH_SPEED_TOLERANCE;
+    return command->getTargetDistance() < getParameter<double>("approach_position_tolerance");
   });
   addTransition(s(S::APPROACH), s(S::ENTRY_POINT), [this]() -> bool {
     using std::chrono::duration;
@@ -124,44 +111,26 @@ void FreeKicker::initialize()
     if (!align_entry_time_.has_value()) {
       target_locked_ = true;
       align_entry_time_ = std::chrono::steady_clock::now();
-      align_stable_count_ = 0;
+      // APPROACH 最終地点と整合させるため、進入時のボール位置を基準に1回だけ計算してロック
+      const Point ball_pos = world_model()->ball().pos;
+      align_target_locked_ = ball_pos - (kick_target_ - ball_pos).normalized() *
+                                          getParameter<double>("approach_distance");
     }
 
-    const Point ball_pos = world_model()->ball().pos;
-    const Point press_point =
-      ball_pos - (kick_target_ - ball_pos).normalized() * getParameter<double>("align_distance");
-
-    command->setTargetPosition(press_point)
-      .lookAtFrom(kick_target_, ball_pos)
+    command->setTargetPosition(align_target_locked_)
+      .lookAtFrom(kick_target_, world_model()->ball().pos)
       .setMaxVelocity("FreeKicker::ALIGN", getParameter<double>("align_max_velocity"))
       .disableBallAvoidance();
-
-    double pos_error = (robot()->pose.pos - press_point).norm();
-    double speed = robot()->vel.linear.norm();
-    double omega = std::abs(robot()->vel.omega);
-
-    bool stable = pos_error < getParameter<double>("align_position_tolerance") &&
-                  speed < getParameter<double>("align_speed_tolerance") &&
-                  omega < getParameter<double>("align_omega_tolerance");
-
-    if (stable) {
-      align_stable_count_++;
-    } else {
-      align_stable_count_ = 0;
-    }
 
     return Status::RUNNING;
   });
   addTransition(s(S::ALIGN), s(S::KICK), [this]() -> bool {
-    return align_stable_count_ >= getParameter<int>("align_stable_frames");
-  });
-  addTransition(s(S::ALIGN), s(S::ENTRY_POINT), [this]() -> bool {
     using std::chrono::duration;
     using std::chrono::duration_cast;
     using std::chrono::steady_clock;
     return align_entry_time_.has_value() &&
-           duration_cast<duration<double>>(steady_clock::now() - *align_entry_time_).count() >
-             FK_ALIGN_PHASE_TIMEOUT;
+           duration_cast<duration<double>>(steady_clock::now() - *align_entry_time_).count() >=
+             FK_ALIGN_WAIT_SEC;
   });
 
   addStateFunction(s(S::KICK), [this]() -> Status {
@@ -179,16 +148,16 @@ void FreeKicker::initialize()
     // 衝突回避は有効のまま（KickOld と異なる、フィールド外押し出し防止の肝）
 
     if (use_chip_) {
-      command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
-      command->kickWithChip(1.0);
+      command->setKickWithChipTargetDistance(chip_distance_);
     } else {
       command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
-      command->kickStraight(1.0);
     }
 
     return Status::RUNNING;
   });
   // KICK → ENTRY_POINT のリトライ遷移は意図的に設けない（ダブルタッチ防止）
+  // 同じ FINISH 遷移でも、ボールが意図方向に飛んだ場合は kick_actually_launched_=true、
+  // タイムアウトで諦めた場合は false にして外部 (Session) から判別できるようにする。
   addTransition(s(S::KICK), s(S::FINISH), [this]() -> bool {
     if (!kick_started_) return false;
 
@@ -273,13 +242,19 @@ std::optional<Point> FreeKicker::selectPassTarget()
 
   auto teammates = wm->ours().robotsWhere().available().excludeGoalie().get();
 
+  // 自陣ロボ（敵半面にいないロボット）はパス先候補から除外
+  const double our_sign = wm->getOurSideSign();
+  teammates.erase(
+    std::remove_if(
+      teammates.begin(), teammates.end(),
+      [&](const auto & r) { return r->id == robot()->id || r->pose.pos.x() * our_sign > 0.0; }),
+    teammates.end());
+
   double best_score = FK_MIN_PASS_ACCEPT_SCORE;
   std::optional<uint8_t> best_id;
   Point best_pos = Point::Zero();
 
   for (const auto & teammate : teammates) {
-    if (teammate->id == robot()->id) continue;
-
     double score = calculatePassScore(teammate->pose.pos, enemies, best_enemy_slack);
 
     if (last_pass_receiver_id_ && teammate->id == last_pass_receiver_id_.value()) {
@@ -295,9 +270,16 @@ std::optional<Point> FreeKicker::selectPassTarget()
 
   if (best_id) {
     last_pass_receiver_id_ = best_id;
-    use_chip_ =
-      getPassAnalysis(ball_pos, best_pos, enemies, getParameter<double>("pass_obstacle_distance"))
-        .need_chip;
+    auto pass_analysis =
+      getPassAnalysis(ball_pos, best_pos, enemies, getParameter<double>("pass_obstacle_distance"));
+    use_chip_ = true;
+    if (use_chip_) {
+      if (pass_analysis.required_chip_distance > 0.5) {
+        chip_distance_ = pass_analysis.required_chip_distance + 0.2;
+      } else {
+        chip_distance_ = 1.0;
+      }
+    }
     return best_pos;
   }
 
@@ -374,6 +356,8 @@ Point FreeKicker::computeFallbackTarget()
   fallback.y() = std::clamp(ball_pos.y(), -field_half_y * 0.3, field_half_y * 0.3);
 
   use_chip_ = true;
+  chip_distance_ =
+    std::clamp((fallback - ball_pos).norm(), 1.0, getParameter<double>("pass_max_distance"));
   return fallback;
 }
 }  // namespace crane::skills
