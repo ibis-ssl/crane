@@ -41,6 +41,11 @@ GameController::GameController(const rclcpp::NodeOptions & options)
       if (packet.ParseFromArray(buf.data(), static_cast<int>(size))) {
         std::lock_guard<std::mutex> lock(latest_mutex_);
         latest_packet_ = std::move(packet);
+        packet_received_.store(true, std::memory_order_relaxed);
+      } else {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000,
+          "Refereeパケットのパース失敗 (size=%zu) — protoバージョン不整合の可能性", size);
       }
     }
   });
@@ -50,6 +55,15 @@ GameController::GameController(const rclcpp::NodeOptions & options)
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
   pub_game_event = create_publisher<robocup_ssl_msgs::msg::GameEvent>("game_event", 10);
   timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&GameController::on_timer, this));
+
+  status_timer_ = rclcpp::create_timer(this, get_clock(), 1000ms, [this, address, port]() {
+    if (!packet_received_.exchange(false, std::memory_order_relaxed)) {
+      RCLCPP_WARN(get_logger(), "Referee受信が直近1秒間ありません (%s:%d)", address.c_str(), port);
+    }
+  });
+
+  RCLCPP_INFO(
+    get_logger(), "game_controller initialized - listening on %s:%d", address.c_str(), port);
 }
 
 GameController::~GameController() = default;

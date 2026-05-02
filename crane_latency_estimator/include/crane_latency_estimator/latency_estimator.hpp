@@ -69,9 +69,6 @@ private:
   double min_cmd_stddev_rad_{0.05};
   double estimation_interval_sec_{1.0};
   double ema_alpha_{0.3};
-  double log_interval_sec_{1.0};
-
-  rclcpp::Time last_log_time_;
 };
 
 }  // namespace crane

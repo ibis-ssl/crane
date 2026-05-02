@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cmath>
 #include <crane_latency_estimator/latency_estimator.hpp>
-#include <cstdio>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -26,7 +25,6 @@ LatencyEstimator::LatencyEstimator(const rclcpp::NodeOptions & options)
   min_cmd_stddev_rad_ = declare_parameter("min_cmd_stddev_rad", 0.05);
   estimation_interval_sec_ = declare_parameter("estimation_interval_sec", 1.0);
   ema_alpha_ = declare_parameter("ema_alpha", 0.3);
-  log_interval_sec_ = declare_parameter("log_interval_sec", 1.0);
 
   sub_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
     "/robot_commands", 10,
@@ -46,8 +44,6 @@ LatencyEstimator::LatencyEstimator(const rclcpp::NodeOptions & options)
   const auto interval_ms =
     std::chrono::milliseconds(static_cast<int>(estimation_interval_sec_ * 1000.0));
   estimation_timer_ = create_wall_timer(interval_ms, [this]() { onEstimationTimer(); });
-
-  last_log_time_ = now();
 }
 
 double LatencyEstimator::interpolate(const std::deque<std::pair<double, double>> & data, double t)
@@ -216,31 +212,6 @@ void LatencyEstimator::onEstimationTimer()
 
   if (!out.estimations.empty()) {
     pub_estimation_->publish(out);
-  }
-
-  if ((rclcpp::Time(out.header.stamp) - last_log_time_).seconds() >= log_interval_sec_) {
-    last_log_time_ = rclcpp::Time(out.header.stamp);
-    for (const auto & [robot_id, buf] : buffers_) {
-      if (buf.cmd.empty()) continue;
-      const double world_ms = buf.ema_world_ms;
-      const double fb_ms = buf.ema_fb_ms;
-      if (std::isnan(world_ms) && std::isnan(fb_ms)) {
-        RCLCPP_DEBUG(
-          get_logger(), "[id %u] no valid estimate (cmd buf=%zu)", robot_id, buf.cmd.size());
-      } else {
-        char line[128];
-        int pos = std::snprintf(line, sizeof(line), "[id %u]", robot_id);
-        if (!std::isnan(world_ms)) {
-          pos += std::snprintf(
-            line + pos, sizeof(line) - pos, " world=%.0fms(r=%.2f)", world_ms, buf.last_world_corr);
-        }
-        if (!std::isnan(fb_ms)) {
-          std::snprintf(
-            line + pos, sizeof(line) - pos, " fb=%.0fms(r=%.2f)", fb_ms, buf.last_fb_corr);
-        }
-        RCLCPP_INFO(get_logger(), "%s", line);
-      }
-    }
   }
 }
 
