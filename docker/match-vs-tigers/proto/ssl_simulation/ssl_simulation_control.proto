@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+package sslsim;
+
+// Minimal subset of ssl-simulation-protocol needed for ball teleportation.
+// Wire-compatible with the canonical messages defined at
+// https://github.com/RoboCup-SSL/ssl-simulation-protocol
+
+message TeleportBall {
+    optional float x = 1;
+    optional float y = 2;
+    optional float z = 3;
+    optional float vx = 4;
+    optional float vy = 5;
+    optional float vz = 6;
+    optional bool teleport_safely = 7 [default = false];
+    optional bool roll = 8 [default = false];
+    optional bool by_force = 9 [default = false];
+}
+
+message SimulatorControl {
+    optional TeleportBall teleport_ball = 1;
+    optional float simulation_speed = 3;
+}
+
+message SimulatorCommand {
+    optional SimulatorControl control = 1;
+}
