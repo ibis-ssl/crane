@@ -2,7 +2,8 @@
 
 // ---- 定数 ----
 const ROBOT_HIT_RADIUS_M = 0.15;
-const FIELD_MARGIN_M = 1.0;  // フィールド外側の余白 (m)
+const BALL_HIT_RADIUS_M = 0.08;
+const FIELD_MARGIN_M = 1.0;
 const CHART_BUF = 300;  // 10Hz × 30秒
 
 // ---- Chart.js ヘルパー ----
@@ -115,15 +116,11 @@ class FieldRenderer {
         this._resizeObserver.disconnect();
     }
 
-    // フィールド寸法(mm)をコントローラから取得
     _getFieldDims() {
         const c = this.controller;
         const halfL = (c.fieldLength / 2 + FIELD_MARGIN_M) * 1000;
         const halfW = (c.fieldWidth / 2 + FIELD_MARGIN_M) * 1000;
-        return {
-            vbX: -halfL, vbY: -halfW,
-            vbW: halfL * 2, vbH: halfW * 2,
-        };
+        return { vbX: -halfL, vbY: -halfW, vbW: halfL * 2, vbH: halfW * 2 };
     }
 
     _getVP() {
@@ -143,6 +140,7 @@ class FieldRenderer {
         const ctx = this.ctx;
         const vp = this._getVP();
         const c = this.controller;
+        const hasSel = c.selectedRobotId !== null;
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -160,20 +158,26 @@ class FieldRenderer {
         this._drawGrid(ctx, vp);
         this._drawFieldLines(ctx);
 
-        // 敵ロボット描画（灰色）
+        // ボール（薄いオレンジ）
+        this._drawBall(ctx, c);
+
+        // 敵ロボット（薄い灰色）
         for (const [id, robot] of Object.entries(c.robotsTheirs)) {
             if (!robot.available_vision && !robot.available_tracker) continue;
-            this._drawRobot(ctx, robot, Number(id), '#888888', null);
+            this._drawRobot(ctx, robot, Number(id), '#888888', null, { dim: true });
         }
 
-        // 味方ロボット描画
+        // 味方ロボット（非選択ロボットは選択中がいる場合に薄表示）
         for (const [id, robot] of Object.entries(c.robotsOurs)) {
             if (!robot.available_vision && !robot.available_tracker) continue;
+            const numId = Number(id);
+            const isSelected = numId === c.selectedRobotId;
             const color = c.isYellow ? '#FFD700' : '#4488FF';
-            this._drawRobot(ctx, robot, Number(id), color, c.selectedRobotId);
+            const dim = hasSel && !isSelected;
+            this._drawRobot(ctx, robot, numId, color, c.selectedRobotId, { dim });
         }
 
-        // 選択ハイライト（破線円）
+        // 選択ハイライト（破線ハロー）
         const selRobot = c.selectedRobotId !== null ? c.robotsOurs[c.selectedRobotId] : null;
         if (selRobot && (selRobot.available_vision || selRobot.available_tracker)) {
             const svgX = selRobot.x * 1000;
@@ -224,39 +228,72 @@ class FieldRenderer {
         }
     }
 
-    _drawRobot(ctx, robot, numId, fillColor, selectedId) {
+    _drawBall(ctx, c) {
+        if (!c.ballPos) return;
+        const bx = c.ballPos.x * 1000;
+        const by = -c.ballPos.y * 1000;
+        const r = BALL_HIT_RADIUS_M * 1000;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFA726';
+        ctx.globalAlpha = 0.45;
+        ctx.fill();
+        ctx.strokeStyle = '#FFA726';
+        ctx.lineWidth = 8;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    _drawRobot(ctx, robot, numId, fillColor, selectedId, opts = {}) {
+        const dim = opts.dim ?? false;
+        const isSelected = numId === selectedId;
         const svgX = robot.x * 1000;
         const svgY = -robot.y * 1000;
         const r = ROBOT_HIT_RADIUS_M * 1000;
 
+        const fillAlpha = dim ? 0.30 : (isSelected ? 1.0 : 0.85);
+        const strokeAlpha = dim ? 0.35 : 1.0;
+        const strokeW = dim ? 4 : (isSelected ? 25 : 10);
+        const strokeColor = isSelected ? '#00ffff' : '#ffffff';
+        const textAlpha = dim ? 0.5 : 1.0;
+
         ctx.save();
+
+        // 本体
         ctx.beginPath();
         ctx.arc(svgX, svgY, r, 0, Math.PI * 2);
         ctx.fillStyle = fillColor;
-        ctx.globalAlpha = 0.85;
+        ctx.globalAlpha = fillAlpha;
         ctx.fill();
-        ctx.strokeStyle = (numId === selectedId) ? '#00ffff' : '#ffffff';
-        ctx.lineWidth = (numId === selectedId) ? 25 : 10;
-        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeW;
+        ctx.globalAlpha = strokeAlpha;
         ctx.stroke();
 
-        ctx.beginPath();
-        ctx.moveTo(svgX, svgY);
-        ctx.lineTo(
-            svgX + Math.cos(robot.theta) * r * 0.9,
-            svgY - Math.sin(robot.theta) * r * 0.9
-        );
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 12;
-        ctx.globalAlpha = 0.9;
-        ctx.stroke();
+        // 方向矢印（dimの時は省略）
+        if (!dim) {
+            ctx.beginPath();
+            ctx.moveTo(svgX, svgY);
+            ctx.lineTo(
+                svgX + Math.cos(robot.theta) * r * 0.9,
+                svgY - Math.sin(robot.theta) * r * 0.9
+            );
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 12;
+            ctx.globalAlpha = 0.9;
+            ctx.stroke();
+        }
 
+        // ID テキスト
         ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = textAlpha;
         ctx.font = `bold ${r * 0.8}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(numId), svgX, svgY);
+
         ctx.restore();
     }
 
@@ -282,59 +319,40 @@ class FieldRenderer {
 
     _drawFieldLines(ctx) {
         const c = this.controller;
-        const halfL = c.fieldLength * 500;   // mm
-        const halfW = c.fieldWidth * 500;    // mm
-        const paDepth = c.penaltyDepth * 1000;   // mm
-        const paHalfW = c.penaltyWidth * 500;    // mm
-        const goalHalfW = c.goalWidth * 500;     // mm
-        const goalDepth = c.goalDepth * 1000;    // mm
-        const ccR = c.centerCircleRadius * 1000; // mm
+        const halfL = c.fieldLength * 500;
+        const halfW = c.fieldWidth * 500;
+        const paDepth = c.penaltyDepth * 1000;
+        const paHalfW = c.penaltyWidth * 500;
+        const goalHalfW = c.goalWidth * 500;
+        const goalDepth = c.goalDepth * 1000;
+        const ccR = c.centerCircleRadius * 1000;
 
         ctx.save();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 20;
         ctx.globalAlpha = 0.7;
         ctx.beginPath();
-
-        // 外枠
         ctx.rect(-halfL, -halfW, halfL * 2, halfW * 2);
-
-        // センターライン
         ctx.moveTo(0, -halfW); ctx.lineTo(0, halfW);
-
-        // センターサークル
         ctx.moveTo(ccR, 0);
         ctx.arc(0, 0, ccR, 0, Math.PI * 2);
-
-        // 左ペナルティエリア（x < 0 側）
         ctx.rect(-halfL, -paHalfW, paDepth, paHalfW * 2);
-
-        // 右ペナルティエリア（x > 0 側）
         ctx.rect(halfL - paDepth, -paHalfW, paDepth, paHalfW * 2);
-
         ctx.stroke();
 
-        // ゴール（塗りなし・別色）
         ctx.strokeStyle = '#ffff88';
         ctx.lineWidth = 15;
         ctx.globalAlpha = 0.6;
         ctx.beginPath();
-
-        // 左ゴール
         ctx.rect(-halfL - goalDepth, -goalHalfW, goalDepth, goalHalfW * 2);
-
-        // 右ゴール
         ctx.rect(halfL, -goalHalfW, goalDepth, goalHalfW * 2);
-
         ctx.stroke();
 
-        // センタースポット
         ctx.globalAlpha = 0.8;
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(0, 0, 40, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.restore();
     }
 
@@ -358,6 +376,7 @@ class RobotTestController {
         // フィールド状態
         this.robotsOurs = {};
         this.robotsTheirs = {};
+        this.ballPos = null;
         this.isYellow = false;
         this.selectedRobotId = null;
         this.targetPos = null;
@@ -408,7 +427,7 @@ class RobotTestController {
         this.setupCanvasEvents();
         this.setupWebSocket();
         this.setStatus(false);
-        this.updateModeDisplay();
+        this._updateUiState();
     }
 
     // ---- WebSocket ----
@@ -439,18 +458,10 @@ class RobotTestController {
 
     handleMessage(data) {
         switch (data.type) {
-            case 'world_model':
-                this.onWorldModel(data);
-                break;
-            case 'robot_commands':
-                this.onRobotCommands(data);
-                break;
-            case 'control_targets':
-                this.onControlTargets(data);
-                break;
-            case 'robot_feedback':
-                this.onRobotFeedback(data);
-                break;
+            case 'world_model':    this.onWorldModel(data);     break;
+            case 'robot_commands': this.onRobotCommands(data);  break;
+            case 'control_targets': this.onControlTargets(data); break;
+            case 'robot_feedback': this.onRobotFeedback(data);  break;
         }
     }
 
@@ -461,13 +472,17 @@ class RobotTestController {
             this.robotsOurs = {};
             for (const r of data.robots_ours) this.robotsOurs[r.id] = r;
         }
-
         if (data.robots_theirs) {
             this.robotsTheirs = {};
             for (const r of data.robots_theirs) this.robotsTheirs[r.id] = r;
         }
 
-        // フィールド寸法を world_model から更新
+        // ボール位置
+        if (data.ball) {
+            this.ballPos = { x: data.ball.x, y: data.ball.y };
+        }
+
+        // フィールド寸法
         if (data.field_info) {
             if (data.field_info.length > 0) this.fieldLength = data.field_info.length;
             if (data.field_info.width > 0) this.fieldWidth = data.field_info.width;
@@ -496,8 +511,6 @@ class RobotTestController {
         if (!data.commands || this.selectedRobotId === null) return;
         const cmd = data.commands.find(c => c.robot_id === this.selectedRobotId);
         if (!cmd) return;
-
-        // backward compatibility: /control_targets が来る環境向けのフォールバック
         const cmdSpeed = cmd.polar_velocity_target_mode?.target_velocity_r;
         if (Number.isFinite(cmdSpeed)) this._pushChartPoint('cmd', cmdSpeed);
     }
@@ -506,8 +519,6 @@ class RobotTestController {
         if (!data.commands || this.selectedRobotId === null) return;
         const cmd = data.commands.find(c => c.robot_id === this.selectedRobotId);
         if (!cmd) return;
-
-        // /robot_commands の target_velocity_r を Cmd Speed として表示
         const cmdSpeed = cmd.polar_velocity_target_mode?.target_velocity_r;
         if (Number.isFinite(cmdSpeed)) this._pushChartPoint('cmd', cmdSpeed);
     }
@@ -517,14 +528,11 @@ class RobotTestController {
         const fb = data.robots.find(r => r.robot_id === this.selectedRobotId);
         if (!fb) return;
 
-        // odom_speed ノルム
         if (fb.odom_speed && fb.odom_speed.length >= 2) {
             const odomSpeed = Math.sqrt(fb.odom_speed[0] ** 2 + fb.odom_speed[1] ** 2);
             document.getElementById('readout-odom-speed').textContent = odomSpeed.toFixed(2) + ' m/s';
             this._pushChartPoint('odom', odomSpeed);
         }
-
-        // mouse_vel ノルム
         if (fb.mouse_vel && fb.mouse_vel.length >= 2) {
             const mouseSpeed = Math.sqrt(fb.mouse_vel[0] ** 2 + fb.mouse_vel[1] ** 2);
             this._pushChartPoint('mouse', mouseSpeed);
@@ -543,20 +551,16 @@ class RobotTestController {
         const t = this._getElapsed();
         const datasets = this.chart.data.datasets;
         const labels = this.chart.data.labels;
-
         const idxMap = { cmd: 0, est: 1, odom: 2, mouse: 3 };
         const idx = idxMap[series];
         if (idx === undefined) return;
 
-        // 時刻ラベルは est が担当
         if (series === 'est') {
             labels.push(t);
             if (labels.length > CHART_BUF) labels.shift();
         }
-
         datasets[idx].data.push({ x: t, y: value });
         if (datasets[idx].data.length > CHART_BUF) datasets[idx].data.shift();
-
         this.chart.update('none');
     }
 
@@ -572,7 +576,7 @@ class RobotTestController {
     activateTest() {
         this.wsSend({ type: 'activate_robot_test' });
         this.testModeActive = true;
-        this.updateModeDisplay();
+        this._updateUiState();
     }
 
     deactivateTest() {
@@ -582,9 +586,9 @@ class RobotTestController {
         this.selectedRobotId = null;
         this.targetPos = null;
         this.renderer?.invalidate();
-        this.updateModeDisplay();
-        document.getElementById('selected-robot-id').textContent = '--';
-        document.getElementById('target-pos-display').textContent = '--';
+        this._updateUiState();
+        document.getElementById('readout-est-speed').textContent = '-- m/s';
+        document.getElementById('readout-odom-speed').textContent = '-- m/s';
         const canvas = document.getElementById('field-canvas');
         if (canvas) canvas.style.cursor = 'crosshair';
     }
@@ -593,7 +597,18 @@ class RobotTestController {
         this.cursorFollowMode = active;
         const canvas = document.getElementById('field-canvas');
         if (canvas) canvas.style.cursor = active ? 'none' : 'crosshair';
-        this.updateModeDisplay();
+        this._updateUiState();
+    }
+
+    clearTarget() {
+        this.targetPos = null;
+        this.renderer?.invalidate();
+        this._updateUiState();
+    }
+
+    deselectRobot() {
+        this.selectRobot(null);
+        this._updateUiState();
     }
 
     sendTarget() {
@@ -608,8 +623,7 @@ class RobotTestController {
             max_velocity: this.maxVelocity,
             max_acceleration: this.maxAcceleration,
         });
-        document.getElementById('target-pos-display').textContent =
-            `(${this.targetPos.x.toFixed(2)}, ${this.targetPos.y.toFixed(2)})`;
+        this._updateUiState();
     }
 
     sendPlannerParam() {
@@ -621,11 +635,11 @@ class RobotTestController {
 
     selectRobot(id) {
         this.selectedRobotId = id;
-        document.getElementById('selected-robot-id').textContent = id !== null ? String(id) : '--';
         document.getElementById('readout-est-speed').textContent = '-- m/s';
         document.getElementById('readout-odom-speed').textContent = '-- m/s';
         this.resetChart();
         this.renderer?.invalidate();
+        this._updateUiState();
     }
 
     findRobotAtPosition(fieldX, fieldY) {
@@ -641,18 +655,117 @@ class RobotTestController {
         return closest;
     }
 
-    updateModeDisplay() {
-        const el = document.getElementById('mode-status');
-        if (!el) return;
-        if (this.cursorFollowMode) {
-            el.textContent = 'CURSOR FOLLOW';
-            el.classList.add('active');
-        } else if (this.testModeActive) {
-            el.textContent = 'ROBOT TEST ACTIVE';
-            el.classList.add('active');
-        } else {
-            el.textContent = 'INACTIVE';
-            el.classList.remove('active');
+    // ---- UI 状態一括更新 ----
+    _updateUiState() {
+        const active = this.testModeActive;
+        const follow = this.cursorFollowMode;
+        const hasSel = this.selectedRobotId !== null;
+        const hasTgt = this.targetPos !== null;
+
+        // --- 状態カード ---
+        const card = document.getElementById('mode-card');
+        const cardIcon = document.getElementById('mode-card-icon');
+        const cardLabel = document.getElementById('mode-card-label');
+        const cardSub = document.getElementById('mode-card-sub');
+        if (card) {
+            card.className = 'mode-card' + (follow ? ' mode-card--follow' : active ? ' mode-card--active' : '');
+        }
+        if (cardIcon) {
+            cardIcon.textContent = follow ? 'mouse' : active ? 'play_circle' : 'radio_button_unchecked';
+        }
+        if (cardLabel) {
+            cardLabel.textContent = follow ? 'CURSOR FOLLOW' : active ? 'ROBOT TEST ACTIVE' : 'INACTIVE';
+        }
+        if (cardSub) {
+            if (!active) {
+                cardSub.textContent = 'Activate を押してテストを開始';
+            } else if (follow) {
+                cardSub.textContent = 'マウスで目標位置を追従中';
+            } else if (hasSel) {
+                cardSub.textContent = `Robot ${this.selectedRobotId} を操作中`;
+            } else {
+                cardSub.textContent = 'フィールドのロボットをクリックして選択';
+            }
+        }
+
+        // --- Activate / Deactivate ボタン ---
+        const btnActivate = document.getElementById('btn-activate');
+        const btnDeactivate = document.getElementById('btn-deactivate');
+        if (btnActivate) btnActivate.style.display = active ? 'none' : '';
+        if (btnDeactivate) btnDeactivate.style.display = active ? '' : 'none';
+
+        // --- Cursor Follow ボタン ---
+        const btnFollow = document.getElementById('btn-cursor-follow');
+        if (btnFollow) {
+            btnFollow.style.display = (active && hasSel) ? '' : 'none';
+            btnFollow.className = follow
+                ? 'm3-btn m3-btn--filled m3-btn--sm'
+                : 'm3-btn m3-btn--tonal m3-btn--sm';
+        }
+
+        // --- Selected Robot セクション ---
+        const robotIdEl = document.getElementById('selected-robot-id');
+        const targetPosEl = document.getElementById('target-pos-display');
+        const btnDeselect = document.getElementById('btn-deselect');
+        const btnClearTarget = document.getElementById('btn-clear-target');
+
+        if (robotIdEl) robotIdEl.textContent = hasSel ? String(this.selectedRobotId) : '--';
+        if (targetPosEl) {
+            if (hasTgt) {
+                targetPosEl.textContent = `(${this.targetPos.x.toFixed(2)}, ${this.targetPos.y.toFixed(2)})`;
+                targetPosEl.style.color = 'var(--md-sys-color-tertiary)';
+            } else {
+                targetPosEl.textContent = '--';
+                targetPosEl.style.color = '';
+            }
+        }
+        if (btnDeselect) btnDeselect.style.display = hasSel ? '' : 'none';
+        if (btnClearTarget) btnClearTarget.style.display = hasTgt ? '' : 'none';
+
+        // --- スライダーセクションの有効/無効 ---
+        const sectSpeed = document.getElementById('sect-speed-limits');
+        const sectAngle = document.getElementById('sect-target-angle');
+        const disableSliders = !active || !hasSel;
+        for (const sect of [sectSpeed, sectAngle]) {
+            if (!sect) continue;
+            sect.style.opacity = disableSliders ? '0.45' : '1';
+            sect.style.pointerEvents = disableSliders ? 'none' : '';
+        }
+
+        // --- フィールド枠のアウトライン ---
+        const fieldContainer = document.getElementById('field-container');
+        if (fieldContainer) {
+            fieldContainer.classList.toggle('is-active', active && !follow);
+            fieldContainer.classList.toggle('is-cursor-follow', follow);
+        }
+
+        // --- ヒント文 ---
+        const hintEl = document.getElementById('hint-text');
+        if (hintEl) {
+            if (!active) {
+                hintEl.textContent = 'Activate を押すとロボット選択・操作が可能になります';
+            } else if (follow) {
+                hintEl.textContent = 'マウス移動: 目標追従 ｜ クリックまたは Esc: 解除';
+            } else if (!hasSel) {
+                hintEl.textContent = '味方ロボットをクリックして選択 ｜ ホイール: ズーム ｜ ドラッグ: パン';
+            } else {
+                hintEl.textContent = 'クリック: 目標設定 ｜ Cursor Follow: マウス追従 ｜ ホイール: ズーム';
+            }
+        }
+
+        // --- ナビ status pill（既存との同期） ---
+        const modeStatus = document.getElementById('mode-status');
+        if (modeStatus) {
+            if (follow) {
+                modeStatus.textContent = 'CURSOR FOLLOW';
+                modeStatus.classList.add('active');
+            } else if (active) {
+                modeStatus.textContent = 'ROBOT TEST ACTIVE';
+                modeStatus.classList.add('active');
+            } else {
+                modeStatus.textContent = 'INACTIVE';
+                modeStatus.classList.remove('active');
+            }
         }
     }
 
@@ -669,6 +782,15 @@ class RobotTestController {
     setupControls() {
         document.getElementById('btn-activate')?.addEventListener('click', () => this.activateTest());
         document.getElementById('btn-deactivate')?.addEventListener('click', () => this.deactivateTest());
+        document.getElementById('btn-cursor-follow')?.addEventListener('click', () => {
+            if (this.cursorFollowMode) {
+                this.setCursorFollowMode(false);
+            } else {
+                this.setCursorFollowMode(true);
+            }
+        });
+        document.getElementById('btn-deselect')?.addEventListener('click', () => this.deselectRobot());
+        document.getElementById('btn-clear-target')?.addEventListener('click', () => this.clearTarget());
 
         const velSlider = document.getElementById('slider-max-vel');
         const velDisplay = document.getElementById('display-max-vel');
@@ -706,7 +828,6 @@ class RobotTestController {
         const canvas = document.getElementById('field-canvas');
         if (!canvas) return;
 
-        // ホイールズーム
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const factor = e.deltaY < 0 ? 1.1 : 0.9;
@@ -714,7 +835,6 @@ class RobotTestController {
             this.renderer?.invalidate();
         }, { passive: false });
 
-        // シングルクリック: ロボット選択 / 目的地設定 / カーソル追従モード解除
         canvas.addEventListener('click', (e) => {
             if (this.cursorFollowMode) {
                 this.setCursorFollowMode(false);
@@ -731,7 +851,6 @@ class RobotTestController {
             }
         });
 
-        // ダブルクリック: カーソル追従モード開始
         canvas.addEventListener('dblclick', (e) => {
             if (!this.testModeActive || this.selectedRobotId === null) return;
             this.setCursorFollowMode(true);
@@ -741,7 +860,6 @@ class RobotTestController {
             this.renderer?.invalidate();
         });
 
-        // マウス移動: カーソル追従モード時にリアルタイム送信
         canvas.addEventListener('mousemove', (e) => {
             if (!this.cursorFollowMode) return;
             const fp = this.renderer.clientToFieldCoords(e.clientX, e.clientY);
@@ -750,7 +868,6 @@ class RobotTestController {
             this.renderer?.invalidate();
         });
 
-        // Escキーでカーソル追従モード解除
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.cursorFollowMode) {
                 this.setCursorFollowMode(false);
