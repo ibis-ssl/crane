@@ -26,6 +26,9 @@ void SingleBallPlacement::initialize()
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
 
+  setParameter("outside_field_timeout", 10.0);
+  setParameter("approach_timeout", 10.0);
+
   addStateFunction(static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
     command->stopHere();
     return Status::RUNNING;
@@ -135,6 +138,11 @@ void SingleBallPlacement::initialize()
       }
     });
 
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("PULL_BACK_FROM_EDGE_PREPARE"); });
+
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH), [this]() {
@@ -186,6 +194,11 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE),
     [this]() { return skill_status == Status::FAILURE; });
+
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("PULL_BACK_FROM_EDGE_TOUCH"); });
 
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL), [this]() {
@@ -273,6 +286,11 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
     [this]() { return isBallTrulyLostFromDribbler(0.2); });
 
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("PULL_BACK_FROM_EDGE_PULL"); });
+
   addStateFunction(static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL), [this]() {
     command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
     auto placement_target = getPlacementTarget();
@@ -335,9 +353,19 @@ void SingleBallPlacement::initialize()
   });
 
   addTransition(
+    static_cast<int>(SingleBallPlacementStates::PASS_TO_TARGET),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("PASS_TO_TARGET"); });
+
+  addTransition(
     static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),
     static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
     [this]() { return skill_status == Status::SUCCESS; });
+
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::GO_OVER_BALL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("GO_OVER_BALL"); });
 
   addStateFunction(static_cast<int>(SingleBallPlacementStates::CONTACT_BALL), [this]() {
     command->disablePlacementAvoidance();
@@ -391,6 +419,11 @@ void SingleBallPlacement::initialize()
       }
       return isBallTrulyLostFromDribbler(0.3);
     });
+
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::CONTACT_BALL),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("CONTACT_BALL"); });
 
   addStateFunction(static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET), [this]() {
     auto placement_target = getPlacementTarget();
@@ -483,6 +516,11 @@ void SingleBallPlacement::initialize()
   //   SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
   //   [this]() { return skill_status == Status::FAILURE; });
 
+  addTransition(
+    static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
+    static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
+    [this]() { return checkAndLogTimeout("MOVE_TO_TARGET"); });
+
   addStateFunction(static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
     if (not sleep) {
       sleep = std::make_shared<Sleep>(command);
@@ -540,5 +578,67 @@ void SingleBallPlacement::initialize()
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
              world_model()->getMsg().ball_info.detected;
     });
+}
+
+void SingleBallPlacement::onPostUpdate()
+{
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+  const double offset = getParameter<double>("コート端判定のオフセット");
+
+  bool outside = !world_model()->point_checker.isFieldInside(robot()->pose.pos, offset);
+  if (outside) {
+    if (!robot_outside_field_since_) robot_outside_field_since_ = now;
+  } else {
+    robot_outside_field_since_ = std::nullopt;
+  }
+
+  auto s = static_cast<SingleBallPlacementStates>(state_machine_.getCurrentState());
+  bool is_approach =
+    s != SingleBallPlacementStates::ENTRY_POINT && s != SingleBallPlacementStates::RECEIVE_BALL &&
+    s != SingleBallPlacementStates::SLEEP && s != SingleBallPlacementStates::LEAVE_BALL &&
+    s != SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP &&
+    s != SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE;
+  if (is_approach) {
+    if (!approach_since_) approach_since_ = now;
+  } else {
+    approach_since_ = std::nullopt;
+  }
+}
+
+bool SingleBallPlacement::isOutsideFieldTimeout() const
+{
+  if (!robot_outside_field_since_) return false;
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+  return (now - *robot_outside_field_since_).seconds() >
+         getParameter<double>("outside_field_timeout");
+}
+
+bool SingleBallPlacement::isApproachTimeout() const
+{
+  if (!approach_since_) return false;
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+  return (now - *approach_since_).seconds() > getParameter<double>("approach_timeout");
+}
+
+bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
+{
+  if (isOutsideFieldTimeout()) {
+    auto clock = rclcpp::Clock(RCL_ROS_TIME).make_shared();
+    RCLCPP_WARN(
+      rclcpp::get_logger("SingleBallPlacement"),
+      "[%s] Robot outside field for %.1fs → ENTRY_POINT (retry)", state_name,
+      (rclcpp::Clock(RCL_ROS_TIME).now() - *robot_outside_field_since_).seconds());
+    robot_outside_field_since_ = std::nullopt;
+    return true;
+  }
+  if (isApproachTimeout()) {
+    RCLCPP_WARN(
+      rclcpp::get_logger("SingleBallPlacement"),
+      "[%s] Approach time exceeded %.1fs → ENTRY_POINT (retry)", state_name,
+      (rclcpp::Clock(RCL_ROS_TIME).now() - *approach_since_).seconds());
+    approach_since_ = std::nullopt;
+    return true;
+  }
+  return false;
 }
 }  // namespace crane::skills
