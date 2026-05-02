@@ -30,25 +30,18 @@ DefenderSession::calculatePositionCommand(const std::vector<RobotIdentifier> & r
   }
 
   std::vector<Point> defense_points = [&]() {
-    // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
-    if (
-      (world_model->ball().pos - world_model->getOurGoalCenter()).norm() <
-      world_model->fieldSize().y() * 0.5) {
-      // ball_lineが防御ラインと交差しない場合のフォールバック
-      // ボールがPA境界〜防御ライン間にいるとき、ball_line(ball→goal)が防御ラインの内側を向くため交差しない
-      auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
-      Segment effective_ball_line = ball_line;
-      if (not defense_parameter) {
-        effective_ball_line = Segment{
-          world_model->getOurGoalCenter(),
-          ball.pos + (ball.pos - world_model->getOurGoalCenter()).normalized() * 2.0};
-        defense_parameter = getDefenseLinePointParameter(effective_ball_line, world_model);
-      }
-      return getDefenseLinePoints(
-        robots.size(), effective_ball_line, world_model, false, defense_parameter);
-    } else {
-      return getDefenseArcPoints(robots.size(), ball_line, world_model);
+    // ball_lineが防御ラインと交差しない場合のフォールバック
+    // ボールがPA境界〜防御ライン間にいるとき、ball_line(ball→goal)が防御ラインの内側を向くため交差しない
+    auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
+    Segment effective_ball_line = ball_line;
+    if (not defense_parameter) {
+      effective_ball_line = Segment{
+        world_model->getOurGoalCenter(),
+        ball.pos + (ball.pos - world_model->getOurGoalCenter()).normalized() * 2.0};
+      defense_parameter = getDefenseLinePointParameter(effective_ball_line, world_model);
     }
+    return getDefenseLinePoints(
+      robots.size(), effective_ball_line, world_model, false, defense_parameter);
   }();
 
   if (not defense_points.empty()) {
