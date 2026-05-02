@@ -23,6 +23,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
+  <depend>robocup_ssl_msgs</depend>
   <depend>speak_ros_interfaces</depend>
   <depend>std_msgs</depend>
   <depend>yaml-cpp</depend>
