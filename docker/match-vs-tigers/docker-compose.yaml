@@ -1,16 +1,18 @@
 services:
-  grsim:
-    image: robocupssl/grsim:latest
-    container_name: match_grsim
+  erforce-sim:
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    container_name: match_erforce_sim
     network_mode: host
-    environment:
-      - DISPLAY=:99
-      - QT_X11_NO_MITSHM=1
-    volumes:
-      - ./config/grsim_config.xml:/tmp/grsim_config.xml:ro
-      - ./scripts/start_grsim.sh:/tmp/start_grsim.sh:ro
-    entrypoint: /bin/sh
-    command: ["/tmp/start_grsim.sh"]
+    entrypoint: ["tini", "--"]
+    command: >
+      ./bin/simulator-cli
+      -g 2020
+      --realism None
+      --ibis-use-referee
+      --ibis-feedback-team-name ibis
+      --ibis-referee-port 11003
+    tty: true
+    stdin_open: true
     restart: "no"
 
   ssl-game-controller:
@@ -72,8 +74,6 @@ services:
     image: tigersmannheim/sumatra:latest
     container_name: match_tigers_blue
     network_mode: host
-    extra_hosts:
-      - "match_grsim:127.0.0.1"
     volumes:
       - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
     command:
@@ -87,26 +87,6 @@ services:
       - --moduli
       - simulation_protocol
     restart: "no"
-
-  # tigers-yellow:
-  #   image: tigersmannheim/sumatra:latest
-  #   container_name: match_tigers_yellow
-  #   network_mode: host
-  #   extra_hosts:
-  #     - "match_grsim:127.0.0.1"
-  #   volumes:
-  #     - ./config/simulation_protocol_fixed.xml:/Sumatra/config/moduli/simulation_protocol.xml:ro
-  #   command:
-  #     - --headless
-  #     - --aiYellow
-  #     - --visionAddress
-  #     - 224.5.23.2:10020
-  #     - --refereeAddress
-  #     - 224.5.23.1:11003
-  #     - --matchStats
-  #     - --moduli
-  #     - simulation_protocol
-  #   restart: "no"
 
   ssl-log-recorder:
     image: robocupssl/ssl-log-recorder:latest

@@ -29,7 +29,7 @@ try:
     from state import ssl_gc_game_event_pb2 as game_event_pb2
     from engine import ssl_gc_engine_pb2 as engine_pb2
     from state import ssl_gc_common_pb2 as common_pb2
-    from grsim import grSim_Packet_pb2
+    from ssl_simulation import ssl_simulation_control_pb2
 except ImportError as e:
     print(f"protobufモジュールのインポートエラー: {e}", file=sys.stderr)
     print("protoファイルをコンパイルしてください", file=sys.stderr)
@@ -83,14 +83,14 @@ class MatchController:
         self.referee_address = "224.5.23.1"
         self.referee_port = 11003
 
-        # Vision parameters (grSim)
+        # Vision parameters (ER-Force simulator publishes on the simulated vision port)
         self.vision_address = "224.5.23.2"
         self.vision_port = 10020
 
-        # grSim simulation control
-        self.grsim_host = "localhost"
-        self.grsim_command_port = 20011
-        self._grsim_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # ssl-simulation-protocol control endpoint (ER-Force simulator-cli)
+        self.sim_host = "localhost"
+        self.sim_control_port = 10300
+        self._sim_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def _create_multicast_socket(
         self, address: str, port: int, timeout: float = 1.0
@@ -121,16 +121,17 @@ class MatchController:
         return sock
 
     def teleport_ball_to_position(self, x: float, y: float) -> None:
-        """grSim APIでボールを指定座標にテレポート"""
+        """ssl-simulation-protocolでボールを指定座標にテレポート"""
         try:
-            packet = grSim_Packet_pb2.grSim_Packet()
-            packet.replacement.ball.x = x
-            packet.replacement.ball.y = y
-            packet.replacement.ball.vx = 0.0
-            packet.replacement.ball.vy = 0.0
-            self._grsim_sock.sendto(
-                packet.SerializeToString(),
-                (self.grsim_host, self.grsim_command_port),
+            cmd = ssl_simulation_control_pb2.SimulatorCommand()
+            tp = cmd.control.teleport_ball
+            tp.x = x
+            tp.y = y
+            tp.vx = 0.0
+            tp.vy = 0.0
+            self._sim_sock.sendto(
+                cmd.SerializeToString(),
+                (self.sim_host, self.sim_control_port),
             )
             print(f"✓ ボールをテレポート: ({x:.2f}, {y:.2f})")
         except Exception as e:
@@ -154,7 +155,7 @@ class MatchController:
             self.teleport_ball_to_position(PENALTY_SPOT_OFFSET, 0.0)
         elif command in ("BALL_PLACEMENT_YELLOW", "BALL_PLACEMENT_BLUE"):
             if referee_msg.HasField("designated_position"):
-                # SSL referee protobufはミリメートル単位、grSimはメートル単位
+                # SSL referee protobufはミリメートル単位、ssl-simulation-protocolはメートル単位
                 self.teleport_ball_to_position(
                     referee_msg.designated_position.x / 1000.0,
                     referee_msg.designated_position.y / 1000.0,
@@ -221,7 +222,7 @@ class MatchController:
         return False
 
     def wait_for_vision(self, timeout: int = 60) -> bool:
-        """grSimからのVisionデータ到達をポーリング確認"""
+        """シミュレータからのVisionデータ到達をポーリング確認"""
         print(f"Visionデータの受信を待機中（最大{timeout}秒）...")
         sock = self._create_multicast_socket(
             self.vision_address, self.vision_port, timeout=2.0
@@ -594,9 +595,9 @@ class MatchController:
         if not self.wait_for_referee():
             return 1
 
-        # Visionデータ受信確認（grSim起動確認）
+        # Visionデータ受信確認（シミュレータ起動確認）
         if not self.wait_for_vision():
-            print("⚠ Visionデータ未受信（grSimが遅れている可能性あり、続行）")
+            print("⚠ Visionデータ未受信（シミュレータが遅れている可能性あり、続行）")
 
         # 試合開始シーケンス
         if not self.start_match_sequence():
@@ -610,7 +611,7 @@ class MatchController:
         # 結果保存
         self.save_results()
 
-        self._grsim_sock.close()
+        self._sim_sock.close()
         print("\n✓ 試合制御完了")
         return 0
 
