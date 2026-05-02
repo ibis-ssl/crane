@@ -22,7 +22,6 @@ namespace crane::skills
 {
 enum class AttackerState {
   ENTRY_POINT,
-  FORCED_PASS,
   RECEIVE,
   KICK,
 };
@@ -61,8 +60,6 @@ public:
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
 
   Point kick_target{Point::Zero()};
-
-  int forced_pass_receiver_id = -1;
 
   KickOld kick_skill;
 

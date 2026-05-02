@@ -41,7 +41,7 @@ Status SubAttacker::update()
     // 後ろからきたボールは一旦避ける
     Segment short_ball_line = world_model()->ball().getTrajectorySegmentByTime(3.0);
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
-    // ボールが敵ゴールに向かっているか
+    // ボールが攻撃対象ゴールに向かっているか
     double dot_dir = (world_model()->getAttackGoalCenter() - world_model()->ball().pos)
                        .dot(world_model()->ball().vel);
     // ボールがロボットを追い越そうとしているか
@@ -62,7 +62,7 @@ Status SubAttacker::update()
       // ゴールとボールの中間方向を向く
       // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
       auto [goal_angle, width] =
-        world_model()->getLargestGoalAngleRangeFromPoint(result.closest_point);
+        world_model()->getLargestAttackGoalAngleRangeFromPoint(result.closest_point);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model()->ball().pos - result.closest_point).normalized();
       double intermediate_angle = getAngle(2 * to_goal + to_ball);
@@ -87,7 +87,8 @@ Status SubAttacker::update()
     }
     command->setTargetPosition(best_position);
     // ゴールとボールの中間方向を向く
-    auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(best_position);
+    auto [goal_angle, width] =
+      world_model()->getLargestAttackGoalAngleRangeFromPoint(best_position);
     auto to_goal = getNormVec(goal_angle);
     auto to_ball = (world_model()->ball().pos - best_position).normalized();
     command->setTargetTheta(getAngle(to_goal + to_ball));
