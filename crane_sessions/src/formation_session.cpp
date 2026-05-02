@@ -12,7 +12,7 @@ std::vector<Point> FormationSession::getWingFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
 
-  formation_points.emplace_back(0.6, 0.0);
+  formation_points.emplace_back(0.7, 0.0);
   formation_points.emplace_back(1.5, 1.2);
   formation_points.emplace_back(1.5, -1.2);
   formation_points.emplace_back(0.6, 2.4);
@@ -97,7 +97,9 @@ FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
       // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
       command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
-    });
+      command->disableAnyAreaAvoidance();
+    },
+    0.03);
   return {SessionBase::Status::RUNNING, robot_commands};
 }
 }  // namespace crane
