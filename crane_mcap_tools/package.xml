@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_mcap_tools</name>
-  <version>1.0.367</version>
+  <version>1.0.368</version>
   <description>Python版Rosbag解析・MCAP解析・SVG動画生成ツール</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
