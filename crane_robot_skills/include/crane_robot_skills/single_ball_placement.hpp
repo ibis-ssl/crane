@@ -52,6 +52,18 @@ private:
 
   mutable std::optional<rclcpp::Time> last_ball_sensor_active_time_;
 
+  std::optional<rclcpp::Time> robot_outside_field_since_;
+
+  std::optional<rclcpp::Time> approach_since_;
+
+  void onPostUpdate() override;
+
+  bool isOutsideFieldTimeout() const;
+
+  bool isApproachTimeout() const;
+
+  bool checkAndLogTimeout(const char * state_name);
+
   Point getPlacementTarget() const
   {
     Point p;
