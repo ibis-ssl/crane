@@ -107,7 +107,7 @@ void Kick::initialize()
       // 角度が合っている場合のみキックゾーンに入ったと判断し、ボールに向かって押し込む
       if (angle_ok && bg::distance(ball_kick_zone, robot()->pose.pos) < 0.15) {
         command->disableCollisionAvoidance();
-        return 0.5;
+        return 0.3;
       } else {
         return 0.0;
       }
