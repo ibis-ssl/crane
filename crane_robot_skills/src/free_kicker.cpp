@@ -88,7 +88,6 @@ void FreeKicker::initialize()
       .lookAtFrom(kick_target_, ball_pos)
       .disableBallAvoidance()
       .disablePlacementAvoidance()
-      .disableGoalAreaAvoidance()
       .disableFieldBoundary()
       .dribble(0.0)
       .setOmegaLimit(10.0);
