@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 
 from .formatters import fmt_t
 from .models import LogData, LogEvent
@@ -30,26 +31,10 @@ _FOUL_TYPES = {
     "UNSPORTING_BEHAVIOR_MAJOR",
 }
 
-_GOAL_TYPES = {
-    "GOAL",
-    "POSSIBLE_GOAL",
-    "GOAL_2",
-    "INVALID_GOAL",
-    "INDIRECT_GOAL",
-    "CHIPPED_GOAL",
-}
-
 _PLACEMENT_TYPES = {
     "PLACEMENT_SUCCEEDED",
     "PLACEMENT_FAILED",
     "MULTIPLE_PLACEMENT_FAILURES",
-}
-
-_CARD_COMMANDS = {
-    "TIMEOUT_YELLOW",
-    "TIMEOUT_BLUE",
-    "CHALLENGE_FLAG",
-    "EMERGENCY_STOP",
 }
 
 
@@ -71,7 +56,8 @@ def run_events(
                 **{
                     k: (
                         v
-                        if not isinstance(v, float) or (v == v and abs(v) < 1e308)
+                        if not isinstance(v, float)
+                        or (math.isfinite(v) and abs(v) < 1e308)
                         else None
                     )
                     for k, v in e.details.items()
