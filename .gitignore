@@ -85,6 +85,7 @@ docker/match-vs-tigers/results/
 docker/match-vs-tigers/proto/**/*_pb2.py
 docker/dev/ball-calibration/proto/
 docker/dev/ball-calibration/ssl_proto/
+scripts/ssl_proto/
 
 # Test scripts
 docker/match-vs-tigers/scripts/test_*.py
