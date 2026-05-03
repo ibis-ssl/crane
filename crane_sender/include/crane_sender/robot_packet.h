@@ -84,8 +84,27 @@ inline void PolarVelocityModeArgs_serialize(const PolarVelocityModeArgs * args, 
   forward(&data[2], &data[3], args->target_global_velocity_theta, 32.767);
 }
 
+typedef struct
+{
+  float terminal_velocity_x;
+  float terminal_velocity_y;
+} PositionTargetModeArgs;
+
+inline void PositionTargetModeArgs_init(PositionTargetModeArgs * args, const uint8_t * data)
+{
+  args->terminal_velocity_x = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->terminal_velocity_y = convertTwoByteToFloat(data[2], data[3], 32.767);
+}
+
+inline void PositionTargetModeArgs_serialize(const PositionTargetModeArgs * args, uint8_t * data)
+{
+  forward(&data[0], &data[1], args->terminal_velocity_x, 32.767);
+  forward(&data[2], &data[3], args->terminal_velocity_y, 32.767);
+}
+
 typedef enum {
   POLAR_VELOCITY_TARGET_MODE = 3,
+  POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE = 4,
 } ControlMode;
 
 typedef struct
@@ -110,6 +129,7 @@ typedef struct
 
   union {
     PolarVelocityModeArgs polar_velocity;
+    PositionTargetModeArgs position_target;
   } mode_args;
 
   float target_global_pos[2];
@@ -206,6 +226,10 @@ inline void RobotCommandSerializedV2_serialize(
       PolarVelocityModeArgs_serialize(
         &command->mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
+    case POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE:
+      PositionTargetModeArgs_serialize(
+        &command->mode_args.position_target, &serialized->data[CONTROL_MODE_ARGS]);
+      break;
   }
   forward(
     &serialized->data[TARGET_GLOBAL_POS_X_HIGH], &serialized->data[TARGET_GLOBAL_POS_X_LOW],
@@ -256,6 +280,10 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
     case POLAR_VELOCITY_TARGET_MODE:
       PolarVelocityModeArgs_init(
         &command.mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
+      break;
+    case POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE:
+      PositionTargetModeArgs_init(
+        &command.mode_args.position_target, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
   command.target_global_pos[0] = convertTwoByteToFloat(

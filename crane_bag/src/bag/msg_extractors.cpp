@@ -213,6 +213,10 @@ RobotCommands extract_robot_commands(const RosMsgParser::FlatMessage & flat)
         m.get_f(FlatValueMap::arr_path(pos_prefix, j, "target_x"));
       cmd.position_target_mode[j].target_y =
         m.get_f(FlatValueMap::arr_path(pos_prefix, j, "target_y"));
+      cmd.position_target_mode[j].terminal_velocity_x =
+        m.get_f(FlatValueMap::arr_path(pos_prefix, j, "terminal_velocity_x"));
+      cmd.position_target_mode[j].terminal_velocity_y =
+        m.get_f(FlatValueMap::arr_path(pos_prefix, j, "terminal_velocity_y"));
     }
 
     const std::string vel_prefix = ap("polar_velocity_target_mode");
