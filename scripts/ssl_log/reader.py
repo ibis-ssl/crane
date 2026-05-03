@@ -73,10 +73,12 @@ def iter_messages(path: Path) -> Iterator[tuple[int, int, bytes]]:
             if not hdr or len(hdr) < _MSG_HEADER_SIZE:
                 break
             ts_ns, msg_id, length = struct.unpack(_MSG_HEADER_FMT, hdr)
+            if msg_id == _MSG_INDEX_2021:
+                break
+            if length <= 0 or length > 10_000_000:
+                break
             payload = f.read(length)
             if len(payload) < length:
-                break
-            if msg_id == _MSG_INDEX_2021:
                 break
             yield ts_ns, msg_id, payload
 
@@ -119,7 +121,10 @@ def load_log(path: Path | str) -> LogData:
 
         elif msg_id == _MSG_TRACKER_2020:
             pkt = TrackerWrapperPacket()
-            pkt.ParseFromString(payload)
+            try:
+                pkt.ParseFromString(payload)
+            except Exception:
+                continue
             if primary_uuid is None:
                 primary_uuid = pkt.uuid
             elif pkt.uuid != primary_uuid:
@@ -194,7 +199,10 @@ def load_log(path: Path | str) -> LogData:
 
         elif msg_id == _MSG_REFEREE_2013:
             pkt = Referee()
-            pkt.ParseFromString(payload)
+            try:
+                pkt.ParseFromString(payload)
+            except Exception:
+                continue
             if pkt.command_counter == last_command_counter:
                 continue
             last_command_counter = pkt.command_counter
