@@ -6,8 +6,9 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent"]
 
 # SSL公式ログ解析
 
-RoboCup SSL Game Controllerが出力する `.log.gz` 形式の公式ログを解析します。
-ボール・ロボット位置（Vision/Tracker）とreferee状態（スコア・ファウル・ゲームイベント）を解析できます。
+RoboCup SSL公式レコーダーが記録する `.log.gz` 形式のログを解析します。
+SSL公式ツール群（ssl-vision, ssl-game-controller等）がUDPで配信するパケットをレコーダーがキャプチャしたもので、
+ボール・ロボット位置（Vision/Tracker）とreferee状態（スコア・ファウル・ゲームイベント）が含まれます。
 
 コマンドプレフィックス:
 
@@ -39,7 +40,7 @@ ls -lh "$LOG"
 初回実行時のみ `scripts/ssl_proto/` に protobuf Pythonバインディングが自動生成される（数秒かかる）。
 `grpcio-tools` または `protoc` がインストールされていない場合は事前に `pip install grpcio-tools` を実行する。
 
-> **注意**: `.log.gz` は Vision/Tracker/Referee を含む SSL Game Controller の公式ログ形式。
+> **注意**: `.log.gz` は SSL公式レコーダーが記録した形式（Vision/Tracker/Refereeパケットを含む）。
 > ROS bag（.mcap）の解析には `/analyze-rosbag` を使用すること。
 
 ### Step 1: ログ基本情報
