@@ -12,7 +12,7 @@ RoboCup SSL Game Controllerが出力する `.log.gz` 形式の公式ログを解
 コマンドプレフィックス:
 
 ```bash
-cd /home/hans/workspace/ibis_ws/src/crane
+# craneリポジトリのルートで実行する
 # 以降 ssl_log <subcommand> ... は以下の意味:
 # python3 scripts/analyze_ssl_log.py <subcommand> ...
 ```
