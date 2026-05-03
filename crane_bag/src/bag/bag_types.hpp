@@ -82,6 +82,7 @@ struct NamedString
 struct PositionTarget
 {
   float target_x = 0, target_y = 0;
+  float terminal_velocity_x = 0, terminal_velocity_y = 0;
 };
 
 struct PolarVelocityTarget

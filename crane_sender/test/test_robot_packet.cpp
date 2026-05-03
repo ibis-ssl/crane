@@ -91,6 +91,33 @@ TEST(RobotPacket, EncodeDecode)
       packet.target_global_pos[1], deserialized_packet.target_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(packet.terminal_velocity, deserialized_packet.terminal_velocity, MAX_ERROR_32);
   }
+
+  {
+    packet.target_global_pos[0] = dist_32(gen);
+    packet.target_global_pos[1] = dist_32(gen);
+    packet.terminal_velocity = dist_32(gen);
+
+    packet.control_mode = POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE;
+    packet.mode_args.position_target.terminal_velocity_x = dist_32(gen);
+    packet.mode_args.position_target.terminal_velocity_y = dist_32(gen);
+
+    RobotCommandSerializedV2 serialized_packet;
+    RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
+
+    RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
+    EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
+    EXPECT_NEAR(
+      packet.mode_args.position_target.terminal_velocity_x,
+      deserialized_packet.mode_args.position_target.terminal_velocity_x, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.mode_args.position_target.terminal_velocity_y,
+      deserialized_packet.mode_args.position_target.terminal_velocity_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.target_global_pos[0], deserialized_packet.target_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.target_global_pos[1], deserialized_packet.target_global_pos[1], MAX_ERROR_32);
+    EXPECT_NEAR(packet.terminal_velocity, deserialized_packet.terminal_velocity, MAX_ERROR_32);
+  }
 }
 
 int main(int argc, char ** argv)

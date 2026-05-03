@@ -835,7 +835,9 @@ private:
         {"target_x", pt.target_x},
         {"target_y", pt.target_y},
         {"position_tolerance", pt.position_tolerance},
-        {"speed_limit_at_target", pt.speed_limit_at_target}};
+        {"speed_limit_at_target", pt.speed_limit_at_target},
+        {"terminal_velocity_x", pt.terminal_velocity_x},
+        {"terminal_velocity_y", pt.terminal_velocity_y}};
     }
 
     json simple_velocity_json = nullptr;
