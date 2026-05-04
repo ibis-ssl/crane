@@ -26,11 +26,6 @@ repos:
       - id: markdownlint
         args: [-c, .markdownlint.yaml, --fix]
 
-#  - repo: https://github.com/pre-commit/mirrors-prettier
-#    rev: v3.0.0-alpha.6
-#    hooks:
-#      - id: prettier
-
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
@@ -39,10 +34,6 @@ repos:
   - repo: https://github.com/tier4/pre-commit-hooks-ros
     rev: v0.10.2
     hooks:
-      #      - id: flake8-ros
-      - id: prettier-xacro
-      - id: prettier-launch-xml
-      - id: prettier-package-xml
       - id: ros-include-guard
       - id: sort-package-xml
 
@@ -56,11 +47,6 @@ repos:
     hooks:
       - id: shfmt
         args: [-w, -s, -i=4]
-
-#  - repo: https://github.com/pycqa/isort
-#    rev: 5.12.0
-#    hooks:
-#      - id: isort
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
@@ -81,9 +67,3 @@ repos:
       - id: cpplint
         args: [--quiet]
         exclude: .cu
-
-#  - repo: https://github.com/streetsidesoftware/cspell-cli
-#    rev: v8.19.0
-#    hooks:
-#      - id: cspell
-#        args: [--config, "https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/.cspell.json", --config, .github/workflows/custom_dict.json]
