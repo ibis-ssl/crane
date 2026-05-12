@@ -265,7 +265,13 @@ private:
     packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
-    if (!command.position_target_mode.empty()) {
+    // POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE (mode=4) は、上位レイヤが明示的に
+    // POSITION_TARGET_MODE を指定した場合のみ使用する。
+    // 旧受信機 (ER-Force ibis branch / 現行実機ファーム) は mode=3 のみ対応しているため、
+    // crane_local_planner が設定した control_mode フィールドを尊重することで後方互換性を維持する。
+    if (
+      command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE &&
+      !command.position_target_mode.empty()) {
       const auto & pos_mode = command.position_target_mode.front();
       packet.control_mode = POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE;
       packet.mode_args.position_target.terminal_velocity_x = pos_mode.terminal_velocity_x;
@@ -274,8 +280,6 @@ private:
       packet.target_global_pos[1] = pos_mode.target_y;
       packet.terminal_velocity = pos_mode.speed_limit_at_target;
     } else {
-      // POLAR_VELOCITY_TARGET_MODE は「位置ターゲット = 現在位置, 速度ベクトル = 目標速度」として
-      // POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE と統一的に解釈できる互換構成にする
       packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
       packet.mode_args.polar_velocity.target_global_velocity_r = target_velocity_r;
       packet.mode_args.polar_velocity.target_global_velocity_theta = target_velocity_theta;
