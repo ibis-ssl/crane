@@ -262,7 +262,7 @@ private:
         : selected_acceleration;
     packet.linear_velocity_limit = resolved_max_velocity;
     packet.angular_velocity_limit = command.omega_limit;
-    packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
+    packet.latency_time_ms = static_cast<uint16_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
     // POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE (mode=4) は、上位レイヤが明示的に
