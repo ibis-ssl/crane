@@ -236,7 +236,19 @@ inline auto computeAroundBallApproachTarget(
   const Point & ball, const Point & desired_opposite, const Point & from, double offset,
   double epsilon = 1e-4) -> Point
 {
-  Point base_target = ball + (ball - desired_opposite).normalized() * offset;
+  // ボールと目標が同位置の場合、(ball - desired_opposite) はゼロ長となり
+  // normalized() が NaN を返すため、from 方向（それもゼロ長なら任意の既定方向）へフォールバックする
+  Vector2 base_dir = ball - desired_opposite;
+  double base_dir_norm = base_dir.norm();
+  if (base_dir_norm < 1e-9) {
+    Vector2 from_dir = from - ball;
+    double from_dir_norm = from_dir.norm();
+    if (from_dir_norm < 1e-9) {
+      return ball + Vector2(offset, 0.0);
+    }
+    return ball + (from_dir / from_dir_norm) * offset;
+  }
+  Point base_target = ball + (base_dir / base_dir_norm) * offset;
   Segment from_to_base{from, base_target};
   auto result = getClosestPointAndDistance(ball, from_to_base);
   if (result.distance > epsilon) {
@@ -272,10 +284,17 @@ inline auto computeAroundBallApproachTargetDynamic(
   double max_offset, double epsilon = 1e-4) -> Point
 {
   // 進捗（回り込みの達成度）を評価
-  Vector2 a = (desired_opposite - ball).normalized();
-  Vector2 b = (from - ball).normalized();
-  double dot = a.dot(b);
-  double progress = std::clamp((1.0 - dot) / 2.0, 0.0, 1.0);  // [0,1]
+  // ボールと desired_opposite / from が同位置の場合、ベクトルがゼロ長となり
+  // normalized() が NaN を返すため、ゼロ長判定で進捗を 0（初期状態）にフォールバックする
+  Vector2 a_raw = desired_opposite - ball;
+  Vector2 b_raw = from - ball;
+  double a_norm = a_raw.norm();
+  double b_norm = b_raw.norm();
+  double progress = 0.0;  // 退化入力時は初期状態（max_offset側）とみなす
+  if (a_norm >= 1e-9 && b_norm >= 1e-9) {
+    double dot = (a_raw / a_norm).dot(b_raw / b_norm);
+    progress = std::clamp((1.0 - dot) / 2.0, 0.0, 1.0);  // [0,1]
+  }
 
   // 有効オフセット（初期はmax_offset、完了でbase_offset）
   double offset_eff = max_offset + (base_offset - max_offset) * progress;
