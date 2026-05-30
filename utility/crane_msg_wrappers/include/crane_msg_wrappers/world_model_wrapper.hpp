@@ -166,18 +166,36 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
     callbacks.emplace_back(callback_func);
   }
 
-  [[nodiscard]] auto getRobot(RobotIdentifier robot) const
+  [[nodiscard]] auto getRobot(RobotIdentifier robot) const -> RobotInfo::SharedPtr
   {
     if (robot.is_ours) {
+      if (robot.id >= ours_.robots.size()) {
+        return nullptr;
+      }
       return ours_.robots.at(robot.id);
     } else {
+      if (robot.id >= theirs_.robots.size()) {
+        return nullptr;
+      }
       return theirs_.robots.at(robot.id);
     }
   }
 
-  [[nodiscard]] auto getOurRobot(uint8_t id) const { return ours_.robots.at(id); }
+  [[nodiscard]] auto getOurRobot(uint8_t id) const -> RobotInfo::SharedPtr
+  {
+    if (id >= ours_.robots.size()) {
+      return nullptr;
+    }
+    return ours_.robots.at(id);
+  }
 
-  [[nodiscard]] auto getTheirRobot(uint8_t id) const { return theirs_.robots.at(id); }
+  [[nodiscard]] auto getTheirRobot(uint8_t id) const -> RobotInfo::SharedPtr
+  {
+    if (id >= theirs_.robots.size()) {
+      return nullptr;
+    }
+    return theirs_.robots.at(id);
+  }
 
   [[nodiscard]] auto getOurMaxAllowedBots() const { return ours_.max_allowed_bots; }
 
