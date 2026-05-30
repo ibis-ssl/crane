@@ -84,10 +84,6 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
           // Vision生データから速度を時間微分で計算（スパイク対策強化版）
           auto current_time = rclcpp::Time(bag_message->recv_timestamp);
           if (!ball_data.empty()) {
-            // 速度計算のため位置データをフィルタリング
-            Point smoothed_pos = applySmoothingFilter(ball_data, vision_ball.pos);
-            double smoothed_pos_z = applySmoothingFilterScalar(ball_data, vision_ball.pos_z);
-
             auto & [prev_time, prev_ball] = ball_data.back();
             double dt = (current_time - prev_time).seconds();
 
@@ -96,9 +92,11 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
             const double max_dt = 0.2;   // 最大時間間隔（200ms）
 
             if (dt >= min_dt && dt <= max_dt) {
-              // 平滑化された位置から速度を計算
-              Point position_diff = smoothed_pos - prev_ball.pos;
-              double pos_z_diff = smoothed_pos_z - prev_ball.pos_z;
+              // 速度差分は両端点の平滑化状態を一致させるため生の位置同士で計算する。
+              // （現在位置のみ平滑化すると過去側へ引っ張られ、前回の生位置との差分に
+              //   バイアス（符号反転・過小評価）が入り、キック検出に影響するため）
+              Point position_diff = vision_ball.pos - prev_ball.pos;
+              double pos_z_diff = vision_ball.pos_z - prev_ball.pos_z;
 
               Point raw_velocity = position_diff / dt;
               double raw_velocity_z = pos_z_diff / dt;
