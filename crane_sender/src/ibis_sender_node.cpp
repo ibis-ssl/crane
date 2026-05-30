@@ -393,7 +393,9 @@ private:
       cmd->set_allocated_move_command(move_command);
 
       const auto kick = computeKick(command.kick_power, command.chip_enable);
-      cmd->set_kick_angle(kick.angle_rad);
+      // ssl_simulation_robot_control.proto の kick_angle は度単位を要求するため、
+      // ラジアンから度へ変換して渡す（grSim 経路は cos/sin に渡すためラジアンのまま）。
+      cmd->set_kick_angle(kick.angle_rad * 180.0 / M_PI);
       cmd->set_kick_speed(kick.speed);
       cmd->set_dribbler_speed(command.dribble_power * 1000.0);
     }
