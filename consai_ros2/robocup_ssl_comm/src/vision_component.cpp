@@ -45,7 +45,12 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
     if (size > 0) {
       robocup_ssl::SSL_WrapperPacket wrapper_packet;
-      wrapper_packet.ParseFromArray(buf.data(), static_cast<int>(size));
+      if (!wrapper_packet.ParseFromArray(buf.data(), static_cast<int>(size))) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000,
+          "Visionパケットのパース失敗 (size=%zu) — protoバージョン不整合の可能性", size);
+        return;
+      }
       if (wrapper_packet.has_detection()) {
         auto detection_frame_msg = parse_detection_frame(wrapper_packet);
         uint32_t camera_id = detection_frame_msg.camera_id;
