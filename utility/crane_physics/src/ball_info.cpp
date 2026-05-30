@@ -46,7 +46,10 @@ auto Ball::getPredictedVelocity(double time_ahead) const -> Point
   return physics_model_->predictVelocity(pos, vel, state, pos_z, vel_z, time_ahead);
 }
 
-auto Ball::getStopTime() const -> double { return physics_model_->getStopTime(vel, state, vel_z); }
+auto Ball::getStopTime() const -> double
+{
+  return physics_model_->getStopTime(vel, state, pos_z, vel_z);
+}
 
 auto Ball::getMaxDistance() const -> double
 {
