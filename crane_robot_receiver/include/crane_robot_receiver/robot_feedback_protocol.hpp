@@ -178,7 +178,7 @@ struct RobotFeedback
 
   uint8_t counter = 0;
 
-  uint8_t kick_state = 0;
+  uint16_t kick_state = 0;
 
   uint8_t temperature[7] = {};
 

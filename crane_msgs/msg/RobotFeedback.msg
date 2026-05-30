@@ -16,7 +16,7 @@ uint32 counter_jump_count
 
 uint8 counter
 
-uint8 kick_state
+uint16 kick_state
 
 uint8 TEMP_MOTOR_1=0
 uint8 TEMP_MOTOR_2=1
