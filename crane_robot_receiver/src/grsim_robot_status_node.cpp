@@ -56,6 +56,11 @@ public:
             auto received_msg = get_status_msg(packet);
             std::lock_guard<std::mutex> lock(status_mutex_);
             for (const auto & received_status : received_msg.robots_status) {
+              if (
+                received_status.robot_id < 0 ||
+                static_cast<size_t>(received_status.robot_id) >= target.robots_status.size()) {
+                continue;
+              }
               target.robots_status[received_status.robot_id] = received_status;
             }
           }
@@ -99,6 +104,9 @@ private:
     auto statuses_msg = robocup_ssl_msgs::msg::RobotsStatus();
 
     for (const auto & status : robots_status.robots_status()) {
+      if (status.robot_id() < 0 || status.robot_id() >= 20) {
+        continue;
+      }
       robocup_ssl_msgs::msg::RobotStatus status_msg;
       status_msg.robot_id = status.robot_id();
       status_msg.infrared = status.infrared();
