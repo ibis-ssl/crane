@@ -78,6 +78,16 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   if (referee_timeout_active_) {
     RCLCPP_WARN(get_logger(), "レフェリーメッセージの受信が復帰しました");
     referee_timeout_active_ = false;
+    // タイムアウト中に play_situation_msg.command を STOP へ強制遷移させたが
+    // latest_raw_referee は据え置いたため、同一 RAW コマンドで復帰すると
+    // 後段の差分判定 (latest_raw_referee.command.value != msg.command.value) を
+    // すり抜けて STOP に固着してしまう。復帰検出時に latest_raw_referee の
+    // コマンドを実在しない sentinel 値へ無効化し、次の差分判定を必ず成立させて
+    // 最新の referee コマンドで状況を再評価できるようにする。
+    // RefereeCommand.value は int32 で有効値は 0 以上のため、-1 は実在しない
+    // sentinel として安全に利用できる。
+    constexpr int32_t INVALID_REFEREE_COMMAND = -1;
+    latest_raw_referee.command.value = INVALID_REFEREE_COMMAND;
   }
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
