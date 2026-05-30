@@ -54,6 +54,11 @@ public:
       ++invalid_packet_count_;
       return;
     }
+    if (protocol::readRawByte(buf, protocol::offset::CHECKSUM) != protocol::computeChecksum(buf)) {
+      ++checksum_error_count_;
+      ++invalid_packet_count_;
+      return;
+    }
 
     RobotFeedback new_packet = parseBuffer(buf, stamp);
     updateCounterStatsLocked(new_packet.counter);
