@@ -221,7 +221,17 @@ inline auto getOptimalAssignments(
     return {};
   }
   if (robot_positions.size() == 1) {
-    return {0};
+    // ターゲットが複数ある場合、最近傍のターゲットを選択する
+    int best_index = 0;
+    double best_distance = bg::distance(robot_positions[0], targets[0]);
+    for (size_t j = 1; j < targets.size(); ++j) {
+      const double d = bg::distance(robot_positions[0], targets[j]);
+      if (d < best_distance) {
+        best_distance = d;
+        best_index = static_cast<int>(j);
+      }
+    }
+    return {best_index};
   }
 
   // Hungarianアルゴリズムは行数 >= 列数を要求するため、
@@ -277,7 +287,17 @@ inline auto getOptimalAssignmentsWithCost(
     return {};
   }
   if (num_robots == 1) {
-    return {0};
+    // ターゲットが複数ある場合、最小コストのターゲットを選択する
+    int best_index = 0;
+    double best_cost = cost_func(0, 0);
+    for (size_t j = 1; j < num_targets; ++j) {
+      const double c = cost_func(0, j);
+      if (c < best_cost) {
+        best_cost = c;
+        best_index = static_cast<int>(j);
+      }
+    }
+    return {best_index};
   }
 
   // Hungarianアルゴリズムは行数 >= 列数を要求するため、
