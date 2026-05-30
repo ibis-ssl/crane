@@ -7,6 +7,7 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <algorithm>
+#include <array>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
@@ -473,7 +474,11 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     }
   }
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
+  std::array<bool, 20> ally_commanded{};
   for (auto & command : msg.robot_commands) {
+    if (command.robot_id < 20) {
+      ally_commanded[command.robot_id] = true;
+    }
     if (command.position_target_mode.empty()) {
       RCLCPP_WARN(
         rclcpp::get_logger("rvo2_local_planner"),
@@ -508,6 +513,19 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     applyPreConstraintStage(ctx, command);
     setPlanningStage(command, "RVO_INPUT");
     applyRVOInputStage(ctx, command);
+  }
+
+  // 敵側と対称に、今サイクルで指令が無い／available() が false の味方エージェントを
+  // (20,20) へ退避させ速度0にする。これにより指令が止まった味方（退場・通信断）が
+  // 前回位置のまま残り、他の味方経路計画に対する幽霊障害物となるのを防ぐ。
+  for (const auto & ally_robot : world_model->ours().robots) {
+    if (ally_robot->id >= 20) {
+      continue;
+    }
+    if (!ally_commanded[ally_robot->id] || !ally_robot->available()) {
+      rvo_sim->setAgentPosition(ally_robot->id, RVO::Vector2(20.f, 20.f));
+      rvo_sim->setAgentPrefVelocity(ally_robot->id, RVO::Vector2(0.f, 0.f));
+    }
   }
 
   for (const auto & enemy_robot : world_model->theirs().robots) {
