@@ -956,11 +956,31 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
     ball_info_.position.x = vision_ball_state_.position.x();
     ball_info_.position.y = vision_ball_state_.position.y();
     ball_info_.position.z = vision_ball_state_.position.z();
-    // Visionからは速度計算しない（Trackerがない場合は速度0）
-    ball_info_.velocity.x = 0.0;
-    ball_info_.velocity.y = 0.0;
-    ball_info_.velocity.z = 0.0;
-    ball_info_.velocity_norm = 0.0;
+
+    // Tracker未検出時はVision連続フレームの有限差分で速度を推定する。
+    // (現在pos - 前回pos) / dt。前回値が無い、または dt<=0 の場合のみ速度0とする。
+    Eigen::Vector3d vision_velocity = Eigen::Vector3d::Zero();
+    if (prev_vision_ball_valid_) {
+      const double dt = (vision_ball_state_.last_detect_time - prev_vision_ball_stamp_).seconds();
+      if (dt > 0.0) {
+        vision_velocity = (vision_ball_state_.position - prev_vision_ball_position_) / dt;
+
+        // Visionノイズ・誤検出による非現実的な速度を抑制するためクランプする。
+        // (SSLボール最高速 6.5m/s を上回る値は外れ値とみなしスケールダウン)
+        constexpr double MAX_BALL_SPEED = 6.5;  // m/s
+        const double speed = vision_velocity.norm();
+        if (!std::isfinite(speed)) {
+          vision_velocity = Eigen::Vector3d::Zero();
+        } else if (speed > MAX_BALL_SPEED) {
+          vision_velocity *= (MAX_BALL_SPEED / speed);
+        }
+      }
+    }
+
+    ball_info_.velocity.x = vision_velocity.x();
+    ball_info_.velocity.y = vision_velocity.y();
+    ball_info_.velocity.z = vision_velocity.z();
+    ball_info_.velocity_norm = vision_velocity.norm();
   } else {
     // 両方未検出 - 速度のみリセット
     ball_info_.velocity.x = 0.0;
@@ -973,6 +993,11 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
   if (vision_ball_state_.detected) {
     ball_info_.vision.stamp = vision_ball_state_.last_detect_time;
     ball_info_.vision.pos = vision_ball_state_.raw_position;
+
+    // 次回のVision単独速度推定（有限差分）のため前回Vision位置・時刻を更新する。
+    prev_vision_ball_position_ = vision_ball_state_.position;
+    prev_vision_ball_stamp_ = vision_ball_state_.last_detect_time;
+    prev_vision_ball_valid_ = true;
   }
 
   // Tracker情報の更新（常にTrackerの生データを保持）

@@ -231,6 +231,11 @@ private:
   VisionBallState vision_ball_state_;
   TrackerBallState tracker_ball_state_;
 
+  // Vision単独検出時の速度推定用（前回Vision位置・時刻を保持し有限差分で速度を算出）
+  Eigen::Vector3d prev_vision_ball_position_{Eigen::Vector3d::Zero()};
+  rclcpp::Time prev_vision_ball_stamp_{};
+  bool prev_vision_ball_valid_{false};
+
   // フォールバック推定用
   Eigen::Vector3d last_known_ball_position_{Eigen::Vector3d::Zero()};
   rclcpp::Time last_known_ball_stamp_{};
