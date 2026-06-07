@@ -273,7 +273,7 @@ private:
     double penalty_area_h;
   } game_data;
 
-  bool on_positive_half;
+  bool on_positive_half = false;
 
   bool is_emplace_positive_side;
 
