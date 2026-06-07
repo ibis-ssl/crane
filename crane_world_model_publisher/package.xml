@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_world_model_publisher</name>
-  <version>1.0.372</version>
+  <version>1.0.373</version>
   <description>crane_world_model_publisher</description>
   <maintainer email="macakasit@gmail.com">akshota</maintainer>
   <license>MIT</license>
