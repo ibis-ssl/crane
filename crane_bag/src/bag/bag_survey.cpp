@@ -135,7 +135,7 @@ std::string section_planning_factors(const BagData & data)
   return oss.str();
 }
 
-std::string section_velocity_status(const BagData & data, double interval = 10.0)
+std::string section_velocity_status(const BagData & data, double interval = kSurveyVelocityInterval)
 {
   std::ostringstream oss;
   char buf[256];

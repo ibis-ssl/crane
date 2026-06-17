@@ -8,6 +8,7 @@
 
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "bag_reader.hpp"
@@ -35,6 +36,10 @@ inline const std::vector<std::string> ALL_EVENT_TYPES = {EVENT_GOAL, EVENT_PLAY,
                                                          EVENT_KICK, EVENT_BALL_SPEED, EVENT_FOUL};
 
 std::vector<Event> detect_events(const BagData & data, const std::vector<std::string> & types = {});
+
+/// 要求された event type の検出に必要なトピック集合を返す（空 types = 全タイプ）。
+/// read() に渡して不要トピックのデシリアライズを省くために使う。
+std::unordered_set<std::string> topics_for_event_types(const std::vector<std::string> & types);
 
 std::vector<Event> detect_play_transitions(const BagData & data);
 std::vector<Event> detect_role_changes(const BagData & data);

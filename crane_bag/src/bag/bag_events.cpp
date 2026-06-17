@@ -332,6 +332,26 @@ std::vector<Event> detect_fouls(const BagData & data)
   return events;
 }
 
+std::unordered_set<std::string> topics_for_event_types(const std::vector<std::string> & types)
+{
+  const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
+  std::unordered_set<std::string> topics;
+  for (const auto & t : target) {
+    if (t == EVENT_PLAY) {
+      topics.insert("/play_situation");
+    } else if (t == EVENT_ROLE) {
+      topics.insert("/robot_select_results");
+    } else if (t == EVENT_KICK) {
+      topics.insert("/robot_commands");
+    } else if (t == EVENT_BALL_SPEED || t == EVENT_GOAL) {
+      topics.insert("/world_model");
+    } else if (t == EVENT_FOUL) {
+      topics.insert("/referee");
+    }
+  }
+  return topics;
+}
+
 std::vector<Event> detect_events(const BagData & data, const std::vector<std::string> & types)
 {
   const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;

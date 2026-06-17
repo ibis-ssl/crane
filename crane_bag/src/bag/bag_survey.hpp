@@ -13,7 +13,12 @@
 namespace crane::bag
 {
 
+/// survey が使うサンプリング間隔[秒]。read() の読み込み時ダウンサンプルと
+/// 各セクションの sample() で同一値を共有し、出力を変えずに展開件数を減らす。
+constexpr double kSurveySampleInterval = 5.0;     ///< world_model / game_analysis セクション
+constexpr double kSurveyVelocityInterval = 10.0;  ///< robot_commands 速度セクション
+
 /// 概要サーベイを実行してテキストを返す（analyze-rosbag Step 2 テンプレート移植）
-std::string run_survey(const BagData & data, double sample_interval = 5.0);
+std::string run_survey(const BagData & data, double sample_interval = kSurveySampleInterval);
 
 }  // namespace crane::bag

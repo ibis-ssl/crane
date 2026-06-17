@@ -10,6 +10,8 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -82,16 +84,36 @@ inline std::pair<int64_t, int64_t> make_ns_range(
     bag_start_ns + static_cast<int64_t>(time_range->second * 1e9)};
 }
 
+/// read() の読み込み挙動を制御するオプション。
+/// 各コマンドが必要とするトピック/サンプリングだけをデシリアライズすることで、
+/// 巨大な /world_model 等の無駄な展開を避ける。
+struct ReadOptions
+{
+  /// デシリアライズ対象トピック。空 = 既存の全デフォルトターゲット（後方互換）。
+  std::unordered_set<std::string> topics;
+
+  /// 相対秒の時間範囲フィルタ。
+  std::optional<std::pair<double, double>> time_range;
+
+  /// トピックごとの最小サンプリング間隔[秒]。
+  /// ts - last_kept_ns >= interval*1e9 を満たすメッセージのみデシリアライズする
+  /// （last_kept 初期値 0、貪欲規則は BagData::sample と同一）。
+  /// 未登録/0 以下 = 全件。track/survey の読み込み時ダウンサンプル用。
+  std::unordered_map<std::string, double> downsample_interval_sec;
+
+  /// /world_model を ball_info/field_info のみ抽出し、ロボット配列を破棄する高速モード。
+  /// goal/ball_speed イベント検出など、ロボット情報が不要な経路で使う。
+  bool world_model_ball_only = false;
+};
+
 class BagReader
 {
 public:
   /// メタデータのみ取得（メッセージ読み込みなし）
   static BagInfo read_info(const std::string & bag_path);
 
-  /// 全トピックをワンパスで読み込む
-  static BagData read(
-    const std::string & bag_path,
-    std::optional<std::pair<double, double>> time_range = std::nullopt);
+  /// 必要なトピック/サンプリングをワンパスで読み込む（既定 = 全ターゲット全件）
+  static BagData read(const std::string & bag_path, const ReadOptions & opts = {});
 };
 
 }  // namespace crane::bag
