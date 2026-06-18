@@ -26,9 +26,11 @@ using crane::bag::detect_events;
 using crane::bag::detect_factor_transitions;
 using crane::bag::extract_referee_transitions;
 using crane::bag::format_factor_pairs;
+using crane::bag::ReadOptions;
 using crane::bag::RefereeSnapshot;
 using crane::bag::run_survey;
 using crane::bag::sample_referee;
+using crane::bag::topics_for_event_types;
 using crane::bag::track_ball;
 using crane::bag::track_robot;
 
@@ -144,7 +146,17 @@ static void cmd_info(const Args & args)
 static void cmd_survey(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path);
+  ReadOptions opts;
+  // survey が参照するトピックのみ（referee は不要）。
+  opts.topics = {"/play_situation", "/robot_select_results", "/world_model", "/control_targets",
+                 "/robot_commands", "/game_analysis",        "/rosout"};
+  // 各セクションのサンプリング間隔と一致させ、出力を変えずに展開件数を削減する。
+  // robot_select_results(.back()) と rosout(全件dedup) はダウンサンプルしない。
+  opts.downsample_interval_sec = {
+    {"/world_model", crane::bag::kSurveySampleInterval},
+    {"/robot_commands", crane::bag::kSurveyVelocityInterval},
+    {"/game_analysis", crane::bag::kSurveySampleInterval}};
+  auto data = BagReader::read(args.bag_path, opts);
   std::printf("%s\n", run_survey(data).c_str());
 }
 
@@ -155,10 +167,17 @@ static void cmd_track(const Args & args)
     std::exit(1);
   }
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/world_model"};
+  opts.time_range = args.time_range;
+  // 読み込み時に interval 間隔へ間引く。track 側は再サンプルせず全件を通す（interval=0）。
+  // read のダウンサンプルは track_ball/track_robot と同一の貪欲規則のため、
+  // 「windowed ストリームへの単一の貪欲パス」となり、従来の track 単独サンプルと一致する。
+  opts.downsample_interval_sec = {{"/world_model", args.interval}};
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (args.ball) {
-    auto states = track_ball(data, args.interval);
+    auto states = track_ball(data, 0.0);
     if (states.empty()) {
       std::printf("ボールのデータが見つかりません\n");
       return;
@@ -175,7 +194,7 @@ static void cmd_track(const Args & args)
   bool is_ours = !args.enemy;
   const char * side = is_ours ? "ours" : "enemy";
 
-  auto states = track_robot(data, args.robot_id, is_ours, args.interval);
+  auto states = track_robot(data, args.robot_id, is_ours, 0.0);
   if (states.empty()) {
     std::printf("robot=%d (%s) のデータが見つかりません\n", args.robot_id, side);
     return;
@@ -195,7 +214,13 @@ static void cmd_track(const Args & args)
 static void cmd_events(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path);
+  ReadOptions opts;
+  // 要求された event type の検出に必要なトピックのみ読む（空 = 全タイプ）。
+  opts.topics = topics_for_event_types(args.event_types);
+  // goal/ball_speed は world_model を全件走査するが ball/field しか使わないため、
+  // ロボット配列を破棄する高速デシリアライズを有効化する。
+  opts.world_model_ball_only = opts.topics.count("/world_model") > 0;
+  auto data = BagReader::read(args.bag_path, opts);
   auto events = detect_events(data, args.event_types);
 
   if (print_json(args, events)) return;
@@ -218,7 +243,10 @@ static void cmd_control(const Args & args)
     std::exit(1);
   }
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/control_targets"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (args.changes_only) {
     auto transitions = detect_factor_transitions(data, args.robot_id);
@@ -270,7 +298,10 @@ static void cmd_control(const Args & args)
 static void cmd_referee(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/referee"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (data.referees.empty()) {
     std::printf("/referee トピックが見つかりません\n");
