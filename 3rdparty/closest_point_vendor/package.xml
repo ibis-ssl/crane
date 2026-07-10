@@ -3,7 +3,7 @@
 <package format="3">
   <name>closest_point_vendor</name>
   <version>1.0.377</version>
-  <description>TODO: Package description</description>
+  <description>Vendor package for the Boost.Geometry closest_point extension headers (artemp/closest_point)</description>
   <maintainer email="pythagora.yoshimoto@gmail.com">hans</maintainer>
   <license>TODO: License declaration</license>
 

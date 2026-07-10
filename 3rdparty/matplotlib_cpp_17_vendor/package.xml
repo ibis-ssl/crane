@@ -3,7 +3,7 @@
 <package format="3">
   <name>matplotlib_cpp_17_vendor</name>
   <version>1.0.377</version>
-  <description>TODO: Package description</description>
+  <description>Vendor package for matplotlibcpp17, a C++17 wrapper of matplotlib (soblin/matplotlibcpp17)</description>
   <maintainer email="pythagora.yoshimoto@gmail.com">groundstation</maintainer>
   <license>TODO: License declaration</license>
 
