@@ -142,7 +142,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   wrapper_->addDelayCheckpoint("post_processed", "");
 
   pub_world_model.publish(wrapper_->getMsg());
-  wrapper_->addDelayCheckpoint("world_model_published", "30Hz");
+  wrapper_->addDelayCheckpoint("world_model_published", "");
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
