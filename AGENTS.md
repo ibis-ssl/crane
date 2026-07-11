@@ -227,7 +227,7 @@ ros2 launch robocup_ssl_comm comm.launch.py
 ### コアコンポーネント
 
 - crane_session_coordinator: 試合進行とゲーム状態管理
-- crane_sessions: プラグイン型の戦略プランナー
+- crane_sessions: ファクトリ登録型の戦略プランナー（`session_factory` 経由で生成）
 - crane_robot_skills: 個別ロボット振る舞い（ゴールキーパー等）
 - crane_local_planner: RVO2 ベースの局所経路計画
 - crane_world_model_publisher: 状態推定とトラッキング
@@ -235,7 +235,7 @@ ros2 launch robocup_ssl_comm comm.launch.py
 
 ### メッセージフロー
 
-1. `robocup_ssl_comm` がSSLの視覚/審判データを受信
+1. `crane_world_model_publisher` が SSL-Vision データを直接UDP受信、`robocup_ssl_comm` が審判（GameController）データを受信
 2. `crane_world_model_publisher` が世界モデルを配信
 3. セッションコントローラが上位意思決定
 4. プランナが割当と戦略を生成
@@ -245,7 +245,7 @@ ros2 launch robocup_ssl_comm comm.launch.py
 ### 主なディレクトリ
 
 - `crane_session_coordinator/` 最上位制御・ゲーム状態管理
-- `crane_sessions/` 戦略タクティックプラグイン群
+- `crane_sessions/` 戦略セッション群（ファクトリ登録）
 - `crane_robot_skills/` 個別ロボットスキルライブラリ
 - `crane_local_planner/` 経路計画・衝突回避
 - `utility/` 共有ユーティリティライブラリ（幾何・物理・通信・メッセージラッパー等）
@@ -284,9 +284,9 @@ ros2 launch robocup_ssl_comm comm.launch.py
 
 ### 依存レイヤ構成（概略）
 
-1. メッセージ層: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`
-2. ユーティリティ層: `crane_geometry`, `crane_physics`, `crane_comm`, `crane_msg_wrappers`
-3. コンポーネント層: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_robot_skills`
+1. メッセージ層: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`（可視化ラッパーを含むため `crane_geometry` にも依存）
+2. ユーティリティ層: `crane_geometry`, `crane_physics`, `crane_comm`, `crane_msg_wrappers`, `crane_utils`
+3. コンポーネント層: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_play_switcher`, `crane_robot_skills`
 4. 計画層: `crane_session_coordinator`, `crane_sessions`, `crane_local_planner`
 5. 統合層: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
 

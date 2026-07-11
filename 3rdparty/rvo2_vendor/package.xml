@@ -3,7 +3,7 @@
 <package format="3">
   <name>rvo2_vendor</name>
   <version>1.0.377</version>
-  <description>TODO: Package description</description>
+  <description>Vendor package for the RVO2 multi-agent collision avoidance library (snape/RVO2)</description>
   <maintainer email="pythagora.yoshimoto@gmail.com">groundstation</maintainer>
   <license>TODO: License declaration</license>
 
