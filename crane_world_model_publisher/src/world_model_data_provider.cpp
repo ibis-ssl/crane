@@ -66,7 +66,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     multicast_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
-        pending_vision_packets_.emplace_back(buf.data(), size);
+        pending_vision_packets_.push_back(
+          TimedPacket{std::string(buf.data(), size), std::chrono::steady_clock::now()});
       }
     });
     RCLCPP_INFO(
@@ -86,7 +87,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     tracker_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
-        pending_tracker_packets_.emplace_back(buf.data(), size);
+        pending_tracker_packets_.push_back(
+          TimedPacket{std::string(buf.data(), size), std::chrono::steady_clock::now()});
       }
     });
     RCLCPP_INFO(
@@ -264,7 +266,7 @@ WorldModelDataProvider::~WorldModelDataProvider() = default;
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
   // asioスレッドからのパケットを取り出す（最小限のロック）
-  std::vector<std::string> vision_packets, tracker_packets;
+  std::vector<TimedPacket> vision_packets, tracker_packets;
   {
     std::lock_guard<std::mutex> lock(recv_mutex_);
     vision_packets.swap(pending_vision_packets_);
@@ -272,10 +274,10 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   }
 
   // Visionパケット処理（ROS2スレッドから安全に実行）
-  for (const auto & raw : vision_packets) {
+  for (const auto & vision_packet : vision_packets) {
     try {
       robocup_ssl::SSL_WrapperPacket packet;
-      if (packet.ParseFromString(raw)) {
+      if (packet.ParseFromString(vision_packet.data)) {
         if (packet.has_detection()) {
           // Vision ボール生データは常に更新（isBallTrulyLostFromDribblerのクロスリファレンス用）
           if (!packet.detection().balls().empty()) {
@@ -307,15 +309,19 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   }
 
   // Trackerパケット処理（ROS2スレッドから安全に実行）
-  for (const auto & raw : tracker_packets) {
+  for (const auto & tracker_packet : tracker_packets) {
     try {
       robocup_ssl::TrackerWrapperPacket wrapper_packet;
-      if (wrapper_packet.ParseFromString(raw) && wrapper_packet.has_tracked_frame()) {
+      if (
+        wrapper_packet.ParseFromString(tracker_packet.data) && wrapper_packet.has_tracked_frame()) {
         auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
         latest_tracked_frame = tracked_frame_msg;
         has_tracked_frame_updated_ = true;
         last_tracker_recv_time_ = node.get_clock()->now();
         processTrackedFrame(tracked_frame_msg);
+        last_tracker_udp_recv_steady_ = tracker_packet.recv_time;
+        last_tracker_parsed_steady_ = std::chrono::steady_clock::now();
+        has_tracker_delay_checkpoint_ = true;
       }
     } catch (const std::exception & ex) {
       RCLCPP_WARN(node.get_logger(), "Trackerパケットパースエラー: %s", ex.what());
@@ -374,6 +380,24 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
   crane_msgs::msg::WorldModel msg;
+
+  // Trackerフレームの実際のUDP受信時刻・パース完了時刻を計測用に記録する。
+  // ここで最初にチェックポイントを追加することで、以降にmergeされるチェックポイント群の
+  // 基準時刻（reference_timestamp_ns）となり、asioバッファ〜publishまでの
+  // キュー待ち遅延を計測できるようにする。
+  // has_tracker_delay_checkpoint_ はここで消費したら false に戻す：
+  // 戻さないとTracker途絶中も直近の古い受信時刻を毎サイクル再送出し続け、
+  // 見かけ上の遅延が際限なく増大してベースライン計測のp95/maxを汚染するため。
+  if (has_tracker_delay_checkpoint_) {
+    auto to_ns = [](const std::chrono::steady_clock::time_point & tp) {
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(tp.time_since_epoch()).count();
+    };
+    DelayMonitorWrapper::addDelayCheckpointAt(
+      msg.delay_checkpoints, "tracker_udp_received", to_ns(last_tracker_udp_recv_steady_));
+    DelayMonitorWrapper::addDelayCheckpointAt(
+      msg.delay_checkpoints, "tracker_parsed", to_ns(last_tracker_parsed_steady_));
+    has_tracker_delay_checkpoint_ = false;
+  }
 
   // Basic game configuration
   msg.is_yellow = (game_data.our_color == Color::YELLOW);
