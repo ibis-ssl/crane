@@ -123,14 +123,15 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
   // 遅延監視: データ取得開始
   auto msg = data_provider_->getMsg();
-  wrapper_->clearDelayCheckpoints();
 
-  // VisionタイムスタンプをWorldModelWrapperに統合
-  wrapper_->mergeDelayCheckpoints(msg.delay_checkpoints);
-
-  // ROS 2でのVisionパケット受信時刻を追加
-  wrapper_->addDelayCheckpoint("vision_packet_received", "ros2_received");
-  wrapper_->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+  // wrapper_->update(msg)はlatest_msg = world_modelという丸ごと代入のため、
+  // update()より後にwrapper_へ追加したチェックポイントしか生き残らない。
+  // そのため、update()より前に打刻したいチェックポイントはmsg.delay_checkpoints側に
+  // 直接積んでおく（update()の代入でそのままwrapper_に引き継がれる）。
+  DelayMonitorWrapper::addDelayCheckpoint(
+    msg.delay_checkpoints, "vision_packet_received", "ros2_received");
+  DelayMonitorWrapper::addDelayCheckpoint(
+    msg.delay_checkpoints, "data_provider_getMsg", "vision_processed");
 
   wrapper_->update(msg);
   wrapper_->addDelayCheckpoint("wrapper_updated", "");
@@ -141,8 +142,10 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   postProcessWorldModel(wrapper_);
   wrapper_->addDelayCheckpoint("post_processed", "");
 
-  pub_world_model.publish(wrapper_->getMsg());
+  // publish()より後に打刻すると、そのタイムスタンプは配信されるメッセージには
+  // 物理的に反映できない（getMsg()のコピーは既にpublish済み）ため、publish直前に打刻する。
   wrapper_->addDelayCheckpoint("world_model_published", "");
+  pub_world_model.publish(wrapper_->getMsg());
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
