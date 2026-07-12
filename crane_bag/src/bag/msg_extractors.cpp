@@ -156,10 +156,38 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
       r.velocity.y = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "velocity/y"));
       r.available_vision =
         m.get_d_exact(FlatValueMap::arr_path(prefix, i, "available_vision")) != 0.0;
+      r.ball_contact_last_ns =
+        static_cast<int64_t>(m.get_d_exact(
+          FlatValueMap::arr_path(prefix, i, "ball_contact/last_contacted_time/sec"))) *
+          1'000'000'000LL +
+        static_cast<int64_t>(m.get_d_exact(
+          FlatValueMap::arr_path(prefix, i, "ball_contact/last_contacted_time/nanosec")));
     }
   };
   fill_robots(p + "/robot_info_ours", wm.robot_info_ours);
   fill_robots(p + "/robot_info_theirs", wm.robot_info_theirs);
+
+  // header stamp（ball_contact と同一クロックでの時刻基準）
+  wm.header_stamp_ns =
+    static_cast<int64_t>(m.get_d_exact(p + "/header/stamp/sec")) * 1'000'000'000LL +
+    static_cast<int64_t>(m.get_d_exact(p + "/header/stamp/nanosec"));
+
+  // 内包 game_analysis の抜粋（パス解析用）。ball-only モードや古いbagでは既定値のまま。
+  const std::string ga = p + "/game_analysis";
+  wm.pass_target_id = static_cast<int32_t>(m.get_d_exact(ga + "/pass_target_id", -1.0));
+  wm.recommended_pass_receiver_id =
+    static_cast<int32_t>(m.get_d_exact(ga + "/recommended_pass_receiver_id", -1.0));
+  const std::string ok_prefix = ga + "/ongoing_kick";
+  if (m.count_array(ok_prefix) > 0) {
+    wm.ongoing_kick.present = true;
+    wm.ongoing_kick.kicker_id =
+      static_cast<int32_t>(m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "kicker_id"), -1.0));
+    wm.ongoing_kick.is_kicker_friend =
+      m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "is_kicker_friend")) != 0.0;
+    wm.ongoing_kick.origin.x = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "origin_x"));
+    wm.ongoing_kick.origin.y = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "origin_y"));
+    wm.ongoing_kick.direction = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "direction"));
+  }
 
   return wm;
 }

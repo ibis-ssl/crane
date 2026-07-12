@@ -15,6 +15,7 @@
 #include "bag_control.hpp"
 #include "bag_events.hpp"
 #include "bag_json.hpp"
+#include "bag_pass.hpp"
 #include "bag_reader.hpp"
 #include "bag_referee.hpp"
 #include "bag_survey.hpp"
@@ -67,7 +68,7 @@ static Args parse_args(int argc, char ** argv)
     std::fprintf(
       stderr,
       "使い方: crane_bag <command> <bag_path> [options]\n"
-      "コマンド: info, survey, track, events, control, referee\n");
+      "コマンド: info, survey, track, events, control, referee, pass\n");
     std::exit(1);
   }
 
@@ -219,7 +220,9 @@ static void cmd_events(const Args & args)
   opts.topics = topics_for_event_types(args.event_types);
   // goal/ball_speed は world_model を全件走査するが ball/field しか使わないため、
   // ロボット配列を破棄する高速デシリアライズを有効化する。
-  opts.world_model_ball_only = opts.topics.count("/world_model") > 0;
+  // ただし pass 検出はロボット配列・game_analysis を必要とするため全量読みに切り替える。
+  opts.world_model_ball_only = opts.topics.count("/world_model") > 0 &&
+                               !crane::bag::event_types_require_full_world_model(args.event_types);
   auto data = BagReader::read(args.bag_path, opts);
   auto events = detect_events(data, args.event_types);
 
@@ -341,6 +344,53 @@ static void cmd_referee(const Args & args)
   }
 }
 
+static void cmd_pass(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  ReadOptions opts;
+  // 接触タイミングの精度が要るため全レートで読む（ダウンサンプルなし）
+  opts.topics = {"/world_model"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
+
+  if (data.world_models.empty()) {
+    std::printf("/world_model トピックが見つかりません\n");
+    return;
+  }
+
+  auto events = crane::bag::detect_pass_events(data);
+  auto summary = crane::bag::summarize_passes(events);
+
+  if (args.format == "json") {
+    nlohmann::json j;
+    j["events"] = events;
+    j["summary"] = summary;
+    std::printf("%s\n", j.dump(2).c_str());
+    return;
+  }
+
+  std::printf("%s", crane::bag::format_pass_summary(summary).c_str());
+  if (!events.empty()) {
+    std::printf("\n=== PASS EVENTS (%zu) ===\n", events.size());
+    for (const auto & e : events) {
+      std::string notes;
+      if (
+        e.first_toucher_id >= 0 &&
+        !(e.first_toucher_ours && e.first_toucher_id == e.intended_receiver_id)) {
+        notes += std::string("  toucher=") + (e.first_toucher_ours ? "our" : "their") +
+                 std::to_string(e.first_toucher_id);
+      }
+      if (e.reserved_receiver_id >= 0 && e.reserved_receiver_id != e.intended_receiver_id) {
+        notes += "  reserved=" + std::to_string(e.reserved_receiver_id);
+      }
+      std::printf(
+        "  t=%8.2f  %d -> %-2d  %-14s d=%5.2fm v=%4.2fm/s fwd=%+5.2fm dur=%4.2fs%s\n", e.t,
+        e.kicker_id, e.intended_receiver_id, crane::bag::to_string(e.outcome).c_str(),
+        e.pass_distance, e.kick_speed, e.forward_progress, e.duration, notes.c_str());
+    }
+  }
+}
+
 // ─── main ──────────────────────────────────────────────────────────────────
 
 int main(int argc, char ** argv)
@@ -354,7 +404,8 @@ int main(int argc, char ** argv)
       "  survey   <path>                                             概要サーベイを実行\n"
       "  track    <path> --robot <id>|--ball [--enemy]              ロボット/ボール追跡\n"
       "                  [--time start:end] [--interval 0.5] [--format json|text]\n"
-      "  events   <path> [--type goal kick play role ball_speed foul] [--format json|text]\n"
+      "  events   <path> [--type goal kick play role ball_speed foul pass] [--format json|text]\n"
+      "  pass     <path> [--time start:end] [--format json|text]    パス試行の検出とKPI集計\n"
       "  control  <path> --robot <id> [--time start:end] [--changes-only] [--format json|text]\n"
       "  referee  <path> [--time start:end] [--changes-only] [--format json|text]\n"
       "           デフォルト: 全メッセージをサンプリング (--interval で間隔指定)\n"
@@ -377,6 +428,8 @@ int main(int argc, char ** argv)
       cmd_control(args);
     } else if (args.command == "referee") {
       cmd_referee(args);
+    } else if (args.command == "pass") {
+      cmd_pass(args);
     } else {
       std::fprintf(stderr, "不明なコマンド: %s\n", args.command.c_str());
       return 1;

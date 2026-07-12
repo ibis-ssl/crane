@@ -25,6 +25,7 @@ ament_auto_add_executable(crane_bag
   src/bag/bag_tracking.cpp
   src/bag/bag_control.cpp
   src/bag/bag_referee.cpp
+  src/bag/bag_pass.cpp
   src/bag/msg_extractors.cpp
 )
 target_include_directories(crane_bag PRIVATE src/bag)
@@ -37,5 +38,14 @@ target_link_libraries(crane_bag
   mcap_vendor::mcap
   magic_enum::magic_enum
 )
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+
+  # パスイベント検出器の単体テスト（bag_pass は rosx_introspection 非依存の純関数）
+  ament_auto_add_gtest(test_bag_pass test/test_bag_pass.cpp src/bag/bag_pass.cpp)
+  target_include_directories(test_bag_pass PRIVATE src/bag)
+endif()
 
 ament_auto_package()

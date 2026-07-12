@@ -47,6 +47,18 @@ struct RobotInfo
   Pose2D pose;
   Point2D velocity;
   bool available_vision = false;
+  /// ball_contact/last_contacted_time [ns]（WorldModel header と同一クロック）
+  int64_t ball_contact_last_ns = 0;
+};
+
+/// WorldModel.game_analysis.ongoing_kick[<=1] の抜粋（パス解析用）
+struct OngoingKickInfo
+{
+  bool present = false;
+  int32_t kicker_id = -1;
+  bool is_kicker_friend = false;
+  Point2D origin;
+  double direction = 0.0;
 };
 
 struct FieldInfo
@@ -61,6 +73,12 @@ struct WorldModel
   bool is_yellow = false;
   std::vector<RobotInfo> robot_info_ours;
   std::vector<RobotInfo> robot_info_theirs;
+  /// header/stamp [ns]。ball_contact_last_ns との比較に使う（同一クロック保証）
+  int64_t header_stamp_ns = 0;
+  // ─ 内包 game_analysis の抜粋（パス解析用。未記録の古いbagでは既定値）─
+  int32_t pass_target_id = -1;
+  int32_t recommended_pass_receiver_id = -1;
+  OngoingKickInfo ongoing_kick;
 };
 
 // ─── PlaySituation ────────────────────────────────────────────────────────────
