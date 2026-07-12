@@ -26,5 +26,6 @@ GameAnalysis extract_game_analysis(const RosMsgParser::FlatMessage & flat);
 RobotSelectResults extract_robot_select_results(const RosMsgParser::FlatMessage & flat);
 LogMessage extract_log_message(const RosMsgParser::FlatMessage & flat);
 Referee extract_referee(const RosMsgParser::FlatMessage & flat);
+KickPredictionTraceData extract_kick_prediction_trace(const RosMsgParser::FlatMessage & flat);
 
 }  // namespace crane::bag

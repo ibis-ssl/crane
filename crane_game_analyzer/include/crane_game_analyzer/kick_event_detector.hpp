@@ -53,6 +53,9 @@ public:
 
   auto setKickerModel(std::shared_ptr<KickerModel> kicker_model) -> void;
 
+  /// 実績（actual）まで記録された完了トレースを取り出す（内部キューはクリアされる）
+  auto takeCompletedTraces() -> std::vector<crane_msgs::msg::KickPredictionTrace>;
+
   auto updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void;
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
@@ -102,6 +105,9 @@ private:
 
   // キック予測トレース管理
   std::optional<crane_msgs::msg::KickPredictionTrace> ongoing_kick_trace_ = std::nullopt;
+  // 実績記録済みの完了トレース（takeCompletedTraces で払い出し）
+  std::vector<crane_msgs::msg::KickPredictionTrace> completed_traces_;
+  static constexpr size_t COMPLETED_TRACE_QUEUE_SIZE = 100;
   Point kick_origin_pos_;                      // キック開始位置を記録
   std::shared_ptr<KickerModel> kicker_model_;  // キック予測用モデル
 

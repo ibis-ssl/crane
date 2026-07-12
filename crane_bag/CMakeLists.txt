@@ -26,6 +26,7 @@ ament_auto_add_executable(crane_bag
   src/bag/bag_control.cpp
   src/bag/bag_referee.cpp
   src/bag/bag_pass.cpp
+  src/bag/bag_kick_stats.cpp
   src/bag/msg_extractors.cpp
 )
 target_include_directories(crane_bag PRIVATE src/bag)
@@ -46,6 +47,9 @@ if(BUILD_TESTING)
   # パスイベント検出器の単体テスト（bag_pass は rosx_introspection 非依存の純関数）
   ament_auto_add_gtest(test_bag_pass test/test_bag_pass.cpp src/bag/bag_pass.cpp)
   target_include_directories(test_bag_pass PRIVATE src/bag)
+
+  ament_auto_add_gtest(test_kick_stats test/test_kick_stats.cpp src/bag/bag_kick_stats.cpp)
+  target_include_directories(test_kick_stats PRIVATE src/bag)
 endif()
 
 ament_auto_package()
