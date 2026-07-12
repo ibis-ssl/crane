@@ -13,6 +13,7 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
+#include <chrono>
 #include <cmath>
 #include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
@@ -192,9 +193,19 @@ private:
   std::unique_ptr<crane::AsyncUdpReceiver> multicast_receiver_;
 
   // asioスレッドからROS2スレッドへの安全な受け渡し用バッファ
+  struct TimedPacket
+  {
+    std::string data;
+    std::chrono::steady_clock::time_point recv_time;
+  };
   std::mutex recv_mutex_;
-  std::vector<std::string> pending_vision_packets_;
-  std::vector<std::string> pending_tracker_packets_;
+  std::vector<TimedPacket> pending_vision_packets_;
+  std::vector<TimedPacket> pending_tracker_packets_;
+
+  // 直近処理したTrackerフレームのUDP受信時刻・パース完了時刻（DelayCheckpoints用、steady_clock基準）
+  std::chrono::steady_clock::time_point last_tracker_udp_recv_steady_{};
+  std::chrono::steady_clock::time_point last_tracker_parsed_steady_{};
+  bool has_tracker_delay_checkpoint_{false};
 
   // データ状態
   crane_msgs::msg::BallInfo ball_info_;

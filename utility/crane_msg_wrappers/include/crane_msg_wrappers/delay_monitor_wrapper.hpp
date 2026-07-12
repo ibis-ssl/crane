@@ -61,7 +61,22 @@ public:
     auto now = std::chrono::steady_clock::now();
     auto timestamp_ns =
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+    addDelayCheckpointAt(checkpoints, name, timestamp_ns, value);
+  }
 
+  /**
+   * @brief 指定した時刻でチェックポイントを追加する
+   * @param checkpoints DelayCheckpointsメッセージ
+   * @param name チェックポイント名
+   * @param timestamp_ns steady_clockエポック基準のタイムスタンプ（ナノ秒）
+   * @param value 追加情報（オプション）
+   *
+   * asioスレッドで記録したUDP受信時刻など、呼び出し時点以外の時刻を刻むために使う。
+   */
+  static void addDelayCheckpointAt(
+    DelayCheckpointsMsg & checkpoints, const std::string & name, int64_t timestamp_ns,
+    const std::string & value = "")
+  {
     // 最初のチェックポイントの場合、基準タイムスタンプを設定
     if (checkpoints.checkpoints.empty()) {
       checkpoints.reference_timestamp_ns = timestamp_ns;
@@ -280,6 +295,12 @@ public:
   auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
   {
     DelayMonitorWrapper::addDelayCheckpoint(checkpoints(), name, value);
+  }
+
+  auto addDelayCheckpointAt(
+    const std::string & name, int64_t timestamp_ns, const std::string & value = "") -> void
+  {
+    DelayMonitorWrapper::addDelayCheckpointAt(checkpoints(), name, timestamp_ns, value);
   }
 
   auto clearDelayCheckpoints() -> void { DelayMonitorWrapper::clearCheckpoints(checkpoints()); }
