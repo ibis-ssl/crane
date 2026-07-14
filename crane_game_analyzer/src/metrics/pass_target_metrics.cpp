@@ -6,7 +6,8 @@
 
 #include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 
-#include <crane_physics/pass_evaluation.hpp>
+#include <crane_msg_wrappers/pass_rating.hpp>
+#include <cstdio>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
@@ -49,90 +50,12 @@ auto PassTargetMetric::computePassOrigin(MetricContext & ctx) const -> Point
 auto PassTargetMetric::calcScore(
   MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double
 {
-  double score = 1.0;
-
-  // 距離評価（山型：1.5〜4.0mが最適ゾーン）
-  const double pass_distance = (p - pass_origin).norm();
-  {
-    double distance_factor;
-    if (pass_distance < 1.5) {
-      distance_factor = pass_distance / 1.5;  // 0m→0.0, 1.5m→1.0
-    } else if (pass_distance <= 4.0) {
-      distance_factor = 1.0;  // 最適ゾーン
-    } else {
-      distance_factor = std::max(0.2, 1.0 - (pass_distance - 4.0) * 0.15);  // 漸減
-    }
-    score *= distance_factor;
-  }
-
-  // ゴール角度（敵ゴールに対する見通し）
-  {
-    auto [best_angle, goal_angle_width] = ctx.world_model->getLargestGoalAngleRangeFromPoint(p);
-    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-  }
-
-  // 自ゴールに対する危険度（大きいほど減点）
-  {
-    auto [best_angle, goal_angle_width] =
-      ctx.world_model->getLargestGoalAngleRangeFromPoint(p, ctx.world_model->getOurGoalPosts(), {});
-    score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-  }
-
-  // 敵ゴールへの接近
-  {
-    double normed_distance_to_their_goal = ((p - ctx.world_model->getTheirGoalCenter()).norm() -
-                                            (ctx.world_model->fieldSize().x() * 0.5)) /
-                                           (ctx.world_model->fieldSize().x() * 0.5);
-    score *= (1.0 - normed_distance_to_their_goal * 0.5);
-  }
-
-  // 実際のキック速度に合わせて距離依存（attacker.cpp の configurePassKick と同じ式）
-  const double kick_speed = std::clamp(pass_distance, 2.0, 4.0);
-  const Segment pass_line{pass_origin, p};
-  const Vector2 pass_dir = p - pass_origin;
-  const Vector2 ball_velocity =
-    (pass_distance > 1e-6) ? Vector2(pass_dir / pass_distance * kick_speed) : Vector2::Zero();
-
-  auto calc_slack_time = [&](const auto & enemy) -> double {
-    const auto closest = getClosestPointAndDistance(enemy->pose.pos, pass_line);
-    const double ball_time = (closest.closest_point - pass_origin).norm() / kick_speed;
-
-    auto slack_result = ctx.world_model->getBallSlackTime(
-      pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
-
-    // getBallSlackTime の slack_time = ball_time - robot_time（正なら渡したロボットが
-    // ボールに先着＝インターセプト可能）。ここでは敵を渡すため符号を反転し、
-    // 「敵がボールに間に合わない安全余裕（robot_time - ball_time）」として扱う。
-    // 正＝安全、負＝奪われる。下流の min は最も脅威的な敵、clamp/fallback は余裕を加点。
-    return slack_result.has_value() ? -slack_result->slack_time : 1.0;
-  };
-
-  auto enemies = ctx.world_model->theirs().robotsWhere().available().get();
-  auto slack_times_view = enemies | ranges::views::filter([&](const auto & enemy) {
-                            // パス起点から近すぎる敵はチップで飛び越せるので除外
-                            return enemy->getDistance(pass_origin) >= 1.0;
-                          }) |
-                          ranges::views::filter([&](const auto & enemy) {
-                            // パス先より向こうにいる敵は除外
-                            return pass_dir.dot(enemy->pose.pos - p) <= 0.0;
-                          }) |
-                          ranges::views::transform(calc_slack_time);
-
-  const double worst_slack = ranges::empty(slack_times_view) ? 1.0 : ranges::min(slack_times_view);
-  const double intercept_score = std::clamp(worst_slack / slack_scale_, 0.0, 1.0);
-
-  score *= intercept_score;
-
-  // シャドウ評価: パスライン上の敵による遮蔽効果
-  const double shadow_score = evaluatePassShadow(pass_origin, p, enemies);
-  score *= shadow_score;
-
-  // ペナルティエリア内は無効
-  if (ctx.world_model->point_checker.isPenaltyArea(p)) {
-    score = 0.0;
-  }
-
-  return score;
+  // 評価は crane_msg_wrappers の ratePassCandidate に一元化（挙動保存）。
+  // 選定ゲート（min_pass_score_）とヒステリシスは compute() 側に残す。
+  return ratePassCandidate(
+           ctx.world_model, pass_origin, p,
+           PassRatingConfig{.slack_scale = slack_scale_, .enemy_slack = enemy_slack_config_})
+    .score;
 }
 
 auto PassTargetMetric::compute(MetricContext & ctx) -> void
@@ -208,6 +131,20 @@ auto PassTargetMetric::visualize(
   visualizer->drawText(
     Point(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35),
     std::string("PASS TARGET #") + std::to_string(receiver->id), "lime", 110.0, "middle");
+
+  // スコア内訳（M1-5）: 選定された受け手のパス評価を分解表示
+  const auto rating = ratePassCandidate(
+    ctx.world_model, pass_origin, receiver->pose.pos,
+    PassRatingConfig{.slack_scale = slack_scale_, .enemy_slack = enemy_slack_config_});
+  char breakdown[192];
+  std::snprintf(
+    breakdown, sizeof(breakdown),
+    "score %.2f = dist %.2f +goal %.2f -own %.2f *tgoal %.2f *icpt %.2f *shd %.2f", rating.score,
+    rating.distance_factor, rating.goal_angle_bonus, rating.own_goal_penalty,
+    rating.their_goal_factor, rating.intercept_score, rating.shadow_score);
+  visualizer->drawText(
+    Point(receiver->pose.pos.x(), receiver->pose.pos.y() - 0.45), std::string(breakdown), "lime",
+    60.0, "middle");
 }
 
 }  // namespace crane::metrics
