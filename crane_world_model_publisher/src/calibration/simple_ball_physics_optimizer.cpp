@@ -392,7 +392,7 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
 }
 
 auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
-  const TrajectoryData & trajectory, double /* deceleration */) -> KickPowerVelocityPair
+  const TrajectoryData & trajectory, double deceleration) -> KickPowerVelocityPair
 {
   KickPowerVelocityPair result;
   result.event_id = trajectory.event_id;
@@ -407,25 +407,43 @@ auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
     return result;
   }
 
-  // 速度vs時間の線形回帰: v(t) = v0 - deceleration * t
+  // 速度vs時間の固定傾きモデル: v(t) = v0 - deceleration * t
   // ここで固定された減速度を使用して初速度を推定
-  auto [slope, intercept, r_squared] =
-    performLinearRegression(trajectory.time_points, trajectory.velocities);
+  // v0 = v(t) + deceleration * t を各時刻で算出し平均をとる
+  double v0_sum = 0.0;
+  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
+    v0_sum += trajectory.velocities[i] + deceleration * trajectory.time_points[i];
+  }
+  double estimated_initial_velocity = v0_sum / trajectory.time_points.size();
 
-  result.estimated_initial_velocity = intercept;  // 切片 = 初速度
+  // 固定傾きモデルでの決定係数(R^2)を算出
+  double mean_velocity = 0.0;
+  for (size_t i = 0; i < trajectory.velocities.size(); ++i) {
+    mean_velocity += trajectory.velocities[i];
+  }
+  mean_velocity /= trajectory.velocities.size();
+
+  double ss_res = 0.0;
+  double ss_tot = 0.0;
+  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
+    double predicted_velocity =
+      estimated_initial_velocity - deceleration * trajectory.time_points[i];
+    double residual = trajectory.velocities[i] - predicted_velocity;
+    ss_res += residual * residual;
+    double deviation = trajectory.velocities[i] - mean_velocity;
+    ss_tot += deviation * deviation;
+  }
+  double r_squared = (ss_tot > 0.0) ? (1.0 - ss_res / ss_tot) : 0.0;
+
+  result.estimated_initial_velocity = estimated_initial_velocity;
   result.fitting_r_squared = r_squared;
 
   // 信頼区間の計算
-  double velocity_std = 0.0;
-  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-    double predicted_velocity = intercept + slope * trajectory.time_points[i];
-    double error = trajectory.velocities[i] - predicted_velocity;
-    velocity_std += error * error;
-  }
-  velocity_std = std::sqrt(velocity_std / trajectory.time_points.size());
+  double velocity_std = std::sqrt(ss_res / trajectory.time_points.size());
 
   double confidence_margin = 1.96 * velocity_std;  // 95%信頼区間
-  result.confidence_interval = {intercept - confidence_margin, intercept + confidence_margin};
+  result.confidence_interval = {
+    estimated_initial_velocity - confidence_margin, estimated_initial_velocity + confidence_margin};
 
   return result;
 }
