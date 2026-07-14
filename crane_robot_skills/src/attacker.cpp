@@ -5,7 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_geometry/ddps.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/pass.hpp>
+#include <crane_physics/pass_kick.hpp>
 #include <crane_robot_skills/attacker.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -32,6 +34,10 @@ constexpr double MIN_PASS_SCORE_ATTACKER = 0.2;        // パス品質の下限�
 constexpr double KICK_TIMEOUT_SEC = 3.0;               // KICK状態でボール無接触の場合のタイムアウト
 constexpr double KICK_NO_CONTACT_THRESHOLD_SEC = 0.1;  // ボール接触とみなす最小継続時間
 constexpr double KICK_BALL_STOPPED_VEL = 0.3;          // タイムアウト判定でのボール停止閾値
+constexpr double PASS_ARRIVAL_SPEED =
+  2.0;  // パス受領点での望ましい到達速度 [m/s]（M3でplanから上書き予定）
+constexpr double PASS_MIN_KICK_SPEED = 2.0;  // 直進パス初速の下限 [m/s]
+constexpr double PASS_MAX_KICK_SPEED = 5.5;  // 直進パス初速の上限 [m/s]
 }  // namespace
 void Attacker::initialize()
 {
@@ -327,8 +333,12 @@ void Attacker::configurePassKick(const Point & target, KickOld & kick_skill)
   } else {
     kick_skill.setParameter("chip_kick", false);
     kick_skill.setParameter("use_target_kick_speed", true);
-    kick_skill.setParameter(
-      "target_kick_speed", std::clamp((world_model()->ball().pos - target).norm(), 2.0, 4.0));
+    // 望ましい受領点到達速度から必要初速を物理逆算（旧: clamp(距離, 2, 4) のアドホック式）
+    const double pass_distance = (world_model()->ball().pos - target).norm();
+    const double deceleration = world_model()->ball().getPhysicsModel()->getDeceleration();
+    const auto plan = planStraightPass(
+      pass_distance, PASS_ARRIVAL_SPEED, deceleration, PASS_MIN_KICK_SPEED, PASS_MAX_KICK_SPEED);
+    kick_skill.setParameter("target_kick_speed", plan.initial_speed);
     kick_skill.setParameter("dribble_power", 0.0);
   }
 }
