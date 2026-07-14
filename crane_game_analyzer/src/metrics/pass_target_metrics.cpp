@@ -6,9 +6,7 @@
 
 #include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 
-#include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/pass_evaluation.hpp>
-#include <crane_physics/pass_kick.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
@@ -19,13 +17,6 @@
 
 namespace crane::metrics
 {
-namespace
-{
-// パスキック初速の物理逆算パラメータ（attacker.cpp の configurePassKick と一致させる）
-constexpr double kPassArrivalSpeed = 2.0;  // 望ましい受領点到達速度 [m/s]
-constexpr double kPassMinKickSpeed = 2.0;  // 直進パス初速の下限 [m/s]
-constexpr double kPassMaxKickSpeed = 5.5;  // 直進パス初速の上限 [m/s]
-}  // namespace
 
 PassTargetMetric::PassTargetMetric() : MetricBase(MetricId::PASS_TARGET, "PassTarget") {}
 
@@ -95,13 +86,8 @@ auto PassTargetMetric::calcScore(
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
   }
 
-  // 実際のキック速度に合わせて距離依存（attacker.cpp の configurePassKick と同じ物理式）。
-  // 敵slack評価は定速近似のため、ここでは初速のみ物理逆算し ball_velocity/ball_time の整合を保つ。
-  const double deceleration = ctx.world_model->ball().getPhysicsModel()->getDeceleration();
-  const double kick_speed =
-    planStraightPass(
-      pass_distance, kPassArrivalSpeed, deceleration, kPassMinKickSpeed, kPassMaxKickSpeed)
-      .initial_speed;
+  // 実際のキック速度に合わせて距離依存（attacker.cpp の configurePassKick と同じ式）
+  const double kick_speed = std::clamp(pass_distance, 2.0, 4.0);
   const Segment pass_line{pass_origin, p};
   const Vector2 pass_dir = p - pass_origin;
   const Vector2 ball_velocity =
