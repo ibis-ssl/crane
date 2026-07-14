@@ -122,6 +122,10 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   const auto now = rclcpp::Time(world_model.header.stamp);
 
   for (auto & robot : world_model.robot_info_ours) {
+    // 外部publisherから確保数(robots.size())を超えるidを受信した場合は安全にスキップ
+    if (robot.id >= ours_.robots.size()) {
+      continue;
+    }
     auto & info = ours_.robots.at(robot.id);
 
     info->available_vision = robot.available_vision;
@@ -154,6 +158,10 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   }
 
   for (const auto & robot : world_model.robot_info_theirs) {
+    // 外部publisherから確保数(robots.size())を超えるidを受信した場合は安全にスキップ
+    if (robot.id >= theirs_.robots.size()) {
+      continue;
+    }
     auto & info = theirs_.robots.at(robot.id);
 
     // 敵ロボットはビジョン検出のみで判定（診断情報なし）
