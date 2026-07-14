@@ -209,10 +209,12 @@ inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> s
 inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> std::vector<Point>
 {
   std::vector<Point> points;
-  Vector2 segment_vec = (segment1.second - segment1.first).normalized();
-  for (int i = 0; i < separated_num - 1; ++i) {
-    points.push_back(
-      segment1.first + segment_vec * (i + 1) / static_cast<double>(separated_num + 1));
+  Vector2 segment_vec = segment1.second - segment1.first;
+  if (segment_vec.isZero()) {
+    return points;
+  }
+  for (int i = 1; i <= separated_num; ++i) {
+    points.push_back(segment1.first + segment_vec * i / static_cast<double>(separated_num + 1));
   }
   return points;
 }
