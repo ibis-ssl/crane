@@ -265,7 +265,7 @@ limitations under the License.
   <!-- 除外: /diagnostics（/diagnostics_aggで代替）, **/process_time, /parameter_events, /events/write_split -->
   <group if="$(var record)">
     <executable
-      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
+      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
     />
   </group>
 

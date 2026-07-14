@@ -148,6 +148,29 @@ struct RobotSelectResults
   std::vector<SelectResult> results;
 };
 
+// ─── KickPredictionTrace ────────────────────────────────────────────────────
+
+/// /kick_prediction_traces（キック予実トレース）のプレーン構造体。
+/// prediction_point[<=1] / actual[<=1] は has_* フラグ付きでフラット化。
+struct KickPredictionTraceData
+{
+  int64_t reference_timestamp_ns = 0;
+  uint32_t trace_id = 0;
+  bool has_prediction = false;
+  std::string source;
+  double kick_power = 0;
+  bool is_chip_kick = false;
+  double predicted_ball_speed = 0;
+  double predicted_stop_distance = 0;
+  bool has_actual = false;
+  double actual_ball_speed = 0;
+  double actual_stop_distance = 0;
+  double speed_error = 0;             // 実測 - 予測 [m/s]
+  double speed_error_percent = 0;     // 予測比 [%]
+  double distance_error = 0;          // 実測 - 予測 [m]
+  double distance_error_percent = 0;  // 予測比 [%]
+};
+
 // ─── Log (rosout) ─────────────────────────────────────────────────────────────
 
 struct LogMessage

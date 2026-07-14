@@ -243,6 +243,8 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
 
+  rclcpp::Publisher<crane_msgs::msg::KickPredictionTrace>::SharedPtr kick_prediction_trace_pub_;
+
   // メトリクス計算エンジン
   std::unique_ptr<metrics::MetricEngine> metric_engine_;
   std::deque<crane_msgs::msg::BallInfo> ball_history_;

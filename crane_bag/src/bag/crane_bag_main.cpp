@@ -15,6 +15,7 @@
 #include "bag_control.hpp"
 #include "bag_events.hpp"
 #include "bag_json.hpp"
+#include "bag_kick_stats.hpp"
 #include "bag_pass.hpp"
 #include "bag_reader.hpp"
 #include "bag_referee.hpp"
@@ -68,7 +69,7 @@ static Args parse_args(int argc, char ** argv)
     std::fprintf(
       stderr,
       "使い方: crane_bag <command> <bag_path> [options]\n"
-      "コマンド: info, survey, track, events, control, referee, pass\n");
+      "コマンド: info, survey, track, events, control, referee, pass, kick_stats\n");
     std::exit(1);
   }
 
@@ -391,6 +392,28 @@ static void cmd_pass(const Args & args)
   }
 }
 
+static void cmd_kick_stats(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  ReadOptions opts;
+  opts.topics = {"/kick_prediction_traces"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
+
+  if (data.kick_prediction_traces.empty()) {
+    std::printf("/kick_prediction_traces トピックが見つかりません（古いbagでは未記録の可能性）\n");
+    return;
+  }
+
+  auto stats = crane::bag::compute_kick_stats(data.kick_prediction_traces);
+  if (args.format == "json") {
+    nlohmann::json j = stats;
+    std::printf("%s\n", j.dump(2).c_str());
+    return;
+  }
+  std::printf("%s", crane::bag::format_kick_stats(stats).c_str());
+}
+
 // ─── main ──────────────────────────────────────────────────────────────────
 
 int main(int argc, char ** argv)
@@ -406,6 +429,7 @@ int main(int argc, char ** argv)
       "                  [--time start:end] [--interval 0.5] [--format json|text]\n"
       "  events   <path> [--type goal kick play role ball_speed foul pass] [--format json|text]\n"
       "  pass     <path> [--time start:end] [--format json|text]    パス試行の検出とKPI集計\n"
+      "  kick_stats <path> [--time start:end] [--format json|text]  キック予実誤差の統計\n"
       "  control  <path> --robot <id> [--time start:end] [--changes-only] [--format json|text]\n"
       "  referee  <path> [--time start:end] [--changes-only] [--format json|text]\n"
       "           デフォルト: 全メッセージをサンプリング (--interval で間隔指定)\n"
@@ -430,6 +454,8 @@ int main(int argc, char ** argv)
       cmd_referee(args);
     } else if (args.command == "pass") {
       cmd_pass(args);
+    } else if (args.command == "kick_stats") {
+      cmd_kick_stats(args);
     } else {
       std::fprintf(stderr, "不明なコマンド: %s\n", args.command.c_str());
       return 1;

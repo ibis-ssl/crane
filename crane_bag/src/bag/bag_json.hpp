@@ -10,6 +10,7 @@
 
 #include "bag_control.hpp"
 #include "bag_events.hpp"
+#include "bag_kick_stats.hpp"
 #include "bag_pass.hpp"
 #include "bag_reader.hpp"
 #include "bag_referee.hpp"
@@ -141,6 +142,46 @@ inline void to_json(nlohmann::json & j, const RefereeSnapshot & v)
     j["next_command"] = nullptr;
     j["next_command_value"] = nullptr;
   }
+}
+
+// KickPowerBin / KickStatsGroup / KickStats
+inline void to_json(nlohmann::json & j, const KickPowerBin & v)
+{
+  j = {
+    {"power_lo", v.power_lo},
+    {"power_hi", v.power_hi},
+    {"count", v.count},
+    {"mean_predicted_speed", v.mean_predicted_speed},
+    {"mean_actual_speed", v.mean_actual_speed},
+    {"mean_predicted_distance", v.mean_predicted_distance},
+    {"mean_actual_distance", v.mean_actual_distance},
+  };
+}
+
+inline void to_json(nlohmann::json & j, const KickStatsGroup & v)
+{
+  j = {
+    {"count", v.count},
+    {"speed_bias_percent", v.speed_bias_percent},
+    {"speed_abs_mean", v.speed_abs_mean},
+    {"speed_abs_p50", v.speed_abs_p50},
+    {"speed_abs_p90", v.speed_abs_p90},
+    {"dist_bias_percent", v.dist_bias_percent},
+    {"dist_abs_mean", v.dist_abs_mean},
+    {"dist_abs_p50", v.dist_abs_p50},
+    {"dist_abs_p90", v.dist_abs_p90},
+    {"power_bins", v.power_bins},
+  };
+}
+
+inline void to_json(nlohmann::json & j, const KickStats & v)
+{
+  j = {
+    {"total", v.total},
+    {"with_actual", v.with_actual},
+    {"straight", v.straight},
+    {"chip", v.chip},
+  };
 }
 
 // PassEvent
