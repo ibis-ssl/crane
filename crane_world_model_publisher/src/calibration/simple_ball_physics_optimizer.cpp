@@ -328,18 +328,15 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
       if (trajectory.time_points.size() < config_.min_data_points_per_trajectory) continue;
 
       // 固定減速度を仮定した初速度推定（v(t) = v0 - decel * t）
-      // 線形回帰で v0 を求める: velocities = v0 - decel * time_points
-      std::vector<double> expected_velocities;
+      // 傾きを -decel に固定したモデルの最適 v0 は残差 (v + decel * t) の平均で与えられる。
+      // 自由回帰の切片を使うと傾きが 1 に固定されず v0 が候補 decel と無関係な定数になり、
+      // 各 decel 候補の RMSE 評価が歪んでグローバル減速度選定がバイアスするため、
+      // 制約付き（固定傾き）推定 v0 = mean(v + decel * t) を用いる。
+      double v0_sum = 0.0;
       for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-        expected_velocities.push_back(-decel * trajectory.time_points[i]);  // -decel * t の部分
+        v0_sum += trajectory.velocities[i] + decel * trajectory.time_points[i];
       }
-
-      // velocities - expected_velocities = v0 (定数) を線形回帰で求める
-      auto [slope, intercept, r_squared] =
-        performLinearRegression(expected_velocities, trajectory.velocities);
-
-      // slope は 1 に近く、intercept が推定初速度 v0
-      double estimated_v0 = intercept;
+      double estimated_v0 = v0_sum / trajectory.time_points.size();
 
       // 固定減速度モデルでの予測誤差を計算
       double rmse = 0.0;
