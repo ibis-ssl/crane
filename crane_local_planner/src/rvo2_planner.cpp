@@ -800,8 +800,12 @@ auto RVO2Planner::adjustForBallAvoidance(
           return 0.2;
       }
     }();
-    if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
-      target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
+    if (const double diff_norm = (target_pos - ball_pos).norm(); diff_norm < MIN_BALL_DISTANCE) {
+      // target_pos と ball_pos が一致(diff_norm==0)する場合、normalized() がゼロ長ベクトルに対して
+      // NaN を生成し target_pos を汚染するため、ゼロ近傍ではボール回避調整をスキップする
+      if (diff_norm > 1e-9) {
+        target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
+      }
     }
     if ((current_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
       // 現在位置が近い場合は、最優先で離れる
