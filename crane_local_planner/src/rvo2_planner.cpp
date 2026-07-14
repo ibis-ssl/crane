@@ -836,15 +836,23 @@ auto RVO2Planner::adjustForPlacementAvoidance(
     if (isInPlacementArea(current_pos, 0.2)) {
       auto [distance, closest_point] =
         getClosestPointAndDistance(placement_area.segment, current_pos);
+      // current_pos が配置ラインセグメント上にあると closest_point == current_pos となり、
+      // (current_pos - closest_point).normalized() がゼロ長ベクトルの正規化で NaN を生成し、
+      // target_position 全体が NaN になって出力コマンドへ伝播する。
+      // ゼロ長を検出した場合はセグメント法線方向を安全な脱出方向としてフォールバックする。
+      const Vector2 escape_diff = current_pos - closest_point;
+      const auto & segment = placement_area.segment;
+      Vector2 escape_dir =
+        escape_diff.norm() > 1e-6
+          ? escape_diff.normalized()
+          : getVerticalVec((segment.second - segment.first).normalized()).normalized();
       // 0.6m離れる
-      Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
+      Point target_position = closest_point + escape_dir * 0.8;
       if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
         // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
-        target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
+        target_position = closest_point - escape_dir * 0.8;
 
-        if (
-          const auto & segment = placement_area.segment;
-          (closest_point == segment.first || closest_point == segment.second)) {
+        if (closest_point == segment.first || closest_point == segment.second) {
           // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
           // 垂直方向に0.6m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
           Vector2 vertical_vec =
