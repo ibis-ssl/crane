@@ -44,35 +44,56 @@ public:
 
   auto erase(double a, double b) -> void
   {
-    double upper = std::max(a, b);
-    double lower = std::min(a, b);
+    // 消去区間 [L, U]
+    double U = std::max(a, b);
+    double L = std::min(a, b);
+
+    // 各既存区間 [lo, hi] から [L, U] を引いた結果を再構築する。
+    // uppers/lowers をペアとして扱い、対応関係を崩さないようにする。
+    std::vector<double> new_lowers;
+    std::vector<double> new_uppers;
+    new_lowers.reserve(lowers.size() + 1);
+    new_uppers.reserve(uppers.size() + 1);
+
     for (size_t i = 0; i < uppers.size(); i++) {
-      // 完全消去
-      if (uppers[i] < upper && lowers[i] > lower) {
-        lowers.erase(lowers.begin() + i);
-        uppers.erase(uppers.begin() + i);
-        i--;
+      double lo = lowers[i];
+      double hi = uppers[i];
+
+      // 重なりなし（境界一致を含む）：区間はそのまま残る
+      if (U <= lo || L >= hi) {
+        new_lowers.emplace_back(lo);
+        new_uppers.emplace_back(hi);
         continue;
       }
-      // 中抜き
-      if (uppers[i] > upper && lowers[i] < lower) {
-        uppers.emplace_back(lower);
-        lowers.emplace_back(upper);
-        std::ranges::sort(uppers);
-        std::ranges::sort(lowers);
+
+      // 完全に覆われる：区間を削除（何も追加しない）
+      if (L <= lo && U >= hi) {
+        continue;
       }
 
-      // 上限修正
-      if (lower < uppers[i] && upper > uppers[i]) {
-        uppers[i] = lower;
+      // 中抜き（2分割）：[lo, L] と [U, hi]
+      if (L > lo && U < hi) {
+        new_lowers.emplace_back(lo);
+        new_uppers.emplace_back(L);
+        new_lowers.emplace_back(U);
+        new_uppers.emplace_back(hi);
+        continue;
       }
-      // 下限修正
-      if (lowers[i] < upper && lowers[i] > lower) {
-        lowers[i] = upper;
+
+      // 下端を縮める：[U, hi]（L <= lo < U < hi）
+      if (L <= lo) {
+        new_lowers.emplace_back(U);
+        new_uppers.emplace_back(hi);
+        continue;
       }
+
+      // 上端を縮める：[lo, L]（lo < L < hi <= U）
+      new_lowers.emplace_back(lo);
+      new_uppers.emplace_back(L);
     }
-    std::ranges::sort(uppers);
-    std::ranges::sort(lowers);
+
+    lowers = std::move(new_lowers);
+    uppers = std::move(new_uppers);
   }
 
   auto getWidth() const -> double
