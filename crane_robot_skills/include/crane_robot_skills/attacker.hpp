@@ -80,8 +80,6 @@ private:
   bool shouldUseChipKick(const Point & target);
 
   double evaluateGoalAngle(const Point & position);
-
-  double calculatePassScore(const Point & target);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
