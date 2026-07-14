@@ -57,6 +57,7 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
   static const std::unordered_map<std::string, SessionFactory> factory_map{
     PLANNER_ENTRY("attacker_heat_rotation", AttackerHeatRotationSession),
     PLANNER_ENTRY("attacker_skill", AttackerSkillSession),
+    PLANNER_ENTRY("attacker_heat_rotation", AttackerHeatRotationSession),
     PLANNER_ENTRY("ball_nearby_positioner_skill", BallNearByPositionerSkillSession),
     PLANNER_ENTRY(
       "placement_target_nearby_positioner_skill", PlacementTargetNearByPositionerSkillSession),
