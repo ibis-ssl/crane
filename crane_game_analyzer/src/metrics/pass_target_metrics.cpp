@@ -100,7 +100,11 @@ auto PassTargetMetric::calcScore(
     auto slack_result = ctx.world_model->getBallSlackTime(
       pass_origin, ball_velocity, ball_time, {enemy}, enemy_slack_config_);
 
-    return slack_result.has_value() ? slack_result->slack_time : 1.0;
+    // getBallSlackTime の slack_time = ball_time - robot_time（正なら渡したロボットが
+    // ボールに先着＝インターセプト可能）。ここでは敵を渡すため符号を反転し、
+    // 「敵がボールに間に合わない安全余裕（robot_time - ball_time）」として扱う。
+    // 正＝安全、負＝奪われる。下流の min は最も脅威的な敵、clamp/fallback は余裕を加点。
+    return slack_result.has_value() ? -slack_result->slack_time : 1.0;
   };
 
   auto enemies = ctx.world_model->theirs().robotsWhere().available().get();
