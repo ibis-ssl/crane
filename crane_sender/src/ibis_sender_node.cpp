@@ -378,6 +378,12 @@ private:
 
     robocup_ssl::RobotControl packet;
     for (const auto & command : msg.robot_commands) {
+      if (command.robot_id >= CommConfig::AI_CMD_V2_ROBOT_NUM) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1000, "robot_id %u is out of range (>= %d); skipping command",
+          command.robot_id, CommConfig::AI_CMD_V2_ROBOT_NUM);
+        continue;
+      }
       auto cmd = packet.add_robot_commands();
       cmd->set_id(command.robot_id);
 
@@ -411,6 +417,12 @@ private:
     commands->set_timestamp(0.0);
 
     for (const auto & command : msg.robot_commands) {
+      if (command.robot_id >= CommConfig::AI_CMD_V2_ROBOT_NUM) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1000, "robot_id %u is out of range (>= %d); skipping command",
+          command.robot_id, CommConfig::AI_CMD_V2_ROBOT_NUM);
+        continue;
+      }
       auto * robot_cmd = commands->add_robot_commands();
       robot_cmd->set_id(command.robot_id);
 
