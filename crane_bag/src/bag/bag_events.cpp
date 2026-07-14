@@ -14,6 +14,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "bag_pass.hpp"
+
 namespace crane::bag
 {
 
@@ -332,6 +334,36 @@ std::vector<Event> detect_fouls(const BagData & data)
   return events;
 }
 
+std::vector<Event> detect_pass_attempt_events(const BagData & data)
+{
+  std::vector<Event> events;
+  for (const auto & pe : detect_pass_events(data)) {
+    std::string toucher_note;
+    if (pe.first_toucher_id >= 0 && pe.first_toucher_id != pe.intended_receiver_id) {
+      toucher_note = std::string(" toucher=") + (pe.first_toucher_ours ? "our" : "their") +
+                     std::to_string(pe.first_toucher_id);
+    }
+    char buf[192];
+    std::snprintf(
+      buf, sizeof(buf), "PASS: %d -> %d %s d=%.2fm v=%.2fm/s%s", pe.kicker_id,
+      pe.intended_receiver_id, to_string(pe.outcome).c_str(), pe.pass_distance, pe.kick_speed,
+      toucher_note.c_str());
+    Event e;
+    e.timestamp_ns = pe.timestamp_ns;
+    e.t = pe.t;
+    e.event_type = EVENT_PASS;
+    e.description = buf;
+    events.push_back(e);
+  }
+  return events;
+}
+
+bool event_types_require_full_world_model(const std::vector<std::string> & types)
+{
+  const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
+  return std::find(target.begin(), target.end(), EVENT_PASS) != target.end();
+}
+
 std::unordered_set<std::string> topics_for_event_types(const std::vector<std::string> & types)
 {
   const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
@@ -343,7 +375,7 @@ std::unordered_set<std::string> topics_for_event_types(const std::vector<std::st
       topics.insert("/robot_select_results");
     } else if (t == EVENT_KICK) {
       topics.insert("/robot_commands");
-    } else if (t == EVENT_BALL_SPEED || t == EVENT_GOAL) {
+    } else if (t == EVENT_BALL_SPEED || t == EVENT_GOAL || t == EVENT_PASS) {
       topics.insert("/world_model");
     } else if (t == EVENT_FOUL) {
       topics.insert("/referee");
@@ -371,6 +403,7 @@ std::vector<Event> detect_events(const BagData & data, const std::vector<std::st
   append_if(EVENT_BALL_SPEED, [&] { return detect_ball_speed_spikes(data); });
   append_if(EVENT_GOAL, [&] { return detect_goals(data); });
   append_if(EVENT_FOUL, [&] { return detect_fouls(data); });
+  append_if(EVENT_PASS, [&] { return detect_pass_attempt_events(data); });
 
   std::sort(all.begin(), all.end(), [](const Event & a, const Event & b) {
     return a.timestamp_ns < b.timestamp_ns;

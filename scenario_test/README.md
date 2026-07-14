@@ -14,6 +14,23 @@
 | `emit_from_penalty_01` | ペナルティエリアからのボール排出テスト |
 | `STOP_AVOID_BALL` | STOP状態でのボール回避テスト（0.4m以上離れる） |
 | `PENALTY_AREA_BYPASS_STABILITY` | ペナルティ横断回避時の侵入防止・安定性テスト |
+| `PASS_BUILDUP_STATIC` | 静的敵配置でのビルドアップパス成立テスト（3試行中2成功） |
+| `PASS_UNDER_MARK` | ゴール側マーク下でのパス成立テスト（3試行中2成功） |
+
+### パス成功率の計測（テストではなく A/B 比較用）
+
+`measure_pass_rate.py` は assert せず、N 試行のパス成功率と結果内訳を JSON 出力する。
+パスプレイ改良の before/after 比較に使う。
+
+```bash
+# sim + crane 起動済みの状態で（起動方法は scripts/scenario_test/run_test.sh を参照）
+source scenario_test_env/bin/activate
+cd scenario_test
+python measure_pass_rate.py --trials 20 --scenario buildup --out pass_rate_before.json
+```
+
+判定は vision 情報のみのヒューリスティック（`pass_helpers.py`）。
+bag ベースの詳細 KPI（意図受け手・距離帯別など）は `crane_bag pass` を使うこと。
 
 ## 前提条件
 

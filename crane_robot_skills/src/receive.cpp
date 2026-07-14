@@ -161,6 +161,17 @@ Status Receive::update()
     }
   } else {
     command->lookAtBall().kickStraight(0.);
+    // ソフトバンパーと同条件（有効かつボール接近）でドリブラー(既定0.3)を回しトラップ性を高める。
+    // software_bumper を切る側（Attacker/ball_placement）は条件不成立で挙動不変。
+    // 発火時のみ withDribble し、共有command の継承 dribble を else 側で上書きしない。
+    const double ball_speed = world_model()->ball().vel.norm();
+    if (
+      getParameter<bool>("enable_software_bumper") &&
+      robot()->getDistance(world_model()->ball().pos) <
+        ball_speed * getParameter<double>("software_bumper_start_time")) {
+      command->withDribble(getParameter<double>("dribble_power"));
+      command->addPlanningFactor("Receive", "dribbler ON (ボール接近・トラップ)");
+    }
   }
   command->setDribblerTargetPosition(interception_point).disableBallAvoidance();
 

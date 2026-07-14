@@ -50,8 +50,9 @@ std::string schema_data_to_string(const mcap::Schema & schema)
 const std::unordered_set<std::string> & target_topics()
 {
   static const std::unordered_set<std::string> s = {
-    "/play_situation", "/world_model",          "/control_targets", "/robot_commands",
-    "/game_analysis",  "/robot_select_results", "/rosout",          "/referee",
+    "/play_situation",       "/world_model",   "/control_targets",
+    "/robot_commands",       "/game_analysis", "/rosout",
+    "/robot_select_results", "/referee",       "/kick_prediction_traces",
   };
   return s;
 }
@@ -238,6 +239,8 @@ BagData BagReader::read(const std::string & bag_path, const ReadOptions & opts)
         data.rosout.push_back({ts, extract_log_message(*flat)});
       } else if (topic == "/referee") {
         data.referees.push_back({ts, extract_referee(*flat)});
+      } else if (topic == "/kick_prediction_traces") {
+        data.kick_prediction_traces.push_back({ts, extract_kick_prediction_trace(*flat)});
       }
 
       // 格納に成功したフレームでのみダウンサンプルのカーソルを進める。

@@ -156,10 +156,38 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
       r.velocity.y = m.get_d_exact(FlatValueMap::arr_path(prefix, i, "velocity/y"));
       r.available_vision =
         m.get_d_exact(FlatValueMap::arr_path(prefix, i, "available_vision")) != 0.0;
+      r.ball_contact_last_ns =
+        static_cast<int64_t>(m.get_d_exact(
+          FlatValueMap::arr_path(prefix, i, "ball_contact/last_contacted_time/sec"))) *
+          1'000'000'000LL +
+        static_cast<int64_t>(m.get_d_exact(
+          FlatValueMap::arr_path(prefix, i, "ball_contact/last_contacted_time/nanosec")));
     }
   };
   fill_robots(p + "/robot_info_ours", wm.robot_info_ours);
   fill_robots(p + "/robot_info_theirs", wm.robot_info_theirs);
+
+  // header stamp（ball_contact と同一クロックでの時刻基準）
+  wm.header_stamp_ns =
+    static_cast<int64_t>(m.get_d_exact(p + "/header/stamp/sec")) * 1'000'000'000LL +
+    static_cast<int64_t>(m.get_d_exact(p + "/header/stamp/nanosec"));
+
+  // 内包 game_analysis の抜粋（パス解析用）。ball-only モードや古いbagでは既定値のまま。
+  const std::string ga = p + "/game_analysis";
+  wm.pass_target_id = static_cast<int32_t>(m.get_d_exact(ga + "/pass_target_id", -1.0));
+  wm.recommended_pass_receiver_id =
+    static_cast<int32_t>(m.get_d_exact(ga + "/recommended_pass_receiver_id", -1.0));
+  const std::string ok_prefix = ga + "/ongoing_kick";
+  if (m.count_array(ok_prefix) > 0) {
+    wm.ongoing_kick.present = true;
+    wm.ongoing_kick.kicker_id =
+      static_cast<int32_t>(m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "kicker_id"), -1.0));
+    wm.ongoing_kick.is_kicker_friend =
+      m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "is_kicker_friend")) != 0.0;
+    wm.ongoing_kick.origin.x = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "origin_x"));
+    wm.ongoing_kick.origin.y = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "origin_y"));
+    wm.ongoing_kick.direction = m.get_d_exact(FlatValueMap::arr_path(ok_prefix, 0, "direction"));
+  }
 
   return wm;
 }
@@ -418,6 +446,43 @@ Referee extract_referee(const RosMsgParser::FlatMessage & flat)
   }
 
   return ref;
+}
+
+// ─── KickPredictionTrace ────────────────────────────────────────────────────
+
+KickPredictionTraceData extract_kick_prediction_trace(const RosMsgParser::FlatMessage & flat)
+{
+  const FlatValueMap m(flat);
+  const std::string & p = m.prefix;
+
+  KickPredictionTraceData tr;
+  tr.reference_timestamp_ns = static_cast<int64_t>(m.get_d_exact(p + "/reference_timestamp_ns"));
+  tr.trace_id = m.get_u32(p + "/trace_id");
+
+  const std::string pp = p + "/prediction_point";
+  if (m.count_array(pp) > 0) {
+    tr.has_prediction = true;
+    tr.source = m.get_s_exact(FlatValueMap::arr_path(pp, 0, "source"));
+    tr.kick_power = m.get_d_exact(FlatValueMap::arr_path(pp, 0, "kick_power"));
+    tr.is_chip_kick = m.get_d_exact(FlatValueMap::arr_path(pp, 0, "is_chip_kick")) != 0.0;
+    tr.predicted_ball_speed = m.get_d_exact(FlatValueMap::arr_path(pp, 0, "predicted_ball_speed"));
+    tr.predicted_stop_distance =
+      m.get_d_exact(FlatValueMap::arr_path(pp, 0, "predicted_stop_distance"));
+  }
+
+  const std::string ac = p + "/actual";
+  if (m.count_array(ac) > 0) {
+    tr.has_actual = true;
+    tr.actual_ball_speed = m.get_d_exact(FlatValueMap::arr_path(ac, 0, "actual_ball_speed"));
+    tr.actual_stop_distance = m.get_d_exact(FlatValueMap::arr_path(ac, 0, "actual_stop_distance"));
+    tr.speed_error = m.get_d_exact(FlatValueMap::arr_path(ac, 0, "speed_error"));
+    tr.speed_error_percent = m.get_d_exact(FlatValueMap::arr_path(ac, 0, "speed_error_percent"));
+    tr.distance_error = m.get_d_exact(FlatValueMap::arr_path(ac, 0, "distance_error"));
+    tr.distance_error_percent =
+      m.get_d_exact(FlatValueMap::arr_path(ac, 0, "distance_error_percent"));
+  }
+
+  return tr;
 }
 
 }  // namespace crane::bag

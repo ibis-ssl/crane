@@ -53,6 +53,7 @@ struct BagData
   std::vector<TimestampedMsg<RobotSelectResults>> robot_select_results;
   std::vector<TimestampedMsg<LogMessage>> rosout;
   std::vector<TimestampedMsg<Referee>> referees;
+  std::vector<TimestampedMsg<KickPredictionTraceData>> kick_prediction_traces;
 
   /// 指定間隔でサンプリングしたポインタ列を返す
   template <typename MsgT>

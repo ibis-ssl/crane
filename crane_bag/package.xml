@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_bag</name>
-  <version>1.0.380</version>
+  <version>1.0.386</version>
   <description>C++ Rosbag解析CLIツール（mcap埋め込みメッセージ定義を使った動的デシリアライズ）</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
@@ -14,6 +14,7 @@
   <depend>nlohmann-json-dev</depend>
   <depend>rosx_introspection</depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
 

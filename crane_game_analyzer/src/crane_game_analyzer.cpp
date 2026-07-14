@@ -124,6 +124,10 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // 脅威評価結果のパブリッシャー
   game_analysis_pub_ = create_publisher<crane_msgs::msg::GameAnalysis>("game_analysis", 10);
 
+  // キック予実トレース（実績記録済みの完了トレースのみ）のパブリッシャー
+  kick_prediction_trace_pub_ =
+    create_publisher<crane_msgs::msg::KickPredictionTrace>("kick_prediction_traces", 10);
+
   // メトリクス計算エンジンの初期化
   metric_engine_ = std::make_unique<metrics::MetricEngine>(get_logger());
 
@@ -203,6 +207,11 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     metric_engine_->visualizeAll(ctx, visualizer);
 
     game_analysis_pub_->publish(analysis);
+
+    // キック終了時に完成した予実トレースを払い出して publish（bag に残して較正に使う）
+    for (const auto & trace : kick_event_detector_->takeCompletedTraces()) {
+      kick_prediction_trace_pub_->publish(trace);
+    }
 
     visualizer->flush();
     CraneVisualizerBuffer::publish();
