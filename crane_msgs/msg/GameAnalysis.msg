@@ -39,3 +39,6 @@ int32 recommended_pass_receiver_id   # 推奨パスレシーバーID（-1は未�
 geometry_msgs/Point recommended_sub_attacker_position
 float32 sub_attacker_position_score
 bool has_sub_attacker_position  # 有効な位置が存在するか
+
+# パス計画（M2: シャドー運用・消費者なし。M3 以降で出し手/受け手が消費）
+PassPlan pass_plan
