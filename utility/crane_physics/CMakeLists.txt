@@ -50,6 +50,10 @@ if(BUILD_TESTING)
   target_include_directories(test_pass_kick PUBLIC include)
   target_link_libraries(test_pass_kick Eigen3::Eigen)
 
+  ament_auto_add_gtest(test_pass_feasibility test/test_pass_feasibility.cpp)
+  target_include_directories(test_pass_feasibility PUBLIC include)
+  target_link_libraries(test_pass_feasibility Eigen3::Eigen)
+
   ament_auto_add_gtest(test_pass_rating_math test/test_pass_rating_math.cpp)
   target_include_directories(test_pass_rating_math PUBLIC include)
 

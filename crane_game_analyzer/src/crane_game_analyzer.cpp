@@ -15,6 +15,7 @@
 #include "crane_game_analyzer/metrics/attacker_metrics.hpp"
 #include "crane_game_analyzer/metrics/ball_horizon_metric.hpp"
 #include "crane_game_analyzer/metrics/ongoing_kick_metric.hpp"
+#include "crane_game_analyzer/metrics/pass_plan_metrics.hpp"
 #include "crane_game_analyzer/metrics/pass_target_metrics.hpp"
 #include "crane_game_analyzer/metrics/slack_metrics.hpp"
 #include "crane_game_analyzer/metrics/sub_attacker_metrics.hpp"
@@ -168,6 +169,37 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   get_parameter("pass_target.min_improvement_margin", min_improve);
   pass_target_metric->setHysteresisParams(min_hold, min_improve);
   metric_engine_->registerMetric(pass_target_metric);
+
+  // パス計画メトリクス（M2: シャドー運用・消費者なし）
+  auto pass_plan_metric = std::make_shared<metrics::PassPlanMetric>();
+  declare_parameter("pass_plan.recompute_interval_sec", 0.1);
+  declare_parameter("pass_plan.min_pass_score", 0.5);
+  declare_parameter("pass_plan.max_candidates", 800);
+  declare_parameter("pass_plan.dpps_r_resolution", 0.3);
+  declare_parameter("pass_plan.dpps_r_max", 2.5);
+  declare_parameter("pass_plan.dpps_theta_div", 16);
+  declare_parameter("pass_plan.receiver_max_acceleration", 3.0);
+  declare_parameter("pass_plan.receiver_max_velocity", 4.0);
+  declare_parameter("pass_plan.desired_arrival_speed", 1.5);
+  declare_parameter("pass_plan.feasibility_margin", 0.3);
+  pass_plan_metric->setRecomputeInterval(
+    get_parameter("pass_plan.recompute_interval_sec").as_double());
+  pass_plan_metric->setMinPassScore(get_parameter("pass_plan.min_pass_score").as_double());
+  pass_plan_metric->setMaxCandidates(
+    static_cast<int>(get_parameter("pass_plan.max_candidates").as_int()));
+  pass_plan_metric->setDppsParams(
+    get_parameter("pass_plan.dpps_r_resolution").as_double(),
+    get_parameter("pass_plan.dpps_r_max").as_double(),
+    static_cast<int>(get_parameter("pass_plan.dpps_theta_div").as_int()));
+  {
+    ReceiveFeasibilityParams fp;
+    fp.receiver_max_acceleration = get_parameter("pass_plan.receiver_max_acceleration").as_double();
+    fp.receiver_max_velocity = get_parameter("pass_plan.receiver_max_velocity").as_double();
+    fp.desired_arrival_speed = get_parameter("pass_plan.desired_arrival_speed").as_double();
+    fp.margin = get_parameter("pass_plan.feasibility_margin").as_double();
+    pass_plan_metric->setFeasibilityParams(fp);
+  }
+  metric_engine_->registerMetric(pass_plan_metric);
 
   // メトリクスエンジン初期化（トポロジカルソート・循環依存検出）
   if (!metric_engine_->initialize()) {

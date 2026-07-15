@@ -57,9 +57,6 @@ public:
   auto setMinPassScore(double min_score) -> void { min_pass_score_ = min_score; }
 
 private:
-  // パス起点の計算
-  [[nodiscard]] auto computePassOrigin(MetricContext & ctx) const -> Point;
-
   // スコア計算
   [[nodiscard]] auto calcScore(
     MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double;
