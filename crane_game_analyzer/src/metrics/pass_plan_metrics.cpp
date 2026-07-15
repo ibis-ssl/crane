@@ -194,7 +194,8 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   const int chosen_id = sel->id;
 
   // 受領点の第2レベル保持（同一受け手内で改善が閾値未満なら点を動かさない）
-  Point receive_point = sel->point;
+  // 下の全分岐で必ず代入するため、ここでは初期化しない（冗長代入 redundantAssignment を避ける）
+  Point receive_point;
   if (held_receiver_id_ != chosen_id || !held_receive_point_.has_value()) {
     held_receiver_id_ = chosen_id;
     held_receive_point_ = sel->point;
