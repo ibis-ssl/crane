@@ -147,9 +147,7 @@ crane_local_plannerは自動的にKickerModelを使用します：
 
 ```python
 # launch.py での設定
-{
-    "kicker_physics_config": "/path/to/kicker_physics.yaml"
-}
+{"kicker_physics_config": "/path/to/kicker_physics.yaml"}
 ```
 
 ## 使用例

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -101,8 +101,7 @@ def fit_linear_ransac(
     min_samples: int = 5,
 ) -> FitResult:
     """RANSACRegressor による線形フィット v(t) = v0 - a*t."""
-    from sklearn.linear_model import RANSACRegressor
-    from sklearn.linear_model import LinearRegression
+    from sklearn.linear_model import LinearRegression, RANSACRegressor
 
     result = FitResult(method="ransac")
     n = len(time_points)

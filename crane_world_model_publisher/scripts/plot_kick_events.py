@@ -13,9 +13,10 @@ JSONデータファイルからキックイベントのグラフを生成する�
 
 import argparse
 import json
-import sys
 import os
+import sys
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 

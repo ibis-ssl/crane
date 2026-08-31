@@ -13,7 +13,6 @@ def pytest_addoption(parser):
     """pytestのコマンドライン引数を追加"""
     # rcstライブラリが既に--vision_port, --logging, --log_recorderを定義しているので
     # 追加で必要なオプションがあればここに記述
-    pass
 
 
 @pytest.fixture(scope="session")
