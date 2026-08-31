@@ -12,8 +12,8 @@ Usage:
 import argparse
 import os
 import re
-import urllib.request
 import sys
+import urllib.request
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

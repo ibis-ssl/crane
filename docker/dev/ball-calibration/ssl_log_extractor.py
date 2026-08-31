@@ -206,8 +206,8 @@ def extract_ball_timeline_and_trajectories(
     logger.info("SSL ログ抽出開始: %s", path)
 
     try:
-        from ssl_vision_wrapper_tracked_pb2 import TrackerWrapperPacket
         from ssl_vision_wrapper_pb2 import SSL_WrapperPacket
+        from ssl_vision_wrapper_tracked_pb2 import TrackerWrapperPacket
     except ImportError as e:
         raise RuntimeError(
             f"protobuf モジュールが見つかりません。sync_proto.sh を実行してから Docker を"

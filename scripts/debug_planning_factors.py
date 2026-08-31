@@ -4,9 +4,9 @@ import argparse
 from datetime import datetime
 
 import rclpy
-from crane_msgs.msg import RobotCommands
 from rclpy.node import Node
 
+from crane_msgs.msg import RobotCommands
 
 DEFAULT_FACTOR_KEYS = [
     "Attacker",

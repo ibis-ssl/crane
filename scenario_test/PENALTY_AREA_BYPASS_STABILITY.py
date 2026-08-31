@@ -2,9 +2,9 @@ import math
 import time
 
 import pytest
+from rcst.ball import Ball
 from rcst.communication import Communication
 from rcst.robot import RobotDict
-from rcst.ball import Ball
 
 
 def is_in_penalty_area(x: float, y: float) -> bool:

@@ -1,8 +1,9 @@
 import math
 import time
-from rcst.communication import Communication
+
 from rcst import calc
 from rcst.ball import Ball
+from rcst.communication import Communication
 from rcst.robot import RobotDict
 
 

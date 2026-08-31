@@ -53,7 +53,6 @@ class SvgRendererBase(ABC):
         Returns:
             画像バイト列（フォーマットはoutput_formatに依存）
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -64,7 +63,6 @@ class SvgRendererBase(ABC):
         Returns:
             使用可能な場合True
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -75,7 +73,6 @@ class SvgRendererBase(ABC):
         Returns:
             レンダラー名（例: "cairosvg", "resvg"）
         """
-        pass
 
     @classmethod
     def get_description(cls) -> str:

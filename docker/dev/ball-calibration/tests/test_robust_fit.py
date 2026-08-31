@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-
-from tests.conftest import make_synthetic_trajectory
 from robust_fit import (
     FitResult,
     bootstrap_ci,
@@ -14,6 +12,8 @@ from robust_fit import (
     fit_nonlinear_huber,
     pick_fit_fn,
 )
+
+from tests.conftest import make_synthetic_trajectory
 
 TRUE_V0 = 4.0
 TRUE_DECEL = 0.7

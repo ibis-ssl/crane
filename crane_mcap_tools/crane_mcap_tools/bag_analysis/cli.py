@@ -98,7 +98,7 @@ def cmd_events(args: argparse.Namespace) -> None:
 
 def cmd_control(args: argparse.Namespace) -> None:
     """control_target分析を実行する."""
-    from .control import detect_factor_transitions, analyze_control
+    from .control import analyze_control, detect_factor_transitions
 
     time_range = _parse_time_range(getattr(args, "time", None))
     changes_only = getattr(args, "changes_only", False)

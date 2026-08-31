@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 
 from crane_mcap_tools.mcap_analysis import (
-    MCAPAnnotationExtractor,
     GeminiAnalysisClient,
+    MCAPAnnotationExtractor,
     ReportGenerator,
 )
 from crane_mcap_tools.mcap_analysis.prompts import (

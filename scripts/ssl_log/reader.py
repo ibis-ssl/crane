@@ -5,8 +5,8 @@ from __future__ import annotations
 import gzip
 import math
 import struct
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from .models import BallSnapshot, LogData, LogInfo, RefereeState, RobotSnapshot
 from .proto_loader import load_proto_modules
@@ -177,7 +177,7 @@ def load_log(path: Path | str) -> LogData:
                 vx = vel.x if vel else 0.0
                 vy = vel.y if vel else 0.0
                 spd = math.hypot(vx, vy)
-                vis = robot.visibility if robot.HasField("visibility") else 1.0  # noqa: SIM108
+                vis = robot.visibility if robot.HasField("visibility") else 1.0
                 key = (team, rid)
                 if key not in robot_timeline:
                     robot_timeline[key] = []
@@ -257,7 +257,7 @@ def load_log(path: Path | str) -> LogData:
 
 def _ge_type_name(value: int) -> str:
     try:
-        from ssl_gc_game_event_pb2 import GameEvent  # noqa: PLC0415
+        from ssl_gc_game_event_pb2 import GameEvent
 
         return GameEvent.Type.Name(value)
     except (ValueError, KeyError):
