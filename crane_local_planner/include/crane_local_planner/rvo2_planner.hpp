@@ -111,6 +111,11 @@ private:
   auto applyRVOInputStage(
     const PreprocessContext & ctx, const crane_msgs::msg::RobotCommand & command) -> void;
 
+  auto retireAgent(size_t agent_id) -> void;
+
+  auto updateActiveAllyAgent(crane_msgs::msg::RobotCommand & command, uint8_t referee_command)
+    -> void;
+
   auto getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const -> Point;
 
   auto adjustForPenaltyAreaAvoidance(
