@@ -393,7 +393,7 @@ private:
       cmd->set_allocated_move_command(move_command);
 
       const auto kick = computeKick(command.kick_power, command.chip_enable);
-      cmd->set_kick_angle(kick.angle_rad);
+      cmd->set_kick_angle(kick.angle_rad * 180.0 / M_PI);
       cmd->set_kick_speed(kick.speed);
       cmd->set_dribbler_speed(command.dribble_power * 1000.0);
     }
