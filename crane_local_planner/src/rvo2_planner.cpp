@@ -7,6 +7,7 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <algorithm>
+#include <array>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
@@ -50,6 +51,9 @@ void drawRobotRadiusWithSpeed(
     .fill(color, text_opacity)
     .build();
 }
+
+const RVO::Vector2 RETIRED_AGENT_POS(20.0f, 20.0f);
+const RVO::Vector2 ZERO_VELOCITY(0.0f, 0.0f);
 }  // namespace
 
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
@@ -118,7 +122,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   // friend robots -> 0~19
   // enemy robots -> 20~39
   for (int i = 0; i < 40; i++) {
-    rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
+    rvo_sim->addAgent(RETIRED_AGENT_POS);
   }
 
   sub_feedback_array = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -458,67 +462,105 @@ auto RVO2Planner::applyRVOInputStage(
   rvo_sim->setAgentMaxSpeed(command.robot_id, ctx.max_vel);
 }
 
+auto RVO2Planner::retireAgent(size_t agent_id) -> void
+{
+  rvo_sim->setAgentPosition(agent_id, RETIRED_AGENT_POS);
+  rvo_sim->setAgentPrefVelocity(agent_id, ZERO_VELOCITY);
+  rvo_sim->setAgentRadius(agent_id, RVO_RADIUS);
+}
+
+auto RVO2Planner::updateActiveAllyAgent(
+  crane_msgs::msg::RobotCommand & command, uint8_t referee_command) -> void
+{
+  auto ctx = createPreprocessContext(command);
+  initializePlanningFactors(command);
+  applyInputValidation(ctx, command);
+  if (!ctx.is_valid) {
+    applyRVOInputStage(ctx, command);
+    return;
+  }
+
+  setPlanningStage(command, "RVO_INPUT");
+  auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
+  double radius = 0.05f + vel * 0.1f;
+  rvo_sim->setAgentRadius(command.robot_id, radius);
+
+  auto robot = world_model->getOurRobot(command.robot_id);
+  drawRobotRadiusWithSpeed(visualizer, robot->pose.pos, radius, vel, "yellow");
+
+  if (ctx.run_target_adjustments) {
+    applyTargetAdjustmentPipeline(ctx, command);
+  } else if (!command.position_target_mode.empty()) {
+    auto & pos_mode = command.position_target_mode.front();
+    pos_mode.target_x = ctx.target_pos.x();
+    pos_mode.target_y = ctx.target_pos.y();
+    addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
+  }
+  computePreferredVelocityStage(ctx, command, referee_command);
+  applyPreConstraintStage(ctx, command);
+  setPlanningStage(command, "RVO_INPUT");
+  applyRVOInputStage(ctx, command);
+}
+
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
   const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  if (
-    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-    !world_model->isPracticeNormalSpeed()) {
-    for (int i = 0; i < 40; i++) {
-      rvo_sim->setAgentMaxSpeed(i, STOP_STATE_MAX_VELOCITY);
-    }
-  } else {
-    for (int i = 0; i < 40; i++) {
-      rvo_sim->setAgentMaxSpeed(i, RVO_MAX_SPEED);
-    }
+  const float max_speed = (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+                           !world_model->isPracticeNormalSpeed())
+                            ? STOP_STATE_MAX_VELOCITY
+                            : RVO_MAX_SPEED;
+  for (int i = 0; i < 40; i++) {
+    rvo_sim->setAgentMaxSpeed(i, max_speed);
   }
-  // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
+
+  // 1. コマンドのマップ化（robot_id -> commandポインタ）
+  std::array<crane_msgs::msg::RobotCommand *, 20> cmd_map{};
   for (auto & command : msg.robot_commands) {
-    if (command.position_target_mode.empty()) {
-      RCLCPP_WARN(
-        rclcpp::get_logger("rvo2_local_planner"),
-        "robot_id=%d has no position_target_mode. skipping.", static_cast<int>(command.robot_id));
-      continue;
+    if (command.robot_id < 20) {
+      if (command.position_target_mode.empty()) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("rvo2_local_planner"),
+          "robot_id=%d has no position_target_mode. skipping.", static_cast<int>(command.robot_id));
+        continue;
+      }
+      cmd_map[command.robot_id] = &command;
     }
-    auto ctx = createPreprocessContext(command);
-    initializePlanningFactors(command);
-    applyInputValidation(ctx, command);
-    if (!ctx.is_valid) {
-      applyRVOInputStage(ctx, command);
-      continue;
-    }
-
-    setPlanningStage(command, "RVO_INPUT");
-    auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
-    double radius = 0.05f + vel * 0.1f;
-    rvo_sim->setAgentRadius(command.robot_id, radius);
-
-    auto robot = world_model->getOurRobot(command.robot_id);
-    drawRobotRadiusWithSpeed(visualizer, robot->pose.pos, radius, vel, "yellow");
-
-    if (ctx.run_target_adjustments) {
-      applyTargetAdjustmentPipeline(ctx, command);
-    } else if (!command.position_target_mode.empty()) {
-      auto & pos_mode = command.position_target_mode.front();
-      pos_mode.target_x = ctx.target_pos.x();
-      pos_mode.target_y = ctx.target_pos.y();
-      addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
-    }
-    computePreferredVelocityStage(ctx, command, referee_command);
-    applyPreConstraintStage(ctx, command);
-    setPlanningStage(command, "RVO_INPUT");
-    applyRVOInputStage(ctx, command);
   }
 
+  // 2. 味方ロボット (0..19) の更新
+  // - 不在 (!available)：RVOシミュレータ外 (20,20) へ退避
+  // - 能動 (commandあり)：RVO入力パイプラインによる経路計画
+  // - 受動 (availableだがcommandなし)：現在位置で静止障害物として配置
+  for (const auto & ally_robot : world_model->ours().robots) {
+    if (ally_robot->id >= 20) {
+      continue;
+    }
+    const auto id = ally_robot->id;
+    if (!ally_robot->available()) {
+      retireAgent(id);
+    } else if (auto * command = cmd_map[id]; command != nullptr) {
+      updateActiveAllyAgent(*command, referee_command);
+    } else {
+      rvo_sim->setAgentPosition(id, toRVO(ally_robot->pose.pos));
+      rvo_sim->setAgentPrefVelocity(id, ZERO_VELOCITY);
+      rvo_sim->setAgentRadius(id, RVO_RADIUS);
+    }
+  }
+
+  // 3. 敵ロボット (20..39) の更新
   for (const auto & enemy_robot : world_model->theirs().robots) {
+    if (enemy_robot->id >= 20) {
+      continue;
+    }
+    const auto agent_id = enemy_robot->id + 20;
     if (enemy_robot->available()) {
       const auto & pos = enemy_robot->pose.pos;
       const auto & vel = enemy_robot->vel.linear;
-      rvo_sim->setAgentPosition(enemy_robot->id + 20, toRVO(pos));
-      rvo_sim->setAgentPrefVelocity(enemy_robot->id + 20, toRVO(vel));
+      rvo_sim->setAgentPosition(agent_id, toRVO(pos));
+      rvo_sim->setAgentPrefVelocity(agent_id, toRVO(vel));
+      rvo_sim->setAgentRadius(agent_id, RVO_RADIUS);
     } else {
-      rvo_sim->setAgentPosition(enemy_robot->id + 20, RVO::Vector2(20.f, 20.f));
-      rvo_sim->setAgentPrefVelocity(enemy_robot->id + 20, RVO::Vector2(0.f, 0.f));
+      retireAgent(agent_id);
     }
   }
 }
