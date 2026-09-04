@@ -122,26 +122,36 @@ inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   return intersections;
 }
 
+// getIntersections(Circle, Segment) で先行利用するための前方宣言
+template <typename Geometry1, typename Geometry2>
+inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geometry2 & geometry2)
+  -> ClosestPoint;
+
 inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
 {
   std::vector<Point> intersections;
-  double distance = bg::distance(circle, segment);
+  // ゼロ長線分（点）は方向ベクトルが定義できないため交点なしとして扱う
+  Vector2 seg_diff = segment.second - segment.first;
+  if (seg_diff.norm() < 1e-12) {
+    return intersections;
+  }
+  // 円中心から線分への垂直距離と、その垂線足（線分上の最近接点）を求める。
+  // bg::distance(circle, segment) は「円表面から線分までの距離（0クランプ）」を返すため
+  // ここでは中心から線分への距離が必要であり、circle.center を用いて計算する。
+  auto closest = getClosestPointAndDistance(segment, circle.center);
+  double distance = closest.distance;
   if (distance > circle.radius) {
     // 交差しない
     return intersections;
   } else {
     // 交差する
     // 交点を求める
-    Vector2 norm_vec = getVerticalVec(segment.second - segment.first).normalized();
-    if (
-      ((circle.center + norm_vec) - segment.first).norm() >
-      ((circle.center - norm_vec) - segment.first).norm()) {
-      norm_vec = -norm_vec;
-    }
+    // 垂線足（線分上の最近接点）から線分方向に弦半長 sqrt(r^2 - d^2) だけ±する
     double d = std::sqrt(circle.radius * circle.radius - distance * distance);
-    Vector2 seg_norm = (segment.second - segment.first).normalized();
-    Point p1 = circle.center + norm_vec * distance + seg_norm * d;
-    Point p2 = circle.center + norm_vec * distance - seg_norm * d;
+    Vector2 seg_norm = seg_diff.normalized();
+    Point foot = closest.closest_point;
+    Point p1 = foot + seg_norm * d;
+    Point p2 = foot - seg_norm * d;
 
     // 交点が線分上にあるか確認
     if (
