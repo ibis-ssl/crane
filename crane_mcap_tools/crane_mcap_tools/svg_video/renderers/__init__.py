@@ -8,8 +8,8 @@ from .cairosvg_renderer import CairoSvgRenderer
 from .resvg_renderer import ResvgPyRenderer
 
 __all__ = [
-    "SvgRendererBase",
-    "OutputFormat",
     "CairoSvgRenderer",
+    "OutputFormat",
     "ResvgPyRenderer",
+    "SvgRendererBase",
 ]

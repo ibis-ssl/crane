@@ -6,7 +6,6 @@ import logging
 import math
 
 import numpy as np
-
 from models import (
     OptimizationConfig,
     OptimizationResult,

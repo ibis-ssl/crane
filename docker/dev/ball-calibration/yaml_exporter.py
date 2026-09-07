@@ -6,7 +6,6 @@ import logging
 import time
 
 import yaml
-
 from models import OptimizationResult
 
 logger = logging.getLogger(__name__)

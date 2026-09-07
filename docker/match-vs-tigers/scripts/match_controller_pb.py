@@ -5,14 +5,13 @@ TIGERs対戦試合制御スクリプト (Protocol Buffers版)
 ssl-game-controllerのProtocol Buffersメッセージを使用して試合を制御・監視します。
 """
 
-import time
-import sys
+import asyncio
+import json
 import os
 import socket
 import struct
-import asyncio
-import json
-from typing import List, Tuple, Optional
+import sys
+import time
 
 try:
     import websockets
@@ -25,11 +24,11 @@ except ImportError as e:
 sys.path.insert(0, "/app/proto")
 try:
     from api import ssl_gc_api_pb2
-    from state import ssl_gc_referee_message_pb2 as referee_pb2
-    from state import ssl_gc_game_event_pb2 as game_event_pb2
     from engine import ssl_gc_engine_pb2 as engine_pb2
-    from state import ssl_gc_common_pb2 as common_pb2
     from ssl_simulation import ssl_simulation_control_pb2
+    from state import ssl_gc_common_pb2 as common_pb2
+    from state import ssl_gc_game_event_pb2 as game_event_pb2
+    from state import ssl_gc_referee_message_pb2 as referee_pb2
 except ImportError as e:
     print(f"protobufモジュールのインポートエラー: {e}", file=sys.stderr)
     print("protoファイルをコンパイルしてください", file=sys.stderr)
@@ -66,8 +65,8 @@ class MatchController:
 
         self.yellow_score = 0
         self.blue_score = 0
-        self.events: List[Tuple[float, str]] = []
-        self.start_time: Optional[float] = None
+        self.events: list[tuple[float, str]] = []
+        self.start_time: float | None = None
         self.match_duration = 0.0
 
         # ファウル・カード追跡
@@ -75,7 +74,7 @@ class MatchController:
         self.foul_counters = {"YELLOW": 0, "BLUE": 0}
         self.max_allowed_bots = {"YELLOW": 0, "BLUE": 0}
         # (elapsed_sec, team_name, event_type) のリスト
-        self.foul_event_log: List[Tuple[float, str, str]] = []
+        self.foul_event_log: list[tuple[float, str, str]] = []
         # event_type -> count per team
         self.foul_event_counts: dict = {"YELLOW": {}, "BLUE": {}}
 
@@ -94,7 +93,7 @@ class MatchController:
 
     def _create_multicast_socket(
         self, address: str, port: int, timeout: float = 1.0
-    ) -> Optional[socket.socket]:
+    ) -> socket.socket | None:
         """マルチキャストUDPソケットを作成"""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -111,7 +110,7 @@ class MatchController:
             )
             return None
 
-    def create_referee_socket(self) -> Optional[socket.socket]:
+    def create_referee_socket(self) -> socket.socket | None:
         """レフェリーメッセージ受信用のマルチキャストソケットを作成"""
         sock = self._create_multicast_socket(self.referee_address, self.referee_port)
         if sock:
@@ -161,7 +160,7 @@ class MatchController:
                     referee_msg.designated_position.y / 1000.0,
                 )
 
-    def _extract_event_team(self, ev) -> Optional[str]:
+    def _extract_event_team(self, ev) -> str | None:
         """ゲームイベントからチーム名を抽出する"""
         field_name = ev.WhichOneof("event")
         if not field_name:
@@ -214,7 +213,7 @@ class MatchController:
                     command = referee_pb2.Referee.Command.Name(referee_msg.command)
                     print(f"✓ レフェリーメッセージ受信確認 (command={command})")
                     return True
-                except socket.timeout:
+                except TimeoutError:
                     continue
         finally:
             sock.close()
@@ -237,7 +236,7 @@ class MatchController:
                     if len(data) > 0:
                         print("✓ Visionデータ受信確認")
                         return True
-                except socket.timeout:
+                except TimeoutError:
                     continue
         finally:
             sock.close()
@@ -278,7 +277,7 @@ class MatchController:
         type_name = engine_pb2.ContinueAction.Type.Name(action_type)
         return await self.send_input(input_msg, f"ContinueAction: {type_name}")
 
-    def get_current_command(self) -> Optional[str]:
+    def get_current_command(self) -> str | None:
         """現在のコマンドをレフェリーメッセージから取得"""
         try:
             sock = self._create_multicast_socket(
@@ -352,7 +351,7 @@ class MatchController:
         self.start_time = time.time()
         last_print_time = time.time()
         print_interval = 10.0
-        stop_since: Optional[float] = None
+        stop_since: float | None = None
         prev_yellow_score = 0
         prev_blue_score = 0
         last_event_count = 0
@@ -516,7 +515,7 @@ class MatchController:
                         print(f"  試合終了: stage={stage}, elapsed={int(elapsed)}秒")
                         break
 
-                except socket.timeout:
+                except TimeoutError:
                     # パケットなしの場合もタイムアウト確認
                     if self.start_time and time.time() - self.start_time > max_duration:
                         self.match_duration = time.time() - self.start_time
@@ -551,8 +550,10 @@ class MatchController:
 
                 if self.events:
                     f.write("\n=== イベント履歴 ===\n")
-                    for timestamp, event_desc in self.events:
-                        f.write(f"[{timestamp:6.1f}s] {event_desc}\n")
+                    f.writelines(
+                        f"[{timestamp:6.1f}s] {event_desc}\n"
+                        for timestamp, event_desc in self.events
+                    )
 
                 # ファウル・カード詳細
                 f.write("\n=== ファウル・カード詳細 ===\n")
@@ -570,13 +571,19 @@ class MatchController:
                     counts = self.foul_event_counts.get(team_key, {})
                     if counts:
                         f.write("  ファウル内訳:\n")
-                        for ev_type, cnt in sorted(counts.items(), key=lambda x: -x[1]):
-                            f.write(f"    {ev_type}: {cnt}回\n")
+                        f.writelines(
+                            f"    {ev_type}: {cnt}回\n"
+                            for ev_type, cnt in sorted(
+                                counts.items(), key=lambda x: -x[1]
+                            )
+                        )
 
                 if self.foul_event_log:
                     f.write("\n=== ファウル時系列 ===\n")
-                    for t, team, ev_type in self.foul_event_log:
-                        f.write(f"[{t:6.1f}s] {team}: {ev_type}\n")
+                    f.writelines(
+                        f"[{t:6.1f}s] {team}: {ev_type}\n"
+                        for t, team, ev_type in self.foul_event_log
+                    )
 
             print(f"✓ 試合結果を保存: {filename}")
             print(f"  結果: {result_str}")
