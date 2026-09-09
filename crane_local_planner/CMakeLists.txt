@@ -24,13 +24,15 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/rvo2_planner.cpp
+  src/visibility_graph.cpp
+  src/visibility_graph_planner.cpp
   src/crane_local_planner.cpp
 )
 
 option(CRANE_UNITY_BUILD "Enable unity build" ON)
 if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
-  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 2)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 3)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb Eigen3::Eigen)
@@ -50,6 +52,12 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_penalty_avoidance_helper test/test_penalty_avoidance_helper.cpp)
   target_include_directories(test_penalty_avoidance_helper PUBLIC include)
   target_link_libraries(test_penalty_avoidance_helper Eigen3::Eigen)
+  ament_auto_add_gtest(test_visibility_graph
+    test/test_visibility_graph.cpp
+    src/visibility_graph.cpp
+  )
+  target_include_directories(test_visibility_graph PUBLIC include)
+  target_link_libraries(test_visibility_graph Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

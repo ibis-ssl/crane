@@ -21,6 +21,7 @@
 
 #include "rvo2_planner.hpp"
 #include "visibility_control.h"
+#include "visibility_graph_planner.hpp"
 
 namespace crane
 {
@@ -61,6 +62,8 @@ public:
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
     if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
+    } else if (planner_str == "visibility_graph") {
+      planner = std::make_shared<VisibilityGraphPlanner>(*this);
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());
       throw std::runtime_error("Unknown planner: " + planner_str);

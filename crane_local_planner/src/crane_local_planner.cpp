@@ -124,8 +124,9 @@ auto LocalPlannerComponent::processLatestCommands() -> void
         command.current_pose.x = robot->pose.pos.x();                   // フィールド座標系
         command.current_pose.y = robot->pose.pos.y();                   // フィールド座標系
         command.current_pose.theta = robot->pose.theta + theta_offset;  // theta_offset適用
-        command.current_velocity.x = robot->vel.linear.x();             // フィールド座標系
-        command.current_velocity.y = robot->vel.linear.y();             // フィールド座標系
+        command.field_coordinate_theta_offset = theta_offset;
+        command.current_velocity.x = robot->vel.linear.x();  // フィールド座標系
+        command.current_velocity.y = robot->vel.linear.y();  // フィールド座標系
         command.current_velocity.theta = robot->vel.omega;
         command.target_theta += theta_offset;  // theta_offset適用
         command.kick_power = getKickPower(command);

@@ -98,6 +98,7 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
   if (no_movement) {
     for (auto & command : preprocessed_msg.robot_commands) {
+      command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
       if (command.polar_velocity_target_mode.empty()) {
         command.polar_velocity_target_mode.emplace_back();
       }
