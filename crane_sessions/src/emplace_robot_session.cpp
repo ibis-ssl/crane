@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <crane_sessions/emplace_robot_session.hpp>
+#include <crane_utils/parameter.hpp>
 #include <filesystem>
 
 namespace crane
@@ -18,12 +19,8 @@ EmplaceRobotSession::EmplaceRobotSession(
   WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
 : SessionBase("emplace", world_model), topics_interface_(node.get_node_topics_interface())
 {
-  // パラメータを取得（既に宣言されている場合はその値を使用、未宣言ならデフォルト値を使用）
-  if (!node.has_parameter("emplace_robot.use_voice_announcement")) {
-    use_voice_announcement_ = node.declare_parameter("emplace_robot.use_voice_announcement", true);
-  } else {
-    use_voice_announcement_ = node.get_parameter("emplace_robot.use_voice_announcement").as_bool();
-  }
+  use_voice_announcement_ =
+    crane::get_or_declare_parameter(node, "emplace_robot.use_voice_announcement", true);
 
   // speakアクションクライアントを作成
   speak_client_ = rclcpp_action::create_client<Speak>(

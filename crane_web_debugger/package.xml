@@ -11,6 +11,7 @@
 
   <depend>ament_index_cpp</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_utils</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_msgs</depend>
   <depend>libboost-system-dev</depend>
