@@ -19,7 +19,12 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-include(/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake)
+if(EXISTS "/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake")
+  include(/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake)
+else()
+  macro(add_backward target)
+  endmacro()
+endif()
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR} ${robocup_ssl_msgs_INCLUDE_DIRS})
 ament_auto_add_executable(robot_receiver_node

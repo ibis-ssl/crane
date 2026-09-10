@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_utils/parameter.hpp>
 #include <ranges>
 
 namespace crane
@@ -21,33 +22,19 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
       "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); })),
   clock(RCL_ROS_TIME)
 {
-  declare_parameter<bool>("no_movement", false);
-  get_parameter("no_movement", no_movement);
-
-  declare_parameter<double>("delay_s", 0.0);
-  get_parameter("delay_s", delay_s);
-
-  declare_parameter<double>("kick_power_limit_straight", kick_power_limit_straight);
-  get_parameter("kick_power_limit_straight", kick_power_limit_straight);
-
-  declare_parameter<double>("kick_power_limit_chip", kick_power_limit_chip);
-  get_parameter("kick_power_limit_chip", kick_power_limit_chip);
-
-  declare_parameter<double>("latency_ms", current_latency_ms);
-  get_parameter("latency_ms", current_latency_ms);
-
-  declare_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
-  get_parameter("robot_acceleration.acceleration", robot_acceleration_acceleration_);
-
-  declare_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
-  get_parameter("robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
-
-  declare_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
-  get_parameter("robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
-
-  declare_parameter(
-    "robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
-  get_parameter("robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+  crane::get_or_declare_parameter(this, "no_movement", no_movement);
+  crane::get_or_declare_parameter(this, "delay_s", delay_s);
+  crane::get_or_declare_parameter(this, "kick_power_limit_straight", kick_power_limit_straight);
+  crane::get_or_declare_parameter(this, "kick_power_limit_chip", kick_power_limit_chip);
+  crane::get_or_declare_parameter(this, "latency_ms", current_latency_ms);
+  crane::get_or_declare_parameter(
+    this, "robot_acceleration.acceleration", robot_acceleration_acceleration_);
+  crane::get_or_declare_parameter(
+    this, "robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+  crane::get_or_declare_parameter(
+    this, "robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+  crane::get_or_declare_parameter(
+    this, "robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
 }
@@ -98,6 +85,7 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
   if (no_movement) {
     for (auto & command : preprocessed_msg.robot_commands) {
+      command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
       if (command.polar_velocity_target_mode.empty()) {
         command.polar_velocity_target_mode.emplace_back();
       }

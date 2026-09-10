@@ -29,13 +29,14 @@ include_directories(
 
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
 
-add_library(crane_sender_base STATIC src/sender_base.cpp)
+add_library(crane_sender_base STATIC src/sender_base.cpp src/sim_position_controller.cpp)
 set_target_properties(crane_sender_base PROPERTIES POSITION_INDEPENDENT_CODE ON)
 ament_target_dependencies(crane_sender_base
   rclcpp
   crane_msgs
   crane_msg_wrappers
   crane_comm
+  crane_utils
 )
 target_include_directories(crane_sender_base PUBLIC include)
 
@@ -45,6 +46,8 @@ if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_robot_packet test/test_robot_packet.cpp)
+  ament_auto_add_gtest(test_sim_position_controller test/test_sim_position_controller.cpp)
+  target_link_libraries(test_sim_position_controller crane_sender_base)
 endif ()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

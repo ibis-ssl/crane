@@ -18,6 +18,14 @@
 - `getElapsedSec()`: 開始時刻からの経過時間計算
 - `ScopedTimer`: スコープベースの自動時間計測とROS 2トピック発行
 
+### ROSパラメータ操作 (`parameter.hpp`)
+
+- `get_or_declare_parameter()`: パラメータの宣言と取得を安全かつ1行で実行
+- 参照渡し版（変数の初期値をデフォルト値として宣言し、設定値を変数に直接格納）
+- 戻り値版（設定値またはデフォルト値を返す）
+- 多重宣言防止（すでに宣言済みの場合でも例外を投げず値を取得）
+- 文字列リテラルの自動対応（`const char*` を安全に `std::string` パラメータとして処理）
+
 ## アーキテクチャ上の役割
 
 **依存レイヤ**: ユーティリティ層（Layer 2）
@@ -79,6 +87,40 @@ double elapsed = crane::getDiffSec(start, end);
   crane::ScopedTimer timer(publisher);
   // ... 計測対象処理 ...
 }  // デストラクタで自動的に経過時間をトピック発行
+```
+
+### parameter.hpp
+
+```cpp
+namespace crane {
+  // 戻り値版
+  template <typename T>
+  T get_or_declare_parameter(rclcpp::Node & node, const std::string & name, const T & default_value);
+
+  // 参照渡し版（変数 value の初期値をデフォルト値として宣言し、設定値を代入）
+  template <typename T>
+  void get_or_declare_parameter(rclcpp::Node & node, const std::string & name, T & value);
+
+  // rclcpp::Node* (this ポインタ) 版
+  template <typename T>
+  T get_or_declare_parameter(rclcpp::Node * node, const std::string & name, const T & default_value);
+
+  template <typename T>
+  void get_or_declare_parameter(rclcpp::Node * node, const std::string & name, T & value);
+}
+```
+
+**使用例**:
+
+```cpp
+#include <crane_utils/parameter.hpp>
+
+// 変数の初期値をデフォルト値として宣言・取得（参照渡し）
+double max_speed = 2.0;
+crane::get_or_declare_parameter(node, "max_speed", max_speed);
+
+// 戻り値として取得（文字列リテラルも安全に処理）
+std::string team_name = crane::get_or_declare_parameter(this, "team_name", "ibis-ssl");
 ```
 
 ## 依存関係

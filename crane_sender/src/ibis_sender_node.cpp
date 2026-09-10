@@ -13,9 +13,11 @@
 
 #include <array>
 #include <boost/asio.hpp>
+#include <chrono>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_utils/parameter.hpp>
 #include <format>
 #include <iomanip>
 #include <iostream>
@@ -28,6 +30,7 @@
 #include "crane_geometry/geometry_operations.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
+#include "crane_sender/sim_position_controller.hpp"
 
 namespace crane
 {
@@ -39,6 +42,7 @@ constexpr int DEFAULT_PORT = 12345;
 constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
+constexpr int MAX_ROBOT_NUM = 20;
 }  // namespace CommConfig
 
 // 送信パケット種別
@@ -71,11 +75,15 @@ private:
   {
     double prev_vx = 0.0;
     double prev_vy = 0.0;
+    uint8_t previous_control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    std::chrono::steady_clock::time_point previous_update{};
+    bool initialized = false;
   };
-  std::array<PerRobotState, CommConfig::AI_CMD_V2_ROBOT_NUM> robot_states_;
+  std::array<PerRobotState, CommConfig::MAX_ROBOT_NUM> robot_states_;
 
   double theta_p_gain_{4.0};
   double chip_angle_deg_{30.0};
+  SimPositionControllerConfig position_controller_config_;
 
   int counter_{0};
 
@@ -85,8 +93,7 @@ public:
     broadcast_socket_(
       broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
-    declare_parameter("debug_id", -1);
-    get_parameter("debug_id", debug_id);
+    crane::get_or_declare_parameter(this, "debug_id", debug_id);
 
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
@@ -99,27 +106,26 @@ public:
       });
 
     // packet_type パラメータ: ibis / ssl / grsim
-    declare_parameter("packet_type", std::string("ibis"));
-    const std::string packet_type_str = get_parameter("packet_type").as_string();
+    const std::string packet_type_str =
+      crane::get_or_declare_parameter(this, "packet_type", "ibis");
 
     // 送信先アドレスとポートの設定
-    declare_parameter("target_address", std::string(CommConfig::BROADCAST_ADDRESS));
-    declare_parameter("target_port", CommConfig::DEFAULT_PORT);
-    declare_parameter("theta_p_gain", theta_p_gain_);
-    declare_parameter("chip_angle_deg", chip_angle_deg_);
-
-    const std::string target_address = get_parameter("target_address").as_string();
-    const int target_port = get_parameter("target_port").as_int();
-    theta_p_gain_ = get_parameter("theta_p_gain").as_double();
-    chip_angle_deg_ = get_parameter("chip_angle_deg").as_double();
+    const std::string target_address =
+      crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
+    const int target_port =
+      crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
+    crane::get_or_declare_parameter(this, "theta_p_gain", theta_p_gain_);
+    crane::get_or_declare_parameter(this, "chip_angle_deg", chip_angle_deg_);
+    crane::get_or_declare_parameter(
+      this, "position_control.kp", position_controller_config_.position_gain);
+    crane::get_or_declare_parameter(
+      this, "position_control.deceleration", position_controller_config_.deceleration);
 
     if (packet_type_str == "ssl") {
       packet_type_ = PacketType::SSL;
       // SSL制御ポートはgrSimの標準ポートを使用（target_addressのホストに送信）
-      declare_parameter("ssl_blue_port", 10301);
-      declare_parameter("ssl_yellow_port", 10302);
-      const int blue_port = get_parameter("ssl_blue_port").as_int();
-      const int yellow_port = get_parameter("ssl_yellow_port").as_int();
+      const int blue_port = crane::get_or_declare_parameter(this, "ssl_blue_port", 10301);
+      const int yellow_port = crane::get_or_declare_parameter(this, "ssl_yellow_port", 10302);
       ssl_blue_sender_ = std::make_unique<UDPSender>(target_address, blue_port);
       ssl_yellow_sender_ = std::make_unique<UDPSender>(target_address, yellow_port);
       RCLCPP_INFO(
@@ -127,8 +133,7 @@ public:
         target_address.c_str(), blue_port, target_address.c_str(), yellow_port);
     } else if (packet_type_str == "grsim") {
       packet_type_ = PacketType::GRSIM;
-      declare_parameter("grsim_port", 20011);
-      const int grsim_port = get_parameter("grsim_port").as_int();
+      const int grsim_port = crane::get_or_declare_parameter(this, "grsim_port", 20011);
       grsim_sender_ = std::make_unique<UDPSender>(target_address, grsim_port);
       RCLCPP_INFO(
         get_logger(), "ibis_sender_node started [packet_type=grsim] (%s:%d)",
@@ -302,15 +307,6 @@ private:
   LocalVelocity convertToLocalVelocity(
     const crane_msgs::msg::RobotCommand & command, PerRobotState & state)
   {
-    const double target_velocity_r =
-      !command.polar_velocity_target_mode.empty()
-        ? command.polar_velocity_target_mode.front().target_velocity_r
-        : 0.0;
-    const double target_velocity_theta =
-      !command.polar_velocity_target_mode.empty()
-        ? command.polar_velocity_target_mode.front().target_velocity_theta
-        : 0.0;
-
     // Theta P制御
     const double theta_error = getAngleDiff(command.target_theta, command.current_pose.theta);
     double omega = theta_p_gain_ * (-theta_error);
@@ -318,13 +314,44 @@ private:
       omega, -static_cast<double>(command.omega_limit), static_cast<double>(command.omega_limit));
 
     // 遅延補正後の現在角度
-    constexpr double dt = 1.0 / 30.0;
     const double current_theta = command.current_pose.theta + omega * delay_s;
 
-    // グローバル極座標 → ロボットローカル直交座標
-    const double velocity_theta = target_velocity_theta - current_theta;
-    const double target_vx = target_velocity_r * std::cos(velocity_theta);
-    const double target_vy = target_velocity_r * std::sin(velocity_theta);
+    double global_vx = 0.0;
+    double global_vy = 0.0;
+    if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+      const auto velocity = calculateSimGlobalVelocity(command, position_controller_config_);
+      global_vx = velocity.x();
+      global_vy = velocity.y();
+    } else if (!command.polar_velocity_target_mode.empty()) {
+      const auto & polar = command.polar_velocity_target_mode.front();
+      global_vx = polar.target_velocity_r * std::cos(polar.target_velocity_theta);
+      global_vy = polar.target_velocity_r * std::sin(polar.target_velocity_theta);
+    }
+
+    // グローバル直交座標 → ロボットローカル直交座標
+    const double target_vx =
+      global_vx * std::cos(current_theta) + global_vy * std::sin(current_theta);
+    const double target_vy =
+      -global_vx * std::sin(current_theta) + global_vy * std::cos(current_theta);
+
+    const auto update_time = std::chrono::steady_clock::now();
+    double dt = 1.0 / 60.0;
+    if (state.initialized) {
+      dt = std::clamp(
+        std::chrono::duration<double>(update_time - state.previous_update).count(), 1e-3, 0.1);
+    }
+    if (!state.initialized || state.previous_control_mode != command.control_mode) {
+      const double offset = command.field_coordinate_theta_offset;
+      const auto rotated_current_velocity =
+        rotateFieldVector(Vector2(command.current_velocity.x, command.current_velocity.y), offset);
+      state.prev_vx = rotated_current_velocity.x() * std::cos(current_theta) +
+                      rotated_current_velocity.y() * std::sin(current_theta);
+      state.prev_vy = -rotated_current_velocity.x() * std::sin(current_theta) +
+                      rotated_current_velocity.y() * std::cos(current_theta);
+    }
+    state.previous_update = update_time;
+    state.previous_control_mode = command.control_mode;
+    state.initialized = true;
 
     // 加速度制限
     const double current_speed = std::hypot(state.prev_vx, state.prev_vy);
@@ -378,6 +405,12 @@ private:
 
     robocup_ssl::RobotControl packet;
     for (const auto & command : msg.robot_commands) {
+      if (command.robot_id >= robot_states_.size()) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1000, "robot_id=%d is out of sender state range",
+          static_cast<int>(command.robot_id));
+        continue;
+      }
       auto cmd = packet.add_robot_commands();
       cmd->set_id(command.robot_id);
 
@@ -411,6 +444,12 @@ private:
     commands->set_timestamp(0.0);
 
     for (const auto & command : msg.robot_commands) {
+      if (command.robot_id >= robot_states_.size()) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1000, "robot_id=%d is out of sender state range",
+          static_cast<int>(command.robot_id));
+        continue;
+      }
       auto * robot_cmd = commands->add_robot_commands();
       robot_cmd->set_id(command.robot_id);
 

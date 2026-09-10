@@ -174,6 +174,8 @@ limitations under the License.
     <param name="kick_power_limit_chip" value="1.0"/>
     <param name="chip_angle_deg" value="30.0"/>
     <param name="theta_p_gain" value="3.0"/>
+    <param name="position_control.kp" value="2.0"/>
+    <param name="position_control.deceleration" value="$(var robot_acceleration.deceleration_high)"/>
     <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
     <param name="robot_acceleration.deceleration_high" value="$(var robot_acceleration.deceleration_high)"/>
     <param name="robot_acceleration.deceleration_low" value="$(var robot_acceleration.deceleration_low)"/>

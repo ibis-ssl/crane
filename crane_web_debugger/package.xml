@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>crane_web_debugger</name>
-  <version>1.0.387</version>
+  <version>1.0.389</version>
   <description>WebSocketデバッグサーバーとWebフロントエンド</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
@@ -11,6 +11,7 @@
 
   <depend>ament_index_cpp</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_utils</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_msgs</depend>
   <depend>libboost-system-dev</depend>

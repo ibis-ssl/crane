@@ -1,0 +1,383 @@
+// Copyright (c) 2026 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include "crane_local_planner/visibility_graph_planner.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <crane_msg_wrappers/command_wrapper_base.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
+#include <crane_utils/parameter.hpp>
+#include <limits>
+#include <robocup_ssl_msgs/msg/referee.hpp>
+
+namespace crane
+{
+namespace
+{
+auto expandedBox(const Box & source, double offset) -> Box
+{
+  Box result = source;
+  result.min_corner() -= Point(offset, offset);
+  result.max_corner() += Point(offset, offset);
+  return result;
+}
+
+auto closestPointOnSegment(const Point & point, const Point & from, const Point & to) -> Point
+{
+  const Vector2 segment = to - from;
+  if (segment.squaredNorm() < 1e-9) {
+    return from;
+  }
+  const double ratio = std::clamp((point - from).dot(segment) / segment.squaredNorm(), 0.0, 1.0);
+  return from + ratio * segment;
+}
+}  // namespace
+
+VisibilityGraphPlanner::VisibilityGraphPlanner(rclcpp::Node & node)
+: LocalPlannerBase("visibility_graph_planner", node)
+{
+  crane::get_or_declare_parameter(node, "max_vel", max_velocity_);
+  crane::get_or_declare_parameter(node, "stop_state_max_velocity", stop_state_max_velocity_);
+  crane::get_or_declare_parameter(node, "field_boundary_offset", field_boundary_offset_);
+  crane::get_or_declare_parameter(node, "penalty_area_offset", penalty_area_offset_);
+  crane::get_or_declare_parameter(node, "penalty_area_offset_stop", penalty_area_offset_stop_);
+
+  crane::get_or_declare_parameter(node, "visibility_graph.prediction_horizon", prediction_horizon_);
+  crane::get_or_declare_parameter(node, "visibility_graph.safety_margin", safety_margin_);
+  crane::get_or_declare_parameter(node, "visibility_graph.lookahead_distance", lookahead_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.replan_cross_track_distance", replan_cross_track_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.route_switch_improvement_ratio", route_switch_improvement_ratio_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.goal_change_threshold", goal_change_threshold_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.full_replan_interval", full_replan_interval_);
+
+  int circle_samples = crane::get_or_declare_parameter(node, "visibility_graph.circle_samples", 12);
+  int capsule_end_samples =
+    crane::get_or_declare_parameter(node, "visibility_graph.capsule_end_samples", 6);
+  visibility_graph_.configure({circle_samples, capsule_end_samples, 1e-3});
+}
+
+auto VisibilityGraphPlanner::buildObstacles(
+  uint8_t robot_id, const crane_msgs::msg::RobotCommand & command) const
+  -> std::vector<visibility_graph::Obstacle>
+{
+  std::vector<visibility_graph::Obstacle> obstacles;
+  const auto ego = world_model->getOurRobot(robot_id);
+  const Vector2 ego_velocity(command.current_velocity.x, command.current_velocity.y);
+  if (!command.local_planner_config.disable_collision_avoidance) {
+    auto append_robot = [&](const auto & robot) {
+      if (!robot->available() || robot == ego) {
+        return;
+      }
+      obstacles.push_back(
+        visibility_graph::makePredictedRobotObstacle(
+          ego_velocity, ego->geometry().radius, robot->pose.pos, robot->vel.linear,
+          robot->geometry().radius, prediction_horizon_, safety_margin_));
+    };
+    for (const auto & robot : world_model->ours().robots) {
+      append_robot(robot);
+    }
+    for (const auto & robot : world_model->theirs().robots) {
+      append_robot(robot);
+    }
+  }
+
+  if (
+    !command.local_planner_config.disable_goal_area_avoidance &&
+    world_model->getMsg().play_situation.command.value != crane_msgs::msg::PlaySituation::HALT) {
+    const bool stop = world_model->getMsg().play_situation.referee_raw.command.value ==
+                      robocup_ssl_msgs::msg::RefereeCommand::STOP;
+    const double offset = stop ? penalty_area_offset_stop_ : penalty_area_offset_;
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getOurPenaltyArea(), offset)));
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getTheirPenaltyArea(), offset)));
+  }
+
+  if (!command.local_planner_config.disable_ball_avoidance) {
+    double radius = 0.2;
+    switch (world_model->getMsg().play_situation.command.value) {
+      case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+        radius = 0.7;
+        break;
+      case crane_msgs::msg::PlaySituation::STOP:
+        radius = 0.5;
+        break;
+      default:
+        break;
+    }
+    obstacles.push_back(visibility_graph::Obstacle::makeCircle(world_model->ball().pos, radius));
+  }
+
+  if (
+    !command.local_planner_config.disable_placement_avoidance &&
+    world_model->getBallPlacementTarget().has_value()) {
+    if (const auto placement = world_model->getBallPlacementArea(); placement.has_value()) {
+      obstacles.push_back(visibility_graph::Obstacle::makeCapsule(*placement));
+    }
+  }
+
+  if (!command.local_planner_config.disable_field_boundary) {
+    const double half_width = world_model->fieldSize().x() / 2.0 + field_boundary_offset_;
+    const double half_height = world_model->fieldSize().y() / 2.0 + field_boundary_offset_;
+    constexpr double FAR = 20.0;
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(Box(Point(-FAR, half_height), Point(FAR, FAR))));
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(Box(Point(-FAR, -FAR), Point(FAR, -half_height))));
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(Box(Point(half_width, -FAR), Point(FAR, FAR))));
+    obstacles.push_back(
+      visibility_graph::Obstacle::makeBox(Box(Point(-FAR, -FAR), Point(-half_width, FAR))));
+  }
+  return obstacles;
+}
+
+auto VisibilityGraphPlanner::trimPathFromCurrent(
+  const Point & current, const std::vector<Point> & path) -> std::vector<Point>
+{
+  if (path.size() < 2) {
+    return {};
+  }
+  size_t best_segment = 0;
+  double best_distance = std::numeric_limits<double>::infinity();
+  Point best_projection = current;
+  for (size_t i = 1; i < path.size(); ++i) {
+    const Point projection = closestPointOnSegment(current, path[i - 1], path[i]);
+    const double distance = (current - projection).norm();
+    if (distance < best_distance) {
+      best_distance = distance;
+      best_segment = i;
+      best_projection = projection;
+    }
+  }
+  std::vector<Point> result{current};
+  if ((best_projection - current).norm() > 1e-4) {
+    result.push_back(best_projection);
+  }
+  result.insert(result.end(), path.begin() + static_cast<std::ptrdiff_t>(best_segment), path.end());
+  return result;
+}
+
+auto VisibilityGraphPlanner::selectPath(
+  uint8_t robot_id, const Point & current, const Point & goal,
+  const std::vector<visibility_graph::Obstacle> & obstacles) -> std::vector<Point>
+{
+  auto & state = path_states_.at(robot_id);
+  if (const auto escape = visibility_graph_.nearestDynamicEscape(current, obstacles)) {
+    state.path = {current, *escape};
+    state.goal = goal;
+    state.valid = false;
+    return state.path;
+  }
+
+  std::vector<Point> retained;
+  if (state.valid && (goal - state.goal).norm() <= goal_change_threshold_) {
+    double cross_track_distance = std::numeric_limits<double>::infinity();
+    for (size_t i = 1; i < state.path.size(); ++i) {
+      cross_track_distance = std::min(
+        cross_track_distance,
+        (current - closestPointOnSegment(current, state.path[i - 1], state.path[i])).norm());
+    }
+    retained = trimPathFromCurrent(current, state.path);
+    if (!retained.empty()) {
+      retained.back() = goal;
+    }
+    if (
+      retained.size() < 2 || cross_track_distance > replan_cross_track_distance_ ||
+      !visibility_graph_.isPathVisible(retained, obstacles)) {
+      retained.clear();
+    }
+  }
+
+  // 保持経路が安全な間は高コストな全グラフ再計算を周期的に限定する。ただし、
+  // 障害物が直線経路から退いた場合は即座に最短の直線へ戻す。
+  const std::vector<Point> direct_path{current, goal};
+  const bool direct_path_visible = visibility_graph_.isPathVisible(direct_path, obstacles);
+  const auto now = std::chrono::steady_clock::now();
+  const bool full_replan_due = now >= state.next_full_replan;
+  const auto action =
+    visibility_graph::decideReplanAction(!retained.empty(), direct_path_visible, full_replan_due);
+  if (action == visibility_graph::ReplanAction::USE_DIRECT_PATH) {
+    state.path = direct_path;
+    state.goal = goal;
+    state.valid = true;
+    return state.path;
+  }
+  if (action == visibility_graph::ReplanAction::REUSE_RETAINED_PATH) {
+    state.path = retained;
+    state.goal = goal;
+    state.valid = true;
+    return state.path;
+  }
+
+  const auto new_path = visibility_graph_.plan(current, goal, obstacles);
+  const double stagger = 0.02 * static_cast<double>(robot_id);
+  state.next_full_replan =
+    now + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(std::max(0.0, full_replan_interval_) + stagger));
+
+  std::vector<Point> selected;
+  if (!retained.empty() && new_path.has_value()) {
+    const double retained_length = visibility_graph::pathLength(retained);
+    const double new_length = visibility_graph::pathLength(*new_path);
+    selected =
+      new_length < retained_length * (1.0 - route_switch_improvement_ratio_) ? *new_path : retained;
+  } else if (!retained.empty()) {
+    selected = retained;
+  } else if (new_path.has_value()) {
+    selected = *new_path;
+  } else {
+    selected = {current, current};
+  }
+
+  state.path = selected;
+  state.goal = goal;
+  state.valid = selected.size() >= 2;
+  return selected;
+}
+
+auto VisibilityGraphPlanner::pointAtDistance(const std::vector<Point> & path, double distance)
+  -> Point
+{
+  if (path.empty()) {
+    return Point::Zero();
+  }
+  double remaining = std::max(0.0, distance);
+  for (size_t i = 1; i < path.size(); ++i) {
+    const Vector2 segment = path[i] - path[i - 1];
+    const double length = segment.norm();
+    if (length > 1e-9 && remaining <= length) {
+      return path[i - 1] + segment * (remaining / length);
+    }
+    remaining -= length;
+  }
+  return path.back();
+}
+
+auto VisibilityGraphPlanner::planSingleRobot(
+  const crane_msgs::msg::RobotCommand & command, double theta_offset)
+  -> crane_msgs::msg::RobotCommand
+{
+  crane_msgs::msg::RobotCommand result = command;
+  result.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+  if (result.position_target_mode.empty()) {
+    result.position_target_mode.emplace_back();
+  }
+  if (command.position_target_mode.empty() || command.robot_id >= path_states_.size()) {
+    auto & output = result.position_target_mode.front();
+    output.target_x = command.current_pose.x;
+    output.target_y = command.current_pose.y;
+    output.terminal_velocity_x = 0.0;
+    output.terminal_velocity_y = 0.0;
+    output.speed_limit_at_target = 0.0;
+    return result;
+  }
+
+  const Point current(command.current_pose.x, command.current_pose.y);
+  const auto & input = command.position_target_mode.front();
+  Point goal(input.target_x, input.target_y);
+  if (!command.local_planner_config.disable_field_boundary) {
+    const double half_width = world_model->fieldSize().x() / 2.0 + field_boundary_offset_;
+    const double half_height = world_model->fieldSize().y() / 2.0 + field_boundary_offset_;
+    goal.x() = std::clamp(goal.x(), -half_width, half_width);
+    goal.y() = std::clamp(goal.y(), -half_height, half_height);
+  }
+  auto obstacles = buildObstacles(command.robot_id, command);
+  const auto path = selectPath(command.robot_id, current, goal, obstacles);
+  const double remaining_distance = visibility_graph::pathLength(path);
+  Point subgoal = pointAtDistance(path, lookahead_distance_);
+  if (!visibility_graph_.isPathVisible({current, subgoal}, obstacles) && path.size() >= 2) {
+    subgoal = path[1];
+  }
+  const bool final_target = (subgoal - path.back()).norm() < 1e-4;
+
+  result.local_planner_config.max_velocity_factors.emplace_back(
+    crane_msgs::msg::NamedFloat()
+      .set__name("VisibilityGraphPlanner::max_vel")
+      .set__value(max_velocity_));
+  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
+  if (
+    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+    !world_model->isPracticeNormalSpeed()) {
+    result.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat()
+        .set__name("VisibilityGraphPlanner STOP制限")
+        .set__value(stop_state_max_velocity_));
+  }
+  const double max_velocity = resolveMaxVelocityFactors(result, max_velocity_);
+  resolveMaxAccelerationFactors(result, planning_acceleration);
+
+  auto & output = result.position_target_mode.front();
+  output.target_x = subgoal.x();
+  output.target_y = subgoal.y();
+  if (final_target) {
+    output.position_tolerance = input.position_tolerance;
+    output.speed_limit_at_target = input.speed_limit_at_target;
+    output.terminal_velocity_x = input.terminal_velocity_x;
+    output.terminal_velocity_y = input.terminal_velocity_y;
+  } else {
+    output.position_tolerance = std::min(input.position_tolerance, 0.02f);
+    Vector2 direction = subgoal - current;
+    for (size_t i = 1; i + 1 < path.size(); ++i) {
+      if ((subgoal - path[i]).norm() < 1e-4) {
+        direction = path[i + 1] - path[i];
+        break;
+      }
+    }
+    if (direction.norm() > 1e-6) {
+      direction.normalize();
+    } else {
+      direction.setZero();
+    }
+    const double terminal_speed =
+      std::min(max_velocity, std::sqrt(2.0 * planning_deceleration * remaining_distance));
+    output.speed_limit_at_target = terminal_speed;
+    output.terminal_velocity_x = direction.x() * terminal_speed;
+    output.terminal_velocity_y = direction.y() * terminal_speed;
+  }
+
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphStatus", remaining_distance < 1e-6 ? "HOLD" : "OK");
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphPathLength", formatPlanningDouble(remaining_distance));
+  addOrUpdatePlanningFactor(result, "VisibilityGraphNodes", std::to_string(path.size()));
+
+  for (const auto & obstacle : obstacles) {
+    if (obstacle.type == visibility_graph::Obstacle::Type::CAPSULE && obstacle.is_dynamic_robot) {
+      visualizer->drawLine(
+        obstacle.capsule.segment.first, obstacle.capsule.segment.second, "red", 12, 0.35);
+      visualizer->drawCircle(
+        obstacle.capsule.segment.first, obstacle.capsule.radius, "red", 6, 0.15);
+      visualizer->drawCircle(
+        obstacle.capsule.segment.second, obstacle.capsule.radius, "red", 6, 0.15);
+    }
+  }
+  visualizer->drawPolyline(path, "cyan", 0.8, 12.0);
+  visualizer->drawFilledCircle(subgoal, 0.04, "orange", 0.8);
+  (void)theta_offset;
+  return result;
+}
+
+auto VisibilityGraphPlanner::calculateRobotCommand(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
+{
+  crane_msgs::msg::RobotCommands result;
+  result.header = msg.header;
+  result.on_positive_half = msg.on_positive_half;
+  result.is_yellow = msg.is_yellow;
+  result.robot_commands.reserve(msg.robot_commands.size());
+  for (const auto & command : msg.robot_commands) {
+    result.robot_commands.push_back(planSingleRobot(command, theta_offset));
+  }
+  return result;
+}
+
+}  // namespace crane
