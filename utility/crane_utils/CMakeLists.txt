@@ -31,6 +31,9 @@ if(BUILD_TESTING)
 
   ament_auto_add_gtest(test_parameter test/test_parameter.cpp)
   target_include_directories(test_parameter PUBLIC include)
+
+  ament_auto_add_gtest(test_package test/test_package.cpp)
+  target_include_directories(test_package PUBLIC include)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

@@ -6,9 +6,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_sessions/test_session.hpp>
+#include <crane_utils/package.hpp>
 #include <crane_utils/time.hpp>
 #include <filesystem>
 #include <range/v3/algorithm/count.hpp>
@@ -18,10 +18,7 @@ namespace crane
 TestSession::TestSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
 : SessionBase("test", world_model), topics_interface(node.get_node_topics_interface())
 {
-  config_file_path =
-    (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_sessions")) /
-     "config" / "test_planner.yaml")
-      .string();
+  config_file_path = crane::resolve_package_path("crane_sessions", "test_planner.yaml").string();
   if (not loadConfigFromFile(config_file_path)) {
     RCLCPP_WARN(
       rclcpp::get_logger("TestSession"), "設定の読込に失敗: %s", config_file_path.c_str());

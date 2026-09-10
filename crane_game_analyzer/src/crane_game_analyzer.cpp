@@ -4,9 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/kicker_model.hpp>
+#include <crane_utils/package.hpp>
 #include <crane_utils/parameter.hpp>
 #include <filesystem>
 #include <format>
@@ -53,28 +53,13 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   world_model = std::make_unique<WorldModelWrapper>(*this);
   kick_event_detector_ = std::make_unique<KickEventDetector>();
 
-  auto resolveConfigPath = [this](const std::string & config_path) -> std::string {
-    if (config_path.empty() || std::filesystem::path(config_path).is_absolute()) {
-      return config_path;
-    }
-    try {
-      std::string package_share_dir =
-        ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-      return (std::filesystem::path(package_share_dir) / "config" / config_path).string();
-    } catch (const std::exception & ex) {
-      RCLCPP_WARN(
-        get_logger(), "パッケージディレクトリ取得に失敗したため相対パスとして扱います: %s",
-        ex.what());
-      return config_path;
-    }
-  };
-
   // キック予測モデル初期化（ongoing_kickの予測トレース生成に使用）
   std::string ball_physics_config_path =
     crane::get_or_declare_parameter(this, "ball_physics_config_path", "");
   std::shared_ptr<BallPhysicsModel> ball_physics_model;
   if (!ball_physics_config_path.empty()) {
-    auto full_config_path = resolveConfigPath(ball_physics_config_path);
+    auto full_config_path = crane::resolve_package_path(
+      get_logger(), "crane_world_model_publisher", ball_physics_config_path);
     try {
       ball_physics_model = BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
       RCLCPP_INFO(get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
@@ -92,7 +77,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     crane::get_or_declare_parameter(this, "kicker_physics_config_path", "");
   std::shared_ptr<KickerModel> kicker_model;
   if (!kicker_physics_config_path.empty()) {
-    auto full_config_path = resolveConfigPath(kicker_physics_config_path);
+    auto full_config_path = crane::resolve_package_path(
+      get_logger(), "crane_world_model_publisher", kicker_physics_config_path);
     try {
       kicker_model = createIntegratedKickerModel(full_config_path, ball_physics_model);
       RCLCPP_INFO(get_logger(), "キッカー物理設定を読み込みました: %s", full_config_path.c_str());

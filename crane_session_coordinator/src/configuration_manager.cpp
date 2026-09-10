@@ -15,15 +15,18 @@
 namespace crane
 {
 ConfigurationManager::ConfigurationManager(
-  const std::string & package_share_directory, const std::string & config_file_name,
-  rclcpp::Logger logger)
+  const std::filesystem::path & config_path, rclcpp::Logger logger)
 : logger_(logger)
 {
-  using std::filesystem::path;
-
-  // 統合設定ファイルの読み込み
-  auto config_path = path(package_share_directory) / "config" / config_file_name;
   loadUnifiedConfig(config_path);
+}
+
+ConfigurationManager::ConfigurationManager(
+  const std::string & package_share_directory, const std::string & config_file_name,
+  rclcpp::Logger logger)
+: ConfigurationManager(
+    std::filesystem::path(package_share_directory) / "config" / config_file_name, logger)
+{
 }
 
 auto ConfigurationManager::getSessionNameForEvent(const std::string & event_name) const

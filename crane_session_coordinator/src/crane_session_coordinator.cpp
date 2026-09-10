@@ -6,10 +6,10 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_sessions/session_factory.hpp>
+#include <crane_utils/package.hpp>
 #include <crane_utils/parameter.hpp>
 #include <crane_utils/stream.hpp>
 #include <crane_utils/time.hpp>
@@ -45,9 +45,9 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
   // 設定管理の初期化
   auto session_config_file_name = crane::get_or_declare_parameter(
     this, "session_config_file_name", "unified_session_config.yaml");
-  config_manager_ = std::make_shared<ConfigurationManager>(
-    ament_index_cpp::get_package_share_directory("crane_session_coordinator"),
-    session_config_file_name, get_logger());
+  auto session_config_path = crane::resolve_package_path(
+    get_logger(), "crane_session_coordinator", session_config_file_name);
+  config_manager_ = std::make_shared<ConfigurationManager>(session_config_path, get_logger());
 
   // プランナー管理の初期化
   session_registry_ = std::make_shared<SessionRegistry>();

@@ -45,6 +45,15 @@ class ConfigurationManager
 {
 public:
   /**
+   * @brief コンストラクタ（設定ファイルパス直接指定）
+   * @param config_path 設定ファイルのフルパス
+   * @param logger ロガー
+   */
+  explicit ConfigurationManager(
+    const std::filesystem::path & config_path,
+    rclcpp::Logger logger = rclcpp::get_logger("ConfigurationManager"));
+
+  /**
    * @brief コンストラクタ
    * @param package_share_directory パッケージのshareディレクトリパス
    * @param config_file_name 統合設定ファイル名（デフォルト: unified_session_config.yaml）
