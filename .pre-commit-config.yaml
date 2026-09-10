@@ -10,7 +10,9 @@ repos:
     hooks:
       - id: check-json
       - id: check-merge-conflict
+      - id: check-symlinks
       - id: check-toml
+      - id: destroyed-symlinks
       - id: check-xml
       - id: check-yaml
         args: [--unsafe]

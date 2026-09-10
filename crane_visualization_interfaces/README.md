@@ -1,1 +1,1 @@
-/home/hans/workspace/ibis_ws/src/crane/docs/packages/./crane_visualization_interfaces.md
+../docs/packages/crane_visualization_interfaces.md

@@ -1,1 +1,1 @@
-/home/hans/workspace/ibis_ws/src/crane/docs/packages/crane_world_model_publisher.md
+../docs/packages/crane_world_model_publisher.md
