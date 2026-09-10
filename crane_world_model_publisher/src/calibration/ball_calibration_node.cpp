@@ -7,6 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <crane_physics/ball_physics_model.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_world_model_publisher/calibration/ball_calibration_data_extractor.hpp>
 #include <crane_world_model_publisher/calibration/simple_ball_physics_optimizer.hpp>
 #include <filesystem>
@@ -30,10 +31,10 @@ public:
   BallCalibrationNode() : Node("ball_calibration_node")
   {
     // パラメータの宣言
-    this->declare_parameter("rosbag_path", "");
-    this->declare_parameter("output_config_path", "");
-    this->declare_parameter("kick_power_analysis_output", "");
-    this->declare_parameter("auto_calibrate", false);
+    crane::get_or_declare_parameter(this, "rosbag_path", "");
+    crane::get_or_declare_parameter(this, "output_config_path", "");
+    crane::get_or_declare_parameter(this, "kick_power_analysis_output", "");
+    bool auto_calibrate = crane::get_or_declare_parameter(this, "auto_calibrate", false);
 
     // サービスサーバーの作成
     calibrate_service_ = this->create_service<std_srvs::srv::Trigger>(
@@ -45,7 +46,6 @@ public:
     status_publisher_ = this->create_publisher<std_msgs::msg::String>("calibration_status", 10);
 
     // 自動キャリブレーションの確認
-    bool auto_calibrate = this->get_parameter("auto_calibrate").as_bool();
     if (auto_calibrate) {
       RCLCPP_INFO(this->get_logger(), "自動キャリブレーションを開始します");
       bool success = performCalibration();
@@ -107,7 +107,7 @@ private:
     publishStatus("JSONベースキャリブレーション開始");
 
     // ROSBAGパスの取得
-    std::string rosbag_path = this->get_parameter("rosbag_path").as_string();
+    std::string rosbag_path = crane::get_or_declare_parameter(this, "rosbag_path", "");
     if (rosbag_path.empty()) {
       RCLCPP_ERROR(this->get_logger(), "ROSBAGパスが指定されていません");
       publishStatus("エラー: ROSBAGパスが未指定");
@@ -216,7 +216,8 @@ private:
     }
 
     // キックパワー分析結果の出力
-    std::string kick_power_output = this->get_parameter("kick_power_analysis_output").as_string();
+    std::string kick_power_output =
+      crane::get_or_declare_parameter(this, "kick_power_analysis_output", "");
     if (kick_power_output.empty()) {
       // デフォルト出力パスを自動生成
       kick_power_output = json_dir_path + "/kick_power_velocity_analysis.json";
@@ -248,7 +249,7 @@ private:
     const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
   {
     // 出力パスの取得
-    std::string output_path = this->get_parameter("output_config_path").as_string();
+    std::string output_path = crane::get_or_declare_parameter(this, "output_config_path", "");
     if (output_path.empty()) {
       output_path = "calibrated_ball_physics.yaml";
     }

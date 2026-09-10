@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/penalty_kick.hpp>
 #include <magic_enum/magic_enum.hpp>
@@ -45,7 +46,7 @@ void PenaltyKick::initialize()
       start_ball_point = world_model()->ball().pos;
     }
 
-    double minimum_angle_accuracy = 2.0 * M_PI / 180.;
+    double minimum_angle_accuracy = deg2rad(2.0);
     double best_angle = GoalKick::getBestAngleToShootFromPoint(
       minimum_angle_accuracy, world_model()->ball().pos, world_model(), visualizer);
     Point best_target = world_model()->ball().pos + getNormVec(best_angle) * 0.5;

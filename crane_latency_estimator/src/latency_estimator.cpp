@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cmath>
 #include <crane_latency_estimator/latency_estimator.hpp>
+#include <crane_utils/parameter.hpp>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -18,13 +19,13 @@ namespace crane
 LatencyEstimator::LatencyEstimator(const rclcpp::NodeOptions & options)
 : Node("latency_estimator", options)
 {
-  buffer_seconds_ = declare_parameter("buffer_seconds", 5.0);
-  resample_dt_ms_ = declare_parameter("resample_dt_ms", 10.0);
-  max_lag_ms_ = declare_parameter("max_lag_ms", 500.0);
-  min_correlation_ = declare_parameter("min_correlation", 0.3);
-  min_cmd_stddev_rad_ = declare_parameter("min_cmd_stddev_rad", 0.05);
-  estimation_interval_sec_ = declare_parameter("estimation_interval_sec", 1.0);
-  ema_alpha_ = declare_parameter("ema_alpha", 0.3);
+  buffer_seconds_ = crane::get_or_declare_parameter(this, "buffer_seconds", 5.0);
+  resample_dt_ms_ = crane::get_or_declare_parameter(this, "resample_dt_ms", 10.0);
+  max_lag_ms_ = crane::get_or_declare_parameter(this, "max_lag_ms", 500.0);
+  min_correlation_ = crane::get_or_declare_parameter(this, "min_correlation", 0.3);
+  min_cmd_stddev_rad_ = crane::get_or_declare_parameter(this, "min_cmd_stddev_rad", 0.05);
+  estimation_interval_sec_ = crane::get_or_declare_parameter(this, "estimation_interval_sec", 1.0);
+  ema_alpha_ = crane::get_or_declare_parameter(this, "ema_alpha", 0.3);
 
   sub_commands_ = create_subscription<crane_msgs::msg::RobotCommands>(
     "/robot_commands", 10,

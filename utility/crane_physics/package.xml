@@ -11,6 +11,7 @@
 
   <depend>crane_geometry</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_utils</depend>
   <depend>eigen</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>

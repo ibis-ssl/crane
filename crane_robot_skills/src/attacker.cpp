@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_geometry/ddps.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/pass.hpp>
 #include <crane_physics/pass_kick.hpp>
@@ -22,7 +23,7 @@ std::string Attacker::getStateName(int s)
 namespace
 {
 constexpr double GOAL_ANGLE_THRESHOLD_DEG = 3.0;
-constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
+constexpr double GOAL_ANGLE_THRESHOLD_RAD = deg2rad(GOAL_ANGLE_THRESHOLD_DEG);
 constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 0.5;
 constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
 constexpr double BALL_CONTROL_DISTANCE = 1.0;
@@ -140,7 +141,7 @@ void Attacker::initialize()
   addStateFunction(static_cast<int>(AttackerState::RECEIVE), [this]() -> Status {
     auto redirect_target = [&]() -> Point {
       double angle = GoalKick::getBestAngleToShootFromPoint(
-        10.0 * M_PI / 180., robot()->pose.pos, world_model(), visualizer);
+        deg2rad(10.0), robot()->pose.pos, world_model(), visualizer);
       Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
       Segment goal_line;
       goal_line.first << world_model()->getAttackGoalCenter().x(),
@@ -158,12 +159,11 @@ void Attacker::initialize()
 
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestAttackGoalAngleRangeFromPoint(robot()->pose.pos);
-    double angle_diff_deg =
-      std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
-      180.0 / M_PI;
+    double angle_diff_deg = rad2deg(
+      std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)));
 
     // ゴールが見えている && リダイレクト角度が45度以内
-    bool redirect = goal_angle_width * 180.0 / M_PI > 10. && angle_diff_deg < 45.;
+    bool redirect = rad2deg(goal_angle_width) > 10. && angle_diff_deg < 45.;
 
     if (redirect) {
       printTextOnRobot("RECEIVE::REDIRECT");
@@ -277,7 +277,7 @@ void Attacker::initialize()
       kick_skill.setParameter("target", kick_target);
       configurePassKick(kick_target, kick_skill);
       return kick_skill.run();
-    } else if (goal_angle_width > LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0) {
+    } else if (goal_angle_width > deg2rad(LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG)) {
       // LOW_CHANCE_GOAL_KICK
       printTextOnRobot("KICK::LOW_CHANCE_GOAL_KICK");
       return goal_kick_skill.run();
