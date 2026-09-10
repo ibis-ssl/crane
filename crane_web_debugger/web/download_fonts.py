@@ -96,7 +96,7 @@ def process_font(name: str, cfg: dict, output_dir: str) -> None:
                 f.write(data)
             print(f"{len(data):,} bytes")
             url_map[url] = f"{subdir}/{local_name}" if subdir != "." else local_name
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"FAILED: {e}")
             sys.exit(1)
 

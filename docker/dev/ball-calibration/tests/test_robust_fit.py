@@ -102,7 +102,7 @@ class TestFewPoints:
 class TestBootstrapCI:
     def test_ci_contains_true(self):
         t, v = make_synthetic_trajectory(TRUE_V0, TRUE_DECEL, noise_std=0.03)
-        v0_s, decel_s = bootstrap_ci(t, v, fit_linear_huber, n_boot=200)
+        _v0_s, decel_s = bootstrap_ci(t, v, fit_linear_huber, n_boot=200)
         assert len(decel_s) > 0
         lo, hi = np.percentile(decel_s, 2.5), np.percentile(decel_s, 97.5)
         assert lo < TRUE_DECEL < hi

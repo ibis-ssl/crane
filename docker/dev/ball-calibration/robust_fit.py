@@ -66,7 +66,7 @@ def fit_linear_huber(
     try:
         model = HuberRegressor(epsilon=epsilon, max_iter=300)
         model.fit(X, velocities)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         result.method = "huber_failed"
         result.rejected = True
         result.rejection_reason = f"HuberRegressor 収束失敗: {e}"
@@ -121,7 +121,7 @@ def fit_linear_ransac(
             random_state=0,
         )
         model.fit(X, velocities)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         result.method = "ransac_failed"
         result.rejected = True
         result.rejection_reason = f"RANSAC 失敗: {e}"
@@ -179,7 +179,7 @@ def fit_nonlinear_huber(
             loss=loss,
             bounds=([0.0, 0.0], [np.inf, np.inf]),
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         result.method = f"nonlinear_{loss}_failed"
         result.rejected = True
         result.rejection_reason = f"least_squares 失敗: {e}"
@@ -244,7 +244,7 @@ def fit_exponential_decay(
             loss="soft_l1",
             bounds=([0.0, 0.0], [np.inf, np.inf]),
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         result.method = "exponential_decay_failed"
         result.rejected = True
         result.rejection_reason = f"least_squares 失敗: {e}"

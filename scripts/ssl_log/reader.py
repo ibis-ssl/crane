@@ -8,6 +8,8 @@ import struct
 from collections.abc import Iterator
 from pathlib import Path
 
+from google.protobuf.message import DecodeError
+
 from .models import BallSnapshot, LogData, LogInfo, RefereeState, RobotSnapshot
 from .proto_loader import load_proto_modules
 
@@ -123,7 +125,7 @@ def load_log(path: Path | str) -> LogData:
             pkt = TrackerWrapperPacket()
             try:
                 pkt.ParseFromString(payload)
-            except Exception:
+            except DecodeError:
                 continue
             if primary_uuid is None:
                 primary_uuid = pkt.uuid
@@ -201,7 +203,7 @@ def load_log(path: Path | str) -> LogData:
             pkt = Referee()
             try:
                 pkt.ParseFromString(payload)
-            except Exception:
+            except DecodeError:
                 continue
             if pkt.command_counter == last_command_counter:
                 continue

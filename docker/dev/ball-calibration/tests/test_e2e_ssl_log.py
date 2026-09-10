@@ -34,7 +34,7 @@ class TestE2ESSLLog:
         _, ball_data = extracted
         for entry in ball_data[:10]:
             assert len(entry) == 9, "ball_data タプルは9要素必要"
-            ts_ns, x, y, z, vx, vy, vz, state, detected = entry
+            ts_ns, _x, _y, _z, _vx, _vy, _vz, state, detected = entry
             assert isinstance(ts_ns, int), "timestamp は int"
             assert isinstance(state, int) and 0 <= state <= 2, "state は 0/1/2"
             assert isinstance(detected, bool), "detected は bool"

@@ -238,7 +238,7 @@ def run_optimization(
         return result
 
     if config.algorithm == "linear":
-        decel, rmse = optimize_global_deceleration(filtered, config)
+        decel, _rmse = optimize_global_deceleration(filtered, config)
         if decel <= 0.0:
             logger.error("グローバル減速度最適化に失敗")
             return result

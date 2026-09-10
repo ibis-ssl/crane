@@ -103,7 +103,7 @@ class MatchController:
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
             sock.settimeout(timeout)
             return sock
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
                 f"✗ マルチキャストソケット作成エラー ({address}:{port}): {e}",
                 file=sys.stderr,
@@ -133,7 +133,7 @@ class MatchController:
                 (self.sim_host, self.sim_control_port),
             )
             print(f"✓ ボールをテレポート: ({x:.2f}, {y:.2f})")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  ボールテレポートエラー: {e}")
 
     def teleport_ball_to_center(self) -> None:
@@ -152,13 +152,15 @@ class MatchController:
             # Blueにペナルティ → Yellowがキック → Blue側ゴール(-x方向)へ
             # ペナルティスポット: センターから +PENALTY_SPOT_OFFSET = +2.0 m
             self.teleport_ball_to_position(PENALTY_SPOT_OFFSET, 0.0)
-        elif command in ("BALL_PLACEMENT_YELLOW", "BALL_PLACEMENT_BLUE"):
-            if referee_msg.HasField("designated_position"):
-                # SSL referee protobufはミリメートル単位、ssl-simulation-protocolはメートル単位
-                self.teleport_ball_to_position(
-                    referee_msg.designated_position.x / 1000.0,
-                    referee_msg.designated_position.y / 1000.0,
-                )
+        elif command in (
+            "BALL_PLACEMENT_YELLOW",
+            "BALL_PLACEMENT_BLUE",
+        ) and referee_msg.HasField("designated_position"):
+            # SSL referee protobufはミリメートル単位、ssl-simulation-protocolはメートル単位
+            self.teleport_ball_to_position(
+                referee_msg.designated_position.x / 1000.0,
+                referee_msg.designated_position.y / 1000.0,
+            )
 
     def _extract_event_team(self, ev) -> str | None:
         """ゲームイベントからチーム名を抽出する"""
@@ -169,7 +171,7 @@ class MatchController:
             sub = getattr(ev, field_name)
             if sub.HasField("by_team"):
                 return common_pb2.Team.Name(sub.by_team)
-        except Exception:
+        except (AttributeError, ValueError):
             pass
         return None
 
@@ -183,7 +185,7 @@ class MatchController:
                 if result:
                     print("✓ Game Controller準備完了")
                     return True
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
             time.sleep(2)
         print("✗ Game Controllerの起動タイムアウト", file=sys.stderr)
@@ -265,7 +267,7 @@ class MatchController:
                 except asyncio.TimeoutError:
                     print("  応答タイムアウト（正常）")
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ WebSocket通信エラー: {e}", file=sys.stderr)
             return False
 
@@ -292,7 +294,7 @@ class MatchController:
                 return referee_pb2.Referee.Command.Name(referee_msg.command)
             finally:
                 sock.close()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  コマンド確認失敗: {e}")
             return None
 
@@ -405,7 +407,7 @@ class MatchController:
                         for ev in referee_msg.game_events[last_event_count:]:
                             try:
                                 ev_type = game_event_pb2.GameEvent.Type.Name(ev.type)
-                            except Exception:
+                            except Exception:  # noqa: BLE001
                                 ev_type = str(ev.type)
                             new_event_types.append(ev_type)
 
@@ -448,7 +450,7 @@ class MatchController:
                                         engine_pb2.ContinueAction.NEXT_COMMAND
                                     )
                                 )
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 print(f"  NEXT_COMMANDエラー: {e}")
                             stop_since = None
                     elif command == "STOP":
@@ -463,7 +465,7 @@ class MatchController:
                                             engine_pb2.ContinueAction.ACCEPT_GOAL
                                         )
                                     )
-                                except Exception as e:
+                                except Exception as e:  # noqa: BLE001
                                     print(f"  ACCEPT_GOALエラー: {e}")
                             else:
                                 print(
@@ -475,7 +477,7 @@ class MatchController:
                                             engine_pb2.ContinueAction.FORCE_START
                                         )
                                     )
-                                except Exception as e:
+                                except Exception as e:  # noqa: BLE001
                                     print(f"  FORCE_STARTエラー: {e}")
                             stop_since = None
                     elif command in (
@@ -494,7 +496,7 @@ class MatchController:
                                         engine_pb2.ContinueAction.NORMAL_START
                                     )
                                 )
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 print(f"  NORMAL_STARTエラー: {e}")
                             stop_since = None
                     else:
@@ -587,7 +589,7 @@ class MatchController:
 
             print(f"✓ 試合結果を保存: {filename}")
             print(f"  結果: {result_str}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ 結果保存エラー: {e}", file=sys.stderr)
 
     def run(self) -> int:

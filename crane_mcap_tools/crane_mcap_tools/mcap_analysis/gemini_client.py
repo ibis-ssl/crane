@@ -128,7 +128,7 @@ class GeminiAnalysisClient:
                 raw_response if "raw_response" in locals() else "",
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Gemini API error: {e}")
             return AnalysisResult.error_result(str(e))
 
@@ -292,7 +292,7 @@ class GeminiAnalysisClient:
             )
 
         except Exception as e:
-            logger.exception(f"Gemini API error: {e}")
+            logger.exception("Gemini API error")
             return AnalysisResult.error_result(str(e))
 
     def _run_batch(

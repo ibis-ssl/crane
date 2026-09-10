@@ -68,7 +68,7 @@ class PlanningFactorDebugger(Node):
         if command.polar_velocity_target_mode:
             vel_r = command.polar_velocity_target_mode[0].target_velocity_r
             vel_theta = command.polar_velocity_target_mode[0].target_velocity_theta
-        now = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        now = datetime.now().astimezone().strftime("%H:%M:%S.%f")[:-3]
 
         key_values = [f"{key}={factors.get(key, '-')}" for key in self.factor_keys]
         print(

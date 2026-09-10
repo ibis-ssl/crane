@@ -203,10 +203,10 @@ def main():
             if not args.no_display:
                 try:
                     plt.show()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     print(f"ディスプレイエラー（ファイルは保存済み）: {e}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"エラー: {e}", file=sys.stderr)
         sys.exit(1)
 

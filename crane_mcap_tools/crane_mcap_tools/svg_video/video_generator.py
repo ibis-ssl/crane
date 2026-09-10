@@ -59,8 +59,7 @@ class VideoGenerator:
         try:
             subprocess.run(
                 ["ffmpeg", "-version"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 check=True,
             )
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -172,10 +171,10 @@ class VideoGenerator:
                 f"Video generation completed: {output_path} ({frame_count} frames)"
             )
 
-        except Exception as e:
+        except Exception:
             # エラー時はプロセスを終了
             process.kill()
-            raise e
+            raise
 
     def generate_from_directory(
         self,

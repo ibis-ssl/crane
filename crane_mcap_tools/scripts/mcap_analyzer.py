@@ -237,8 +237,8 @@ def main() -> int:
         logger.error(f"必要なパッケージがインストールされていません: {e}")
         return 1
 
-    except Exception as e:
-        logger.exception(f"予期しないエラーが発生しました: {e}")
+    except Exception:
+        logger.exception("予期しないエラーが発生しました")
         return 1
 
 
