@@ -2,7 +2,7 @@ ci:
   autofix_commit_msg: "style(pre-commit): autofix"
 
 default_language_version:
-  node: 22.20.0
+  node: 22.22.2
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
