@@ -6,6 +6,7 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/ball_calibration_data_collector.hpp>
+#include <crane_utils/time.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -102,7 +103,7 @@ void BallCalibrationDataCollector::initialize()
         return false;
       }
 
-      bool should_transition = (now - last_ball_motion_time_).seconds() > stop_time_threshold_;
+      bool should_transition = crane::isTimeout(last_ball_motion_time_, stop_time_threshold_, now);
       // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;

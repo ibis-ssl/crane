@@ -9,6 +9,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_sessions/test_session.hpp>
+#include <crane_utils/time.hpp>
 #include <filesystem>
 #include <range/v3/algorithm/count.hpp>
 
@@ -60,10 +61,10 @@ TestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robot
 
   // 待機時間経過後、次のウェイポイントに遷移
   if (sleep_until.has_value()) {
-    double remaining_sec = (*sleep_until - now).seconds();
+    double remaining_sec = crane::getElapsedSec(now, *sleep_until);
     if (remaining_sec > 0.1) {  // 0.1秒以上残っている場合のみログ出力（頻度削減）
       static rclcpp::Time last_log_time;
-      if ((now - last_log_time).seconds() > 1.0) {  // 1秒ごとにログ
+      if (crane::isTimeout(last_log_time, 1.0, now)) {  // 1秒ごとにログ
         RCLCPP_INFO(
           rclcpp::get_logger("TestSession"), "Sleeping... remaining: %.1f sec", remaining_sec);
         last_log_time = now;

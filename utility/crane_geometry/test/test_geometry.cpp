@@ -142,4 +142,46 @@ TEST(GeometryOperationsTest, RotateVector)
   EXPECT_DOUBLE_EQ(v_0.x(), 1.0);
   EXPECT_DOUBLE_EQ(v_0.y(), 0.0);
 }
+
+TEST(GeometryOperationsTest, ClampNorm)
+{
+  Vector2 v(3.0, 4.0);  // norm = 5.0
+
+  // 上限より大きい場合 -> 長さが max_norm に縮小され、方向は維持
+  auto clamped = clampNorm(v, 2.5);
+  EXPECT_NEAR(clamped.norm(), 2.5, 1e-10);
+  EXPECT_NEAR(clamped.x(), 1.5, 1e-10);
+  EXPECT_NEAR(clamped.y(), 2.0, 1e-10);
+
+  // 上限以下の場合は変化なし
+  auto not_clamped = clampNorm(v, 6.0);
+  EXPECT_DOUBLE_EQ(not_clamped.x(), 3.0);
+  EXPECT_DOUBLE_EQ(not_clamped.y(), 4.0);
+
+  // 上限が0以下の場合はゼロベクトル
+  auto zero = clampNorm(v, 0.0);
+  EXPECT_DOUBLE_EQ(zero.x(), 0.0);
+  EXPECT_DOUBLE_EQ(zero.y(), 0.0);
+}
+
+TEST(GeometryOperationsTest, ClampPoint)
+{
+  Point p(10.0, -8.0);
+
+  // 対称範囲 [-5, 5] x [-5, 5]
+  auto p_sym = clampPoint(p, 5.0, 5.0);
+  EXPECT_DOUBLE_EQ(p_sym.x(), 5.0);
+  EXPECT_DOUBLE_EQ(p_sym.y(), -5.0);
+
+  // 任意範囲 [min_x, max_x] x [min_y, max_y]
+  auto p_range = clampPoint(p, 0.0, 8.0, -5.0, 5.0);
+  EXPECT_DOUBLE_EQ(p_range.x(), 8.0);
+  EXPECT_DOUBLE_EQ(p_range.y(), -5.0);
+
+  // Box によるクランプ
+  Box box{Point(-2.0, -3.0), Point(4.0, 6.0)};
+  auto p_box = clampPoint(p, box);
+  EXPECT_DOUBLE_EQ(p_box.x(), 4.0);
+  EXPECT_DOUBLE_EQ(p_box.y(), -3.0);
+}
 }  // namespace crane

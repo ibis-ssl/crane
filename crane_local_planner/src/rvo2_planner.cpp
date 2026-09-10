@@ -581,10 +581,7 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
 
     // 障害物回避を無効にする場合、目標速度をそのまま使う
     if (command.local_planner_config.disable_collision_avoidance) {
-      vel = pref_vel;
-      if (vel.norm() > rvo_sim->getAgentMaxSpeed(original_command.robot_id)) {
-        vel = vel.normalized() * rvo_sim->getAgentMaxSpeed(original_command.robot_id);
-      }
+      vel = clampNorm(pref_vel, rvo_sim->getAgentMaxSpeed(original_command.robot_id));
       addOrUpdatePlanningFactor(command, "RVO2CollisionAvoidance", "DISABLED");
     } else {
       addOrUpdatePlanningFactor(command, "RVO2CollisionAvoidance", "ENABLED");
@@ -740,8 +737,7 @@ auto RVO2Planner::adjustForFieldBoundary(
     target_pos = *closest;
   } else {
     // 交点がない場合（現在位置がフィールド外など）、単純なクランプにフォールバック
-    target_pos.x() = std::clamp(target_pos.x(), -max_x, max_x);
-    target_pos.y() = std::clamp(target_pos.y(), -max_y, max_y);
+    target_pos = clampPoint(target_pos, max_x, max_y);
   }
 }
 
@@ -915,8 +911,7 @@ auto RVO2Planner::adjustForPlacementAvoidance(
       if (not world_model->point_checker.isFieldInside(target_pos, 0.2)) {
         const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
         const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
-        target_pos.x() = std::clamp(target_pos.x(), -max_x, max_x);
-        target_pos.y() = std::clamp(target_pos.y(), -max_y, max_y);
+        target_pos = clampPoint(target_pos, max_x, max_y);
       }
     }
   }

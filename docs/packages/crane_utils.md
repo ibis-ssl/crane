@@ -14,8 +14,10 @@
 
 ### 時間計測 (`time.hpp`)
 
-- `getDiffSec()`: 2つの時刻間の差分計算（秒単位）
-- `getElapsedSec()`: 開始時刻からの経過時間計算
+- `getDiffSec()`: 2つの時刻間の差分計算（秒単位、`std::chrono`, `rclcpp::Time`, `builtin_interfaces::msg::Time` に対応）
+- `getElapsedSec()`: 開始時刻からの経過時間計算（`std::chrono`, `rclcpp::Time`, `builtin_interfaces::msg::Time` に対応）
+- `isTimeout()`: 経過時間が指定秒数を超過したかの判定（タイムアウトチェック）
+- `isValidTime()`: タイムスタンプが有効値（非ゼロ）かの判定
 - `ScopedTimer`: スコープベースの自動時間計測とROS 2トピック発行
 
 ### ROSパラメータ操作 (`parameter.hpp`)
@@ -57,12 +59,22 @@ std::cout << data << std::endl;  // 出力: [1,2,3]
 
 ```cpp
 namespace crane {
+  // std::chrono 用
   template<typename TClock>
   double getDiffSec(std::chrono::time_point<TClock> start,
                     std::chrono::time_point<TClock> end);
-
   template<typename TClock>
   double getElapsedSec(std::chrono::time_point<TClock> start);
+
+  // ROS 2 (rclcpp::Time / builtin_interfaces::msg::Time) 用
+  double getDiffSec(const rclcpp::Time & t1, const rclcpp::Time & t2);
+  double getDiffSec(const builtin_interfaces::msg::Time & t1, const builtin_interfaces::msg::Time & t2);
+  double getElapsedSec(const rclcpp::Time & start, const rclcpp::Time & now);
+  double getElapsedSec(const builtin_interfaces::msg::Time & start, const rclcpp::Time & now);
+  bool isTimeout(const rclcpp::Time & start, double timeout_sec, const rclcpp::Time & now);
+  bool isTimeout(const builtin_interfaces::msg::Time & start, double timeout_sec, const rclcpp::Time & now);
+  bool isValidTime(const rclcpp::Time & stamp);
+  bool isValidTime(const builtin_interfaces::msg::Time & stamp);
 
   class ScopedTimer {
     explicit ScopedTimer(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub);
@@ -76,11 +88,22 @@ namespace crane {
 ```cpp
 #include <crane_utils/time.hpp>
 
-// 時間差分計算
+// std::chrono による時間差分計算
 auto start = std::chrono::high_resolution_clock::now();
 // ... 処理 ...
 auto end = std::chrono::high_resolution_clock::now();
 double elapsed = crane::getDiffSec(start, end);
+
+// ROS 2 rclcpp::Time による経過時間・タイムアウト判定
+auto now = this->now();
+if (crane::isTimeout(last_update_time, 1.0, now)) {
+  RCLCPP_WARN(get_logger(), "タイムアウト: 経過 %.1fs", crane::getElapsedSec(last_update_time, now));
+}
+
+// タイムスタンプ有効性チェック
+if (crane::isValidTime(msg->header.stamp)) {
+  double age = crane::getElapsedSec(msg->header.stamp, now);
+}
 
 // スコープタイマー（自動計測＋ROS 2発行）
 {
