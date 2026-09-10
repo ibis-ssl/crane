@@ -28,6 +28,12 @@
 - 多重宣言防止（すでに宣言済みの場合でも例外を投げず値を取得）
 - 文字列リテラルの自動対応（`const char*` を安全に `std::string` パラメータとして処理）
 
+### パッケージパス解決 (`package.hpp`)
+
+- `get_package_share_path()`: パッケージの share ディレクトリパスを安全に取得（取得失敗時は `std::nullopt`）
+- `resolve_package_path()`: 設定ファイルやアセット等のパッケージ相対パスを安全に解決（空や絶対パスは保持、失敗時はフォールバック）
+- ロガー付きオーバーロード（失敗時に WARN ログを出力）
+
 ## アーキテクチャ上の役割
 
 **依存レイヤ**: ユーティリティ層（Layer 2）
@@ -146,11 +152,47 @@ crane::get_or_declare_parameter(node, "max_speed", max_speed);
 std::string team_name = crane::get_or_declare_parameter(this, "team_name", "ibis-ssl");
 ```
 
+### package.hpp
+
+```cpp
+namespace crane {
+  // パッケージの share ディレクトリパス取得（失敗時 nullopt）
+  std::optional<std::filesystem::path> get_package_share_path(const std::string & package_name);
+
+  // パッケージ相対パスの安全な解決
+  std::filesystem::path resolve_package_path(
+    const std::string & package_name,
+    const std::filesystem::path & path,
+    const std::filesystem::path & sub_dir = "config");
+
+  // ロガー付きオーバーロード（失敗時に WARN ログ出力）
+  std::filesystem::path resolve_package_path(
+    const rclcpp::Logger & logger,
+    const std::string & package_name,
+    const std::filesystem::path & path,
+    const std::filesystem::path & sub_dir = "config");
+}
+```
+
+**使用例**:
+
+```cpp
+#include <crane_utils/package.hpp>
+
+// パッケージ share ディレクトリ配下の config/unified_session_config.yaml を解決
+auto config_path = crane::resolve_package_path(
+  get_logger(), "crane_session_coordinator", "unified_session_config.yaml");
+
+// パッケージ share ディレクトリのパスを取得
+auto share_path = crane::get_package_share_path("crane_sessions");
+```
+
 ## 依存関係
 
 ### ビルド依存
 
 - `ament_cmake_auto`
+- `ament_index_cpp`
 - `rclcpp`
 - `std_msgs`
 

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_sessions/ball_placement_skill_session.hpp>
+#include <crane_utils/package.hpp>
 #include <robocup_ssl_msgs/msg/game_event_type.hpp>
 
 namespace crane
@@ -27,9 +27,7 @@ std::filesystem::path BallPlacementSkillSession::resolveHistoryFilePath() const
   // unified_session_config.yaml と同様に package_share_directory/config から解決する。
   // その上で symlink-install 環境では実体パスへ解決し、src 側のファイルを直接更新する。
   const auto config_path =
-    std::filesystem::path(
-      ament_index_cpp::get_package_share_directory("crane_session_coordinator")) /
-    "config" / "ball_placement_history.yaml";
+    crane::resolve_package_path("crane_session_coordinator", "ball_placement_history.yaml");
   try {
     return std::filesystem::weakly_canonical(config_path);
   } catch (const std::exception &) {

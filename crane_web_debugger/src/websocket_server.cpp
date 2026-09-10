@@ -15,7 +15,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <atomic>
 #include <boost/asio.hpp>
 #include <cctype>
@@ -30,6 +29,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_utils/package.hpp>
 #include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
@@ -1285,9 +1285,9 @@ private:
   void loadSituationNames()
   {
     try {
-      auto share_dir = ament_index_cpp::get_package_share_directory("crane_session_coordinator");
-      std::string config_path = share_dir + "/config/unified_session_config.yaml";
-      YAML::Node config = YAML::LoadFile(config_path);
+      auto config_path = crane::resolve_package_path(
+        this->get_logger(), "crane_session_coordinator", "unified_session_config.yaml");
+      YAML::Node config = YAML::LoadFile(config_path.string());
       std::lock_guard<std::mutex> lock(injection_mutex_);
       cached_situation_names_.clear();
       if (config["situations"]) {

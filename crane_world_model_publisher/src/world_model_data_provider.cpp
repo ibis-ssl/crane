@@ -11,10 +11,10 @@
 #include <sys/socket.h>
 #include <yaml-cpp/yaml.h>
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_utils/package.hpp>
 #include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <filesystem>
@@ -124,20 +124,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   std::string field_geometry_config_path =
     crane::get_or_declare_parameter(node, "field_geometry_config_path", "");
   if (!field_geometry_config_path.empty()) {
-    // ファイル名だけの場合はconfigディレクトリと結合
-    std::string full_config_path = field_geometry_config_path;
-    if (!std::filesystem::path(field_geometry_config_path).is_absolute()) {
-      try {
-        std::string package_share_dir =
-          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-        full_config_path =
-          std::filesystem::path(package_share_dir) / "config" / field_geometry_config_path;
-      } catch (const std::exception & ex) {
-        RCLCPP_WARN(
-          node.get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
-      }
-    }
+    std::string full_config_path = crane::resolve_package_path(
+      node.get_logger(), "crane_world_model_publisher", field_geometry_config_path);
 
     if (loadFieldGeometryFromConfig(full_config_path)) {
       geometry_initialized = true;
