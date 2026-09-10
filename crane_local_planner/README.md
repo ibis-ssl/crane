@@ -1,1 +1,1 @@
-/home/hans/workspace/ibis_ws/src/crane/docs/packages/./crane_local_planner.md
+../docs/packages/crane_local_planner.md
