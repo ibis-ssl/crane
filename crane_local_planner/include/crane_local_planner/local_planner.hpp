@@ -13,6 +13,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/kicker_model.hpp>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -37,12 +38,11 @@ public:
       this, "local_planner", "local_planner/path_planning", this,
       &LocalPlannerComponent::updateDiagnostics)
   {
-    declare_parameter("planner", "rvo2");
-    auto planner_str = get_parameter("planner").as_string();
+    auto planner_str = crane::get_or_declare_parameter(this, "planner", "rvo2");
 
     // KickerModel初期化（YAML設定ファイルから読み込み）
-    declare_parameter<std::string>("kicker_physics_config", "");
-    std::string kicker_config_path = get_parameter("kicker_physics_config").as_string();
+    std::string kicker_config_path =
+      crane::get_or_declare_parameter(this, "kicker_physics_config", "");
     try {
       if (!kicker_config_path.empty()) {
         kicker_model_ = createKickerModelFromYAML(kicker_config_path);
@@ -70,9 +70,8 @@ public:
     }
 
     // 練習用モードの設定
-    bool half_court_practice_mode = false;
-    declare_parameter("half_court_practice_mode", half_court_practice_mode);
-    get_parameter("half_court_practice_mode", half_court_practice_mode);
+    bool half_court_practice_mode =
+      crane::get_or_declare_parameter(this, "half_court_practice_mode", false);
 
     if (half_court_practice_mode) {
       theta_offset = -M_PI / 2.;
@@ -80,8 +79,7 @@ public:
       theta_offset = 0.;
     }
 
-    declare_parameter("update_rate_hz", 60.0);
-    const auto update_rate_hz = get_parameter("update_rate_hz").as_double();
+    const auto update_rate_hz = crane::get_or_declare_parameter(this, "update_rate_hz", 60.0);
     const bool callback_driven = update_rate_hz <= 0.0;
 
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(

@@ -15,6 +15,7 @@
 #include "robocup_ssl_comm/vision_component.hpp"
 
 #include <chrono>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -27,18 +28,13 @@ namespace robocup_ssl_comm
 {
 Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
-  declare_parameter("multicast_address", "224.5.23.2");
-  declare_parameter("multicast_port", 10020);
-  declare_parameter("publish_interval_ms", 25);
-  declare_parameter("max_camera_age_ms", 100);
-
+  const std::string multicast_address =
+    crane::get_or_declare_parameter(this, "multicast_address", "224.5.23.2");
+  const int multicast_port = crane::get_or_declare_parameter(this, "multicast_port", 10020);
   publish_interval_ms_ =
-    std::chrono::milliseconds(get_parameter("publish_interval_ms").get_value<int>());
+    std::chrono::milliseconds(crane::get_or_declare_parameter(this, "publish_interval_ms", 25));
   max_camera_age_ms_ =
-    std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
-
-  const std::string multicast_address = get_parameter("multicast_address").get_value<std::string>();
-  const int multicast_port = get_parameter("multicast_port").get_value<int>();
+    std::chrono::milliseconds(crane::get_or_declare_parameter(this, "max_camera_age_ms", 100));
 
   receiver = std::make_unique<crane::AsyncUdpReceiver>(
     asio_ctx_.io_context, multicast_address, multicast_port);

@@ -7,6 +7,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_physics/ball_physics_model.hpp>
 #include <crane_physics/kicker_model.hpp>
+#include <crane_utils/parameter.hpp>
 #include <filesystem>
 #include <format>
 #include <rclcpp/rclcpp.hpp>
@@ -30,25 +31,17 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  // パラメータの設定
-  declare_parameter("ball_idle.threshold_duration", 5.0);
-  declare_parameter("ball_idle.move_distance_threshold_meter", 0.05);
-  declare_parameter("robot_collision.velocity_threshold", 1.0);
-  declare_parameter("robot_collision.distance_threshold", 0.2);
-  declare_parameter("robot_collision.time_window", 0.5);
-  declare_parameter("ball_physics_config_path", std::string(""));
-  declare_parameter("kicker_physics_config_path", std::string(""));
-
-  // パラメータの読み込み
-  config.ball_idle.threshold_duration =
-    rclcpp::Duration::from_seconds(get_parameter("ball_idle.threshold_duration").as_double());
+  // パラメータの設定と読み込み
+  config.ball_idle.threshold_duration = rclcpp::Duration::from_seconds(
+    crane::get_or_declare_parameter(this, "ball_idle.threshold_duration", 5.0));
   config.ball_idle.move_distance_threshold_meter =
-    get_parameter("ball_idle.move_distance_threshold_meter").as_double();
+    crane::get_or_declare_parameter(this, "ball_idle.move_distance_threshold_meter", 0.05);
   config.robot_collision.velocity_threshold =
-    get_parameter("robot_collision.velocity_threshold").as_double();
+    crane::get_or_declare_parameter(this, "robot_collision.velocity_threshold", 1.0);
   config.robot_collision.distance_threshold =
-    get_parameter("robot_collision.distance_threshold").as_double();
-  config.robot_collision.time_window = get_parameter("robot_collision.time_window").as_double();
+    crane::get_or_declare_parameter(this, "robot_collision.distance_threshold", 0.2);
+  config.robot_collision.time_window =
+    crane::get_or_declare_parameter(this, "robot_collision.time_window", 0.5);
   RCLCPP_DEBUG(
     get_logger(), "  - Velocity threshold: %.2f m/s", config.robot_collision.velocity_threshold);
   RCLCPP_DEBUG(
@@ -77,8 +70,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   };
 
   // キック予測モデル初期化（ongoing_kickの予測トレース生成に使用）
-  std::string ball_physics_config_path;
-  get_parameter("ball_physics_config_path", ball_physics_config_path);
+  std::string ball_physics_config_path =
+    crane::get_or_declare_parameter(this, "ball_physics_config_path", "");
   std::shared_ptr<BallPhysicsModel> ball_physics_model;
   if (!ball_physics_config_path.empty()) {
     auto full_config_path = resolveConfigPath(ball_physics_config_path);
@@ -95,8 +88,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     ball_physics_model = BallPhysicsModelFactory::getInstance();
   }
 
-  std::string kicker_physics_config_path;
-  get_parameter("kicker_physics_config_path", kicker_physics_config_path);
+  std::string kicker_physics_config_path =
+    crane::get_or_declare_parameter(this, "kicker_physics_config_path", "");
   std::shared_ptr<KickerModel> kicker_model;
   if (!kicker_physics_config_path.empty()) {
     auto full_config_path = resolveConfigPath(kicker_physics_config_path);
@@ -161,11 +154,9 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // パスターゲット選定メトリクス
   auto pass_target_metric = std::make_shared<metrics::PassTargetMetric>();
   // パラメータ設定
-  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
-  declare_parameter("pass_target.min_improvement_margin", 0.2);
-  double min_hold = 0.5, min_improve = 0.2;
-  get_parameter("pass_target.min_hold_duration_sec", min_hold);
-  get_parameter("pass_target.min_improvement_margin", min_improve);
+  double min_hold = crane::get_or_declare_parameter(this, "pass_target.min_hold_duration_sec", 0.5);
+  double min_improve =
+    crane::get_or_declare_parameter(this, "pass_target.min_improvement_margin", 0.2);
   pass_target_metric->setHysteresisParams(min_hold, min_improve);
   metric_engine_->registerMetric(pass_target_metric);
 

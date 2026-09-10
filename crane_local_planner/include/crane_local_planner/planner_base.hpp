@@ -10,6 +10,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
 
@@ -24,12 +25,10 @@ public:
     world_model = std::make_shared<WorldModelWrapper>(node);
 
     // 経路計画用の減速度パラメータを読み込み
-    node.declare_parameter("planning_deceleration", 2.5);
-    planning_deceleration = node.get_parameter("planning_deceleration").as_double();
+    planning_deceleration = crane::get_or_declare_parameter(node, "planning_deceleration", 2.5);
 
     // 経路計画用の加速度パラメータを読み込み（減速度とは別に設定）
-    node.declare_parameter("planning_acceleration", 5.0);
-    planning_acceleration = node.get_parameter("planning_acceleration").as_double();
+    planning_acceleration = crane::get_or_declare_parameter(node, "planning_acceleration", 5.0);
   }
   virtual auto calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, double theta_offset)

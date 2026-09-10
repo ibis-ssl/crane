@@ -15,6 +15,7 @@
 #include "robocup_ssl_comm/tracker_component.hpp"
 
 #include <chrono>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -27,10 +28,9 @@ namespace robocup_ssl_comm
 {
 Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
-  declare_parameter("multicast_address", "224.5.23.2");
-  declare_parameter("multicast_port", 10010);
-  const std::string address = get_parameter("multicast_address").get_value<std::string>();
-  const int port = get_parameter("multicast_port").get_value<int>();
+  const std::string address =
+    crane::get_or_declare_parameter(this, "multicast_address", "224.5.23.2");
+  const int port = crane::get_or_declare_parameter(this, "multicast_port", 10010);
 
   receiver = std::make_unique<crane::AsyncUdpReceiver>(asio_ctx_.io_context, address, port);
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {

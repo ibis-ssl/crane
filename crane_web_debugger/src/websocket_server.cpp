@@ -30,6 +30,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <deque>
@@ -317,8 +318,7 @@ class WebSocketDebugServer : public rclcpp::Node
 public:
   WebSocketDebugServer() : Node("websocket_debug_server"), websocket_port_(8091)
   {
-    this->declare_parameter("websocket_port", 8091);
-    websocket_port_ = this->get_parameter("websocket_port").as_int();
+    websocket_port_ = crane::get_or_declare_parameter(this, "websocket_port", 8091);
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(

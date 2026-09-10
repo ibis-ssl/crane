@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_utils/time.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
@@ -25,8 +26,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
   process_time_pub = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
-  declare_parameter<std::string>("team_name", "ibis");
-  team_name = get_parameter("team_name").as_string();
+  team_name = crane::get_or_declare_parameter(this, "team_name", "ibis");
 
   decoded_referee_sub = create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });

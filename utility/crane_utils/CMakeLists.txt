@@ -28,6 +28,9 @@ if(BUILD_TESTING)
   # Utility tests
   ament_auto_add_gtest(test_time test/test_time.cpp)
   target_include_directories(test_time PUBLIC include)
+
+  ament_auto_add_gtest(test_parameter test/test_parameter.cpp)
+  target_include_directories(test_parameter PUBLIC include)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

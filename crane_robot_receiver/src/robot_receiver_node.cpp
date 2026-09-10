@@ -11,6 +11,7 @@
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <format>
@@ -335,11 +336,11 @@ public:
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     // パラメータの宣言と取得
-    int max_robot_id = declare_parameter("max_robot_id", 15);
-    bool sim_mode = declare_parameter("sim_mode", false);
-    std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
-    int port_base = declare_parameter("port_base", 50100);
-    int ip_offset = declare_parameter("ip_octet_offset", 100);
+    int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 15);
+    bool sim_mode = crane::get_or_declare_parameter(this, "sim_mode", false);
+    std::string ip_base = crane::get_or_declare_parameter(this, "multicast_ip_base", "224.5.20");
+    int port_base = crane::get_or_declare_parameter(this, "port_base", 50100);
+    int ip_offset = crane::get_or_declare_parameter(this, "ip_octet_offset", 100);
 
     RCLCPP_INFO(
       get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,

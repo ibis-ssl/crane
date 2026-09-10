@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -29,10 +30,9 @@ namespace robocup_ssl_comm
 GameController::GameController(const rclcpp::NodeOptions & options)
 : Node("game_controller", options)
 {
-  declare_parameter("multicast_address", "224.5.23.1");
-  declare_parameter("multicast_port", 10003);
-  const std::string address = get_parameter("multicast_address").get_value<std::string>();
-  const int port = get_parameter("multicast_port").get_value<int>();
+  const std::string address =
+    crane::get_or_declare_parameter(this, "multicast_address", "224.5.23.1");
+  const int port = crane::get_or_declare_parameter(this, "multicast_port", 10003);
 
   receiver = std::make_unique<crane::AsyncUdpReceiver>(asio_ctx_.io_context, address, port);
   receiver->startReceive([this](const std::vector<char> & buf, size_t size) {
