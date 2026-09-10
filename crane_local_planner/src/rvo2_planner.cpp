@@ -10,6 +10,7 @@
 #include <array>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstdint>
 #include <iomanip>
@@ -61,38 +62,25 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   acceleration_factor("acceleration_factor", node, 1.5),
   velocity_damping_gain("velocity_damping_gain", node, 0.5)
 {
-  node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
-  RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
-  node.declare_parameter("rvo_neighbor_dist", RVO_NEIGHBOR_DIST);
-  RVO_NEIGHBOR_DIST = node.get_parameter("rvo_neighbor_dist").as_double();
-  node.declare_parameter("rvo_max_neighbors", RVO_MAX_NEIGHBORS);
-  RVO_MAX_NEIGHBORS = node.get_parameter("rvo_max_neighbors").as_int();
-  node.declare_parameter("rvo_time_horizon", RVO_TIME_HORIZON);
-  RVO_TIME_HORIZON = node.get_parameter("rvo_time_horizon").as_double();
-  node.declare_parameter("rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
-  RVO_TIME_HORIZON_OBST = node.get_parameter("rvo_time_horizon_obst").as_double();
-  node.declare_parameter("rvo_radius", RVO_RADIUS);
-  RVO_RADIUS = node.get_parameter("rvo_radius").as_double();
-  node.declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
-  RVO_MAX_SPEED = node.get_parameter("rvo_max_speed").as_double();
+  crane::get_or_declare_parameter(node, "rvo_time_step", RVO_TIME_STEP);
+  crane::get_or_declare_parameter(node, "rvo_neighbor_dist", RVO_NEIGHBOR_DIST);
+  crane::get_or_declare_parameter(node, "rvo_max_neighbors", RVO_MAX_NEIGHBORS);
+  crane::get_or_declare_parameter(node, "rvo_time_horizon", RVO_TIME_HORIZON);
+  crane::get_or_declare_parameter(node, "rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
+  crane::get_or_declare_parameter(node, "rvo_radius", RVO_RADIUS);
+  crane::get_or_declare_parameter(node, "rvo_max_speed", RVO_MAX_SPEED);
 
-  node.declare_parameter("max_vel", MAX_VEL);
-  MAX_VEL = node.get_parameter("max_vel").as_double();
+  crane::get_or_declare_parameter(node, "max_vel", MAX_VEL);
 
-  node.declare_parameter("stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
-  STOP_STATE_MAX_VELOCITY = node.get_parameter("stop_state_max_velocity").as_double();
+  crane::get_or_declare_parameter(node, "stop_state_max_velocity", STOP_STATE_MAX_VELOCITY);
 
-  node.declare_parameter("field_boundary_offset", FIELD_BOUNDARY_OFFSET);
-  FIELD_BOUNDARY_OFFSET = node.get_parameter("field_boundary_offset").as_double();
+  crane::get_or_declare_parameter(node, "field_boundary_offset", FIELD_BOUNDARY_OFFSET);
 
-  node.declare_parameter("crash_speed_limit", CRASH_SPEED_LIMIT);
-  CRASH_SPEED_LIMIT = node.get_parameter("crash_speed_limit").as_double();
-  node.declare_parameter("crash_safety_margin", CRASH_SAFETY_MARGIN);
-  CRASH_SAFETY_MARGIN = node.get_parameter("crash_safety_margin").as_double();
-  node.declare_parameter("crash_avoidance_distance", CRASH_AVOIDANCE_DISTANCE);
-  CRASH_AVOIDANCE_DISTANCE = node.get_parameter("crash_avoidance_distance").as_double();
-  node.declare_parameter("crash_avoidance_decel_distance", CRASH_AVOIDANCE_DECEL_DISTANCE);
-  CRASH_AVOIDANCE_DECEL_DISTANCE = node.get_parameter("crash_avoidance_decel_distance").as_double();
+  crane::get_or_declare_parameter(node, "crash_speed_limit", CRASH_SPEED_LIMIT);
+  crane::get_or_declare_parameter(node, "crash_safety_margin", CRASH_SAFETY_MARGIN);
+  crane::get_or_declare_parameter(node, "crash_avoidance_distance", CRASH_AVOIDANCE_DISTANCE);
+  crane::get_or_declare_parameter(
+    node, "crash_avoidance_decel_distance", CRASH_AVOIDANCE_DECEL_DISTANCE);
   if (CRASH_AVOIDANCE_DISTANCE <= CRASH_AVOIDANCE_DECEL_DISTANCE) {
     RCLCPP_ERROR(
       node.get_logger(),
@@ -103,17 +91,12 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     CRASH_AVOIDANCE_DECEL_DISTANCE = 0.5;
   }
 
-  node.declare_parameter("penalty_area_offset", PENALTY_AREA_OFFSET);
-  PENALTY_AREA_OFFSET = node.get_parameter("penalty_area_offset").as_double();
-  node.declare_parameter("penalty_area_surrounding_offset", PENALTY_AREA_SURROUNDING_OFFSET);
-  PENALTY_AREA_SURROUNDING_OFFSET =
-    node.get_parameter("penalty_area_surrounding_offset").as_double();
-  node.declare_parameter(
-    "penalty_area_force_waypoint_on_crossing", PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
-  PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING =
-    node.get_parameter("penalty_area_force_waypoint_on_crossing").as_bool();
-  node.declare_parameter("enable_velocity_plan_trace", false);
-  enable_velocity_plan_trace = node.get_parameter("enable_velocity_plan_trace").as_bool();
+  crane::get_or_declare_parameter(node, "penalty_area_offset", PENALTY_AREA_OFFSET);
+  crane::get_or_declare_parameter(
+    node, "penalty_area_surrounding_offset", PENALTY_AREA_SURROUNDING_OFFSET);
+  crane::get_or_declare_parameter(
+    node, "penalty_area_force_waypoint_on_crossing", PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
+  crane::get_or_declare_parameter(node, "enable_velocity_plan_trace", enable_velocity_plan_trace);
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,

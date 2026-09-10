@@ -17,6 +17,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_utils/parameter.hpp>
 #include <format>
 #include <iomanip>
 #include <iostream>
@@ -92,8 +93,7 @@ public:
     broadcast_socket_(
       broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
-    declare_parameter("debug_id", -1);
-    get_parameter("debug_id", debug_id);
+    crane::get_or_declare_parameter(this, "debug_id", debug_id);
 
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
@@ -106,32 +106,26 @@ public:
       });
 
     // packet_type パラメータ: ibis / ssl / grsim
-    declare_parameter("packet_type", std::string("ibis"));
-    const std::string packet_type_str = get_parameter("packet_type").as_string();
+    const std::string packet_type_str =
+      crane::get_or_declare_parameter(this, "packet_type", "ibis");
 
     // 送信先アドレスとポートの設定
-    declare_parameter("target_address", std::string(CommConfig::BROADCAST_ADDRESS));
-    declare_parameter("target_port", CommConfig::DEFAULT_PORT);
-    declare_parameter("theta_p_gain", theta_p_gain_);
-    declare_parameter("chip_angle_deg", chip_angle_deg_);
-    declare_parameter("position_control.kp", position_controller_config_.position_gain);
-    declare_parameter("position_control.deceleration", position_controller_config_.deceleration);
-
-    const std::string target_address = get_parameter("target_address").as_string();
-    const int target_port = get_parameter("target_port").as_int();
-    theta_p_gain_ = get_parameter("theta_p_gain").as_double();
-    chip_angle_deg_ = get_parameter("chip_angle_deg").as_double();
-    position_controller_config_.position_gain = get_parameter("position_control.kp").as_double();
-    position_controller_config_.deceleration =
-      get_parameter("position_control.deceleration").as_double();
+    const std::string target_address =
+      crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
+    const int target_port =
+      crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
+    crane::get_or_declare_parameter(this, "theta_p_gain", theta_p_gain_);
+    crane::get_or_declare_parameter(this, "chip_angle_deg", chip_angle_deg_);
+    crane::get_or_declare_parameter(
+      this, "position_control.kp", position_controller_config_.position_gain);
+    crane::get_or_declare_parameter(
+      this, "position_control.deceleration", position_controller_config_.deceleration);
 
     if (packet_type_str == "ssl") {
       packet_type_ = PacketType::SSL;
       // SSL制御ポートはgrSimの標準ポートを使用（target_addressのホストに送信）
-      declare_parameter("ssl_blue_port", 10301);
-      declare_parameter("ssl_yellow_port", 10302);
-      const int blue_port = get_parameter("ssl_blue_port").as_int();
-      const int yellow_port = get_parameter("ssl_yellow_port").as_int();
+      const int blue_port = crane::get_or_declare_parameter(this, "ssl_blue_port", 10301);
+      const int yellow_port = crane::get_or_declare_parameter(this, "ssl_yellow_port", 10302);
       ssl_blue_sender_ = std::make_unique<UDPSender>(target_address, blue_port);
       ssl_yellow_sender_ = std::make_unique<UDPSender>(target_address, yellow_port);
       RCLCPP_INFO(
@@ -139,8 +133,7 @@ public:
         target_address.c_str(), blue_port, target_address.c_str(), yellow_port);
     } else if (packet_type_str == "grsim") {
       packet_type_ = PacketType::GRSIM;
-      declare_parameter("grsim_port", 20011);
-      const int grsim_port = get_parameter("grsim_port").as_int();
+      const int grsim_port = crane::get_or_declare_parameter(this, "grsim_port", 20011);
       grsim_sender_ = std::make_unique<UDPSender>(target_address, grsim_port);
       RCLCPP_INFO(
         get_logger(), "ibis_sender_node started [packet_type=grsim] (%s:%d)",

@@ -10,6 +10,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_utils/parameter.hpp>
 #include <limits>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
@@ -39,42 +40,27 @@ auto closestPointOnSegment(const Point & point, const Point & from, const Point 
 VisibilityGraphPlanner::VisibilityGraphPlanner(rclcpp::Node & node)
 : LocalPlannerBase("visibility_graph_planner", node)
 {
-  node.declare_parameter("max_vel", max_velocity_);
-  max_velocity_ = node.get_parameter("max_vel").as_double();
-  node.declare_parameter("stop_state_max_velocity", stop_state_max_velocity_);
-  stop_state_max_velocity_ = node.get_parameter("stop_state_max_velocity").as_double();
-  node.declare_parameter("field_boundary_offset", field_boundary_offset_);
-  field_boundary_offset_ = node.get_parameter("field_boundary_offset").as_double();
-  node.declare_parameter("penalty_area_offset", penalty_area_offset_);
-  penalty_area_offset_ = node.get_parameter("penalty_area_offset").as_double();
-  node.declare_parameter("penalty_area_offset_stop", penalty_area_offset_stop_);
-  penalty_area_offset_stop_ = node.get_parameter("penalty_area_offset_stop").as_double();
+  crane::get_or_declare_parameter(node, "max_vel", max_velocity_);
+  crane::get_or_declare_parameter(node, "stop_state_max_velocity", stop_state_max_velocity_);
+  crane::get_or_declare_parameter(node, "field_boundary_offset", field_boundary_offset_);
+  crane::get_or_declare_parameter(node, "penalty_area_offset", penalty_area_offset_);
+  crane::get_or_declare_parameter(node, "penalty_area_offset_stop", penalty_area_offset_stop_);
 
-  node.declare_parameter("visibility_graph.prediction_horizon", prediction_horizon_);
-  prediction_horizon_ = node.get_parameter("visibility_graph.prediction_horizon").as_double();
-  node.declare_parameter("visibility_graph.safety_margin", safety_margin_);
-  safety_margin_ = node.get_parameter("visibility_graph.safety_margin").as_double();
-  node.declare_parameter("visibility_graph.lookahead_distance", lookahead_distance_);
-  lookahead_distance_ = node.get_parameter("visibility_graph.lookahead_distance").as_double();
-  node.declare_parameter(
-    "visibility_graph.replan_cross_track_distance", replan_cross_track_distance_);
-  replan_cross_track_distance_ =
-    node.get_parameter("visibility_graph.replan_cross_track_distance").as_double();
-  node.declare_parameter(
-    "visibility_graph.route_switch_improvement_ratio", route_switch_improvement_ratio_);
-  route_switch_improvement_ratio_ =
-    node.get_parameter("visibility_graph.route_switch_improvement_ratio").as_double();
-  node.declare_parameter("visibility_graph.goal_change_threshold", goal_change_threshold_);
-  goal_change_threshold_ = node.get_parameter("visibility_graph.goal_change_threshold").as_double();
-  node.declare_parameter("visibility_graph.full_replan_interval", full_replan_interval_);
-  full_replan_interval_ = node.get_parameter("visibility_graph.full_replan_interval").as_double();
+  crane::get_or_declare_parameter(node, "visibility_graph.prediction_horizon", prediction_horizon_);
+  crane::get_or_declare_parameter(node, "visibility_graph.safety_margin", safety_margin_);
+  crane::get_or_declare_parameter(node, "visibility_graph.lookahead_distance", lookahead_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.replan_cross_track_distance", replan_cross_track_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.route_switch_improvement_ratio", route_switch_improvement_ratio_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.goal_change_threshold", goal_change_threshold_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.full_replan_interval", full_replan_interval_);
 
-  int circle_samples = 12;
-  int capsule_end_samples = 6;
-  node.declare_parameter("visibility_graph.circle_samples", circle_samples);
-  node.declare_parameter("visibility_graph.capsule_end_samples", capsule_end_samples);
-  circle_samples = node.get_parameter("visibility_graph.circle_samples").as_int();
-  capsule_end_samples = node.get_parameter("visibility_graph.capsule_end_samples").as_int();
+  int circle_samples = crane::get_or_declare_parameter(node, "visibility_graph.circle_samples", 12);
+  int capsule_end_samples =
+    crane::get_or_declare_parameter(node, "visibility_graph.capsule_end_samples", 6);
   visibility_graph_.configure({circle_samples, capsule_end_samples, 1e-3});
 }
 

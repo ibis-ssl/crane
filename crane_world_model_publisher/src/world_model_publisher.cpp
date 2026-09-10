@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
@@ -52,9 +53,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         msg, field_w, field_h, data_provider_->getLatestPlaySituation().command.name);
     });
 
-  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
-  std::string robot_id_mask_str;
-  get_parameter("robot_id_mask", robot_id_mask_str);
+  auto robot_id_mask_str = crane::get_or_declare_parameter(this, "robot_id_mask", "1, 2, 3");
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
   // game_analysisを購読して、world_modelに引き継ぐ

@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <crane_comm/unicast.hpp>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <mutex>
 #include <range/v3/algorithm/find_if.hpp>
@@ -27,13 +28,10 @@ class GrSimRobotStatusNode : public rclcpp::Node
 public:
   explicit GrSimRobotStatusNode(const rclcpp::NodeOptions & options) : Node("vision", options)
   {
-    declare_parameter("multicast_address", "224.5.23.2");
-    declare_parameter("blue_port", 10301);
-    declare_parameter("yellow_port", 10302);
-
-    const std::string address = get_parameter("multicast_address").get_value<std::string>();
-    const int yellow_port = get_parameter("yellow_port").get_value<int>();
-    const int blue_port = get_parameter("blue_port").get_value<int>();
+    const std::string address =
+      crane::get_or_declare_parameter(this, "multicast_address", "224.5.23.2");
+    const int blue_port = crane::get_or_declare_parameter(this, "blue_port", 10301);
+    const int yellow_port = crane::get_or_declare_parameter(this, "yellow_port", 10302);
 
     yellow_receiver =
       std::make_unique<crane::AsyncUdpReceiver>(asio_ctx_.io_context, address, yellow_port);

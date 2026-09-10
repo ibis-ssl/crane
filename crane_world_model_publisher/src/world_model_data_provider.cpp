@@ -15,6 +15,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
@@ -39,23 +40,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 {
   using std::chrono_literals::operator""ms;
 
-  // VisionStreamProcessorの機能を統合：パラメータ設定
-  node.declare_parameter("vision_address", config_.vision_address);
-  node.declare_parameter("vision_port", config_.vision_port);
-  node.declare_parameter("confidence_threshold", config_.confidence_threshold);
+  // VisionStreamProcessorの機能を統合：パラメータ設定と取得
+  crane::get_or_declare_parameter(node, "vision_address", config_.vision_address);
+  crane::get_or_declare_parameter(node, "vision_port", config_.vision_port);
+  crane::get_or_declare_parameter(node, "confidence_threshold", config_.confidence_threshold);
   // Tracker/legacy切替パラメータ
-  node.declare_parameter("tracker_address", std::string("224.5.23.2"));
-  node.declare_parameter("tracker_port", 10010);
-  node.declare_parameter("use_udp_detection", false);
-  node.declare_parameter("feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
-  node.declare_parameter("robot_vision_hold_sec", robot_vision_hold_sec_);
-
-  config_.vision_address = node.get_parameter("vision_address").get_value<std::string>();
-  config_.vision_port = node.get_parameter("vision_port").get_value<int>();
-  config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
-  use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
-  feedback_stale_timeout_ms_ = node.get_parameter("feedback_stale_timeout_ms").get_value<int>();
-  robot_vision_hold_sec_ = node.get_parameter("robot_vision_hold_sec").get_value<double>();
+  config_.tracker_address = crane::get_or_declare_parameter(node, "tracker_address", "224.5.23.2");
+  config_.tracker_port = crane::get_or_declare_parameter(node, "tracker_port", 10010);
+  use_udp_detection_ = crane::get_or_declare_parameter(node, "use_udp_detection", false);
+  crane::get_or_declare_parameter(node, "feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
+  crane::get_or_declare_parameter(node, "robot_vision_hold_sec", robot_vision_hold_sec_);
 
   // Initialize UDP receivers
 
@@ -80,8 +74,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // AsyncUdpReceiver初期化（Tracker UDP）
   try {
-    config_.tracker_address = node.get_parameter("tracker_address").get_value<std::string>();
-    config_.tracker_port = node.get_parameter("tracker_port").get_value<int>();
     tracker_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
       asio_ctx_.io_context, config_.tracker_address, config_.tracker_port);
     tracker_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
@@ -129,9 +121,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   area_mask.max_corner() << 20., 10.;
 
   // フィールドジオメトリ設定ファイルの読み込み
-  node.declare_parameter("field_geometry_config_path", "");
   std::string field_geometry_config_path =
-    node.get_parameter("field_geometry_config_path").as_string();
+    crane::get_or_declare_parameter(node, "field_geometry_config_path", "");
   if (!field_geometry_config_path.empty()) {
     // ファイル名だけの場合はconfigディレクトリと結合
     std::string full_config_path = field_geometry_config_path;
@@ -186,11 +177,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     "/robot_feedback", 1,
     [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { robot_feedback = *msg; });
 
-  node.declare_parameter("team_name", "ibis-ssl");
-  game_data.team_name = node.get_parameter("team_name").as_string();
+  game_data.team_name = crane::get_or_declare_parameter(node, "team_name", "ibis-ssl");
 
-  node.declare_parameter("initial_team_color", "BLUE");
-  auto initial_team_color = node.get_parameter("initial_team_color").as_string();
+  auto initial_team_color = crane::get_or_declare_parameter(node, "initial_team_color", "BLUE");
   if (initial_team_color == "BLUE") {
     game_data.our_color = Color::BLUE;
     game_data.their_color = Color::YELLOW;
@@ -201,8 +190,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     our_team_color_ = TeamColor::YELLOW;
   }
 
-  node.declare_parameter("is_emplace_positive_side", true);
-  is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
+  is_emplace_positive_side =
+    crane::get_or_declare_parameter(node, "is_emplace_positive_side", true);
 
   // 半面練習モード: session coordinator からの /practice_mode トピックを購読
   sub_practice_mode = node.create_subscription<crane_msgs::msg::PracticeMode>(
