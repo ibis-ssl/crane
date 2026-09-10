@@ -329,10 +329,9 @@ private:
     }
 
     // グローバル直交座標 → ロボットローカル直交座標
-    const double target_vx =
-      global_vx * std::cos(current_theta) + global_vy * std::sin(current_theta);
-    const double target_vy =
-      -global_vx * std::sin(current_theta) + global_vy * std::cos(current_theta);
+    const auto target_local_vel = rotate(Vector2(global_vx, global_vy), -current_theta);
+    const double target_vx = target_local_vel.x();
+    const double target_vy = target_local_vel.y();
 
     const auto update_time = std::chrono::steady_clock::now();
     double dt = 1.0 / 60.0;
@@ -344,10 +343,9 @@ private:
       const double offset = command.field_coordinate_theta_offset;
       const auto rotated_current_velocity =
         rotateFieldVector(Vector2(command.current_velocity.x, command.current_velocity.y), offset);
-      state.prev_vx = rotated_current_velocity.x() * std::cos(current_theta) +
-                      rotated_current_velocity.y() * std::sin(current_theta);
-      state.prev_vy = -rotated_current_velocity.x() * std::sin(current_theta) +
-                      rotated_current_velocity.y() * std::cos(current_theta);
+      const auto current_local_vel = rotate(rotated_current_velocity, -current_theta);
+      state.prev_vx = current_local_vel.x();
+      state.prev_vy = current_local_vel.y();
     }
     state.previous_update = update_time;
     state.previous_control_mode = command.control_mode;
@@ -394,7 +392,7 @@ private:
     constexpr double MAX_KICK_SPEED = 8.0;
     const double kick_speed = MAX_KICK_SPEED * kick_power;
     if (chip_enable) {
-      return {kick_speed * 0.5, chip_angle_deg_ * M_PI / 180.0};
+      return {kick_speed * 0.5, deg2rad(chip_angle_deg_)};
     }
     return {kick_speed, 0.0};
   }
@@ -426,7 +424,7 @@ private:
       cmd->set_allocated_move_command(move_command);
 
       const auto kick = computeKick(command.kick_power, command.chip_enable);
-      cmd->set_kick_angle(kick.angle_rad * 180.0 / M_PI);
+      cmd->set_kick_angle(rad2deg(kick.angle_rad));
       cmd->set_kick_speed(kick.speed);
       cmd->set_dribbler_speed(command.dribble_power * 1000.0);
     }

@@ -7,6 +7,7 @@
 #ifndef CRANE_PHYSICS__SLACK_TIME_CONFIG_HPP_
 #define CRANE_PHYSICS__SLACK_TIME_CONFIG_HPP_
 
+#include <crane_utils/parameter.hpp>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -88,20 +89,15 @@ struct SlackTimeConfig
   {
     SlackTimeConfig config;
 
-    config.robot_max_acceleration =
-      node.get_parameter_or(prefix + "robot_max_acceleration", config.robot_max_acceleration);
-    config.robot_max_velocity =
-      node.get_parameter_or(prefix + "robot_max_velocity", config.robot_max_velocity);
-    config.time_horizon = node.get_parameter_or(prefix + "time_horizon", config.time_horizon);
-    config.time_step = node.get_parameter_or(prefix + "time_step", config.time_step);
-    config.slack_time_offset =
-      node.get_parameter_or(prefix + "slack_time_offset", config.slack_time_offset);
-    config.distance_horizon =
-      node.get_parameter_or(prefix + "distance_horizon", config.distance_horizon);
-    config.velocity_epsilon =
-      node.get_parameter_or(prefix + "velocity_epsilon", config.velocity_epsilon);
-    config.circling_radius =
-      node.get_parameter_or(prefix + "circling_radius", config.circling_radius);
+    crane::get_or_declare_parameter(
+      node, prefix + "robot_max_acceleration", config.robot_max_acceleration);
+    crane::get_or_declare_parameter(node, prefix + "robot_max_velocity", config.robot_max_velocity);
+    crane::get_or_declare_parameter(node, prefix + "time_horizon", config.time_horizon);
+    crane::get_or_declare_parameter(node, prefix + "time_step", config.time_step);
+    crane::get_or_declare_parameter(node, prefix + "slack_time_offset", config.slack_time_offset);
+    crane::get_or_declare_parameter(node, prefix + "distance_horizon", config.distance_horizon);
+    crane::get_or_declare_parameter(node, prefix + "velocity_epsilon", config.velocity_epsilon);
+    crane::get_or_declare_parameter(node, prefix + "circling_radius", config.circling_radius);
 
     return config;
   }
@@ -117,14 +113,16 @@ struct SlackTimeConfig
    */
   void declareParameters(rclcpp::Node & node, const std::string & prefix = "slack.") const
   {
-    node.declare_parameter(prefix + "robot_max_acceleration", robot_max_acceleration);
-    node.declare_parameter(prefix + "robot_max_velocity", robot_max_velocity);
-    node.declare_parameter(prefix + "time_horizon", time_horizon);
-    node.declare_parameter(prefix + "time_step", time_step);
-    node.declare_parameter(prefix + "slack_time_offset", slack_time_offset);
-    node.declare_parameter(prefix + "distance_horizon", distance_horizon);
-    node.declare_parameter(prefix + "velocity_epsilon", velocity_epsilon);
-    node.declare_parameter(prefix + "circling_radius", circling_radius);
+    crane::declare_parameter_if_not_declared(
+      node, prefix + "robot_max_acceleration", robot_max_acceleration);
+    crane::declare_parameter_if_not_declared(
+      node, prefix + "robot_max_velocity", robot_max_velocity);
+    crane::declare_parameter_if_not_declared(node, prefix + "time_horizon", time_horizon);
+    crane::declare_parameter_if_not_declared(node, prefix + "time_step", time_step);
+    crane::declare_parameter_if_not_declared(node, prefix + "slack_time_offset", slack_time_offset);
+    crane::declare_parameter_if_not_declared(node, prefix + "distance_horizon", distance_horizon);
+    crane::declare_parameter_if_not_declared(node, prefix + "velocity_epsilon", velocity_epsilon);
+    crane::declare_parameter_if_not_declared(node, prefix + "circling_radius", circling_radius);
   }
 
   /**

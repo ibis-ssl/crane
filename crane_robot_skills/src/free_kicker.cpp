@@ -52,7 +52,7 @@ void FreeKicker::initialize()
   setParameter("approach_position_tolerance", 0.05);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
-  setParameter("shoot_min_angle_rad", 6.0 * M_PI / 180.0);
+  setParameter("shoot_min_angle_rad", deg2rad(6.0));
   setParameter("pass_obstacle_distance", 0.2);
   setParameter("pass_min_distance", 1.5);
   setParameter("pass_max_distance", 6.0);
@@ -213,14 +213,14 @@ bool FreeKicker::tryShoot(Point & out_target)
   // ヒステリシス: 前回シュートを選んだ場合は閾値を少し下げる
   double threshold = getParameter<double>("shoot_min_angle_rad");
   if (last_chose_shoot_) {
-    threshold -= 0.5 * M_PI / 180.0;
+    threshold -= deg2rad(0.5);
   }
 
   if (goal_angle_width > threshold) {
     last_chose_shoot_ = true;
     double shoot_angle =
       GoalKick::getBestAngleToShootFromPoint(3.0, ball_pos, world_model(), visualizer);
-    out_target = ball_pos + Vector2(std::cos(shoot_angle), std::sin(shoot_angle)) * 10.0;
+    out_target = ball_pos + getNormVec(shoot_angle) * 10.0;
     return true;
   }
 
