@@ -154,10 +154,9 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // パスターゲット選定メトリクス
   auto pass_target_metric = std::make_shared<metrics::PassTargetMetric>();
   // パラメータ設定
-  double min_hold = 0.5;
-  double min_improve = 0.2;
-  crane::get_or_declare_parameter(this, "pass_target.min_hold_duration_sec", min_hold);
-  crane::get_or_declare_parameter(this, "pass_target.min_improvement_margin", min_improve);
+  double min_hold = crane::get_or_declare_parameter(this, "pass_target.min_hold_duration_sec", 0.5);
+  double min_improve =
+    crane::get_or_declare_parameter(this, "pass_target.min_improvement_margin", 0.2);
   pass_target_metric->setHysteresisParams(min_hold, min_improve);
   metric_engine_->registerMetric(pass_target_metric);
 
