@@ -119,7 +119,7 @@ def watch_pass_outcome(get_world, timeout_sec: float = 25.0) -> PassTrialResult:
             if speed >= KICK_DETECT_SPEED and prev_ball is not None:
                 kick_x, kick_y = prev_ball
                 y_id, y_d = _nearest_robot(yellows, kick_x, kick_y)
-                b_id, b_d = _nearest_robot(blues, kick_x, kick_y)
+                _b_id, b_d = _nearest_robot(blues, kick_x, kick_y)
                 if y_id is not None and y_d <= KICK_PROXIMITY and y_d <= b_d:
                     tracking = True
                     kick_wall_time = time.time()

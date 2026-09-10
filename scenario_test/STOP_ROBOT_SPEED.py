@@ -1,5 +1,6 @@
 import math
 import time
+
 from rcst.communication import Communication
 
 
@@ -17,7 +18,7 @@ def test_robot_speed(rcst_comm: Communication):
     for _ in range(10):
         if rcst_comm.observer.robot_speed().some_yellow_robots_over(1.5):
             velocities = rcst_comm.observer.robot_speed().yellow_max_velocities()
-            for robot_id in velocities.keys():
+            for robot_id in velocities:
                 print(f"Robot {robot_id} has speed {velocities[robot_id]}")
             assert False, "Yellow robot exceeded 1.5 m/s during STOP"
         time.sleep(1)

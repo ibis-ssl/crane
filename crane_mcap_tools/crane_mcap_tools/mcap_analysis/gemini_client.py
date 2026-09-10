@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from .extractor import AnnotationContext
-from .mcap_tools import MCAPToolsHandler, MCAP_TOOLS_SCHEMA
+from .mcap_tools import MCAP_TOOLS_SCHEMA, MCAPToolsHandler
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class GeminiAnalysisClient:
                 raw_response if "raw_response" in locals() else "",
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Gemini API error: {e}")
             return AnalysisResult.error_result(str(e))
 
@@ -260,12 +260,9 @@ class GeminiAnalysisClient:
 
                 # マークダウンのコードブロックを削除（```json ... ```）
                 json_text = raw_response.strip()
-                if json_text.startswith("```json"):
-                    json_text = json_text[7:]  # ```json を削除
-                if json_text.startswith("```"):
-                    json_text = json_text[3:]  # ``` を削除
-                if json_text.endswith("```"):
-                    json_text = json_text[:-3]  # ``` を削除
+                json_text = json_text.removeprefix("```json")  # ```json を削除
+                json_text = json_text.removeprefix("```")  # ``` を削除
+                json_text = json_text.removesuffix("```")  # ``` を削除
                 json_text = json_text.strip()
 
                 # JSONをパース
@@ -295,7 +292,7 @@ class GeminiAnalysisClient:
             )
 
         except Exception as e:
-            logger.exception(f"Gemini API error: {e}")
+            logger.exception("Gemini API error")
             return AnalysisResult.error_result(str(e))
 
     def _run_batch(

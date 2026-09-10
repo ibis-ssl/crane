@@ -3,6 +3,8 @@
 このモジュールは、Gemini APIで使用するプロンプトテンプレートを定義します。
 """
 
+import itertools
+
 SYSTEM_INSTRUCTION = """あなたはRoboCup SSLの専門家です。試合中に記録された人間のアノテーションと、
 その前後のロボット・ボールの状態データ（WorldModel）を分析し、以下の観点で評価してください:
 
@@ -167,7 +169,7 @@ def summarize_world_model_context(world_model_snapshots: list) -> str:
     # ボール移動距離
     total_ball_distance = sum(
         ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
-        for p1, p2 in zip(ball_positions[:-1], ball_positions[1:])
+        for p1, p2 in itertools.pairwise(ball_positions)
     )
     summary_lines.append(f"**ボール移動距離**: {total_ball_distance:.2f}m")
 

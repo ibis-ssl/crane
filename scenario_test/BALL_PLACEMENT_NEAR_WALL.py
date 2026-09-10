@@ -8,6 +8,7 @@
 
 import math
 import time
+
 import pytest
 from rcst.communication import Communication
 

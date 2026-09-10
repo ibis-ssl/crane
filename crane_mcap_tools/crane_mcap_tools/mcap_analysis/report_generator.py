@@ -50,7 +50,7 @@ class ReportGenerator:
             "## 概要",
             "",
             f"- **ファイル**: `{self.mcap_path.name}`",
-            f"- **解析日時**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"- **解析日時**: {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S')}",
             f"- **アノテーション数**: {len(annotations)}",
         ]
 

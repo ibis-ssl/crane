@@ -6,8 +6,8 @@
 import logging
 from typing import Any
 
-from .extractor import AnnotationContext, WorldModelSnapshot
 from ..bag_analysis.metrics import distance_2d, speed_2d, speed_3d
+from .extractor import AnnotationContext, WorldModelSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class MCAPToolsHandler:
                 result = handler(args)
                 logger.debug(f"Function result: {result}")
                 return result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error in {function_name}: {e}")
                 return {"error": str(e)}
         else:

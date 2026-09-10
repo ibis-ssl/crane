@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) 2025 ibis-ssl
 #
 # Use of this source code is governed by an MIT-style
@@ -21,6 +20,7 @@ Usage:
 
 import os
 from pathlib import Path
+
 import launch
 from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.substitutions import LaunchConfiguration
