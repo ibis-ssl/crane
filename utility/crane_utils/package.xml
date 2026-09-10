@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <build_export_depend>builtin_interfaces</build_export_depend>
   <build_export_depend>rclcpp</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
 

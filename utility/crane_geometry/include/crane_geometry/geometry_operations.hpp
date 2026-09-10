@@ -324,6 +324,79 @@ inline auto computeAroundBallApproachTargetDynamic(
 
   return computeAroundBallApproachTarget(ball, desired_opposite, from, offset_eff, epsilon);
 }
+
+/**
+ * @brief ベクトルのノルムを指定した上限値以下に制限する（ノルム飽和）
+ *
+ * @param vec 対象2Dベクトル
+ * @param max_norm 上限ノルム（0以下の場合は零ベクトルを返す）
+ * @return Vector2 クランプされたベクトル
+ */
+inline auto clampNorm(const Vector2 & vec, double max_norm) -> Vector2
+{
+  if (max_norm <= 0.0) {
+    return Vector2::Zero();
+  }
+  const double current_norm = vec.norm();
+  if (current_norm > max_norm && current_norm > 1e-9) {
+    return vec * (max_norm / current_norm);
+  }
+  return vec;
+}
+
+/**
+ * @brief 2D点を min_p と max_p の範囲内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param min_p 最小境界点
+ * @param max_p 最大境界点
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, const Point & min_p, const Point & max_p) -> Point
+{
+  return Point(std::clamp(p.x(), min_p.x(), max_p.x()), std::clamp(p.y(), min_p.y(), max_p.y()));
+}
+
+/**
+ * @brief 2D点を Box 矩形領域内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param box クランプ対象の矩形領域
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, const Box & box) -> Point
+{
+  return clampPoint(p, box.min_corner(), box.max_corner());
+}
+
+/**
+ * @brief 2D点を [min_x, max_x] x [min_y, max_y] の範囲内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param min_x X座標最小値
+ * @param max_x X座標最大値
+ * @param min_y Y座標最小値
+ * @param max_y Y座標最大値
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, double min_x, double max_x, double min_y, double max_y)
+  -> Point
+{
+  return Point(std::clamp(p.x(), min_x, max_x), std::clamp(p.y(), min_y, max_y));
+}
+
+/**
+ * @brief 2D点を原点対称な境界 [-max_x, max_x] x [-max_y, max_y] 内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param max_x X座標の絶対値上限
+ * @param max_y Y座標の絶対値上限
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, double max_x, double max_y) -> Point
+{
+  return clampPoint(p, -max_x, max_x, -max_y, max_y);
+}
 }  // namespace crane
 
 #endif  // CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_

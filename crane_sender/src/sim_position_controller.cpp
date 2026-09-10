@@ -30,8 +30,8 @@ auto calculateSimGlobalVelocity(
     target.target_x - command.current_pose.x, target.target_y - command.current_pose.y);
   Vector2 feedforward(target.terminal_velocity_x, target.terminal_velocity_y);
   const double terminal_limit = std::max(0.0f, target.speed_limit_at_target);
-  if (terminal_limit > 0.0 && feedforward.norm() > terminal_limit) {
-    feedforward *= terminal_limit / feedforward.norm();
+  if (terminal_limit > 0.0) {
+    feedforward = clampNorm(feedforward, terminal_limit);
   }
   if (error.norm() <= target.position_tolerance && feedforward.norm() < 1e-4) {
     return Vector2::Zero();
@@ -44,9 +44,7 @@ auto calculateSimGlobalVelocity(
   const double braking_limit = std::sqrt(
     terminal_speed * terminal_speed + 2.0 * std::max(0.0, config.deceleration) * error.norm());
   const double speed_limit = std::min(max_velocity, braking_limit);
-  if (velocity.norm() > speed_limit && velocity.norm() > 1e-9) {
-    velocity *= speed_limit / velocity.norm();
-  }
+  velocity = clampNorm(velocity, speed_limit);
   return rotateFieldVector(velocity, command.field_coordinate_theta_offset);
 }
 

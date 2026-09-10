@@ -7,6 +7,7 @@
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
+#include <crane_utils/time.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <memory>
 
@@ -494,12 +495,12 @@ void SingleBallPlacement::initialize()
       bool feedback_timeout =
         robot()->ball_sensor_stamp.has_value() &&
         now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
-        (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
+        crane::isTimeout(*(robot()->ball_sensor_stamp), 1.0, now);
       if (feedback_timeout && !robot()->ball_sensor) {
         RCLCPP_INFO(
           rclcpp::get_logger("SingleBallPlacement"),
           "Ball sensor is not working, so return to ENTRY_POINT: %fs",
-          std::abs((now - *(robot()->ball_sensor_stamp)).seconds()));
+          crane::getDiffSec(*(robot()->ball_sensor_stamp), now));
         return true;
       }
       if (isBallTrulyLostFromDribbler(0.2)) {
@@ -609,15 +610,15 @@ bool SingleBallPlacement::isOutsideFieldTimeout() const
 {
   if (!robot_outside_field_since_) return false;
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-  return (now - *robot_outside_field_since_).seconds() >
-         getParameter<double>("outside_field_timeout");
+  return crane::isTimeout(
+    *robot_outside_field_since_, getParameter<double>("outside_field_timeout"), now);
 }
 
 bool SingleBallPlacement::isApproachTimeout() const
 {
   if (!approach_since_) return false;
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-  return (now - *approach_since_).seconds() > getParameter<double>("approach_timeout");
+  return crane::isTimeout(*approach_since_, getParameter<double>("approach_timeout"), now);
 }
 
 bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
@@ -627,7 +628,7 @@ bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
     RCLCPP_WARN(
       rclcpp::get_logger("SingleBallPlacement"),
       "[%s] Robot outside field for %.1fs → ENTRY_POINT (retry)", state_name,
-      (rclcpp::Clock(RCL_ROS_TIME).now() - *robot_outside_field_since_).seconds());
+      crane::getElapsedSec(*robot_outside_field_since_, rclcpp::Clock(RCL_ROS_TIME).now()));
     robot_outside_field_since_ = std::nullopt;
     return true;
   }
@@ -635,7 +636,7 @@ bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
     RCLCPP_WARN(
       rclcpp::get_logger("SingleBallPlacement"),
       "[%s] Approach time exceeded %.1fs → ENTRY_POINT (retry)", state_name,
-      (rclcpp::Clock(RCL_ROS_TIME).now() - *approach_since_).seconds());
+      crane::getElapsedSec(*approach_since_, rclcpp::Clock(RCL_ROS_TIME).now()));
     approach_since_ = std::nullopt;
     return true;
   }

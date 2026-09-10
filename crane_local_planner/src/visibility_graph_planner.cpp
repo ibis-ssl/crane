@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_utils/parameter.hpp>
@@ -287,8 +288,7 @@ auto VisibilityGraphPlanner::planSingleRobot(
   if (!command.local_planner_config.disable_field_boundary) {
     const double half_width = world_model->fieldSize().x() / 2.0 + field_boundary_offset_;
     const double half_height = world_model->fieldSize().y() / 2.0 + field_boundary_offset_;
-    goal.x() = std::clamp(goal.x(), -half_width, half_width);
-    goal.y() = std::clamp(goal.y(), -half_height, half_height);
+    goal = clampPoint(goal, half_width, half_height);
   }
   auto obstacles = buildObstacles(command.robot_id, command);
   const auto path = selectPath(command.robot_id, current, goal, obstacles);

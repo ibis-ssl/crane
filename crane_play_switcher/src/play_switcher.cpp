@@ -293,7 +293,7 @@ void PlaySwitcher::check_referee_timeout()
   constexpr double REFEREE_TIMEOUT_SEC = 1.0;
 
   const rclcpp::Time current_time = now();
-  const double elapsed_sec = (current_time - last_referee_recv_time_).seconds();
+  const double elapsed_sec = crane::getElapsedSec(last_referee_recv_time_, current_time);
 
   if (elapsed_sec <= REFEREE_TIMEOUT_SEC) {
     return;
