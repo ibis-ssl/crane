@@ -7,6 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_sessions/test_session.hpp>
 #include <filesystem>
 #include <range/v3/algorithm/count.hpp>
@@ -145,7 +146,7 @@ auto TestSession::loadConfigFromFile(const std::string & path) -> bool
           // 3要素目がある場合は角度（度）として読み込み、ラジアンに変換
           if (w["position"].size() >= 3) {
             double theta_deg = w["position"][2].as<double>();
-            wp.theta = theta_deg * M_PI / 180.0;
+            wp.theta = deg2rad(theta_deg);
           }
         } else {
           RCLCPP_WARN(rclcpp::get_logger("TestSession"), "position が無い経由点をスキップしました");

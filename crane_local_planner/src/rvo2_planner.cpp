@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <boost/stacktrace.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
@@ -625,15 +626,14 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     // - sim_senderで velocity_theta = target_velocity_theta - current_theta により
     //   ロボットローカル座標系に変換される
     command.polar_velocity_target_mode.front().target_velocity_r = vel.norm();
-    command.polar_velocity_target_mode.front().target_velocity_theta =
-      std::atan2(vel.y(), vel.x()) + theta_offset;
+    command.polar_velocity_target_mode.front().target_velocity_theta = getAngle(vel) + theta_offset;
 
     // 効率的な加速のための回転制御
     if (command.local_planner_config.enable_rotation_stop_on_accel) {
-      double move_angle = std::atan2(vel.y(), vel.x());
+      double move_angle = getAngle(vel);
       double angle_diff = getAngleDiff(robot->pose.theta, move_angle);
 
-      constexpr double ANGLE_THRESHOLD = 15.0 * M_PI / 180.0;  // 15度
+      constexpr double ANGLE_THRESHOLD = deg2rad(15.0);  // 15度
       bool is_forward_or_backward =
         (std::abs(angle_diff) <= ANGLE_THRESHOLD) ||                 // 前方
         (std::abs(std::abs(angle_diff) - M_PI) <= ANGLE_THRESHOLD);  // 後方
@@ -892,7 +892,7 @@ auto RVO2Planner::adjustForPlacementAvoidance(
             std::array<Point, 8> radial_candidates;
             for (int i = 0; i < 8; i++) {
               double angle = i * M_PI / 4.0;
-              radial_candidates[i] = closest_point + Point(std::cos(angle), std::sin(angle)) * 0.8;
+              radial_candidates[i] = closest_point + getNormVec(angle) * 0.8;
             }
             auto valid = std::ranges::find_if(radial_candidates, [&](const auto & c) {
               return world_model->point_checker.isFieldInside(c, 0.2) &&

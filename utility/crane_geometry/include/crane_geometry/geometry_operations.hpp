@@ -32,7 +32,47 @@ inline auto createBox(const Point & p1, const Point & p2) -> Box
   return box;
 }
 
+/**
+ * @brief 度からラジアンへの変換 (constexpr)
+ *
+ * @tparam T 数値型（デフォルト: double）
+ * @param deg 角度（度）
+ * @return T 角度（ラジアン）
+ */
+template <typename T = double>
+constexpr auto deg2rad(T deg) noexcept -> T
+{
+  return deg * static_cast<T>(M_PI / 180.0);
+}
+
+/**
+ * @brief ラジアンから度への変換 (constexpr)
+ *
+ * @tparam T 数値型（デフォルト: double）
+ * @param rad 角度（ラジアン）
+ * @return T 角度（度）
+ */
+template <typename T = double>
+constexpr auto rad2deg(T rad) noexcept -> T
+{
+  return rad * static_cast<T>(180.0 / M_PI);
+}
+
 inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
+
+/**
+ * @brief 2Dベクトルを指定角度（ラジアン、反時計回り）だけ回転
+ *
+ * @param vec 回転対象の2Dベクトル
+ * @param angle_rad 回転角度（ラジアン）
+ * @return Vector2 回転後のベクトル
+ */
+inline auto rotate(const Vector2 & vec, double angle_rad) -> Vector2
+{
+  const double c = std::cos(angle_rad);
+  const double s = std::sin(angle_rad);
+  return Vector2(vec.x() * c - vec.y() * s, vec.x() * s + vec.y() * c);
+}
 
 inline auto normalizeAngle(double angle_rad) -> double
 {

@@ -47,11 +47,11 @@ void VelocityPlanTracker::addCorrection(
   correction.velocity_delta = static_cast<float>(delta.norm());
 
   // 方向変化を計算（度）
-  double before_angle = std::atan2(before_vel.y(), before_vel.x());
-  double after_angle = std::atan2(after_vel.y(), after_vel.x());
+  double before_angle = getAngle(before_vel);
+  double after_angle = getAngle(after_vel);
   double angle_diff = normalizeAngle(after_angle - before_angle);
 
-  correction.direction_delta_deg = static_cast<float>(angle_diff * 180.0 / M_PI);
+  correction.direction_delta_deg = static_cast<float>(rad2deg(angle_diff));
 
   trace.corrections.push_back(correction);
 }

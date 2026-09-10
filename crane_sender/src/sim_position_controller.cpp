@@ -8,15 +8,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 
 namespace crane
 {
 
 auto rotateFieldVector(const Vector2 & vector, double theta_offset) -> Vector2
 {
-  return Vector2(
-    vector.x() * std::cos(theta_offset) - vector.y() * std::sin(theta_offset),
-    vector.x() * std::sin(theta_offset) + vector.y() * std::cos(theta_offset));
+  return rotate(vector, theta_offset);
 }
 
 auto calculateSimGlobalVelocity(

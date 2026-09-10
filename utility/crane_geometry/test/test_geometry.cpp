@@ -93,4 +93,53 @@ TEST(GeometryOperationsTest, GetCircle)
   auto invalid_circle = getCircle(p1, p2, p4);
   EXPECT_FALSE(invalid_circle.has_value());
 }
+
+TEST(GeometryOperationsTest, Deg2RadAndRad2Deg)
+{
+  EXPECT_DOUBLE_EQ(deg2rad(0.0), 0.0);
+  EXPECT_DOUBLE_EQ(rad2deg(0.0), 0.0);
+
+  EXPECT_NEAR(deg2rad(180.0), M_PI, 1e-10);
+  EXPECT_NEAR(rad2deg(M_PI), 180.0, 1e-10);
+
+  EXPECT_NEAR(deg2rad(90.0), M_PI_2, 1e-10);
+  EXPECT_NEAR(rad2deg(M_PI_2), 90.0, 1e-10);
+
+  EXPECT_NEAR(deg2rad(-45.0), -M_PI / 4.0, 1e-10);
+  EXPECT_NEAR(rad2deg(-M_PI / 4.0), -45.0, 1e-10);
+
+  EXPECT_NEAR(deg2rad(360.0), 2.0 * M_PI, 1e-10);
+  EXPECT_NEAR(rad2deg(2.0 * M_PI), 360.0, 1e-10);
+
+  // float型サポートの確認
+  constexpr float f_deg = 60.0f;
+  constexpr float f_rad = deg2rad(f_deg);
+  EXPECT_NEAR(f_rad, static_cast<float>(M_PI / 3.0), 1e-5f);
+  EXPECT_NEAR(rad2deg(f_rad), f_deg, 1e-5f);
+}
+
+TEST(GeometryOperationsTest, RotateVector)
+{
+  Vector2 v(1.0, 0.0);
+
+  // 90度回転
+  auto v_90 = rotate(v, M_PI_2);
+  EXPECT_NEAR(v_90.x(), 0.0, 1e-10);
+  EXPECT_NEAR(v_90.y(), 1.0, 1e-10);
+
+  // 180度回転
+  auto v_180 = rotate(v, M_PI);
+  EXPECT_NEAR(v_180.x(), -1.0, 1e-10);
+  EXPECT_NEAR(v_180.y(), 0.0, 1e-10);
+
+  // -90度回転
+  auto v_neg90 = rotate(v, -M_PI_2);
+  EXPECT_NEAR(v_neg90.x(), 0.0, 1e-10);
+  EXPECT_NEAR(v_neg90.y(), -1.0, 1e-10);
+
+  // 0度回転
+  auto v_0 = rotate(v, 0.0);
+  EXPECT_DOUBLE_EQ(v_0.x(), 1.0);
+  EXPECT_DOUBLE_EQ(v_0.y(), 0.0);
+}
 }  // namespace crane
