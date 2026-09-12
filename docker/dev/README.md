@@ -9,41 +9,35 @@
 リポジトリルートから以下のコマンドを実行します。
 
 ```bash
-# シミュレーション環境(デフォルト: ER-Force) + ssl-log-recorder自動起動
+# シミュレーション環境(デフォルト: ER-Force)
 ./scripts/docker-dev.sh
+
+# シミュレータ最小構成(シミュレータ + GCのみ起動、ネットワーク・マシン負荷最小)
+./scripts/docker-dev.sh --minimal
 
 # シミュレーション環境(grSim)
 ./scripts/docker-dev.sh --sim grsim
 
-# シミュレーション環境(ER-Force、明示指定)
-./scripts/docker-dev.sh --sim erforce
-
-# 実機環境 + ssl-log-recorder自動起動
+# 実機環境 (robot-manager有効)
 ./scripts/docker-dev.sh real
 
 # バックグラウンド起動
 ./scripts/docker-dev.sh -d
-./scripts/docker-dev.sh --sim grsim -d
+./scripts/docker-dev.sh --minimal -d
 
-# robot-manager なしで起動
-./scripts/docker-dev.sh --no-debug
+# sim環境でrobot-managerを起動したい場合
+./scripts/docker-dev.sh --robot-manager
 
 # 停止
 ./scripts/docker-dev.sh down
 ```
 
-**注1**: `up` 実行時（フォアグラウンド/バックグラウンドの両方）に
-`ssl-log-recorder` (`robocupssl/ssl-log-recorder:latest`) が自動的に起動し、
-ログはリポジトリルートに保存されます。
+**注1**: `up` 実行時にホストのループバック (`lo`) にマルチキャスト設定がない場合、Wi-Fi/LAN へのマルチキャストパケット漏洩を防ぐため、自動で設定スクリプト (`setup-multicast.sh`) の実行を求めます（要sudoパスワード）。
 
-**注2**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
+**注2**: `sim` モード実行時は、実機への無駄なHTTPポーリングによるネットワーク負荷を防ぐため、`robot-manager` はデフォルトで無効化されています。実機環境 (`real`) では自動で有効化されます。
+
+**注3**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
 `up` を Ctrl+C で終了した場合は recorder は継続起動します。
-
-**注3**: `robot-manager` は Docker Compose サービスとして常時定義されています。
-
-- URL: <http://localhost:8092>
-- `--no-debug` オプションで無効化可能（`robot-manager` のみ停止）
-- イメージは [ibis-ssl/Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) リポジトリで管理・ビルドされます（`ghcr.io/ibis-ssl/robot-manager:latest`）
 
 ### robot-manager の手動操作
 
