@@ -1,0 +1,19 @@
+diff --git a/speak_ros_interfaces/CMakeLists.txt b/speak_ros_interfaces/CMakeLists.txt
+index 4d31235..ce8e4eb 100644
+--- a/speak_ros_interfaces/CMakeLists.txt
++++ b/speak_ros_interfaces/CMakeLists.txt
+@@ -4,7 +4,13 @@ project(speak_ros_interfaces)
+ find_package(ament_cmake_auto REQUIRED)
+ ament_auto_find_build_dependencies()
+
+-rosidl_auto_generate_interfaces()
++rosidl_generate_interfaces(${PROJECT_NAME}
++  action/Speak.action
++  msg/AudioChunk.msg
++  msg/ParameterOverride.msg
++  msg/ParameterSchema.msg
++  srv/GetParameterSchema.srv
++  DEPENDENCIES builtin_interfaces)
+
+ if(BUILD_TESTING)
+   find_package(ament_lint_auto REQUIRED)

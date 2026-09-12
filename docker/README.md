@@ -25,9 +25,10 @@
 
 ### ビルド支援
 
-- **`base/`** - ベースイメージのDockerfile
-- **`prebuilt/`** - プリビルド依存関係
-- **`ccache/`** - ccacheボリューム設定
+- **`Dockerfile`** - `base` / `deps` / `system-deps` / `scenario` の共通multi-stageビルド
+  - 外部ROS依存は固定SHAで `/opt/crane_deps` に事前ビルド
+  - craneのOS依存は `package.xml` だけをキャッシュキーにして分離
+  - 本体コンパイルはBuildKit cache mount経由のccacheを利用
 
 ### 共通設定
 
@@ -80,5 +81,5 @@ docker compose up
 ## 関連ドキュメント
 
 - プロジェクト全体の概要: [../AGENTS.md](../AGENTS.md)
-- Dockerビルド: `docker/base/Dockerfile`
+- Dockerビルド: `docker/Dockerfile`
 - CI設定: `.github/workflows/`

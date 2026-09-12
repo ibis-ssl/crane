@@ -20,13 +20,15 @@ cd "${REPO_ROOT}"
 if ! docker buildx version &>/dev/null; then
     echo "警告: docker buildxが利用できません。通常のdocker buildを使用します。"
     docker build \
-        -f docker/scenario/Dockerfile \
+        -f docker/Dockerfile \
+        --target scenario \
         -t "${FULL_IMAGE}" \
         .
 else
     # buildxを使用したビルド（キャッシュ最適化）
     docker buildx build \
-        -f docker/scenario/Dockerfile \
+        -f docker/Dockerfile \
+        --target scenario \
         -t "${FULL_IMAGE}" \
         --load \
         .

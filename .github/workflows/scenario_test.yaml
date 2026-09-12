@@ -8,6 +8,10 @@ on:
 env:
   PYTHON_VERSION: '3.12'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   create_scenario_test_image:
     name: build image for scenario test
@@ -29,27 +33,80 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image
-        uses: docker/build-push-action@v5
+      - name: Restore compiler cache
+        id: ccache
+        uses: actions/cache@v4
+        with:
+          path: cache-mount
+          key: scenario-ccache-v2-${{ runner.os }}-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}-${{ github.sha }}
+          restore-keys: |
+            scenario-ccache-v2-${{ runner.os }}-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}-
+            docker-ccache-v2-${{ runner.os }}-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}-
+            scenario-ccache-v2-${{ runner.os }}-
+            docker-ccache-v2-${{ runner.os }}-
+
+      - name: Inject compiler cache into BuildKit
+        uses: reproducible-containers/buildkit-cache-dance@v3
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-dir: cache-mount
+          cache-map: |
+            {
+              "crane-ccache": "/root/.ccache"
+            }
+          skip-extraction: ${{ steps.ccache.outputs.cache-hit }}
+
+      - name: Build and push image
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: docker/scenario/Dockerfile
+          file: docker/Dockerfile
+          target: scenario
+          pull: true
           push: true
           tags: ghcr.io/${{ github.repository }}:scenario-${{ github.sha }}
           cache-from: |
-            type=gha,scope=scenario-${{ github.ref_name }}
+            type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy
+            type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
             type=gha,scope=scenario-develop
             type=gha,scope=scenario
-          cache-to: type=gha,mode=max,scope=scenario-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=scenario-develop
+
+      - name: Build image for fork pull request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: scenario
+          pull: true
+          tags: ghcr.io/${{ github.repository }}:scenario-${{ github.sha }}
+          outputs: type=docker,dest=/tmp/scenario-image.tar
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy
+            type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
+            type=gha,scope=scenario-develop
+            type=gha,scope=scenario
+
+      - name: Upload fork image
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        uses: actions/upload-artifact@v5
+        with:
+          name: scenario-image-${{ github.sha }}
+          path: /tmp/scenario-image.tar
+          retention-days: 1
 
   setup_scenario_test_library:
     runs-on: ubuntu-latest
@@ -131,6 +188,17 @@ jobs:
           pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
           pip install pytest
 
+      - name: Download fork image
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        uses: actions/download-artifact@v5
+        with:
+          name: scenario-image-${{ github.sha }}
+          path: /tmp
+
+      - name: Load fork image
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: docker load --input /tmp/scenario-image.tar
+
       - name: Start Docker Compose services
         run: |
           for i in 1 2 3; do
@@ -158,7 +226,7 @@ jobs:
         run: |
           source env/bin/activate
           pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
-          echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
+          echo "LOG_EXISTS=$(find . -maxdepth 1 -name '*.log.gz' -print -quit)" >> "$GITHUB_ENV"
 
       - name: Get and print logs
         if: always()
