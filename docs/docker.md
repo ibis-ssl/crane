@@ -41,7 +41,7 @@ sudo ./scripts/setup-multicast.sh
 用途に合わせて以下の方法を使い分けることで、ネットワークやシステムへの負荷を最小限に抑えられます。
 
 1. **最小構成でのシミュレータ起動 (`--minimal`)**
-   デバッガやレコーダー、音声エンジン等を起動せず、シミュレータ本体と Game Controller のみ起動します。
+   デバッガやレコーダー、音声エンジン等を起動せず、シミュレータ本体、Game Controller、Vision Client (Webビューア: <http://localhost:8082>) のみ起動します。
 
    ```bash
    ./scripts/docker-dev.sh --minimal

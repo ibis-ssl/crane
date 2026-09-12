@@ -161,16 +161,16 @@ if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]] && [
     DOCKER_ARGS+=(--scale robot-manager=0)
 fi
 
-# 最小構成モード: シミュレータ本体とGame Controllerのみを起動
+# 最小構成モード: シミュレータ本体、Game Controller、Vision Client (http://localhost:8082) のみを起動
 if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
     if [[ $MODE == "sim" ]]; then
         if [[ $SIM == "erforce" ]]; then
-            DOCKER_ARGS+=("erforce-sim" "ssl-game-controller")
+            DOCKER_ARGS+=("erforce-sim" "ssl-game-controller" "ssl-vision-client")
         else
-            DOCKER_ARGS+=("grsim" "ssl-game-controller")
+            DOCKER_ARGS+=("grsim" "ssl-game-controller" "ssl-vision-client")
         fi
     else
-        DOCKER_ARGS+=("ssl-game-controller")
+        DOCKER_ARGS+=("ssl-game-controller" "ssl-vision-client")
     fi
 fi
 

@@ -12,7 +12,7 @@
 # シミュレーション環境(デフォルト: ER-Force)
 ./scripts/docker-dev.sh
 
-# シミュレータ最小構成(シミュレータ + GCのみ起動、ネットワーク・マシン負荷最小)
+# シミュレータ最小構成(シミュレータ + GC + Vision Clientのみ起動、ネットワーク・マシン負荷最小)
 ./scripts/docker-dev.sh --minimal
 
 # シミュレーション環境(grSim)
