@@ -1,13 +1,14 @@
 #!/bin/bash
 # Docker開発環境の起動スクリプト
 # Usage:
-#   ./scripts/docker-dev.sh [sim|real] [--sim erforce|grsim] [--no-debug] [docker-compose-args...]
+#   ./scripts/docker-dev.sh [sim|real] [--sim erforce|grsim] [--minimal] [--robot-manager|--no-debug] [docker-compose-args...]
 #
 # Examples:
-#   ./scripts/docker-dev.sh                     # sim環境(ER-Force) + ssl-log-recorder
+#   ./scripts/docker-dev.sh                     # sim環境(ER-Force)
+#   ./scripts/docker-dev.sh --minimal           # 最小構成(シミュレータ + GCのみ)
 #   ./scripts/docker-dev.sh --sim grsim         # sim環境(grSim)
 #   ./scripts/docker-dev.sh -d                  # sim環境(バックグラウンド)
-#   ./scripts/docker-dev.sh --no-debug          # robot-managerなし
+#   ./scripts/docker-dev.sh --robot-manager     # robot-managerあり(sim環境)
 #   ./scripts/docker-dev.sh down                # 停止
 
 set -e
@@ -22,7 +23,8 @@ COMPOSE_FILE="docker/dev/docker-compose.yaml"
 # 引数解析
 MODE="sim"
 SIM="erforce"
-ENABLE_ROBOT_MANAGER=true
+ENABLE_ROBOT_MANAGER=""
+MINIMAL=false
 DOCKER_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -43,8 +45,16 @@ while [[ $# -gt 0 ]]; do
         fi
         shift 2
         ;;
+    --minimal)
+        MINIMAL=true
+        shift
+        ;;
     --no-debug)
         ENABLE_ROBOT_MANAGER=false
+        shift
+        ;;
+    --robot-manager | --debug)
+        ENABLE_ROBOT_MANAGER=true
         shift
         ;;
     *)
@@ -53,6 +63,15 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
+
+# robot-managerのデフォルト: simモード時は不要なネットワーク負荷を避けるため無効、realモード時は有効
+if [[ -z $ENABLE_ROBOT_MANAGER ]]; then
+    if [[ $MODE == "sim" ]]; then
+        ENABLE_ROBOT_MANAGER=false
+    else
+        ENABLE_ROBOT_MANAGER=true
+    fi
+fi
 
 detect_compose_command() {
     # docker compose グローバルオプションをスキップしてサブコマンドを特定する
@@ -92,19 +111,63 @@ detect_compose_command() {
 
 COMPOSE_COMMAND="$(detect_compose_command)"
 
+# マルチキャスト設定のチェック＆ブロック実行 (up時のみ)
+if [[ $COMPOSE_COMMAND == "up" ]]; then
+    if ! ip link show lo 2>/dev/null | grep -q MULTICAST || ! ip route show 224.0.0.0/4 2>/dev/null | grep -q "dev lo"; then
+        echo "======================================================================" >&2
+        echo "⚠️  【警告】マルチキャスト設定が lo（ループバック）に向けられていません！" >&2
+        echo "    このまま起動すると、Wi-Fi/LANにマルチキャストパケットが漏洩し、" >&2
+        echo "    ネットワーク帯域が著しく圧迫されます。" >&2
+        echo "    マルチキャスト設定を適用します (sudo パスワードの入力が必要です)..." >&2
+        echo "======================================================================" >&2
+        if sudo "$REPO_ROOT/scripts/setup-multicast.sh"; then
+            echo "✅ マルチキャスト設定が完了しました。" >&2
+            echo "" >&2
+        else
+            echo "❌ マルチキャスト設定に失敗したため、ネットワーク保護のため起動を中断します。" >&2
+            exit 1
+        fi
+    fi
+fi
+
 echo "=== Docker開発環境 ==="
 echo "モード: $MODE"
 if [[ $MODE == "sim" ]]; then
     echo "シミュレータ: $SIM"
 fi
+echo "最小構成 (--minimal): $MINIMAL"
 echo "robot-manager: $ENABLE_ROBOT_MANAGER"
 echo "compose command: $COMPOSE_COMMAND"
 echo "Compose file: $COMPOSE_FILE"
 echo "引数: ${DOCKER_ARGS[*]}"
 echo ""
 
+# 明示的なサブコマンドが DOCKER_ARGS にない場合、先頭に COMPOSE_COMMAND を補完
+HAS_SUBCOMMAND=false
+for arg in "${DOCKER_ARGS[@]}"; do
+    case "$arg" in
+    up | down | build | ps | stop | restart | logs | config | exec | run | pull | create | kill | rm | top)
+        HAS_SUBCOMMAND=true
+        break
+        ;;
+    esac
+done
+
+if [[ $HAS_SUBCOMMAND == "false" ]]; then
+    DOCKER_ARGS=("$COMPOSE_COMMAND" "${DOCKER_ARGS[@]}")
+fi
+
 if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
     DOCKER_ARGS+=(--scale robot-manager=0)
+fi
+
+# 最小構成モード: シミュレータ本体とGame Controllerのみを起動
+if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
+    if [[ $SIM == "erforce" ]]; then
+        DOCKER_ARGS+=("erforce-sim" "ssl-game-controller")
+    else
+        DOCKER_ARGS+=("grsim" "ssl-game-controller")
+    fi
 fi
 
 case "$COMPOSE_COMMAND" in
