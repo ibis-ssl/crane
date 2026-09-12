@@ -59,6 +59,7 @@ scenario-test:
 
 scenario-test-docker-up:
 	@echo "=== Docker環境を起動中 ==="
+	@./scripts/ensure-sim-network-confined.sh
 	@if [ "$(USE_LOCAL)" = "1" ]; then \
 		docker compose -f docker/scenario/docker-compose.local.yaml up -d; \
 		echo "Docker環境が起動しました（ローカルモード）"; \

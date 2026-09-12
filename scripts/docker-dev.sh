@@ -111,22 +111,30 @@ detect_compose_command() {
 
 COMPOSE_COMMAND="$(detect_compose_command)"
 
-# マルチキャスト設定のチェック＆ブロック実行 (up時のみ)
-if [[ $COMPOSE_COMMAND == "up" ]]; then
-    if ! ip link show lo 2>/dev/null | grep -q MULTICAST || ! ip route show 224.0.0.0/4 2>/dev/null | grep -q "dev lo"; then
-        echo "======================================================================" >&2
-        echo "⚠️  【警告】マルチキャスト設定が lo（ループバック）に向けられていません！" >&2
-        echo "    このまま起動すると、Wi-Fi/LANにマルチキャストパケットが漏洩し、" >&2
-        echo "    ネットワーク帯域が著しく圧迫されます。" >&2
-        echo "    マルチキャスト設定を適用します (sudo パスワードの入力が必要です)..." >&2
-        echo "======================================================================" >&2
-        if sudo "$REPO_ROOT/scripts/setup-multicast.sh"; then
-            echo "✅ マルチキャスト設定が完了しました。" >&2
-            echo "" >&2
-        else
-            echo "❌ マルチキャスト設定に失敗したため、ネットワーク保護のため起動を中断します。" >&2
-            exit 1
-        fi
+# マルチキャスト設定のチェック＆ブロック実行 (simモードのup時のみ)
+# 注: simモード専用のネットワーク隔離設定であり、realモードで適用すると実機の
+#     Vision/Refereeを受信できなくなる。realモード起動時は逆に必ず解除する（下記参照）。
+if [[ $COMPOSE_COMMAND == "up" ]] && [[ $MODE == "sim" ]]; then
+    echo "======================================================================" >&2
+    echo "🔒 シミュレータ用にマルチキャストをホスト内(lo)に隔離します。" >&2
+    echo "    (ルーティング設定だけでは一部ツールがWi-Fi/LANに直接送出するため、" >&2
+    echo "     iptablesによる遮断も併用して確実に漏洩を防ぎます)" >&2
+    echo "    未設定の項目があれば sudo パスワードの入力が必要です..." >&2
+    echo "======================================================================" >&2
+    if sudo "$REPO_ROOT/scripts/setup-multicast.sh"; then
+        echo "" >&2
+    else
+        echo "❌ マルチキャスト隔離設定に失敗したため、ネットワーク保護のため起動を中断します。" >&2
+        exit 1
+    fi
+fi
+
+# realモード起動時は、simモード用のネットワーク隔離設定が残っていないことを保証する
+# (残っていると実機のVision/Refereeがサイレントに受信できなくなるため)
+if [[ $COMPOSE_COMMAND == "up" ]] && [[ $MODE == "real" ]]; then
+    if ! sudo "$REPO_ROOT/scripts/restore-real-network.sh"; then
+        echo "❌ simモード用ネットワーク設定の解除が必要なため、安全のため起動を中断します（上記メッセージの対応後に再実行してください）。" >&2
+        exit 1
     fi
 fi
 

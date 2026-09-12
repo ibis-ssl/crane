@@ -26,15 +26,29 @@ Docker Compose V2 は通常 Docker Engine に同梱されています (Docker De
 
 シミュレータ環境の Docker コンテナは `network_mode: host` で動作し、マルチキャスト（SSL Vision: `224.5.23.2`, Game Controller: `224.5.23.1`）を使用します。
 
-ホストのループバック (`lo`) にマルチキャストが設定されていない場合、**マルチキャストパケットが物理 Wi-Fi / LAN へ漏洩し、Wi-Fi 帯域を極端に圧迫（Wi-Fi が遅延・切断）** します。
+ホストのループバック (`lo`) にマルチキャストが設定されていない場合、**マルチキャストパケットが物理 Wi-Fi / LAN へ漏洩し、Wi-Fi 帯域を極端に圧迫（Wi-Fi アクセスポイントがダウンすることもある）** します。
 
-これを防ぐため、`lo` へのマルチキャストルート設定が必要です：
+これを防ぐため `scripts/setup-multicast.sh` は次の2段構えで隔離します（`sudo ./scripts/setup-multicast.sh` で手動実行可能）：
 
-```bash
-sudo ./scripts/setup-multicast.sh
-```
+1. `224.0.0.0/4` の送信経路を `lo` に向ける（ルーティングベース）
+2. `224.5.23.0/24` の `lo` 以外への送出を **iptables で強制遮断**（パケットフィルタベース）
 
-※ `./scripts/docker-dev.sh up` 実行時、未設定の場合は自動で検知してブロックし、設定スクリプトを実行してパスワード入力を求めます。
+**1. だけでは不十分**な点に注意してください。`ssl-game-controller` など一部の公式ツールは、送信元アドレスを
+ホストの各ネットワークインターフェースのIPに明示バインドしてマルチキャストを送信するため、ルーティングテーブルの
+設定を無視して物理 Wi-Fi/LAN に直接パケットを送出します（実際にこれが原因で Wi-Fi アクセスポイントが
+高頻度マルチキャストにより過負荷でダウンした実績があります）。そのため 2. の iptables による遮断を
+独立した保護層として併用しています。コンテナ間の通信は同一ホスト内の `IP_MULTICAST_LOOP` により
+物理インターフェースの状態に関わらず継続されるため、`lo` 以外への送出を遮断するだけで機能に影響はありません。
+
+※ `./scripts/docker-dev.sh` の sim モード (`up`) 実行時、未設定の項目があれば自動で検知して
+設定スクリプトを実行し、パスワード入力を求めます。`scripts/scenario_test/run_test.sh` /
+`make scenario-test-docker-up` / `scripts/match-vs-tigers/run_local.sh` など、同様に
+`network_mode: host` でシミュレータを起動する他のスクリプトも
+`scripts/ensure-sim-network-confined.sh` 経由で同じ保護を適用します。
+
+※ この隔離設定は **sim モード専用** です。`./scripts/docker-dev.sh real` を実行すると、
+残っていないことを確認・警告した上で起動します（real モードで隔離が残っていると、実機の
+Vision/Referee を受信できずサイレントに機能しなくなるため）。
 
 ### ネットワークやマシンに負荷をかけずにテストする方法
 

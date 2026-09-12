@@ -62,6 +62,10 @@ fi
 # 念のため前回の残存コンテナを停止・削除
 docker compose -f "${COMPOSE_FILE}" down 2>/dev/null || true
 
+# erforce-sim/auto-refereeはnetwork_mode:hostでマルチキャストを使うため、
+# Wi-Fi/LANへの漏洩を防ぐホスト隔離設定を適用してから起動する
+"${REPO_ROOT}/scripts/ensure-sim-network-confined.sh"
+
 # Docker Composeでサービスを起動（grSimとauto-referee）
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
