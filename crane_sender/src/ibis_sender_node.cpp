@@ -116,6 +116,15 @@ public:
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
     crane::get_or_declare_parameter(this, "theta_p_gain", theta_p_gain_);
     crane::get_or_declare_parameter(this, "chip_angle_deg", chip_angle_deg_);
+    // position_control.* は packet_type=ssl / grsim のときだけ効く
+    // （calculateSimGlobalVelocity で使う）。
+    // packet_type=ibis では位置制御を crane 側で行わないため、宣言はされるが一切参照されない。
+    //
+    // ゲインの正本は CM4 側の position_controller である。実機で実際に効くのは CM4 の
+    // 位置制御ループであり、ここの値は grsim/ssl シミュレータ用の近似にすぎない。
+    // CM4 側のゲインを変更してもこの値は自動追従しないので、両者を比較する場合は
+    // Orion_CM4 の position_controller を正本として参照すること。
+    // 詳細: framework/docs/robot-side-position-control.md
     crane::get_or_declare_parameter(
       this, "position_control.kp", position_controller_config_.position_gain);
     crane::get_or_declare_parameter(
@@ -270,6 +279,11 @@ private:
     packet.latency_time_ms = static_cast<uint8_t>(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
+    // ROS 側とワイヤ側で control_mode の番号が異なる点に注意（意図的な対応付け）:
+    //   ROS  crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE       = 1
+    //   ワイヤ POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE (robot_packet.h) = 4
+    //   ROS/ワイヤ とも POLAR_VELOCITY_TARGET_MODE = 3（こちらは偶然一致している）
+    //
     // POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE (mode=4) は、上位レイヤが明示的に
     // POSITION_TARGET_MODE を指定した場合のみ使用する。
     // 旧受信機 (ER-Force ibis branch / 現行実機ファーム) は mode=3 のみ対応しているため、
@@ -285,6 +299,16 @@ private:
       packet.target_global_pos[1] = pos_mode.target_y;
       packet.terminal_velocity = pos_mode.speed_limit_at_target;
     } else {
+      if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+        // 上位レイヤは位置指令を要求しているのに position_target_mode が空。
+        // このまま mode 3 に落ちると polar_velocity_target_mode も空なので速度 0 になり、
+        // 「ロボットが無言で動かない」という最も切り分けにくい形で現れる。必ず可聴にする。
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 1000,
+          "robot_id=%d: control_mode=POSITION_TARGET_MODE but position_target_mode is empty; "
+          "falling back to POLAR_VELOCITY_TARGET_MODE (wire mode 3)",
+          static_cast<int>(command.robot_id));
+      }
       packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
       packet.mode_args.polar_velocity.target_global_velocity_r = target_velocity_r;
       packet.mode_args.polar_velocity.target_global_velocity_theta = target_velocity_theta;
@@ -304,6 +328,8 @@ private:
     double omega;
   };
 
+  // 呼び出し元は sendSSL() と sendGrSim() のみ。sendIbis() からは呼ばれない。
+  // packet_type=ibis の経路に位置制御ループを持ち込まないこと（CM4 側が唯一の位置ループ）。
   LocalVelocity convertToLocalVelocity(
     const crane_msgs::msg::RobotCommand & command, PerRobotState & state)
   {
