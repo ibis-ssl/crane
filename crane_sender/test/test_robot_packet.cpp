@@ -120,6 +120,105 @@ TEST(RobotPacket, EncodeDecode)
   }
 }
 
+// mode 4 のバイト境界を固定するテスト。
+//
+// 上の EncodeDecode は serialize -> deserialize の「対称性」しか見ていないため、
+// 両者が同じ誤ったオフセットを使っていても通ってしまう。robot_packet.h は
+// crane / G474_Orion_main / framework の 3 リポジトリで共有される正本であり、
+// 守るべきは絶対オフセットそのものなので、ここで直接固定する。
+TEST(RobotPacket, Mode4ByteLayout)
+{
+  const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
+
+  // オフセット自体を固定する（enum の並び替えや項目追加による無言のズレを検出する）
+  EXPECT_EQ(23, static_cast<int>(CONTROL_MODE));
+  EXPECT_EQ(24, static_cast<int>(CONTROL_MODE_ARGS));
+  EXPECT_EQ(32, static_cast<int>(TARGET_GLOBAL_POS_X_HIGH));
+  EXPECT_EQ(34, static_cast<int>(TARGET_GLOBAL_POS_Y_HIGH));
+  EXPECT_EQ(36, static_cast<int>(TERMINAL_VELOCITY_HIGH));
+
+  RobotCommandV2 packet{};
+  packet.header = 0x00;
+  packet.check_counter = 1;
+  packet.control_mode = POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE;
+  packet.mode_args.position_target.terminal_velocity_x = 1.25;
+  packet.mode_args.position_target.terminal_velocity_y = -0.75;
+  packet.target_global_pos[0] = 2.5;
+  packet.target_global_pos[1] = -1.5;
+  packet.terminal_velocity = 0.5;
+
+  RobotCommandSerializedV2 serialized;
+  RobotCommandSerializedV2_serialize(&serialized, &packet);
+
+  // byte 23 == 4
+  EXPECT_EQ(POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE, serialized.data[23]);
+
+  // byte 24..27 = terminal_velocity_x / y（mode 4 の ARGS）
+  EXPECT_NEAR(
+    1.25, convertTwoByteToFloat(serialized.data[24], serialized.data[25], 32.767), MAX_ERROR_32);
+  EXPECT_NEAR(
+    -0.75, convertTwoByteToFloat(serialized.data[26], serialized.data[27], 32.767), MAX_ERROR_32);
+
+  // byte 32..37 = TARGET_GLOBAL_POS_X / Y, TERMINAL_VELOCITY（mode に依存しない固定フィールド）
+  EXPECT_NEAR(
+    2.5, convertTwoByteToFloat(serialized.data[32], serialized.data[33], 32.767), MAX_ERROR_32);
+  EXPECT_NEAR(
+    -1.5, convertTwoByteToFloat(serialized.data[34], serialized.data[35], 32.767), MAX_ERROR_32);
+  EXPECT_NEAR(
+    0.5, convertTwoByteToFloat(serialized.data[36], serialized.data[37], 32.767), MAX_ERROR_32);
+}
+
+// mode 3 も同じく byte 23 と ARGS の位置を固定する。
+TEST(RobotPacket, Mode3ByteLayout)
+{
+  const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
+
+  RobotCommandV2 packet{};
+  packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+  packet.mode_args.polar_velocity.target_global_velocity_r = 1.25;
+  packet.mode_args.polar_velocity.target_global_velocity_theta = -0.75;
+
+  RobotCommandSerializedV2 serialized;
+  RobotCommandSerializedV2_serialize(&serialized, &packet);
+
+  EXPECT_EQ(POLAR_VELOCITY_TARGET_MODE, serialized.data[23]);
+  EXPECT_NEAR(
+    1.25, convertTwoByteToFloat(serialized.data[24], serialized.data[25], 32.767), MAX_ERROR_32);
+  EXPECT_NEAR(
+    -0.75, convertTwoByteToFloat(serialized.data[26], serialized.data[27], 32.767), MAX_ERROR_32);
+}
+
+// CONTROL_MODE_ARGS(24..31) は mode によって意味が変わる union である。
+//
+// このテストは「mode を見ずに復号すると何が起きるか」を実行可能な形で固定する。
+// mode 4 のバイト列を mode 3 として読むと、terminal_velocity_x/y が
+// そのまま r/theta として解釈される。値としては壊れていないため
+// 受信側はチェックサムでもレンジチェックでも誤りに気づけない。
+// すなわち CONTROL_MODE を先に見る以外にこの取り違えを防ぐ手段はない。
+TEST(RobotPacket, ModeArgsUnionMustNotBeDecodedWithoutControlMode)
+{
+  const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
+
+  RobotCommandV2 packet{};
+  packet.control_mode = POSITION_TARGET_WITH_TERMINAL_VELOCITY_MODE;
+  packet.mode_args.position_target.terminal_velocity_x = 1.25;
+  packet.mode_args.position_target.terminal_velocity_y = -0.75;
+
+  RobotCommandSerializedV2 serialized;
+  RobotCommandSerializedV2_serialize(&serialized, &packet);
+
+  // CONTROL_MODE だけを mode 3 に偽装する（= mode を見ない受信側と同じ状況）
+  RobotCommandSerializedV2 spoofed = serialized;
+  spoofed.data[CONTROL_MODE] = POLAR_VELOCITY_TARGET_MODE;
+
+  const RobotCommandV2 misread = RobotCommandSerializedV2_deserialize(&spoofed);
+
+  EXPECT_EQ(POLAR_VELOCITY_TARGET_MODE, misread.control_mode);
+  // 終端速度ベクトルが「極座標の r / theta」として無言で読まれてしまう
+  EXPECT_NEAR(1.25, misread.mode_args.polar_velocity.target_global_velocity_r, MAX_ERROR_32);
+  EXPECT_NEAR(-0.75, misread.mode_args.polar_velocity.target_global_velocity_theta, MAX_ERROR_32);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
