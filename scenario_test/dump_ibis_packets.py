@@ -214,6 +214,17 @@ def main() -> int:
         help="最初の受信までのタイムアウト秒 (default: 10)",
     )
     parser.add_argument("--json-out", default="", help="要約 JSON の出力先")
+    parser.add_argument(
+        "--expect-mode",
+        type=int,
+        default=MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY,
+        choices=[
+            MODE_POLAR_VELOCITY_TARGET,
+            MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY,
+        ],
+        help="要約で期待する CONTROL_MODE。crane の送信ポート(12345)を見るなら 4、"
+        "cm4_sim の出力ポート(12346)を見るなら 3 (default: 4)",
+    )
     args = parser.parse_args()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -310,14 +321,17 @@ def main() -> int:
     for counts in mode_counts.values():
         all_modes.update(counts)
     if all_modes:
-        if set(all_modes) == {MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY}:
-            print("\n=> 全スロットが byte23 == 4 (mode 4) でした。")
-        elif MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY not in all_modes:
-            print(
-                "\n=> mode 4 が 1 つも出ていません。planner:=visibility_graph で起動しているか確認してください。"
-            )
+        expected = args.expect_mode
+        if set(all_modes) == {expected}:
+            print(f"\n=> 全スロットが byte23 == {expected} でした。")
+        elif expected not in all_modes:
+            if expected == MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY:
+                hint = "planner:=visibility_graph で起動しているか確認してください。"
+            else:
+                hint = "cm4_sim が経路に入っているか確認してください。"
+            print(f"\n=> byte23 == {expected} が 1 つも出ていません。{hint}")
         else:
-            print("\n=> mode 4 と他モードが混在しています。")
+            print(f"\n=> byte23 == {expected} と他モードが混在しています。")
 
     if args.json_out:
         summary = {
