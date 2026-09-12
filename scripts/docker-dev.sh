@@ -157,16 +157,20 @@ if [[ $HAS_SUBCOMMAND == "false" ]]; then
     DOCKER_ARGS=("$COMPOSE_COMMAND" "${DOCKER_ARGS[@]}")
 fi
 
-if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
+if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]] && [[ $MINIMAL == "false" ]]; then
     DOCKER_ARGS+=(--scale robot-manager=0)
 fi
 
 # 最小構成モード: シミュレータ本体とGame Controllerのみを起動
 if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
-    if [[ $SIM == "erforce" ]]; then
-        DOCKER_ARGS+=("erforce-sim" "ssl-game-controller")
+    if [[ $MODE == "sim" ]]; then
+        if [[ $SIM == "erforce" ]]; then
+            DOCKER_ARGS+=("erforce-sim" "ssl-game-controller")
+        else
+            DOCKER_ARGS+=("grsim" "ssl-game-controller")
+        fi
     else
-        DOCKER_ARGS+=("grsim" "ssl-game-controller")
+        DOCKER_ARGS+=("ssl-game-controller")
     fi
 fi
 
