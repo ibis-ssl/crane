@@ -38,11 +38,6 @@ jobs:
       matrix:
         rosdistro: [jazzy]
     steps:
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -58,7 +53,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if reusable scenario image exists
+        id: check_scenario_image
+        run: |
+          CANDIDATE_TAGS=()
+          if [ -n "${{ github.sha }}" ]; then
+            CANDIDATE_TAGS+=("scenario-${{ github.sha }}")
+          fi
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+            CANDIDATE_TAGS+=("scenario-${{ github.event.pull_request.head.sha }}")
+          fi
+
+          FOUND_TAG=""
+          for tag in "${CANDIDATE_TAGS[@]}"; do
+            IMAGE="ghcr.io/${{ github.repository }}:${tag}"
+            echo "Checking image: ${IMAGE}"
+            if docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
+              FOUND_TAG="${tag}"
+              break
+            fi
+          done
+
+          if [ -n "${FOUND_TAG}" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "source_tag=${FOUND_TAG}" >> "$GITHUB_OUTPUT"
+            echo "既存の scenario イメージが見つかりました: ${FOUND_TAG}"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "既存の scenario イメージが見つかりません。新規ビルドを行います。"
+          fi
+
+      - name: Reuse scenario image as match image
+        if: steps.check_scenario_image.outputs.exists == 'true'
+        run: |
+          SOURCE_IMAGE="ghcr.io/${{ github.repository }}:${{ steps.check_scenario_image.outputs.source_tag }}"
+          TARGET_IMAGE="ghcr.io/${{ github.repository }}:match-${{ github.sha }}"
+          docker buildx imagetools create --tag "${TARGET_IMAGE}" "${SOURCE_IMAGE}"
+          echo "既存の ${SOURCE_IMAGE} を ${TARGET_IMAGE} としてタグ付けしました"
+
+      - name: Free Disk Space
+        if: steps.check_scenario_image.outputs.exists != 'true'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
       - name: Build crane image
+        if: steps.check_scenario_image.outputs.exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -66,10 +106,11 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:match-${{ github.sha }}
           cache-from: |
-            type=gha,scope=match-${{ github.ref_name }}
             type=gha,scope=match-develop
+            type=gha,scope=scenario-develop
             type=gha,scope=match
-          cache-to: type=gha,mode=max,scope=match-${{ github.ref_name }}
+            type=gha,scope=scenario
+          cache-to: type=gha,mode=min,scope=match-develop
 
   match_vs_tigers:
     needs: [build_crane_image]
