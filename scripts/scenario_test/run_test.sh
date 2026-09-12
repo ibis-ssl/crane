@@ -22,11 +22,28 @@ PLANNER="${PLANNER:-rvo2}"
 # 片方が全パケットを取るため cm4-sim の位置制御ループが位置信号を失う。
 COMPOSE_PROFILES="${COMPOSE_PROFILES:-}"
 IBIS_PORT="${IBIS_PORT:-12345}"
+IBIS_REFEREE_PORT="${IBIS_REFEREE_PORT:-11003}"
+# simulator-cli のチーム色自動検出。空文字にすると --ibis-use-referee を外せる。
+IBIS_USE_REFEREE_FLAG="${IBIS_USE_REFEREE_FLAG---ibis-use-referee}"
 CRANE_TARGET_PORT="${CRANE_TARGET_PORT:-12345}"
 FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE:-true}"
 RX_DELAY_MS="${RX_DELAY_MS:-0}"
 RX_JITTER_MS="${RX_JITTER_MS:-0}"
 RX_LOSS_RATE="${RX_LOSS_RATE:-0.0}"
+
+# ローカルモードで cm4-loop profile を使うときのホスト側 cm4_sim バイナリ。
+# Orion_CM4 にまだ Dockerfile が無く ghcr.io/ibis-ssl/orion-cm4-sim も未作成のため、
+# ローカルモードでは crane と同じくホスト上で直接起動する。
+CM4_SIM_BIN="${CM4_SIM_BIN:-${REPO_ROOT}/../../../Orion_CM4/cm4/bin/cm4_sim.out}"
+CM4_ROBOT_IDS="${CM4_ROBOT_IDS:-0,1,2,3,4,5,6,7,8,9,10}"
+CM4_RATE_HZ="${CM4_RATE_HZ:-1000}"
+CM4_SEED="${CM4_SEED:-0}"
+
+# cm4-loop profile が指定されているか
+USE_CM4_LOOP=0
+case ",${COMPOSE_PROFILES}," in
+*,cm4-loop,*) USE_CM4_LOOP=1 ;;
+esac
 
 # compose に渡す profile 引数を組み立てる（カンマ区切りで複数指定可）
 COMPOSE_PROFILE_ARGS=()
@@ -96,10 +113,40 @@ docker compose --profile cm4-loop -f "${COMPOSE_FILE}" down 2>/dev/null || true
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
 CRANE_TAG="${CRANE_TAG}" PLANNER="${PLANNER}" \
-    IBIS_PORT="${IBIS_PORT}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
+    IBIS_PORT="${IBIS_PORT}" IBIS_REFEREE_PORT="${IBIS_REFEREE_PORT}" IBIS_USE_REFEREE_FLAG="${IBIS_USE_REFEREE_FLAG}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
     FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE}" \
     RX_DELAY_MS="${RX_DELAY_MS}" RX_JITTER_MS="${RX_JITTER_MS}" RX_LOSS_RATE="${RX_LOSS_RATE}" \
     docker compose "${COMPOSE_PROFILE_ARGS[@]}" -f "${COMPOSE_FILE}" up -d
+
+# ローカルモードかつ cm4-loop の場合、cm4_sim をホスト上で起動する。
+# crane より先に上げて 12345 を確保しておく（crane の送信先）。
+CM4_SIM_PID=""
+if [ "${USE_LOCAL}" = "1" ] && [ "${USE_CM4_LOOP}" = "1" ]; then
+    if [ ! -x "${CM4_SIM_BIN}" ]; then
+        echo "エラー: cm4_sim バイナリが見つかりません: ${CM4_SIM_BIN}"
+        echo "Orion_CM4 の feat/cm4-position-control で 'bash cm4/build.sh' を実行するか、"
+        echo "CM4_SIM_BIN で場所を指定してください"
+        exit 1
+    fi
+    echo "cm4_sim をホスト上で起動中..."
+    # --feedback-port-base は 50100 固定。cm4_sim の再配信先は
+    # 224.5.20.(100+id):<base>+id で base に連動するが、crane_robot_receiver 側は
+    # 50100 を直書きしているため、ずらすと feedback が無言で途切れる。
+    "${CM4_SIM_BIN}" \
+        --robot-ids "${CM4_ROBOT_IDS}" \
+        --in-port "${CRANE_TARGET_PORT}" \
+        --out-addr 127.0.0.1 \
+        --out-port "${IBIS_PORT}" \
+        --feedback-port-base 50100 \
+        --multicast-if 127.0.0.1 \
+        --rate-hz "${CM4_RATE_HZ}" \
+        --rx-delay-ms "${RX_DELAY_MS}" \
+        --rx-jitter-ms "${RX_JITTER_MS}" \
+        --rx-loss-rate "${RX_LOSS_RATE}" \
+        --seed "${CM4_SEED}" >/tmp/cm4_sim_local.log 2>&1 &
+    CM4_SIM_PID=$!
+    echo "cm4_simプロセスID: ${CM4_SIM_PID}"
+fi
 
 # ローカルモードの場合、craneをローカルで起動
 CRANE_PID=""
@@ -214,6 +261,20 @@ if [ -n "${CRANE_PID}" ]; then
         echo ""
         echo "=== ローカルcraneのログ ==="
         tail -50 /tmp/crane_local.log
+    fi
+fi
+
+# cm4_simプロセスを停止
+if [ -n "${CM4_SIM_PID}" ]; then
+    echo "=== ローカルcm4_simプロセスを停止中 ==="
+    kill -TERM "${CM4_SIM_PID}" 2>/dev/null || true
+    sleep 1
+    kill -KILL "${CM4_SIM_PID}" 2>/dev/null || true
+    echo "cm4_simプロセスを停止しました"
+    if [ -f "/tmp/cm4_sim_local.log" ]; then
+        echo ""
+        echo "=== ローカルcm4_simのログ ==="
+        tail -30 /tmp/cm4_sim_local.log
     fi
 fi
 
