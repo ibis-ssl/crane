@@ -32,6 +32,21 @@ limitations under the License.
   <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
   <arg name="planner" default="rvo2" description="局所経路計画アルゴリズム (rvo2 または visibility_graph)"/>
 
+  <!-- feedback の受信方式。既定は sim フラグに追従する（従来動作）。
+       true : unicast 127.0.0.1:50100+id で受ける（simulator-cli から直接受け取る従来のシミュレータ構成）
+       false: 実機と同じ multicast 224.5.20.(100+id):50100+id で受ける
+       cm4_sim を経路に挟む構成では必ず false にすること。
+       cm4_sim は simulator-cli の unicast feedback を 127.0.0.1:50100+id で受ける。
+       ここで crane も同じ 127.0.0.1:50100+id を bind すると、SO_REUSEPORT の振り分けは
+       送信元を含む 4-tuple ハッシュで決まるため、単一送信元からの feedback は
+       「片方のソケットが全量を取り、もう片方はゼロ」になる（実測確認済み）。
+       crane 側が当たると cm4_sim は位置信号を 1 パケットも受け取れず位置制御が死ぬ。
+       false にすれば crane は multicast 側で受けるので、unicast は cm4_sim が独占できる
+       （multicast 受けと unicast 受けが混在しても取り違えないことも実測確認済み）。
+       詳細: framework/docs/robot-side-position-control.md -->
+  <arg name="feedback_sim_mode" default="$(var sim)"
+       description="feedbackをunicast(127.0.0.1)で受けるか(true)/実機と同じmulticastで受けるか(false)"/>
+
   <!-- ============================================================ -->
   <!-- ネットワークポート自動設定（sim引数に基づく） -->
   <!-- ============================================================ -->
@@ -166,6 +181,7 @@ limitations under the License.
   <!-- sender: 統合（packet_typeでプロトコルを切り替え） -->
   <node pkg="crane_sender" exec="ibis_sender_node">
     <param name="no_movement" value="false"/>
+    <!-- sim_mode は ibis_sender_node からは参照されていない（dead param）。feedback 受信とは無関係。 -->
     <param name="sim_mode" value="$(var sim)"/>
     <param name="packet_type" value="$(var packet_type)"/>
     <param name="target_address" value="$(var ibis_target_address_final)"/>
@@ -201,7 +217,7 @@ limitations under the License.
   </node>
 
   <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true">
-    <param name="sim_mode" value="$(var sim)"/>
+    <param name="sim_mode" value="$(var feedback_sim_mode)"/>
     <param name="max_robot_id" value="11"/>
   </node>
 
@@ -253,6 +269,8 @@ limitations under the License.
 
   <!-- 診断情報の配信 -->
   <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node">
+    <!-- ここは feedback_sim_mode ではなく sim に追従させる。このノードはソケットを開かず、
+         sim_mode は「ping/feedback が無い状態を正常とみなすか」の診断判定にしか使わないため。 -->
     <param name="sim_mode" value="$(var sim)"/>
   </node>
 
