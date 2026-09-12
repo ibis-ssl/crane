@@ -5,7 +5,7 @@ services:
     network_mode: host
     entrypoint: ["tini", "--"]
     command: >
-      ./build/bin/simulator-cli
+      ./bin/simulator-cli
       -g 2020B
       --realism None
       --ibis-use-referee

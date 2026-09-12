@@ -354,7 +354,13 @@ public:
         ip = std::format("{}.{}", ip_base, i + ip_offset);
       }
       int port = port_base + i;
-      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+      try {
+        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          get_logger(), "Failed to listen on %s:%d for robot %d: %s", ip.c_str(), port, i,
+          e.what());
+      }
     }
 
     // asioイベントループを専用スレッドで開始

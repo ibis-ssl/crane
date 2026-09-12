@@ -12,6 +12,7 @@ TEST_NAME="${1:-all}"
 VISION_PORT="${VISION_PORT:-10020}"
 USE_LOCAL="${USE_LOCAL:-1}" # デフォルトはローカルモード
 CRANE_TAG="${CRANE_TAG:-local-scenario}"
+PLANNER="${PLANNER:-rvo2}"
 
 # ワークスペースルートのパス（REPO_ROOTの2階層上）
 WORKSPACE_ROOT="$(cd "${REPO_ROOT}/../.." && pwd)"
@@ -33,6 +34,7 @@ LOG_RECORDER="${REPO_ROOT}/ssl-log-recorder"
 echo "=== シナリオテストの実行 ==="
 echo "モード: ${MODE_NAME}"
 echo "テスト: ${TEST_NAME}"
+echo "プランナー: ${PLANNER}"
 if [ "${USE_LOCAL}" != "1" ]; then
     echo "Dockerイメージタグ: ${CRANE_TAG}"
 fi
@@ -57,10 +59,13 @@ if [ ! -f "${LOG_RECORDER}" ]; then
     echo "ダウンロード完了"
 fi
 
+# 念のため前回の残存コンテナを停止・削除
+docker compose -f "${COMPOSE_FILE}" down 2>/dev/null || true
+
 # Docker Composeでサービスを起動（grSimとauto-referee）
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
-CRANE_TAG="${CRANE_TAG}" docker compose -f "${COMPOSE_FILE}" up -d
+CRANE_TAG="${CRANE_TAG}" PLANNER="${PLANNER}" docker compose -f "${COMPOSE_FILE}" up -d
 
 # ローカルモードの場合、craneをローカルで起動
 CRANE_PID=""
@@ -71,7 +76,7 @@ if [ "${USE_LOCAL}" = "1" ]; then
     # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
     # shellcheck source=/dev/null
     source "${WORKSPACE_ROOT}/install/setup.bash"
-    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow >/tmp/crane_local.log 2>&1 &
+    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:="${PLANNER}" >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
     echo "craneプロセスID: ${CRANE_PID}"
 
@@ -93,6 +98,9 @@ PYTEST_ARGS=(
     "--vision_port=${VISION_PORT}"
     "--logging"
     "--log_recorder=${LOG_RECORDER}"
+    "-p" "no:launch_ros"
+    "-p" "no:launch_testing"
+    "-p" "no:launch_pytest"
 )
 
 # テストの実行（失敗してもスクリプトは継続）
@@ -113,7 +121,7 @@ echo ""
 echo "=== Dockerコンテナのログ ==="
 docker compose -f "${COMPOSE_FILE}" logs
 
-# 動画生成（テスト失敗時のみ）
+# 動画生成（テスト失敗時のみ、最新のログファイル1件のみ対象）
 if [ ${TEST_RESULT} -ne 0 ]; then
     echo ""
     echo "=== テスト失敗：ログから動画を生成中 ==="
@@ -141,17 +149,17 @@ if [ ${TEST_RESULT} -ne 0 ]; then
         sudo apt install -y ffmpeg
     fi
 
-    # 動画の生成
+    # 直近に生成された最新ログのみ動画変換
     cd "${REPO_ROOT}"
-    for logfile in *.log.gz; do
-        if [ -f "${logfile}" ]; then
-            echo "動画を生成中: ${logfile}"
-            gunzip -c "${logfile}" >"${logfile%.gz}"
-            "${SSL_LOG_VIDEO_DIR}/cmd/ssl-log-video/ssl-log-video" -file "${logfile%.gz}" -output "${logfile%.gz}.avi"
-            ffmpeg -i "${logfile%.gz}.avi" -vcodec libx264 -acodec aac "${logfile%.gz}.mp4" -y
-            echo "動画を生成しました: ${logfile%.gz}.mp4"
-        fi
-    done
+    # shellcheck disable=SC2012,SC2035
+    LATEST_LOG="$(ls -t ./*.log.gz 2>/dev/null | head -n 1)"
+    if [ -n "${LATEST_LOG}" ] && [ -f "${LATEST_LOG}" ]; then
+        echo "動画を生成中: ${LATEST_LOG}"
+        gunzip -c "${LATEST_LOG}" >"${LATEST_LOG%.gz}"
+        "${SSL_LOG_VIDEO_DIR}/cmd/ssl-log-video/ssl-log-video" -file "${LATEST_LOG%.gz}" -output "${LATEST_LOG%.gz}.avi" || true
+        ffmpeg -i "${LATEST_LOG%.gz}.avi" -vcodec libx264 -acodec aac "${LATEST_LOG%.gz}.mp4" -y || true
+        echo "動画を生成しました: ${LATEST_LOG%.gz}.mp4"
+    fi
 fi
 
 # クリーンアップ
