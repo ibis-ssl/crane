@@ -6,7 +6,9 @@
 #   ./scripts/match-vs-tigers/run_local.sh
 #
 # 注意:
-#   - Dockerブリッジネットワークを使用するため、ホスト環境に影響しません
+#   - 各サービスはnetwork_mode: hostで動作し、SSL Vision/Refereeマルチキャストを
+#     ホストのネットワークスタックにそのまま使用する（Dockerブリッジ隔離ではない）
+#   - そのためWi-Fi/LANへのマルチキャスト漏洩を防ぐホスト隔離設定を起動前に適用する
 #   - craneもDocker内で実行されます（ホストで実行する場合はdocker-compose.local.yamlを使用）
 
 set -e
@@ -37,6 +39,10 @@ rm -rf "${COMPOSE_DIR}/results"
 mkdir -p "${COMPOSE_DIR}/results"
 echo "✓ 結果ディレクトリを作成"
 echo ""
+
+# erforce-sim/ssl-game-controller等はnetwork_mode:hostでマルチキャストを使うため、
+# Wi-Fi/LANへの漏洩を防ぐホスト隔離設定を適用してから起動する
+"${PROJECT_ROOT}/scripts/ensure-sim-network-confined.sh"
 
 # Docker Composeサービスを起動
 echo "Docker Composeサービスを起動中..."
