@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/dev/ball-calibration/requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --default-timeout=1000 --retries 10 -r requirements.txt
 
 # proto/ から Python protobuf モジュールを生成
 COPY docker/dev/ball-calibration/proto /tmp/ssl_proto
