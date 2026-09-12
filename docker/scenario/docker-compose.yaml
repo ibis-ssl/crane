@@ -8,6 +8,7 @@ services:
       ./bin/simulator-cli
       -g 2020B
       --realism None
+      --ibis-port ${IBIS_PORT:-12345}
       --ibis-use-referee
       --ibis-feedback-team-name ibis
       --ibis-referee-port 11003
@@ -19,10 +20,21 @@ services:
     image: ghcr.io/ibis-ssl/crane:${CRANE_TAG}
     container_name: crane
     network_mode: host
+    # command 内の $${VAR} はコンテナ内 bash が展開するため、environment で明示的に
+    # 渡さないと常に既定値になる（compose はホストの環境変数を自動転送しない）。
+    # PLANNER が届いていなかったため、これまで docker 経由では常に rvo2 で起動していた。
+    environment:
+      - PLANNER=${PLANNER:-rvo2}
+      # crane の送信先ポート。既定 12345。CM4 in the loop では cm4-sim が 12345 で待ち受ける。
+      - CRANE_TARGET_PORT=${CRANE_TARGET_PORT:-12345}
+      # feedback の受け方。cm4-sim を挟む構成では false（実機と同じ multicast 受け）にする。
+      # true のままだと crane と cm4-sim が 127.0.0.1:50100+id を奪い合い、
+      # 片方が全パケットを取るため cm4-sim の位置制御ループが位置信号を失う。
+      - FEEDBACK_SIM_MODE=${FEEDBACK_SIM_MODE:-true}
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-rvo2}
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-rvo2} ibis_target_port:=$${CRANE_TARGET_PORT:-12345} feedback_sim_mode:=$${FEEDBACK_SIM_MODE:-true}
       "
     tty: true
     stdin_open: true

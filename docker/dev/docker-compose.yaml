@@ -66,6 +66,7 @@ services:
       ./bin/simulator-cli
       -g 2023
       --realism Realistic
+      --ibis-port ${IBIS_PORT:-12345}
       --ibis-use-referee
       --ibis-feedback-team-name ibis
       --ibis-referee-port 11003

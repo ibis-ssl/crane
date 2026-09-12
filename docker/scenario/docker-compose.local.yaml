@@ -8,6 +8,7 @@ services:
       ./bin/simulator-cli
       -g 2020B
       --realism None
+      --ibis-port ${IBIS_PORT:-12345}
       --ibis-use-referee
       --ibis-feedback-team-name ibis
       --ibis-referee-port 11003
