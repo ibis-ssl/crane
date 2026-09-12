@@ -30,3 +30,36 @@ services:
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host
+
+  # ===== CM4 in the loop 構成（既定では起動しない） =====
+  # 有効化: docker compose --profile cm4-loop up -d
+  #
+  # 【未確定】image 名と CLI フラグは Orion_CM4 側（cm4-side セッション）で cm4_sim を
+  # 実装した時点で確定する。crane 側が依存するのは以下の「ポートと振る舞い」だけであり、
+  # フラグ名ではない:
+  #   - 12345 で crane からの mode 4 パケット（715B = 11 slot x 65B）を受ける
+  #   - 12346 へ mode 3（POLAR_VELOCITY_TARGET_MODE）の速度指令を送る
+  #   - 127.0.0.1:50100+id で simulator-cli からの feedback（128B unicast）を受ける
+  #   - 224.5.20.(100+id):50100+id へ実機と同じ 128B 形式のまま再配信する
+  #   - CONTROL_MODE(byte 23) を先に見てから CONTROL_MODE_ARGS(24..31) を復号する
+  # 詳細: framework/docs/robot-side-position-control.md
+  cm4-sim:
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-latest}
+    container_name: cm4-sim
+    network_mode: host
+    entrypoint: ["tini", "--"]
+    command: >
+      cm4_sim
+      --ai-port 12345
+      --g474-port 12346
+      --feedback-listen-port-base 50100
+      --feedback-multicast-base 224.5.20
+      --feedback-ip-offset 100
+      --rate-hz ${CM4_RATE_HZ:-1000}
+      --rx-delay-ms ${RX_DELAY_MS:-0}
+      --rx-jitter-ms ${RX_JITTER_MS:-0}
+      --rx-loss-rate ${RX_LOSS_RATE:-0.0}
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles: ["cm4-loop"]

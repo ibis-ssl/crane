@@ -172,3 +172,39 @@ services:
     # image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021
+
+  # ===== CM4 in the loop 構成（既定では起動しない） =====
+  # 有効化例:
+  #   IBIS_PORT=12346 RX_DELAY_MS=30 \
+  #   docker compose --profile sim-erforce --profile cm4-loop -f docker/dev/docker-compose.yaml up -d
+  #
+  # crane 本体は dev では docker ではなくホスト上で起動するので、あわせて
+  #   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph \
+  #       ibis_target_port:=12345 feedback_sim_mode:=false
+  # のように起動すること（feedback_sim_mode:=false が無いと cm4-sim と
+  # 127.0.0.1:50100+id を奪い合い、片方が全パケットを取る）。
+  #
+  # 【未確定】image 名と CLI フラグは Orion_CM4 側で cm4_sim を実装した時点で確定する。
+  # crane 側が依存するのはポートと振る舞いだけであり、フラグ名ではない。
+  # 詳細: framework/docs/robot-side-position-control.md
+  cm4-sim:
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-latest}
+    container_name: cm4-sim
+    network_mode: host
+    entrypoint: ["tini", "--"]
+    command: >
+      cm4_sim
+      --ai-port 12345
+      --g474-port 12346
+      --feedback-listen-port-base 50100
+      --feedback-multicast-base 224.5.20
+      --feedback-ip-offset 100
+      --rate-hz ${CM4_RATE_HZ:-1000}
+      --rx-delay-ms ${RX_DELAY_MS:-0}
+      --rx-jitter-ms ${RX_JITTER_MS:-0}
+      --rx-loss-rate ${RX_LOSS_RATE:-0.0}
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles:
+      - cm4-loop
