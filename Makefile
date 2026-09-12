@@ -3,6 +3,7 @@
 # デフォルト設定
 USE_LOCAL ?= 1
 CRANE_TAG ?= local-scenario
+PLANNER ?= rvo2
 
 help:
 	@echo "利用可能なターゲット:"
@@ -14,16 +15,18 @@ help:
 	@echo "  scenario-test-clean       - シナリオテスト環境のクリーンアップ"
 	@echo ""
 	@echo "環境変数:"
-	@echo "  TEST=<テスト名>  - 実行するテスト名（例: TEST=STOP_ROBOT_SPEED）"
-	@echo "  USE_LOCAL=1      - ローカルのワークスペースを使用（デフォルト）"
-	@echo "  USE_LOCAL=0      - Dockerイメージを使用（リモートモード）"
-	@echo "  CRANE_TAG=<タグ> - 使用するDockerイメージタグ（リモートモード時、デフォルト: local-scenario）"
+	@echo "  TEST=<テスト名>       - 実行するテスト名（例: TEST=STOP_ROBOT_SPEED）"
+	@echo "  PLANNER=<プランナー>  - 経路計画アルゴリズム（rvo2 または visibility_graph、デフォルト: rvo2）"
+	@echo "  USE_LOCAL=1           - ローカルのワークスペースを使用（デフォルト）"
+	@echo "  USE_LOCAL=0           - Dockerイメージを使用（リモートモード）"
+	@echo "  CRANE_TAG=<タグ>      - 使用するDockerイメージタグ（リモートモード時、デフォルト: local-scenario）"
 	@echo ""
 	@echo "使用例:"
-	@echo "  make scenario-test-setup                  # 初回のみ実行"
-	@echo "  make scenario-test                        # 全テスト実行"
-	@echo "  make scenario-test TEST=STOP_ROBOT_SPEED  # 個別テスト実行"
-	@echo "  USE_LOCAL=0 make scenario-test            # リモートモードで実行"
+	@echo "  make scenario-test-setup                                  # 初回のみ実行"
+	@echo "  make scenario-test                                        # 全テスト実行"
+	@echo "  make scenario-test TEST=STOP_ROBOT_SPEED                  # 個別テスト実行"
+	@echo "  make scenario-test PLANNER=visibility_graph TEST=STOP_ROBOT_SPEED # VisibilityGraphで実行"
+	@echo "  USE_LOCAL=0 make scenario-test                            # リモートモードで実行"
 
 scenario-test-setup:
 	@echo "=== シナリオテスト環境のセットアップ ==="
@@ -52,7 +55,7 @@ scenario-test:
 		echo "先に 'make scenario-test-setup' を実行してください"; \
 		exit 1; \
 	fi
-	@bash scripts/scenario_test/run_test.sh $(TEST)
+	@PLANNER=$(PLANNER) bash scripts/scenario_test/run_test.sh $(TEST)
 
 scenario-test-docker-up:
 	@echo "=== Docker環境を起動中 ==="

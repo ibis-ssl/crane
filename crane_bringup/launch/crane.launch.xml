@@ -30,6 +30,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <arg name="team" default="ibis" description="チーム名"/>
   <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
+  <arg name="planner" default="rvo2" description="局所経路計画アルゴリズム (rvo2 または visibility_graph)"/>
 
   <!-- ============================================================ -->
   <!-- ネットワークポート自動設定（sim引数に基づく） -->
@@ -127,7 +128,7 @@ limitations under the License.
   <!-- local_planner: シミュレータ用設定 -->
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-      <param name="planner" value="rvo2"/>
+      <param name="planner" value="$(var planner)"/>
       <param name="max_vel" value="$(var max_vel)"/>
       <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
@@ -142,7 +143,7 @@ limitations under the License.
   <!-- local_planner: 実機用設定 -->
   <group unless="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-      <param name="planner" value="rvo2"/>
+      <param name="planner" value="$(var planner)"/>
       <param name="max_vel" value="$(var max_vel)"/>
       <param name="planning_deceleration" value="$(var planning_deceleration)"/>
       <param name="planning_acceleration" value="$(var planning_acceleration)"/>
@@ -201,6 +202,7 @@ limitations under the License.
 
   <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true">
     <param name="sim_mode" value="$(var sim)"/>
+    <param name="max_robot_id" value="11"/>
   </node>
 
   <!-- Webデバッガー（ブラウザ http://localhost:8090 でアクセス可能） -->

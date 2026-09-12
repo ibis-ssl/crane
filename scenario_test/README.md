@@ -16,6 +16,7 @@
 | `PENALTY_AREA_BYPASS_STABILITY` | ペナルティ横断回避時の侵入防止・安定性テスト |
 | `PASS_BUILDUP_STATIC` | 静的敵配置でのビルドアップパス成立テスト（3試行中2成功） |
 | `PASS_UNDER_MARK` | ゴール側マーク下でのパス成立テスト（3試行中2成功） |
+| `VISIBILITY_OBSTACLE_AVOIDANCE` | 敵ロボット障害物の迂回・衝突回避テスト（VisibilityGraphPlanner向け） |
 
 ### パス成功率の計測（テストではなく A/B 比較用）
 
@@ -76,6 +77,21 @@ make scenario-test
 # 個別テストを実行
 make scenario-test TEST=STOP_ROBOT_SPEED
 make scenario-test TEST=emit_from_penalty_01
+
+# プランナーを指定して実行（デフォルト: rvo2）
+make scenario-test PLANNER=visibility_graph TEST=VISIBILITY_OBSTACLE_AVOIDANCE
+make scenario-test PLANNER=visibility_graph TEST=STOP_ROBOT_SPEED
+```
+
+### プランナーの切り替え
+
+Crane の局所経路計画アルゴリズム（`rvo2` または `visibility_graph`）を環境変数 `PLANNER` で切り替えてテストできます。
+
+- `PLANNER=rvo2`（デフォルト）: RVO2 アルゴリズム
+- `PLANNER=visibility_graph`: 可視グラフ法ベースのアルゴリズム
+
+```bash
+PLANNER=visibility_graph make scenario-test TEST=VISIBILITY_OBSTACLE_AVOIDANCE
 ```
 
 ### ローカルモード vs リモートモード

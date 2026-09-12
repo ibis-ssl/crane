@@ -5,7 +5,7 @@ services:
     network_mode: host
     entrypoint: ["tini", "--"]
     command: >
-      ./build/bin/simulator-cli
+      ./bin/simulator-cli
       -g 2020B
       --realism None
       --ibis-use-referee
@@ -22,7 +22,7 @@ services:
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-rvo2}
       "
     tty: true
     stdin_open: true

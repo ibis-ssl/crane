@@ -42,9 +42,9 @@ pip install pyyaml setuptools jinja2 typeguard lark
 echo "robocup_scenario_testライブラリをインストール中..."
 pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
 
-# pytestのインストール
+# pytestのインストール（ROS 2 Jazzy互換性のため7.4.4を指定）
 echo "pytestをインストール中..."
-pip install pytest
+pip install "pytest==7.4.4"
 
 echo ""
 echo "=== セットアップが完了しました ==="
