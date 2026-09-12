@@ -5,21 +5,28 @@ on:
     branches:
       - develop
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  build_base:
-    name: build base image
+  build:
+    name: build Docker targets
     runs-on: ubuntu-latest
     steps:
-      - name: free disk
+      - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
+
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
@@ -29,92 +36,73 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image
-        uses: docker/build-push-action@v5
+      - name: Restore compiler cache
+        id: ccache
+        uses: actions/cache@v4
+        with:
+          path: cache-mount
+          key: docker-ccache-v2-${{ runner.os }}-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}-${{ github.sha }}
+          restore-keys: |
+            docker-ccache-v2-${{ runner.os }}-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}-
+            docker-ccache-v2-${{ runner.os }}-
+
+      - name: Inject compiler cache into BuildKit
+        uses: reproducible-containers/buildkit-cache-dance@v3
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-dir: cache-mount
+          cache-map: |
+            {
+              "crane-ccache": "/root/.ccache"
+            }
+          skip-extraction: ${{ steps.ccache.outputs.cache-hit }}
+
+      - name: Build base image
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: docker/base/Dockerfile
+          file: docker/Dockerfile
+          target: base
+          pull: true
           push: true
-          tags: ghcr.io/${{ github.repository }}:base
+          tags: |
+            ghcr.io/${{ github.repository }}:base
+            ghcr.io/${{ github.repository }}:base-jazzy-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}
           cache-from: |
             type=gha,scope=base
             type=registry,ref=ghcr.io/${{ github.repository }}:base
           cache-to: type=gha,mode=max,scope=base
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
 
-  build_ccache:
-    name: build ccache image
-    needs: build_base
-    runs-on: ubuntu-latest
-    steps:
-      - name: free disk
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build image
-        uses: docker/build-push-action@v5
+      - name: Build dependency image
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: docker/ccache/Dockerfile
+          file: docker/Dockerfile
+          target: deps
+          pull: true
           push: true
-          tags: ghcr.io/${{ github.repository }}:ccache
+          tags: |
+            ghcr.io/${{ github.repository }}:deps-jazzy
+            ghcr.io/${{ github.repository }}:deps-jazzy-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}
           cache-from: |
-            type=gha,scope=ccache
-            type=registry,ref=ghcr.io/${{ github.repository }}:ccache
-          cache-to: type=gha,mode=max,scope=ccache
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+            type=gha,scope=deps
+            type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy
+            type=registry,ref=ghcr.io/${{ github.repository }}:base
+          cache-to: type=gha,mode=max,scope=deps
 
-  build_prebuilt:
-    name: build prebuilt image
-    needs: build_base
-    runs-on: ubuntu-latest
-    steps:
-      - name: free disk
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build image
-        uses: docker/build-push-action@v5
+      - name: Build scenario image
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: docker/prebuilt/Dockerfile
+          file: docker/Dockerfile
+          target: scenario
+          pull: true
           push: true
-          tags: ghcr.io/${{ github.repository }}:prebuilt
+          tags: |
+            ghcr.io/${{ github.repository }}:scenario-${{ github.sha }}
+            ghcr.io/${{ github.repository }}:scenario-develop
           cache-from: |
-            type=gha,scope=prebuilt
-            type=registry,ref=ghcr.io/${{ github.repository }}:prebuilt
-          cache-to: type=gha,mode=max,scope=prebuilt
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+            type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}
+            type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
+            type=gha,scope=scenario-develop
+          cache-to: type=gha,mode=max,scope=scenario-develop

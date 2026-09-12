@@ -25,6 +25,10 @@ on:
 env:
   PYTHON_VERSION: '3.12'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build_crane_image:
     name: craneイメージのビルド
@@ -99,13 +103,16 @@ jobs:
 
       - name: Build crane image
         if: steps.check_scenario_image.outputs.exists != 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: docker/scenario/Dockerfile
+          file: docker/Dockerfile
+          target: scenario
           push: true
           tags: ghcr.io/${{ github.repository }}:match-${{ github.sha }}
           cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy
+            type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
             type=gha,scope=match-develop
             type=gha,scope=scenario-develop
             type=gha,scope=match

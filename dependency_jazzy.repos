@@ -2,8 +2,8 @@ repositories:
     speak_ros:
         type: git
         url: https://github.com/HansRobo/speak_ros.git
-        version: main
+        version: ea08b1ff6f0f75de0b5d792f1686c04397a6c5ed
     proto2ros:
         type: git
         url: https://github.com/ibis-ssl/proto2ros.git
-        version: jazzy
+        version: 2fcedfe306fad3395da99477361909c80b0c1f6d

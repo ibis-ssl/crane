@@ -26,16 +26,16 @@ CIで実行される自動シナリオテスト用のDocker環境です。
 ### Dockerfileの使用
 
 ```bash
-cd docker/scenario
-docker build -t crane:scenario-local -f Dockerfile ../..
+docker build -t crane:scenario-local -f docker/Dockerfile --target scenario .
 ```
 
-このDockerfileは：
+共通Dockerfileの `scenario` targetは：
 
-1. ROS 2 Jazzy環境をセットアップ
-2. 依存パッケージをインストール
-3. craneワークスペースをビルド
-4. シナリオテスト環境を構築
+1. `base` targetでROS 2 Jazzyとシステム依存をセットアップ
+2. `deps` targetで固定済み外部依存を `/opt/crane_deps` にビルド
+3. `system-deps` targetでcraneの `package.xml` に対応するOS依存をセットアップ
+4. `scenario` targetでcrane本体だけをoverlay build
+5. `/root/ibis_ws/install/setup.bash` から従来どおり起動可能な環境を構築
 
 ### CI再現
 
@@ -51,7 +51,7 @@ cd docker/scenario
 
 このDockerfileは以下のGitHub Actionsワークフローで使用されます：
 
-- `.github/workflows/ros-ci.yaml` - ROS 2 CI（シナリオテスト含む）
+- `.github/workflows/scenario_test.yaml` - シナリオテストCI
 
 ### CIでの実行フロー
 
@@ -80,7 +80,7 @@ GitHub ActionsのArtifactsセクションから以下をダウンロード：
 
 ### ベースイメージ
 
-- `ros:jazzy-ros-base-noble` - ROS 2 Jazzy公式イメージ
+- `ros:jazzy` - ROS 2 Jazzy公式イメージ
 
 ### 追加パッケージ
 
@@ -90,8 +90,9 @@ GitHub ActionsのArtifactsセクションから以下をダウンロード：
 
 ### ビルド最適化
 
-- ccacheの使用
-- マルチステージビルド（将来的に検討可能）
+- GitHub Actions間で永続化されるccache
+- `package.xml` が変わらないソース変更では再利用されるOS依存レイヤー
+- `base` / `deps` / `system-deps` / `scenario` のマルチステージビルド
 
 ## トラブルシューティング
 
@@ -100,7 +101,7 @@ GitHub ActionsのArtifactsセクションから以下をダウンロード：
 ccacheが有効になっているか確認：
 
 ```bash
-docker build --build-arg CCACHE_DIR=/ccache ...
+./scripts/scenario_test/build_docker.sh
 ```
 
 ### テストがタイムアウト
