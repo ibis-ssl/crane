@@ -3,7 +3,8 @@
 #
 # scripts/setup-multicast.sh は sim 用に以下を設定する:
 #   (a) 224.0.0.0/4 の送信経路を lo に強制
-#   (b) 224.5.23.0/24 (SSL Vision/Referee/Tracker) の lo 以外への送出を iptables で遮断
+#   (b) 224.5.23.0/24 (SSL Vision/Referee/Tracker) と 224.5.20.0/24 (ロボット feedback) の
+#       lo 以外への送出を iptables で遮断
 #
 # これが real モードでも残っていると、実機の Vision/Referee を物理インターフェースから
 # 受信・送信できずサイレントに機能しなくなる（試合中に気づけないと重大事故になる）。
@@ -20,7 +21,7 @@
 # 冪等: sim用の設定が残っていなければ何もしない。
 set -euo pipefail
 
-readonly MULTICAST_SUBNET="224.5.23.0/24"
+readonly MULTICAST_SUBNETS=("224.5.23.0/24" "224.5.20.0/24")
 readonly IPTABLES_COMMENT="crane-sim-multicast-confine"
 
 # iptables -C はroot権限が無いと「ルール不在」ではなく Permission denied で失敗し、
@@ -34,10 +35,12 @@ fi
 changed=false
 route_warning=false
 
-while iptables -C OUTPUT -d "$MULTICAST_SUBNET" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP 2>/dev/null; do
-    echo "[restore-real-network] simモード用の遮断ルール (${MULTICAST_SUBNET}) を解除します"
-    sudo iptables -D OUTPUT -d "$MULTICAST_SUBNET" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP
-    changed=true
+for subnet in "${MULTICAST_SUBNETS[@]}"; do
+    while iptables -C OUTPUT -d "$subnet" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP 2>/dev/null; do
+        echo "[restore-real-network] simモード用の遮断ルール (${subnet}) を解除します"
+        sudo iptables -D OUTPUT -d "$subnet" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP
+        changed=true
+    done
 done
 
 if ip route show 224.0.0.0/4 2>/dev/null | grep -q "dev lo"; then

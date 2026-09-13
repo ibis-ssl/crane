@@ -154,6 +154,13 @@ def main() -> int:
     )
     parser.add_argument("--ttl", type=int, default=1, help="multicast TTL (default: 1)")
     parser.add_argument(
+        "--multicast-if",
+        default="127.0.0.1",
+        help="multicast 送出インタフェースの IP (default: 127.0.0.1)。"
+        "既定ではループバックに固定し Wi-Fi/LAN への漏洩を防ぐ。"
+        "実機ネットワークへ流したい場合はそのインタフェースの IP を指定する",
+    )
+    parser.add_argument(
         "--moving",
         action="store_true",
         help="位置を円運動させる（静止値ではなく変化を見たいとき）",
@@ -167,6 +174,14 @@ def main() -> int:
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, args.ttl)
         # 同一ホストの受信プロセスへ届かせる
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        # 送出インタフェースを明示する。指定しないと OS の既定ルート（Wi-Fi に
+        # なりうる）が選ばれ、224.5.20.x が AP へ漏れる。ルーティング設定に
+        # 依存せずソケット単位で固定するため、発生源での封じ込めになる。
+        sock.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_MULTICAST_IF,
+            socket.inet_aton(args.multicast_if),
+        )
 
     targets = []
     for rid in robot_ids:
