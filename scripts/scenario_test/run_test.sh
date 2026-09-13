@@ -157,7 +157,12 @@ if [ "${USE_LOCAL}" = "1" ]; then
     # ROS 2環境のセットアップとcraneの起動（バックグラウンド）
     # shellcheck source=/dev/null
     source "${WORKSPACE_ROOT}/install/setup.bash"
-    ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:="${PLANNER}" ibis_target_port:="${CRANE_TARGET_PORT}" feedback_sim_mode:="${FEEDBACK_SIM_MODE}" >/tmp/crane_local.log 2>&1 &
+    # setsid で独自のプロセスグループにする。非対話スクリプトはジョブ制御が無効なので、
+    # 単に & で起動するとこのスクリプト自身と同じプロセスグループに入ってしまい、
+    # 後段の `kill -TERM -<pid>` が存在しないグループを狙って何も落とせない。
+    # その結果 ros2 launch の子ノード群が毎回残り、実行を繰り返すと DDS domain 0 の
+    # participant index を使い切って world_model_publisher が起動できなくなる。
+    setsid ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:="${PLANNER}" ibis_target_port:="${CRANE_TARGET_PORT}" feedback_sim_mode:="${FEEDBACK_SIM_MODE}" >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
     echo "craneプロセスID: ${CRANE_PID}"
 
@@ -249,11 +254,20 @@ echo ""
 # ローカルモードの場合、craneプロセスを停止
 if [ -n "${CRANE_PID}" ]; then
     echo "=== ローカルcraneプロセスを停止中 ==="
-    # プロセスグループ全体を終了（子プロセスも含む）
-    kill -TERM -${CRANE_PID} 2>/dev/null || true
-    sleep 2
-    # まだ残っている場合は強制終了
-    kill -KILL -${CRANE_PID} 2>/dev/null || true
+    # プロセスグループ全体を終了（子プロセスも含む）。
+    # pid ではなく実際の pgid を引く。setsid が効いていれば pgid == CRANE_PID になるが、
+    # 万一効いていない場合にこのスクリプト自身のグループを撃たないよう $$ と比較して守る。
+    CRANE_PGID="$(ps -o pgid= -p "${CRANE_PID}" 2>/dev/null | tr -d ' ')"
+    if [ -n "${CRANE_PGID}" ] && [ "${CRANE_PGID}" != "$$" ]; then
+        kill -TERM -"${CRANE_PGID}" 2>/dev/null || true
+        sleep 2
+        kill -KILL -"${CRANE_PGID}" 2>/dev/null || true
+    else
+        echo "警告: craneのプロセスグループを特定できないため単一プロセスのみ停止します" >&2
+        kill -TERM "${CRANE_PID}" 2>/dev/null || true
+        sleep 2
+        kill -KILL "${CRANE_PID}" 2>/dev/null || true
+    fi
     echo "craneプロセスを停止しました"
 
     # craneのログを表示
