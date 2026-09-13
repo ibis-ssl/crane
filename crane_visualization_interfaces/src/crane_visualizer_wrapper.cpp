@@ -32,11 +32,6 @@ SvgCircleBuilder VisualizerMessageBuilder::circle() { return SvgCircleBuilder(sh
 
 SvgLineBuilder VisualizerMessageBuilder::line() { return SvgLineBuilder(shared_from_this()); }
 
-SvgPolygonBuilder VisualizerMessageBuilder::polygon()
-{
-  return SvgPolygonBuilder(shared_from_this());
-}
-
 SvgPolyLineBuilder VisualizerMessageBuilder::polyline()
 {
   return SvgPolyLineBuilder(shared_from_this());
@@ -65,27 +60,6 @@ auto VisualizerMessageBuilder::arrow(
   Point right = end - dir * arrowhead_length - perp * arrowhead_width;
   line().start(end).end(left).stroke(color).strokeWidth(stroke_width).build();
   line().start(end).end(right).stroke(color).strokeWidth(stroke_width).build();
-}
-
-auto VisualizerMessageBuilder::velocityArrow(
-  Point pos, Vector2 velocity, const std::string & color, double scale, double stroke_width) -> void
-{
-  double speed = velocity.norm();
-  if (speed < 0.01) return;  // 速度がほぼゼロなら描画しない
-
-  double length = speed * scale;
-  Vector2 dir = velocity / speed;
-  Point end = pos + dir * length;
-
-  // メインシャフト
-  line().start(pos).end(end).stroke(color, 0.7).strokeWidth(stroke_width).build();
-
-  // V字ヘッド（速度矢印用の小さめのヘッド）
-  Vector2 perp(-dir.y(), dir.x());
-  Point base_left = end + perp * 0.06 - dir * 0.03;
-  Point base_right = end - perp * 0.06 - dir * 0.03;
-  line().start(end).end(base_left).stroke(color, 0.5).strokeWidth(stroke_width).build();
-  line().start(end).end(base_right).stroke(color, 0.5).strokeWidth(stroke_width).build();
 }
 
 auto VisualizerMessageBuilder::labeledCircle(
@@ -304,52 +278,5 @@ auto VisualizerMessageBuilder::drawRobotWithID(
     .fontSize(id_font_size)
     .fill(id_color)
     .build();
-}
-
-// 軌跡描画の便利関数の実装
-auto VisualizerMessageBuilder::drawTrajectory(
-  const std::vector<Point> & points, const std::string & color, double base_opacity,
-  int sampling_interval, double stroke_width) -> void
-{
-  if (points.empty()) return;
-
-  auto polyline_builder = polyline().stroke(color, base_opacity).strokeWidth(stroke_width);
-  for (size_t i = 0; i < points.size(); i += sampling_interval) {
-    polyline_builder = polyline_builder.addPoint(points[i]);
-  }
-  // 最後のポイントが含まれていない場合は追加
-  if ((points.size() - 1) % sampling_interval != 0) {
-    polyline_builder = polyline_builder.addPoint(points.back());
-  }
-  polyline_builder.build();
-}
-
-auto VisualizerMessageBuilder::drawFadingTrajectory(
-  const std::vector<Point> & points, const std::string & color, int segments, double stroke_width,
-  int sampling_interval) -> void
-{
-  if (points.empty() || segments <= 0) return;
-
-  // セグメント数を調整（ポイント数より多い場合はポイント数に合わせる）
-  int actual_segments = std::min(segments, static_cast<int>(points.size()));
-
-  for (int i = 0; i < actual_segments; ++i) {
-    int start = static_cast<int>((points.size() / static_cast<double>(actual_segments)) * i);
-    int end = static_cast<int>((points.size() / static_cast<double>(actual_segments)) * (i + 1));
-
-    // セグメント内のポイントを描画
-    auto polyline_builder = polyline();
-    for (int index = start; index < end; index += sampling_interval) {
-      polyline_builder = polyline_builder.addPoint(points[index]);
-    }
-    // 最後のセグメントでない場合、終点を追加
-    if (i != actual_segments - 1 && end < static_cast<int>(points.size())) {
-      polyline_builder = polyline_builder.addPoint(points[end]);
-    }
-
-    // グラデーション透明度（古い軌跡ほど薄く）
-    double opacity = 0.5 * start / static_cast<double>(points.size());
-    polyline_builder.stroke(color, opacity).strokeWidth(stroke_width).build();
-  }
 }
 }  // namespace crane
