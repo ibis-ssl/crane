@@ -12,7 +12,6 @@ setup(
     packages=[
         package_name,
         f"{package_name}.mcap_analysis",
-        f"{package_name}.bag_analysis",
         f"{package_name}.svg_video",
         f"{package_name}.svg_video.renderers",
     ],
@@ -40,9 +39,4 @@ setup(
     maintainer_email="ibis.ssl.team@gmail.com",
     description="Python版Rosbag解析・MCAP解析・SVG動画生成ツール",
     license="MIT",
-    entry_points={
-        "console_scripts": [
-            "crane_bag_py = crane_mcap_tools.bag_analysis.cli:main",
-        ],
-    },
 )
