@@ -73,7 +73,15 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
         static_cast<uint16_t>(std::clamp(elapsed_ms, 0.0, 65535.0));
     } catch (...) {
       RCLCPP_ERROR(get_logger(), "Failed to get elapsed time of vision from world_model");
-      command.elapsed_time_ms_since_last_vision = 0;
+      // world_model からロボットを引けない状況で 0（＝たった今検出した）を送るのは
+      // 最も危険な向きの fail-open なので、最大陳腐化を送って受信側を停止させる。
+      // 実機 G474 / CM4 / simulator-cli はいずれも
+      // elapsed_time_ms_since_last_vision > 500 で停止する。
+      // なお is_vision_available は ibis_sender_node 側で available_ids から
+      // 独立に計算されるが、この catch は robots.at(id) が範囲外 id で投げた場合にしか
+      // 入らず、その id は available_ids にも含まれないため false になる。
+      // 両フィールドが矛盾する組み合わせにはならない。
+      command.elapsed_time_ms_since_last_vision = 65535;
     }
 
     if (
