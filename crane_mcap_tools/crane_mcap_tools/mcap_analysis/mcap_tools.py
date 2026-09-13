@@ -6,8 +6,8 @@
 import logging
 from typing import Any
 
-from ..bag_analysis.metrics import distance_2d, speed_2d, speed_3d
 from .extractor import AnnotationContext, WorldModelSnapshot
+from .metrics import distance_2d, speed_2d, speed_3d
 
 logger = logging.getLogger(__name__)
 
