@@ -8,9 +8,10 @@ services:
       ./bin/simulator-cli
       -g 2020B
       --realism None
-      --ibis-use-referee
+      --ibis-port ${IBIS_PORT:-12345}
+      ${IBIS_USE_REFEREE_FLAG---ibis-use-referee}
       --ibis-feedback-team-name ibis
-      --ibis-referee-port 11003
+      --ibis-referee-port ${IBIS_REFEREE_PORT:-11003}
     tty: true
     stdin_open: true
     restart: "no"
@@ -29,3 +30,19 @@ services:
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host
+
+  # ===== CM4 in the loop 構成 =====
+  # ローカルモードでは cm4_sim も crane と同じくホスト上で直接実行する
+  # （run_test.sh から起動される）。Orion_CM4 に Dockerfile がまだ無く
+  # ghcr.io/ibis-ssl/orion-cm4-sim も未作成のため、コンテナ定義は置かない。
+  #
+  # 起動:
+  #   COMPOSE_PROFILES=cm4-loop IBIS_PORT=12346 CRANE_TARGET_PORT=12345 \
+  #   FEEDBACK_SIM_MODE=false PLANNER=visibility_graph \
+  #   bash scripts/scenario_test/run_test.sh VISIBILITY_OBSTACLE_AVOIDANCE
+  #
+  # バイナリは Orion_CM4 の feat/cm4-position-control を `bash cm4/build.sh` で
+  # ビルドしたもの。場所は CM4_SIM_BIN で上書きできる。
+  #
+  # コンテナ版のサービス定義とインタフェース契約は docker/scenario/docker-compose.yaml
+  # の cm4-sim を参照（イメージ作成後はそちらに合わせる）。

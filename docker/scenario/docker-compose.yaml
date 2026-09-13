@@ -8,9 +8,10 @@ services:
       ./bin/simulator-cli
       -g 2020B
       --realism None
-      --ibis-use-referee
+      --ibis-port ${IBIS_PORT:-12345}
+      ${IBIS_USE_REFEREE_FLAG---ibis-use-referee}
       --ibis-feedback-team-name ibis
-      --ibis-referee-port 11003
+      --ibis-referee-port ${IBIS_REFEREE_PORT:-11003}
     tty: true
     stdin_open: true
     restart: "no"
@@ -19,10 +20,21 @@ services:
     image: ghcr.io/ibis-ssl/crane:${CRANE_TAG}
     container_name: crane
     network_mode: host
+    # command 内の $${VAR} はコンテナ内 bash が展開するため、environment で明示的に
+    # 渡さないと常に既定値になる（compose はホストの環境変数を自動転送しない）。
+    # PLANNER が届いていなかったため、これまで docker 経由では常に rvo2 で起動していた。
+    environment:
+      - PLANNER=${PLANNER:-rvo2}
+      # crane の送信先ポート。既定 12345。CM4 in the loop では cm4-sim が 12345 で待ち受ける。
+      - CRANE_TARGET_PORT=${CRANE_TARGET_PORT:-12345}
+      # feedback の受け方。cm4-sim を挟む構成では false（実機と同じ multicast 受け）にする。
+      # true のままだと crane と cm4-sim が 127.0.0.1:50100+id を奪い合い、
+      # 片方が全パケットを取るため cm4-sim の位置制御ループが位置信号を失う。
+      - FEEDBACK_SIM_MODE=${FEEDBACK_SIM_MODE:-true}
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-rvo2}
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-rvo2} ibis_target_port:=$${CRANE_TARGET_PORT:-12345} feedback_sim_mode:=$${FEEDBACK_SIM_MODE:-true}
       "
     tty: true
     stdin_open: true
@@ -38,3 +50,50 @@ services:
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host
+
+  # ===== CM4 in the loop 構成（既定では起動しない） =====
+  # 有効化: docker compose --profile cm4-loop up -d
+  #
+  # CLI フラグは Orion_CM4 の feat/cm4-position-control ブランチの cm4_sim --help と
+  # 突き合わせて確定済み。
+  # 【未確定】image のみ。ghcr.io/ibis-ssl/orion-cm4-sim は未作成で Orion_CM4 に
+  # Dockerfile も無いため、compose 一括起動はイメージ作成待ち。
+  # ローカルバイナリでの統合は docker-compose.local.yaml 側で今すぐ可能。
+  #
+  # --feedback-port-base は simulator-cli の --ibis-feedback-port-base と揃えること。
+  # これは cm4_sim が simulator-cli からの unicast を受ける「入力側」のポートである。
+  # multicast 再配信先は 224.5.20.(100+id):50100+id 固定で、入力側 base とは独立している
+  # （--feedback-port-base 50800 で起動し 224.5.20.100:50100 に 619 パケット、
+  #   224.5.20.100:50800 に 0 パケットを実測）。
+  # crane_robot_receiver は 50100 を直書きしているので、この分離のおかげで
+  # 入力側 base を変えても crane の受信は壊れない。
+  #
+  # crane 側が依存するのは以下の「ポートと振る舞い」:
+  #   - 12345 で crane からの mode 4 パケット（715B = 11 slot x 65B）を受ける
+  #   - 12346 へ mode 3（POLAR_VELOCITY_TARGET_MODE）の速度指令を送る
+  #   - 127.0.0.1:50100+id で simulator-cli からの feedback（128B unicast）を受ける
+  #   - 224.5.20.(100+id):50100+id へ実機と同じ 128B 形式のまま再配信する
+  #   - CONTROL_MODE(byte 23) を先に見てから CONTROL_MODE_ARGS(24..31) を復号する
+  # 詳細: framework/docs/robot-side-position-control.md
+  cm4-sim:
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-latest}
+    container_name: cm4-sim
+    network_mode: host
+    entrypoint: ["tini", "--"]
+    command: >
+      cm4_sim
+      --robot-ids ${CM4_ROBOT_IDS:-0,1,2,3,4,5,6,7,8,9,10}
+      --in-port 12345
+      --out-addr 127.0.0.1
+      --out-port 12346
+      --feedback-port-base 50100
+      --multicast-if 127.0.0.1
+      --rate-hz ${CM4_RATE_HZ:-1000}
+      --rx-delay-ms ${RX_DELAY_MS:-0}
+      --rx-jitter-ms ${RX_JITTER_MS:-0}
+      --rx-loss-rate ${RX_LOSS_RATE:-0.0}
+      --seed ${CM4_SEED:-0}
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles: ["cm4-loop"]
