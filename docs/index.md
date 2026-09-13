@@ -1,101 +1,22 @@
-# Crane Documentation
+# Crane ガイド
 
-**Crane**は、ibis-ssl チームが開発するRoboCup Small Size League (SSL) 用の自律ロボットサッカーシステムです。ROS 2 Jazzy ベースで構築された、小型自律ロボットチームによるサッカー試合を制御するAIフレームワークです。
+Crane は Vision から世界モデルを作り、セッションで役割を割り当て、スキル・局所経路計画を経てロボットへ指令を送ります。[パッケージ一覧](packages/index.md)から各実装へ進めます。
 
-## 🚀 はじめに
+## 動かす・調べる
 
-### クイックスタート
+- [環境構築・起動](setup.md) / [Docker](docker.md)
+- [試合チェックリスト](match.md) / [Vision設定](vision.md)
+- [ネットワークと実機通信](network.md) / [診断](diagnostics.md)
+- [開発・テスト](tools.md) / [ER-Forceシミュレータ](erforce_sim.md) / [grSim](grSim.md)
 
-- **[環境構築](./setup.md)** - ROS 2 Jazzy環境のセットアップガイド
-- **[Docker環境](./docker.md)** - シミュレーション環境の構築
+## 設計・拡張
 
-### 開発者向け
+- [座標・単位](coordinates.md) / [競技ルールへの対応](rule.md)
+- [スキルの追加](skill.md) / [WorldModelの利用](world_model_wrapper.md) / [可視化](visualizer.md)
+- [局所経路計画](rvo2_local_planner.md)
+- [ボールトラッキング](ball_tracking_system.md) / [キャリブレーション](ball_model_calibration_guide.md)
+- [攻撃](offense.md) / [Attacker](attacker.md) / [パス](pass.md) / [守備](defense.md)
 
-- **[開発ツール](./tools.md)** - コード品質ツールと便利なコマンド
-- **[座標系仕様](./coordinates.md)** - フィールド・ロボット座標系の詳細定義
+API・設定値・実装一覧はソースが正本です。このガイドには手順・設計理由・制約を残します。
 
-## 📦 システムアーキテクチャ
-
-### 🔥 基盤コンポーネント
-
-#### [crane_msgs](./packages/crane_msgs.md)
-
-メッセージ定義基盤 - システム全体の通信インフラを支える中核パッケージ
-
-- Analysis/Control/WorldModel 3層メッセージ構造
-- 型安全なROS 2通信の実現
-
-#### [crane_world_model_publisher](./packages/crane_world_model_publisher.md)  
-
-世界状態推定・トラッキング - 高精度な知覚システム
-
-- マルチソース統合ボールトラッキング
-- 3D物理モデル（重力・空気抵抗対応）
-- 自動キャリブレーション機能
-- リアルタイム60Hz更新
-
-#### [crane_robot_skills](./packages/crane_robot_skills.md)
-
-ロボットスキルライブラリ - 多様な戦術的行動を実装
-
-- 攻撃・守備・特殊状況スキルの包括的カタログ
-- 状態機械とパラメータシステム
-- 可視化統合対応
-
-#### [crane_session_coordinator](./packages/crane_session_coordinator.md)
-
-試合統括・ゲーム状態管理 - 最上位制御レイヤー
-
-- セッションベースロボット役割管理
-- YAML駆動戦術設定システム
-- 動的タクティックプラグイン管理
-
-#### [crane_geometry](./packages/crane_geometry.md)
-
-数学的基盤パッケージ - 幾何学計算とBoost.Geometry統合
-
-- カスタム2D/3Dベクトルクラス（Eigen風API）
-- 幾何学形状と座標変換の包括的実装
-- 型安全で効率的な幾何学操作基盤
-
-#### [crane_physics](./packages/crane_physics.md)
-
-物理シミュレーションパッケージ - Header-only高性能ライブラリ
-
-- 3D状態ベース ボール物理モデル（STOPPED/ROLLING/FLYING）
-- 台形運動プロファイル・PID制御・ハンガリアンアルゴリズム
-- リアルタイム（60-100Hz）制御ループ最適化設計
-
-## 🎯 専門技術ドキュメント
-
-### ロボット制御
-
-- **[スキルシステム](./skill.md)** - 個別ロボット行動の詳細実装ガイド
-- **[攻撃戦術](./attacker.md)** - Attackerスキルの状態遷移と実装
-- **[守備システム](./defense.md)** - ゴールキーパーとディフェンダーの戦術
-
-### システム技術
-
-- **[診断システム](./diagnostics.md)** - システム全体の健全性監視と診断
-- **[ボールトラッキング](./ball_tracking_system.md)** - 外部トラッカー統合と物理モデル予測の技術仕様
-- **[ボールモデルキャリブレーション](./ball_model_calibration_guide.md)** - 物理パラメータ自動最適化
-- **[可視化システム](./visualizer.md)** - SVGベース可視化APIの使用ガイド
-- **[ネットワーク設定](./network.md)** - SSL通信とマルチキャスト設定
-
-### 試合運用
-
-- **[試合チェックリスト](./match.md)** - 試合前確認事項
-- **[SSL Vision設定](./vision.md)** - カメラキャリブレーションとパターン認識
-- **[grSim環境](./grSim.md)** - シミュレーション環境の使用方法
-
-## 📚 パッケージドキュメント
-
-**各パッケージの詳細仕様** - [📦 パッケージ一覧](./packages/index.md)
-
-## 🔗 外部リソース
-
-- **[ibis-ssl ドキュメント](https://ibis-ssl.github.io/ibis_documentation/)** - チーム公式ドキュメント
-- **[GitHub リポジトリ](https://github.com/ibis-ssl/crane)** - 最新ソースコード
-- **[RoboCup SSL公式](https://ssl.robocup.org/)** - 競技規則と技術仕様
-
-**📧 質問・フィードバック**: [GitHub Issues](https://github.com/ibis-ssl/crane/issues)で承ります。
+この `docs/` は [同期設定](https://github.com/ibis-ssl/crane/blob/develop/.github/sync.yml) で外部ドキュメントへコピーされます。削除したページが公開先からも消えるかは同期アクションの設定を確認してから反映し、この変更では公開操作を行いません。
