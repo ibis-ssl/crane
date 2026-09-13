@@ -68,6 +68,12 @@ services:
       --realism Realistic
       --ibis-port ${IBIS_PORT:-12345}
       --ibis-team-color ${IBIS_TEAM_COLOR:-yellow}
+    # simulator-cli の log() は flush しないため、TTY が無いと stdout が
+    # ブロックバッファリングされ、コンテナ停止時にログが丸ごと失われる。
+    # ibis の警告（mode 4 受信、指令の位置照合失敗など）は切り分けの要なので、
+    # scenario 側の compose と同じく TTY を割り当てて行バッファリングにする。
+    tty: true
+    stdin_open: true
     restart: "no"
     profiles:
       - sim-erforce
