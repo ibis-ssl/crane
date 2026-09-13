@@ -64,7 +64,13 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
     try {
       const auto elapsed = now - world_model->getOurRobot(command.robot_id)->vision_detection_stamp;
-      command.elapsed_time_ms_since_last_vision = elapsed.nanoseconds() / 1e6;
+      // 浮動小数から符号なし整数への範囲外変換は未定義動作なので、代入前に飽和させる。
+      // 飽和させないと 65536ms(65.5秒) が 0 になり、vision を 1 分以上見失っている状態で
+      // 「たった今検出した」と主張してしまう。受信側(G474 / cm4_sim)の
+      // elapsed_time_ms_since_last_vision > 500 による停止判定を素通りさせる最悪の値になる。
+      const double elapsed_ms = elapsed.nanoseconds() / 1e6;
+      command.elapsed_time_ms_since_last_vision =
+        static_cast<uint16_t>(std::clamp(elapsed_ms, 0.0, 65535.0));
     } catch (...) {
       RCLCPP_ERROR(get_logger(), "Failed to get elapsed time of vision from world_model");
       command.elapsed_time_ms_since_last_vision = 0;
