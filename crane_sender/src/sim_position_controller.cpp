@@ -18,19 +18,19 @@ auto rotateFieldVector(const Vector2 & vector, double theta_offset) -> Vector2
   return rotate(vector, theta_offset);
 }
 
-// grsim / ssl シミュレータ用の位置 P 制御。
+// ssl シミュレータ用の位置 P 制御。
 //
 // 【これは ibis 経路の権威ではない】
 // packet_type=ibis（実機および cm4_sim を挟んだシミュレータ構成）では、位置制御ループは
 // ロボット側の CM4 が閉じる。crane は位置指令（ワイヤ mode 4）を送るだけで、この関数は
-// 一切呼ばれない。呼び出し元は sendSSL() / sendGrSim() のみである。
+// 一切呼ばれない。呼び出し元は sendSSL() のみである。
 //
 // 不変条件: チェーン全体で位置制御ループはちょうど 1 つ。
 // この関数を ibis 経路から呼び出すと位置ループが二重化し、無線遅延をループ内に戻すという
 // 設計の目的そのものを壊すので、絶対に呼び出さないこと。
 //
 // ゲイン（config.position_gain / config.deceleration）の正本は CM4 側の position_controller。
-// ここの値は grsim/ssl 用の近似であり、実機の挙動を代表しない。
+// ここの値は ssl 用の近似であり、実機の挙動を代表しない。
 // 詳細: framework/docs/robot-side-position-control.md
 auto calculateSimGlobalVelocity(
   const crane_msgs::msg::RobotCommand & command, const SimPositionControllerConfig & config)
