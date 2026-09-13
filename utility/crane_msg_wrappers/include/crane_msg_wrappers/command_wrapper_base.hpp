@@ -46,7 +46,7 @@ inline auto addOrUpdatePlanningFactor(
 }
 
 /**
- * @brief RobotCommandWrapper と VelocityCommandWrapper の共通メソッドを提供する CRTP 基底クラス
+ * @brief RobotCommandWrapper の共通メソッドを提供する CRTP 基底クラス
  * @tparam Derived 派生クラス
  *
  * 派生クラスは以下のメソッドを提供する必要がある（friend宣言推奨）:
