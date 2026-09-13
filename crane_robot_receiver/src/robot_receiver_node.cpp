@@ -28,8 +28,12 @@ namespace protocol = crane::robot_receiver::protocol;
 class RobotFeedbackReceiver
 {
 public:
-  RobotFeedbackReceiver(asio::io_context & io_ctx, const std::string & host, const int port)
-  : robot_id(port - 50100),
+  // robot_id は呼び出し側から明示的に受け取る。
+  // 以前は port - 50100 と直書きしており、port_base パラメータを変更すると
+  // robot_id が丸ごとずれていた（port_base=50800 なら robot_id が 700 台になる）。
+  RobotFeedbackReceiver(
+    asio::io_context & io_ctx, const std::string & host, const int port, const int robot_id)
+  : robot_id(robot_id),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
     clock(RCL_ROS_TIME)
@@ -368,7 +372,7 @@ public:
       }
       int port = port_base + i;
       try {
-        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, i));
       } catch (const std::exception & e) {
         RCLCPP_WARN(
           get_logger(), "Failed to listen on %s:%d for robot %d: %s", ip.c_str(), port, i,
