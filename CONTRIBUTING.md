@@ -1,33 +1,8 @@
-# CONTRIBUTING
+# 開発規約
 
-## コーディング
-
-基本的に[ROS 2 Developer's Guide](https://index.ros.org/doc/ros2/Contributing/Developer-Guide/)に従ってください．
-
-main関数以外の全てのコードは`crane`名前空間の中で実装を行ってください．
-
-## ブランチ
-
-gitflowを採用
-
-参考 : <https://qiita.com/KosukeSone/items/514dd24828b485c69a05>
-
-### `develop`
-
-基本の開発ブランチ．
-ビルドが通るブランチであればマージしてもOKです
-
-### `feature/〇〇`
-
-〇〇に関して開発するブランチ
-`develop`から生やして`develop`にマージします  
-ビルドが通らなくてもpushして構いませんが，`develop`にマージする時はビルドが通るようにしてください
-
-### `fix/〇〇`
-
-`develop`にマージしてしまった後でバグなどが見つかった時に使います．  
-先にissueを立てて`fix/#3`とかにすると良いかも知れません
-
-### `master`
-
-現在は使用していません。メインブランチは `develop` です。
+- C++ は `main` 関数を除き `crane` 名前空間に置く。書式は[既存の lint 設定](.pre-commit-config.yaml)に従う。
+- `develop` から作業ブランチを作成し、PRで `develop` へ統合する。直接コミットしない。
+- コミットは日本語で、1コミット1論理変更。タイトルは `[カテゴリ]概要`（50文字以内）とし、本文に変更理由を書く。
+- コード・文書・設定は論理的に分け、コード変更はビルド可能な状態でまとめる。[開発・テスト手順](docs/tools.md)に従い、変更に必要な検証を行う。
+- 生成物、IDE設定、秘密情報は含めない。無関係な変更をステージせず、コミット前に `git diff --cached` を確認する。
+- パッケージのバージョンとリリースは [GitHub Actions](.github/workflows/) が管理する。

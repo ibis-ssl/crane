@@ -28,8 +28,12 @@ namespace protocol = crane::robot_receiver::protocol;
 class RobotFeedbackReceiver
 {
 public:
-  RobotFeedbackReceiver(asio::io_context & io_ctx, const std::string & host, const int port)
-  : robot_id(port - 50100),
+  // robot_id は呼び出し側から明示的に受け取る。
+  // 以前は port - 50100 と直書きしており、port_base パラメータを変更すると
+  // robot_id が丸ごとずれていた（port_base=50800 なら robot_id が 700 台になる）。
+  RobotFeedbackReceiver(
+    asio::io_context & io_ctx, const std::string & host, const int port, const int robot_id)
+  : robot_id(robot_id),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
     clock(RCL_ROS_TIME)
@@ -100,13 +104,24 @@ public:
 
     // 連続値: 算術平均
     const float n = static_cast<float>(packet_queue_.size());
-    float sum_yaw = 0.f, sum_diff = 0.f;
+    // 角度は算術平均してはならない。実機の yaw_deg は ICM20602_normAngle() で
+    // [-180, 180) に折り返されて送られてくるため、179.9 と -179.9 の算術平均は
+    // 0 になるが、正しい平均は 180 である（真値と 180 度ずれる）。
+    // 単位ベクトルの平均から atan2 で戻す円周平均を使う。
+    // diff_angle も実機側で yaw_deg - vision_theta の生の差として送られ、
+    // 折り返しの影響を受けるため同様に扱う。
+    double sum_yaw_sin = 0.0, sum_yaw_cos = 0.0;
+    double sum_diff_sin = 0.0, sum_diff_cos = 0.0;
     float sum_motor[4] = {};
     std::array<float, 2> sum_odom = {}, sum_odom_speed = {}, sum_mouse_odom = {},
                          sum_mouse_vel = {}, sum_voltage = {};
     for (const auto & p : packet_queue_) {
-      sum_yaw += p.yaw_angle;
-      sum_diff += p.diff_angle;
+      const double yaw_rad = p.yaw_angle * M_PI / 180.0;
+      sum_yaw_sin += std::sin(yaw_rad);
+      sum_yaw_cos += std::cos(yaw_rad);
+      const double diff_rad = p.diff_angle * M_PI / 180.0;
+      sum_diff_sin += std::sin(diff_rad);
+      sum_diff_cos += std::cos(diff_rad);
       for (int i = 0; i < 4; ++i) sum_motor[i] += p.motor_current[i];
       for (int i = 0; i < 2; ++i) {
         sum_odom[i] += p.odom[i];
@@ -116,8 +131,10 @@ public:
         sum_voltage[i] += p.voltage[i];
       }
     }
-    result.yaw_angle = sum_yaw / n;
-    result.diff_angle = sum_diff / n;
+    // 全ベクトルが打ち消し合う縮退時は atan2(0, 0) = 0 になるが、
+    // 単一ロボットの短い窓ではばらつきが小さいため実運用では起きない。
+    result.yaw_angle = static_cast<float>(std::atan2(sum_yaw_sin, sum_yaw_cos) * 180.0 / M_PI);
+    result.diff_angle = static_cast<float>(std::atan2(sum_diff_sin, sum_diff_cos) * 180.0 / M_PI);
     for (int i = 0; i < 4; ++i) result.motor_current[i] = sum_motor[i] / n;
     for (int i = 0; i < 2; ++i) {
       result.odom[i] = sum_odom[i] / n;
@@ -355,7 +372,7 @@ public:
       }
       int port = port_base + i;
       try {
-        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, i));
       } catch (const std::exception & e) {
         RCLCPP_WARN(
           get_logger(), "Failed to listen on %s:%d for robot %d: %s", ip.c_str(), port, i,

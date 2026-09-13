@@ -1,113 +1,19 @@
-# Docker開発環境(統合版)
+# Docker開発環境
 
-このディレクトリは、シミュレーション環境(sim)と実機環境(real)を統合したDocker環境です。
-
-## 使用方法
-
-### スクリプトを使用した起動(推奨)
-
-リポジトリルートから以下のコマンドを実行します。
+シミュレーションと実機で共用する。リポジトリルートから起動スクリプトを使う。
 
 ```bash
-# シミュレーション環境(デフォルト: ER-Force)
-./scripts/docker-dev.sh
-
-# シミュレータ開発セット(シミュレータ + GC + Vision + Webデバッガー + AutoRefのみ起動、不要な負荷をカット)
-./scripts/docker-dev.sh --minimal
-
-# シミュレーション環境(grSim)
-./scripts/docker-dev.sh --sim grsim
-
-# 実機環境 (robot-manager有効)
-./scripts/docker-dev.sh real
-
-# バックグラウンド起動
-./scripts/docker-dev.sh -d
-./scripts/docker-dev.sh --minimal -d
-
-# sim環境でrobot-managerを起動したい場合
-./scripts/docker-dev.sh --robot-manager
-
-# 停止
+./scripts/docker-dev.sh                         # ER-Force
+./scripts/docker-dev.sh --sim grsim             # grSim
+./scripts/docker-dev.sh --minimal -d            # シミュレータ開発用の構成
+./scripts/docker-dev.sh real                    # 実機
 ./scripts/docker-dev.sh down
 ```
 
-**注1**: `sim` モードで `up` 実行時、ホストにマルチキャスト隔離設定（`lo` へのルーティング + `224.5.23.0/24` の `lo` 以外への iptables 遮断）が無い場合、Wi-Fi/LAN へのマルチキャストパケット漏洩を防ぐため、自動で設定スクリプト (`setup-multicast.sh`) の実行を求めます（要sudoパスワード）。ルーティング設定だけでは一部ツールがWi-Fi/LANに直接送出してしまう（実際にアクセスポイントが過負荷でダウンした実績あり）ため、iptablesによる遮断も必須です。詳細は `docs/docker.md` の「ネットワーク負荷対策と注意点」を参照。`real` モードでは逆にこの隔離設定が残っていないことを確認してから起動します。
+## 運用上の注意
 
-**注2**: `sim` モード実行時は、実機への無駄なHTTPポーリングによるネットワーク負荷を防ぐため、`robot-manager` はデフォルトで無効化されています。実機環境 (`real`) では自動で有効化されます。
+- simではマルチキャストをループバックへ限定し、物理インターフェースへの送出をiptablesで遮断する。ルート設定だけでは直接送出するツールを防げず、過去にアクセスポイントが過負荷で停止した。起動スクリプトの隔離確認を省略しない。realでは隔離を解除してから起動する。設定手順は[Docker運用](../../docs/docker.md)を参照する。
+- `robot-manager` は ROS 非依存で [Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) 側が管理する実機管理UIである。実機へのHTTPポーリングを避けるためsimでは無効、realでは有効。simで必要な場合は `--robot-manager` を指定する。
+- Ctrl+Cだけでは `ssl-log-recorder` が動き続ける。`down` まで実行する。
 
-**注3**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
-`up` を Ctrl+C で終了した場合は recorder は継続起動します。
-
-### robot-manager の手動操作
-
-`robot-manager` を個別に操作したい場合は、以下のスクリプトを使用できます。
-
-```bash
-# robot-manager を起動
-./scripts/start-debug-tools.sh
-
-# robot-manager を停止
-./scripts/stop-debug-tools.sh
-```
-
-### Docker Composeコマンドでの直接起動
-
-```bash
-# シミュレーション環境(ER-Force)
-docker compose -f docker/dev/docker-compose.yaml --profile sim-erforce up
-
-# シミュレーション環境(grSim)
-docker compose -f docker/dev/docker-compose.yaml --profile sim-grsim up
-
-# 実機環境
-VISION_PORT=10006 docker compose -f docker/dev/docker-compose.yaml up
-
-# 停止
-docker compose -f docker/dev/docker-compose.yaml down
-```
-
-## sim/real の差分
-
-| 項目 | sim (ER-Force) | sim (grSim) | real |
-|------|----------------|-------------|------|
-| Vision ポート | 10020 | 10020 | 10006 |
-| ssl-status-board | 有効 | 有効 | 無効 |
-| profile | `sim-erforce` | `sim-grsim` | なし |
-
-環境変数 `VISION_PORT` とDocker Composeの `profiles` 機能を使用して切り替えています。
-
-## サービス一覧
-
-- **web-debugger**: Crane デバッグ統合ポータル（ポータル/Viewer/Telemetry/Robot Test/Annotation）
-- **ball-calibration**: ボール物理パラメータ最適化 UI（SSL ログ入力）
-- **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
-- **ssl-game-controller**: RoboCup SSLのゲームコントローラー
-- **ssl-vision-client**: SSL Vision クライアント
-- **ssl-status-board**: ステータスボード(simのみ)
-- **autoref-tigers**: Tigers Mannheimのオートレフェリー
-- **voicevox**: 音声合成エンジン
-- **erforce-sim**: ER-Forceシミュレータ（`sim-erforce` profile時のみ）
-- **grsim**: grSimシミュレータ（`sim-grsim` profile時のみ）
-
-## Web UI ポート一覧
-
-| サービス | URL | 説明 |
-|---------|-----|------|
-| web-debugger (Viewer) | <http://localhost:8090/> | フィールドビジュアライザ（デフォルトページ） |
-| web-debugger (Telemetry) | <http://localhost:8090/robot_telemetry.html> | ロボットテレメトリ |
-| web-debugger (Robot Test) | <http://localhost:8090/robot_test.html> | ロボット動作テスト |
-| web-debugger (Annotation) | <http://localhost:8090/annotation/> | 試合アノテーション (PWA) |
-| ball-calibration | <http://localhost:8093/> | ボール物理キャリブレーション |
-| robot-manager | <http://localhost:8092/> | ロボットハードウェア管理 |
-| ssl-game-controller | <http://localhost:8081/> | SSL ゲームコントローラー |
-| ssl-vision-client | <http://localhost:8082/> | SSL ビジョンクライアント |
-| ssl-status-board | <http://localhost:8083/> | ステータスボード |
-
-各ページの上部に共通ナビゲーションバーが表示され、ページ間を直接移動できます。
-
-## 設定ファイル
-
-- `docker-compose.yaml`: サービス定義
-- `.env`: 環境変数(Visionポートなどのデフォルト設定)
-- `config/`: ゲームコントローラー設定ファイル
+Webデバッガーの入口は <http://localhost:8090/>。サービス・ポート・profile・設定値は[Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml)、引数と起動処理は[docker-dev.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/docker-dev.sh)を参照する。
