@@ -7,8 +7,6 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-#include <robocup_ssl_msgs/grSim_Commands.pb.h>
-#include <robocup_ssl_msgs/grSim_Packet.pb.h>
 #include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
 
 #include <array>
@@ -46,7 +44,7 @@ constexpr int MAX_ROBOT_NUM = 20;
 }  // namespace CommConfig
 
 // 送信パケット種別
-enum class PacketType { IBIS, SSL, GRSIM };
+enum class PacketType { IBIS, SSL };
 
 class IbisSenderNode : public SenderBase
 {
@@ -67,10 +65,7 @@ private:
   std::unique_ptr<UDPSender> ssl_blue_sender_;
   std::unique_ptr<UDPSender> ssl_yellow_sender_;
 
-  // GRSIM type
-  std::unique_ptr<UDPSender> grsim_sender_;
-
-  // SSL/GRSIM type: per-robot state for theta control and acceleration limiting
+  // SSL type: per-robot state for theta control and acceleration limiting
   struct PerRobotState
   {
     double prev_vx = 0.0;
@@ -105,7 +100,7 @@ public:
         }
       });
 
-    // packet_type パラメータ: ibis / ssl / grsim
+    // packet_type パラメータ: ibis / ssl
     const std::string packet_type_str =
       crane::get_or_declare_parameter(this, "packet_type", "ibis");
 
@@ -116,12 +111,12 @@ public:
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
     crane::get_or_declare_parameter(this, "theta_p_gain", theta_p_gain_);
     crane::get_or_declare_parameter(this, "chip_angle_deg", chip_angle_deg_);
-    // position_control.* は packet_type=ssl / grsim のときだけ効く
+    // position_control.* は packet_type=ssl のときだけ効く
     // （calculateSimGlobalVelocity で使う）。
     // packet_type=ibis では位置制御を crane 側で行わないため、宣言はされるが一切参照されない。
     //
     // ゲインの正本は CM4 側の position_controller である。実機で実際に効くのは CM4 の
-    // 位置制御ループであり、ここの値は grsim/ssl シミュレータ用の近似にすぎない。
+    // 位置制御ループであり、ここの値は ssl シミュレータ用の近似にすぎない。
     // CM4 側のゲインを変更してもこの値は自動追従しないので、両者を比較する場合は
     // Orion_CM4 の position_controller を正本として参照すること。
     // 詳細: framework/docs/robot-side-position-control.md
@@ -140,13 +135,6 @@ public:
       RCLCPP_INFO(
         get_logger(), "ibis_sender_node started [packet_type=ssl] (blue: %s:%d, yellow: %s:%d)",
         target_address.c_str(), blue_port, target_address.c_str(), yellow_port);
-    } else if (packet_type_str == "grsim") {
-      packet_type_ = PacketType::GRSIM;
-      const int grsim_port = crane::get_or_declare_parameter(this, "grsim_port", 20011);
-      grsim_sender_ = std::make_unique<UDPSender>(target_address, grsim_port);
-      RCLCPP_INFO(
-        get_logger(), "ibis_sender_node started [packet_type=grsim] (%s:%d)",
-        target_address.c_str(), grsim_port);
     } else {
       if (packet_type_str != "ibis") {
         RCLCPP_WARN(
@@ -320,7 +308,7 @@ private:
     return packet;
   }
 
-  // SSL/GRSIM 共通：極座標速度＋theta制御 → ロボットローカル速度変換
+  // SSL 用：極座標速度＋theta制御 → ロボットローカル速度変換
   struct LocalVelocity
   {
     double vx;  // forward
@@ -328,7 +316,7 @@ private:
     double omega;
   };
 
-  // 呼び出し元は sendSSL() と sendGrSim() のみ。sendIbis() からは呼ばれない。
+  // 呼び出し元は sendSSL() のみ。sendIbis() からは呼ばれない。
   // packet_type=ibis の経路に位置制御ループを持ち込まないこと（CM4 側が唯一の位置ループ）。
   LocalVelocity convertToLocalVelocity(
     const crane_msgs::msg::RobotCommand & command, PerRobotState & state)
@@ -460,42 +448,6 @@ private:
     sender->send(output);
   }
 
-  void sendGrSim(const crane_msgs::msg::RobotCommands & msg)
-  {
-    robocup_ssl::grSim_Packet packet;
-    auto * commands = packet.mutable_commands();
-    commands->set_isteamyellow(msg.is_yellow);
-    commands->set_timestamp(0.0);
-
-    for (const auto & command : msg.robot_commands) {
-      if (command.robot_id >= robot_states_.size()) {
-        RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 1000, "robot_id=%d is out of sender state range",
-          static_cast<int>(command.robot_id));
-        continue;
-      }
-      auto * robot_cmd = commands->add_robot_commands();
-      robot_cmd->set_id(command.robot_id);
-
-      auto & state = robot_states_[command.robot_id];
-      const auto vel = convertToLocalVelocity(command, state);
-
-      robot_cmd->set_veltangent(static_cast<float>(vel.vx));
-      robot_cmd->set_velnormal(static_cast<float>(vel.vy));
-      robot_cmd->set_velangular(static_cast<float>(vel.omega));
-      robot_cmd->set_spinner(command.dribble_power > 0.001f);
-      robot_cmd->set_wheelsspeed(false);
-
-      const auto kick = computeKick(command.kick_power, command.chip_enable);
-      robot_cmd->set_kickspeedx(static_cast<float>(kick.speed * std::cos(kick.angle_rad)));
-      robot_cmd->set_kickspeedz(static_cast<float>(kick.speed * std::sin(kick.angle_rad)));
-    }
-
-    std::string output;
-    packet.SerializeToString(&output);
-    grsim_sender_->send(output);
-  }
-
   void sendIbis(const crane_msgs::msg::RobotCommands & msg)
   {
     if (++counter_ > 200) {
@@ -545,9 +497,6 @@ public:
     switch (packet_type_) {
       case PacketType::SSL:
         sendSSL(msg);
-        break;
-      case PacketType::GRSIM:
-        sendGrSim(msg);
         break;
       case PacketType::IBIS:
       default:

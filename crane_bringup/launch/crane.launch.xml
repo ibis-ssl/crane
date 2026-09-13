@@ -21,7 +21,7 @@ limitations under the License.
   <arg name="vision_port" default="" description="SSL-Vision multicast port (empty: auto from sim flag)"/>
   <arg name="referee_port" default="" description="Game Controller multicast port (empty: auto from sim flag)"/>
   <arg name="tracker_port" default="" description="SSL Tracker multicast port (empty: auto from sim flag)"/>
-  <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf) / grsim (grSim legacy protobuf)"/>
+  <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf). Unknown values (including the removed 'grsim') fall back to ibis with a warning."/>
   <arg name="ibis_target_address" default="" description="Target address (empty: auto from sim flag: sim=true -&gt; 127.0.0.1, sim=false -&gt; 192.168.20.255)"/>
   <arg name="ibis_target_port" default="12345" description="ibis_sender_nodeの送信先ポート（packet_type=ibisのみ使用）"/>
 
