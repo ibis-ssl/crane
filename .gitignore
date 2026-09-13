@@ -75,6 +75,9 @@ scenario_test_env/
 ssl-log-recorder
 ssl-go-tools/
 *.log.gz
+
+# crane.launch.xml の ros2 bag record が生成する記録（1回で数百MB〜数GB）
+rosbag2_*/
 *.mp4
 *.avi
 
