@@ -1,67 +1,27 @@
 # オフェンス戦術システム
 
-> **最終更新**: 2026年1月
-> **関連パッケージ**: [crane_robot_skills](./packages/crane_robot_skills.md), [crane_sessions](./packages/crane_sessions.md)
+## 目的
 
-Craneシステムにおけるオフェンス戦術は、`crane_robot_skills`パッケージのスキルベースアーキテクチャと`crane_sessions`の戦略Tacticにより実現されています。
+相手陣形を崩して得点を狙うため、ボール保持ロボット（Attacker）と支援ロボット（SubAttacker / Forward）を協調動作させます。
 
-## アーキテクチャ概要
+## 戦術構成と連携規約
 
-### スキルベース設計
+- **Attacker（メイン攻撃）**:
+  - ボールを保持し、ゴールが見えればシュート、塞がれていればパスを選択。
+  - 詳細は [Attackerスキル](./attacker.md) を参照。
+- **SubAttacker / Forward（支援・ポジショニング）**:
+  - アタッカーがボールを保持している間、パスコースを確保しつつこぼれ球を拾える位置へ動的にポジショニング。
+- **Kick / Receive（連携実行）**:
+  - パスライン上の障害物有無に応じてストレートキックとチップキックを自動選択。
+  - パス連携の安定化契約については [パス連携](./pass.md) を参照。
 
-オフェンス行動は、個別のロボットスキルの組み合わせとして実装されます：
+## 安全・ルール制約規約
 
-- **Attacker**: 複合的な攻撃行動（状態遷移ベース）
-- **SubAttacker**: アタッカーを支援するポジショニングと攻撃行動
-- **Kick**: ボールキック動作（ストレート・チップ対応。独立したスキルとして他から呼び出される）
-- **Receive**: ボール受け取り専用スキル
-- **Dribble**: （独立したスキルではなく、各スキル内で `command->dribble()` を呼び出すことで実現）
+- **オーバードリブル防止**: `SkillBaseWithState` がボール保持中の移動距離を積算し、0.5 m を超えると `stopHere()` を発行する。詳細は [ルール制約](./rule.md) を参照。
+- **相手ペナルティエリア回避**: シュート・パス時であっても相手ペナルティエリア内への進入・接触を回避。
 
-### 状態遷移システム
+## 実装リファレンス
 
-各スキルは `SkillBaseWithState` を継承した状態機械として実装され、ゲーム状況に応じて適切な行動を選択します。
-
-## 主要オフェンススキル
-
-### Attacker（複合攻撃行動）
-
-**実装場所**: `crane_robot_skills/include/crane_robot_skills/attacker.hpp`
-
-- **機能**:
-  - `PassTargetSelector` と連携したパス実行
-  - ゴールが見える場合は `GoalKick` を実行
-  - ボールが自分に向かっている場合は `Receive` を実行
-  - オーバードリブル（0.5m超）の自動監視と停止
-
-### SubAttacker（支援攻撃行動）
-
-**実装場所**: `crane_robot_skills/include/crane_robot_skills/sub_attacker.hpp`
-
-- **機能**:
-  - アタッカーがボールを保持している間の最適なポジショニング
-  - こぼれ球の回収準備
-  - パスコースの確保
-
-### Kick（キック動作）
-
-- **機能**:
-  - ストレートキック・チップキックの切り替え
-  - ドリブルを併用したキック（助走中のボール保持向上）
-  - 障害物（敵ロボット）を考慮した自動チップキック選択（`configurePassKick` 経由）
-
-## 戦略レベルの統合 (Tactic)
-
-### crane_sessions との連携
-
-**FormationTactic**:
-
-- 攻撃時のロボット配置（FW, MF等）を管理
-- 状況に応じた動的なポジショニング
-
-## 実装の詳細
-
-各スキルの実装詳細は以下のドキュメントを参照してください：
-
-- **[crane_robot_skills](./packages/crane_robot_skills.md)** - 個別スキルの実装仕様
-- **[crane_sessions](./packages/crane_sessions.md)** - 戦略Tacticの統合実装
-- **[attacker.md](./attacker.md)** - Attackerスキルの詳細な状態遷移
+- アタッカースキル: [attacker.hpp](https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/include/crane_robot_skills/attacker.hpp)
+- サブアタッカースキル: [sub_attacker.hpp](https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/include/crane_robot_skills/sub_attacker.hpp)
+- 関連ドキュメント: [Attacker スキル](./attacker.md) | [パス連携](./pass.md) | [ルール制約](./rule.md)
