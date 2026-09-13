@@ -9,9 +9,7 @@ services:
       -g 2020B
       --realism None
       --ibis-port ${IBIS_PORT:-12345}
-      ${IBIS_USE_REFEREE_FLAG---ibis-use-referee}
-      --ibis-feedback-team-name ibis
-      --ibis-referee-port ${IBIS_REFEREE_PORT:-11003}
+      --ibis-team-color ${IBIS_TEAM_COLOR:-yellow}
     tty: true
     stdin_open: true
     restart: "no"

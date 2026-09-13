@@ -22,9 +22,10 @@ PLANNER="${PLANNER:-rvo2}"
 # 片方が全パケットを取るため cm4-sim の位置制御ループが位置信号を失う。
 COMPOSE_PROFILES="${COMPOSE_PROFILES:-}"
 IBIS_PORT="${IBIS_PORT:-12345}"
-IBIS_REFEREE_PORT="${IBIS_REFEREE_PORT:-11003}"
-# simulator-cli のチーム色自動検出。空文字にすると --ibis-use-referee を外せる。
-IBIS_USE_REFEREE_FLAG="${IBIS_USE_REFEREE_FLAG---ibis-use-referee}"
+# simulator-cli の ibis チーム色。crane の team 引数と揃えること。
+# referee からの自動検出(--ibis-use-referee)は rcst/autoref 環境では
+# チーム名 ibis を引けず永久に解決せず、feedback が 1 パケットも出ない。
+IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR:-yellow}"
 CRANE_TARGET_PORT="${CRANE_TARGET_PORT:-12345}"
 FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE:-true}"
 RX_DELAY_MS="${RX_DELAY_MS:-0}"
@@ -113,7 +114,7 @@ docker compose --profile cm4-loop -f "${COMPOSE_FILE}" down 2>/dev/null || true
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
 CRANE_TAG="${CRANE_TAG}" PLANNER="${PLANNER}" \
-    IBIS_PORT="${IBIS_PORT}" IBIS_REFEREE_PORT="${IBIS_REFEREE_PORT}" IBIS_USE_REFEREE_FLAG="${IBIS_USE_REFEREE_FLAG}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
+    IBIS_PORT="${IBIS_PORT}" IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
     FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE}" \
     RX_DELAY_MS="${RX_DELAY_MS}" RX_JITTER_MS="${RX_JITTER_MS}" RX_LOSS_RATE="${RX_LOSS_RATE}" \
     docker compose "${COMPOSE_PROFILE_ARGS[@]}" -f "${COMPOSE_FILE}" up -d
