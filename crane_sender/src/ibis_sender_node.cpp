@@ -61,6 +61,13 @@ private:
   boost::asio::ip::udp::endpoint broadcast_endpoint_;
   boost::asio::ip::udp::socket broadcast_socket_;
 
+  // IBIS type: 位置制御設定パケットの送信先（指令と同じアドレスでポートだけ分ける）
+  boost::asio::ip::udp::endpoint position_control_config_endpoint_;
+  std::chrono::steady_clock::time_point last_position_control_config_send_;
+  // CM4 の position_tolerance。715 バイトの指令パケットには載らないので
+  // SimPositionControllerConfig にもフィールドが無い。設定パケットで送る。
+  double position_control_tolerance_ = 0.01;
+
   // SSL type
   std::unique_ptr<UDPSender> ssl_blue_sender_;
   std::unique_ptr<UDPSender> ssl_yellow_sender_;
@@ -111,19 +118,23 @@ public:
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
     crane::get_or_declare_parameter(this, "theta_p_gain", theta_p_gain_);
     crane::get_or_declare_parameter(this, "chip_angle_deg", chip_angle_deg_);
-    // position_control.* は packet_type=ssl のときだけ効く
-    // （calculateSimGlobalVelocity で使う）。
-    // packet_type=ibis では位置制御を crane 側で行わないため、宣言はされるが一切参照されない。
+    // position_control.* の効き方は packet_type で変わる。
     //
-    // ゲインの正本は CM4 側の position_controller である。実機で実際に効くのは CM4 の
-    // 位置制御ループであり、ここの値は ssl シミュレータ用の近似にすぎない。
-    // CM4 側のゲインを変更してもこの値は自動追従しないので、両者を比較する場合は
-    // Orion_CM4 の position_controller を正本として参照すること。
+    // packet_type=ssl: crane 側の calculateSimGlobalVelocity がこの値で位置制御する。
+    // packet_type=ibis: 位置制御は CM4 側で閉じる。crane は 1 秒ごとに設定パケット
+    //   （Orion_CM4 cm4/bridge/config_packet.h）でこの値を CM4 へ送り、CM4 の
+    //   position_controller のゲインを稼働中に上書きする。
+    //
+    // 実装の正本は CM4 側の position_controller で、crane は遠隔から設定する側である。
+    // 値は 1 秒ごとに get_parameter() で読み直すので、ros2 param set で変えれば
+    // ロボットを再起動せずに反映される。
     // 詳細: framework/docs/robot-side-position-control.md
     crane::get_or_declare_parameter(
       this, "position_control.kp", position_controller_config_.position_gain);
     crane::get_or_declare_parameter(
       this, "position_control.deceleration", position_controller_config_.deceleration);
+    crane::get_or_declare_parameter(
+      this, "position_control.tolerance", position_control_tolerance_);
 
     if (packet_type_str == "ssl") {
       packet_type_ = PacketType::SSL;
@@ -151,11 +162,21 @@ public:
         broadcast_endpoint_ = boost::asio::ip::udp::endpoint(
           boost::asio::ip::address::from_string(target_address), target_port);
 
+        // 位置制御設定パケットは指令と同じ broadcast アドレスでポートだけ分ける。
+        // CM4 側の既定は 12350（ai_cmd_v2.out / cm4_sim.out の --config-port）。
+        const int position_control_config_port =
+          crane::get_or_declare_parameter(this, "position_control.config_port", 12350);
+        position_control_config_endpoint_ = boost::asio::ip::udp::endpoint(
+          boost::asio::ip::address::from_string(target_address), position_control_config_port);
+
         // インターフェース情報の確認（デバッグ用）
         checkNetworkInterfaces();
 
         RCLCPP_INFO(get_logger(), "【Real Robot Broadcast Mode Initialized】");
         RCLCPP_INFO(get_logger(), "  Target Address: %s:%d", target_address.c_str(), target_port);
+        RCLCPP_INFO(
+          get_logger(), "  Position Control Config: %s:%d", target_address.c_str(),
+          position_control_config_port);
         RCLCPP_INFO(
           get_logger(), "  Resolved Endpoint: %s:%d",
           broadcast_endpoint_.address().to_string().c_str(), broadcast_endpoint_.port());
@@ -488,6 +509,50 @@ private:
       RCLCPP_ERROR(get_logger(), "  Error Message: %s", e.code().message().c_str());
     } catch (std::exception & e) {
       RCLCPP_ERROR(get_logger(), "❌ Packet Send Exception: %s", e.what());
+    }
+
+    sendPositionControlConfig();
+  }
+
+  /**
+   * @brief 位置制御ゲインを CM4 へ送る（Orion_CM4 cm4/bridge/config_packet.h、20 バイト固定）
+   *
+   * 位置制御ループは CM4 側で閉じているので、ゲインを変えるにはロボットへ届ける必要がある。
+   * 指令パケットに相乗りさせないのは、64 バイトのレイアウトが crane / G474 / framework /
+   * CM4 の 4 者一致を不変条件にしているためである。別ポートなら他の 3 者は変わらない。
+   *
+   * 1 秒ごとに get_parameter() で読み直して送る。ros2 param set で変えた値がそのまま乗り、
+   * ロボットの再起動は要らない。同じ値の再送は無害で（CM4 は値が変わったときだけログを
+   * 出す）、CM4 が再起動しても次の送信で追いつく。範囲外の値は CM4 側でクランプされず
+   * データグラムごと破棄され、拒否理由が CM4 のログに出る。
+   */
+  void sendPositionControlConfig()
+  {
+    const auto now = std::chrono::steady_clock::now();
+    if (now - last_position_control_config_send_ < std::chrono::seconds(1)) {
+      return;
+    }
+    last_position_control_config_send_ = now;
+
+    const float values[3] = {
+      static_cast<float>(get_parameter("position_control.kp").as_double()),
+      static_cast<float>(get_parameter("position_control.deceleration").as_double()),
+      static_cast<float>(get_parameter("position_control.tolerance").as_double())};
+
+    uint8_t buf[20] = {};
+    buf[0] = 'O';
+    buf[1] = 'C';
+    buf[2] = '4';
+    buf[3] = 'C';
+    buf[4] = 1;     // version
+    buf[5] = 0xFF;  // 全機宛
+    memcpy(&buf[8], values, sizeof(values));
+
+    try {
+      broadcast_socket_.send_to(boost::asio::buffer(buf), position_control_config_endpoint_);
+    } catch (std::exception & e) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 5000, "位置制御設定パケットの送信に失敗: %s", e.what());
     }
   }
 
