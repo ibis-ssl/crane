@@ -18,6 +18,10 @@ namespace
 {
 constexpr double EPSILON = 1e-9;
 
+// isEdgeVisible が障害物との食い込みを判定する際の許容量。
+// ノードの間引き（plan 内）と同じ値を使うことで、判定が完全に一致する。
+constexpr double EDGE_CLEARANCE_EPSILON = 1e-6;
+
 auto closestPointOnSegment(const Segment & segment, const Point & point) -> Point
 {
   const Vector2 direction = segment.second - segment.first;
@@ -33,6 +37,91 @@ auto closestPointOnSegment(const Segment & segment, const Point & point) -> Poin
 auto distanceToSegment(const Segment & segment, const Point & point) -> double
 {
   return (point - closestPointOnSegment(segment, point)).norm();
+}
+
+// 以下は isEdgeVisible の内側だけで使う。辺の総数が O(N^2)、障害物ごとに判定するため
+// この3関数が計画時間のほぼ全部を占める。boost.geometry の汎用版は同じ計算をするが
+// ディスパッチと sqrt が乗るので、ここだけ平方距離の自前実装に置き換えている。
+// 判定は「距離 < しきい値」なので、両辺を2乗しても符号は変わらない。
+
+auto squaredDistancePointToSegment(const Point & a, const Point & b, const Point & point) -> double
+{
+  const Vector2 direction = b - a;
+  const double squared_length = direction.squaredNorm();
+  if (squared_length < EPSILON) {
+    return (point - a).squaredNorm();
+  }
+  const double ratio = std::clamp((point - a).dot(direction) / squared_length, 0.0, 1.0);
+  return (point - (a + ratio * direction)).squaredNorm();
+}
+
+// 2線分間の最近接距離の2乗。Ericson, Real-Time Collision Detection 5.1.9 と同じ手順。
+auto squaredDistanceSegmentToSegment(
+  const Point & p1, const Point & q1, const Point & p2, const Point & q2) -> double
+{
+  const Vector2 d1 = q1 - p1;
+  const Vector2 d2 = q2 - p2;
+  const Vector2 r = p1 - p2;
+  const double a = d1.squaredNorm();
+  const double e = d2.squaredNorm();
+  const double f = d2.dot(r);
+
+  double s = 0.0;
+  double t = 0.0;
+  if (a < EPSILON && e < EPSILON) {
+    return r.squaredNorm();
+  }
+  if (a < EPSILON) {
+    t = std::clamp(f / e, 0.0, 1.0);
+  } else {
+    const double c = d1.dot(r);
+    if (e < EPSILON) {
+      s = std::clamp(-c / a, 0.0, 1.0);
+    } else {
+      const double b = d1.dot(d2);
+      const double denom = a * e - b * b;
+      s = denom > EPSILON ? std::clamp((b * f - c * e) / denom, 0.0, 1.0) : 0.0;
+      t = (b * s + f) / e;
+      if (t < 0.0) {
+        t = 0.0;
+        s = std::clamp(-c / a, 0.0, 1.0);
+      } else if (t > 1.0) {
+        t = 1.0;
+        s = std::clamp((b - c) / a, 0.0, 1.0);
+      }
+    }
+  }
+  return ((p1 + d1 * s) - (p2 + d2 * t)).squaredNorm();
+}
+
+// 線分と軸平行矩形の交差判定（Liang-Barsky のスラブ法）。接触も交差として扱う。
+auto segmentIntersectsBox(const Point & a, const Point & b, const Box & box) -> bool
+{
+  const Vector2 direction = b - a;
+  double t_enter = 0.0;
+  double t_exit = 1.0;
+  for (int axis = 0; axis < 2; ++axis) {
+    const double lower = box.min_corner()[axis];
+    const double upper = box.max_corner()[axis];
+    if (std::abs(direction[axis]) < EPSILON) {
+      if (a[axis] < lower || a[axis] > upper) {
+        return false;
+      }
+      continue;
+    }
+    const double inverse = 1.0 / direction[axis];
+    double near_hit = (lower - a[axis]) * inverse;
+    double far_hit = (upper - a[axis]) * inverse;
+    if (near_hit > far_hit) {
+      std::swap(near_hit, far_hit);
+    }
+    t_enter = std::max(t_enter, near_hit);
+    t_exit = std::min(t_exit, far_hit);
+    if (t_enter > t_exit) {
+      return false;
+    }
+  }
+  return true;
 }
 }  // namespace
 
@@ -126,27 +215,82 @@ auto Obstacle::projectOutside(const Point & point, double clearance) const -> Po
   return point;
 }
 
+auto VisibilityGraph::computeObstacleBounds(const std::vector<Obstacle> & obstacles)
+  -> std::vector<ObstacleBounds>
+{
+  std::vector<ObstacleBounds> bounds;
+  bounds.reserve(obstacles.size());
+  for (const auto & obstacle : obstacles) {
+    ObstacleBounds box;
+    switch (obstacle.type) {
+      case Obstacle::Type::CIRCLE:
+        box.min_x = obstacle.circle.center.x() - obstacle.circle.radius;
+        box.max_x = obstacle.circle.center.x() + obstacle.circle.radius;
+        box.min_y = obstacle.circle.center.y() - obstacle.circle.radius;
+        box.max_y = obstacle.circle.center.y() + obstacle.circle.radius;
+        break;
+      case Obstacle::Type::CAPSULE: {
+        const auto & first = obstacle.capsule.segment.first;
+        const auto & second = obstacle.capsule.segment.second;
+        box.min_x = std::min(first.x(), second.x()) - obstacle.capsule.radius;
+        box.max_x = std::max(first.x(), second.x()) + obstacle.capsule.radius;
+        box.min_y = std::min(first.y(), second.y()) - obstacle.capsule.radius;
+        box.max_y = std::max(first.y(), second.y()) + obstacle.capsule.radius;
+        break;
+      }
+      case Obstacle::Type::BOX:
+        box.min_x = obstacle.box.min_corner().x();
+        box.max_x = obstacle.box.max_corner().x();
+        box.min_y = obstacle.box.min_corner().y();
+        box.max_y = obstacle.box.max_corner().y();
+        break;
+    }
+    bounds.push_back(box);
+  }
+  return bounds;
+}
+
 auto VisibilityGraph::isEdgeVisible(
-  const Point & from, const Point & to, const std::vector<Obstacle> & obstacles) const -> bool
+  const Point & from, const Point & to, const std::vector<Obstacle> & obstacles,
+  const std::vector<ObstacleBounds> & bounds) const -> bool
 {
   if ((to - from).norm() < EPSILON) {
     return true;
   }
-  const Segment edge(from, to);
-  for (const auto & obstacle : obstacles) {
+  const double edge_min_x = std::min(from.x(), to.x());
+  const double edge_max_x = std::max(from.x(), to.x());
+  const double edge_min_y = std::min(from.y(), to.y());
+  const double edge_max_y = std::max(from.y(), to.y());
+  for (size_t index = 0; index < obstacles.size(); ++index) {
+    const auto & box = bounds[index];
+    if (
+      box.max_x < edge_min_x || box.min_x > edge_max_x || box.max_y < edge_min_y ||
+      box.min_y > edge_max_y) {
+      continue;
+    }
+    const auto & obstacle = obstacles[index];
     switch (obstacle.type) {
-      case Obstacle::Type::CIRCLE:
-        if (distanceToSegment(edge, obstacle.circle.center) < obstacle.circle.radius - 1e-6) {
+      case Obstacle::Type::CIRCLE: {
+        const double threshold = obstacle.circle.radius - EDGE_CLEARANCE_EPSILON;
+        if (
+          threshold > 0.0 &&
+          squaredDistancePointToSegment(from, to, obstacle.circle.center) < threshold * threshold) {
           return false;
         }
         break;
-      case Obstacle::Type::CAPSULE:
-        if (bg::distance(edge, obstacle.capsule.segment) < obstacle.capsule.radius - 1e-6) {
+      }
+      case Obstacle::Type::CAPSULE: {
+        const double threshold = obstacle.capsule.radius - EDGE_CLEARANCE_EPSILON;
+        if (
+          threshold > 0.0 && squaredDistanceSegmentToSegment(
+                               from, to, obstacle.capsule.segment.first,
+                               obstacle.capsule.segment.second) < threshold * threshold) {
           return false;
         }
         break;
+      }
       case Obstacle::Type::BOX:
-        if (bg::intersects(edge, obstacle.box)) {
+        if (segmentIntersectsBox(from, to, obstacle.box)) {
           return false;
         }
         break;
@@ -249,7 +393,8 @@ auto VisibilityGraph::plan(
   }
 
   // 障害物に遮られていない通常ケースでは、グラフ全辺の生成を避ける。
-  if (isEdgeVisible(effective_start, effective_goal, obstacles)) {
+  const auto bounds = computeObstacleBounds(obstacles);
+  if (isEdgeVisible(effective_start, effective_goal, obstacles, bounds)) {
     std::vector<Point> path{effective_start, effective_goal};
     if ((effective_start - start).norm() > 1e-6) {
       path.insert(path.begin(), start);
@@ -260,48 +405,73 @@ auto VisibilityGraph::plan(
   }
 
   std::vector<Point> nodes{effective_start, effective_goal};
-  auto obstacle_nodes = generateNodes(obstacles);
-  nodes.insert(nodes.end(), obstacle_nodes.begin(), obstacle_nodes.end());
-
-  std::vector<std::vector<std::pair<size_t, double>>> edges(nodes.size());
-  for (size_t from = 0; from < nodes.size(); ++from) {
-    for (size_t to = from + 1; to < nodes.size(); ++to) {
-      if (isEdgeVisible(nodes[from], nodes[to], obstacles)) {
-        const double cost = (nodes[to] - nodes[from]).norm();
-        edges[from].emplace_back(to, cost);
-        edges[to].emplace_back(from, cost);
-      }
+  const auto obstacle_nodes = generateNodes(obstacles);
+  // 障害物の内側に入り込んだノードは捨てる。isEdgeVisible はノードの所属を問わず
+  // 「辺が障害物に食い込んでいれば不可視」と判定するので、内側のノードへ向かう辺は
+  // すべて不可視になり経路に採用されない。辺の総数は O(N^2) なので、ここで落とす
+  // ほうが圧倒的に安い。混雑した盤面では隣接ロボットのカプセルに埋まるノードが多い。
+  nodes.reserve(nodes.size() + obstacle_nodes.size());
+  for (const auto & node : obstacle_nodes) {
+    const bool buried =
+      std::any_of(obstacles.begin(), obstacles.end(), [&node](const Obstacle & obstacle) {
+        return obstacle.signedDistance(node) < -EDGE_CLEARANCE_EPSILON;
+      });
+    if (!buried) {
+      nodes.push_back(node);
     }
   }
 
+  // 可視グラフの全辺を先に作ると、辺の本数 O(N^2) × 障害物数の判定が必要になり、
+  // これが計画時間のほぼ全部を占めていた。そこで辺は A* が実際に展開したノードから
+  // だけ遅延生成する。ヒューリスティックは目標までの直線距離で、可容かつ整合的
+  // （辺コストがユークリッド距離なので三角不等式が成り立つ）なので、得られる経路長は
+  // Dijkstra と同一である。
+  //
+  // さらに効くのが next_cost の枝刈り。直線距離だけで既知の距離を改善できないと
+  // 分かった辺は、可視判定そのものを省ける。可視判定は障害物数に比例するため、
+  // ここで落とせる分がそのまま効く。
   struct QueueEntry
   {
-    double cost;
+    double priority;
     size_t node;
-    auto operator>(const QueueEntry & other) const -> bool { return cost > other.cost; }
+    auto operator>(const QueueEntry & other) const -> bool { return priority > other.priority; }
   };
   const double infinity = std::numeric_limits<double>::infinity();
+  const Point & goal_node = nodes[1];
+  const auto heuristic = [&goal_node, &nodes](size_t index) {
+    return (nodes[index] - goal_node).norm();
+  };
   std::vector<double> distances(nodes.size(), infinity);
   std::vector<size_t> predecessors(nodes.size(), nodes.size());
+  std::vector<bool> closed(nodes.size(), false);
   std::priority_queue<QueueEntry, std::vector<QueueEntry>, std::greater<QueueEntry>> queue;
   distances[0] = 0.0;
-  queue.push({0.0, 0});
+  queue.push({heuristic(0), 0});
   while (!queue.empty()) {
-    const auto [cost, node] = queue.top();
+    const auto [priority, node] = queue.top();
     queue.pop();
-    if (cost > distances[node]) {
+    if (closed[node]) {
       continue;
     }
+    closed[node] = true;
     if (node == 1) {
       break;
     }
-    for (const auto & [next, edge_cost] : edges[node]) {
-      const double next_cost = cost + edge_cost;
-      if (next_cost < distances[next]) {
-        distances[next] = next_cost;
-        predecessors[next] = node;
-        queue.push({next_cost, next});
+    const double node_distance = distances[node];
+    for (size_t next = 0; next < nodes.size(); ++next) {
+      if (next == node || closed[next]) {
+        continue;
       }
+      const double next_cost = node_distance + (nodes[next] - nodes[node]).norm();
+      if (next_cost >= distances[next]) {
+        continue;
+      }
+      if (!isEdgeVisible(nodes[node], nodes[next], obstacles, bounds)) {
+        continue;
+      }
+      distances[next] = next_cost;
+      predecessors[next] = node;
+      queue.push({next_cost + heuristic(next), next});
     }
   }
   if (!std::isfinite(distances[1])) {
@@ -330,8 +500,9 @@ auto VisibilityGraph::plan(
 auto VisibilityGraph::isPathVisible(
   const std::vector<Point> & path, const std::vector<Obstacle> & obstacles) const -> bool
 {
+  const auto bounds = computeObstacleBounds(obstacles);
   for (size_t i = 1; i < path.size(); ++i) {
-    if (!isEdgeVisible(path[i - 1], path[i], obstacles)) {
+    if (!isEdgeVisible(path[i - 1], path[i], obstacles, bounds)) {
       return false;
     }
   }
