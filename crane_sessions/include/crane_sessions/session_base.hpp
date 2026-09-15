@@ -189,6 +189,44 @@ public:
   virtual void onDeactivated(const crane_msgs::msg::PlaySituation &) {}
 
   /**
+   * @brief YAML 由来の固定割当ロボットIDを設定する（RobotAllocator が呼ぶ）
+   *
+   * 設定されたID列は allocator の固定割当処理や Session 内部の補助ロジックから参照できる。
+   */
+  void setFixedRobots(const std::vector<uint8_t> & ids) { fixed_robots_ = ids; }
+
+  /**
+   * @brief 固定割当ロボットIDを取得する
+   */
+  const std::vector<uint8_t> & getFixedRobots() const { return fixed_robots_; }
+
+  /**
+   * @brief このセッションが「候補ロボットプール」を利用することを宣言する
+   *
+   * 派生クラス（例: AttackerHeatRotationSession）のコンストラクタで true を渡すことで、
+   * 「このセッションは YAML の candidate_robots: [...] を Session 内のロジックで
+   * 使う」ことを明示する。allocator は候補プールには関与しない。
+   */
+  void setUseCandidateRobots(bool flag) { use_candidate_robots_ = flag; }
+
+  /**
+   * @brief 候補ロボットプール利用モードかどうか
+   */
+  bool usesCandidateRobots() const { return use_candidate_robots_; }
+
+  /**
+   * @brief YAML 由来の候補ロボットIDプールを設定する（RobotAllocator が呼ぶ）
+   *
+   * Session 自身が suitability 関数等の中で参照する想定。allocator 自体は使わない。
+   */
+  void setCandidateRobots(const std::vector<uint8_t> & ids) { candidate_robots_ = ids; }
+
+  /**
+   * @brief 候補ロボットIDプールを取得する
+   */
+  const std::vector<uint8_t> & getCandidateRobots() const { return candidate_robots_; }
+
+  /**
    * @brief ロボット適性評価関数を取得（GlobalRobotAllocator用）
    *
    * 各Sessionに適したロボットを評価するための関数を返す。
@@ -209,6 +247,14 @@ public:
    * @return 推奨ロボット数。デフォルトはmax_robots
    */
   virtual int getDesiredRobotNumber(int max_robots) const { return max_robots; }
+
+  /**
+   * @brief セッションがアクティブ集合から外れる直前のフック
+   *
+   * 最新の PlaySituation を受け取り、セッション固有の終了処理に使う。
+   * 例: AutoRef/Referee 信号に基づく履歴の確定。
+   */
+  virtual void onDeactivated(const crane_msgs::msg::PlaySituation &) {}
 
   /**
    * @brief GameAnalysisメッセージを設定する
