@@ -55,8 +55,22 @@ public:
     const Point & point, const std::vector<Obstacle> & obstacles) const -> std::optional<Point>;
 
 private:
+  // 障害物を囲む軸平行境界。辺との重なりが無ければ厳密判定を省ける。
+  // 円・カプセルは半径ぶん広げてあるので、この判定は必ず保守的（取りこぼさない）。
+  struct ObstacleBounds
+  {
+    double min_x = 0.0;
+    double min_y = 0.0;
+    double max_x = 0.0;
+    double max_y = 0.0;
+  };
+
+  [[nodiscard]] static auto computeObstacleBounds(const std::vector<Obstacle> & obstacles)
+    -> std::vector<ObstacleBounds>;
+
   [[nodiscard]] auto isEdgeVisible(
-    const Point & from, const Point & to, const std::vector<Obstacle> & obstacles) const -> bool;
+    const Point & from, const Point & to, const std::vector<Obstacle> & obstacles,
+    const std::vector<ObstacleBounds> & bounds) const -> bool;
 
   [[nodiscard]] auto generateNodes(const std::vector<Obstacle> & obstacles) const
     -> std::vector<Point>;
