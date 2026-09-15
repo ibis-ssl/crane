@@ -169,11 +169,13 @@ if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]] && [
     DOCKER_ARGS+=(--scale robot-manager=0)
 fi
 
-# 最小構成モード: シミュレータ本体、GC (8081)、Vision Client (8082)、Web Debugger (8090)、AutoRef のみを起動
+# 最小構成モード: シミュレータ本体、GC (8081)、Vision Client (8082)、Web Debugger (8090)、AutoRef のみを起動。
+# ER-Force では cm4-sim も「シミュレータ本体」に含める。標準構成では Crane の送信先は
+# cm4-sim(12345) であり、これを外すと simulator-cli は 12346 で待つので指令が誰にも届かない。
 if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
     if [[ $MODE == "sim" ]]; then
         if [[ $SIM == "erforce" ]]; then
-            DOCKER_ARGS+=("erforce-sim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
+            DOCKER_ARGS+=("erforce-sim" "cm4-sim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
         else
             DOCKER_ARGS+=("grsim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
         fi

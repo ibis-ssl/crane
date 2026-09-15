@@ -12,9 +12,11 @@ Docker Compose、Python 3.12のvenv、ビルド済みROS 2ワークスペース�
 ```bash
 make scenario-test-setup
 make scenario-test TEST=STOP_ROBOT_SPEED
-make scenario-test PLANNER=visibility_graph TEST=VISIBILITY_OBSTACLE_AVOIDANCE
+make scenario-test RX_DELAY_MS=30 RX_LOSS_RATE=0.02 TEST=STOP_ROBOT_SPEED
 make scenario-test
 ```
+
+経路には実機CM4に相当する `cm4-sim` が入る（`crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli`）。位置制御ループは `cm4-sim` が閉じるため、既定のplannerは mode 4 を出す `visibility_graph`。`RX_DELAY_MS` などはCraneから `cm4-sim` への区間、すなわち無線に相当する部分に劣化を注入する。構成の詳細は[ネットワーク](../docs/network.md)を参照する。
 
 既定のローカルモードはホストでCraneを起動する。コード変更後はワークスペースルートで対象パッケージを再ビルドし、環境を再読み込みしてから再実行する。
 

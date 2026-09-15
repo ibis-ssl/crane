@@ -12,48 +12,34 @@ TEST_NAME="${1:-all}"
 VISION_PORT="${VISION_PORT:-10020}"
 USE_LOCAL="${USE_LOCAL:-1}" # デフォルトはローカルモード
 CRANE_TAG="${CRANE_TAG:-local-scenario}"
-PLANNER="${PLANNER:-rvo2}"
+# mode 4（位置指令）を出すのは visibility_graph だけ。rvo2 は mode 3 を出す。
+PLANNER="${PLANNER:-visibility_graph}"
 
-# CM4 in the loop 構成用の設定。
-# COMPOSE_PROFILES=cm4-loop を指定すると cm4-sim が経路に入る。
-# そのときは crane の送信先を cm4-sim(12345) に向け、simulator-cli を 12346 へ退避させ、
-# feedback は実機と同じ multicast で受ける（FEEDBACK_SIM_MODE=false）必要がある。
-# FEEDBACK_SIM_MODE=true のままだと crane と cm4-sim が 127.0.0.1:50100+id を奪い合い、
-# 片方が全パケットを取るため cm4-sim の位置制御ループが位置信号を失う。
-COMPOSE_PROFILES="${COMPOSE_PROFILES:-}"
-IBIS_PORT="${IBIS_PORT:-12345}"
+# 標準構成のトポロジ:
+#   crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+# 位置制御ループは cm4-sim（実機 CM4 相当）が閉じる。
+# CRANE_TARGET_PORT が cm4-sim の入力、IBIS_PORT が simulator-cli の入力。
+IBIS_PORT="${IBIS_PORT:-12346}"
 # simulator-cli の ibis チーム色。crane の team 引数と揃えること。
 # referee からの自動検出(--ibis-use-referee)は rcst/autoref 環境では
 # チーム名 ibis を引けず永久に解決せず、feedback が 1 パケットも出ない。
 IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR:-yellow}"
 CRANE_TARGET_PORT="${CRANE_TARGET_PORT:-12345}"
-FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE:-true}"
+# feedback は実機と同じ multicast で受ける。true にすると crane と cm4-sim が
+# 127.0.0.1:50100+id を奪い合い、SO_REUSEPORT の振り分けは送信元を含む 4-tuple
+# ハッシュで決まるため片方が全パケットを取る。crane 側が当たると cm4-sim は
+# 位置信号を 1 つも受け取れず位置制御が死ぬ。
+FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE:-false}"
+
+# crane -> cm4-sim 経路への劣化注入（無線区間の模擬）。
 RX_DELAY_MS="${RX_DELAY_MS:-0}"
 RX_JITTER_MS="${RX_JITTER_MS:-0}"
 RX_LOSS_RATE="${RX_LOSS_RATE:-0.0}"
-
-# ローカルモードで cm4-loop profile を使うときのホスト側 cm4_sim バイナリ。
-# Orion_CM4 にまだ Dockerfile が無く ghcr.io/ibis-ssl/orion-cm4-sim も未作成のため、
-# ローカルモードでは crane と同じくホスト上で直接起動する。
-CM4_SIM_BIN="${CM4_SIM_BIN:-${REPO_ROOT}/../../../Orion_CM4/cm4/bin/cm4_sim.out}"
+# 空なら compose 側の既定（commit SHA 固定）が使われる。
+CM4_SIM_TAG="${CM4_SIM_TAG:-}"
 CM4_ROBOT_IDS="${CM4_ROBOT_IDS:-0,1,2,3,4,5,6,7,8,9,10}"
 CM4_RATE_HZ="${CM4_RATE_HZ:-1000}"
 CM4_SEED="${CM4_SEED:-0}"
-
-# cm4-loop profile が指定されているか
-USE_CM4_LOOP=0
-case ",${COMPOSE_PROFILES}," in
-*,cm4-loop,*) USE_CM4_LOOP=1 ;;
-esac
-
-# compose に渡す profile 引数を組み立てる（カンマ区切りで複数指定可）
-COMPOSE_PROFILE_ARGS=()
-if [ -n "${COMPOSE_PROFILES}" ]; then
-    IFS=',' read -r -a _profiles <<<"${COMPOSE_PROFILES}"
-    for _p in "${_profiles[@]}"; do
-        [ -n "${_p}" ] && COMPOSE_PROFILE_ARGS+=(--profile "${_p}")
-    done
-fi
 
 # ワークスペースルートのパス（REPO_ROOTの2階層上）
 WORKSPACE_ROOT="$(cd "${REPO_ROOT}/../.." && pwd)"
@@ -76,6 +62,12 @@ echo "=== シナリオテストの実行 ==="
 echo "モード: ${MODE_NAME}"
 echo "テスト: ${TEST_NAME}"
 echo "プランナー: ${PLANNER}"
+echo "経路: crane(${CRANE_TARGET_PORT}) -> cm4-sim -> simulator-cli(${IBIS_PORT})"
+if [ "${FEEDBACK_SIM_MODE}" = "true" ]; then
+    echo "feedback: unicast 127.0.0.1:50100+id"
+else
+    echo "feedback: multicast 224.5.20.(100+id):50100+id"
+fi
 if [ "${USE_LOCAL}" != "1" ]; then
     echo "Dockerイメージタグ: ${CRANE_TAG}"
 fi
@@ -101,52 +93,33 @@ if [ ! -f "${LOG_RECORDER}" ]; then
 fi
 
 # 念のため前回の残存コンテナを停止・削除。
-# ここは「前回の実行」の残骸が対象で、前回が別 profile だった可能性があるため、
-# 常に cm4-loop を有効にして down する（profile を外すと cm4-sim が削除対象から漏れ、
-# 12345 を bind したまま残って今回の構成と衝突する）。
-docker compose --profile cm4-loop -f "${COMPOSE_FILE}" down 2>/dev/null || true
+# cm4-sim が 12345 を bind したまま残ると今回の構成と衝突する。
+# --remove-orphans は旧 profile 構成の残骸も対象にする。
+docker compose -f "${COMPOSE_FILE}" down --remove-orphans 2>/dev/null || true
 
 # erforce-sim/auto-refereeはnetwork_mode:hostでマルチキャストを使うため、
 # Wi-Fi/LANへの漏洩を防ぐホスト隔離設定を適用してから起動する
 "${REPO_ROOT}/scripts/ensure-sim-network-confined.sh"
 
-# Docker Composeでサービスを起動（grSimとauto-referee）
+# Docker Composeでサービスを起動（simulator-cli / cm4-sim / auto-referee）
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
 CRANE_TAG="${CRANE_TAG}" PLANNER="${PLANNER}" \
     IBIS_PORT="${IBIS_PORT}" IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
     FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE}" \
     RX_DELAY_MS="${RX_DELAY_MS}" RX_JITTER_MS="${RX_JITTER_MS}" RX_LOSS_RATE="${RX_LOSS_RATE}" \
-    docker compose "${COMPOSE_PROFILE_ARGS[@]}" -f "${COMPOSE_FILE}" up -d
+    CM4_SIM_TAG="${CM4_SIM_TAG}" CM4_ROBOT_IDS="${CM4_ROBOT_IDS}" \
+    CM4_RATE_HZ="${CM4_RATE_HZ}" CM4_SEED="${CM4_SEED}" \
+    docker compose -f "${COMPOSE_FILE}" up -d
 
-# ローカルモードかつ cm4-loop の場合、cm4_sim をホスト上で起動する。
-# crane より先に上げて 12345 を確保しておく（crane の送信先）。
-CM4_SIM_PID=""
-if [ "${USE_LOCAL}" = "1" ] && [ "${USE_CM4_LOOP}" = "1" ]; then
-    if [ ! -x "${CM4_SIM_BIN}" ]; then
-        echo "エラー: cm4_sim バイナリが見つかりません: ${CM4_SIM_BIN}"
-        echo "Orion_CM4 の feat/cm4-position-control で 'bash cm4/build.sh' を実行するか、"
-        echo "CM4_SIM_BIN で場所を指定してください"
-        exit 1
-    fi
-    echo "cm4_sim をホスト上で起動中..."
-    # --feedback-port-base は 50100 固定。cm4_sim の再配信先は
-    # 224.5.20.(100+id):<base>+id で base に連動するが、crane_robot_receiver 側は
-    # 50100 を直書きしているため、ずらすと feedback が無言で途切れる。
-    "${CM4_SIM_BIN}" \
-        --robot-ids "${CM4_ROBOT_IDS}" \
-        --in-port "${CRANE_TARGET_PORT}" \
-        --out-addr 127.0.0.1 \
-        --out-port "${IBIS_PORT}" \
-        --feedback-port-base 50100 \
-        --multicast-if 127.0.0.1 \
-        --rate-hz "${CM4_RATE_HZ}" \
-        --rx-delay-ms "${RX_DELAY_MS}" \
-        --rx-jitter-ms "${RX_JITTER_MS}" \
-        --rx-loss-rate "${RX_LOSS_RATE}" \
-        --seed "${CM4_SEED}" >/tmp/cm4_sim_local.log 2>&1 &
-    CM4_SIM_PID=$!
-    echo "cm4_simプロセスID: ${CM4_SIM_PID}"
+# cm4-sim は位置制御ループそのものなので、落ちていればテストは無意味に失敗する。
+# 原因が crane にあるように見えてしまうため、ここで早期に切り分ける。
+CM4_STATE="$(docker inspect -f '{{.State.Running}}' cm4-sim 2>/dev/null || echo missing)"
+if [ "${CM4_STATE}" != "true" ]; then
+    echo "エラー: cm4-sim が起動していません (state=${CM4_STATE})" >&2
+    docker compose -f "${COMPOSE_FILE}" logs cm4-sim || true
+    docker compose -f "${COMPOSE_FILE}" down --remove-orphans || true
+    exit 1
 fi
 
 # ローカルモードの場合、craneをローカルで起動
@@ -206,7 +179,7 @@ set -e # エラー終了を再び有効化
 # ログの表示
 echo ""
 echo "=== Dockerコンテナのログ ==="
-docker compose "${COMPOSE_PROFILE_ARGS[@]}" -f "${COMPOSE_FILE}" logs
+docker compose -f "${COMPOSE_FILE}" logs
 
 # 動画生成（テスト失敗時のみ、最新のログファイル1件のみ対象）
 if [ ${TEST_RESULT} -ne 0 ]; then
@@ -279,23 +252,9 @@ if [ -n "${CRANE_PID}" ]; then
     fi
 fi
 
-# cm4_simプロセスを停止
-if [ -n "${CM4_SIM_PID}" ]; then
-    echo "=== ローカルcm4_simプロセスを停止中 ==="
-    kill -TERM "${CM4_SIM_PID}" 2>/dev/null || true
-    sleep 1
-    kill -KILL "${CM4_SIM_PID}" 2>/dev/null || true
-    echo "cm4_simプロセスを停止しました"
-    if [ -f "/tmp/cm4_sim_local.log" ]; then
-        echo ""
-        echo "=== ローカルcm4_simのログ ==="
-        tail -30 /tmp/cm4_sim_local.log
-    fi
-fi
-
 echo ""
 echo "=== Docker Composeサービスを停止中 ==="
-docker compose "${COMPOSE_PROFILE_ARGS[@]}" -f "${COMPOSE_FILE}" down
+docker compose -f "${COMPOSE_FILE}" down
 
 echo ""
 if [ ${TEST_RESULT} -eq 0 ]; then

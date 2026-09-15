@@ -34,7 +34,26 @@ Docker開発・シナリオ・対戦テストの起動スクリプトは隔離�
 | ロボットのフィードバック受信 | [crane_robot_receiver](https://github.com/ibis-ssl/crane/tree/develop/crane_robot_receiver) |
 | Docker側のサービス接続 | [開発環境のCompose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml) |
 
-送受信側のアドレス・ポート・チーム設定を合わせ、起動ログと使用中の設定で確認します。`cm4_sim` を挟む構成では `feedback_sim_mode:=false` が必要です。同じunicastポートをCraneとブリッジが受信すると、片方だけにパケットが配送されるためです。
+送受信側のアドレス・ポート・チーム設定を合わせ、起動ログと使用中の設定で確認します。
+
+## シミュレーションの標準構成
+
+実機CM4に相当する `cm4-sim` が経路に入り、位置制御ループを閉じます。Craneは位置指令（ワイヤmode 4）を送るだけで、不安定な無線経路に相当する区間が制御ループの外側に出ます。
+
+```text
+crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+  ^                       ^                          |
+  |                       +-- unicast feedback 127.0.0.1:50100+id --+
+  +-- multicast feedback 224.5.20.(100+id):50100+id（cm4-simが再配信）--+
+```
+
+mode 4 を出すのは `planner:=visibility_graph` だけです。`rvo2` は mode 3 を出し、`cm4-sim` はそれを位置制御せずそのまま転送します。
+
+この構成では `feedback_sim_mode:=false` が必要です。同じunicastポートをCraneと `cm4-sim` が受信すると、`SO_REUSEPORT` の振り分けは送信元を含む4-tupleハッシュで決まるため、片方だけに全パケットが配送されます。Crane側が当たると `cm4-sim` は位置信号を受け取れず、位置制御が動きません。
+
+同じ理由で、feedbackを観測したいときに `cm4-sim` と同じunicastポート（`--feedback-port-base` が示す `127.0.0.1:50100+id`）を別プロセスでbindしてはいけません。配送が片方に偏り、「位置制御が効いていない」ように見えます。観測は再配信先の `224.5.20.(100+id):50100+id` で行います。再配信自体は `cm4_sim --no-feedback-relay` で止められます。
+
+統合仕様の正本は framework の `docs/robot-side-position-control.md`、サービス定義は[シナリオ用Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/scenario/docker-compose.yaml)です。
 
 ## 通信仕様を変更するとき
 
