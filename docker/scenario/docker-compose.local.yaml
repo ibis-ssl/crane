@@ -1,3 +1,10 @@
+# シナリオテストの標準構成（ローカルモード: crane だけホスト上のワークスペースで動かす）。
+# トポロジと環境変数の意味は docker/scenario/docker-compose.yaml と同じ。
+#
+#   crane(ホスト) --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+#
+# crane は run_test.sh が ros2 launch で起動する。ポートと feedback の受け方は
+# run_test.sh の CRANE_TARGET_PORT / FEEDBACK_SIM_MODE から渡される。
 services:
   erforce-sim:
     image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
@@ -8,8 +15,32 @@ services:
       ./bin/simulator-cli
       -g 2020B
       --realism None
-      --ibis-port ${IBIS_PORT:-12345}
+      --ibis-port ${IBIS_PORT:-12346}
       --ibis-team-color ${IBIS_TEAM_COLOR:-yellow}
+    tty: true
+    stdin_open: true
+    restart: "no"
+
+  # 実機の CM4 に相当するプロセス。設定の意味は docker-compose.yaml の cm4-sim を参照。
+  # イメージは同じ commit SHA に固定する（両ファイルで食い違わせないこと）。
+  cm4-sim:
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-d7a2e07c47cf09c6d359e391f1cf2828f4fe7f5a}
+    container_name: cm4-sim
+    network_mode: host
+    entrypoint: ["tini", "--"]
+    command: >
+      cm4_sim
+      --robot-ids ${CM4_ROBOT_IDS:-0,1,2,3,4,5,6,7,8,9,10}
+      --in-port ${CRANE_TARGET_PORT:-12345}
+      --out-addr 127.0.0.1
+      --out-port ${IBIS_PORT:-12346}
+      --feedback-port-base 50100
+      --multicast-if 127.0.0.1
+      --rate-hz ${CM4_RATE_HZ:-1000}
+      --rx-delay-ms ${RX_DELAY_MS:-0}
+      --rx-jitter-ms ${RX_JITTER_MS:-0}
+      --rx-loss-rate ${RX_LOSS_RATE:-0.0}
+      --seed ${CM4_SEED:-0}
     tty: true
     stdin_open: true
     restart: "no"
@@ -28,19 +59,3 @@ services:
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host
-
-  # ===== CM4 in the loop 構成 =====
-  # ローカルモードでは cm4_sim も crane と同じくホスト上で直接実行する
-  # （run_test.sh から起動される）。Orion_CM4 に Dockerfile がまだ無く
-  # ghcr.io/ibis-ssl/orion-cm4-sim も未作成のため、コンテナ定義は置かない。
-  #
-  # 起動:
-  #   COMPOSE_PROFILES=cm4-loop IBIS_PORT=12346 CRANE_TARGET_PORT=12345 \
-  #   FEEDBACK_SIM_MODE=false PLANNER=visibility_graph \
-  #   bash scripts/scenario_test/run_test.sh VISIBILITY_OBSTACLE_AVOIDANCE
-  #
-  # バイナリは Orion_CM4 の feat/cm4-position-control を `bash cm4/build.sh` で
-  # ビルドしたもの。場所は CM4_SIM_BIN で上書きできる。
-  #
-  # コンテナ版のサービス定義とインタフェース契約は docker/scenario/docker-compose.yaml
-  # の cm4-sim を参照（イメージ作成後はそちらに合わせる）。
