@@ -16,36 +16,12 @@
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
+#include "crane_game_analyzer/metrics/pass_origin.hpp"
+
 namespace crane::metrics
 {
 
 PassTargetMetric::PassTargetMetric() : MetricBase(MetricId::PASS_TARGET, "PassTarget") {}
-
-auto PassTargetMetric::computePassOrigin(MetricContext & ctx) const -> Point
-{
-  const auto & ball = ctx.world_model->ball();
-  // 検出かつ停止
-  if (ball.isStopped() && ball.detected) {
-    return ball.pos;
-  }
-  // 検出かつ移動
-  if (ball.detected && ball.isMoving()) {
-    return ball.getPredictedPosition(std::min(ball.getStopTime(), 1.0));
-  }
-  // 履歴から直近検出
-  for (auto it = ctx.ball_history->begin(); it != ctx.ball_history->end(); ++it) {
-    if (it->detected) {
-      return Point(it->position.x, it->position.y);
-    }
-  }
-  // キック起点
-  if (not ctx.analysis.ongoing_kick.empty()) {
-    const auto & k = ctx.analysis.ongoing_kick.front();
-    return Point(k.origin_x, k.origin_y);
-  }
-  // フォールバック
-  return ball.pos;
-}
 
 auto PassTargetMetric::calcScore(
   MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double
