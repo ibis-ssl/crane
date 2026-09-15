@@ -216,6 +216,20 @@ jobs:
         run: |
           sleep 5
 
+      # cm4-sim は位置制御ループそのもの。落ちているとテストは無意味に失敗し、
+      # 原因が crane 側にあるように見えてしまうのでここで切り分ける。
+      - name: Check simulator stack is up
+        run: |
+          docker compose -f docker/scenario/docker-compose.yaml ps
+          for svc in erforce-sim cm4-sim crane; do
+            state="$(docker inspect -f '{{.State.Running}}' "$svc" 2>/dev/null || echo missing)"
+            if [ "$state" != "true" ]; then
+              echo "::error::サービス $svc が起動していません (state=$state)"
+              docker compose -f docker/scenario/docker-compose.yaml logs "$svc" || true
+              exit 1
+            fi
+          done
+
       - name: Download logger
         run: |
           curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
