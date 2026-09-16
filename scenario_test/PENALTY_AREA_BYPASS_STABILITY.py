@@ -7,6 +7,8 @@ from rcst.robot import RobotDict
 
 # ボールをゴールラインからどれだけ手前に置くか [m]（ペナルティエリア内）
 BALL_INSET_FROM_GOAL_LINE = 0.8
+# ゴールキーパーの ID。自陣ペナルティエリアに入るのは本来の役割なので判定から除く。
+GOALKEEPER_ID = 0
 
 
 def test_penalty_area_bypass_stability(field: Field):
@@ -30,6 +32,12 @@ def test_penalty_area_bypass_stability(field: Field):
     ) -> bool:
         del ball, blue_robots
         for robot in yellow_robots.values():
+            # GK が自陣ゴール前に立つのは正しい振る舞い。実測でも Y0 は
+            # FORCE_START の 1.94 秒後に自陣側の (-3.506, +0.276) に入る。
+            # これを違反として数えるとテストは crane の迂回能力ではなく
+            # 「GK が仕事をしたか」を見てしまう。
+            if robot.id == GOALKEEPER_ID:
+                continue
             if field.is_in_penalty_area(robot.x, robot.y):
                 return True
         return False

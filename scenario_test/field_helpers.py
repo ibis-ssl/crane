@@ -29,6 +29,17 @@ from rcst.field_geometry import FieldGeometry
 BALL_RADIUS = 0.0215
 ROBOT_RADIUS = 0.09
 
+# crane(yellow) が守るゴールの側。
+#
+# rcst の referee は blue_team_on_positive_half を送らないため、どちら向きになるかは
+# 観測して決めるしかない。実測では、フィールド中央に1機だけ置いた状態で FORCE_START
+# すると、その機体は -x 側のゴール前 (-4.04, 0.00) へ移動して留まる（ゴールキーパー
+# 挙動）。VISIBILITY_OBSTACLE_AVOIDANCE が GK を -x 側に置いて成立しているのとも一致
+# する。配置を決めるテストはこの定数を使い、直に符号を書かないこと。
+DEFENDED_SIDE = -1
+# 攻める側（相手ゴールのある側）
+ATTACKING_SIDE = -DEFENDED_SIDE
+
 
 class Field:
     """geometry から導出した座標系と、検査付きの配置 API。
