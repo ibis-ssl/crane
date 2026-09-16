@@ -154,6 +154,7 @@ jobs:
           - TEST: emit_from_penalty_01
           - TEST: BALL_PLACEMENT_NEAR_WALL
           - TEST: PENALTY_AREA_BYPASS_STABILITY
+          - TEST: VISIBILITY_OBSTACLE_AVOIDANCE
 
     runs-on: ubuntu-latest
     steps:

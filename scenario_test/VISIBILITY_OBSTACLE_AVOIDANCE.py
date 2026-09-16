@@ -10,7 +10,6 @@
 import math
 import time
 
-import pytest
 from field_helpers import Field
 from rcst.ball import Ball
 from rcst.robot import RobotDict
@@ -19,6 +18,8 @@ from rcst.robot import RobotDict
 ROBOT_COLLISION_DISTANCE = 0.15
 # 障害物を越えたと判定する、ハーフウェイラインからの距離 [m]
 BYPASS_MARGIN = 0.3
+# 「実際に走行した」とみなす速度 [m/s]
+MOTION_SPEED_THRESHOLD = 0.2
 
 
 def test_visibility_obstacle_avoidance(field: Field):
@@ -77,7 +78,9 @@ def test_visibility_obstacle_avoidance(field: Field):
             )
 
         world = rcst_comm.observer.get_world()
-        if rcst_comm.observer.robot_speed().some_yellow_robots_over(0.2):
+        if rcst_comm.observer.robot_speed().some_yellow_robots_over(
+            MOTION_SPEED_THRESHOLD
+        ):
             observed_active_motion = True
 
         for robot_id, yellow in world.get_yellow_robots().items():
@@ -86,8 +89,12 @@ def test_visibility_obstacle_avoidance(field: Field):
 
         time.sleep(1.0)
 
-    if not observed_active_motion:
-        pytest.skip("Yellow robot did not actively move in this environment")
+    # ロボットが1機も動かないのは、このテストが検証したい「迂回」以前の異常。
+    # skip にすると CI では緑になり、動かない不具合を素通ししてしまう。
+    assert observed_active_motion, (
+        f"12秒間どの yellow も {MOTION_SPEED_THRESHOLD} m/s を超えなかった。"
+        "迂回以前に走行していないので、経路計画ではなく起動・役割割当を疑うこと"
+    )
 
     # 障害物を越えて敵陣側へ迂回・前進できたことを確認
     assert passed_obstacle, (
