@@ -54,8 +54,12 @@ pip install pyyaml setuptools jinja2 typeguard lark
 #
 # cm4-sim イメージと同じくcommit SHAで固定する。追従にするとフォーク側のpushだけで
 # craneのCIが壊れ、原因がcrane側のリグレッションに見えてしまう。
+#
+# 固定先は必ず main 上のcommitにすること。PRのブランチ上のcommitを指したままにすると、
+# squash mergeでブランチが消えた瞬間に到達不能になり、pip installが失敗する。
+# 症状はcrane側のCI失敗として出るので原因が分かりにくい。
 echo "robocup_scenario_testライブラリをインストール中..."
-pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@40ec4081d5324a4c908079d9ae29f465820d3c48
+pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@941afdb7da384d7ef5901ca2ab814dd7689f5ba2
 
 # pytestのインストール（ROS 2 Jazzy互換性のため7.4.4を指定）
 echo "pytestをインストール中..."

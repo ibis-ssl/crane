@@ -140,7 +140,7 @@ jobs:
           sudo apt install -y protobuf-compiler
           # 本家は更新が止まっているため ibis-ssl のフォークを使う。commit SHA 固定の理由は
           # scripts/scenario_test/setup_env.sh のコメントを参照。
-          pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@40ec4081d5324a4c908079d9ae29f465820d3c48
+          pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@941afdb7da384d7ef5901ca2ab814dd7689f5ba2
           pip install pytest
 
   scenario_test:
@@ -189,7 +189,7 @@ jobs:
           sudo apt install -y protobuf-compiler
           # 本家は更新が止まっているため ibis-ssl のフォークを使う。commit SHA 固定の理由は
           # scripts/scenario_test/setup_env.sh のコメントを参照。
-          pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@40ec4081d5324a4c908079d9ae29f465820d3c48
+          pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@941afdb7da384d7ef5901ca2ab814dd7689f5ba2
           pip install pytest
 
       - name: Download fork image
