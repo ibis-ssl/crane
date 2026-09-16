@@ -80,6 +80,8 @@ ssl-go-tools/
 rosbag2_*/
 *.mp4
 *.avi
+# ssl-log-recorder の avi 生成中に残る索引の一時ファイル。*.avi では拾えない
+*.avi.idx_
 
 # Match vs TIGERs results
 docker/match-vs-tigers/results/

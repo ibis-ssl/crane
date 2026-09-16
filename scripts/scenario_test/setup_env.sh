@@ -41,15 +41,21 @@ pip install pyyaml setuptools jinja2 typeguard lark
 # robocup_scenario_testライブラリのインストール
 #
 # 本家 SSL-Roots/robocup_scenario_test は更新が止まっているため、ibis-ssl の
-# フォークを正本として使う。フォークには VisionWorld が検出の途切れたロボットを
-# 削除するようにした修正が入っている。本家では一度でも見えたロボットが最後の位置に
-# 残り続け、send_empty_world() が効く前の初期配置が亡霊としてフィールドに居座るため、
-# ロボット同士の距離を見るテストが存在しないロボットとの衝突を報告していた。
+# フォークを正本として使う。フォークには以下が入っている:
+#
+# - VisionWorld が検出の途切れたロボットを削除する。本家では一度でも見えた
+#   ロボットが最後の位置に残り続け、send_empty_world() が効く前の初期配置が
+#   亡霊としてフィールドに居座るため、ロボット同士の距離を見るテストが存在しない
+#   ロボットとの衝突を報告していた。
+# - vision の geometry パケットからフィールド寸法を取り出して公開する。
+#   scenario シミュレータは Division B（9000x6000）で走るので、テストが Division A の
+#   座標を直書きするとシミュレータに静かにクランプされ、要求したのとは別の世界で
+#   テストが進む。scenario_test/field_helpers.py がこれを使って座標を導出する。
 #
 # cm4-sim イメージと同じくcommit SHAで固定する。追従にするとフォーク側のpushだけで
 # craneのCIが壊れ、原因がcrane側のリグレッションに見えてしまう。
 echo "robocup_scenario_testライブラリをインストール中..."
-pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@aa3a6ab6b8608224e107f51003be0503fc47d41f
+pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@40ec4081d5324a4c908079d9ae29f465820d3c48
 
 # pytestのインストール（ROS 2 Jazzy互換性のため7.4.4を指定）
 echo "pytestをインストール中..."

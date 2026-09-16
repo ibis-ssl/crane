@@ -10,15 +10,27 @@ bag 解析（crane_bag pass）と異なり意図（pass_target_id）は観測で
 - ボール高さ z も観測できないため、チップキックが敵の頭上を越える場合に
   INTERCEPTED と誤判定し得る（本シナリオはストレートパスが成立する配置を使う）
 
-座標系（vision）: crane(yellow) は +x 側を守り、-x 方向へ攻める
-（rcst の referee は blue_team_on_positive_half を送らない = false のため、
- crane_world_model_publisher は yellow を positive half と解釈する）。
+座標系（vision）: crane(yellow) が守るのは field_helpers.DEFENDED_SIDE 側で、
+攻めるのは ATTACKING_SIDE 側。rcst 環境では -x を守り +x へ攻める（rcst が
+blue_team_on_positive_half を送らず on_positive_half が初期値 false のままになるため。
+根拠の連鎖は field_helpers.DEFENDED_SIDE のコメントに書いた）。
+
+以前このファイルは逆（+x を守り -x へ攻める）を前提に配置しており、
+attacker は自陣ゴールではなく相手ゴールの方向、つまり配置上の「後ろ」へ蹴って
+いた。その結果ボールは 3 試行とも +4.6 付近（ゴールライン 4.5 の外）へ抜けていた。
+場外判定が Division A 固定の 6.05 だったためにそれが場外と数えられず、壁で跳ね
+返ったあとの接触を SUCCESS と分類していて、配置の向きが逆であることが見えなかった。
+
+配置座標は Division を決め打ちせず vision の geometry から導出する（field_helpers）。
+ロボット間隔のようなロボットスケールの距離は絶対値のまま持つ。
 """
 
 import dataclasses
 import math
 import time
 from collections import deque
+
+from field_helpers import ATTACKING_SIDE, DEFENDED_SIDE, Field
 
 # ─── 判定パラメータ ──────────────────────────────────────────────────────────
 KICK_DETECT_SPEED = 1.5  # キック開始とみなすボール速度 [m/s]
@@ -27,9 +39,9 @@ CONTACT_DIST = 0.13  # 接触とみなすロボット中心-ボール距離 [m]
 KICKER_RELEASE_DIST = 0.5  # キッカー再接触を有効化するボール離脱距離 [m]
 STOP_SPEED = 0.3  # こぼれ球とみなすボール速度 [m/s]
 SETTLE_TIME = 0.2  # キック直後の判定無効時間 [s]
-FIELD_HALF_X = 6.05  # 場外判定 [m]（フィールド 12x9 + マージン）
-FIELD_HALF_Y = 4.55
+OUT_OF_PLAY_MARGIN = 0.05  # 場外判定をフィールド境界から何 m 外に置くか
 SPEED_WINDOW_SEC = 0.08  # 速度推定の差分窓 [s]
+MARKER_DISTANCE = 0.7  # 受け手からマーカーまでの距離 [m]
 
 
 @dataclasses.dataclass
@@ -94,11 +106,11 @@ def _nearest_robot(robots, x: float, y: float):
     return best_id, best_d
 
 
-def watch_pass_outcome(get_world, timeout_sec: float = 25.0) -> PassTrialResult:
-    """次の yellow キック1本を追跡して結果を分類する。
-
-    get_world: () -> VisionWorld（rcst_comm.observer.get_world を渡す）
-    """
+def watch_pass_outcome(field: Field, timeout_sec: float = 25.0) -> PassTrialResult:
+    """次の yellow キック1本を追跡して結果を分類する。"""
+    get_world = field.comm.observer.get_world
+    field_half_x = field.half_length + OUT_OF_PLAY_MARGIN
+    field_half_y = field.half_width + OUT_OF_PLAY_MARGIN
     result = PassTrialResult()
     estimator = _BallSpeedEstimator()
     start_wall = time.time()
@@ -147,7 +159,7 @@ def watch_pass_outcome(get_world, timeout_sec: float = 25.0) -> PassTrialResult:
 
         if dt >= SETTLE_TIME:
             # 場外
-            if abs(ball.x) > FIELD_HALF_X or abs(ball.y) > FIELD_HALF_Y:
+            if abs(ball.x) > field_half_x or abs(ball.y) > field_half_y:
                 result.outcome = "OUT_OF_PLAY"
                 break
 
@@ -192,51 +204,74 @@ def watch_pass_outcome(get_world, timeout_sec: float = 25.0) -> PassTrialResult:
 # ─── 共通配置 ────────────────────────────────────────────────────────────────
 
 
-def setup_buildup_static(comm) -> None:
+def receiver_positions(field: Field) -> list:
+    """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
+
+    ハーフウェイラインをわずかに攻撃側へ越えた位置に置く。
+    """
+    x = field.x(0.07) * ATTACKING_SIDE
+    return [(x, field.y(0.49)), (x, field.y(-0.49))]
+
+
+def setup_buildup_static(field: Field) -> None:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
-    ボール(2.0, 0)から見てゴールマウス(-6, ±0.9)は blue 壁で完全に遮蔽され
-    （ゴール可視角 ≈ 0）、attacker はパスを選択せざるを得ない。
-    受け手 2/3 は攻撃ハーフ（vision x < 0）にいるため pass_target 候補になる。
+    ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
+    attacker はパスを選択せざるを得ない。
+    受け手 2/3 は攻撃ハーフにいるため pass_target 候補になる。
     """
-    comm.send_empty_world()
-    # yellow (crane): +x 側を守り -x 方向へ攻める
-    comm.send_yellow_robot(0, 5.7, 0.0, math.radians(180))  # GK
-    comm.send_yellow_robot(
-        1, 2.4, 0.1, math.radians(180)
+    field.send_empty_world()
+    # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
+    ball_x = field.x(0.33) * DEFENDED_SIDE
+    left_receiver, right_receiver = receiver_positions(field)
+    facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
+
+    # yellow (crane)
+    field.send_yellow_robot(
+        0, field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0, facing
+    )  # GK
+    field.send_yellow_robot(
+        1, ball_x + 0.4 * DEFENDED_SIDE, 0.1, facing
     )  # ボール至近（attacker 候補）
-    comm.send_yellow_robot(2, -0.4, 2.2, math.radians(180))  # 受け手候補（左ウィング）
-    comm.send_yellow_robot(3, -0.4, -2.2, math.radians(180))  # 受け手候補（右ウィング）
-    comm.send_yellow_robot(4, 3.5, -1.5, math.radians(180))  # 後方サポート
+    field.send_yellow_robot(2, *left_receiver, facing)
+    field.send_yellow_robot(3, *right_receiver, facing)
+    field.send_yellow_robot(
+        4, field.x(0.58) * DEFENDED_SIDE, field.y(-0.33), facing
+    )  # 後方サポート
     # blue: 全機静止（制御なし）。シュートコースを塞ぐ壁 + GK + 後方2機
-    comm.send_blue_robot(0, -5.7, 0.0, 0.0)
-    comm.send_blue_robot(1, 0.9, 0.0, 0.0)
-    comm.send_blue_robot(2, 0.7, 0.25, 0.0)
-    comm.send_blue_robot(3, 0.7, -0.25, 0.0)
-    comm.send_blue_robot(4, -2.0, 0.6, 0.0)
-    comm.send_blue_robot(5, -2.0, -0.6, 0.0)
-    comm.send_ball(2.0, 0.0)
+    field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
+    field.send_blue_robot(1, field.x(0.15) * ATTACKING_SIDE, 0.0, 0.0)
+    field.send_blue_robot(2, field.x(0.117) * ATTACKING_SIDE, 0.25, 0.0)
+    field.send_blue_robot(3, field.x(0.117) * ATTACKING_SIDE, -0.25, 0.0)
+    field.send_blue_robot(4, field.x(0.33) * ATTACKING_SIDE, 0.6, 0.0)
+    field.send_blue_robot(5, field.x(0.33) * ATTACKING_SIDE, -0.6, 0.0)
+    field.send_ball(ball_x, 0.0)
 
 
-def setup_under_mark(comm) -> None:
+def setup_under_mark(field: Field) -> None:
     """受け手がゴール側からマークされた配置。
 
     マーカーはパスラインを塞がない位置（受け手のゴール側 0.7m）に置き、
     「密着マーク下でのレシーブ」を試す。直接のパスコース自体は通っている。
     """
-    setup_buildup_static(comm)
-    # 受け手(-0.4, ±2.2) のゴール(-6,0)側 0.7m にマーカーを追加
-    comm.send_blue_robot(6, -1.05, 1.94, 0.0)
-    comm.send_blue_robot(7, -1.05, -1.94, 0.0)
+    setup_buildup_static(field)
+    # 受け手から、crane が攻めるゴールへ 0.7m 寄った位置にマーカーを置く
+    goal = field.own_goal_center(ATTACKING_SIDE)
+    for robot_id, receiver in zip((6, 7), receiver_positions(field)):
+        marker_x, marker_y = field.toward(receiver, goal, MARKER_DISTANCE)
+        field.send_blue_robot(robot_id, marker_x, marker_y, 0.0)
 
 
-def run_pass_trial(comm, setup_fn, timeout_sec: float = 25.0) -> PassTrialResult:
+def run_pass_trial(
+    field: Field, setup_fn, timeout_sec: float = 25.0
+) -> PassTrialResult:
     """1試行: STOP→配置→FORCE_START→パス1本の結果を観測して STOP で終了"""
+    comm = field.comm
     comm.change_referee_command("STOP", 1.0)
-    setup_fn(comm)
+    setup_fn(field)
     time.sleep(2.0)  # 配置反映と役割割当の安定待ち
     comm.observer.reset()
     comm.change_referee_command("FORCE_START", 0.5)
-    result = watch_pass_outcome(comm.observer.get_world, timeout_sec)
+    result = watch_pass_outcome(field, timeout_sec)
     comm.change_referee_command("STOP", 1.0)
     return result
