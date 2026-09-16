@@ -1,7 +1,7 @@
 import time
 
 import pytest
-from field_helpers import Field
+from field_helpers import DEFENDED_SIDE, Field
 from rcst.ball import Ball
 from rcst.robot import RobotDict
 
@@ -27,19 +27,27 @@ def test_penalty_area_bypass_stability(field: Field):
     for robot_id, y in zip(range(8), field.column_y(8, 0.47)):
         field.send_yellow_robot(robot_id, field.x(-0.25), y, 0.0)
 
+    violation: dict = {}
+
     def yellow_enters_penalty(
         ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict
     ) -> bool:
         del ball, blue_robots
         for robot in yellow_robots.values():
-            # GK が自陣ゴール前に立つのは正しい振る舞い。実測でも Y0 は
+            if not field.is_in_penalty_area(robot.x, robot.y):
+                continue
+            # GK が「自陣」ゴール前に立つのは正しい振る舞い。実測でも Y0 は
             # FORCE_START の 1.94 秒後に自陣側の (-3.506, +0.276) に入る。
             # これを違反として数えるとテストは crane の迂回能力ではなく
             # 「GK が仕事をしたか」を見てしまう。
-            if robot.id == GOALKEEPER_ID:
+            #
+            # ただし免除するのは守る側だけにする。is_in_penalty_area は |x| で
+            # 見るので左右を区別せず、条件を id だけにすると GK が相手ペナルティ
+            # エリアに入るという本物の違反まで見逃す。
+            if robot.id == GOALKEEPER_ID and robot.x * DEFENDED_SIDE > 0:
                 continue
-            if field.is_in_penalty_area(robot.x, robot.y):
-                return True
+            violation.setdefault("robot", (robot.id, robot.x, robot.y))
+            return True
         return False
 
     rcst_comm.observer.customized().register_sticky_true_callback(
@@ -55,8 +63,11 @@ def test_penalty_area_bypass_stability(field: Field):
         if rcst_comm.observer.robot_speed().some_yellow_robots_over(0.2):
             observed_active_motion = True
         if rcst_comm.observer.customized().get_result("yellow_enters_penalty"):
+            robot_id, x, y = violation.get("robot", (-1, float("nan"), float("nan")))
             assert False, (
-                "Yellow robot entered penalty area while bypass should be active"
+                f"Yellow {robot_id} がペナルティエリア ({x:.3f}, {y:.3f}) に入った。"
+                f"前縁 x={field.penalty_front_x(+1):.3f}, "
+                f"半幅 {field.penalty_half_width:.3f}"
             )
         time.sleep(1.0)
 
