@@ -39,8 +39,17 @@ echo "必要なPythonライブラリをインストール中..."
 pip install pyyaml setuptools jinja2 typeguard lark
 
 # robocup_scenario_testライブラリのインストール
+#
+# 本家 SSL-Roots/robocup_scenario_test は更新が止まっているため、ibis-ssl の
+# フォークを正本として使う。フォークには VisionWorld が検出の途切れたロボットを
+# 削除するようにした修正が入っている。本家では一度でも見えたロボットが最後の位置に
+# 残り続け、send_empty_world() が効く前の初期配置が亡霊としてフィールドに居座るため、
+# ロボット同士の距離を見るテストが存在しないロボットとの衝突を報告していた。
+#
+# cm4-sim イメージと同じくcommit SHAで固定する。追従にするとフォーク側のpushだけで
+# craneのCIが壊れ、原因がcrane側のリグレッションに見えてしまう。
 echo "robocup_scenario_testライブラリをインストール中..."
-pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
+pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@aa3a6ab6b8608224e107f51003be0503fc47d41f
 
 # pytestのインストール（ROS 2 Jazzy互換性のため7.4.4を指定）
 echo "pytestをインストール中..."
