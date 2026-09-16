@@ -10,9 +10,16 @@ bag 解析（crane_bag pass）と異なり意図（pass_target_id）は観測で
 - ボール高さ z も観測できないため、チップキックが敵の頭上を越える場合に
   INTERCEPTED と誤判定し得る（本シナリオはストレートパスが成立する配置を使う）
 
-座標系（vision）: crane(yellow) は +x 側を守り、-x 方向へ攻める
-（rcst の referee は blue_team_on_positive_half を送らない = false のため、
- crane_world_model_publisher は yellow を positive half と解釈する）。
+座標系（vision）: crane(yellow) が守るのは field_helpers.DEFENDED_SIDE 側で、
+攻めるのは ATTACKING_SIDE 側。rcst 環境では -x を守り +x へ攻める（rcst が
+blue_team_on_positive_half を送らず on_positive_half が初期値 false のままになるため。
+根拠の連鎖は field_helpers.DEFENDED_SIDE のコメントに書いた）。
+
+以前このファイルは逆（+x を守り -x へ攻める）を前提に配置しており、
+attacker は自陣ゴールではなく相手ゴールの方向、つまり配置上の「後ろ」へ蹴って
+いた。その結果ボールは 3 試行とも +4.6 付近（ゴールライン 4.5 の外）へ抜けていた。
+場外判定が Division A 固定の 6.05 だったためにそれが場外と数えられず、壁で跳ね
+返ったあとの接触を SUCCESS と分類していて、配置の向きが逆であることが見えなかった。
 
 配置座標は Division を決め打ちせず vision の geometry から導出する（field_helpers）。
 ロボット間隔のようなロボットスケールの距離は絶対値のまま持つ。
@@ -23,7 +30,7 @@ import math
 import time
 from collections import deque
 
-from field_helpers import Field
+from field_helpers import ATTACKING_SIDE, DEFENDED_SIDE, Field
 
 # ─── 判定パラメータ ──────────────────────────────────────────────────────────
 KICK_DETECT_SPEED = 1.5  # キック開始とみなすボール速度 [m/s]
@@ -198,40 +205,46 @@ def watch_pass_outcome(field: Field, timeout_sec: float = 25.0) -> PassTrialResu
 
 
 def receiver_positions(field: Field) -> list:
-    """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。"""
-    return [(field.x(-0.07), field.y(0.49)), (field.x(-0.07), field.y(-0.49))]
+    """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
+
+    ハーフウェイラインをわずかに攻撃側へ越えた位置に置く。
+    """
+    x = field.x(0.07) * ATTACKING_SIDE
+    return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
 def setup_buildup_static(field: Field) -> None:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
-    ボールから見てゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
+    ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
     attacker はパスを選択せざるを得ない。
-    受け手 2/3 は攻撃ハーフ（vision x < 0）にいるため pass_target 候補になる。
+    受け手 2/3 は攻撃ハーフにいるため pass_target 候補になる。
     """
     field.send_empty_world()
-    ball_x = field.x(0.33)
+    # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
+    ball_x = field.x(0.33) * DEFENDED_SIDE
     left_receiver, right_receiver = receiver_positions(field)
+    facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
-    # yellow (crane): +x 側を守り -x 方向へ攻める
+    # yellow (crane)
     field.send_yellow_robot(
-        0, field.from_goal_line(+1, 0.3), 0.0, math.radians(180)
+        0, field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0, facing
     )  # GK
     field.send_yellow_robot(
-        1, ball_x + 0.4, 0.1, math.radians(180)
+        1, ball_x + 0.4 * DEFENDED_SIDE, 0.1, facing
     )  # ボール至近（attacker 候補）
-    field.send_yellow_robot(2, *left_receiver, math.radians(180))
-    field.send_yellow_robot(3, *right_receiver, math.radians(180))
+    field.send_yellow_robot(2, *left_receiver, facing)
+    field.send_yellow_robot(3, *right_receiver, facing)
     field.send_yellow_robot(
-        4, field.x(0.58), field.y(-0.33), math.radians(180)
+        4, field.x(0.58) * DEFENDED_SIDE, field.y(-0.33), facing
     )  # 後方サポート
     # blue: 全機静止（制御なし）。シュートコースを塞ぐ壁 + GK + 後方2機
-    field.send_blue_robot(0, field.from_goal_line(-1, 0.3), 0.0, 0.0)
-    field.send_blue_robot(1, field.x(0.15), 0.0, 0.0)
-    field.send_blue_robot(2, field.x(0.117), 0.25, 0.0)
-    field.send_blue_robot(3, field.x(0.117), -0.25, 0.0)
-    field.send_blue_robot(4, field.x(-0.33), 0.6, 0.0)
-    field.send_blue_robot(5, field.x(-0.33), -0.6, 0.0)
+    field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
+    field.send_blue_robot(1, field.x(0.15) * ATTACKING_SIDE, 0.0, 0.0)
+    field.send_blue_robot(2, field.x(0.117) * ATTACKING_SIDE, 0.25, 0.0)
+    field.send_blue_robot(3, field.x(0.117) * ATTACKING_SIDE, -0.25, 0.0)
+    field.send_blue_robot(4, field.x(0.33) * ATTACKING_SIDE, 0.6, 0.0)
+    field.send_blue_robot(5, field.x(0.33) * ATTACKING_SIDE, -0.6, 0.0)
     field.send_ball(ball_x, 0.0)
 
 
@@ -242,8 +255,8 @@ def setup_under_mark(field: Field) -> None:
     「密着マーク下でのレシーブ」を試す。直接のパスコース自体は通っている。
     """
     setup_buildup_static(field)
-    # 受け手から攻撃側ゴールへ 0.7m 寄った位置にマーカーを置く
-    goal = field.own_goal_center(-1)
+    # 受け手から、crane が攻めるゴールへ 0.7m 寄った位置にマーカーを置く
+    goal = field.own_goal_center(ATTACKING_SIDE)
     for robot_id, receiver in zip((6, 7), receiver_positions(field)):
         marker_x, marker_y = field.toward(receiver, goal, MARKER_DISTANCE)
         field.send_blue_robot(robot_id, marker_x, marker_y, 0.0)

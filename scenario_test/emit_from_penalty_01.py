@@ -47,6 +47,14 @@ def test_emit_from_penalty_01(field: Field):
         f"開始時点でボール ({placed.x:.3f}, {placed.y:.3f}) が自陣ペナルティエリアに"
         f"入っていない。要求位置は ({ball_x:.3f}, {ball_y:.3f})"
     )
+    # is_in_penalty_area は |x| で見るので左右を区別しない。守る側が反転していると
+    # 相手ペナルティエリアに置いたまま上の assert を通過し、タイムアウトまで
+    # 「出ない」と報告されて原因が見えなくなる。側そのものを明示的に確かめる。
+    assert placed.x * DEFENDED_SIDE > 0, (
+        f"ボール ({placed.x:.3f}, {placed.y:.3f}) が守る側 "
+        f"(x の符号 {DEFENDED_SIDE:+d}) にない。"
+        f"DEFENDED_SIDE の前提が崩れている可能性がある（field_helpers.py の説明を参照）"
+    )
 
     field.comm.change_referee_command("FORCE_START", 3.0)
 
@@ -59,10 +67,17 @@ def test_emit_from_penalty_01(field: Field):
             return
         time.sleep(0.5)
 
-    ball = field.comm.observer.get_world().get_ball()
+    world = field.comm.observer.get_world()
+    ball = world.get_ball()
+    # ロボットが自陣へ帰ってボールを放置しているのか、寄っているのに出せないのかを
+    # ログだけで切り分けられるようにロボット位置も出す。
+    robots = ", ".join(
+        f"Y{r.id}({r.x:.3f}, {r.y:.3f})" for r in world.get_yellow_robots().values()
+    )
     raise AssertionError(
         f"{EMIT_TIMEOUT:.0f}秒たってもボールが自陣ペナルティエリア内 "
         f"({ball.x:.3f}, {ball.y:.3f}) に残っている。"
         f"要求位置は ({ball_x:.3f}, {ball_y:.3f})、"
-        f"前縁 x={front_x:.3f}, 半幅 {field.penalty_half_width:.3f}"
+        f"前縁 x={front_x:.3f}, 半幅 {field.penalty_half_width:.3f}、"
+        f"yellow: {robots or 'なし'}"
     )

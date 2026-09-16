@@ -31,11 +31,23 @@ ROBOT_RADIUS = 0.09
 
 # crane(yellow) が守るゴールの側。
 #
-# rcst の referee は blue_team_on_positive_half を送らないため、どちら向きになるかは
-# 観測して決めるしかない。実測では、フィールド中央に1機だけ置いた状態で FORCE_START
-# すると、その機体は -x 側のゴール前 (-4.04, 0.00) へ移動して留まる（ゴールキーパー
-# 挙動）。VISIBILITY_OBSTACLE_AVOIDANCE が GK を -x 側に置いて成立しているのとも一致
-# する。配置を決めるテストはこの定数を使い、直に符号を書かないこと。
+# rcst 環境では -x で確定する。referee パケットの経路を追うとそうなる:
+#
+# - rcst/sim_referee.py の to_referee_packet_string() は blue_team_on_positive_half を
+#   一切セットしない。
+# - crane_world_model_publisher/src/world_model_data_provider.cpp:204 は
+#   `msg.has_field & BLUE_TEAM_ON_POSITIVE_HALF_FIELD_SET` のときだけ on_positive_half を
+#   更新する。上記のとおりこのフィールドは来ないので、更新は起きない。
+# - したがって on_positive_half は初期値 false のまま
+#   （world_model_data_provider.hpp:287）で、:351 の
+#   `our_goal_x = on_positive_half ? +field_w/2 : -field_w/2` は -x を返す。
+#
+# 実測とも一致する。フィールド中央に1機だけ置いて FORCE_START すると -x 側のゴール前
+# (-4.04, 0.00) へ帰り、キックは +4.6 付近（攻撃側のゴールライン裏）へ飛ぶ。
+#
+# 配置を決めるテストはこの定数を使い、直に符号を書かないこと。実機のようにレフェリーが
+# blue_team_on_positive_half を送る環境では向きが反転しうるので、rcst 以外へ流用する
+# 場合は上の連鎖を再確認すること。
 DEFENDED_SIDE = -1
 # 攻める側（相手ゴールのある側）
 ATTACKING_SIDE = -DEFENDED_SIDE
