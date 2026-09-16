@@ -15,6 +15,7 @@ import argparse
 import json
 from collections import Counter
 
+from field_helpers import make_field
 from pass_helpers import run_pass_trial, setup_buildup_static, setup_under_mark
 from rcst.communication import Communication
 
@@ -43,14 +44,23 @@ def main() -> None:
 
     setup_fn = SCENARIOS[args.scenario]
     comm = Communication()
+    # vision スレッドを回さないと geometry も detection も届かない。
+    # rcst_comm フィクスチャが行うのと同じ手順を踏む。
+    comm.start_thread()
     results = []
     try:
+        field = make_field(comm)
+        print(
+            f"field: {field.geometry.field_length:.1f} x "
+            f"{field.geometry.field_width:.1f} m"
+        )
         for i in range(args.trials):
-            result = run_pass_trial(comm, setup_fn, timeout_sec=args.timeout)
+            result = run_pass_trial(field, setup_fn, timeout_sec=args.timeout)
             results.append(result.to_dict())
             print(f"[{i + 1}/{args.trials}] {result.outcome} ({result.to_dict()})")
     finally:
-        comm.close()
+        comm.change_referee_command("HALT", 0.1)
+        comm.stop_thread()
 
     outcome_counts = Counter(r["outcome"] for r in results)
     attempts = sum(1 for r in results if r["outcome"] not in ("NO_KICK",))

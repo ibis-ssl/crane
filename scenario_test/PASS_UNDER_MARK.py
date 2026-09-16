@@ -5,22 +5,15 @@
 フレーキー対策として 3 試行し 2 回以上の成功で pass とする。
 """
 
+from field_helpers import Field
 from pass_helpers import run_pass_trial, setup_under_mark
-from rcst.communication import Communication
 
 
-def test_pass_under_mark(rcst_comm: Communication):
-    results = [run_pass_trial(rcst_comm, setup_under_mark) for _ in range(3)]
+def test_pass_under_mark(field: Field):
+    results = [run_pass_trial(field, setup_under_mark) for _ in range(3)]
     outcomes = [r.outcome for r in results]
     print(f"PASS_UNDER_MARK outcomes: {outcomes}")
     for r in results:
         print(f"  {r.to_dict()}")
     success_count = outcomes.count("SUCCESS")
     assert success_count >= 2, f"パス成功 {success_count}/3 (要求: 2以上): {outcomes}"
-
-
-if __name__ == "__main__":
-    rcst_comm = Communication()
-    test_pass_under_mark(rcst_comm)
-    rcst_comm.close()
-    print("PASS_UNDER_MARK test passed")

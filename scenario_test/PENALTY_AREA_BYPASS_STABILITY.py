@@ -1,32 +1,36 @@
-import math
 import time
 
 import pytest
+from field_helpers import Field
 from rcst.ball import Ball
-from rcst.communication import Communication
 from rcst.robot import RobotDict
 
-
-def is_in_penalty_area(x: float, y: float) -> bool:
-    # SSL Div-A: field half x=6.0, penalty depth=1.8, half width=1.8
-    return math.fabs(x) >= 4.2 and math.fabs(y) <= 1.8
+# ボールをゴールラインからどれだけ手前に置くか [m]（ペナルティエリア内）
+BALL_INSET_FROM_GOAL_LINE = 0.8
 
 
-def test_penalty_area_bypass_stability(rcst_comm: Communication):
-    rcst_comm.send_empty_world()
-    rcst_comm.send_ball(5.2, 0.0)
+def test_penalty_area_bypass_stability(field: Field):
+    rcst_comm = field.comm
+    field.send_empty_world()
+
+    ball_x = field.from_goal_line(+1, BALL_INSET_FROM_GOAL_LINE)
+    assert field.is_in_penalty_area(ball_x, 0.0), (
+        f"ボール ({ball_x:.3f}, 0) がペナルティエリア内にない。"
+        f"エリア前縁は x={field.penalty_front_x(+1):.3f}"
+    )
+    field.send_ball(ball_x, 0.0)
 
     # 複数機体を中央付近からスタートさせ、敵陣側への移動で
     # ペナルティエリア横断が起きやすい状況を作る
-    for i in range(8):
-        rcst_comm.send_yellow_robot(i, -1.5, 2.1 - i * 0.6, 0.0)
+    for robot_id, y in zip(range(8), field.column_y(8, 0.47)):
+        field.send_yellow_robot(robot_id, field.x(-0.25), y, 0.0)
 
     def yellow_enters_penalty(
         ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict
     ) -> bool:
         del ball, blue_robots
         for robot in yellow_robots.values():
-            if is_in_penalty_area(robot.x, robot.y):
+            if field.is_in_penalty_area(robot.x, robot.y):
                 return True
         return False
 
@@ -50,10 +54,3 @@ def test_penalty_area_bypass_stability(rcst_comm: Communication):
 
     if not observed_active_motion:
         pytest.skip("Robots did not actively move in this environment")
-
-
-if __name__ == "__main__":
-    rcst_comm = Communication()
-    test_penalty_area_bypass_stability(rcst_comm)
-    rcst_comm.close()
-    print("PENALTY_AREA_BYPASS_STABILITY test passed")

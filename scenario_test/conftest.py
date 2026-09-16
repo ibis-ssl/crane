@@ -7,12 +7,27 @@ pytestの設定とコマンドライン引数の定義
 """
 
 import pytest
+from field_helpers import make_field
 
 
 def pytest_addoption(parser):
     """pytestのコマンドライン引数を追加"""
     # rcstライブラリが既に--vision_port, --logging, --log_recorderを定義しているので
     # 追加で必要なオプションがあればここに記述
+
+
+@pytest.fixture
+def field(rcst_comm):
+    """vision の geometry から導出したフィールドと、検査付きの配置 API。
+
+    シナリオテストの座標は必ずこれを経由して決めること。区分（Division A / B）を
+    決め打ちした座標はシミュレータに静かにクランプされ、テストが要求したのとは
+    別の世界で走ってしまう。詳細は field_helpers.py を参照。
+
+    rcst_comm と同じく function スコープ。geometry は detection より頻度が低いので
+    最初の1パケットを待つぶんだけ時間がかかる（届かなければ例外）。
+    """
+    return make_field(rcst_comm)
 
 
 @pytest.fixture(scope="session")
