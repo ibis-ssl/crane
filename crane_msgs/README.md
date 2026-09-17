@@ -8,7 +8,11 @@ Craneシステム全体で使用されるカスタムROS 2メッセージ、サ�
 
 - ボールの3D軌道表現には `geometry_msgs/Vector3 position` および `velocity` の `z` 成分を使用すること。
 - 全メッセージ定義は `msg/` 直下に配置されていること。
-- トピックガイドは存在しないため、各メッセージ型のフィールド定義は `.msg` ファイルを参照すること。
+
+## 関連規約
+
+- [座標系仕様](../docs/coordinates.md)
+- [パス連携（GameAnalysis契約）](../docs/pass.md)
 
 ## リンク
 

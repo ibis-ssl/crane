@@ -9,7 +9,7 @@
 - `rvo2`（既定）: RVO2で他ロボットとの衝突を回避し、速度・加減速制約を適用する。実機とシミュレーションで使用する。
 - `visibility_graph`: 相対速度から予測した障害物を可視グラフで回避し、先読み位置指令（`POSITION_TARGET_MODE`）を生成する。
 
-現行の実機ファームウェアは位置目標モードに未対応です。対応が完了するまで `planner:=visibility_graph` はシミュレーションだけで使い、実機では既定の `rvo2` を選択します。
+実機で位置目標モード（`POSITION_TARGET_MODE` / ワイヤ mode 4）を運用する場合は、ロボット側に位置制御ループを実行する CM4（[Orion_CM4](https://github.com/ibis-ssl/Orion_CM4)）が必要です。詳細は [CM4・cm4-simでの位置制御](cm4_position_control.md) を参照してください。CM4 による位置制御を行わない実機環境では、速度目標モード（mode 3）を出力する既定の `rvo2` を選択します。
 
 ## 制約
 
