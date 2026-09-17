@@ -13,6 +13,14 @@ def test_pass_under_mark(field: Field):
     results = [run_pass_trial(field, setup_under_mark) for _ in range(3)]
     outcomes = [r.outcome for r in results]
     print(f"PASS_UNDER_MARK outcomes: {outcomes}")
+    # 配置が反映されるまでの待ちと、キック時点で配置からどれだけ崩れていたか。
+    # crane は yellow 全機を動かすので、ずれが大きい試行は「テストが作った
+    # パスコースとは別の状況」を見ている。判定ではなく切り分けのために出す。
+    waits = [f"{r.placement_wait:.2f}" for r in results]
+    print(f"  配置待ち[s]: {waits}")
+    for i, r in enumerate(results, 1):
+        drift = ", ".join(f"Y{k}:{v:.2f}" for k, v in sorted(r.drift_at_kick.items()))
+        print(f"  試行{i} キック時の配置ずれ[m]: {drift or '(未計測)'}")
     for r in results:
         print(f"  {r.to_dict()}")
     success_count = outcomes.count("SUCCESS")
