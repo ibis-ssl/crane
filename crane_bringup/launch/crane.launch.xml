@@ -208,10 +208,9 @@ limitations under the License.
     <param name="multicast_port" value="$(var referee_port_final)"/>
   </node>
 
-  <!-- ============================================================ -->
-  <!-- モニタリング/診断系 -->
-  <!-- ============================================================ -->
-  <node pkg="crane_robot_receiver" exec="ping_status_node"/>
+  <group unless="$(var sim)">
+    <node pkg="crane_robot_receiver" exec="ping_status_node"/>
+  </group>
 
   <node pkg="crane_game_analyzer" exec="crane_game_analyzer_node" output="screen">
     <param name="ball_physics_config_path" value="$(var ball_physics_config_path)"/>
@@ -258,15 +257,14 @@ limitations under the License.
   <!-- 音声出力（条件付き起動） -->
   <group if="$(var speak)">
     <node pkg="crane_speaker" exec="crane_speaker_node"/>
+    <!-- 音声合成エンジン -->
+    <node pkg="speak_ros" exec="speak_ros_node">
+      <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
+      <param name="voicevox_plugin/speaker" value="13"/>
+      <param name="voicevox_plugin/speedScale" value="0.8"/>
+      <param name="voicevox_plugin/volumeScale" value="1.0"/>
+    </node>
   </group>
-
-  <!-- 音声合成エンジン -->
-  <node pkg="speak_ros" exec="speak_ros_node">
-    <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
-    <param name="voicevox_plugin/speaker" value="13"/>
-    <param name="voicevox_plugin/speedScale" value="0.8"/>
-    <param name="voicevox_plugin/volumeScale" value="1.0"/>
-  </node>
 
   <!-- 診断情報の配信 -->
   <node pkg="crane_robot_receiver" exec="diagnostic_publisher_node">
@@ -288,7 +286,7 @@ limitations under the License.
   <!-- 除外: /diagnostics（/diagnostics_aggで代替）, **/process_time, /parameter_events, /events/write_split -->
   <group if="$(var record)">
     <executable
-      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
+      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal --topics /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
     />
   </group>
 

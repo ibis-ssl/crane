@@ -116,7 +116,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   });
 }
 
-WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
+WorldModelPublisherComponent::~WorldModelPublisherComponent()
+{
+  if (timer) {
+    timer->cancel();
+  }
+  data_provider_.reset();
+}
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {

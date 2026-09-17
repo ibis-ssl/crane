@@ -524,6 +524,12 @@ private:
   {
     running_ = false;
 
+    if (ws_acceptor_) {
+      boost::system::error_code ec;
+      ws_acceptor_->close(ec);
+    }
+    ws_io_context_.stop();
+
     if (websocket_thread_.joinable()) {
       websocket_thread_.join();
     }
@@ -532,21 +538,31 @@ private:
   void runWebSocketServer()
   {
     try {
-      boost::asio::io_context io_context;
-      boost::asio::ip::tcp::acceptor acceptor(
-        io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
+      ws_acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(
+        ws_io_context_,
+        boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
 
       RCLCPP_INFO(this->get_logger(), "WebSocket server listening on port %d", websocket_port_);
 
       while (running_) {
-        auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
-        acceptor.accept(*socket);
+        auto socket = std::make_shared<boost::asio::ip::tcp::socket>(ws_io_context_);
+        boost::system::error_code ec;
+        ws_acceptor_->accept(*socket, ec);
+        if (ec) {
+          if (!running_ || ec == boost::asio::error::operation_aborted) {
+            break;
+          }
+          RCLCPP_WARN(this->get_logger(), "WebSocket accept failed: %s", ec.message().c_str());
+          continue;
+        }
 
         // Handle WebSocket connection in separate thread
         std::thread([this, socket]() { handleWebSocketConnection(socket); }).detach();
       }
     } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+      if (running_) {
+        RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+      }
     }
   }
 
@@ -1681,6 +1697,8 @@ private:
   std::thread websocket_thread_;
   int websocket_port_;
   std::atomic<bool> running_{true};
+  boost::asio::io_context ws_io_context_;
+  std::unique_ptr<boost::asio::ip::tcp::acceptor> ws_acceptor_;
 
   // WebSocket connections
   std::set<std::shared_ptr<WebSocketConnection>> connections_;

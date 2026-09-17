@@ -69,6 +69,11 @@ private:
   rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr topics_interface_;
   std::chrono::steady_clock::time_point last_announce_time_{};
   static constexpr std::chrono::milliseconds ANNOUNCE_INTERVAL{5000};  // 5秒間隔
+  std::chrono::steady_clock::time_point last_shortage_announce_time_{};
+  static constexpr std::chrono::milliseconds SHORTAGE_ANNOUNCE_INTERVAL{
+    30000};  // 不足アナウンスは30秒間隔
+  int last_announced_deficit_{-1};
+  int last_announced_max_allowed_{-1};
   bool use_voice_announcement_{true};  // true: 音声アナウンス, false: ビープ音
 
   // ビープ音制御用
