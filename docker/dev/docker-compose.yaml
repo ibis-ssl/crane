@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
 
   erforce-sim:
-    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:${SIMULATOR_CLI_TAG:-a52b6bd}
     container_name: erforce-sim
     network_mode: host
     entrypoint: ["tini", "--"]
