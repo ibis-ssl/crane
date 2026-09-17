@@ -53,7 +53,7 @@ mode 4 を出すのは `planner:=visibility_graph` だけです。`rvo2` は mod
 
 同じ理由で、feedbackを観測したいときに `cm4-sim` と同じunicastポート（`--feedback-port-base` が示す `127.0.0.1:50100+id`）を別プロセスでbindしてはいけません。配送が片方に偏り、「位置制御が効いていない」ように見えます。観測は再配信先の `224.5.20.(100+id):50100+id` で行います。再配信自体は `cm4_sim --no-feedback-relay` で止められます。
 
-統合仕様の正本は framework の `docs/robot-side-position-control.md`、サービス定義は[シナリオ用Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/scenario/docker-compose.yaml)です。
+詳しいアーキテクチャ・起動手順・制約は [CM4・cm4-simでの位置制御](cm4_position_control.md)、サービス定義は[シナリオ用Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/scenario/docker-compose.yaml)です。
 
 ## 通信仕様を変更するとき
 

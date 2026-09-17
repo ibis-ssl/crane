@@ -22,4 +22,4 @@
 - [RVO2Planner](https://github.com/ibis-ssl/crane/blob/develop/crane_local_planner/src/rvo2_planner.cpp)
 - [VisibilityGraphPlanner](https://github.com/ibis-ssl/crane/blob/develop/crane_local_planner/src/visibility_graph_planner.cpp)
 - [テスト](https://github.com/ibis-ssl/crane/tree/develop/crane_local_planner/test)
-- [ルール制約](./rule.md) / [座標・単位](./coordinates.md)
+- [ルール制約](./rule.md) / [座標・単位](./coordinates.md) / [CM4・cm4-simでの位置制御](cm4_position_control.md)
