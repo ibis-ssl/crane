@@ -6,8 +6,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <random>
+#include <vector>
 
 namespace crane
 {
@@ -184,4 +187,122 @@ TEST(GeometryOperationsTest, ClampPoint)
   EXPECT_DOUBLE_EQ(p_box.x(), 4.0);
   EXPECT_DOUBLE_EQ(p_box.y(), -3.0);
 }
+
+// getIntersections(Circle, Segment) のテスト
+//
+// このAPIは「返る点が円周上にあり、かつ線分上にある」ことが本質的な不変条件であり、
+// 過去に垂線足ベースの実装がこれを破っていた（円周から外れた点や、線分から浮いた点を返す）。
+// 個別の期待値だけでなく、必ず下の不変条件ヘルパで検証すること。
+namespace
+{
+void expectOnCircleAndSegment(
+  const Circle & circle, const Segment & segment, const std::vector<Point> & intersections)
+{
+  for (const auto & p : intersections) {
+    EXPECT_NEAR((p - circle.center).norm(), circle.radius, 1e-6)
+      << "交点が円周上にない: (" << p.x() << ", " << p.y() << ")";
+    EXPECT_NEAR(bg::distance(segment, p), 0.0, 1e-6)
+      << "交点が線分上にない: (" << p.x() << ", " << p.y() << ")";
+  }
+}
+}  // namespace
+
+// 垂線足が線分の内側に落ちる基本ケース
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentBasic)
+{
+  Circle circle{.center = Point(5.0, 1.0), .radius = 2.0};
+  Segment segment{Point(0.0, 0.0), Point(10.0, 0.0)};
+
+  auto intersections = getIntersections(circle, segment);
+  ASSERT_EQ(intersections.size(), 2u);
+  expectOnCircleAndSegment(circle, segment, intersections);
+  // 始点側から終点側の順で並ぶ
+  EXPECT_NEAR(intersections[0].x(), 5.0 - std::sqrt(3.0), 1e-9);
+  EXPECT_NEAR(intersections[0].y(), 0.0, 1e-9);
+  EXPECT_NEAR(intersections[1].x(), 5.0 + std::sqrt(3.0), 1e-9);
+  EXPECT_NEAR(intersections[1].y(), 0.0, 1e-9);
+}
+
+// 垂線足が線分の外に落ちるケース（線分上の最近接点を使う実装が破綻する）
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentFootOutsideSegment)
+{
+  Circle circle{.center = Point(-6.0, 0.0), .radius = 2.5};
+  Segment segment{Point(-5.0, 0.5), Point(-4.0, 3.5)};
+
+  auto intersections = getIntersections(circle, segment);
+  ASSERT_EQ(intersections.size(), 1u);
+  expectOnCircleAndSegment(circle, segment, intersections);
+  EXPECT_NEAR(intersections[0].x(), -4.5, 1e-9);
+  EXPECT_NEAR(intersections[0].y(), 2.0, 1e-9);
+}
+
+// 円中心が線分の延長上にあり、円が線分を横切るケース
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentCenterBeyondSegment)
+{
+  Circle circle{.center = Point(2.0, 0.0), .radius = 1.5};
+  Segment segment{Point(0.0, 0.0), Point(1.0, 0.0)};
+
+  auto intersections = getIntersections(circle, segment);
+  ASSERT_EQ(intersections.size(), 1u);
+  expectOnCircleAndSegment(circle, segment, intersections);
+  EXPECT_NEAR(intersections[0].x(), 0.5, 1e-9);
+  EXPECT_NEAR(intersections[0].y(), 0.0, 1e-9);
+}
+
+// 交点がちょうど線分の端点に乗るケース
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentOnEndpoint)
+{
+  Circle circle{.center = Point(0.0, 0.0), .radius = 1.0};
+  Segment segment{Point(1.0, 0.0), Point(3.0, 0.0)};
+
+  auto intersections = getIntersections(circle, segment);
+  ASSERT_EQ(intersections.size(), 1u);
+  expectOnCircleAndSegment(circle, segment, intersections);
+  EXPECT_NEAR(intersections[0].x(), 1.0, 1e-9);
+  EXPECT_NEAR(intersections[0].y(), 0.0, 1e-9);
+}
+
+// 接するケースは重解なので1点に畳む
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentTangent)
+{
+  Circle circle{.center = Point(5.0, 2.0), .radius = 2.0};
+  Segment segment{Point(0.0, 0.0), Point(10.0, 0.0)};
+
+  auto intersections = getIntersections(circle, segment);
+  ASSERT_EQ(intersections.size(), 1u);
+  expectOnCircleAndSegment(circle, segment, intersections);
+  EXPECT_NEAR(intersections[0].x(), 5.0, 1e-9);
+  EXPECT_NEAR(intersections[0].y(), 0.0, 1e-9);
+}
+
+// 交点なしのケース
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentNoIntersection)
+{
+  Circle circle{.center = Point(0.0, 0.0), .radius = 5.0};
+
+  // 線分が完全に円の内部
+  EXPECT_TRUE(getIntersections(circle, Segment{Point(-1.0, 0.0), Point(1.0, 0.0)}).empty());
+  // 線分が完全に円の外部
+  EXPECT_TRUE(getIntersections(circle, Segment{Point(6.0, 0.0), Point(8.0, 0.0)}).empty());
+  // 長さ0の線分（円周上に乗っていても方向が定義できないので交点なし）
+  EXPECT_TRUE(getIntersections(circle, Segment{Point(5.0, 0.0), Point(5.0, 0.0)}).empty());
+}
+
+// ランダムな配置でも不変条件が破れないことを確認する（シード固定）
+TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentInvariants)
+{
+  std::mt19937 rng(42);
+  std::uniform_real_distribution<double> pos(-6.0, 6.0);
+  std::uniform_real_distribution<double> rad(0.1, 4.0);
+
+  for (int i = 0; i < 2000; ++i) {
+    Circle circle{.center = Point(pos(rng), pos(rng)), .radius = rad(rng)};
+    Segment segment{Point(pos(rng), pos(rng)), Point(pos(rng), pos(rng))};
+
+    auto intersections = getIntersections(circle, segment);
+    ASSERT_LE(intersections.size(), 2u);
+    expectOnCircleAndSegment(circle, segment, intersections);
+  }
+}
+
 }  // namespace crane

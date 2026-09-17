@@ -162,42 +162,51 @@ inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   return intersections;
 }
 
+/**
+ * @brief 円と線分の交点を求める
+ *
+ * 線分を P(t) = segment.first + t * (segment.second - segment.first), t in [0, 1] と
+ * 媒介変数表示し、|P(t) - center|^2 = radius^2 の二次方程式を直接解く。
+ *
+ * 垂線足を経由する構成は「円中心から線分への垂直距離」を必要とするが、
+ * bg::distance(circle, segment) は円表面からの距離（0クランプ）を、
+ * closest_point(segment, center) は線分にクランプされた距離を返すため、
+ * どちらも垂直距離ではなく交点座標が破綻する。二次方程式解にはこの落とし穴がない。
+ *
+ * @return 交点。接する場合は1点、交差しない場合や線分の長さが0の場合は空。
+ */
 inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
 {
   std::vector<Point> intersections;
-  double distance = bg::distance(circle, segment);
-  if (distance > circle.radius) {
-    // 交差しない
-    return intersections;
-  } else {
-    // 交差する
-    // 交点を求める
-    Vector2 norm_vec = getVerticalVec(segment.second - segment.first).normalized();
-    if (
-      ((circle.center + norm_vec) - segment.first).norm() >
-      ((circle.center - norm_vec) - segment.first).norm()) {
-      norm_vec = -norm_vec;
-    }
-    double d = std::sqrt(circle.radius * circle.radius - distance * distance);
-    Vector2 seg_norm = (segment.second - segment.first).normalized();
-    Point p1 = circle.center + norm_vec * distance + seg_norm * d;
-    Point p2 = circle.center + norm_vec * distance - seg_norm * d;
-
-    // 交点が線分上にあるか確認
-    if (
-      (p1 - segment.first).dot(segment.second - segment.first) > 0 &&
-      (p1 - segment.second).dot(segment.first - segment.second) > 0) {
-      intersections.push_back(p1);
-    }
-
-    if (
-      (p2 - segment.first).dot(segment.second - segment.first) > 0 &&
-      (p2 - segment.second).dot(segment.first - segment.second) > 0) {
-      intersections.push_back(p2);
-    }
-
+  const Vector2 dir = segment.second - segment.first;
+  const double a = dir.squaredNorm();
+  // 長さ0の線分は方向が定義できないため交点なしとして扱う
+  if (a < 1e-18) {
     return intersections;
   }
+  const Vector2 to_start = Point(segment.first) - circle.center;
+  const double b = 2.0 * to_start.dot(dir);
+  const double c = to_start.squaredNorm() - circle.radius * circle.radius;
+  const double discriminant = b * b - 4.0 * a * c;
+  if (discriminant < 0.0) {
+    // 交差しない
+    return intersections;
+  }
+  const double sqrt_d = std::sqrt(discriminant);
+  // a > 0 なので (-b - sqrt_d) が常に小さい方の解。始点側から終点側の順で並ぶ
+  for (const double t : {(-b - sqrt_d) / (2.0 * a), (-b + sqrt_d) / (2.0 * a)}) {
+    // 線分の外（無限直線上の交点）は除外する
+    if (t < 0.0 || t > 1.0) {
+      continue;
+    }
+    Point point = Point(segment.first) + dir * t;
+    // 接する場合は重解となり同じ点が2つ得られるので1点に畳む
+    if (not intersections.empty() && (intersections.back() - point).norm() < 1e-9) {
+      continue;
+    }
+    intersections.push_back(point);
+  }
+  return intersections;
 }
 
 template <typename Geometry1, typename Geometry2>
