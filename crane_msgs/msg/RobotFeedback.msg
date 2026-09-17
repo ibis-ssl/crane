@@ -10,7 +10,6 @@ float32 feedback_age_ms
 uint32 valid_packet_count
 uint32 invalid_packet_count
 uint32 sync_error_count
-uint32 checksum_error_count
 uint32 size_mismatch_count
 uint32 counter_jump_count
 

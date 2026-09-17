@@ -47,14 +47,15 @@ public:
   {
     auto stamp = clock.now();
     std::lock_guard<std::mutex> lock(mutex_);
-    if (size != protocol::PACKET_SIZE || buf.size() < protocol::PACKET_SIZE) {
+    // 検証条件は protocol::validatePacket に一本化する。
+    // ここに独自の検証を足すと、ヘッダ側の定義と乖離したまま両方が生き残る。
+    const auto validation = protocol::validatePacket(buf, size);
+    if (!validation.size_valid) {
       ++size_mismatch_count_;
       ++invalid_packet_count_;
       return;
     }
-    if (
-      protocol::readRawByte(buf, protocol::offset::SYNC_0) != protocol::SYNC_0_VALUE ||
-      protocol::readRawByte(buf, protocol::offset::SYNC_1) != protocol::SYNC_1_VALUE) {
+    if (!validation.sync_valid) {
       ++sync_error_count_;
       ++invalid_packet_count_;
       return;
@@ -165,7 +166,6 @@ public:
     uint32_t valid_packet_count = 0;
     uint32_t invalid_packet_count = 0;
     uint32_t sync_error_count = 0;
-    uint32_t checksum_error_count = 0;
     uint32_t size_mismatch_count = 0;
     uint32_t counter_jump_count = 0;
   };
@@ -183,7 +183,6 @@ public:
     result.valid_packet_count = valid_packet_count_;
     result.invalid_packet_count = invalid_packet_count_;
     result.sync_error_count = sync_error_count_;
-    result.checksum_error_count = checksum_error_count_;
     result.size_mismatch_count = size_mismatch_count_;
     result.counter_jump_count = counter_jump_count_;
     return result;
@@ -285,7 +284,6 @@ private:
     feedback.valid_packet_count = valid_packet_count_;
     feedback.invalid_packet_count = invalid_packet_count_;
     feedback.sync_error_count = sync_error_count_;
-    feedback.checksum_error_count = checksum_error_count_;
     feedback.size_mismatch_count = size_mismatch_count_;
     feedback.counter_jump_count = counter_jump_count_;
   }
@@ -333,7 +331,6 @@ private:
   uint32_t valid_packet_count_ = 0;
   uint32_t invalid_packet_count_ = 0;
   uint32_t sync_error_count_ = 0;
-  uint32_t checksum_error_count_ = 0;
   uint32_t size_mismatch_count_ = 0;
   uint32_t counter_jump_count_ = 0;
   bool has_last_counter_ = false;
@@ -411,7 +408,6 @@ public:
           robot_feedback_msg.valid_packet_count = s.valid_packet_count;
           robot_feedback_msg.invalid_packet_count = s.invalid_packet_count;
           robot_feedback_msg.sync_error_count = s.sync_error_count;
-          robot_feedback_msg.checksum_error_count = s.checksum_error_count;
           robot_feedback_msg.size_mismatch_count = s.size_mismatch_count;
           robot_feedback_msg.counter_jump_count = s.counter_jump_count;
         }

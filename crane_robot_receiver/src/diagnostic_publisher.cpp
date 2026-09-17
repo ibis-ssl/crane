@@ -164,7 +164,6 @@ auto RobotData::communicationDiagnosticCallback(
     stat.add("feedback_valid_packet_count", feedback->valid_packet_count);
     stat.add("feedback_invalid_packet_count", feedback->invalid_packet_count);
     stat.add("feedback_sync_error_count", feedback->sync_error_count);
-    stat.add("feedback_checksum_error_count", feedback->checksum_error_count);
     stat.add("feedback_size_mismatch_count", feedback->size_mismatch_count);
     stat.add("feedback_counter_jump_count", feedback->counter_jump_count);
     if (ping != ping_msg.ping.end()) {

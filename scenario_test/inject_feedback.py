@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """合成したロボット feedback パケットを crane_robot_receiver へ注入するツール。
 
+128 バイトのパケットレイアウトの正本は実機ファームウェア
+(G474_Orion_main の `Core/Src/ai_comm.c` sendRobotInfo()) であり、
 `crane_robot_receiver/include/crane_robot_receiver/robot_feedback_protocol.hpp`
-を正本として 128 バイトのパケットを組む。
+はその crane 側の対応表である。
+注入するパケットは crane の受信側ではなく実機の送信側に合わせること。
 
 cm4_sim がまだ無くても、crane 側の feedback 受信経路だけを検証できる。
 
@@ -32,10 +35,16 @@ import time
 
 PACKET_SIZE = 128
 
-# --- robot_feedback_protocol.hpp のオフセット（正本） -------------------------
+# --- パケットオフセット（正本は G474 の ai_comm.c sendRobotInfo()） -----------
 SYNC_0 = 0
 SYNC_1 = 1
-CHECKSUM = 2
+# byte 2 はチェックサムではない。実機ファームウェア (G474_Orion_main の
+# Core/Src/ai_comm.c sendRobotInfo()) は `buf[2] = 10;  // CRC, 10:dummy` と
+# 定数を書くだけなので、この注入ツールも実機と同じ定数を書く。
+# ここに本物のチェックサムを書くと、実機では成立しない前提が sim でだけ成立し、
+# 「受信側で byte 2 を検証する」誤った修正が sim で緑になってしまう。
+DUMMY_CRC = 2
+DUMMY_CRC_VALUE = 10
 COUNTER = 3
 YAW_ANGLE = 4
 VOLTAGE_0 = 8
@@ -67,17 +76,13 @@ def put_float(buf: bytearray, offset: int, value: float) -> None:
     struct.pack_into("<f", buf, offset, value)
 
 
-def compute_checksum(buf: bytes) -> int:
-    """computeChecksum(): COUNTER(3) から末尾までのバイト和の下位 8 bit。"""
-    return sum(buf[COUNTER:PACKET_SIZE]) & 0xFF
-
-
 def build_packet(
     counter: int, x: float, y: float, yaw: float, vx: float, vy: float
 ) -> bytes:
     buf = bytearray(PACKET_SIZE)
     buf[SYNC_0] = SYNC_0_VALUE
     buf[SYNC_1] = SYNC_1_VALUE
+    buf[DUMMY_CRC] = DUMMY_CRC_VALUE
     buf[COUNTER] = counter & 0xFF
 
     put_float(buf, YAW_ANGLE, yaw)
@@ -109,7 +114,6 @@ def build_packet(
     for i in range(CAMERA_POS_X_DIV2, CAMERA_FPS + 1):
         buf[i] = 0
 
-    buf[CHECKSUM] = compute_checksum(buf)
     return bytes(buf)
 
 
