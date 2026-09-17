@@ -11,8 +11,8 @@ cm4_sim がまだ無くても、crane 側の feedback 受信経路だけを検�
 
 新構成（CM4 in the loop）の検証::
 
-    # 端末1: crane を実機と同じ multicast 受信で起動する
-    ros2 launch crane_bringup crane.launch.xml sim:=true feedback_sim_mode:=false
+    # 端末1: crane を起動する（sim:=true でも multicast 受信で起動する）
+    ros2 launch crane_bringup crane.launch.xml sim:=true
     # 端末2
     python3 scenario_test/inject_feedback.py --robot-id 0
     # 端末3

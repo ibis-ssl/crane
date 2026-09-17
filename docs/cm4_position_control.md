@@ -54,10 +54,10 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
    ```
 
 2. **Crane の起動**
-   `planner:=visibility_graph`、`ibis_target_port:=12345`、および **`feedback_sim_mode:=false`** を指定して起動します。
+   `planner:=visibility_graph` を指定して起動します（送信先ポート `12345`、アドレス `127.0.0.1`、multicast フィードバック受信は `sim:=true` により自動設定されます）。
 
    ```bash
-   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph ibis_target_port:=12345 feedback_sim_mode:=false
+   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph
    ```
 
 ### 実機環境
@@ -70,7 +70,7 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
    ```
 
 2. **Crane の起動**
-   `sim:=false` で起動します（`ibis_target_port` は既定値 `12345`、ブロードキャストアドレス `192.168.20.255` に設定されます）。
+   `sim:=false` で起動します（送信先ポート `12345`、ブロードキャストアドレス `192.168.20.255` に自動設定されます）。
 
    ```bash
    ros2 launch crane_bringup crane.launch.xml sim:=false planner:=visibility_graph
@@ -85,12 +85,12 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
 
 ## 守るべき制約（ハマりどころ）
 
-### 1. `feedback_sim_mode:=false` の必須性
+### 1. multicast フィードバック受信の前提
 
-シミュレーションで `cm4-sim` を挟む場合は、Crane 起動時に **`feedback_sim_mode:=false`** の指定が必須です。
+シミュレーションで `cm4-sim` を挟む場合、Crane 側はフィードバックを multicast（`224.5.20.(100+id):50100+id`）で受信する必要があります（`crane.launch.xml` で常にこの設定に固定されています）。
 
-- **理由**: `sim:=true` の既定値では `feedback_sim_mode:=true`（unicast 受信）となります。Crane と `cm4-sim` の両方が同一ポート `127.0.0.1:50100+id` を `SO_REUSEPORT` でバインドすると、Linux カーネルの 4-tuple ハッシュにより単一送信元（`simulator-cli`）からのパケットが片方に全量偏って配送されます。Crane 側に当たると `cm4-sim` は位置信号を 1 パケットも受け取れず、位置制御が停止します。
-- `feedback_sim_mode:=false` を指定することで、Crane は multicast 側（`224.5.20.(100+id):50100+id`）で受信し、unicast ポートは `cm4-sim` が排他的に利用できます。
+- **理由**: Crane と `cm4-sim` の両方が同一ポート `127.0.0.1:50100+id` を `SO_REUSEPORT` でバインドすると、Linux カーネルの 4-tuple ハッシュにより単一送信元（`simulator-cli`）からのパケットが片方に全量偏って配送されます。Crane 側に当たると `cm4-sim` は位置信号を 1 パケットも受け取れず、位置制御が停止します。
+- Crane が multicast 側で受信することで、unicast ポートは `cm4-sim` が排他的に利用できます。
 
 ### 2. ユニキャストポートの重複バインド禁止
 
@@ -121,13 +121,9 @@ ros2 param set /ibis_sender_node position_control.kp 2.5
 
 1. **`cm4-sim` コンテナの状態確認（シミュレーション時）**
    `docker ps` で `cm4-sim` が `Up` になっているか確認します。
-2. **送信先ポートの確認**
-   Crane 側の `ibis_target_port` が `12345`（`cm4-sim` 入力）になっているか確認します。誤って `12346`（シミュレータ直受け）に送っていないか確認してください。
-3. **`feedback_sim_mode:=false` の確認**
-   起動時引数に `feedback_sim_mode:=false` が含まれているか確認します。抜けているとフィードバックの奪い合いが発生します。
-4. **プランナーの確認**
+2. **プランナーの確認**
    位置制御を行う場合は `planner:=visibility_graph` を指定しているか確認します。`rvo2` の場合は速度指令（mode 3）となります。
-5. **診断ログの確認**
+3. **診断ログの確認**
    [診断](diagnostics.md) および `docker compose -f docker/dev/docker-compose.yaml logs cm4-sim` でエラーやパケット破棄が出ていないか確認します。
 
 ## 実装リファレンス

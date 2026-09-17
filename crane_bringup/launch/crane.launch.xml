@@ -18,12 +18,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ネットワーク設定 -->
   <!-- ============================================================ -->
-  <arg name="vision_port" default="" description="SSL-Vision multicast port (empty: auto from sim flag)"/>
-  <arg name="referee_port" default="" description="Game Controller multicast port (empty: auto from sim flag)"/>
-  <arg name="tracker_port" default="" description="SSL Tracker multicast port (empty: auto from sim flag)"/>
   <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf). Unknown values (including the removed 'grsim') fall back to ibis with a warning."/>
-  <arg name="ibis_target_address" default="" description="Target address (empty: auto from sim flag: sim=true -&gt; 127.0.0.1, sim=false -&gt; 192.168.20.255)"/>
-  <arg name="ibis_target_port" default="12345" description="ibis_sender_nodeの送信先ポート（packet_type=ibisのみ使用）"/>
 
   <!-- ============================================================ -->
   <!-- チーム/動作モード設定 -->
@@ -31,46 +26,27 @@ limitations under the License.
   <arg name="team" default="ibis" description="チーム名"/>
   <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
   <arg name="planner" default="rvo2" description="局所経路計画アルゴリズム (rvo2 または visibility_graph)"/>
-
-  <!-- feedback の受信方式。既定は false（cm4-sim を挟むシミュレーション標準構成および実機に対応）。
-       cm4_sim を経路に挟む構成では必ず false にすること。
-       cm4_sim は simulator-cli の unicast feedback を 127.0.0.1:50100+id で受ける。
-       ここで crane も同じ 127.0.0.1:50100+id を bind すると、SO_REUSEPORT の振り分けは
-       送信元を含む 4-tuple ハッシュで決まるため、単一送信元からの feedback は
-       「片方のソケットが全量を取り、もう片方はゼロ」になる（実測確認済み）。
-       crane 側が当たると cm4_sim は位置信号を 1 パケットも受け取れず位置制御が死ぬ。
-       false にすれば crane は multicast 側で受けるので、unicast は cm4_sim が独占できる
-       （multicast 受けと unicast 受けが混在しても取り違えないことも実測確認済み）。
-       詳細: framework/docs/robot-side-position-control.md -->
-  <arg name="feedback_sim_mode" default="false"
-       description="feedbackをunicast(127.0.0.1)で受けるか(true)/実機と同じmulticastで受けるか(false)"/>
   <arg name="team_color" default="YELLOW" description="Referee受信前の初期チーム色 (YELLOW または BLUE)"/>
 
   <!-- ============================================================ -->
-  <!-- ネットワークポート自動設定（sim引数に基づく） -->
+  <!-- ネットワークポート/アドレス自動設定（sim引数に基づく） -->
   <!-- ============================================================ -->
-  <!-- ibis_target_address の自動解決（sim フラグに基づく） -->
-  <let name="ibis_target_address_final" value="127.0.0.1" if="$(eval &quot;'$(var ibis_target_address)' == '' and '$(var sim)' == 'true'&quot;)"/>
-  <let name="ibis_target_address_final" value="192.168.20.255" if="$(eval &quot;'$(var ibis_target_address)' == '' and '$(var sim)' == 'false'&quot;)"/>
-  <let name="ibis_target_address_final" value="$(var ibis_target_address)" unless="$(eval &quot;'$(var ibis_target_address)' == ''&quot;)"/>
+  <!-- sim=true の場合（ローカルシミュレーション） -->
+  <let name="ibis_target_address" value="127.0.0.1" if="$(var sim)"/>
+  <let name="vision_port" value="10020" if="$(var sim)"/>
+  <let name="referee_port" value="11003" if="$(var sim)"/>
 
-  <!-- sim=trueの場合（独自ポート） -->
-  <let name="vision_port_final" value="10020" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
-  <let name="referee_port_final" value="11003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
-  <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'true'&quot;)"/>
+  <!-- sim=false の場合（実機ネットワーク） -->
+  <let name="ibis_target_address" value="192.168.20.255" unless="$(var sim)"/>
+  <let name="vision_port" value="10006" unless="$(var sim)"/>
+  <let name="referee_port" value="10003" unless="$(var sim)"/>
 
-  <!-- sim=falseの場合（公式ポート） -->
-  <let name="vision_port_final" value="10006" if="$(eval &quot;'$(var vision_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
-  <let name="referee_port_final" value="10003" if="$(eval &quot;'$(var referee_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
-  <let name="tracker_port_final" value="11010" if="$(eval &quot;'$(var tracker_port)' == '' and '$(var sim)' == 'false'&quot;)"/>
-
-  <!-- ユーザー指定がある場合はそれを使用 -->
-  <let name="vision_port_final" value="$(var vision_port)" unless="$(eval &quot;'$(var vision_port)' == ''&quot;)"/>
-  <let name="referee_port_final" value="$(var referee_port)" unless="$(eval &quot;'$(var referee_port)' == ''&quot;)"/>
-  <let name="tracker_port_final" value="$(var tracker_port)" unless="$(eval &quot;'$(var tracker_port)' == ''&quot;)"/>
+  <!-- 共通固定設定 -->
+  <let name="tracker_port" value="11010"/>
+  <let name="ibis_target_port" value="12345"/>
 
   <!-- 使用ポート情報の表示 -->
-  <log message="[crane.launch.xml] sim=$(var sim), team=$(var team), initial_color=$(var team_color) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
+  <log message="[crane.launch.xml] sim=$(var sim), team=$(var team), initial_color=$(var team_color) | Ports: Vision=$(var vision_port), Referee=$(var referee_port), Tracker=$(var tracker_port)"/>
 
   <!-- ============================================================ -->
   <!-- ロボット性能パラメータ -->
@@ -183,7 +159,7 @@ limitations under the License.
     <!-- sim_mode は ibis_sender_node からは参照されていない（dead param）。feedback 受信とは無関係。 -->
     <param name="sim_mode" value="$(var sim)"/>
     <param name="packet_type" value="$(var packet_type)"/>
-    <param name="target_address" value="$(var ibis_target_address_final)"/>
+    <param name="target_address" value="$(var ibis_target_address)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
     <param name="latency_ms" value="$(var sender_latency_ms)"/>
     <param name="kick_power_limit_straight" value="$(var sender_kick_power_limit_straight)"/>
@@ -204,7 +180,7 @@ limitations under the License.
   <!-- ============================================================ -->
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
     <param name="multicast_address" value="224.5.23.1"/>
-    <param name="multicast_port" value="$(var referee_port_final)"/>
+    <param name="multicast_port" value="$(var referee_port)"/>
   </node>
 
   <group unless="$(var sim)">
@@ -216,7 +192,6 @@ limitations under the License.
   </node>
 
   <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen" respawn="true">
-    <param name="sim_mode" value="$(var feedback_sim_mode)"/>
     <param name="max_robot_id" value="11"/>
   </node>
 
@@ -231,9 +206,9 @@ limitations under the License.
     <param name="initial_team_color" value="$(var team_color)"/>
     <param name="team_name" value="$(var team)"/>
     <param name="vision_address" value="224.5.23.2"/>
-    <param name="vision_port" value="$(var vision_port_final)"/>
+    <param name="vision_port" value="$(var vision_port)"/>
     <param name="tracker_address" value="224.5.23.2"/>
-    <param name="tracker_port" value="$(var tracker_port_final)"/>
+    <param name="tracker_port" value="$(var tracker_port)"/>
     <param name="is_emplace_positive_side" value="$(var is_emplace_positive_side)"/>
     <param name="slack.robot_max_acceleration" value="$(var slack.robot_max_acceleration)"/>
     <param name="slack.robot_max_velocity" value="$(var slack.robot_max_velocity)"/>

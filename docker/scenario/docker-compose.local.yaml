@@ -55,7 +55,7 @@ services:
       - --visionAddress
       - 224.5.23.2:10020
       - --refereeAddress
-      - 224.5.23.1:10003
+      - 224.5.23.1:11003
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host

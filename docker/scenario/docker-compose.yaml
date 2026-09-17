@@ -82,16 +82,10 @@ services:
     environment:
       # mode 4（位置指令）を出すのは visibility_graph だけ。rvo2 は mode 3 を出す。
       - PLANNER=${PLANNER:-visibility_graph}
-      - CRANE_TARGET_PORT=${CRANE_TARGET_PORT:-12345}
-      # cm4-sim が経路にいる構成では false（実機と同じ multicast 受け）が必須。
-      # true だと crane と cm4-sim が 127.0.0.1:50100+id を奪い合い、SO_REUSEPORT の
-      # 振り分けは 4-tuple ハッシュで決まるため片方が全パケットを取る。
-      # crane 側が当たると cm4-sim は位置信号を 1 つも受け取れず位置制御が死ぬ。
-      - FEEDBACK_SIM_MODE=${FEEDBACK_SIM_MODE:-false}
     command: |
       bash -c "
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:=$${PLANNER:-visibility_graph} ibis_target_port:=$${CRANE_TARGET_PORT:-12345} feedback_sim_mode:=$${FEEDBACK_SIM_MODE:-false}
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false team:=Yellow planner:=$${PLANNER:-visibility_graph}
       "
     depends_on:
       - cm4-sim
@@ -106,7 +100,7 @@ services:
       - --visionAddress
       - 224.5.23.2:10020
       - --refereeAddress
-      - 224.5.23.1:10003
+      - 224.5.23.1:11003
       - --trackerAddress
       - 224.5.23.2:11010
     network_mode: host

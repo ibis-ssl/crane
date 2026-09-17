@@ -351,22 +351,14 @@ public:
 
     // パラメータの宣言と取得
     int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 15);
-    bool sim_mode = crane::get_or_declare_parameter(this, "sim_mode", false);
     std::string ip_base = crane::get_or_declare_parameter(this, "multicast_ip_base", "224.5.20");
     int port_base = crane::get_or_declare_parameter(this, "port_base", 50100);
     int ip_offset = crane::get_or_declare_parameter(this, "ip_octet_offset", 100);
 
-    RCLCPP_INFO(
-      get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,
-      sim_mode ? "true" : "false");
+    RCLCPP_INFO(get_logger(), "Listening for robot feedbacks (max_robot_id: %d)", max_robot_id);
 
     for (int i = 0; i <= max_robot_id; i++) {
-      std::string ip;
-      if (sim_mode) {
-        ip = "127.0.0.1";
-      } else {
-        ip = std::format("{}.{}", ip_base, i + ip_offset);
-      }
+      std::string ip = std::format("{}.{}", ip_base, i + ip_offset);
       int port = port_base + i;
       try {
         receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, i));
