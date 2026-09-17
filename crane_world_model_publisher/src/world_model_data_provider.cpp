@@ -128,6 +128,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       node.get_logger(), "crane_world_model_publisher", field_geometry_config_path);
 
     if (loadFieldGeometryFromConfig(full_config_path)) {
+      geometry_from_config_ = true;
       geometry_initialized = true;
       updateGeometryIfNeeded();
     }
@@ -153,6 +154,18 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           this->node.get_logger(), "Tracker受信が直近1秒間ありません (%s:%d)",
           config_.tracker_address.c_str(), config_.tracker_port);
       }
+    }
+
+    // 設定ファイルの寸法は vision geometry が来るまでの暫定値でしかない。
+    // vision geometry が来ないままだと、craneは推測したフィールドで判断し続ける。
+    // フィールドが実際と違っても何も壊れないので黙って進んでしまう種類の不具合であり、
+    // 明示的に鳴らしておかないと切り分けができない。
+    if (geometry_from_config_ && !vision_geometry_received_) {
+      RCLCPP_WARN_THROTTLE(
+        this->node.get_logger(), *this->node.get_clock(), 10000,
+        "vision geometryを未受信のため、設定ファイルの寸法(field=%.3fx%.3f)で動作しています。"
+        "実際のフィールドと異なる可能性があります (%s:%d)",
+        game_data.field_w, game_data.field_h, config_.vision_address.c_str(), config_.vision_port);
     }
   });
 
@@ -777,6 +790,7 @@ auto WorldModelDataProvider::convertFieldGeometry(
 
   field_geometry_.center_circle_radius = 0.5;  // 標準SSL値
   field_geometry_.is_valid = true;
+  vision_geometry_received_ = true;
 }
 
 auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & config_path) -> bool
@@ -807,8 +821,9 @@ auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & con
 
     RCLCPP_INFO(
       node.get_logger(),
-      "設定ファイルからフィールド情報を読み込みました: field=%.3fx%.3f, goal=%.3fx%.3f, "
-      "penalty_area=%.3fx%.3f",
+      "設定ファイルからフィールド情報を暫定的に読み込みました(vision "
+      "geometry受信で上書きされます): "
+      "field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
       field_geometry_.field_width, field_geometry_.field_height, field_geometry_.goal_width,
       field_geometry_.goal_height, field_geometry_.penalty_area_width,
       field_geometry_.penalty_area_height);

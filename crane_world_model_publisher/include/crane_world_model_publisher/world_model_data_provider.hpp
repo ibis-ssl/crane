@@ -326,6 +326,14 @@ private:
 
   bool geometry_initialized = false;
 
+  // 設定ファイル(field_geometry_div_*.yaml)で暫定初期化したか。
+  // この値はvision geometry受信までのブートストラップにすぎず、実行時の権威ではない。
+  bool geometry_from_config_ = false;
+
+  // vision geometryを一度でも受信したか。
+  // 偽のまま試合が進むと、設定ファイルの推測値でcraneが判断し続けることになる。
+  bool vision_geometry_received_ = false;
+
   auto processDetectionFrame(const robocup_ssl::SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const robocup_ssl::SSL_GeometryData & geometry) -> bool;
   auto convertFieldGeometry(const robocup_ssl::SSL_GeometryData & ssl_geometry) -> void;
