@@ -32,9 +32,7 @@ limitations under the License.
   <arg name="sim" default="true" description="シミュレータフラグ（true: シミュレーション, false: 実機）"/>
   <arg name="planner" default="rvo2" description="局所経路計画アルゴリズム (rvo2 または visibility_graph)"/>
 
-  <!-- feedback の受信方式。既定は sim フラグに追従する（従来動作）。
-       true : unicast 127.0.0.1:50100+id で受ける（simulator-cli から直接受け取る従来のシミュレータ構成）
-       false: 実機と同じ multicast 224.5.20.(100+id):50100+id で受ける
+  <!-- feedback の受信方式。既定は false（cm4-sim を挟むシミュレーション標準構成および実機に対応）。
        cm4_sim を経路に挟む構成では必ず false にすること。
        cm4_sim は simulator-cli の unicast feedback を 127.0.0.1:50100+id で受ける。
        ここで crane も同じ 127.0.0.1:50100+id を bind すると、SO_REUSEPORT の振り分けは
@@ -44,8 +42,9 @@ limitations under the License.
        false にすれば crane は multicast 側で受けるので、unicast は cm4_sim が独占できる
        （multicast 受けと unicast 受けが混在しても取り違えないことも実測確認済み）。
        詳細: framework/docs/robot-side-position-control.md -->
-  <arg name="feedback_sim_mode" default="$(var sim)"
+  <arg name="feedback_sim_mode" default="false"
        description="feedbackをunicast(127.0.0.1)で受けるか(true)/実機と同じmulticastで受けるか(false)"/>
+  <arg name="team_color" default="YELLOW" description="Referee受信前の初期チーム色 (YELLOW または BLUE)"/>
 
   <!-- ============================================================ -->
   <!-- ネットワークポート自動設定（sim引数に基づく） -->
@@ -71,7 +70,7 @@ limitations under the License.
   <let name="tracker_port_final" value="$(var tracker_port)" unless="$(eval &quot;'$(var tracker_port)' == ''&quot;)"/>
 
   <!-- 使用ポート情報の表示 -->
-  <log message="[crane.launch.xml] sim=$(var sim) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
+  <log message="[crane.launch.xml] sim=$(var sim), team=$(var team), initial_color=$(var team_color) | Ports: Vision=$(var vision_port_final), Referee=$(var referee_port_final), Tracker=$(var tracker_port_final)"/>
 
   <!-- ============================================================ -->
   <!-- ロボット性能パラメータ -->
@@ -229,7 +228,7 @@ limitations under the License.
 
   <!-- ワールドモデル（世界状態の推定と管理） -->
   <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node" output="screen">
-    <param name="initial_team_color" value="YELLOW"/>
+    <param name="initial_team_color" value="$(var team_color)"/>
     <param name="team_name" value="$(var team)"/>
     <param name="vision_address" value="224.5.23.2"/>
     <param name="vision_port" value="$(var vision_port_final)"/>
