@@ -32,8 +32,8 @@ public:
     std::ranges::sort(uppers);
     std::ranges::sort(lowers);
     for (size_t i = 1; i < uppers.size(); i++) {
-      // 重なっている
-      if (uppers[i - 1] > lowers[i]) {
+      // 重なっている（境界が接する場合も連続区間として結合する）
+      if (uppers[i - 1] >= lowers[i]) {
         uppers[i - 1] = uppers[i];
         lowers.erase(lowers.begin() + i);
         uppers.erase(uppers.begin() + i);
