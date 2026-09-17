@@ -136,7 +136,7 @@ if [ "${USE_LOCAL}" = "1" ]; then
     # 後段の `kill -TERM -<pid>` が存在しないグループを狙って何も落とせない。
     # その結果 ros2 launch の子ノード群が毎回残り、実行を繰り返すと DDS domain 0 の
     # participant index を使い切って world_model_publisher が起動できなくなる。
-    setsid ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=10003 team:=Yellow planner:="${PLANNER}" ibis_target_port:="${CRANE_TARGET_PORT}" feedback_sim_mode:="${FEEDBACK_SIM_MODE}" >/tmp/crane_local.log 2>&1 &
+    setsid ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false team:=Yellow planner:="${PLANNER}" >/tmp/crane_local.log 2>&1 &
     CRANE_PID=$!
     echo "craneプロセスID: ${CRANE_PID}"
 
@@ -156,6 +156,7 @@ cd "${REPO_ROOT}"
 # pytestコマンドの構築（常にログ記録を有効化）
 PYTEST_ARGS=(
     "--vision_port=${VISION_PORT}"
+    "--referee_port=11003"
     "--logging"
     "--log_recorder=${LOG_RECORDER}"
     "-p" "no:launch_ros"

@@ -183,12 +183,10 @@ services:
   #
   # 位置制御ループは cm4-sim が閉じる。crane 本体は dev では docker ではなく
   # ホスト上で起動するので、あわせて次のように起動すること:
-  #   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph \
-  #       ibis_target_port:=12345 feedback_sim_mode:=false
+  #   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph
   #
-  # feedback_sim_mode:=false が必須。true だと crane と cm4-sim が
-  # 127.0.0.1:50100+id を奪い合い、SO_REUSEPORT の振り分けは 4-tuple ハッシュで
-  # 決まるため片方が全パケットを取る。crane 側が当たると位置制御が死ぬ。
+  # feedback は常に multicast (224.5.20.xxx) で受信するように crane 側で固定されているため、
+  # cm4-sim が unicast ポート (127.0.0.1:50100+id) を排他的に利用できる。
   #
   # --feedback-port-base は simulator-cli の --ibis-feedback-port-base と揃える。
   # これは cm4-sim が simulator-cli からの unicast を受ける「入力側」で、

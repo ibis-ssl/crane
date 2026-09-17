@@ -49,7 +49,7 @@ crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
 
 mode 4 を出すのは `planner:=visibility_graph` だけです。`rvo2` は mode 3 を出し、`cm4-sim` はそれを位置制御せずそのまま転送します。
 
-この構成では `feedback_sim_mode:=false` が必要です。同じunicastポートをCraneと `cm4-sim` が受信すると、`SO_REUSEPORT` の振り分けは送信元を含む4-tupleハッシュで決まるため、片方だけに全パケットが配送されます。Crane側が当たると `cm4-sim` は位置信号を受け取れず、位置制御が動きません。
+Crane は常にフィードバックを multicast 側で受信するよう設定されています。同じ unicast ポートを Crane と `cm4-sim` が受信すると、`SO_REUSEPORT` の振り分けは送信元を含む 4-tuple ハッシュで決まるため、片方だけに全パケットが配送されます。Crane 側が当たると `cm4-sim` は位置信号を受け取れず、位置制御が動きません。Crane を multicast 受信にすることで、unicast は `cm4-sim` が独占できます。
 
 同じ理由で、feedbackを観測したいときに `cm4-sim` と同じunicastポート（`--feedback-port-base` が示す `127.0.0.1:50100+id`）を別プロセスでbindしてはいけません。配送が片方に偏り、「位置制御が効いていない」ように見えます。観測は再配信先の `224.5.20.(100+id):50100+id` で行います。再配信自体は `cm4_sim --no-feedback-relay` で止められます。
 
