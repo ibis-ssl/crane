@@ -67,7 +67,9 @@ services:
       -g 2023
       --realism Realistic
       --ibis-port ${IBIS_PORT:-12346}
-      --ibis-team-color ${IBIS_TEAM_COLOR:-yellow}
+      --ibis-use-referee
+      --ibis-feedback-team-name ${IBIS_FEEDBACK_TEAM_NAME:-ibis}
+      --ibis-referee-port ${REFEREE_PORT:-11003}
     # simulator-cli の log() は flush しないため、TTY が無いと stdout が
     # ブロックバッファリングされ、コンテナ停止時にログが丸ごと失われる。
     # ibis の警告（mode 4 受信、指令の位置照合失敗など）は切り分けの要なので、
@@ -133,8 +135,6 @@ services:
     command:
       - --vision-port
       - "${VISION_PORT:-10020}"
-      - --tracker-port
-      - "11010"
       - --gc-port
       - "${REFEREE_PORT:-11003}"
     network_mode: host
