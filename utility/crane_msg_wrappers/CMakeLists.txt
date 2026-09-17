@@ -33,7 +33,11 @@ ament_target_dependencies(${PROJECT_NAME} ${requirement_dependencies})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(ament_cmake_gtest REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_auto_add_gtest(test_world_model_wrapper_robot_id
+    test/test_world_model_wrapper_robot_id.cpp
+  )
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

@@ -77,9 +77,17 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
   constexpr uint8_t MAX_ROBOT_NUM = 20;
-  for (int i = 0; i < MAX_ROBOT_NUM; i++) {
-    ours_.robots.emplace_back(std::make_shared<RobotInfo>());
-    theirs_.robots.emplace_back(std::make_shared<RobotInfo>());
+  for (uint8_t i = 0; i < MAX_ROBOT_NUM; i++) {
+    // IDはスロット番号で固定する。未検出のスロットもIDを持っていないと、
+    // RobotInfo::id経由でスロットを参照する側（RVOのエージェント番号など）が
+    // すべて0番に化けて、0番ロボットの状態を壊す。
+    auto our_robot = std::make_shared<RobotInfo>();
+    our_robot->id = i;
+    ours_.robots.emplace_back(std::move(our_robot));
+
+    auto their_robot = std::make_shared<RobotInfo>();
+    their_robot->id = i;
+    theirs_.robots.emplace_back(std::move(their_robot));
   }
 
   if (setup_subscriber) {
@@ -124,6 +132,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
 
+    // IDは検出状態に依らず常に同期させる（未検出時に0へ化けるのを防ぐ）
+    info->id = robot.id;
     info->available_vision = robot.available_vision;
     info->available_feedback = robot.available_feedback && !robot.has_error;
     // ハードウェア診断結果を反映（診断エラーがある場合のみfalse、それ以外はtrue）
@@ -133,7 +143,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     updateRobotTimestamps(*info, robot, now);
 
     if (info->available()) {
-      info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
       info->pose.theta = robot.pose.theta;
@@ -156,6 +165,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   for (const auto & robot : world_model.robot_info_theirs) {
     auto & info = theirs_.robots.at(robot.id);
 
+    // IDは検出状態に依らず常に同期させる（未検出時に0へ化けるのを防ぐ）
+    info->id = robot.id;
     // 敵ロボットはビジョン検出のみで判定（診断情報なし）
     info->available_vision = robot.available_vision;
     info->available_hardware = true;  // 敵ロボットの診断情報はないため常にtrue
@@ -164,7 +175,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     updateRobotTimestamps(*info, robot, now);
 
     if (info->available()) {
-      info->id = robot.id;
       info->ball_contact.update(
         robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
       info->pose.pos << robot.pose.x, robot.pose.y;

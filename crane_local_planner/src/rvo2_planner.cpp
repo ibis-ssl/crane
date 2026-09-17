@@ -56,6 +56,9 @@ void drawRobotRadiusWithSpeed(
 
 const RVO::Vector2 RETIRED_AGENT_POS(20.0f, 20.0f);
 const RVO::Vector2 ZERO_VELOCITY(0.0f, 0.0f);
+
+// 味方エージェントは 0..19、敵エージェントは 20..39 に割り当てる
+constexpr size_t MAX_ROBOT_NUM = 20;
 }  // namespace
 
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
@@ -105,7 +108,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 
   // friend robots -> 0~19
   // enemy robots -> 20~39
-  for (int i = 0; i < 40; i++) {
+  for (size_t i = 0; i < MAX_ROBOT_NUM * 2; i++) {
     rvo_sim->addAgent(RETIRED_AGENT_POS);
   }
 
@@ -493,14 +496,14 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
                            !world_model->isPracticeNormalSpeed())
                             ? STOP_STATE_MAX_VELOCITY
                             : RVO_MAX_SPEED;
-  for (int i = 0; i < 40; i++) {
+  for (size_t i = 0; i < MAX_ROBOT_NUM * 2; i++) {
     rvo_sim->setAgentMaxSpeed(i, max_speed);
   }
 
   // 1. コマンドのマップ化（robot_id -> commandポインタ）
-  std::array<crane_msgs::msg::RobotCommand *, 20> cmd_map{};
+  std::array<crane_msgs::msg::RobotCommand *, MAX_ROBOT_NUM> cmd_map{};
   for (auto & command : msg.robot_commands) {
-    if (command.robot_id < 20) {
+    if (command.robot_id < MAX_ROBOT_NUM) {
       if (command.position_target_mode.empty()) {
         RCLCPP_WARN(
           rclcpp::get_logger("rvo2_local_planner"),
@@ -515,11 +518,12 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   // - 不在 (!available)：RVOシミュレータ外 (20,20) へ退避
   // - 能動 (commandあり)：RVO入力パイプラインによる経路計画
   // - 受動 (availableだがcommandなし)：現在位置で静止障害物として配置
-  for (const auto & ally_robot : world_model->ours().robots) {
-    if (ally_robot->id >= 20) {
-      continue;
-    }
-    const auto id = ally_robot->id;
+  // エージェント番号はRobotInfo::idではなくスロット番号から決める。
+  // IDはスロット番号と一致する前提だが、ここで参照するとID未設定時に全スロットが
+  // 0番エージェントへ潰れ、0番ロボットの状態を毎周期上書きしてしまう。
+  const auto & ally_robots = world_model->ours().robots;
+  for (size_t id = 0; id < ally_robots.size() && id < MAX_ROBOT_NUM; id++) {
+    const auto & ally_robot = ally_robots[id];
     if (!ally_robot->available()) {
       retireAgent(id);
     } else if (auto * command = cmd_map[id]; command != nullptr) {
@@ -532,11 +536,10 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   }
 
   // 3. 敵ロボット (20..39) の更新
-  for (const auto & enemy_robot : world_model->theirs().robots) {
-    if (enemy_robot->id >= 20) {
-      continue;
-    }
-    const auto agent_id = enemy_robot->id + 20;
+  const auto & enemy_robots = world_model->theirs().robots;
+  for (size_t id = 0; id < enemy_robots.size() && id < MAX_ROBOT_NUM; id++) {
+    const auto & enemy_robot = enemy_robots[id];
+    const auto agent_id = id + MAX_ROBOT_NUM;
     if (enemy_robot->available()) {
       const auto & pos = enemy_robot->pose.pos;
       const auto & vel = enemy_robot->vel.linear;
