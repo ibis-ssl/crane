@@ -9,6 +9,11 @@ bag 解析（crane_bag pass）と異なり意図（pass_target_id）は観測で
 - rcst の Ball は速度を持たない（常に0）ため、位置差分から速度を推定する
 - ボール高さ z も観測できないため、チップキックが敵の頭上を越える場合に
   INTERCEPTED と誤判定し得る（本シナリオはストレートパスが成立する配置を使う）
+- **静止しているのは blue だけ。** crane は yellow 全機を制御下に置いていて、
+  配置した直後から自分の陣形へ動かし始める。保存ログの実測では、テレポートの
+  0.09 秒後には動き出し、0.8 秒後に受け手が 0.7 m、3.8 秒後には 2.8 m 離れた。
+  したがって「配置してしばらく待ってから開始する」と、テストが作ったパスコースは
+  キック時点では存在しない。run_pass_trial は反映を確認し次第 FORCE_START する。
 
 座標系（vision）: crane(yellow) が守るのは field_helpers.DEFENDED_SIDE 側で、
 攻めるのは ATTACKING_SIDE 側。rcst 環境では -x を守り +x へ攻める（rcst が
@@ -42,6 +47,9 @@ SETTLE_TIME = 0.2  # キック直後の判定無効時間 [s]
 OUT_OF_PLAY_MARGIN = 0.05  # 場外判定をフィールド境界から何 m 外に置くか
 SPEED_WINDOW_SEC = 0.08  # 速度推定の差分窓 [s]
 MARKER_DISTANCE = 0.7  # 受け手からマーカーまでの距離 [m]
+PLACEMENT_TOLERANCE = 0.05  # 配置が vision に反映されたとみなす許容誤差 [m]
+PLACEMENT_WAIT_TIMEOUT = 2.0  # 配置の反映を待つ上限 [s]
+KICKOFF_DELAY = 0.1  # FORCE_START 送信後、観測を始めるまでの待ち [s]
 
 
 @dataclasses.dataclass
@@ -65,6 +73,12 @@ class PassTrialResult:
     kick_speed: float = 0.0
     pass_distance: float = 0.0
     duration: float = 0.0
+    # 配置が vision に反映されるまでに要した秒数（NaN なら確認できなかった）
+    placement_wait: float = float("nan")
+    # キック時点で、各 yellow が配置座標からどれだけ離れていたか {id: m}
+    # 最大値ではなく機体ごとに持つ。attacker がボールへ寄るのは当然の移動なので、
+    # 「受け手が持ち場を離れたか」は個別に見ないと分からない。
+    drift_at_kick: dict = dataclasses.field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -106,8 +120,53 @@ def _nearest_robot(robots, x: float, y: float):
     return best_id, best_d
 
 
-def watch_pass_outcome(field: Field, timeout_sec: float = 25.0) -> PassTrialResult:
-    """次の yellow キック1本を追跡して結果を分類する。"""
+def _drifts(yellows, expected: dict | None) -> dict:
+    """配置座標からのずれ [m] を機体ごとに返す。expected が無ければ空。"""
+    if not expected:
+        return {}
+    return {
+        rid: round(math.hypot(yellows[rid].x - x, yellows[rid].y - y), 3)
+        for rid, (x, y) in expected.items()
+        if rid in yellows
+    }
+
+
+def _wait_for_placement(field: Field, expected: dict) -> float:
+    """配置した座標が vision に現れるまで待ち、要した秒数を返す。
+
+    確認できないまま PLACEMENT_WAIT_TIMEOUT に達したら NaN を返す。
+
+    以前はここが固定 2 秒の sleep だった（「配置反映と役割割当の安定待ち」）。
+    しかし crane は yellow 全機を制御下に置いていて、テレポート直後から自分の
+    陣形へ動かし始める。保存ログの実測では、配置 0.09 秒後には既に動き出し、
+    0.8 秒後には受け手が 0.7 m、3.8 秒後には 2.8 m 離れていた。2 秒待つと、
+    テストが作ったパスコースはキック時点では存在しない。
+    反映を確認できた時点で抜けることで、意図した配置のまま試行を始める。
+    """
+    deadline = time.time() + PLACEMENT_WAIT_TIMEOUT
+    start = time.time()
+    while time.time() < deadline:
+        robots = field.comm.observer.get_world().get_yellow_robots()
+        if all(
+            rid in robots
+            and math.hypot(robots[rid].x - x, robots[rid].y - y) <= PLACEMENT_TOLERANCE
+            for rid, (x, y) in expected.items()
+        ):
+            return time.time() - start
+        time.sleep(0.01)
+    return float("nan")
+
+
+def watch_pass_outcome(
+    field: Field, timeout_sec: float = 25.0, expected: dict | None = None
+) -> PassTrialResult:
+    """次の yellow キック1本を追跡して結果を分類する。
+
+    expected を渡すと、キック時点で配置座標からどれだけずれていたかを
+    result.max_drift_at_kick に記録する。crane は yellow 全機を制御下に置いて
+    いるので、テストが作った配置は放っておくと崩れる。判定そのものには
+    使わないが、「意図した配置で試行できたのか」がログから分かるようにする。
+    """
     get_world = field.comm.observer.get_world
     field_half_x = field.half_length + OUT_OF_PLAY_MARGIN
     field_half_y = field.half_width + OUT_OF_PLAY_MARGIN
@@ -139,6 +198,7 @@ def watch_pass_outcome(field: Field, timeout_sec: float = 25.0) -> PassTrialResu
                     result.kicker_id = y_id
                     result.kick_pos = (kick_x, kick_y)
                     result.kick_speed = speed
+                    result.drift_at_kick = _drifts(yellows, expected)
                 # blue 起因の速度立ち上がり（跳ね返り等）は無視して次のキックを待つ
             else:
                 prev_ball = (ball.x, ball.y)
@@ -213,12 +273,15 @@ def receiver_positions(field: Field) -> list:
     return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
-def setup_buildup_static(field: Field) -> None:
+def setup_buildup_static(field: Field) -> dict:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
     ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
     attacker はパスを選択せざるを得ない。
     受け手 2/3 は攻撃ハーフにいるため pass_target 候補になる。
+
+    配置した yellow の座標を {id: (x, y)} で返す。run_pass_trial がこれを使って
+    「配置が vision に反映されたか」を確かめ、反映され次第 FORCE_START する。
     """
     field.send_empty_world()
     # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
@@ -227,17 +290,15 @@ def setup_buildup_static(field: Field) -> None:
     facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
     # yellow (crane)
-    field.send_yellow_robot(
-        0, field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0, facing
-    )  # GK
-    field.send_yellow_robot(
-        1, ball_x + 0.4 * DEFENDED_SIDE, 0.1, facing
-    )  # ボール至近（attacker 候補）
-    field.send_yellow_robot(2, *left_receiver, facing)
-    field.send_yellow_robot(3, *right_receiver, facing)
-    field.send_yellow_robot(
-        4, field.x(0.58) * DEFENDED_SIDE, field.y(-0.33), facing
-    )  # 後方サポート
+    yellows = {
+        0: (field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0),  # GK
+        1: (ball_x + 0.4 * DEFENDED_SIDE, 0.1),  # ボール至近（attacker 候補）
+        2: left_receiver,
+        3: right_receiver,
+        4: (field.x(0.58) * DEFENDED_SIDE, field.y(-0.33)),  # 後方サポート
+    }
+    for robot_id, (x, y) in yellows.items():
+        field.send_yellow_robot(robot_id, x, y, facing)
     # blue: 全機静止（制御なし）。シュートコースを塞ぐ壁 + GK + 後方2機
     field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
     field.send_blue_robot(1, field.x(0.15) * ATTACKING_SIDE, 0.0, 0.0)
@@ -246,32 +307,40 @@ def setup_buildup_static(field: Field) -> None:
     field.send_blue_robot(4, field.x(0.33) * ATTACKING_SIDE, 0.6, 0.0)
     field.send_blue_robot(5, field.x(0.33) * ATTACKING_SIDE, -0.6, 0.0)
     field.send_ball(ball_x, 0.0)
+    return yellows
 
 
-def setup_under_mark(field: Field) -> None:
+def setup_under_mark(field: Field) -> dict:
     """受け手がゴール側からマークされた配置。
 
     マーカーはパスラインを塞がない位置（受け手のゴール側 0.7m）に置き、
     「密着マーク下でのレシーブ」を試す。直接のパスコース自体は通っている。
     """
-    setup_buildup_static(field)
+    yellows = setup_buildup_static(field)
     # 受け手から、crane が攻めるゴールへ 0.7m 寄った位置にマーカーを置く
     goal = field.own_goal_center(ATTACKING_SIDE)
     for robot_id, receiver in zip((6, 7), receiver_positions(field)):
         marker_x, marker_y = field.toward(receiver, goal, MARKER_DISTANCE)
         field.send_blue_robot(robot_id, marker_x, marker_y, 0.0)
+    return yellows
 
 
 def run_pass_trial(
     field: Field, setup_fn, timeout_sec: float = 25.0
 ) -> PassTrialResult:
-    """1試行: STOP→配置→FORCE_START→パス1本の結果を観測して STOP で終了"""
+    """1試行: STOP→配置→（反映を確認したら即）FORCE_START→パス1本を観測
+
+    配置してから FORCE_START までの時間を最小にするのが肝。crane は yellow 全機を
+    動かすので、待てば待つほどテストが作った配置は崩れる。固定 sleep をやめ、
+    vision に反映されたことを確認し次第そのまま開始する。
+    """
     comm = field.comm
     comm.change_referee_command("STOP", 1.0)
-    setup_fn(field)
-    time.sleep(2.0)  # 配置反映と役割割当の安定待ち
+    expected = setup_fn(field)
+    placement_wait = _wait_for_placement(field, expected)
     comm.observer.reset()
-    comm.change_referee_command("FORCE_START", 0.5)
-    result = watch_pass_outcome(field, timeout_sec)
+    comm.change_referee_command("FORCE_START", KICKOFF_DELAY)
+    result = watch_pass_outcome(field, timeout_sec, expected)
+    result.placement_wait = placement_wait
     comm.change_referee_command("STOP", 1.0)
     return result
