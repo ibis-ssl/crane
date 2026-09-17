@@ -17,7 +17,7 @@ void EmplaceRobotSession::onRobotsChanged() { m_skill_map.clear(); }
 
 EmplaceRobotSession::EmplaceRobotSession(
   WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-: SessionBase("emplace", world_model), topics_interface_(node.get_node_topics_interface())
+: SessionBase("emplace_robot", world_model), topics_interface_(node.get_node_topics_interface())
 {
   use_voice_announcement_ =
     crane::get_or_declare_parameter(node, "emplace_robot.use_voice_announcement", true);
@@ -35,7 +35,7 @@ auto EmplaceRobotSession::sendSpeakGoal(const std::string & text) -> void
   }
 
   // アクションサーバーが利用可能か確認（非ブロッキング）
-  if (!speak_client_->wait_for_action_server(std::chrono::milliseconds(100))) {
+  if (!speak_client_->action_server_is_ready()) {
     return;
   }
 
@@ -105,14 +105,22 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
       static_cast<int>(world_model->ours().robotsWhere().available().getIds().size());
     int max_allowed = static_cast<int>(world_model->getOurMaxAllowedBots());
     if (max_allowed > 0 && available_count < max_allowed) {
+      int deficit = max_allowed - available_count;
       auto now = std::chrono::steady_clock::now();
-      if (now - last_announce_time_ >= ANNOUNCE_INTERVAL) {
+      bool state_changed =
+        (deficit != last_announced_deficit_ || max_allowed != last_announced_max_allowed_);
+      if (now - last_shortage_announce_time_ >= SHORTAGE_ANNOUNCE_INTERVAL && state_changed) {
         if (use_voice_announcement_) {
           sendSpeakGoal(
             "ロボット上限は" + std::to_string(max_allowed) + "台です。ロボットを追加できます");
         }
-        last_announce_time_ = now;
+        last_shortage_announce_time_ = now;
+        last_announced_deficit_ = deficit;
+        last_announced_max_allowed_ = max_allowed;
       }
+    } else {
+      // 不足が解消されたらリセット
+      last_announced_deficit_ = 0;
     }
   }
 

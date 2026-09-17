@@ -251,7 +251,26 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // direct UDP from Tracker; no ROS topic subscription
 }
 
-WorldModelDataProvider::~WorldModelDataProvider() = default;
+WorldModelDataProvider::~WorldModelDataProvider()
+{
+  if (udp_timer) {
+    udp_timer->cancel();
+  }
+  if (status_check_timer_) {
+    status_check_timer_->cancel();
+  }
+  if (multicast_receiver_) {
+    multicast_receiver_->stop();
+  }
+  if (tracker_receiver_) {
+    tracker_receiver_->stop();
+  }
+  asio_ctx_.work_guard.reset();
+  asio_ctx_.io_context.stop();
+  if (asio_ctx_.thread.joinable()) {
+    asio_ctx_.thread.join();
+  }
+}
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
