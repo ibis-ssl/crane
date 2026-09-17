@@ -82,7 +82,11 @@ jobs:
             type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
             type=gha,scope=scenario-develop
             type=gha,scope=scenario
-          cache-to: type=gha,mode=max,scope=scenario-develop
+          # mode=max は中間ステージのレイヤも全部キャッシュするため、リポジトリあたり
+          # 10GB の Actions Cache をすぐ食い潰す（実測 10.55GB で上限超過し、
+          # 「error writing layer blob: failed to reserve cache」でビルドが落ちた）。
+          # ステージ間の再利用は上の type=registry,ref=... が担っているので min で足りる。
+          cache-to: type=gha,mode=min,scope=scenario-develop
 
       - name: Build image for fork pull request
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository

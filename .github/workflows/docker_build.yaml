@@ -71,7 +71,11 @@ jobs:
           cache-from: |
             type=gha,scope=base
             type=registry,ref=ghcr.io/${{ github.repository }}:base
-          cache-to: type=gha,mode=max,scope=base
+          # mode=max は中間ステージのレイヤも全部キャッシュするため、リポジトリあたり
+          # 10GB の Actions Cache をすぐ食い潰す（実測 10.55GB で上限超過し、
+          # 「error writing layer blob: failed to reserve cache」でビルドが落ちた）。
+          # ステージ間の再利用は上の type=registry,ref=... が担っているので min で足りる。
+          cache-to: type=gha,mode=min,scope=base
 
       - name: Build dependency image
         uses: docker/build-push-action@v7
@@ -88,7 +92,7 @@ jobs:
             type=gha,scope=deps
             type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy
             type=registry,ref=ghcr.io/${{ github.repository }}:base
-          cache-to: type=gha,mode=max,scope=deps
+          cache-to: type=gha,mode=min,scope=deps
 
       - name: Build scenario image
         uses: docker/build-push-action@v7
@@ -105,4 +109,4 @@ jobs:
             type=registry,ref=ghcr.io/${{ github.repository }}:deps-jazzy-${{ hashFiles('dependency_jazzy.repos', 'docker/Dockerfile') }}
             type=registry,ref=ghcr.io/${{ github.repository }}:scenario-develop
             type=gha,scope=scenario-develop
-          cache-to: type=gha,mode=max,scope=scenario-develop
+          cache-to: type=gha,mode=min,scope=scenario-develop
