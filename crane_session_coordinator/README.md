@@ -7,7 +7,11 @@ SSL-Referee指示および試合状況（PlaySituation）に基づき、利用�
 ## 固有の制約
 
 - 設定駆動アーキテクチャを採用し、すべての試合状況設定は `config/unified_session_config.yaml`（`events` → `situations` → `sessions`）で管理すること。
-- トピックガイドは存在しないため、設定構造および配分ロジックは設定ファイルおよびソースコードを参照すること。
+
+## 関連ガイド
+
+- [競技ルールへの対応](../docs/rule.md)
+- [Crane ガイド（アーキテクチャ）](../docs/index.md)
 
 ## リンク
 

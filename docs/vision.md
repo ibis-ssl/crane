@@ -1,124 +1,70 @@
-# SSL-Vision
+# SSL-Vision 設定手順
 
-## 環境構築
+実機環境および大会運用における公式画像処理システム [SSL-Vision](https://github.com/RoboCup-SSL/ssl-vision) の設定と運用のガイドです。
 
-```bash
-git clone git@github.com:RoboCup-SSL/ssl-vision.git
-cd ssl-vision
-mkdir build
-cd build
-cmake .. -DUSE_V4L=true
-make -j
-cd ..
-./bin/vision
-```
+## 構成と役割
+
+- **実機環境**: 外部カメラからの映像を SSL-Vision が処理し、フィールド幾何情報（Geometry）およびボール・ロボット検出情報（Detection）をマルチキャスト配信します。
+- **Crane 側の受信**: ポート `10020`（既定値）で受信し、`crane_world_model_publisher` が世界モデルを構築します。
+- **Docker 開発環境**: 通常は `ssl-vision-client` コンテナ（ポート `8082`）やシミュレータが Vision データを模擬・中継します。
+
+ビルドとソースは [RoboCup-SSL/ssl-vision](https://github.com/RoboCup-SSL/ssl-vision) を参照してください。
 
 ## 設定の流れ
 
-1. 起動
-2. カメラの設定
-3. フィールドの設定
-4. 色の設定
-5. カメラキャリブレーション
-6. マスクの設定
-7. Blobの設定
-8. ボール・ロボット認識の設定
-9. ネットワークの設定
+1. 起動とカメラ認識
+2. カメラ画像取得
+3. フィールド幾何設定
+4. カラーキャリブレーション（LUT作成）
+5. カメラ幾何キャリブレーション
+6. ブロブ（Blob）検出・マーカー認識調整
+7. ネットワーク配信確認
 
-## 起動
+## 1. カメラ設定
 
-リポジトリのルートディレクトリで以下のコマンドを実行する．
+1. **起動**: リポジトリルートで `./bin/vision` を実行します。
+2. **キャプチャ設定**: `Thread0/ImageCapture/Video 4 Linux/CaptureSettings` で以下を設定します。
+   - `cam_idx`: カメラデバイス番号（映らない場合は変更して試行）
+   - `width` / `height`: 解像度
+3. **取り込み開始**: `Thread0/ImageCapture/CaptureControl` で `start capture` を選択します。
 
-```bash
-./bin/vision
-```
+## 2. フィールド幾何設定
 
-## カメラの設定
+`Global/FieldConfiguration` で大会規定のフィールド寸法を設定します。
 
-### 前設定
+- `Field Length`（長辺） / `Field Width`（短辺）
+- `Total Number of Cameras` / `Local Number of Cameras`
+- `Number of Line Segments` / `Number of Arcs`
 
-Thread0の「ImageCapture/Video 4 Linux/CaptureSettings」で以下を設定
+> [!TIP]
+> ロボットの検出位置にオフセット（ずれ）が生じる場合は、`Global/Robot Detection/Teams` でロボット高さを調整します（高さを 0 に設定すると改善する場合があります）。
 
-- cam_idx
-  - カメラが映らなかったらここのIDを変えてみる
-- width
-- height
+## 3. カラーキャリブレーション
 
-### 映す
+右側の `Auto Color Calibration` タブを使用します。
 
-Thread0の「ImageCapture/CaptureControl」の「start capture」
+1. 抽出対象の色を選択します。
+2. カメラ画像上で該当色の領域をクリックし、サンプルピクセルを収集します。
+3. `Update LUT` を押してルックアップテーブルを更新します。
+4. `Thread0/Visualization/threshold` を有効化し、二値化結果を確認します。
 
-## フィールドの設定
+## 4. カメラキャリブレーション
 
-「Global/FieldConfiguration」を設定する
-特に以下を設定
+1. `Thread0/Visualization/camera calibration` を有効化します。
+2. `Camera Calibrator/Calibration Parameters` でコントロールポイントを設定します。フィールド実座標（mm）を入力し、画像上の対応点と関連付けます（右側タブでドラッグ移動も可能）。
+3. `Camera Height(in mm)` にカメラの高さを入力します。
+4. `Do initial calibration`、続いて `Do full calibration` を実行します。
 
-- Field Length(こっちが長辺)
-- Field Width
-- Total Number of Cameras
-- Local Number of Cameras
-- Number of Line Segments
-- Number of Arcs
+## 5. パターン認識とマーカー検出
 
-※ロボットがオフセットしているように感じたら...
+カラー抽出で得られたブロブ（領域の塊）からロボットおよびボールを同定します。
 
-- 「Global/Robot Detection/BlueTeam」などからチームを確認
-- 「Global/Robot Detection/Teams/ER-Force」などからロボットの高さを調整
-  ロボットの高さをゼロにするとオフセットがなくなることがある
+1. **ブロブフィルタ**: `Thread0/Blob Finding` で `min_blob_area`（最小面積）を設定し、ノイズを除去しつつ最小のボールが消えない閾値に調整します。
+2. **マーカー認識**: `Global/Robot Detection/Pattern` で中心マーカーおよび個別マーカーの寸法・面積フィルターを設定します。
+3. **パターンフィッティング**: `Global/Robot Detection/Pattern/Pattern Fitting` でマッチングスコアの重みを調整します。ブロブが検出されているのにロボットが認識されない場合は `Max Error` を適宜緩和します。
 
-## 色の設定
+## 実装・運用リファレンス
 
-右側の「Auto Color Calibration」タブを使って設定する
-
-1. 色を選択する（その色でサンプルを取得するモードになる）
-2. 画像上で選択した色のピクセルをいくつかクリックする（サンプルされる）
-3. 「Update LUT」ボタンを押す
-
-### 調整・確認方法など
-
-- 色の識別結果の可視化
-  - 「Thread0/Visualization/threshold」をTrueに設定する
-- 取得したサンプルを削除する
-  - 1 「Remove all samples」ボタンを押す
-    - 少し不安定でこれを押すとVisionが落ちることも
-  - 2 「Thread0/Auto Color Calibration/Calibration Points」
-    - ここにサンプルが全て列挙されているのでクリックして中にある「remove」ボタンで削除できる
-
-## カメラキャリブレーション
-
-「Thread0/Visualization/camera calibration」をTrueにする
-
-### コントロールポイントの設定
-
-各スレッドの「Camera Calibrator/Calibration Parameters(list)」以下でコントロールポイントの設定ができる。  
-それぞれのコントロールポイントのフィールドのxyの座標をmm単位で設定した後、カメラ画像上の点と対応付ける。
-座標を直に設定してもよいが、右の「Camera Calibration」タブを開いた状態にすると、コントロールポイントをドラッグして移動することができる。
-
-### キャリブレーションの実行
-
-コントロールポイントを設定したら、キャリブレーションを実行する。
-まず、右の「Camera Calibration」タブを開いて一番下の「Initial Camera Parameters」にある「Camera Height(in mm)」にカメラの高さを設定する。
-次に、「Do initial calibration」「Do full calibration」の順にボタンを押してキャリブレーションを実行する。
-
-## パターン認識の設定
-
-色が設定できると、「blob」と呼ばれる画像上の同色の塊が認識されるようになる。
-認識されている様子は各スレッドの「Visualization/blobs」にチェックを入れることで確認できる。
-SSL-Visionでは、このblobに対してパターン認識を行い、ロボットやボールを認識する。
-
-### blobのフィルタリング
-
-各スレッドの「Blob Finding」にて認識するblobの最小面積(単位：ピクセル)「min_blob_area」や最大認識数「max regions」などを設定できる。
-
-「min_blob_area」は認識物体の中で一番小さいボールが消えない程度に設定するとよいだろう。
-
-### 各マーカーの認識設定
-
-「Global/Robot Detection/Pattern」の「Center Marker」や「Other Markers」でマーカーの認識調整が行える。
-ここでは認識されるマーカーの（画像上の）最小・最大の幅・高さ・面積のフィルターを設定できる。
-
-### パターンマッチングの設定
-
-「Global/Robot Detection/Pattern/Pattern Fitting」でパターンマッチングの設定が行える。
-マッチングスコアの重みを調整することができる。
-blobが認識できているのに、ロボットが認識されない場合は、「Max Error」を大きくしてみて見るのも良いだろう。
+- 受信側実装: [world_model_publisher.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_world_model_publisher/src/world_model_publisher.cpp)
+- 起動引数とポート: [crane.launch.xml](https://github.com/ibis-ssl/crane/blob/develop/crane_bringup/launch/crane.launch.xml)
+- [試合チェックリスト](match.md) / [ボールトラッキングシステム](ball_tracking_system.md) / [ネットワーク設定](network.md)
