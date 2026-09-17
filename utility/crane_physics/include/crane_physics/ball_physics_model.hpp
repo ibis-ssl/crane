@@ -58,8 +58,8 @@ public:
     const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
     double time_ahead) const -> Point;
 
-  [[nodiscard]] auto getStopTime(const Point & velocity, Ball::State state, double vel_z) const
-    -> double;
+  [[nodiscard]] auto getStopTime(
+    const Point & velocity, Ball::State state, double pos_z, double vel_z) const -> double;
 
   [[nodiscard]] auto getMaxDistance(
     const Point & position, const Point & velocity, Ball::State state, double pos_z,
@@ -86,6 +86,11 @@ private:
   Config config_;
 
   // ヘルパー関数
+  // FLYING状態のボールが着地するまでの時間を計算する。
+  // z(t) = pos_z + vel_z * t + 0.5 * gravity * t^2 = 0 の正の最小根を返す。
+  // 判別式が負、または正の根が存在しない場合は 0 を返す。
+  [[nodiscard]] auto getFlyingLandingTime(double pos_z, double vel_z) const -> double;
+
   [[nodiscard]] auto getRollingStopTime(const Point & velocity) const -> double;
 
   [[nodiscard]] auto getRollingMaxDistance(const Point & velocity) const -> double;
