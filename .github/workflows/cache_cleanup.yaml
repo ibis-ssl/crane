@@ -1,0 +1,68 @@
+name: cache cleanup
+
+# GitHub Actions のキャッシュはリポジトリ全体で10GB上限。scenario_test.yaml が
+# pull_request/merge_group のたびに書き込む Docker レイヤーキャッシュ
+# (buildkit-blob-*, scope=scenario-develop) は refs/pull/<N>/merge にスコープされ、
+# PRがクローズ/マージされた後は二度と読まれないのに残り続ける。放置すると上限に
+# 張り付き、新規ビルドが「error writing layer blob: failed to reserve cache」で
+# 失敗する (2026-09-17, match-vs-tigers.yaml で発生実績あり。実測: クローズ済み
+# PR 13件だけで 5.17GiB を占有していた)。
+#
+# refs/heads/develop 向けキャッシュは対象外。全PRの cache-from から毎回読み直され
+# ている現役キャッシュなので、誤って消すとビルド速度が悪化する。
+#
+# pull_request: closed トリガーでの即時削除は採用しない。match-vs-tigers.yaml が
+# 同じ pull_request: closed イベントで同じ ref (refs/pull/<N>/merge) に
+# cache-to: scope=match-develop を書き込むため、即時削除フックがそのビルド中に
+# キャッシュを消してしまうレースが生じる。日次スケジュールなら、その日に閉じた
+# PR分の掃除が1日遅れるだけで実害がなく、レースも起きない。
+on:
+  schedule:
+    - cron: '0 16 * * *' # 毎日 UTC16:00 (JST 01:00)
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  sweep_stale_pr_caches:
+    name: クローズ済みPRの残存キャッシュを掃除
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete caches for already-closed/merged PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # --sort last_accessed_at --order asc: デフォルト(desc)だと1000件超過時に
+          # 最終アクセスが新しい順(=develop等の現役キャッシュ優先)で切り詰められ、
+          # 掃除したい「長らくアクセスされていない古いキャッシュ」から先に一覧から
+          # 漏れてしまう。asc にして掃除対象を優先的に拾う。
+          refs=$(gh cache list --repo "$REPO" --limit 1000 --sort last_accessed_at --order asc --json ref | jq -r '.[].ref' | sort -u)
+          for ref in $refs; do
+            case "$ref" in
+              refs/heads/develop)
+                ;;
+              refs/pull/*/merge)
+                n=$(echo "$ref" | sed -E 's#refs/pull/([0-9]+)/merge#\1#')
+                state=$(gh pr view "$n" --repo "$REPO" --json state -q .state 2>/dev/null || echo "")
+                case "$state" in
+                  MERGED|CLOSED)
+                    echo "PR #$n: state=$state -> deleting $ref"
+                    gh cache delete --all --ref "$ref" --repo "$REPO" --succeed-on-no-caches
+                    ;;
+                  OPEN)
+                    echo "PR #$n: still open -> keep"
+                    ;;
+                  *)
+                    echo "PR #$n: state unknown ('$state') -> keep for safety"
+                    ;;
+                esac
+                ;;
+              *)
+                echo "未分類のref、要確認: $ref"
+                ;;
+            esac
+          done
