@@ -134,12 +134,16 @@ class _RecorderProcess:
         os.close(handle)
 
         # venv には rclpy が無いので、システム python を ROS 環境で起動する。
+        # インタプリタは絶対パスで指定すること。pytest は venv の中で動いており
+        # PATH の先頭が venv なので、`python3` と書くと venv 側が選ばれる。
+        # その python には rclpy も numpy も無く、rclpy.node の import が
+        # ModuleNotFoundError: numpy で落ちる（rosgraph_msgs 経由）。
         # setsid 相当（start_new_session）でプロセスグループを分け、確実に止められるようにする。
         script = os.path.join(scenario_dir, "pass_plan_recorder.py")
         command = (
             "source /opt/ros/jazzy/setup.bash && "
             f"source {workspace_root}/install/local_setup.bash && "
-            f"exec python3 {script} --out {self.path}"
+            f"exec /usr/bin/python3 {script} --out {self.path}"
         )
         # 子プロセスが動いている間の出力先。stop() まで開いたままにする。
         self._log = open(self.path + ".stderr", "w", encoding="utf-8")  # noqa: SIM115
