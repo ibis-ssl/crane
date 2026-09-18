@@ -819,6 +819,15 @@ auto RVO2Planner::adjustForBallAvoidance(
         case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
           return 0.7;
         case crane_msgs::msg::PlaySituation::STOP:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_KICKOFF_PREPARATION:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_KICKOFF_PREPARATION:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_PENALTY_PREPARATION:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_PENALTY_PREPARATION:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::STOP_PRE_FORCE_START:
+        case crane_msgs::msg::PlaySituation::OUR_KICKOFF_PREPARATION:
+        case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION:
           return 0.5;
         default:
           return 0.2;
