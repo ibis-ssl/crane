@@ -1,13 +1,14 @@
 name: TIGERs対戦CI
 
 on:
+  # develop へのマージ（PRマージによるマージコミットのpush）で対戦を実行する。
+  # 以前は pull_request: types:[closed] をトリガーにしていたが、GitHub が
+  # 2026-06-26 に導入した「low-trustトリガーのキャッシュ書き込み制限」により、
+  # マージ後のイベント解決先がデフォルトブランチ(develop)になり buildx の
+  # type=gha cache-to が書き込み権限を失って `failed to reserve cache` で
+  # 失敗するようになった。push トリガーは許可リストに含まれるため書き込み可能。
   push:
     branches: [develop]
-    paths:
-      - .github/workflows/match-vs-tigers.yaml
-  pull_request:
-    branches: [develop]
-    types: [closed]
   workflow_dispatch:
     inputs:
       crane_image_tag:
@@ -32,8 +33,8 @@ permissions:
 jobs:
   build_crane_image:
     name: craneイメージのビルド
-    # PRマージ時のみ実行（クローズだけでは実行しない）。crane_image_tag指定時はスキップ
-    if: (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && inputs.crane_image_tag == ''
+    # crane_image_tag指定時はスキップ
+    if: inputs.crane_image_tag == ''
     runs-on: ubuntu-latest
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -64,8 +65,12 @@ jobs:
           if [ -n "${{ github.sha }}" ]; then
             CANDIDATE_TAGS+=("scenario-${{ github.sha }}")
           fi
-          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
-            CANDIDATE_TAGS+=("scenario-${{ github.event.pull_request.head.sha }}")
+          # push イベントの github.sha は develop 上のマージコミット。
+          # PRマージによるマージコミットなら第2親が scenario_test.yaml で
+          # ビルド済みの PR head sha と一致するため、それも候補に加える。
+          MERGE_PARENT2_SHA=$(git rev-parse HEAD^2 2>/dev/null || true)
+          if [ -n "${MERGE_PARENT2_SHA}" ]; then
+            CANDIDATE_TAGS+=("scenario-${MERGE_PARENT2_SHA}")
           fi
 
           FOUND_TAG=""
@@ -121,8 +126,8 @@ jobs:
 
   match_vs_tigers:
     needs: [build_crane_image]
-    # PRマージ時のみ実行。ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
-    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.merged == true) && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
+    # ビルドが成功した場合、またはスキップされた場合（既存イメージ指定時）に実行
+    if: always() && (needs.build_crane_image.result == 'success' || needs.build_crane_image.result == 'skipped')
     name: TIGERs Sumatra AIとの対戦
     runs-on: ubuntu-latest
     steps:
