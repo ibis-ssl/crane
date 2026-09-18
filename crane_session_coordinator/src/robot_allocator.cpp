@@ -154,6 +154,9 @@ auto RobotAllocator::allocate(
         prev_robot_roles_.insert_or_assign(id, RobotRole{allocated_name, ""});
       }
 
+      // 次フレームの順序安定化のために割当順序を保存する
+      prev_allocation_order_.insert_or_assign(allocated_name, robot_ids);
+
       // RobotSelectResult を構築
       crane_msgs::msg::RobotSelectResult result;
       result.name = allocated_name;
@@ -168,6 +171,11 @@ auto RobotAllocator::allocate(
       results.results.push_back(result);
     }
   }
+
+  // situationが変わってセッション構成が変わったら、消えたセッションの順序情報を捨てる
+  std::erase_if(prev_allocation_order_, [&allocation](const auto & entry) {
+    return allocation.find(entry.first) == allocation.end();
+  });
 
   const std::unordered_set<SessionBase *> active_session_ptrs([&]() {
     std::unordered_set<SessionBase *> ptrs;
@@ -305,6 +313,9 @@ auto RobotAllocator::allocateRobotsGreedy(
       }
     }
 
+    // 固定割当分は YAML の記載順が意図なので、以降の順序安定化の対象外にする
+    const size_t fixed_count = assigned_robots.size();
+
     if (static_cast<int>(assigned_robots.size()) < req.max_robots) {
       // 適性評価でロボットをスコアリング（ヒステリシスボーナスを適用して安定化）
       const std::unordered_set<uint8_t> assigned_set(
@@ -322,8 +333,10 @@ auto RobotAllocator::allocateRobotsGreedy(
         robot_scores.emplace_back(robot_id, score);
       }
 
-      std::ranges::sort(
-        robot_scores, [](const auto & a, const auto & b) { return a.second < b.second; });
+      // 同スコア時はID順で決める（emplace_robot のように全員同値になるロールがあるため）
+      std::ranges::sort(robot_scores, [](const auto & a, const auto & b) {
+        return a.second < b.second || (a.second == b.second && a.first < b.first);
+      });
 
       const int num_to_allocate = std::min(
         req.max_robots - static_cast<int>(assigned_robots.size()),
@@ -331,6 +344,24 @@ auto RobotAllocator::allocateRobotsGreedy(
       for (int i = 0; i < num_to_allocate; ++i) {
         assigned_robots.push_back(robot_scores[i].first);
       }
+    }
+
+    // 動的割当分を前フレームの順序で並べ直す。
+    // 集合が同じでも順序が入れ替わると SessionBase::setAllocatedRobots() が
+    // onRobotsChanged() を発火させ、ロールが持つヒステリシス状態が毎フレーム破棄される。
+    // 前フレームにいなかったロボットは stable_sort によりスコア順のまま末尾に残る。
+    if (
+      auto prev_it = prev_allocation_order_.find(req.name);
+      prev_it != prev_allocation_order_.end() && assigned_robots.size() > fixed_count) {
+      const auto & prev_order = prev_it->second;
+      auto prev_rank = [&prev_order](uint8_t id) -> size_t {
+        auto it = std::ranges::find(prev_order, id);
+        return it != prev_order.end() ? static_cast<size_t>(std::distance(prev_order.begin(), it))
+                                      : prev_order.size();
+      };
+      std::stable_sort(
+        assigned_robots.begin() + static_cast<std::ptrdiff_t>(fixed_count), assigned_robots.end(),
+        [&prev_rank](uint8_t a, uint8_t b) { return prev_rank(a) < prev_rank(b); });
     }
 
     result[req.name] = assigned_robots;

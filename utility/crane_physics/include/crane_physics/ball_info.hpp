@@ -548,6 +548,11 @@ public:
 
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
+
+  // ボールが上下どちら側にあるか。センター付近ではvisionノイズ（stdev 1mm程度）で
+  // 符号が毎フレーム反転するため、±0.2mのデッドバンドを跨いだときだけ切り替える。
+  Hysteresis side_hysteresis = Hysteresis(-0.2, 0.2);
+
   friend class WorldModelWrapper;
 };
 }  // namespace crane

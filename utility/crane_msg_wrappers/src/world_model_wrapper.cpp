@@ -126,6 +126,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   // BallInfoメッセージからBall構造体への変換
   ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
+  ball_.side_hysteresis.update(ball_.pos.y());
 
   const auto now = rclcpp::Time(world_model.header.stamp);
 

@@ -102,6 +102,12 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
 
   [[nodiscard]] auto getOurSideSign() const { return onPositiveHalf() ? 1.0 : -1.0; }
 
+  /// @brief ボールが上下どちら側にあるか（+1: y正側, -1: y負側）
+  /// @note デッドバンド付き。センター付近のvisionノイズでは反転しない。
+  ///       生の `ball().pos.y() > 0.` で左右を決めると、ボールがセンターにあるとき
+  ///       毎フレーム反転して目標位置が左右に飛ぶので、左右判定には必ずこちらを使うこと。
+  [[nodiscard]] auto getBallSideSign() const { return ball_.side_hysteresis.is_high ? 1.0 : -1.0; }
+
   [[nodiscard]] auto isYellow() const { return (latest_msg.is_yellow); }
 
   [[nodiscard]] auto hasUpdated() const { return has_updated; }
