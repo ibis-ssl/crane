@@ -15,8 +15,16 @@ namespace crane
 /// 受領点フィージビリティ判定のパラメータ
 struct ReceiveFeasibilityParams
 {
-  double receiver_max_acceleration = 3.0;                      ///< 受け手の最大加速度 [m/s^2]
-  double receiver_max_velocity = 4.0;                          ///< 受け手の最大速度 [m/s]
+  /// 受け手の最大加速度 [m/s^2]。local planner が INPLAY 中に解決する上限と揃える
+  /// （planning_acceleration 既定 5.0。加速度 factor を積む箇所は現状どこにも無い）。
+  /// ここを低く見積もると「受け手が間に合わない」として候補を落とすが、指令上は
+  /// 届くので機会を捨てるだけになる。ただしこれは指令上限であって達成値の保証では
+  /// ないため、実挙動はシナリオテストで確認すること。
+  double receiver_max_acceleration = 5.0;
+  /// 受け手の最大速度 [m/s]。同じく INPLAY 中に解決される上限（max_vel 既定 5.0。
+  /// STOP 制限の factor は INPLAY では積まれない）と揃える。
+  /// ただし飛行時間が 2 秒程度までは三角形プロファイルのままで、速度上限は効かない。
+  double receiver_max_velocity = 5.0;
   double desired_arrival_speed = 1.5;                          ///< 望ましい受領点到達速度 [m/s]
   double ball_deceleration = pass_kick::kDefaultDeceleration;  ///< ボール減速度 [m/s^2]
   double min_initial_speed = 1.0;                              ///< キック初速下限 [m/s]

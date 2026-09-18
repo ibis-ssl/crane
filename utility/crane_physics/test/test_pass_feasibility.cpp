@@ -82,4 +82,25 @@ TEST(PassFeasibilityTest, FeasibleReceivePoint_BallUnreachableIsInfeasible)
   EXPECT_FALSE(r.ball_reachable);
   EXPECT_FALSE(r.feasible);
 }
+// 受け手モデルが敵の迎撃モデルより低い能力だと、実力では届く受領点まで
+// 「間に合わない」として捨ててしまう。実際にそうなっており（受け手 3.0/4.0 に対し
+// 敵 3.0/5.5）、パス距離 3.0m で受け手の到達半径 1.05m・敵 1.65m という逆転が
+// 起きていた。同じ距離に対する所要時間で不等号を固定する。
+TEST(PassFeasibilityTest, ReceiverIsModeledAtLeastAsCapableAsInterceptingEnemy)
+{
+  const ReceiveFeasibilityParams params;
+  // PassRatingConfig::enemy_slack の既定（pass_rating.hpp）を書き写した値。
+  // crane_physics は crane_msg_wrappers に依存できない（依存方向が逆）ため実体を
+  // 参照できず、これは凍結コピーである。向こうを変えてもこのテストは気付かない。
+  constexpr double kEnemyAcceleration = 3.0;
+  constexpr double kEnemyVelocity = 5.5;
+  for (double distance = 0.5; distance <= 3.0; distance += 0.5) {
+    const double receiver_time = getTravelTimeTrapezoidal(
+      Point(0.0, 0.0), Vector2(0.0, 0.0), Point(distance, 0.0), params.receiver_max_acceleration,
+      params.receiver_max_velocity);
+    const double enemy_time = getTravelTimeTrapezoidal(
+      Point(0.0, 0.0), Vector2(0.0, 0.0), Point(distance, 0.0), kEnemyAcceleration, kEnemyVelocity);
+    EXPECT_LE(receiver_time, enemy_time) << "distance=" << distance;
+  }
+}
 }  // namespace crane

@@ -168,8 +168,13 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   declare_parameter("pass_plan.dpps_r_resolution", 0.3);
   declare_parameter("pass_plan.dpps_r_max", 2.5);
   declare_parameter("pass_plan.dpps_theta_div", 16);
-  declare_parameter("pass_plan.receiver_max_acceleration", 3.0);
-  declare_parameter("pass_plan.receiver_max_velocity", 4.0);
+  // 受け手の運動能力は local planner が INPLAY 中に解決する上限（planning_acceleration
+  // 5.0 / max_vel 5.0）と揃える。3.0/4.0 では自軍の受け手を指令上限より 4 割遅く見積もり、
+  // 敵の迎撃モデル（3.0/5.5・マージンなし）より不利な扱いになっていた。
+  // 実測（パス距離 3.0m・飛行 1.49s）では受け手の到達半径 1.05m に対し敵 1.65m。
+  // 揃えると受け手 1.76m となり、ようやく敵と同等以上になる。
+  declare_parameter("pass_plan.receiver_max_acceleration", 5.0);
+  declare_parameter("pass_plan.receiver_max_velocity", 5.0);
   declare_parameter("pass_plan.desired_arrival_speed", 1.5);
   declare_parameter("pass_plan.min_initial_speed", 2.0);
   declare_parameter("pass_plan.max_initial_speed", 5.5);
