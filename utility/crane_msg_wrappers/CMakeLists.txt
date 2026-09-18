@@ -38,6 +38,9 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_world_model_wrapper_robot_id
     test/test_world_model_wrapper_robot_id.cpp
   )
+  ament_auto_add_gtest(test_ball_side_hysteresis
+    test/test_ball_side_hysteresis.cpp
+  )
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

@@ -29,11 +29,14 @@ public:
     -> Point
   {
     // ボールと反対側にあるゴールの角
+    // 左右の判定には getBallSideSign() を使う。生の ball().pos.y() の符号で決めると、
+    // ボールがセンターにあるときvisionノイズで毎フレーム反転し、この目標点が左右の角へ
+    // 数m飛ぶ。suitability関数（SecondThreatDefenderSession）もこの関数を呼ぶため、
+    // 目標位置とロボット選択の両方が同時に振動する。
     return {
       (world_model->fieldSize().x() * 0.5 - world_model->getDefenseHeight() - offset) *
         world_model->getOurSideSign(),
-      (world_model->getDefenseWidth() * 0.5 + offset) *
-        ((world_model->ball().pos.y() > 0.) ? -1. : 1.)};
+      (world_model->getDefenseWidth() * 0.5 + offset) * -world_model->getBallSideSign()};
   }
 
   Status update() override;
