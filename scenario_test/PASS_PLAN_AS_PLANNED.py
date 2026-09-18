@@ -43,11 +43,17 @@ RECEIVE_POINT_TOLERANCE = 1.0
 PLAN_LOOKBACK_SEC = 1.0
 
 # このテストでのキック検出しきい値 [m/s]。
-# 既定の 1.5 は、出し手がボールへ寄せる際の小突きも拾ってしまい、
-# 本来のパスが出る前に試行が SELF_TOUCH で解決してしまう。
-# 計画キック初速は実測で 3.7〜5.7 m/s、シュートは 6 m/s 以上なので、
-# 2.5 に上げれば「運び」を除いて「蹴った」だけを見られる。
-KICK_DETECT_SPEED = 2.5
+#
+# 以前は 2.5 にしていたが、これは **信号より高い** 誤りだった。
+# 計画キック初速は実測で 2.08〜2.34 m/s（受領点が近く desired_arrival_speed が
+# 1.5 のため）で、2.5 では計画どおりのパスを一度も検出できず、
+# 代わりに運び中の小突きを拾っていた。実測ではキック初速 2.64 m/s・
+# 飛距離 1.96 m の「キック」を検出し、計画受領点から 4.28 m 離れた地点で
+# 別の味方が触って WRONG_RECEIVER と判定していた。
+#
+# 運びの誤検出は分離速度（pass_helpers.KICK_SEPARATION_SPEED）で弾くので、
+# ここは計画初速の下限を下回る値にしておく。
+KICK_DETECT_SPEED = 1.6
 
 TRIALS = 3
 REQUIRED_SUCCESSES = 2
@@ -104,7 +110,8 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
         print(
             f"  観測: outcome={trial.outcome} kicker={trial.kicker_id} "
             f"receiver={trial.receiver_id} 接触点=({trial.end_pos[0]:.2f},{trial.end_pos[1]:.2f}) "
-            f"初速={trial.kick_speed:.2f} 距離={trial.pass_distance:.2f}"
+            f"初速={trial.kick_speed:.2f}(回帰{trial.kick_speed_fit:.2f} "
+            f"減速{trial.ball_decel_fit:.2f}) 距離={trial.pass_distance:.2f}"
         )
         if plan is None:
             # 計画が観測できないのが最も多い失敗。どの段で落ちたかを出す。
