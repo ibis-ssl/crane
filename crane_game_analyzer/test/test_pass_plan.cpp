@@ -83,9 +83,24 @@ TEST_F(PassPlanTest, UsesSameFlightForScoreAndFeasibility)
   EXPECT_EQ(analysis.recommended_pass_receiver_id, plan.receiver_id);
 }
 
+// 評価予算を使い切っても後続の受け手に届くか。
+//
+// 受け手3を原点寄りへ動かしてからテストする。既定配置の (3,-2) は、
+// ボール減速度を実測値 0.36 m/s^2 に直したあとでは飛行 2.49 秒となり、
+// パスラインから 3.33m 離れた敵でも 4.65m 到達できて本当に迎撃される。
+// 以前この配置で計画が立っていたのは、減速度を 0.7 と過大に見積もっていて
+// 飛行が 1.71 秒・敵到達 2.19m と出ていたためで、物理の方が誤っていた。
+// このテストが固定したいのは予算配分であって特定のパス距離ではないので、
+// 前提が成り立つ距離に縮める。
 TEST_F(PassPlanTest, BudgetReachesLaterReceiverEvenWhenFirstIsBlocked)
 {
   metric.setMaxCandidates(2);
+  for (auto & robot : msg.robot_info_ours) {
+    if (robot.id == 3) {
+      robot.pose.x = 1.5;
+      robot.pose.y = -1.0;
+    }
+  }
   crane_msgs::msg::RobotInfo enemy;
   enemy.id = 1;
   enemy.available_vision = true;
@@ -94,6 +109,35 @@ TEST_F(PassPlanTest, BudgetReachesLaterReceiverEvenWhenFirstIsBlocked)
   compute();
   ASSERT_EQ(analysis.pass_plan.state, analysis.pass_plan.STATE_PLANNING);
   EXPECT_EQ(analysis.pass_plan.receiver_id, 3);
+}
+
+// 計画の受け手以外の味方が先に触れてしまう受領点は採用しない。
+//
+// 実測では、キック較正を直したあとの失敗の最大要因がこれだった（15試行中4件）。
+// ボールは計画どおりの地点に届く（受領点誤差 0.03〜0.75m）のに、そこへ来たのが
+// 計画の受け手ではない、という形で契約が破れる。
+// ここでは受け手2の現在位置に別の味方を重ねて、受け手2が選ばれなくなることを見る。
+TEST_F(PassPlanTest, RejectsReceivePointThatAnotherFriendWouldReachFirst)
+{
+  compute();
+  ASSERT_EQ(analysis.pass_plan.state, analysis.pass_plan.STATE_PLANNING);
+  const int original_receiver = analysis.pass_plan.receiver_id;
+  ASSERT_GE(original_receiver, 0);
+
+  // 選ばれた受け手の真上に別の味方を置く。経路上・受領点のどちらでも
+  // この味方が先着するので、この受け手を使う候補は全滅するはず。
+  crane_msgs::msg::RobotInfo poacher;
+  poacher.id = 4;
+  poacher.available_vision = true;
+  poacher.available_feedback = true;
+  for (const auto & robot : msg.robot_info_ours) {
+    if (robot.id == original_receiver) {
+      poacher.pose = robot.pose;
+    }
+  }
+  msg.robot_info_ours.push_back(poacher);
+  compute();
+  EXPECT_NE(analysis.pass_plan.receiver_id, original_receiver);
 }
 
 TEST_F(PassPlanTest, ReleasesPlanOutsideInplay)

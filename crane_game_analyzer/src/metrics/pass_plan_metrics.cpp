@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <chrono>
 #include <crane_geometry/ddps.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_msg_wrappers/pass_rating.hpp>
 #include <crane_physics/ball_physics_model.hpp>
@@ -23,6 +24,50 @@ namespace
 {
 /// 計画の出し手がボールの保持を続けているか。
 /// 他の味方が明確に（kKickerHoldMargin 以上）近づいたら手放したとみなす。
+/// 計画の受け手以外の味方が、経路上のどこかでボールに先着できるか。
+///
+/// 計画は「この受け手が受け取る」という契約なので、他の味方が先に触れる点は
+/// 採用しない。実測では、キック較正を直したあとの失敗の最大要因がこれだった
+/// （15試行中4件）。ボールは計画どおりの地点に届く（受領点誤差 0.03〜0.75m）のに、
+/// そこへ来たのが計画の受け手ではない、という形で契約が破れる。
+/// 受領点そのものの競合だけでなく、経路を横切って途中で触ってしまう場合も含むので、
+/// 敵の迎撃評価と同じ「経路全体で先着できるか」を味方にも適用する。
+///
+/// 候補点ごとに全味方を評価すると重いので、経路までの距離で先に切る。
+/// 飛行時間内に届き得ない味方は最初から見ない。
+auto friendlyWouldSteal(
+  const WorldModelWrapper & wm, const Point & origin, const Point & target,
+  const StraightPassFlight & flight, int kicker_id, int receiver_id, uint8_t goalie_id,
+  const ReceiveFeasibilityParams & params) -> bool
+{
+  const double pass_distance = (target - origin).norm();
+  const double ball_time =
+    rollingTravelTime(pass_distance, flight.initial_speed, flight.deceleration);
+  if (!std::isfinite(ball_time) || ball_time <= 0.0) {
+    return false;
+  }
+  // 停止して到達する台形プロファイルで、この時間に覆える最大距離。
+  // 実際の到達判定より甘めに見積もる（甘い側で切り捨てても取りこぼさない）。
+  const double max_reach = 0.25 * params.receiver_max_acceleration * ball_time * ball_time;
+  const Segment pass_line{origin, target};
+  for (const auto & robot : wm.ours().robotsWhere().available().get()) {
+    const int id = static_cast<int>(robot->id);
+    if (id == kicker_id || id == receiver_id || robot->id == goalie_id) {
+      continue;
+    }
+    if (getClosestPointAndDistance(robot->pose.pos, pass_line).distance > max_reach) {
+      continue;
+    }
+    if (
+      straightPassInterceptionSlack(
+        origin, target, flight, robot->pose.pos, robot->vel.linear,
+        params.receiver_max_acceleration, params.receiver_max_velocity) <= 0.0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 auto kickerKeepsBall(const WorldModelWrapper & wm, int kicker_id) -> bool
 {
   constexpr double kKickerHoldMargin = 0.5;
@@ -160,13 +205,13 @@ auto PassPlanMetric::compute(MetricContext & ctx) -> void
     // 再計算1回あたりの所要時間と評価候補数を間引きログに記録
     RCLCPP_INFO_THROTTLE(
       rclcpp::get_logger("PassPlanMetric"), *ctx.clock, 5000,
-      "recompute %.2f ms, 評価候補 %d (feasibility棄却 %d, スコア棄却 %d, 最良スコア %.2f / 下限 "
-      "%.2f), "
+      "recompute %.2f ms, 評価候補 %d (feasibility棄却 %d, 味方横取り棄却 %d, スコア棄却 %d, "
+      "最良スコア %.2f / 下限 %.2f), "
       "最良点(%.2f,%.2f) 内訳[距離 %.2f, ゴール角+%.2f, 自ゴール-%.2f, 敵ゴール %.2f, 迎撃 %.2f, "
       "遮蔽 %.2f], state=%u",
-      elapsed_ms, last_evaluated_, last_rejected_infeasible_, last_rejected_low_score_,
-      last_best_score_, min_pass_score_, last_best_point_.x(), last_best_point_.y(),
-      last_best_rating_.distance_factor, last_best_rating_.goal_angle_bonus,
+      elapsed_ms, last_evaluated_, last_rejected_infeasible_, last_rejected_friendly_,
+      last_rejected_low_score_, last_best_score_, min_pass_score_, last_best_point_.x(),
+      last_best_point_.y(), last_best_rating_.distance_factor, last_best_rating_.goal_angle_bonus,
       last_best_rating_.own_goal_penalty, last_best_rating_.their_goal_factor,
       last_best_rating_.intercept_score, last_best_rating_.shadow_score,
       static_cast<unsigned>(cached_plan_.state));
@@ -251,6 +296,7 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   int evaluated = 0;
   int rejected_infeasible = 0;
   int rejected_low_score = 0;
+  int rejected_friendly = 0;
   double best_score_seen = 0.0;
   PassRating best_rating_seen{};
   Point best_point_seen = Point::Zero();
@@ -294,6 +340,15 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
         ++rejected_infeasible;
         continue;
       }
+      // 味方の横取りゲート（採点より安価なので先に置く）
+      if (
+        friendlyWouldSteal(
+          wm, pass_origin, point,
+          StraightPassFlight{feas.kick_speed, feasibility_.ball_deceleration}, kicker_id,
+          static_cast<int>(receiver->id), goalie_id, feasibility_)) {
+        ++rejected_friendly;
+        continue;
+      }
       // 採点（重い: 敵 slack・遮蔽の評価を含む）
       const auto rating = rate_point(point, feas);
       const double score = rating.score;
@@ -320,6 +375,7 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   last_evaluated_ = evaluated;
   last_rejected_infeasible_ = rejected_infeasible;
   last_rejected_low_score_ = rejected_low_score;
+  last_rejected_friendly_ = rejected_friendly;
   last_best_score_ = best_score_seen;
   last_best_rating_ = best_rating_seen;
   last_best_point_ = best_point_seen;

@@ -107,6 +107,8 @@ private:
   // feasibility とスコアのどちらで落ちたかはログに出ないと判別できない。
   int last_rejected_infeasible_ = 0;
   int last_rejected_low_score_ = 0;
+  /// 味方の横取りで落とした候補数。受領点の競合と経路横断の両方を含む。
+  int last_rejected_friendly_ = 0;
   double last_best_score_ = 0.0;
   /// 最良候補のスコア内訳。どの係数が下限割れの原因かをログで切り分ける。
   PassRating last_best_rating_{};

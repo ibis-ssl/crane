@@ -175,7 +175,9 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // 揃えると受け手 1.76m となり、ようやく敵と同等以上になる。
   declare_parameter("pass_plan.receiver_max_acceleration", 5.0);
   declare_parameter("pass_plan.receiver_max_velocity", 5.0);
-  declare_parameter("pass_plan.desired_arrival_speed", 1.5);
+  // 受領点での到達速度。詳細な実測値は ReceiveFeasibilityParams のコメント参照。
+  // 減速度が実測 0.36 m/s^2 と小さいため、1.5 では受領点通過後 3.1m 転がる。
+  declare_parameter("pass_plan.desired_arrival_speed", 1.0);
   declare_parameter("pass_plan.min_initial_speed", 2.0);
   declare_parameter("pass_plan.max_initial_speed", 5.5);
   declare_parameter("pass_plan.feasibility_margin", 0.3);
