@@ -9,6 +9,7 @@
 
 #include <crane_msgs/msg/pass_plan.hpp>
 #include <crane_physics/pass_feasibility.hpp>
+#include <crane_physics/pass_rating_math.hpp>
 #include <crane_physics/slack_time_config.hpp>
 #include <optional>
 #include <vector>
@@ -20,12 +21,12 @@ namespace crane::metrics
 {
 
 /**
- * @brief パス計画メトリクス（M2: シャドー運用・消費者なし）
+ * @brief 通常プレーの出し手と受け手が共有する直進パス計画
  *
  * 各味方（goalie/kicker 除く）の現在位置と周辺グリッド点を候補受領点とし、
  * feasibility ゲート（受け手先着）で安価に早期棄却→ratePassCandidate で採点→
- * ヒステリシス選定して PassPlan を生成する。既存 pass_target 系と並行配信するのみで
- * 消費者はいない。可視化レイヤ analyzer/pass_plan で pass_target と同時描画し新旧比較する。
+ * ヒステリシス選定して PassPlan を生成する。キック検知後は受け手と受領点を固定し、
+ * 停止・中断・タイムアウトで解除する。
  *
  * コスト: 本メトリクスは analyzer 共有の game_analysis publish に相乗りするため、
  * 重い再計算は recompute_interval_sec_ でデシメーションし、直近プランをキャッシュして
@@ -60,6 +61,10 @@ public:
   }
   auto setMaxCandidates(int n) -> void { max_candidates_ = n; }
   auto setMinPassScore(double s) -> void { min_pass_score_ = s; }
+  /// 受領点に要求するフィールド境界からの余裕 [m]
+  auto setReceivePointFieldMargin(double m) -> void { receive_point_field_margin_ = m; }
+  /// 計画保持中に適用する下限の緩和率（1.0 で緩和なし）
+  auto setMinPassScoreReleaseRatio(double r) -> void { min_pass_score_release_ratio_ = r; }
   auto setReceivePointImprovement(double ratio) -> void { receive_point_improvement_ = ratio; }
   auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 1.0) -> void
   {
@@ -91,10 +96,21 @@ private:
   // デシメーション
   double recompute_interval_sec_ = 0.1;  // 既定 10Hz
   std::optional<rclcpp::Time> last_recompute_time_;
+  rclcpp::Clock::SharedPtr selection_clock_;
+  std::optional<rclcpp::Time> flight_started_at_;
+  Point planned_origin_ = Point::Zero();
   uint32_t plan_seq_ = 0;
 
   // 計測（コスト可視化: 直近再計算で feasibility+採点を試みた候補数）
   int last_evaluated_ = 0;
+  // 棄却理由の内訳。評価候補が残っているのに計画が立たないとき、
+  // feasibility とスコアのどちらで落ちたかはログに出ないと判別できない。
+  int last_rejected_infeasible_ = 0;
+  int last_rejected_low_score_ = 0;
+  double last_best_score_ = 0.0;
+  /// 最良候補のスコア内訳。どの係数が下限割れの原因かをログで切り分ける。
+  PassRating last_best_rating_{};
+  Point last_best_point_ = Point::Zero();
 
   // 候補生成パラメータ（getDPPSPoints）
   double dpps_r_resolution_ = 0.3;
@@ -110,6 +126,21 @@ private:
   };
   double slack_scale_ = 1.0;
   double min_pass_score_ = 0.5;
+  /// 受領点をフィールド境界からどれだけ内側に限るか [m]。
+  /// フィールド内であることだけを条件にすると、敵から最も遠いという理由で
+  /// タッチライン際（実測ではラインまで 0.1m）の受領点が選ばれる。
+  /// そこは受け手が後ろに回り込めず、Receive の software bumper が
+  /// ボール進行方向へ目標をずらす先も場外になるため、受け損なって
+  /// ボールがそのまま出る（実測: 9試行中5回が OUT_OF_PLAY）。
+  /// 実行できない計画を立てないよう、境界に余裕を要求する。
+  double receive_point_field_margin_ = 0.5;
+  /// 計画を保持している間だけ下限を緩める比率（シュミットトリガ）。
+  /// 受け手選定と受領点にはヒステリシスがあるのに、スコア判定には無かった。
+  /// スコアが下限のすぐ上に居座る配置では、10Hz の再計算ごとに計画が
+  /// 成立・消滅を繰り返す（実測: score 0.22〜0.37 / 下限 0.20 で、
+  /// PLANNING が 0.06〜0.57 秒しか続かなかった）。
+  /// 取得は min_pass_score_、保持はその release_ratio 倍で判定する。
+  double min_pass_score_release_ratio_ = 0.6;
 
   // 可視化専用サブレイヤ（KickEventDetector と同様に自前ビルダーを所有・自己 flush）
   VisualizerMessageBuilder::SharedPtr viz_ =

@@ -56,6 +56,9 @@ ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp)
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_auto_add_gtest(test_pass_plan test/test_pass_plan.cpp)
+  ament_auto_add_gtest(test_selection_hysteresis test/test_selection_hysteresis.cpp)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()

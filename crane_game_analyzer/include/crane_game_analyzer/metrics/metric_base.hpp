@@ -42,7 +42,7 @@ enum class MetricId {
 
   // パス評価
   PASS_TARGET,  ///< パスターゲット選定
-  PASS_PLAN,    ///< パス計画（誰が・誰に・どの受領点へ・シャドー運用）
+  PASS_PLAN,    ///< 出し手・受け手が共有するパス計画
 };
 
 /**
