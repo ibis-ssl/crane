@@ -125,6 +125,21 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
             # いないか較正が古い。計画値との突き合わせに必須。
             f"実測減速度={trial.ball_decel_fit:.2f}"
         )
+        # Tracker のキック検出。自前の検出（しきい値＋近接＋分離速度）と並べて
+        # 出す。両者が一致するなら自前の推定は捨ててよい。
+        tracker_kick = (
+            pass_plan_log.tracker_kick_near(trial.kick_wall_time)
+            if trial.kick_wall_time
+            else None
+        )
+        if tracker_kick is None:
+            print("  Tracker: キック検出なし（生成側が kicked_ball を出していない）")
+        else:
+            print(
+                f"  Tracker: kicker={tracker_kick['robot_id']}(team={tracker_kick['team']}) "
+                f"初速={tracker_kick['speed']:.2f} vz={tracker_kick['vz']:.2f} "
+                f"開始点=({tracker_kick['x']:.2f},{tracker_kick['y']:.2f})"
+            )
         if plan is None:
             # 計画が観測できないのが最も多い失敗。どの段で落ちたかを出す。
             print(

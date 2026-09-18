@@ -98,13 +98,28 @@ class PassPlanLog:
     def ball_peak_speed(self, start: float, end: float) -> float:
         """区間内で観測されたボール速度の最大値 [m/s]。無ければ NaN。
 
-        crane の EKF 推定（world_model の ball_info.velocity）を使う。
-        pytest 側の vision 位置差分は 0.08 秒窓の差分なので外れ値が出る。
-        実際、差分推定が 6〜8 m/s を示した試行を「シュート」と誤分類し、
-        存在しない問題を追いかけた。キックの分類は EKF 側で行うこと。
+        world_model の ball_info.velocity を使う。tracker がボールを見えている
+        間はこれが tracker の推定値そのもの（world_model_data_provider の
+        updateBallInfo）。pytest 側の vision 位置差分は 0.08 秒窓の差分なので
+        外れ値が出る。実際、差分推定が 6〜8 m/s を示した試行を「シュート」と
+        誤分類し、存在しない問題を追いかけた。キックの分類はこちらで行うこと。
         """
         speeds = [r["speed"] for r in self.records("ball") if start <= r["t"] <= end]
         return max(speeds) if speeds else float("nan")
+
+    def tracker_kick_near(self, when: float, window: float = 1.5) -> dict | None:
+        """指定時刻に最も近い Tracker のキック検出。無ければ None。
+
+        Tracker は蹴ったロボットの ID・初速・キック時刻をそのまま持っている
+        ので、pytest 側のしきい値による自前検出より素性が良い。ただし
+        tracked_frame の生成側が kicked_ball を入れるとは限らない
+        （proto のコメントが optional と明記している）ため、無いことを
+        前提に使うこと。
+        """
+        kicks = [
+            r for r in self.records("tracker_kick") if abs(r["t"] - when) <= window
+        ]
+        return min(kicks, key=lambda r: abs(r["t"] - when)) if kicks else None
 
     def assign_at(self, when: float) -> dict | None:
         return self.latest_before("assign", when)
@@ -133,6 +148,11 @@ class PassPlanLog:
         )
 
 
+# Tracker のマルチキャストポート。crane_bringup/launch/crane.launch.xml の
+# tracker_port と同じ値にすること（SSL 既定の 10010 ではない）。
+TRACKER_PORT = 11010
+
+
 class _RecorderProcess:
     """sidecar の起動と停止。"""
 
@@ -150,10 +170,18 @@ class _RecorderProcess:
         # その python には rclpy も numpy も無く、rclpy.node の import が
         # ModuleNotFoundError: numpy で落ちる（rosgraph_msgs 経由）。
         # setsid 相当（start_new_session）でプロセスグループを分け、確実に止められるようにする。
+        # tracker_node も一緒に上げる。crane 本体は tracked_frame を内部で parse
+        # するだけで ROS トピックには出さないため、Tracker のキック検出
+        # （蹴ったロボット・初速・キック時刻）を取るには受信ノードが別途要る。
+        # ポートは crane.launch.xml の tracker_port と揃える（既定 10010 ではない）。
+        # start_new_session でプロセスグループを分けているので、stop() の killpg で
+        # 両方まとめて止まる。
         script = os.path.join(scenario_dir, "pass_plan_recorder.py")
         command = (
             "source /opt/ros/jazzy/setup.bash && "
             f"source {workspace_root}/install/local_setup.bash && "
+            "ros2 run robocup_ssl_comm tracker_node --ros-args "
+            f"-p multicast_port:={TRACKER_PORT} >/dev/null 2>&1 & "
             f"exec /usr/bin/python3 {script} --out {self.path}"
         )
         # 子プロセスが動いている間の出力先。stop() まで開いたままにする。

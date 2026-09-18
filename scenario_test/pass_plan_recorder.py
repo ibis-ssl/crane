@@ -46,6 +46,7 @@ from rclpy.qos import (
     QoSProfile,
     QoSReliabilityPolicy,
 )
+from robocup_ssl_msgs.msg import TrackedFrame
 
 from crane_msgs.msg import PassPlan, PlaySituation, RobotSelectResults, WorldModel
 
@@ -96,6 +97,13 @@ class PassPlanRecorder(Node):
         self.create_subscription(
             RobotSelectResults, "/robot_select_results", self._on_select_results, 10
         )
+        # Tracker のキック検出。crane 本体は tracked_frame を内部で parse するだけで
+        # ROS には出さないので、robocup_ssl_comm の tracker_node を併走させて拾う
+        # （起動は pass_plan_log._RecorderProcess）。
+        self.create_subscription(
+            TrackedFrame, "/tracked_frame", self._on_tracked_frame, 10
+        )
+        self._last_kick_stamp = None
         self._emit({"kind": "meta", "event": "recorder_started"})
 
     # ─── 出力 ────────────────────────────────────────────────────────────────
@@ -222,9 +230,10 @@ class PassPlanRecorder(Node):
         """動いている間のボール速度を記録する。キック初速の較正に使う。
 
         pytest 側は vision の位置差分でしか速度を測れず、0.08 秒窓の差分では
-        減速度の推定が 0.7 設定に対して 1.3〜2.9 とばらついた。crane は
-        EKF でボール速度を推定して world_model に載せているので、
-        較正にはこちらを使う。
+        減速度の推定が 0.7 設定に対して 1.3〜2.9 とばらついた。world_model の
+        ball_info はこれより素性が良い。tracker がボールを見えている間は
+        tracker の推定値がそのまま入り（world_model_data_provider.cpp の
+        updateBallInfo）、見えていないときだけ vision 由来になる。
 
         静止中は書かない（JSONL が膨れる）。しきい値は「転がっている」と
         言える下限に置く。
@@ -242,6 +251,47 @@ class PassPlanRecorder(Node):
                 "speed": round(speed, 4),
                 "detected": bool(ball.detected),
                 "command": int(msg.play_situation.command.value),
+            }
+        )
+
+    # ─── /tracked_frame ──────────────────────────────────────────────────────
+
+    def _on_tracked_frame(self, msg: TrackedFrame) -> None:
+        """Tracker が検出したキックを記録する。
+
+        pytest 側の自前検出は「ボール速度がしきい値を越えた」「一番近い味方が
+        居る」「そのロボットから離れていく」の合成で、しきい値の置き方次第で
+        ドリブルの小突きを拾ったり、実際のパスを取り逃したりする。Tracker は
+        蹴ったロボットの ID・初速・キック時刻をそのまま持っているので、
+        推定を挟まずに済む。
+
+        ただしこの情報を出すかどうかは tracked_frame の生成側（autoref）次第
+        なので、来ない可能性を前提に「来たら記録する」だけにして、判定を
+        これに依存させない。両方を出力して突き合わせてから乗り換える。
+        """
+        # has_field の既定値は 255（全ビット立ち）なので、フラグだけでは
+        # 「生成側が入れた」ことを意味しない。実値でも守る。
+        if not msg.has_field & msg.KICKED_BALL_FIELD_SET:
+            return
+        kicked = msg.kicked_ball
+        stamp = float(kicked.start_timestamp)
+        if stamp <= 0.0 or stamp == self._last_kick_stamp:
+            return
+        self._last_kick_stamp = stamp
+        has_robot = bool(kicked.has_field & kicked.ROBOT_ID_FIELD_SET)
+        self._emit(
+            {
+                "kind": "tracker_kick",
+                "start_timestamp": stamp,
+                "x": round(float(kicked.pos.x), 4),
+                "y": round(float(kicked.pos.y), 4),
+                "vx": round(float(kicked.vel.x), 4),
+                "vy": round(float(kicked.vel.y), 4),
+                # z が立っていればチップ。直進パスと区別できる。
+                "vz": round(float(kicked.vel.z), 4),
+                "speed": round(math.hypot(float(kicked.vel.x), float(kicked.vel.y)), 4),
+                "robot_id": int(kicked.robot_id.id) if has_robot else None,
+                "team": int(kicked.robot_id.team.value) if has_robot else None,
             }
         )
 
