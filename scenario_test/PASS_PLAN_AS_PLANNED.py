@@ -103,6 +103,14 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
             if trial.kick_wall_time
             else None
         )
+        # キックの分類は EKF 由来の速度で行う。vision の位置差分は外れ値が出る。
+        ekf_peak = (
+            pass_plan_log.ball_peak_speed(
+                trial.kick_wall_time - 0.3, trial.kick_wall_time + 0.8
+            )
+            if trial.kick_wall_time
+            else float("nan")
+        )
         verdict, error = _verdict(trial, plan)
         verdicts.append(verdict)
 
@@ -111,7 +119,11 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
             f"  観測: outcome={trial.outcome} kicker={trial.kicker_id} "
             f"receiver={trial.receiver_id} 接触点=({trial.end_pos[0]:.2f},{trial.end_pos[1]:.2f}) "
             f"初速={trial.kick_speed:.2f}(回帰{trial.kick_speed_fit:.2f} "
-            f"減速{trial.ball_decel_fit:.2f}) 距離={trial.pass_distance:.2f}"
+            f"EKF{ekf_peak:.2f}) 距離={trial.pass_distance:.2f} "
+            # 計画側は yaml の減速度を前提に初速を決める。ここに出るのは
+            # シミュレータの実測値なので、両者がずれていれば設定が効いて
+            # いないか較正が古い。計画値との突き合わせに必須。
+            f"実測減速度={trial.ball_decel_fit:.2f}"
         )
         if plan is None:
             # 計画が観測できないのが最も多い失敗。どの段で落ちたかを出す。

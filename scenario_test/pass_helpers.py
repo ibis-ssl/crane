@@ -515,12 +515,18 @@ def setup_pass_plan_pair(field: Field) -> dict:
     # 出し手はキックまでにボールを運ぶ（実測 1.0〜1.5m）。運んだぶん影がずれても
     # 覆えるよう余裕を足す。
     shadow_half += BLOCKER_CARRY_MARGIN
-    step = 2.0 * ROBOT_RADIUS
-    count = min(int(2.0 * shadow_half / step) + 1, 10)
+    # 機数は blue の残り（GK 以外の 10 機）が上限。上限に当たったら間隔を広げて
+    # 範囲全体へ均等配分する。間隔を固定したまま機数だけ頭打ちにすると、列が
+    # -shadow_half 側にしか伸びず、ゴールの片側が丸ごと開く。
+    max_blockers = 10
+    needed = int(2.0 * shadow_half / (2.0 * ROBOT_RADIUS)) + 1
+    count = min(needed, max_blockers)
+    step = (2.0 * shadow_half / (count - 1)) if count > 1 else 0.0
     field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
     for robot_id in range(1, count + 1):
-        offset = -shadow_half + (robot_id - 1) * step
-        field.send_blue_robot(robot_id, block_x, offset, 0.0)
+        field.send_blue_robot(
+            robot_id, block_x, -shadow_half + (robot_id - 1) * step, 0.0
+        )
     field.send_ball(ball_x, 0.0)
     return yellows
 

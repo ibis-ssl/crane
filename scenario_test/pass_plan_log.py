@@ -95,6 +95,17 @@ class PassPlanLog:
         ]
         return usable[-1] if usable else None
 
+    def ball_peak_speed(self, start: float, end: float) -> float:
+        """区間内で観測されたボール速度の最大値 [m/s]。無ければ NaN。
+
+        crane の EKF 推定（world_model の ball_info.velocity）を使う。
+        pytest 側の vision 位置差分は 0.08 秒窓の差分なので外れ値が出る。
+        実際、差分推定が 6〜8 m/s を示した試行を「シュート」と誤分類し、
+        存在しない問題を追いかけた。キックの分類は EKF 側で行うこと。
+        """
+        speeds = [r["speed"] for r in self.records("ball") if start <= r["t"] <= end]
+        return max(speeds) if speeds else float("nan")
+
     def assign_at(self, when: float) -> dict | None:
         return self.latest_before("assign", when)
 

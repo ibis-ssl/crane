@@ -60,6 +60,8 @@ STATE_NAMES = {
 
 # 役割割当のうち、PassPlan の成立に直接関わるもの。
 WATCHED_SESSIONS = ("attacker_skill", "pass_receive")
+# ボールを記録し始める速度 [m/s]。静止中は書かない（JSONL が膨れる）。
+BALL_LOG_MIN_SPEED = 0.3
 
 
 def _finite(*values) -> bool:
@@ -105,6 +107,7 @@ class PassPlanRecorder(Node):
     # ─── /world_model ────────────────────────────────────────────────────────
 
     def _on_world_model(self, msg: WorldModel) -> None:
+        self._record_ball(msg)
         plan = msg.game_analysis.pass_plan
         point = plan.receive_point
 
@@ -214,6 +217,33 @@ class PassPlanRecorder(Node):
                 }
             )
         return out
+
+    def _record_ball(self, msg: WorldModel) -> None:
+        """動いている間のボール速度を記録する。キック初速の較正に使う。
+
+        pytest 側は vision の位置差分でしか速度を測れず、0.08 秒窓の差分では
+        減速度の推定が 0.7 設定に対して 1.3〜2.9 とばらついた。crane は
+        EKF でボール速度を推定して world_model に載せているので、
+        較正にはこちらを使う。
+
+        静止中は書かない（JSONL が膨れる）。しきい値は「転がっている」と
+        言える下限に置く。
+        """
+        ball = msg.ball_info
+        speed = math.hypot(float(ball.velocity.x), float(ball.velocity.y))
+        if speed < BALL_LOG_MIN_SPEED:
+            return
+        self._emit(
+            {
+                "kind": "ball",
+                "ros_time": msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9,
+                "x": round(float(ball.position.x), 4),
+                "y": round(float(ball.position.y), 4),
+                "speed": round(speed, 4),
+                "detected": bool(ball.detected),
+                "command": int(msg.play_situation.command.value),
+            }
+        )
 
     # ─── /robot_select_results ───────────────────────────────────────────────
 
