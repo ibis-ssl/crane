@@ -130,6 +130,52 @@ TEST_F(PassPlanTest, FreezesReceiverDespiteDelayedKickDetectionAndChangedAttacke
   EXPECT_EQ(analysis.pass_plan.state, before.STATE_INACTIVE);
 }
 
+// 出し手の推薦が入れ替わっても、計画を保持している間は出し手を差し替えない。
+//
+// AttackerMetric のスコアは `10.0 / 到達距離` に二値条件の乗算が掛かる構造で、
+// 実測では推薦が 1.0〜1.6 秒ごとに入れ替わる。そのたびに出し手を差し替えると
+// plan_id が変わり受領点が跳ぶ（実測: PLANNING 継続 1.49 秒の途中で受け手が
+// 1→10、受領点が 3.0m 移動）。受け手は先回りする先を決められない。
+// 計画は契約なので、出し手がボールを保持している限り維持する。
+TEST_F(PassPlanTest, KeepsKickerWhileHoldingPlanDespiteAttackerRecommendationChange)
+{
+  compute();
+  const auto before = analysis.pass_plan;
+  ASSERT_EQ(before.state, before.STATE_PLANNING);
+  ASSERT_EQ(before.kicker_id, 1);
+
+  // 推薦だけが別のロボットへ移る。ボールの位置は変えないので、
+  // 出し手（ID 1、原点＝ボール上）が最もボールに近いまま。
+  analysis.recommended_attacker_id = before.receiver_id;
+  compute();
+  EXPECT_EQ(analysis.pass_plan.kicker_id, before.kicker_id);
+  EXPECT_EQ(analysis.pass_plan.plan_id, before.plan_id);
+  EXPECT_EQ(analysis.pass_plan.receive_point, before.receive_point);
+}
+
+// ボールを手放したら推薦に追従する。保持は「近いままである限り」の条件付き。
+TEST_F(PassPlanTest, FollowsAttackerRecommendationOnceKickerLosesBall)
+{
+  compute();
+  const auto before = analysis.pass_plan;
+  ASSERT_EQ(before.state, before.STATE_PLANNING);
+  ASSERT_EQ(before.kicker_id, 1);
+
+  // 出し手をボールから引き離し、別の味方がボール上に来る。
+  for (auto & robot : msg.robot_info_ours) {
+    if (robot.id == 1) {
+      robot.pose.x = 4.0;
+      robot.pose.y = 4.0;
+    } else if (robot.id == 2) {
+      robot.pose.x = 0.0;
+      robot.pose.y = 0.0;
+    }
+  }
+  analysis.recommended_attacker_id = 2;
+  compute();
+  EXPECT_EQ(analysis.pass_plan.kicker_id, 2);
+}
+
 // 出し手がボールを運んでいる間は計画を解除しない。
 //
 // Attacker はキック前にボールを運んで体勢を整えるので、その間ボール速度は

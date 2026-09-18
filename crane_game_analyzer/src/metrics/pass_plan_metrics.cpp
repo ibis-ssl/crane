@@ -21,6 +21,33 @@ namespace crane::metrics
 {
 namespace
 {
+/// 計画の出し手がボールの保持を続けているか。
+/// 他の味方が明確に（kKickerHoldMargin 以上）近づいたら手放したとみなす。
+auto kickerKeepsBall(const WorldModelWrapper & wm, int kicker_id) -> bool
+{
+  constexpr double kKickerHoldMargin = 0.5;
+  if (kicker_id < 0) {
+    return false;
+  }
+  const auto kicker = wm.getOurRobot(static_cast<uint8_t>(kicker_id));
+  if (!kicker) {
+    return false;
+  }
+  const double kicker_distance = kicker->getDistance(wm.ball().pos);
+  for (const auto & robot : wm.ours().robotsWhere().available().excludeGoalie().get()) {
+    if (static_cast<int>(robot->id) == kicker_id) {
+      continue;
+    }
+    if (robot->getDistance(wm.ball().pos) + kKickerHoldMargin < kicker_distance) {
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
+
+namespace
+{
 /// 計画の出し手がボールを保持しているとみなす距離 [m]。
 /// ロボット半径 0.09 + ドリブラー前方の余裕。これより近ければ、
 /// ボールが動いていても「運んでいる」と判断して計画を保持する。
@@ -107,10 +134,22 @@ auto PassPlanMetric::compute(MetricContext & ctx) -> void
     ctx.analysis.pass_plan = cached_plan_;
     return;
   }
+  // 出し手の推薦が変わっても、計画を保持している間は追従しない。
+  // AttackerMetric のスコアは `10.0 / 到達距離` に二値条件の乗算が掛かる構造で、
+  // 実測では推薦が 1.0〜1.6 秒ごとに入れ替わる。そのたびに再計算して
+  // kicker_id を差し替えると plan_id が変わり、受領点が跳ぶ
+  // （実測: 1.49 秒の PLANNING 継続中に受け手が 1→10、受領点が 3.0m 移動）。
+  // 受け手は先回りする先を決められず、パスが成立しない。
+  // 計画自体が出し手の割当を固定する（AttackerSkillSession は計画の kicker を
+  // 最優先で選ぶ）ので、ここで追従しないことが役割の安定にもつながる。
+  // ボールを手放したとき（他の味方が明確に近い）は追従する。
+  const bool follow_attacker_change =
+    ctx.analysis.recommended_attacker_id >= 0 &&
+    cached_plan_.kicker_id != ctx.analysis.recommended_attacker_id &&
+    (!usable || !kickerKeepsBall(wm, cached_plan_.kicker_id));
   const bool due = !last_recompute_time_.has_value() ||
                    (cached_plan_.state != Plan::STATE_INACTIVE && !usable) || flight_started_at_ ||
-                   (ctx.analysis.recommended_attacker_id >= 0 &&
-                    cached_plan_.kicker_id != ctx.analysis.recommended_attacker_id) ||
+                   follow_attacker_change ||
                    (now - last_recompute_time_.value()).seconds() >= recompute_interval_sec_;
   if (due) {
     last_recompute_time_ = now;
@@ -163,8 +202,13 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   const Point pass_origin = computePassOrigin(ctx);
   planned_origin_ = pass_origin;
 
-  // 出し手: 推奨アタッカー、無ければボール最近傍味方にフォールバック
-  int kicker_id = ctx.analysis.recommended_attacker_id;
+  // 出し手: 計画を保持している間はその出し手を維持する。推薦が揺れても
+  // 契約を差し替えない（compute() の follow_attacker_change と同じ理由）。
+  const bool keep_kicker = cached_plan_.state == crane_msgs::msg::PassPlan::STATE_PLANNING &&
+                           isUsablePassPlan(cached_plan_, wm) &&
+                           kickerKeepsBall(wm, cached_plan_.kicker_id);
+  // それ以外は推奨アタッカー、無ければボール最近傍味方にフォールバック
+  int kicker_id = keep_kicker ? cached_plan_.kicker_id : ctx.analysis.recommended_attacker_id;
   if (kicker_id < 0) {
     // GKの排出は専用の判断経路に任せる
     const auto nearest = wm.getNearestRobotWithDistanceFromPoint(
