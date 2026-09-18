@@ -6,7 +6,7 @@
 
 - `ENTRY_POINT`: 内部スキルとパス先をリセットし、次の行動を選ぶ。
 - `RECEIVE`: 移動中のボールを `Receive` に委譲して受け取る。ボールが停止・通過・接触したら `ENTRY_POINT` へ戻る。
-- `KICK`: ゴール角度、`game_analysis.pass_target_id`、ボール位置に応じて `GoalKick` または `KickOld` を実行する。ボールが動いていてもロボットが近い間は状態を維持し、再遷移の発振を避ける。
+- `KICK`: ゴール角度、`game_analysis.pass_plan`、ボール位置に応じて `GoalKick` または `KickOld` を実行する。パスでは計画された受領点・初速を使う。ボールが動いていてもロボットが近い間は状態を維持し、再遷移の発振を避ける。
 
 ## 安全制約
 

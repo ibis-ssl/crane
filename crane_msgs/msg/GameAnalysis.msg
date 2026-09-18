@@ -40,5 +40,5 @@ geometry_msgs/Point recommended_sub_attacker_position
 float32 sub_attacker_position_score
 bool has_sub_attacker_position  # 有効な位置が存在するか
 
-# パス計画（M2: シャドー運用・消費者なし。M3 以降で出し手/受け手が消費）
+# 通常プレーで出し手・受け手が共有する直進パス計画
 PassPlan pass_plan

@@ -8,8 +8,10 @@
 #define CRANE_MSG_WRAPPERS__PASS_RATING_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
+#include <crane_physics/pass_interception.hpp>
 #include <crane_physics/pass_rating_math.hpp>
 #include <crane_physics/slack_time_config.hpp>
+#include <optional>
 
 namespace crane
 {
@@ -25,12 +27,14 @@ struct PassRatingConfig
     .robot_max_acceleration = 3.0,
     .robot_max_velocity = 5.5,
   };
+  /// 指定時はこの初速・減速で全敵の経路上迎撃を評価する（直進パス用）。
+  std::optional<StraightPassFlight> straight_flight = std::nullopt;
 };
 
 /**
  * @brief パス候補（起点→受領点）を評価しスコアと内訳を返す
  *
- * PassTargetMetric::calcScore と同一の評価。world_model から角度幅・敵slack・遮蔽等の
+ * 既定は PassTargetMetric::calcScore と同一の評価。world_model から角度幅・敵slack・遮蔽等の
  * スカラを集め、crane_physics の combinePassScore で合成する。receiver 走行時間や
  * リードパス（受領点≠受け手現在位置）の扱いは含まない（上位マイルストーンで拡張）。
  */

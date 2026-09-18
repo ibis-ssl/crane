@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
+#include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/attacker.hpp>
@@ -53,6 +54,14 @@ public:
       skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
       visualizer->layer = "skill/" + skill->name;
     }
+    const auto & plan = world_model->getMsg().game_analysis.pass_plan;
+    if (
+      isUsablePassPlan(plan, *world_model) &&
+      plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT &&
+      robots.front().id == plan.kicker_id) {
+      skill->commander()->stopHere().lookAtBall().kickStraight(0.0);
+      return {SessionBase::Status::RUNNING, {skill->getRobotCommand()}};
+    }
 
     std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
     {
@@ -81,6 +90,7 @@ public:
   {
     auto wm = world_model;                   // shared_ptrをコピー
     auto game_analysis = getGameAnalysis();  // GameAnalysisをコピー
+    game_analysis.pass_plan = wm->getMsg().game_analysis.pass_plan;
 
     // デバッグ用：推奨ロボットIDをログ出力
     static int last_logged_id = -999;
@@ -93,6 +103,15 @@ public:
     }
 
     return [wm, game_analysis](const std::shared_ptr<RobotInfo> & robot) {
+      if (isUsablePassPlan(game_analysis.pass_plan, *wm)) {
+        if (robot->id == game_analysis.pass_plan.receiver_id) {
+          return 1000.0;
+        }
+        if (robot->id == game_analysis.pass_plan.kicker_id) {
+          return 0.0;
+        }
+        return robot->getDistance(wm->ball().pos) + RECOMMENDED_ATTACKER_MARGIN;
+      }
       // game_analysisで推奨ロボットが設定されている場合、そのロボットを最優先
       if (
         game_analysis.recommended_attacker_id >= 0 &&

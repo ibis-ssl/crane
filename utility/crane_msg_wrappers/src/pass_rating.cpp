@@ -65,7 +65,20 @@ auto ratePassCandidate(
                             return pass_dir.dot(enemy->pose.pos - target) <= 0.0;
                           }) |
                           ranges::views::transform(calc_slack_time);
-  const double worst_slack = ranges::empty(slack_times_view) ? 1.0 : ranges::min(slack_times_view);
+  const double worst_slack = [&]() {
+    if (!config.straight_flight) {
+      return ranges::empty(slack_times_view) ? 1.0 : ranges::min(slack_times_view);
+    }
+    // 直進計画ではチップによる救済を仮定しない。受領点の先から寄せる敵も含める。
+    double worst = config.slack_scale;
+    for (const auto & enemy : enemies) {
+      worst = std::min(
+        worst, straightPassInterceptionSlack(
+                 pass_origin, target, *config.straight_flight, enemy->pose.pos, enemy->vel.linear,
+                 config.enemy_slack.robot_max_acceleration, config.enemy_slack.robot_max_velocity));
+    }
+    return worst;
+  }();
 
   const double shadow_score = evaluatePassShadow(pass_origin, target, enemies);
 
