@@ -73,6 +73,9 @@ class PassTrialResult:
     kick_speed: float = 0.0
     pass_distance: float = 0.0
     duration: float = 0.0
+    # キックを検出した壁時計時刻。PassPlan の観測ログ（pass_plan_log）は同じ
+    # time.time() で打刻されるので、この値で「キック時点の計画」を引ける。
+    kick_wall_time: float = 0.0
     # 配置が vision に反映されるまでに要した秒数（NaN なら確認できなかった）
     placement_wait: float = float("nan")
     # キック時点で、各 yellow が配置座標からどれだけ離れていたか {id: m}
@@ -158,7 +161,10 @@ def _wait_for_placement(field: Field, expected: dict) -> float:
 
 
 def watch_pass_outcome(
-    field: Field, timeout_sec: float = 25.0, expected: dict | None = None
+    field: Field,
+    timeout_sec: float = 25.0,
+    expected: dict | None = None,
+    kick_detect_speed: float = KICK_DETECT_SPEED,
 ) -> PassTrialResult:
     """次の yellow キック1本を追跡して結果を分類する。
 
@@ -187,13 +193,14 @@ def watch_pass_outcome(
         blues = world.get_blue_robots()
 
         if not tracking:
-            if speed >= KICK_DETECT_SPEED and prev_ball is not None:
+            if speed >= kick_detect_speed and prev_ball is not None:
                 kick_x, kick_y = prev_ball
                 y_id, y_d = _nearest_robot(yellows, kick_x, kick_y)
                 _b_id, b_d = _nearest_robot(blues, kick_x, kick_y)
                 if y_id is not None and y_d <= KICK_PROXIMITY and y_d <= b_d:
                     tracking = True
                     kick_wall_time = time.time()
+                    result.kick_wall_time = kick_wall_time
                     ball_left_kicker = False
                     result.kicker_id = y_id
                     result.kick_pos = (kick_x, kick_y)
@@ -264,16 +271,30 @@ def watch_pass_outcome(
 # ─── 共通配置 ────────────────────────────────────────────────────────────────
 
 
-def receiver_positions(field: Field) -> list:
+# 受け手をハーフウェイラインからどれだけ攻撃側へ置くか（ハーフ長さ比）。
+# 既定 0.07 は既存の PASS_BUILDUP_STATIC / PASS_UNDER_MARK の配置。
+DEFAULT_RECEIVER_DEPTH = 0.07
+
+
+def receiver_positions(
+    field: Field, depth_ratio: float = DEFAULT_RECEIVER_DEPTH
+) -> list:
     """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
 
-    ハーフウェイラインをわずかに攻撃側へ越えた位置に置く。
+    既定ではハーフウェイラインをわずかに攻撃側へ越えた位置。
+
+    `depth_ratio` を上げると攻撃側の深い位置になる。isUsablePassPlan は
+    受領点が攻撃ハーフにあることを厳密に要求する（pass_plan.hpp の
+    `target.x() * getOurSideSign() < 0.0`）ので、受け手がハーフウェイ際にいると
+    走り回るうちに自陣側へ戻り、計画が明滅する。それを避けたいときに深くする。
     """
-    x = field.x(0.07) * ATTACKING_SIDE
+    x = field.x(depth_ratio) * ATTACKING_SIDE
     return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
-def setup_buildup_static(field: Field) -> dict:
+def setup_buildup_static(
+    field: Field, receiver_depth: float = DEFAULT_RECEIVER_DEPTH
+) -> dict:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
     ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
@@ -286,7 +307,7 @@ def setup_buildup_static(field: Field) -> dict:
     field.send_empty_world()
     # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
     ball_x = field.x(0.33) * DEFENDED_SIDE
-    left_receiver, right_receiver = receiver_positions(field)
+    left_receiver, right_receiver = receiver_positions(field, receiver_depth)
     facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
     # yellow (crane)
@@ -325,8 +346,89 @@ def setup_under_mark(field: Field) -> dict:
     return yellows
 
 
+# PassPlan 検証用の受け手深さ（ハーフ長さ比）。
+#
+# 既定の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
+# isUsablePassPlan の `target.x() * getOurSideSign() < 0.0`（攻撃ハーフ厳密）を
+# 割って計画が消えた。
+#
+# 0.22（≒1.0m）は当て推量ではない。既定配置で PassPlanMetric が一瞬だけ出した
+# 計画の受領点が (0.95, 1.94) で score 1.04 だった。分析層自身が「この帯なら
+# 通る」と評価した座標に受け手を置く。
+PASS_PLAN_RECEIVER_DEPTH = 0.22
+
+# 受け手の y（ハーフ幅比）。
+# 0.65（≒1.95m）だと、受領点探索のリング（半径最大2.5m）がタッチライン際まで
+# 伸び、実測では y≈-2.9（ラインまで0.1m）の受領点が選ばれた。
+# そこは敵から最も遠いので迎撃評価は良いが、受け損なうと即場外になる。
+# 0.50（≒1.5m）に寄せて、場外までの余裕を作る。
+PASS_PLAN_RECEIVER_SPAN = 0.60
+
+
+def setup_pass_plan_pair(field: Field) -> dict:
+    """PassPlan の出し手・受け手ペアが成立する配置。
+
+    setup_buildup_static との違いは2点。どちらも実測から決めた。
+
+    1. **黄色を8機置く。** INPLAY のセッション優先順位は
+       goalie_skill(1) → emplace_robot(0) → attacker_skill(1) → defender(3) →
+       pass_receive(1) の順（unified_session_config.yaml）。5機しかいないと
+       defender が3機使い切って **pass_receive に1機も回らない**。
+       その結果「受け手」として置いたロボットがディフェンダーとして自陣へ戻り、
+       受領点が攻撃ハーフから消えて計画が立たなくなる。
+       後方の 4-7 は defender / second_threat_defender に吸わせるための実体。
+
+    2. **受け手を攻撃ハーフの深い位置に置く。** 理由は
+       PASS_PLAN_RECEIVER_DEPTH のコメントを参照。
+
+    blue は setup_buildup_static と同じくシュートラインを塞ぐ壁を維持する。
+    Attacker は KICK 状態でシュート（ゴール可視角 3° 超）をパスより先に評価するため
+    （crane_robot_skills/src/attacker.cpp）、ゴールが開いていると計画を捨てて撃つ。
+
+    配置した yellow の座標を {id: (x, y)} で返す。
+    """
+    field.send_empty_world()
+    ball_x = field.x(0.33) * DEFENDED_SIDE
+    facing = math.atan2(0.0, ATTACKING_SIDE)
+
+    receiver_x = field.x(PASS_PLAN_RECEIVER_DEPTH) * ATTACKING_SIDE
+    yellows = {
+        0: (field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0),  # GK
+        1: (ball_x + 0.4 * DEFENDED_SIDE, 0.1),  # ボール至近（出し手候補）
+        2: (receiver_x, field.y(PASS_PLAN_RECEIVER_SPAN)),  # 受け手候補（左）
+        3: (receiver_x, field.y(-PASS_PLAN_RECEIVER_SPAN)),  # 受け手候補（右）
+        # 以下は守備ロールに吸わせる実体。これが無いと defender が受け手を奪う。
+        4: (field.x(0.58) * DEFENDED_SIDE, field.y(-0.33)),
+        5: (field.x(0.58) * DEFENDED_SIDE, field.y(0.33)),
+        6: (field.x(0.75) * DEFENDED_SIDE, field.y(0.15)),
+        7: (field.x(0.75) * DEFENDED_SIDE, field.y(-0.15)),
+    }
+    for robot_id, (x, y) in yellows.items():
+        field.send_yellow_robot(robot_id, x, y, facing)
+
+    # blue: 全機静止。GK + シュートラインを塞ぐ壁のみ。
+    #
+    # 壁の厚み: ボールから見た相手ゴールの角度幅は約17°ある。
+    # setup_buildup_static の3機（y が ±0.34 まで）では約 18.8° しか覆えず紙一重で、
+    # 実測では attacker がゴールへ撃って壁に当てる試行が出た（初速 7.8 m/s）。
+    # 5機に増やして ±0.45 まで覆い、約 24° の余裕を持たせる。
+    #
+    # 後方2機を置かない理由: setup_buildup_static は (x=0.33, y=±0.6) に2機置くが、
+    # これがウィングの受け手へのパスラインに近く、迎撃スコアを潰していた。
+    # シュート遮蔽には不要なので外す。
+    wall_x = field.x(0.117) * ATTACKING_SIDE
+    field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
+    for robot_id, offset in enumerate((-0.36, -0.18, 0.0, 0.18, 0.36), start=1):
+        field.send_blue_robot(robot_id, wall_x, offset, 0.0)
+    field.send_ball(ball_x, 0.0)
+    return yellows
+
+
 def run_pass_trial(
-    field: Field, setup_fn, timeout_sec: float = 25.0
+    field: Field,
+    setup_fn,
+    timeout_sec: float = 25.0,
+    kick_detect_speed: float = KICK_DETECT_SPEED,
 ) -> PassTrialResult:
     """1試行: STOP→配置→（反映を確認したら即）FORCE_START→パス1本を観測
 
@@ -340,7 +442,7 @@ def run_pass_trial(
     placement_wait = _wait_for_placement(field, expected)
     comm.observer.reset()
     comm.change_referee_command("FORCE_START", KICKOFF_DELAY)
-    result = watch_pass_outcome(field, timeout_sec, expected)
+    result = watch_pass_outcome(field, timeout_sec, expected, kick_detect_speed)
     result.placement_wait = placement_wait
     comm.change_referee_command("STOP", 1.0)
     return result
