@@ -109,6 +109,15 @@ auto VisibilityGraphPlanner::buildObstacles(
         radius = 0.7;
         break;
       case crane_msgs::msg::PlaySituation::STOP:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_KICKOFF_PREPARATION:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_KICKOFF_PREPARATION:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_PENALTY_PREPARATION:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_PENALTY_PREPARATION:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_OUR_DIRECT_FREE:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_THEIR_DIRECT_FREE:
+      case crane_msgs::msg::PlaySituation::STOP_PRE_FORCE_START:
+      case crane_msgs::msg::PlaySituation::OUR_KICKOFF_PREPARATION:
+      case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION:
         radius = 0.5;
         break;
       default:
