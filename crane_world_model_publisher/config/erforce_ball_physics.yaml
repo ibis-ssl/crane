@@ -1,0 +1,17 @@
+# ボール物理モデル設定（ER-Force シミュレータ実測値）
+#
+# 値は ER-Force シミュレータ上で実測して決めた。crane 自身の EKF 推定
+# （world_model の ball_info.velocity）を 3 回分の走行から収集し、
+# 自由転がり区間の速度低下に直線を当てている。
+# ロボットに触れた区間は見かけの減速を増やすので、実行ごとの最小値を採った
+# （実測: 0.39 / 0.36 / 0.34。接触区間は 0.94〜2.86 に散る）。
+#
+# 実機で使う場合は必ず測り直すこと。面の材質で転がり減速は大きく変わる。
+
+ball_physics_model:
+  deceleration: 0.36         # 転がり減速度 [m/s²]（ER-Force 実測。旧 grSim 想定値は 0.7）
+  gravity: -9.81             # 重力加速度 [m/s²]
+  air_resistance: 0.0        # 空気抵抗係数
+  height_threshold: 0.05     # 飛行判定の高度閾値 [m]
+  speed_threshold: 0.1       # 移動判定の速度閾値 [m/s]
+  stop_threshold: 0.05       # 停止判定の速度閾値 [m/s]

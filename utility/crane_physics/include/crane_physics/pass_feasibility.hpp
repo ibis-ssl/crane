@@ -25,7 +25,22 @@ struct ReceiveFeasibilityParams
   /// STOP 制限の factor は INPLAY では積まれない）と揃える。
   /// ただし飛行時間が 2 秒程度までは三角形プロファイルのままで、速度上限は効かない。
   double receiver_max_velocity = 5.0;
-  double desired_arrival_speed = 1.5;                          ///< 望ましい受領点到達速度 [m/s]
+  /// 望ましい受領点到達速度 [m/s]。
+  ///
+  /// 実測（ER-Force、減速度 0.36 m/s^2）で 1.5 は両方の軸で不利だった。
+  /// パス距離 1.5m の場合:
+  ///   到達速度 1.5 -> 受領点通過後 3.12m 転がる / 受け手と敵の到達比 0.74（敵有利）
+  ///   到達速度 0.8 -> 通過後 0.89m           / 到達比 1.04
+  ///   到達速度 0.5 -> 通過後 0.35m           / 到達比 1.16
+  /// 下げると転がり過ぎが収まるうえ、飛行時間が延びて受け手の到達余裕が敵を上回る。
+  /// ただし下げすぎると飛行時間が延び、比ではなく **絶対値** で敵の到達範囲が
+  /// 広がる。0.8 では 3.6m のパスの飛行が 2.78 秒になり、4m 離れた敵でも
+  /// 経路へ到達できて迎撃スコアが潰れる（単体テスト
+  /// BudgetReachesLaterReceiverEvenWhenFirstIsBlocked が落ちて判明した）。
+  /// 転がり過ぎの抑制と迎撃されにくさの折り合いで 1.0 を採る。
+  ///
+  /// 実測では 1.5 のとき、受け手が捕り損ねたパスが 5.93m 転がって場外に出た。
+  double desired_arrival_speed = 1.0;
   double ball_deceleration = pass_kick::kDefaultDeceleration;  ///< ボール減速度 [m/s^2]
   double min_initial_speed = 1.0;                              ///< キック初速下限 [m/s]
   double max_initial_speed = 6.5;                              ///< キック初速上限 [m/s]
