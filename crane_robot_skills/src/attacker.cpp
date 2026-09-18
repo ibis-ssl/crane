@@ -242,16 +242,21 @@ void Attacker::initialize()
     // KICK 状態でどの分岐を選んだかは printTextOnRobot（可視化専用）にしか出ず、
     // ログからは追えない。「パス計画を持っていたのにシュートを選んだ」のか
     // 「そもそも計画が無かった」のかを後から切り分けられるようにする。
-    {
+    //
+    // 特に FINAL_GUARD はゴールが開いていなくても 6.0 m/s のストレートを撃つため、
+    // 実測ではパスと見分けがつかない速いボールが飛ぶ。どちらが飛んだのかを
+    // ログだけで判定できないと、シナリオ検証の失敗原因を取り違える。
+    auto log_branch = [&](const char * branch) {
       static auto log_clock = rclcpp::Clock(RCL_STEADY_TIME);
       RCLCPP_INFO_THROTTLE(
         rclcpp::get_logger("Attacker"), log_clock, 1000,
-        "KICK分岐: robot=%d ゴール可視角=%.2f°(シュート閾値 %.1f°) パス計画=%s",
-        static_cast<int>(robot()->id), goal_angle_width / degree<double>(),
+        "KICK分岐: robot=%d %s ゴール可視角=%.2f°(シュート閾値 %.1f°) パス計画=%s",
+        static_cast<int>(robot()->id), branch, goal_angle_width / degree<double>(),
         GOAL_ANGLE_THRESHOLD_DEG, pass_receiver_id.has_value() ? "あり" : "なし");
-    }
+    };
     if (goal_angle_width > GOAL_ANGLE_THRESHOLD_RAD) {
       // GOAL_KICK
+      log_branch("GOAL_KICK");
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", GOAL_ANGLE_THRESHOLD_DEG);
       goal_kick_skill.setParameter("use_target_kick_speed", true);
@@ -260,6 +265,7 @@ void Attacker::initialize()
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
+      log_branch("STANDARD_PASS");
       printTextOnRobot("KICK::STANDARD_PASS");
       kick_skill.setParameter("target", kick_target);
       kick_skill.setParameter("chip_kick", false);
@@ -271,12 +277,14 @@ void Attacker::initialize()
       return kick_skill.run();
     } else if (goal_angle_width > deg2rad(LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG)) {
       // LOW_CHANCE_GOAL_KICK
+      log_branch("LOW_CHANCE_GOAL_KICK");
       printTextOnRobot("KICK::LOW_CHANCE_GOAL_KICK");
       return goal_kick_skill.run();
     } else if (
       robot()->getDistance(world_model()->ball().pos) < BALL_CONTROL_DISTANCE &&
       x_diff_with_their_goal >= world_model()->fieldSize().x() * 0.5) {
       // MOVE_BALL_TO_OPPONENT_HALF
+      log_branch("MOVE_BALL_TO_OPPONENT_HALF");
       printTextOnRobot("KICK::MOVE_BALL_TO_OPPONENT_HALF");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", true);
@@ -287,6 +295,7 @@ void Attacker::initialize()
     } else {
       // FINAL_GUARD: ゴール角度が不十分でも強ストレートでクリア
       // チップキックはGK越えで直接ゴールに入るとファウルになるため使用不可
+      log_branch("FINAL_GUARD");
       printTextOnRobot("KICK::FINAL_GUARD");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", false);
