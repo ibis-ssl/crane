@@ -30,6 +30,8 @@ export class PointerRouter {
         canvas.addEventListener('mouseup', (e) => this._onMouseUp(e));
         canvas.addEventListener('dblclick', (e) => this._onDblClick(e));
         canvas.addEventListener('mouseleave', () => this._onMouseLeave());
+        // テスト中は右クリックで目標を消す。ブラウザのメニューは出さない
+        canvas.addEventListener('contextmenu', (e) => this._onContextMenu(e));
         canvas.style.cursor = 'grab';
     }
 
@@ -54,6 +56,13 @@ export class PointerRouter {
         const v = this._v;
         this._dragStart = { x: e.clientX, y: e.clientY };
         this._dragMoved = false;
+
+        // テストレイヤーが最優先。ここで return するので、下のレイヤーへは透過しない
+        if (v.modes.test) {
+            this._testDragKind = e.shiftKey ? 'velocity' : 'theta';
+            this._testDragBase = { ...v.testSession };
+            return;
+        }
         if (e.ctrlKey) return;   // Ctrl+クリックは mouseup で複数選択として扱う
 
         if (e.shiftKey && v.modes.move) {
@@ -79,6 +88,11 @@ export class PointerRouter {
         if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) this._dragMoved = true;
 
         v.lastMouseField = v.clientToFieldCoords(e.clientX, e.clientY);
+
+        if (v.modes.test) {
+            this._onTestMove(e);
+            return;
+        }
         v.updateHover(v.lastMouseField.x, v.lastMouseField.y);
 
         if (!v.isPanning) return;
@@ -94,8 +108,47 @@ export class PointerRouter {
         v.renderer?.invalidate();
     }
 
+    _onTestMove(e) {
+        const v = this._v;
+        const s = v.testSession;
+        if (!s) return;
+        if (s.cursorFollow) {
+            s.patch({ targetPos: { x: v.lastMouseField.x, y: v.lastMouseField.y } });
+            v.sendTestTarget();
+            return;
+        }
+        if (!this._testDragKind || !this._dragMoved) return;
+        if (this._testDragKind === 'velocity') {
+            // Shift+ドラッグ: 横移動量を速度上限に写す（スライダと双方向に同期する）
+            const dx = e.clientX - this._dragStart.x;
+            const next = Math.min(6, Math.max(0, (this._testDragBase.maxVelocity ?? 2) + dx / 60));
+            s.patch({ maxVelocity: Math.round(next * 10) / 10 });
+            return;
+        }
+        // ドラッグ: 目標位置からの向きを目標姿勢にする
+        if (!s.targetPos) return;
+        const theta = Math.atan2(v.lastMouseField.y - s.targetPos.y, v.lastMouseField.x - s.targetPos.x);
+        s.patch({ targetTheta: theta });
+    }
+
+    _onContextMenu(e) {
+        if (!this._v.modes.test) return;
+        e.preventDefault();
+        this._v.testSession?.patch({ targetPos: null });
+    }
+
     _onMouseUp(e) {
         const v = this._v;
+        if (v.modes.test) {
+            const kind = this._testDragKind;
+            this._testDragKind = null;
+            const fp = v.clientToFieldCoords(e.clientX, e.clientY);
+            if (!this._dragMoved && kind !== 'velocity') {
+                v.testSession?.patch({ targetPos: { x: fp.x, y: fp.y } });
+            }
+            v.sendTestTarget();
+            return;
+        }
         v.isPanning = false;
         if (!v.modes.simEdit && !v.modes.ballPlacement) this._canvas.style.cursor = 'grab';
         if (this._dragMoved) return;

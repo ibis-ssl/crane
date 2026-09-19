@@ -630,6 +630,87 @@
       padding-bottom: 6px;
     }
 
+    /* ===== C-3 テストレイヤー ===== */
+    #test-ownership-pill, #test-help-bar {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 8;
+      display: none;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      letter-spacing: 0.04em;
+      background: var(--crane-field-out);
+      color: var(--crane-field-select);
+      border: 1px solid var(--crane-field-select);
+      white-space: nowrap;
+    }
+    #test-ownership-pill { top: 56px; }
+    #test-help-bar {
+      bottom: 14px;
+      font-family: var(--md-sys-typescale-font-family);
+      letter-spacing: normal;
+      color: var(--crane-field-ink-muted);
+      border-color: var(--crane-field-grid);
+    }
+    #test-ownership-pill.visible, #test-help-bar.visible { display: block; }
+
+    /* テスト中は無効化したレフェリーボタンを明確に沈める */
+    body.test-mode #command-bar [data-action]:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    /* テストタブ */
+    .rd-radio, .rd-check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 0.72rem;
+      color: var(--crane-ink-2);
+      padding: 6px 0;
+      cursor: pointer;
+    }
+    .rd-hint {
+      font-size: 0.64rem;
+      line-height: 1.5;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .rd-test__banner {
+      font-size: 0.7rem;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: var(--md-sys-shape-sm);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      margin-bottom: 8px;
+    }
+    .rd-test__banner[data-active="true"] {
+      background: var(--crane-test-soft);
+      border-color: var(--crane-test);
+      color: var(--crane-test);
+    }
+    .rd-test__limits[data-effective="false"] { opacity: 0.45; pointer-events: none; }
+    .rd-test__row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .rd-test__row label { font-size: 0.7rem; width: 68px; flex: none; color: var(--crane-ink-2); }
+    .rd-test__val {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.68rem;
+      width: 36px;
+      text-align: right;
+    }
+    .rd-test__unit { font-size: 0.62rem; color: var(--md-sys-color-on-surface-variant); width: 34px; }
+    .rd-test__target {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.68rem;
+      color: var(--crane-ink-2);
+      padding: 4px 0 8px;
+    }
+    .rd-test__actions { display: flex; gap: 8px; padding-top: 10px; }
+
     /* テレメトリタブ */
     .rd-chart {
       position: relative;
@@ -1082,6 +1163,12 @@
         </div>
 
         <!-- ズーム・移動モードなどフィールド直結の操作 -->
+        <!-- C-3: テストレイヤーの所有権表示 -->
+        <div id="test-ownership-pill">TEST MODE</div>
+        <div id="test-help-bar">
+          クリック = 目標 / ドラッグ = 姿勢 / Shift+ドラッグ = 速度上限 / 右クリック = 目標消去 / Esc = 解除
+        </div>
+
         <div id="field-tools">
           <!-- Zoom toolbar -->
           <div class="zoom-toolbar">

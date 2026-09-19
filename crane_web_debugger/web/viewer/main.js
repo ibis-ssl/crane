@@ -24,6 +24,8 @@ import { ActionDispatcher } from './ui/ActionDispatcher.js';
 import { FocusSidebar } from './ui/FocusSidebar.js';
 import { OverviewTab } from './sidebar/OverviewTab.js';
 import { TelemetryTab } from './sidebar/TelemetryTab.js';
+import { TestTab } from './sidebar/TestTab.js';
+import { ROUTE_DIRECT } from './state/TestSession.js';
 import { LogTab } from './sidebar/LogTab.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { RingBuffer } from './replay/RingBuffer.js';
@@ -83,6 +85,7 @@ class CraneViewer {
         this._haltPending = false;
         this._haltTimer = null;
         this._hoveredTooltipId = null;
+        this.testSession = null;
 
         this.init();
     }
@@ -98,6 +101,7 @@ class CraneViewer {
         this.sidebar = new FocusSidebar(this);
         this.sidebar.register('overview', new OverviewTab(this.state, this.themeTokens));
         this.sidebar.register('telemetry', new TelemetryTab(this));
+        this.sidebar.register('test', new TestTab(this));
         this.sidebar.register('log', new LogTab(this.logPanel));
         this.shell = new ShellControls(this);
         this.actions = new ActionDispatcher(this);
@@ -109,6 +113,15 @@ class CraneViewer {
 
         this.modes.setHooks({
             onEnterMove: () => this.hub.send({ type: 'activate_move_mode' }),
+            onEnterTest: () => this._syncTestChrome(),
+            // 解除の送信はここに置く。Escape ラダーからの exitTop() も
+            // ボタンからの deactivateTest() も必ずここを通るため、
+            // 「UI は off なのに crane 側はテストセッションのまま」にならない
+            onExitTest: () => {
+                this.hub.send({ type: 'deactivate_robot_test' });
+                this.logPanel?.appendLog('action', 'TEST', 'deactivate → HALT');
+                this._syncTestChrome();
+            },
             onChange: () => this.renderer?.invalidate(),
         });
 
@@ -419,6 +432,65 @@ class CraneViewer {
         });
     }
 
+    // ===== テストモード =====
+    // C-3。ロボット単位ではなく crane 全体のモードで、解除は HALT を注入する。
+
+    setTestSession(session) {
+        this.testSession = session;
+        session.onChange(() => this.renderer?.invalidate());
+        this.renderer?.invalidate();
+    }
+
+    activateTest() {
+        const s = this.testSession;
+        if (!s) return;
+        // 指令経路で有効化のメッセージが変わる。
+        // プランナ経由 → セッション注入 ROBOT_TEST / 直接 → HALT
+        this.hub.send({ type: s.route === ROUTE_DIRECT ? 'activate_move_mode' : 'activate_robot_test' });
+        this.modes.enterTest();
+        this.logPanel?.appendLog('action', 'TEST', `activate (${s.route}) robot #${s.robotId}`);
+    }
+
+    deactivateTest() { this.modes.exitTest(); }
+
+    sendTestTarget() {
+        const s = this.testSession;
+        if (!s || !this.modes.test || !s.targetPos) return;
+        if (s.route === ROUTE_DIRECT) {
+            // プランナを迂回して /control_targets へ。速度上限は乗らない
+            this.sendMoveCommand(s.robotId, s.targetPos.x, s.targetPos.y);
+            return;
+        }
+        this.hub.send({
+            type: 'robot_test_target',
+            robot_id: s.robotId,
+            target_x: s.targetPos.x,
+            target_y: s.targetPos.y,
+            target_theta: s.targetTheta,
+            max_velocity: s.maxVelocity,
+            max_acceleration: s.maxAcceleration,
+        });
+    }
+
+    sendPlannerDamping() {
+        const s = this.testSession;
+        if (!s) return;
+        this.hub.send({ type: 'set_planner_param', velocity_damping_gain: s.dampingGain });
+    }
+
+    // C-3 のピルとヘルプバー。所有権がテストレイヤーにあることを画面上で示す
+    _syncTestChrome() {
+        const pill = document.getElementById('test-ownership-pill');
+        const help = document.getElementById('test-help-bar');
+        const on = this.modes.test;
+        if (pill) {
+            pill.classList.toggle('visible', on);
+            pill.textContent = `TEST MODE · #${this.testSession?.robotId ?? '--'}`;
+        }
+        help?.classList.toggle('visible', on);
+        this.renderer?.invalidate();
+    }
+
     activateMoveMode() { this.modes.enterMove(); }
     deactivateMoveMode() { this.modes.exitMove(); }
     toggleSimEditMode() { this.modes.toggleSimEdit(); this.renderer?.invalidate(); }
@@ -551,7 +623,7 @@ class CraneViewer {
     // Escape ラダー。3 段目までの正本は ModeMachine の LADDER。
     //   1. コマンドパレット
     //   2. ドロワー          ← ShellControls が capture 段階で処理して伝播を止める
-    //   3. 指令モード        ← ModeMachine.exitTop()（move → ballPlacement → simEdit）
+    //   3. 指令モード        ← ModeMachine.exitTop()（test → move → ballPlacement → simEdit）
     //   4. フォーカス
     //   5. 複数選択
     //   6. 何も無ければ確認ダイアログ付き HALT

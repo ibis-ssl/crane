@@ -2,20 +2,20 @@
 // 1 箇所に集める。
 //
 // 【排他の規則】現行の振る舞いをそのまま明文化したもので、変更ではない。
+//   - test は他のすべてと共存しない（C-3 の「他レイヤーのクリックは透過しません」）
 //   - simEdit は move / ballPlacement のどちらとも共存しない
 //   - move と ballPlacement は共存する（移動モードのまま配置位置を指す運用がある）
-// V6 で move が「テストタブの指令経路=直接」に吸収される際、test モードは
-// 完全排他になるので、そのときに規則を締める。
 //
 // 【Escape ラダー】exitTop() が上から 1 段だけ降りる。順序はここが正本で、
-// main.js 側に if の列を書き直さないこと。move の解除は HALT セッションを
+// main.js 側に if の列を書き直さないこと。test / move の解除は HALT セッションを
 // 投げるため、ballPlacement より先に置く（Esc 連打で確認なし HALT にしない）。
 
-const LADDER = ['move', 'ballPlacement', 'simEdit'];
+const LADDER = ['test', 'move', 'ballPlacement', 'simEdit'];
 
 export class ModeMachine extends EventTarget {
     constructor() {
         super();
+        this.test = false;
         this.move = false;
         this.simEdit = false;
         this.ballPlacement = null;   // null | 'YELLOW' | 'BLUE'
@@ -31,10 +31,44 @@ export class ModeMachine extends EventTarget {
         return Boolean(this[name]);
     }
 
+    // ===== テストモード =====
+    // ロボット単位ではなく crane 全体のモード。解除は HALT を注入する。
+
+    enterTest() {
+        if (this.test) return;
+        this.exitMove();
+        this.exitBallPlacement();
+        if (this.simEdit) this.toggleSimEdit();
+        this.test = true;
+        document.body.classList.add('test-mode');
+        this._syncRefereeButtons();
+        this._hooks.onEnterTest?.();
+        this._changed();
+    }
+
+    exitTest() {
+        if (!this.test) return;
+        this.test = false;
+        document.body.classList.remove('test-mode');
+        this._syncRefereeButtons();
+        this._hooks.onExitTest?.();
+        this._changed();
+    }
+
+    // テスト中に生かすのは HALT / STOP / NORMAL_START の 3 つだけ。
+    // FK / KO / PLACE を押せると、テスト中の機体にレフェリー指令が割り込む。
+    _syncRefereeButtons() {
+        for (const btn of document.querySelectorAll('#command-bar [data-action]')) {
+            const keep = btn.dataset.action === 'gc-command'
+                && ['HALT', 'STOP', 'NORMAL_START'].includes(btn.dataset.type);
+            btn.disabled = this.test && !keep;
+        }
+    }
+
     // ===== 移動モード =====
 
     enterMove() {
-        if (this.move) return;
+        if (this.move || this.test) return;
         this.move = true;
         document.getElementById('btn-move-mode')?.classList.add('active');
         this._hooks.onEnterMove?.();
@@ -54,6 +88,7 @@ export class ModeMachine extends EventTarget {
     // ===== sim 編集 =====
 
     toggleSimEdit() {
+        if (this.test) return;   // テスト中は他のモードに入らせない
         this.simEdit = !this.simEdit;
         const btn = document.getElementById('btn-sim-edit');
         if (this.simEdit) {
@@ -71,6 +106,7 @@ export class ModeMachine extends EventTarget {
     // ===== ボール配置 =====
 
     enterBallPlacement(team) {
+        if (this.test) return;
         if (this.simEdit) this.toggleSimEdit();
         this.exitBallPlacement();
         this.ballPlacement = team;
@@ -94,7 +130,8 @@ export class ModeMachine extends EventTarget {
     exitTop() {
         for (const name of LADDER) {
             if (!this.is(name)) continue;
-            if (name === 'move') this.exitMove();
+            if (name === 'test') this.exitTest();
+            else if (name === 'move') this.exitMove();
             else if (name === 'ballPlacement') this.exitBallPlacement();
             else if (name === 'simEdit') this.toggleSimEdit();
             return name;

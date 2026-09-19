@@ -1,3 +1,4 @@
+import { TestLayer } from './TestLayer.js';
 import { ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './constants.js';
 import { svgArcToCanvas } from './SvgPathUtils.js';
 import { RobotHud } from './RobotHud.js';
@@ -101,6 +102,12 @@ export class CanvasRenderer {
 
         // ロボット HUD (方向矢印/FSM/planner/ハロー/ドリブラーLED)
         this._robotHud.draw(ctx, v, tokens);
+
+        // C-3: テスト中は下地を沈め、テストレイヤーが入力を受け取っていることを示す
+        if (v.modes?.test) {
+            TestLayer.drawDim(ctx, fl, tokens);
+            TestLayer.draw(ctx, fl, tokens, v.testSession, v.robotsOurs[v.focusedRobotId]);
+        }
 
         // ロボット移動モードのオーバーレイ (M3トークン使用)
         if (v.moveMode && v.focusedRobotId !== null) {
