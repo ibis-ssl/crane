@@ -21,7 +21,9 @@ import { StatusStrip } from './ui/StatusStrip.js';
 import { CommandPalette } from './ui/CommandPalette.js';
 import { PositionControlPanel } from './ui/PositionControlPanel.js';
 import { ActionDispatcher } from './ui/ActionDispatcher.js';
-import { RobotDetail } from './ui/RobotDetail.js';
+import { FocusSidebar } from './ui/FocusSidebar.js';
+import { OverviewTab } from './sidebar/OverviewTab.js';
+import { LogTab } from './sidebar/LogTab.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { RingBuffer } from './replay/RingBuffer.js';
 import { TimeScrubber } from './ui/TimeScrubber.js';
@@ -71,7 +73,7 @@ class CraneViewer {
         this.palette = null;
         this.positionControl = null;
         this.actions = null;
-        this.detail = null;
+        this.sidebar = null;
         this.logPanel = null;
 
         this._detailTimer = null;
@@ -92,7 +94,9 @@ class CraneViewer {
         const logBody = document.getElementById('log-panel-body');
         if (logBody) this.logPanel = new LogPanel(logBody);
 
-        this.detail = new RobotDetail(this.state);
+        this.sidebar = new FocusSidebar(this);
+        this.sidebar.register('overview', new OverviewTab(this.state, this.themeTokens));
+        this.sidebar.register('log', new LogTab(this.logPanel));
         this.shell = new ShellControls(this);
         this.actions = new ActionDispatcher(this);
         this.statusStrip = new StatusStrip(this.actions);
@@ -119,6 +123,7 @@ class CraneViewer {
         if (tsContainer) this.timeScrubber = new TimeScrubber(tsContainer, this.ringBuffer, this);
 
         this._setConnected(false);
+        this.sidebar.applyUrlParams();
         this.gcClient.connect(window.location.hostname);
         this.gcClient.onStateChange = (state) => this.statusStrip.updateFromGc(state);
     }
@@ -309,16 +314,16 @@ class CraneViewer {
         else this.showRobotDetail(id);
     }
 
-    showRobotDetail(id) {
-        if (!this.state.robotsOurs[id]) return;
-        if (!this.detail.show(id)) return;
+    // tabName を渡すとそのタブで開く（URL 契約 ?robot=&tab= の受け口）
+    showRobotDetail(id, tabName = null) {
         this.state.setFocus(id);
+        if (!this.sidebar.open(id, tabName)) return;
         this._syncFocusLabel();
         this.renderer?.invalidate();
     }
 
     closeRobotDetail() {
-        this.detail.hide();
+        this.sidebar.close();
         this.state.setFocus(null);
         this._syncFocusLabel();
         this.renderer?.invalidate();
@@ -338,7 +343,7 @@ class CraneViewer {
     }
 
     _refreshDetailNow() {
-        if (this.state.focusedRobotId !== null) this.detail.render(this.state.focusedRobotId);
+        this.sidebar.refresh();
     }
 
     // ===== 座標とホバー =====

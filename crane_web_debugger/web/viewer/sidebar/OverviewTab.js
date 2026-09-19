@@ -1,8 +1,10 @@
-// 右サイドバーのロボット詳細。
+// フォーカスサイドバーの「概要」タブ。
 //
-// V4 で概要 / テレメトリ / テスト / ログのタブへ分割する。ここはその「概要」に
-// あたる中身で、いまは単一パネルとして丸ごと描いている。
+// 指令・状態・フィードバック・レイテンシの現在値に加えて、位置と速度の
+// スパークラインを出す。ここは Chart.js を使わない（Canvas2D 自前の
+// Sparkline）。360px に 2 枚置いても Chart のインスタンスは増えない。
 
+import { Sparkline } from '../ui/Sparkline.js';
 import {
     formatPlannerName, getFsmState, getControlModeLong,
     formatLatencyRich, formatVoltage, formatTemperature,
@@ -11,44 +13,83 @@ import {
 
 const PACKET_FREQ_WARN_HZ = 80;
 const LATENCY_WARN_MS = 100;
+const SPARK_SAMPLES = 180;
+const SPARK_W = 320;
+const SPARK_H = 34;
 
-export class RobotDetail {
-    constructor(state) {
+export class OverviewTab {
+    constructor(state, themeTokens) {
         this._state = state;
+        this._themeTokens = themeTokens;
+        this._root = null;
+        this._sparkPos = null;
+        this._sparkVel = null;
     }
 
-    get panel() { return document.getElementById('robot-detail-inline'); }
+    get label() { return '概要'; }
 
-    show(id) {
-        const panel = this.panel;
-        if (!panel) return false;
-        this.render(id);
-        panel.classList.add('visible');
-        return true;
+    mount(container) {
+        this._root = document.createElement('div');
+        container.appendChild(this._root);
     }
 
-    hide() {
-        this.panel?.classList.remove('visible');
+    activate(id) { this.refresh(id); }
+
+    deactivate() {
+        this._root = null;
+        this._sparkPos = null;
+        this._sparkVel = null;
     }
 
-    render(id) {
-        const panel = this.panel;
-        if (!panel) return;
+    refresh(id) {
+        if (!this._root) return;
         const robot = this._state.robotsOurs[id];
         if (!robot) return;
         const cmd = this._state.controlTargets[id];
 
-        panel.innerHTML = `
-            <div class="rd-title">Robot ${id}
-                <a href="/robot_telemetry.html?id=${id}" target="_blank" class="rd-telem-link" title="Telemetry を別タブで開く">
-                    <span class="material-symbols-outlined icon-sm">open_in_new</span>
-                </a>
-            </div>
+        this._root.innerHTML = `
             ${this._commandHtml(cmd)}
             ${this._stateHtml(robot)}
+            <div class="rd-section-title">Trend (直近 18 秒)</div>
+            <div class="rd-spark" id="spark-pos-host"></div>
+            <div class="rd-spark-label">位置 X / Y</div>
+            <div class="rd-spark" id="spark-vel-host"></div>
+            <div class="rd-spark-label">速度</div>
             ${this._feedbackHtml(id)}
             ${this._latencyHtml(id)}
         `;
+        this._renderSparklines(id);
+    }
+
+    // innerHTML の張り替えで canvas ごと捨てているので、毎回作り直す。
+    // Chart.js と違いインスタンスを保持しないため、これで漏れない。
+    _renderSparklines(id) {
+        const metrics = this._state.metrics.get(id);
+        if (!metrics) return;
+        const cs = getComputedStyle(document.documentElement);
+        const token = (k, fb) => cs.getPropertyValue(k).trim() || fb;
+        const chrome = {
+            surfaceContainer: token('--md-sys-color-surface-container', '#F7F8FA'),
+            outlineVariant: token('--md-sys-color-outline-variant', '#E3E6EC'),
+        };
+
+        const posHost = this._root.querySelector('#spark-pos-host');
+        if (posHost) {
+            this._sparkPos = new Sparkline(posHost, { width: SPARK_W, height: SPARK_H });
+            this._sparkPos.setSeries([
+                { color: token('--crane-chart-1', '#5B4BE0'), data: metrics.posX.latest(SPARK_SAMPLES) },
+                { color: token('--crane-chart-2', '#00959F'), data: metrics.posY.latest(SPARK_SAMPLES) },
+            ]);
+            this._sparkPos.render(chrome);
+        }
+        const velHost = this._root.querySelector('#spark-vel-host');
+        if (velHost) {
+            this._sparkVel = new Sparkline(velHost, { width: SPARK_W, height: SPARK_H });
+            this._sparkVel.setSeries([
+                { color: token('--crane-chart-3', '#B02D6B'), data: metrics.vel.latest(SPARK_SAMPLES) },
+            ]);
+            this._sparkVel.render(chrome);
+        }
     }
 
     _commandHtml(cmd) {

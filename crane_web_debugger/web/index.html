@@ -584,6 +584,73 @@
 
     .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
 
+    /* ===== フォーカスサイドバーのタブ (C-2) ===== */
+    .cv-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      flex-shrink: 0;
+    }
+    .cv-tab {
+      border: none;
+      background: transparent;
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 8px 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .cv-tab:hover { color: var(--md-sys-color-on-surface); }
+    .cv-tab.active {
+      color: var(--md-sys-color-primary);
+      border-bottom-color: var(--md-sys-color-primary);
+      font-weight: 500;
+    }
+
+    /* レールの異常表示。V2a で robot_feedback が届くようになって初めて成立する */
+    .cv-rail-btn.warn {
+      border-color: var(--md-sys-color-warning);
+      color: var(--md-sys-color-warning);
+    }
+    .cv-rail-btn.danger {
+      border-color: var(--md-sys-color-error);
+      color: var(--md-sys-color-error);
+      font-weight: 700;
+    }
+
+    /* 概要タブのスパークライン */
+    .rd-spark { padding: 4px 0 0; }
+    .rd-spark-label {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+      padding-bottom: 6px;
+    }
+
+    /* ログタブ */
+    .rd-log {
+      max-height: 46vh;
+      overflow-y: auto;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.64rem;
+      line-height: 1.6;
+    }
+    .rd-log__empty {
+      color: var(--md-sys-color-on-surface-variant);
+      font-family: var(--md-sys-typescale-font-family);
+      font-size: 0.7rem;
+      padding: 10px 0;
+    }
+    .rd-log__row { display: flex; gap: 6px; }
+    .rd-log__time { color: var(--md-sys-color-on-surface-variant); }
+    .rd-log__tag { color: var(--md-sys-color-primary); }
+    .rd-log__msg { color: var(--crane-ink-2); word-break: break-all; }
+    .rd-log__row--warn .rd-log__msg { color: var(--md-sys-color-warning); }
+    .rd-log__row--error .rd-log__msg { color: var(--md-sys-color-error); }
+
     /* ===== コマンドパレット (⌘K) ===== */
     #command-palette {
       position: fixed;
@@ -1232,13 +1299,14 @@
         <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
         <div class="right-dock-section-header">
         <span class="material-symbols-outlined icon-sm">smart_toy</span>
-        Robot Detail
+        ROBOT <span id="focus-robot-id">--</span>
         <button class="m3-icon-btn m3-icon-btn--sm" id="btn-robot-detail-close" title="パネルを閉じる" style="margin-left:auto;">
         <span class="material-symbols-outlined icon-sm">close</span>
         </button>
         </div>
+        <div class="cv-tabs" id="focus-tabs" role="tablist"><!-- FocusSidebar が生成 --></div>
         <div id="robot-detail-inline">
-        <!-- Populated by main.js -->
+        <!-- 選択中タブの中身 -->
         </div>
         </div>
       </aside>
