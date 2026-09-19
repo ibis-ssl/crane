@@ -23,6 +23,7 @@ import { PositionControlPanel } from './ui/PositionControlPanel.js';
 import { ActionDispatcher } from './ui/ActionDispatcher.js';
 import { FocusSidebar } from './ui/FocusSidebar.js';
 import { OverviewTab } from './sidebar/OverviewTab.js';
+import { TelemetryTab } from './sidebar/TelemetryTab.js';
 import { LogTab } from './sidebar/LogTab.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { RingBuffer } from './replay/RingBuffer.js';
@@ -96,6 +97,7 @@ class CraneViewer {
 
         this.sidebar = new FocusSidebar(this);
         this.sidebar.register('overview', new OverviewTab(this.state, this.themeTokens));
+        this.sidebar.register('telemetry', new TelemetryTab(this));
         this.sidebar.register('log', new LogTab(this.logPanel));
         this.shell = new ShellControls(this);
         this.actions = new ActionDispatcher(this);
