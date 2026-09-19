@@ -10,6 +10,7 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_map>
 
 namespace crane::skills
 {
@@ -246,10 +247,19 @@ void Attacker::initialize()
     // 特に FINAL_GUARD はゴールが開いていなくても 6.0 m/s のストレートを撃つため、
     // 実測ではパスと見分けがつかない速いボールが飛ぶ。どちらが飛んだのかを
     // ログだけで判定できないと、シナリオ検証の失敗原因を取り違える。
+    //
+    // 出力は「そのロボットの分岐が変わったとき」だけにする。時間 throttle だと
+    // クロックが呼び出し箇所ごとに共有されるため、複数ロボットが同時に KICK に
+    // 居ると 1 秒に 1 行しか出ず、実際に蹴った機体の分岐が落ちる。
     auto log_branch = [&](const char * branch) {
-      static auto log_clock = rclcpp::Clock(RCL_STEADY_TIME);
-      RCLCPP_INFO_THROTTLE(
-        rclcpp::get_logger("Attacker"), log_clock, 1000,
+      static std::unordered_map<uint8_t, std::string> last_branch;
+      auto & previous = last_branch[robot()->id];
+      if (previous == branch) {
+        return;
+      }
+      previous = branch;
+      RCLCPP_INFO(
+        rclcpp::get_logger("Attacker"),
         "KICK分岐: robot=%d %s ゴール可視角=%.2f°(シュート閾値 %.1f°) パス計画=%s",
         static_cast<int>(robot()->id), branch, goal_angle_width / degree<double>(),
         GOAL_ANGLE_THRESHOLD_DEG, pass_receiver_id.has_value() ? "あり" : "なし");

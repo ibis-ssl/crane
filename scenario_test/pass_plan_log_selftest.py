@@ -119,6 +119,59 @@ def test_plan_acted_on_takes_last_usable_within_lookback(tmp_path):
     assert log.plan_acted_on(10.0, 0.2) is None
 
 
+# ─── Tracker のキック検出 ────────────────────────────────────────────────────
+
+
+def _tracker_kick(t, *, robot=1, team=1, speed=2.0, start=None):
+    return {
+        "kind": "tracker_kick",
+        "t": t,
+        "start_timestamp": t if start is None else start,
+        "x": 0.0,
+        "y": 0.0,
+        "vx": speed,
+        "vy": 0.0,
+        "vz": 0.0,
+        "speed": speed,
+        "robot_id": robot,
+        "team": team,
+    }
+
+
+def test_tracker_kick_is_taken_from_before_the_detection(tmp_path):
+    """検出時刻より後のキックは採らない。
+
+    自前のキック検出はボール速度がしきい値を越えるまで待つので必ず遅れる。
+    前後で最も近いものを採ると、受け手が触った瞬間のキックを拾って出し手を
+    取り違える。実測でそれが起き、計画どおりの試行が WRONG_KICKER に化けた。
+    """
+    path = tmp_path / "log.jsonl"
+    _write(path, [_tracker_kick(9.5, robot=1), _tracker_kick(10.3, robot=3)])
+    log = PassPlanLog(str(path))
+    kick = log.tracker_kick_near(10.0)
+    assert kick is not None
+    assert kick["robot_id"] == 1
+
+
+def test_tracker_kick_prefers_start_timestamp_over_arrival(tmp_path):
+    """キック時刻は受信時刻ではなく start_timestamp を使う。"""
+    path = tmp_path / "log.jsonl"
+    _write(path, [_tracker_kick(10.4, start=9.8)])
+    log = PassPlanLog(str(path))
+    # 受信は 10.4（窓の外）だが、キックは 9.8 なので拾える。
+    kick = log.tracker_kick_near(10.0, window=0.5)
+    assert kick is not None
+    assert math.isclose(PassPlanLog.kick_time(kick), 9.8)
+
+
+def test_tracker_kick_absent_is_not_an_error(tmp_path):
+    """kicked_ball は optional。来なくても落ちず、None を返すだけ。"""
+    path = tmp_path / "log.jsonl"
+    _write(path, [_plan(1.0, "PLANNING")])
+    log = PassPlanLog(str(path))
+    assert log.tracker_kick_near(10.0) is None
+
+
 # ─── 判定 ────────────────────────────────────────────────────────────────────
 
 

@@ -20,6 +20,7 @@ pass_receive セッションにロボットが回らず（defender が使い切�
 フレーキー対策として 3 試行し 2 回以上で pass とする（既存パステストと同じ方針）。
 """
 
+import dataclasses
 import math
 
 from field_helpers import Field
@@ -57,6 +58,10 @@ KICK_DETECT_SPEED = 1.6
 
 TRIALS = 3
 REQUIRED_SUCCESSES = 2
+
+
+# robocup_ssl_msgs/Team: UNKNOWN=0, YELLOW=1, BLUE=2。crane は Yellow で起動する。
+TRACKER_TEAM_YELLOW = 1
 
 
 def _verdict(trial, plan) -> tuple[str, float]:
@@ -98,20 +103,44 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
         trial = run_pass_trial(
             field, setup_pass_plan_pair, kick_detect_speed=KICK_DETECT_SPEED
         )
-        plan = (
-            pass_plan_log.plan_acted_on(trial.kick_wall_time, PLAN_LOOKBACK_SEC)
+        # Tracker がキックを出していれば、その時刻を基準に計画をラッチする。
+        # 自前検出はボール速度がしきい値を越えるまで待つぶん必ず遅れるので、
+        # 遅れた時刻でさかのぼると、実際に使われた計画ではなく、その後に
+        # 差し替わった計画を拾うことがある。実測でそれが起き、受け手が
+        # 食い違ったように見えた（計画は受け手10、ボールは受け手2へ）。
+        # Tracker の kicked_ball は optional で来ないことがあるため、
+        # 来ないときは従来どおり自前検出の時刻を使う。
+        tracker_kick = (
+            pass_plan_log.tracker_kick_near(trial.kick_wall_time)
             if trial.kick_wall_time
+            else None
+        )
+        kick_time = (
+            pass_plan_log.kick_time(tracker_kick)
+            if tracker_kick
+            else trial.kick_wall_time
+        )
+        plan = (
+            pass_plan_log.plan_acted_on(kick_time, PLAN_LOOKBACK_SEC)
+            if kick_time
             else None
         )
         # キックの分類は EKF 由来の速度で行う。vision の位置差分は外れ値が出る。
         ekf_peak = (
-            pass_plan_log.ball_peak_speed(
-                trial.kick_wall_time - 0.3, trial.kick_wall_time + 0.8
-            )
-            if trial.kick_wall_time
+            pass_plan_log.ball_peak_speed(kick_time - 0.3, kick_time + 0.8)
+            if kick_time
             else float("nan")
         )
-        verdict, error = _verdict(trial, plan)
+        # 出し手も Tracker が答えを持っている。自前検出は「ボールが速くなった
+        # 直前に最も近かった味方」なので、受け手が触った瞬間を拾うと出し手を
+        # 取り違える。実測でそれが起き、計画どおりの試行が WRONG_KICKER に
+        # 化けた。team=1 は yellow（crane 側）。
+        judged = trial
+        if tracker_kick and tracker_kick["team"] == TRACKER_TEAM_YELLOW:
+            robot_id = tracker_kick["robot_id"]
+            if robot_id is not None:
+                judged = dataclasses.replace(trial, kicker_id=robot_id)
+        verdict, error = _verdict(judged, plan)
         verdicts.append(verdict)
 
         print(f"試行{i}: {verdict}")
@@ -124,13 +153,6 @@ def test_pass_plan_as_planned(field: Field, pass_plan_log):
             # シミュレータの実測値なので、両者がずれていれば設定が効いて
             # いないか較正が古い。計画値との突き合わせに必須。
             f"実測減速度={trial.ball_decel_fit:.2f}"
-        )
-        # Tracker のキック検出。自前の検出（しきい値＋近接＋分離速度）と並べて
-        # 出す。両者が一致するなら自前の推定は捨ててよい。
-        tracker_kick = (
-            pass_plan_log.tracker_kick_near(trial.kick_wall_time)
-            if trial.kick_wall_time
-            else None
         )
         if tracker_kick is None:
             print("  Tracker: キック検出なし（生成側が kicked_ball を出していない）")

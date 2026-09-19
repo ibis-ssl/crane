@@ -108,18 +108,34 @@ class PassPlanLog:
         return max(speeds) if speeds else float("nan")
 
     def tracker_kick_near(self, when: float, window: float = 1.5) -> dict | None:
-        """指定時刻に最も近い Tracker のキック検出。無ければ None。
+        """自前のキック検出時刻に対応する Tracker のキック。無ければ None。
 
-        Tracker は蹴ったロボットの ID・初速・キック時刻をそのまま持っている
-        ので、pytest 側のしきい値による自前検出より素性が良い。ただし
-        tracked_frame の生成側が kicked_ball を入れるとは限らない
-        （proto のコメントが optional と明記している）ため、無いことを
-        前提に使うこと。
+        Tracker は蹴ったロボットの ID・初速・キック時刻をそのまま持っているので、
+        pytest 側のしきい値による自前検出より素性が良い。ただし tracked_frame の
+        生成側が kicked_ball を入れるとは限らない（proto のコメントが optional と
+        明記しており、実測でも 3 試行中 2 件で来なかった）ので、無いことを前提に
+        使うこと。
+
+        探すのは「検出時刻**以前**で最も近いキック」。自前検出はしきい値を越える
+        まで待つぶん必ず遅れるため、前後で最も近いものを採ると受け手が触った瞬間
+        の方を拾う。実測でそれが起き、出し手を取り違えた。
         """
         kicks = [
-            r for r in self.records("tracker_kick") if abs(r["t"] - when) <= window
+            r
+            for r in self.records("tracker_kick")
+            if when - window <= self.kick_time(r) <= when
         ]
-        return min(kicks, key=lambda r: abs(r["t"] - when)) if kicks else None
+        return max(kicks, key=self.kick_time) if kicks else None
+
+    @staticmethod
+    def kick_time(kick: dict) -> float:
+        """Tracker のキック時刻 [unix 秒]。
+
+        start_timestamp は Tracker がキックが起きたと判断した時刻そのもので、
+        受信時刻（t）より正確なので、あればそちらを使う。
+        """
+        stamp = float(kick.get("start_timestamp") or 0.0)
+        return stamp if stamp > 0.0 else float(kick["t"])
 
     def assign_at(self, when: float) -> dict | None:
         return self.latest_before("assign", when)
