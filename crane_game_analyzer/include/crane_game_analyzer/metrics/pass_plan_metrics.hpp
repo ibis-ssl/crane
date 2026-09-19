@@ -86,6 +86,14 @@ private:
   /// 残らなかった。キックや INPLAY 離脱のような本当の解除では捨てる。
   auto writeInactivePlan(int kicker_id, bool keep_selection = false) -> void;
 
+  /// 保持中の受け手が候補を1つも持たなくなった時刻。持っていれば無効。
+  ///
+  /// この周期だけ候補が出ないことと、本当に受け手として使えなくなったことを
+  /// 区別するために要る。区別しないと、保持中の受け手のスコアを 0.0 として
+  /// ヒステリシスに渡すことになり、「改善率 無限大」として即切り替わる。
+  /// 保持時間の設定が素通りし、受け手が毎周期入れ替わっていた。
+  std::optional<rclcpp::Time> receiver_absent_since_;
+
   // 受け手ID選定（第1レベルヒステリシス）
   SelectionHysteresis<int> receiver_hysteresis_{SelectionHysteresis<int>::Config{
     .min_hold_duration_sec = 0.5,

@@ -43,6 +43,10 @@ namespace
 /// 制御半径ぶんを足した程度。
 constexpr double kReceivePointClearance = 0.6;
 
+/// 保持中の受け手が候補を持たない状態をどれだけ見逃すか [s]。
+/// receiver_hysteresis_ の min_hold_duration_sec と揃える。
+constexpr double kReceiverAbsenceGrace = 0.5;
+
 /// 計画の受け手より先に、別の味方がボールへ届いてしまう受領点かどうか。
 ///
 /// 見る観点は2つある。
@@ -438,15 +442,40 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   }
 
   // 受け手選定（第1レベルヒステリシス）: 前回受け手の現行スコアと比較
-  double prev_score = 0.0;
+  //
+  // 保持中の受け手が今周期の候補に居ないときに 0.0 を渡してはいけない。
+  // ヒステリシスは改善率で判定するので、0.0 に対しては何でも「無限大の改善」に
+  // なり、保持時間を待たずに切り替わる。候補の可否はロボットの動きで毎フレーム
+  // 揺れるため、これが起きると受け手が 0.11 秒ごとに入れ替わる。
+  //
+  // そこで、居ない状態が保持時間より短いあいだはこの周期の判定自体を見送る。
+  // それを超えて居ないなら、本当に使えなくなったと見て通常の選定に戻す。
+  const auto * held_best = static_cast<const ReceiverBest *>(nullptr);
   if (const auto prev_id = receiver_hysteresis_.currentId(); prev_id.has_value()) {
     for (const auto & rb : receiver_bests) {
       if (rb.id == prev_id.value()) {
-        prev_score = rb.score;
+        held_best = &rb;
         break;
       }
     }
+    if (held_best == nullptr) {
+      const auto now = ctx.clock->now();
+      if (!receiver_absent_since_.has_value()) {
+        receiver_absent_since_ = now;
+      }
+      if ((now - *receiver_absent_since_).seconds() < kReceiverAbsenceGrace) {
+        writeInactivePlan(kicker_id, /*keep_selection=*/true);
+        return;
+      }
+      receiver_hysteresis_.reset();
+      held_receiver_id_ = -1;
+      held_receive_point_.reset();
+    }
   }
+  if (held_best != nullptr) {
+    receiver_absent_since_.reset();
+  }
+  const double prev_score = held_best != nullptr ? held_best->score : 0.0;
   receiver_hysteresis_.shouldSwitch(overall_best->id, overall_best->score, prev_score);
   const int held_or_best_id = receiver_hysteresis_.currentId().value_or(overall_best->id);
 
