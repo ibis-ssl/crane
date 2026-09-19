@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_msg_wrappers/pass_rating.hpp>
 #include <crane_physics/ball_physics_model.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <format>
 #include <vector>
 
@@ -33,12 +34,33 @@ namespace
 /// 受領点そのものの競合だけでなく、経路を横切って途中で触ってしまう場合も含むので、
 /// 敵の迎撃評価と同じ「経路全体で先着できるか」を味方にも適用する。
 ///
+/// 経路のどこまでを「途中で横切る」と見なすかの、受領点手前の余裕 [m]。
+///
+/// 終端そのものは別の基準で見る（下の receiver_travel_time 比較）。ここで
+/// 終端まで含めてボール到達時刻と比べると、受領点の近くに味方が立っている
+/// だけで候補が消える。実測では 563 候補中 427 がこれで落ち、計画が成立
+/// しないまま Attacker がクリアを蹴る試行が並んだ。値はロボット直径 0.18m に
+/// 制御半径ぶんを足した程度。
+constexpr double kReceivePointClearance = 0.6;
+
+/// 計画の受け手より先に、別の味方がボールへ届いてしまう受領点かどうか。
+///
+/// 見る観点は2つある。
+///
+/// 1. **経路を途中で横切る味方**。ボールより先にパスラインへ到達できるなら、
+///    受領点まで届く前に触られる。
+/// 2. **受領点で先に待っている味方**。ここはボール到達時刻ではなく
+///    「計画の受け手より先に着くか」で見る。ボールと比べると、受け手自身が
+///    間に合う地点でも近くの味方が居るだけで落ちてしまい、候補が枯れる。
+///    受け手より近い味方が居るなら、その点はその味方に割り当てられるべきで、
+///    実際その味方を受け手とする候補として別途評価される。
+///
 /// 候補点ごとに全味方を評価すると重いので、経路までの距離で先に切る。
 /// 飛行時間内に届き得ない味方は最初から見ない。
 auto friendlyWouldSteal(
   const WorldModelWrapper & wm, const Point & origin, const Point & target,
   const StraightPassFlight & flight, int kicker_id, int receiver_id, uint8_t goalie_id,
-  const ReceiveFeasibilityParams & params) -> bool
+  const ReceiveFeasibilityParams & params, double receiver_travel_time) -> bool
 {
   const double pass_distance = (target - origin).norm();
   const double ball_time =
@@ -61,7 +83,15 @@ auto friendlyWouldSteal(
     if (
       straightPassInterceptionSlack(
         origin, target, flight, robot->pose.pos, robot->vel.linear,
-        params.receiver_max_acceleration, params.receiver_max_velocity) <= 0.0) {
+        params.receiver_max_acceleration, params.receiver_max_velocity,
+        PassPathRange{0.0, pass_distance - kReceivePointClearance}) <= 0.0) {
+      return true;
+    }
+    // 受領点に受け手より先（同着を含む）に着ける味方が居れば、そこは渡らない。
+    const double friend_time = getTravelTimeTrapezoidal(
+      robot->pose.pos, robot->vel.linear, target, params.receiver_max_acceleration,
+      params.receiver_max_velocity);
+    if (std::isfinite(friend_time) && friend_time <= receiver_travel_time) {
       return true;
     }
   }
@@ -345,7 +375,7 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
         friendlyWouldSteal(
           wm, pass_origin, point,
           StraightPassFlight{feas.kick_speed, feasibility_.ball_deceleration}, kicker_id,
-          static_cast<int>(receiver->id), goalie_id, feasibility_)) {
+          static_cast<int>(receiver->id), goalie_id, feasibility_, feas.receiver_travel_time)) {
         ++rejected_friendly;
         continue;
       }
