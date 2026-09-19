@@ -9,7 +9,7 @@ import { CanvasRenderer } from './renderer/CanvasRenderer.js';
 import { FieldLayer } from './renderer/FieldLayer.js';
 import { ThemeTokens } from './renderer/ThemeTokens.js';
 import { GameControlClient } from './ws/GameControlClient.js';
-import { DockLayout } from './ui/DockLayout.js';
+import { ShellControls } from './ui/ShellControls.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { MetricRing } from './ui/Sparkline.js';
 import { RingBuffer, indexBy, applyLayerUpdate } from './replay/RingBuffer.js';
@@ -69,7 +69,7 @@ class CraneViewer {
         this.fieldLayer = new FieldLayer();
         this.themeTokens = new ThemeTokens();
         this.renderer = null;
-        this.dockLayout = null;
+        this.shell = null;
         this.logPanel = null;
 
         this.init();
@@ -81,7 +81,7 @@ class CraneViewer {
             this.renderer = new CanvasRenderer(canvas, this, this.fieldLayer, this.themeTokens);
         }
         this.themeTokens.mount(() => this.renderer?.invalidate());
-        this.dockLayout = new DockLayout();
+        this.shell = new ShellControls(this);
         const logBody = document.getElementById('log-panel-body');
         if (logBody) this.logPanel = new LogPanel(logBody);
         this.setupWebSocket();
