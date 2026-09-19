@@ -34,7 +34,8 @@ class CraneViewer {
         this.controlTargets = {};
 
         this.moveMode = false;
-        this.selectedRobotId = null;
+        // 注目中のロボット。サイドバーの表示対象であり、移動モードの操作対象でもある。
+        this.focusedRobotId = null;
         this.isYellow = false;
         this.onPositiveHalf = false;
         this._prevFieldLength = null;
@@ -59,7 +60,6 @@ class CraneViewer {
         this._feedbackTimestamp = {};  // { robot_id: Date.now() } - 警告バッジのstale判定用
         this.latencyEstimation = {};   // { robot_id: { source: { latency_ms, correlation, ... } } }
         this._robotMetrics = new Map(); // id -> { posX, posY, vel }
-        this._detailRobotId = null;
         this._replayMode = false;
         this.ringBuffer = new RingBuffer();
         this.timeScrubber = null;
@@ -182,10 +182,10 @@ class CraneViewer {
                 samples_used: est.samples_used,
             };
         }
-        if (this._detailRobotId !== null) {
-            const robot = this.robotsOurs[this._detailRobotId];
-            const cmd   = this.controlTargets[this._detailRobotId];
-            if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
+        if (this.focusedRobotId !== null) {
+            const robot = this.robotsOurs[this.focusedRobotId];
+            const cmd   = this.controlTargets[this.focusedRobotId];
+            if (robot) this._renderDetailPanel(this.focusedRobotId, robot, cmd);
         }
         this.renderer?.invalidate();
     }
@@ -335,7 +335,7 @@ class CraneViewer {
         }
 
         this.scheduleRobotUpdate();
-        if (this.moveMode && this.selectedRobotId !== null) this.renderer?.invalidate();
+        if (this.moveMode && this.focusedRobotId !== null) this.renderer?.invalidate();
         if (this.simEditMode) this.renderer?.invalidate();
     }
 
@@ -364,7 +364,7 @@ class CraneViewer {
                 this._feedbackTimestamp[fb.robot_id] = now;
             }
         }
-        if (this._detailRobotId !== null) this.scheduleRobotUpdate();
+        if (this.focusedRobotId !== null) this.scheduleRobotUpdate();
     }
 
     handleGameInfo(data) {
@@ -379,10 +379,10 @@ class CraneViewer {
         if (this.robotUpdateTimer) return;
         this.robotUpdateTimer = setTimeout(() => {
             this.robotUpdateTimer = null;
-            if (this._detailRobotId !== null) {
-                const robot = this.robotsOurs[this._detailRobotId];
-                const cmd = this.controlTargets[this._detailRobotId];
-                if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
+            if (this.focusedRobotId !== null) {
+                const robot = this.robotsOurs[this.focusedRobotId];
+                const cmd = this.controlTargets[this.focusedRobotId];
+                if (robot) this._renderDetailPanel(this.focusedRobotId, robot, cmd);
             }
         }, 500);
     }
@@ -397,7 +397,7 @@ class CraneViewer {
     }
 
     toggleRobotDetail(id) {
-        if (this._detailRobotId === id) {
+        if (this.focusedRobotId === id) {
             this.closeRobotDetail();
         } else {
             this.showRobotDetail(id);
@@ -412,7 +412,8 @@ class CraneViewer {
         const panel = document.getElementById('robot-detail-inline');
         if (!panel) return;
 
-        this._detailRobotId = id;
+        this.focusedRobotId = id;
+        this._syncFocusLabel();
         this._renderDetailPanel(id, robot, cmd);
         panel.classList.add('visible');
         this.renderer?.invalidate();
@@ -508,7 +509,8 @@ class CraneViewer {
     closeRobotDetail() {
         const panel = document.getElementById('robot-detail-inline');
         panel?.classList.remove('visible');
-        this._detailRobotId = null;
+        this.focusedRobotId = null;
+        this._syncFocusLabel();
         this.renderer?.invalidate();
     }
 
@@ -791,11 +793,15 @@ class CraneViewer {
 
     deactivateMoveMode() {
         this.moveMode = false;
-        this.selectedRobotId = null;
         document.getElementById('btn-move-mode')?.classList.remove('active');
-        const label = document.getElementById('selected-robot-label');
-        if (label) label.textContent = '--';
+        // フォーカスは移動モードを抜けても維持する（サイドバーの表示対象でもあるため）
         this.renderer?.invalidate();
+    }
+
+    // focusedRobotId の唯一の書き手。ツールバーのラベルを同期する。
+    _syncFocusLabel() {
+        const label = document.getElementById('selected-robot-label');
+        if (label) label.textContent = this.focusedRobotId ?? '--';
     }
 
     sendMoveCommand(robotId, targetX, targetY) {
@@ -997,12 +1003,9 @@ class CraneViewer {
                 const fp = this.clientToFieldCoords(e.clientX, e.clientY);
                 const hitId = this.findRobotAtPosition(fp.x, fp.y);
                 if (hitId !== null) {
-                    this.selectedRobotId = hitId;
-                    const label = document.getElementById('selected-robot-label');
-                    if (label) label.textContent = hitId;
-                    this.renderer?.invalidate();
-                } else if (this.selectedRobotId !== null) {
-                    this.sendMoveCommand(this.selectedRobotId, fp.x, fp.y);
+                    this.showRobotDetail(hitId);
+                } else if (this.focusedRobotId !== null) {
+                    this.sendMoveCommand(this.focusedRobotId, fp.x, fp.y);
                 }
             } else {
                 this.isPanning = true;
@@ -1081,12 +1084,21 @@ class CraneViewer {
             const isInput = tag === 'INPUT' || tag === 'TEXTAREA';
 
             if (e.key === 'Escape') {
+                // Escape ラダー（順序は固定。上ほど優先）
+                //   1. コマンドパレット (V3)
+                //   2. ドロワー          ← ShellControls が capture 段階で処理済み
+                //   3. 指令モード        ← ボール配置より先。解除は HALT を投げるので
+                //                          「Esc 連打で確認なし HALT」にならない位置に置く
+                //   4. ボール配置
+                //   5. Sim 編集
+                //   6. フォーカス
+                //   7. 複数選択
+                //   8. 何も無ければ確認ダイアログ付き HALT
+                if (this.moveMode) { this.deactivateMoveMode(); return; }
                 if (this.placeBallPending) { this.cancelBallPlacement(); return; }
                 if (this.simEditMode) { this.toggleSimEditMode(); return; }
-                if (this.moveMode) { this.deactivateMoveMode(); return; }
-                if (this._detailRobotId !== null) { this.closeRobotDetail(); return; }
+                if (this.focusedRobotId !== null) { this.closeRobotDetail(); return; }
                 if (this._multiSelect.size > 0) { this._multiSelect.clear(); this.renderer?.invalidate(); return; }
-                // モード外の Escape → 確認ダイアログ付き HALT
                 this._requestHalt();
                 return;
             }

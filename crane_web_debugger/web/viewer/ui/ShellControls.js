@@ -103,7 +103,7 @@ export class ShellControls {
     }
 
     _syncRailSelection() {
-        const sel = this._viewer._detailRobotId;
+        const sel = this._viewer.focusedRobotId;
         for (const [id, btn] of this._railBtns) {
             btn.classList.toggle('selected', id === sel);
         }

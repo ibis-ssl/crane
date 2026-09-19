@@ -1,6 +1,9 @@
 import { formatPlannerName, getFsmState, formatLatencyMs, formatLatencyRich } from './formatters.js';
 
-const HALO_RADIUS = 120;         // mm
+const HALO_RADIUS = 120;         // mm  C-2 の二重リング内側（実線）
+const HALO_RADIUS_OUTER = 165;   // mm  同 外側（細線）
+// フォーカス中のロボットが居るとき、それ以外を沈めて視線を 1 台に集める（C-2）
+const NON_FOCUS_ALPHA = 0.62;
 const ARROW_LEN = 150;
 const ARROW_HEAD_LEN = 40;
 const ARROW_HEAD_HALF_ANGLE = Math.PI / 6; // 30°
@@ -31,8 +34,7 @@ const BADGE_OFFSET_Y = -95;
 export class RobotHud {
     // ctx は CanvasRenderer._render() 内の変換済みコンテキスト（SVG 座標系、1 unit = 1mm）
     draw(ctx, viewer, tokens) {
-        const primary = viewer.selectedRobotId;
-        const detail = viewer._detailRobotId;
+        const focus = viewer.focusedRobotId;
         const multi = viewer._multiSelect;
         const hover = viewer._hoveredRobotId;
         const zoom = viewer.zoomLevel ?? 1.0;
@@ -44,64 +46,59 @@ export class RobotHud {
             const cy = -robot.y * 1000;
             const theta = robot.theta ?? 0;
             const cmd = viewer.controlTargets[id];
-            this._drawHalo(ctx, cx, cy, id, primary, detail, multi, hover, tokens);
-            this._drawArrow(ctx, cx, cy, theta, cmd, tokens);
-            this._drawDribblerLed(ctx, cx, cy, id, viewer, tokens);
+            // 各描画メソッドは自前で globalAlpha を設定するので、Canvas では
+            // アルファが入れ子で乗算されない。減光率を引数で渡して掛け合わせる。
+            const a = (focus !== null && id !== focus) ? NON_FOCUS_ALPHA : 1.0;
+            this._drawHalo(ctx, cx, cy, id, focus, multi, hover, tokens, a);
+            this._drawArrow(ctx, cx, cy, theta, cmd, tokens, a);
+            this._drawDribblerLed(ctx, cx, cy, id, viewer, tokens, a);
             const latEst = viewer.latencyEstimation?.[id];
-            if (cmd || latEst) this._drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoom);
+            if (cmd || latEst) this._drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoom, a);
+            // 警告バッジだけは減光しない。異常の通知はフォーカスの有無で弱めない。
             this._drawWarningBadges(ctx, cx, cy, id, viewer, tokens);
         }
     }
 
-    _drawHalo(ctx, cx, cy, id, primary, detail, multi, hover, tokens) {
-        const accent = tokens.select ?? '#A0C4FF';
-        const detailColor = tokens.selectDetail ?? '#7D5260';
-        if (id === primary) {
-            // moveMode 選択: 実線・太
-            ctx.save();
+    // フォーカス = C-2 の二重リング。moveMode 選択と Detail 表示は
+    // focusedRobotId に統合済みなので、リングも 1 種類だけ。
+    _drawHalo(ctx, cx, cy, id, focus, multi, hover, tokens, alpha = 1.0) {
+        const accent = tokens.select ?? '#7FE3FF';
+        ctx.save();
+        ctx.setLineDash([]);
+        if (id === focus) {
             ctx.strokeStyle = accent;
-            ctx.globalAlpha = 0.8;
+            ctx.globalAlpha = 0.85 * alpha;
             ctx.lineWidth = 24;
-            ctx.setLineDash([]);
             ctx.beginPath();
             ctx.arc(cx, cy, HALO_RADIUS, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
-        } else if (id === detail) {
-            // Detail パネル選択: 実線・細、別色
-            ctx.save();
-            ctx.strokeStyle = detailColor;
-            ctx.globalAlpha = 0.75;
-            ctx.lineWidth = 14;
-            ctx.setLineDash([]);
+
+            ctx.globalAlpha = 0.45 * alpha;
+            ctx.lineWidth = 8;
             ctx.beginPath();
-            ctx.arc(cx, cy, HALO_RADIUS, 0, Math.PI * 2);
+            ctx.arc(cx, cy, HALO_RADIUS_OUTER, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
         } else if (multi?.has(id)) {
-            ctx.save();
             ctx.strokeStyle = accent;
-            ctx.globalAlpha = 0.6;
+            ctx.globalAlpha = 0.6 * alpha;
             ctx.lineWidth = 8;
             ctx.setLineDash([20, 10]);
             ctx.beginPath();
             ctx.arc(cx, cy, HALO_RADIUS, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
         } else if (id === hover) {
-            ctx.save();
             ctx.strokeStyle = accent;
-            ctx.globalAlpha = 0.35;
+            ctx.globalAlpha = 0.35 * alpha;
             ctx.lineWidth = 6;
             ctx.setLineDash([10, 6]);
             ctx.beginPath();
             ctx.arc(cx, cy, HALO_RADIUS + 8, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
         }
+        ctx.restore();
     }
 
-    _drawArrow(ctx, cx, cy, theta, cmd, tokens) {
+    _drawArrow(ctx, cx, cy, theta, cmd, tokens, alpha = 1.0) {
         const hasDribble = (cmd?.dribble_power ?? 0) > 0;
         const color = hasDribble ? (tokens.overlayMove ?? '#D0BCFF') : (tokens.hudAccent ?? '#A0C4FF');
         // SVG 座標系: tipX = cx + cos(θ)*L, tipY = cy - sin(θ)*L (Y反転)
@@ -110,7 +107,7 @@ export class RobotHud {
 
         ctx.save();
         ctx.strokeStyle = color;
-        ctx.globalAlpha = 0.85;
+        ctx.globalAlpha = 0.85 * alpha;
         ctx.lineWidth = ARROW_LINE_W;
         ctx.lineCap = 'round';
         ctx.setLineDash([]);
@@ -131,19 +128,19 @@ export class RobotHud {
         ctx.restore();
     }
 
-    _drawDribblerLed(ctx, cx, cy, id, viewer, tokens) {
+    _drawDribblerLed(ctx, cx, cy, id, viewer, tokens, alpha = 1.0) {
         const hasBall = viewer.robotFeedback?.[id]?.ball_sensor ?? false;
         const color = hasBall ? (tokens.hudAccent ?? '#A0C4FF') : (tokens.inkMuted ?? '#8C929A');
         ctx.save();
         ctx.fillStyle = color;
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.9 * alpha;
         ctx.beginPath();
         ctx.arc(cx, cy + DRIBBLER_Y, DRIBBLER_R, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     }
 
-    _drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoomLevel) {
+    _drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoomLevel, alpha = 1.0) {
         const fsm = getFsmState(cmd) ?? '';
         const planner = cmd?.planner_name ?? '';
         const wmEst = latEst?.world_model;
@@ -152,7 +149,7 @@ export class RobotHud {
         ctx.save();
         ctx.textAlign = 'center';
         ctx.setLineDash([]);
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.9 * alpha;
 
         if (fsm) {
             ctx.font = '80px sans-serif';

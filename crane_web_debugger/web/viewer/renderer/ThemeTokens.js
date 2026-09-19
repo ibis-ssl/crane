@@ -31,27 +31,26 @@ export class ThemeTokens {
         const r = (k, fallback) => cs.getPropertyValue(k).trim() || fallback;
         this._tokens = {
             // 面
-            fieldTurf:    r('--crane-field-turf', '#0E3D10'),
-            fieldGrid:    r('--crane-field-grid', '#1D5A22'),
+            fieldTurf:    r('--crane-field-turf', '#12291B'),
+            fieldGrid:    r('--crane-field-grid', '#1B3A26'),
             // テキスト
-            ink:          r('--crane-field-ink', '#E2E4E8'),
-            inkMuted:     r('--crane-field-ink-muted', '#8C929A'),
+            ink:          r('--crane-field-ink', '#FFFFFF'),
+            inkMuted:     r('--crane-field-ink-muted', 'rgba(255, 255, 255, 0.62)'),
             // ロボット HUD
             hudAccent:    r('--crane-field-hud-accent', '#A0C4FF'),
-            select:       r('--crane-field-select', '#A0C4FF'),
-            selectDetail: r('--crane-field-select-2', '#7D5260'),
+            select:       r('--crane-field-select', '#7FE3FF'),
             // オーバーレイ
-            overlayMove:  r('--crane-field-overlay-move', '#D0BCFF'),
-            overlayBall:  r('--crane-field-overlay-ball', '#FFA726'),
-            overlayRobot: r('--crane-field-overlay-robot', '#D0BCFF'),
+            overlayMove:  r('--crane-field-overlay-move', '#3DD68C'),
+            overlayBall:  r('--crane-field-overlay-ball', '#FF7A1A'),
+            overlayRobot: r('--crane-field-overlay-robot', '#7FE3FF'),
             // 状態色（バッジ・レイテンシ）
-            danger:       r('--crane-field-danger', '#B3261E'),
-            onDanger:     r('--crane-field-on-danger', '#FFFFFF'),
-            warn:         r('--crane-field-warn', '#F9A825'),
+            danger:       r('--crane-field-danger', '#FF8A7A'),
+            onDanger:     r('--crane-field-on-danger', '#2A0806'),
+            warn:         r('--crane-field-warn', '#FFC44D'),
             onWarn:       r('--crane-field-on-warn', '#2A2000'),
-            crit:         r('--crane-field-crit', '#6650A4'),
-            onCrit:       r('--crane-field-on-crit', '#FFFFFF'),
-            ok:           r('--crane-field-ok', '#F4DFF0'),
+            crit:         r('--crane-field-crit', '#C9A7FF'),
+            onCrit:       r('--crane-field-on-crit', '#2A0A3A'),
+            ok:           r('--crane-field-ok', 'rgba(255, 255, 255, 0.70)'),
         };
         this._onChange?.(this._tokens);
     }

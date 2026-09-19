@@ -118,7 +118,6 @@
   --crane-field-ink-muted: rgba(255, 255, 255, 0.62);     /* HUD 補助テキスト (planner・データなし) */
   --crane-field-hud-accent: #A0C4FF;    /* 向き矢印・ドリブラ LED */
   --crane-field-select: #7FE3FF;        /* フォーカスのハロー */
-  --crane-field-select-2: #C9A7FF;      /* Detail パネル選択のハロー */
   --crane-field-overlay-move: #3DD68C;  /* 移動モードの輪・ドリブル時の矢印 */
   --crane-field-overlay-ball: #FF7A1A;  /* sim edit: ボール */
   --crane-field-overlay-robot: #7FE3FF; /* sim edit: ロボット */

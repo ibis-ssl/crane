@@ -103,8 +103,8 @@ export class CanvasRenderer {
         this._robotHud.draw(ctx, v, tokens);
 
         // ロボット移動モードのオーバーレイ (M3トークン使用)
-        if (v.moveMode && v.selectedRobotId !== null) {
-            const robot = v.robotsOurs[v.selectedRobotId];
+        if (v.moveMode && v.focusedRobotId !== null) {
+            const robot = v.robotsOurs[v.focusedRobotId];
             if (robot) {
                 ctx.save();
                 ctx.strokeStyle = tokens.overlayMove ?? '#D0BCFF';
