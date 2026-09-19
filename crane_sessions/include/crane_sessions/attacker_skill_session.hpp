@@ -18,6 +18,7 @@
 #include <functional>
 #include <magic_enum/magic_enum.hpp>
 #include <memory>
+#include <optional>
 #include <range/v3/algorithm/contains.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -34,6 +35,15 @@ class AttackerSkillSession : public SessionBase
   // アロケータのhysteresis_bonus(1.5m)を確実に上回り、game_analyzer推奨の切替を保証するマージン
   static constexpr double RECOMMENDED_ATTACKER_MARGIN = 2.0;
 
+  /// 出し手がボールを持っていると見なす距離 [m]。
+  static constexpr double PASS_BALL_OWNED_DISTANCE = 0.25;
+  /// ボールが出し手から離れた（＝蹴った）と見なす距離 [m]。
+  /// ドリブル中の揺れでは越えない値にする。
+  static constexpr double PASS_BALL_RELEASED_DISTANCE = 0.6;
+  /// 蹴ったあと出し手が追わずに待つ時間 [s]。
+  /// 実測のパス到達時間は 0.8〜1.3 秒なので、受け手が確保するまで足りる長さにする。
+  static constexpr double PASS_YIELD_DURATION = 2.0;
+
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
@@ -42,6 +52,62 @@ public:
   : SessionBase("attacker_skill", world_model)
   {
   }
+
+  /// 自分が出したパスを自分で追いかけないようにするか。
+  ///
+  /// 飛行状態（STATE_BALL_IN_FLIGHT）は条件に使わない。ボールが飛んでいるかの
+  /// 推定は現状安定しておらず、特に実機で安定しないため、そこに依存した判断は
+  /// 実機で静かに無効化される（docs/pass.md の制約を参照）。
+  ///
+  /// 代わりに、このセッション自身が持っている事実だけで判断する。
+  ///   1. 直前に「自分が出し手の計画」をボールを持った状態で保持していた
+  ///   2. そのボールが自分から離れた
+  /// どちらも位置の直接観測で、速度推定も飛行判定も挟まない。
+  ///
+  /// これが無いと、受領点を通過したボールが転がり続けたときに、ボールへ最も近い
+  /// 出し手がそのまま追いかけて自分のパスを取り戻す。実測では SELF_TOUCH として
+  /// 現れ、味方ゲート修正後に残る支配的な失敗だった。
+  auto shouldYieldAfterOwnPass(uint8_t robot_id) -> bool
+  {
+    const auto & plan = world_model->getMsg().game_analysis.pass_plan;
+    const auto robot = world_model->getOurRobot(robot_id);
+    const double ball_distance = robot->getDistance(world_model->ball().pos);
+    const auto now = world_model->getMsg().header.stamp;
+    const double now_sec = now.sec + now.nanosec * 1e-9;
+
+    if (
+      isUsablePassPlan(plan, *world_model) && plan.kicker_id == static_cast<int>(robot_id) &&
+      ball_distance < PASS_BALL_OWNED_DISTANCE) {
+      // パスを出す直前。まだ蹴っていない。
+      holding_pass_as_kicker_ = true;
+      pass_issued_at_sec_.reset();
+      return false;
+    }
+
+    if (holding_pass_as_kicker_ && ball_distance > PASS_BALL_RELEASED_DISTANCE) {
+      holding_pass_as_kicker_ = false;
+      pass_issued_at_sec_ = now_sec;
+    }
+
+    if (!pass_issued_at_sec_.has_value()) {
+      return false;
+    }
+    if (now_sec - *pass_issued_at_sec_ > PASS_YIELD_DURATION) {
+      pass_issued_at_sec_.reset();
+      return false;
+    }
+    // 待っているあいだにボールが自分の所へ戻ってきたら、譲る理由が無い。
+    if (ball_distance < PASS_BALL_OWNED_DISTANCE) {
+      pass_issued_at_sec_.reset();
+      return false;
+    }
+    return true;
+  }
+
+  /// 自分が出し手の計画をボールを持った状態で保持しているか。
+  bool holding_pass_as_kicker_ = false;
+  /// 自分がパスを出したと判断した時刻 [s]。譲っていない間は無効。
+  std::optional<double> pass_issued_at_sec_;
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
@@ -54,11 +120,7 @@ public:
       skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
       visualizer->layer = "skill/" + skill->name;
     }
-    const auto & plan = world_model->getMsg().game_analysis.pass_plan;
-    if (
-      isUsablePassPlan(plan, *world_model) &&
-      plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT &&
-      robots.front().id == plan.kicker_id) {
+    if (shouldYieldAfterOwnPass(robots.front().id)) {
       skill->commander()->stopHere().lookAtBall().kickStraight(0.0);
       return {SessionBase::Status::RUNNING, {skill->getRobotCommand()}};
     }
