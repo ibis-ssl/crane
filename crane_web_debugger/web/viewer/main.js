@@ -355,9 +355,11 @@ class CraneViewer {
     }
 
     handleRobotFeedback(data) {
-        if (data.feedback) {
+        // websocket_server.cpp は "robots" キーで送る。以前は "feedback" を読んでいて
+        // robotFeedback が常に空になり、警告バッジと Detail の Feedback 節が死んでいた。
+        if (data.robots) {
             const now = Date.now();
-            for (const fb of data.feedback) {
+            for (const fb of data.robots) {
                 this.robotFeedback[fb.robot_id] = fb;
                 this._feedbackTimestamp[fb.robot_id] = now;
             }
