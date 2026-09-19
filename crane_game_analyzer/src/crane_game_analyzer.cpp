@@ -178,6 +178,23 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   // 受領点での到達速度。詳細な実測値は ReceiveFeasibilityParams のコメント参照。
   // 減速度が実測 0.36 m/s^2 と小さいため、1.5 では受領点通過後 3.1m 転がる。
   declare_parameter("pass_plan.desired_arrival_speed", 1.0);
+  // キック初速の下限。
+  //
+  // この下限は短いパスで desired_arrival_speed の設計を上書きする。実測
+  // （受領点まで 1.99m）では、到達速度 1.0 で届く初速 1.56 m/s が 2.00 へ
+  // クランプされ、受領点での速度が 1.60 m/s になる。通過後 3.56m 転がるので、
+  // 受け手が捕り損ねると場外まで出る。
+  //
+  // それでも 2.0 を維持する。1.5 に下げて 15 試行を測ったところ、到達速度は
+  // 設計どおり 1.0 に乗った（検算 1.04/1.07/1.00）が、成功率は 7/15 から
+  // 4/15 へ落ちた。原因は出し手による再接触で、SELF_TOUCH が 1 件から 6 件に
+  // 増えた。5 m/s で動けるロボットにとって 1.7 m/s の減速するボールは追い
+  // つける速さで、遅いパスは出し手自身に取り戻される。
+  //
+  // 転がり過ぎを減らすなら、初速を下げるのではなく BALL_IN_FLIGHT 中の
+  // 出し手の振る舞いを直す方が筋が良い（AttackerSkillSession は計画が
+  // BALL_IN_FLIGHT のときだけ停止するので、キックで計画が解除されると
+  // そのまま追いかける）。
   declare_parameter("pass_plan.min_initial_speed", 2.0);
   declare_parameter("pass_plan.max_initial_speed", 5.5);
   declare_parameter("pass_plan.feasibility_margin", 0.3);
