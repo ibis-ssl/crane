@@ -584,6 +584,102 @@
 
     .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
 
+    /* ===== 位置制御ゲイン調整パネル (ibis-ssl/crane#1442) ===== */
+    .pc-banner {
+      font-size: 0.7rem;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: var(--md-sys-shape-sm);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      margin-bottom: 10px;
+    }
+    .pc-banner[data-kind="ok"] {
+      background: var(--md-sys-color-success-container);
+      border-color: var(--md-sys-color-success);
+      color: var(--md-sys-color-on-success-container);
+    }
+    .pc-banner[data-kind="warn"] {
+      background: var(--md-sys-color-warning-container);
+      border-color: var(--md-sys-color-warning);
+      color: var(--md-sys-color-on-warning-container);
+    }
+    .pc-banner[data-kind="error"] {
+      background: var(--md-sys-color-error-container);
+      border-color: var(--md-sys-color-error);
+      color: var(--md-sys-color-on-error-container);
+    }
+
+    .pc-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .pc-row:last-of-type { border-bottom: none; }
+    .pc-row__head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pc-row__label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+    }
+    .pc-row__status {
+      margin-left: auto;
+      font-size: 0.64rem;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .pc-row__status[data-kind="ok"]      { color: var(--md-sys-color-success); }
+    .pc-row__status[data-kind="pending"] { color: var(--md-sys-color-warning); }
+    .pc-row__status[data-kind="error"]   { color: var(--md-sys-color-error); }
+    .pc-row__status[data-kind="muted"]   { color: var(--crane-ink-disabled); }
+
+    .pc-row__ctrl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pc-row__slider {
+      flex: 1;
+      min-width: 0;
+      accent-color: var(--md-sys-color-primary);
+    }
+    .pc-row__slider:disabled { accent-color: var(--crane-ink-disabled); }
+    .pc-row__number {
+      width: 74px;
+      flex: none;
+      font-size: 0.7rem;
+      padding: 3px 5px;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      text-align: right;
+    }
+    .pc-row__unit {
+      width: 34px;
+      font-size: 0.64rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .pc-row__help {
+      margin-top: 5px;
+      font-size: 0.64rem;
+      line-height: 1.5;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .pc-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pc-note {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
     /* ドロワー内のセクション (旧・右ドック) */
     .right-dock-section {
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
@@ -759,6 +855,9 @@
           </button>
           <button class="cv-handle" type="button" data-drawer-toggle="session" aria-expanded="false">
             <span class="material-symbols-outlined icon-sm">tune</span>Sim / Session
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="position-control" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">speed</span>位置制御
           </button>
           <button class="cv-handle" type="button" data-drawer-toggle="replay" aria-expanded="false">
             <span class="material-symbols-outlined icon-sm">history</span>リプレイ
@@ -958,6 +1057,19 @@
             </details>
           </div>
         </aside>
+        <aside class="cv-drawer" data-drawer="position-control" aria-label="位置制御ゲイン">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">speed</span>位置制御ゲイン
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <div id="position-control-panel"></div>
+          </div>
+        </aside>
+
         <aside class="cv-drawer" data-drawer="replay" aria-label="リプレイ">
           <div class="cv-drawer__header">
             <span class="material-symbols-outlined icon-sm">history</span>リプレイ

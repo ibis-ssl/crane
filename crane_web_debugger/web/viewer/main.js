@@ -10,6 +10,7 @@ import { FieldLayer } from './renderer/FieldLayer.js';
 import { ThemeTokens } from './renderer/ThemeTokens.js';
 import { GameControlClient } from './ws/GameControlClient.js';
 import { ShellControls } from './ui/ShellControls.js';
+import { PositionControlPanel } from './ui/PositionControlPanel.js';
 import { LogPanel } from './ui/LogPanel.js';
 import { MetricRing } from './ui/Sparkline.js';
 import { RingBuffer, indexBy, applyLayerUpdate } from './replay/RingBuffer.js';
@@ -70,6 +71,7 @@ class CraneViewer {
         this.themeTokens = new ThemeTokens();
         this.renderer = null;
         this.shell = null;
+        this.positionControl = null;
         this.logPanel = null;
 
         this.init();
@@ -84,6 +86,8 @@ class CraneViewer {
         this.shell = new ShellControls(this);
         const logBody = document.getElementById('log-panel-body');
         if (logBody) this.logPanel = new LogPanel(logBody);
+        const pcRoot = document.getElementById('position-control-panel');
+        if (pcRoot) this.positionControl = new PositionControlPanel(this, pcRoot);
         this.setupWebSocket();
         this.setupEventListeners();
         this.setupDelegatedListeners();
@@ -103,6 +107,7 @@ class CraneViewer {
         this.websocket.onopen = () => {
             this.updateConnectionStatus(true);
             this.logPanel?.appendLog('info', 'WS', `接続 ${wsUrl}`);
+            this.positionControl?.requestConfig();
         };
         this.websocket.onmessage = (event) => {
             try { this.handleMessage(JSON.parse(event.data)); } catch (e) {
@@ -135,6 +140,9 @@ class CraneViewer {
             case 'latency_estimation': this.handleLatencyEstimation(data); break;
             case 'situations_list':          this.handleSituationsList(data); break;
             case 'session_injection_current': this.handleSessionInjectionCurrent(data); break;
+            case 'position_control_config': this.positionControl?.handleConfig(data); break;
+            case 'set_position_control_param_result':
+                this.positionControl?.handleSetResult(data); break;
         }
     }
 

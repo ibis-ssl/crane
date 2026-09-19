@@ -15,6 +15,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <boost/asio.hpp>
 #include <cctype>
@@ -396,6 +397,8 @@ public:
       this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
     local_planner_params_client_ =
       std::make_shared<rclcpp::AsyncParametersClient>(this, "local_planner");
+    ibis_sender_params_client_ =
+      std::make_shared<rclcpp::AsyncParametersClient>(this, "ibis_sender");
 
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -681,6 +684,10 @@ private:
         handleRobotTestTarget(connection, request);
       } else if (type == "set_planner_param") {
         handleSetPlannerParam(connection, request);
+      } else if (type == "get_position_control_config") {
+        handleGetPositionControlConfig(connection);
+      } else if (type == "set_position_control_param") {
+        handleSetPositionControlParam(connection, request);
       } else if (type == "sim_teleport_ball") {
         handleSimTeleportBall(connection, request);
       } else if (type == "sim_teleport_robot") {
@@ -1510,6 +1517,149 @@ private:
     connection->sendMessage(ok.dump());
   }
 
+  /**
+   * 位置制御ゲインの遠隔調整（ibis-ssl/crane#1442）
+   *
+   * packet_type=ibis のとき、ibis_sender は 1 秒ごとに position_control.* を
+   * get_parameter() で読み直し、20 バイトの設定パケットとして CM4 へ送る
+   * （Orion_CM4 cm4/bridge/config_packet.h、UDP 12350）。位置制御ループ自体は
+   * CM4 側で閉じているので、ここでパラメータを書き換えることがロボットの
+   * ゲインを稼働中に変える唯一の経路になる。ロボットの再起動は要らない。
+   *
+   * packet_type=ssl のときは設定パケットを送らず、同じ 3 つのうち kp と
+   * deceleration を crane 側の calculateSimGlobalVelocity が使う
+   * （tolerance は sim 経路では未使用）。どちらが効いているかは UI 側で
+   * packet_type を見て出し分けるため、読み出しに packet_type を同梱する。
+   */
+  struct PositionControlParamSpec
+  {
+    const char * name;
+    double min_value;
+    double max_value;
+  };
+
+  // 範囲は CM4 側の受理範囲（config_packet.h の kConfig*Max）に合わせる。
+  // CM4 は範囲外の値をクランプせずデータグラムごと捨て、拒否理由は CM4 の
+  // ログにしか出ない。crane 側で弾かないと「設定できたのに何も起きない」
+  // という無言の失敗になるので、ここが最後の防波堤になる。
+  static constexpr std::array<PositionControlParamSpec, 3> kPositionControlParams{
+    {{"position_control.kp", 0.0, 20.0},
+     {"position_control.deceleration", 0.0, 20.0},
+     {"position_control.tolerance", 0.0, 1.0}}};
+
+  void handleGetPositionControlConfig(std::shared_ptr<WebSocketConnection> connection)
+  {
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      json err = {
+        {"type", "position_control_config"},
+        {"ready", false},
+        {"message", "ibis_sender のパラメータサービスが応答していません"}};
+      connection->sendMessage(err.dump());
+      return;
+    }
+
+    std::vector<std::string> names{"packet_type"};
+    for (const auto & spec : kPositionControlParams) {
+      names.emplace_back(spec.name);
+    }
+
+    ibis_sender_params_client_->get_parameters(
+      names, [this, connection](std::shared_future<std::vector<rclcpp::Parameter>> future) {
+        json msg = {{"type", "position_control_config"}, {"ready", true}};
+        try {
+          json values = json::object();
+          for (const auto & param : future.get()) {
+            switch (param.get_type()) {
+              case rclcpp::ParameterType::PARAMETER_DOUBLE:
+                values[param.get_name()] = param.as_double();
+                break;
+              case rclcpp::ParameterType::PARAMETER_STRING:
+                values[param.get_name()] = param.as_string();
+                break;
+              default:
+                break;
+            }
+          }
+          json limits = json::object();
+          for (const auto & spec : kPositionControlParams) {
+            limits[spec.name] = {{"min", spec.min_value}, {"max", spec.max_value}};
+          }
+          msg["values"] = values;
+          msg["limits"] = limits;
+        } catch (const std::exception & e) {
+          msg["ready"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの読み出しに失敗: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
+  }
+
+  void handleSetPositionControlParam(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    const std::string name = request.value("name", "");
+    const auto spec = std::find_if(
+      kPositionControlParams.begin(), kPositionControlParams.end(),
+      [&name](const PositionControlParamSpec & s) { return name == s.name; });
+
+    auto reject = [&](const std::string & reason) {
+      json err = {
+        {"type", "set_position_control_param_result"},
+        {"name", name},
+        {"success", false},
+        {"message", reason}};
+      connection->sendMessage(err.dump());
+    };
+
+    if (spec == kPositionControlParams.end()) {
+      reject("未知のパラメータです: " + name);
+      return;
+    }
+    if (!request.contains("value") || !request["value"].is_number()) {
+      reject("value が数値ではありません");
+      return;
+    }
+
+    const double value = request["value"].get<double>();
+    if (!std::isfinite(value) || value < spec->min_value || value > spec->max_value) {
+      // クランプしない。丸めた値で「適用済み」と表示すると、UI の表示と
+      // ロボットの実効値が食い違ったまま気付けなくなる（CM4 側と同じ方針）。
+      std::ostringstream oss;
+      oss << "範囲外の値です (" << spec->min_value << " 〜 " << spec->max_value << ")";
+      reject(oss.str());
+      return;
+    }
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      reject("ibis_sender のパラメータサービスが応答していません");
+      return;
+    }
+
+    ibis_sender_params_client_->set_parameters(
+      {rclcpp::Parameter(name, value)},
+      [this, connection,
+       name](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future) {
+        json msg = {{"type", "set_position_control_param_result"}, {"name", name}};
+        try {
+          const auto results = future.get();
+          const bool ok = !results.empty() && results.front().successful;
+          msg["success"] = ok;
+          if (!ok) {
+            const std::string reason = results.empty() ? "結果が空です" : results.front().reason;
+            msg["message"] = reason;
+            RCLCPP_WARN(
+              this->get_logger(), "位置制御パラメータの設定に失敗 (%s): %s", name.c_str(),
+              reason.c_str());
+          }
+        } catch (const std::exception & e) {
+          msg["success"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの設定で例外: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
+  }
+
   void handleSimTeleportBall(std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     float x = static_cast<float>(request.value("x", 0.0));
@@ -1663,6 +1813,7 @@ private:
   std::mutex injection_mutex_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
   rclcpp::AsyncParametersClient::SharedPtr local_planner_params_client_;
+  rclcpp::AsyncParametersClient::SharedPtr ibis_sender_params_client_;
 
   // Cached world model state for move commands
   bool cached_is_yellow_{false};
