@@ -584,6 +584,104 @@
 
     .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
 
+    /* ===== コマンドパレット (⌘K) ===== */
+    #command-palette {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 12vh;
+      background: var(--md-sys-color-scrim);
+    }
+    #command-palette.open { display: flex; }
+    .cp-box {
+      width: min(560px, 92vw);
+      background: var(--md-sys-color-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-lg, 16px);
+      box-shadow: var(--md-sys-elevation-3);
+      overflow: hidden;
+    }
+    .cp-input {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      font-family: inherit;
+      font-size: 0.92rem;
+      padding: 14px 16px;
+      outline: none;
+    }
+    .cp-list { max-height: 46vh; overflow-y: auto; }
+    .cp-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 9px 16px;
+      cursor: pointer;
+    }
+    .cp-item:hover { background: var(--md-sys-color-surface-container); }
+    .cp-item.active {
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+    }
+    .cp-empty, .cp-hint {
+      padding: 10px 16px;
+      font-size: 0.68rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .cp-hint { border-top: 1px solid var(--md-sys-color-outline-variant); }
+
+    .cv-cmdk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+    .cv-cmdk:hover { background: var(--md-sys-color-surface-container-high); }
+    .cv-cmdk__kbd {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.64rem;
+      padding: 1px 5px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-xs, 4px);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* ストリップの追加チップ */
+    .cv-chip--session .material-symbols-outlined { font-size: 14px; }
+    .cv-chip--warn {
+      background: var(--md-sys-color-warning-container);
+      color: var(--md-sys-color-on-warning-container);
+      border-color: var(--md-sys-color-warning);
+    }
+    .cv-chip--last { display: none; }
+    .cv-chip--last.visible { display: inline-flex; }
+    .cv-chip--last .material-symbols-outlined { font-size: 14px; }
+    #strip-last-action {
+      max-width: 22ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* ロボットのホバーツールチップ / HALT 確認ダイアログ
        (旧 main.js の style.cssText べた書きから移設) */
     .cv-hover-tooltip {
@@ -856,8 +954,15 @@
         <span id="gc-command">-</span>
       </span>
 
+      <span class="cv-chip cv-chip--session" title="注入中のセッション">
+        <span class="material-symbols-outlined icon-sm">playlist_play</span><span id="strip-session">HALT</span>
+      </span>
+
       <span class="cv-spacer"></span>
 
+      <span class="cv-chip cv-chip--last" title="直前の操作">
+        <span class="material-symbols-outlined icon-sm">history</span><span id="strip-last-action"></span>
+      </span>
       <span class="cv-chip" title="Game Controller への接続">
         <span class="m3-connection-dot" id="gc-connection-dot"></span>GC
       </span>
@@ -1179,8 +1284,23 @@
         </div>
       </div>
       <span class="cv-divider"></span>
-      <!-- V3: ここに ⌘K コマンドパレットと「直前の操作」が入る -->
+      <button class="cv-cmdk" type="button" id="btn-command-palette"
+        title="コマンドパレット (⌘K / Ctrl+K)。スコア・カード・次のステージはここから">
+        <span class="material-symbols-outlined icon-sm">search</span>
+        <span class="cv-cmdk__label">コマンド</span>
+        <kbd class="cv-cmdk__kbd">⌘K</kbd>
+      </button>
     </footer>
+
+    <!-- コマンドパレット。コマンドバーに居場所が無い操作の唯一の導線 -->
+    <div id="command-palette" role="dialog" aria-modal="true" aria-label="コマンドパレット">
+      <div class="cp-box">
+        <input type="text" id="command-palette-input" class="cp-input"
+          placeholder="操作を検索 (例: カード, スコア, ステージ, ゲイン)" autocomplete="off">
+        <div id="command-palette-list" class="cp-list"></div>
+        <div class="cp-hint">↑↓ で選択 / Enter で実行 / Esc で閉じる</div>
+      </div>
+    </div>
 
   </div>
 

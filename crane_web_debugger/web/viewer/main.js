@@ -17,6 +17,8 @@ import { ViewerState } from './state/ViewerState.js';
 import { ModeMachine } from './state/ModeMachine.js';
 import { LayerStore } from './state/LayerStore.js';
 import { ShellControls } from './ui/ShellControls.js';
+import { StatusStrip } from './ui/StatusStrip.js';
+import { CommandPalette } from './ui/CommandPalette.js';
 import { PositionControlPanel } from './ui/PositionControlPanel.js';
 import { ActionDispatcher } from './ui/ActionDispatcher.js';
 import { RobotDetail } from './ui/RobotDetail.js';
@@ -65,6 +67,8 @@ class CraneViewer {
 
         // --- UI ---
         this.shell = null;
+        this.statusStrip = null;
+        this.palette = null;
         this.positionControl = null;
         this.actions = null;
         this.detail = null;
@@ -91,6 +95,8 @@ class CraneViewer {
         this.detail = new RobotDetail(this.state);
         this.shell = new ShellControls(this);
         this.actions = new ActionDispatcher(this);
+        this.statusStrip = new StatusStrip(this.actions);
+        this.palette = new CommandPalette(this.actions);
 
         const pcRoot = document.getElementById('position-control-panel');
         if (pcRoot) this.positionControl = new PositionControlPanel(this, pcRoot);
@@ -114,7 +120,7 @@ class CraneViewer {
 
         this._setConnected(false);
         this.gcClient.connect(window.location.hostname);
-        this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
+        this.gcClient.onStateChange = (state) => this.statusStrip.updateFromGc(state);
     }
 
     // ===== 互換アクセサ =====
@@ -171,7 +177,7 @@ class CraneViewer {
             this._refreshDetailNow();
             this.renderer?.invalidate();
         });
-        hub.subscribe('game_info', (d) => this._onGameInfo(d));
+        hub.subscribe('game_info', (d) => this.statusStrip.updateFromGameInfo(d));
         hub.subscribe('situations_list', (d) => this._onSituationsList(d));
         hub.subscribe('session_injection_current', (d) => this._onSessionInjection(d));
         hub.subscribe('position_control_config', (d) => this.positionControl?.handleConfig(d));
@@ -241,25 +247,6 @@ class CraneViewer {
         this._scheduleDetailRefresh();
     }
 
-    _onGameInfo(data) {
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        set('score-our', data.our_score ?? 0);
-        set('score-their', data.their_score ?? 0);
-        set('play-situation', data.play_situation || '--');
-        set('game-stage', data.game_stage || '--');
-    }
-
-    updateGcPanel(state) {
-        if (!state) return;
-        const ts = state.teamState ?? {};
-        const scoreEl = document.getElementById('gc-score');
-        if (scoreEl) scoreEl.textContent = `${ts.YELLOW?.goals ?? 0} : ${ts.BLUE?.goals ?? 0}`;
-        const stageEl = document.getElementById('gc-stage');
-        if (stageEl) stageEl.textContent = (state.stage ?? '--').replace('NORMAL_', '').replace('_', ' ');
-        const cmdEl = document.getElementById('gc-command');
-        if (cmdEl) cmdEl.textContent = state.command?.type ?? '--';
-    }
-
     _onSituationsList(data) {
         const sel = document.getElementById('session-select');
         if (!sel) return;
@@ -281,6 +268,7 @@ class CraneViewer {
     }
 
     _onSessionInjection(data) {
+        this.statusStrip.updateSession(data.name);
         const currentEl = document.getElementById('session-current');
         if (currentEl) currentEl.textContent = data.name || '-';
         const historyEl = document.getElementById('session-history');
@@ -532,6 +520,11 @@ class CraneViewer {
             const tag = document.activeElement?.tagName;
             const isInput = tag === 'INPUT' || tag === 'TEXTAREA';
 
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                this.palette?.toggle();
+                return;
+            }
             if (e.key === 'Escape') { this._onEscape(); return; }
             if (e.key === 'Enter' && this.modes.simEdit && this.modes.simSelectedObj) {
                 this.simTeleportTo(this.lastMouseField.x, this.lastMouseField.y);
@@ -549,13 +542,14 @@ class CraneViewer {
     }
 
     // Escape ラダー。3 段目までの正本は ModeMachine の LADDER。
-    //   1. コマンドパレット (V3)
+    //   1. コマンドパレット
     //   2. ドロワー          ← ShellControls が capture 段階で処理して伝播を止める
     //   3. 指令モード        ← ModeMachine.exitTop()（move → ballPlacement → simEdit）
     //   4. フォーカス
     //   5. 複数選択
     //   6. 何も無ければ確認ダイアログ付き HALT
     _onEscape() {
+        if (this.palette?.isOpen) { this.palette.close(); return; }
         if (this.modes.exitTop()) { this.renderer?.invalidate(); return; }
         if (this.state.focusedRobotId !== null) { this.closeRobotDetail(); return; }
         if (this.state.multiSelect.size > 0) {
