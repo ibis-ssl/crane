@@ -94,6 +94,16 @@ class Field:
         return self.geometry.half_width
 
     @property
+    def half_goal_width(self) -> float:
+        """ゴール中心からゴールポストまで [m]。"""
+        return self.geometry.half_goal_width
+
+    @property
+    def penalty_depth(self) -> float:
+        """ゴールラインからペナルティエリア前縁まで [m]。"""
+        return self.geometry.penalty_depth
+
+    @property
     def wall_x(self) -> float:
         """中心からゴールライン裏の壁まで [m]。クランプが起きる境界。"""
         return self.geometry.wall_x

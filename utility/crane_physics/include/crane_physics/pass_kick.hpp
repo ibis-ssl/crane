@@ -19,7 +19,8 @@ namespace crane
 namespace pass_kick
 {
 /// ボール減速度の既定値 [m/s^2]（BallPhysicsModel と整合。実行時は ball().getPhysicsModel() 参照）
-constexpr double kDefaultDeceleration = 0.7;
+/// ER-Force シミュレータ実測値。測り方は erforce_ball_physics.yaml のコメント参照。
+constexpr double kDefaultDeceleration = 0.36;
 
 /// 直進パスの計画結果
 struct StraightPlan

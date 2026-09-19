@@ -7,6 +7,7 @@
 #include "crane_session_coordinator/robot_allocator.hpp"
 
 #include <algorithm>
+#include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_utils/stream.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -279,7 +280,35 @@ auto RobotAllocator::allocateRobotsGreedy(
 
   auto remaining_robots = available_robots;
 
+  // 有効な連携ペアを先に確保する。優先度の高い守備役に受け手を奪われないようにする。
+  // 明示的な固定割当がある構成はその指定を優先する。
+  const auto & plan = world_model->getMsg().game_analysis.pass_plan;
+  const auto has_dynamic_role = [&](const std::string & name) {
+    return std::ranges::any_of(requirements, [&](const auto & req) {
+      return req.name == name && req.max_robots == 1 && req.fixed_robots.empty();
+    });
+  };
+  const bool fixed_conflict = std::ranges::any_of(requirements, [&](const auto & req) {
+    return (req.name == "emplace_robot" && req.max_robots > 0) ||
+           std::ranges::any_of(req.fixed_robots, [&](uint8_t id) {
+             return id == plan.kicker_id || id == plan.receiver_id;
+           });
+  });
+  if (
+    isUsablePassPlan(plan, *world_model) && has_dynamic_role("attacker_skill") &&
+    has_dynamic_role("pass_receive") && !fixed_conflict &&
+    std::ranges::find(remaining_robots, plan.kicker_id) != remaining_robots.end() &&
+    std::ranges::find(remaining_robots, plan.receiver_id) != remaining_robots.end()) {
+    result["attacker_skill"] = {static_cast<uint8_t>(plan.kicker_id)};
+    result["pass_receive"] = {static_cast<uint8_t>(plan.receiver_id)};
+    std::erase_if(
+      remaining_robots, [&](uint8_t id) { return id == plan.kicker_id || id == plan.receiver_id; });
+  }
+
   for (const auto & req : sorted_requirements) {
+    if (result.contains(req.name)) {
+      continue;
+    }
     if (remaining_robots.empty()) {
       RCLCPP_WARN(logger_, "Session「%s」に割り当てるロボットが不足しています", req.name.c_str());
       break;

@@ -35,17 +35,28 @@ import math
 import time
 from collections import deque
 
-from field_helpers import ATTACKING_SIDE, DEFENDED_SIDE, Field
+from field_helpers import ATTACKING_SIDE, DEFENDED_SIDE, ROBOT_RADIUS, Field
 
 # ─── 判定パラメータ ──────────────────────────────────────────────────────────
 KICK_DETECT_SPEED = 1.5  # キック開始とみなすボール速度 [m/s]
 KICK_PROXIMITY = 0.4  # キッカー帰属のボール近傍距離 [m]
+# キッカーから離れていく速度のしきい値 [m/s]。
+# ボール速度だけでキックを判定すると、運び（ドリブル）中の小突きを拾う。
+# 運び中はボールがロボットと一緒に動くので、キッカーから見た分離速度は
+# ほぼ 0 になる。蹴った瞬間だけこれが立ち上がるので、速度としきい値の
+# 両方を課す。これが無いと、計画キック初速（実測 2.1〜2.3 m/s）を
+# 検出できる低いしきい値にしたとたん運びを誤検出する。
+KICK_SEPARATION_SPEED = 1.2
 CONTACT_DIST = 0.13  # 接触とみなすロボット中心-ボール距離 [m]
 KICKER_RELEASE_DIST = 0.5  # キッカー再接触を有効化するボール離脱距離 [m]
 STOP_SPEED = 0.3  # こぼれ球とみなすボール速度 [m/s]
 SETTLE_TIME = 0.2  # キック直後の判定無効時間 [s]
 OUT_OF_PLAY_MARGIN = 0.05  # 場外判定をフィールド境界から何 m 外に置くか
 SPEED_WINDOW_SEC = 0.08  # 速度推定の差分窓 [s]
+# 初速の直線回帰に使う窓 [s]（キック検出からの経過時間）。
+# 立ち上がり途中を避けて始め、他のロボットに触れる前に終える。
+KICK_FIT_START = 0.10
+KICK_FIT_END = 0.60
 MARKER_DISTANCE = 0.7  # 受け手からマーカーまでの距離 [m]
 PLACEMENT_TOLERANCE = 0.05  # 配置が vision に反映されたとみなす許容誤差 [m]
 PLACEMENT_WAIT_TIMEOUT = 2.0  # 配置の反映を待つ上限 [s]
@@ -71,8 +82,17 @@ class PassTrialResult:
     kick_pos: tuple = (0.0, 0.0)
     end_pos: tuple = (0.0, 0.0)
     kick_speed: float = 0.0
+    # キック直後の速度サンプルに直線を当てて得た初速 [m/s] と減速度 [m/s^2]。
+    # kick_speed は 0.3 秒窓の最大値なので vision ノイズで上振れする。
+    # 計画初速と突き合わせるには偏りの無い推定が要る。
+    # 減速度も併せて出す。設定（kicker_physics.yaml）は 0.7 m/s^2。
+    kick_speed_fit: float = float("nan")
+    ball_decel_fit: float = float("nan")
     pass_distance: float = 0.0
     duration: float = 0.0
+    # キックを検出した壁時計時刻。PassPlan の観測ログ（pass_plan_log）は同じ
+    # time.time() で打刻されるので、この値で「キック時点の計画」を引ける。
+    kick_wall_time: float = 0.0
     # 配置が vision に反映されるまでに要した秒数（NaN なら確認できなかった）
     placement_wait: float = float("nan")
     # キック時点で、各 yellow が配置座標からどれだけ離れていたか {id: m}
@@ -97,17 +117,58 @@ class _BallSpeedEstimator:
         return self.speed()
 
     def speed(self) -> float:
+        vx, vy = self.velocity()
+        return math.hypot(vx, vy)
+
+    def velocity(self) -> tuple[float, float]:
+        """速度ベクトル [m/s]。速さだけでなく向きも要る（分離速度の判定）。"""
         if len(self.samples) < 2:
-            return 0.0
+            return (0.0, 0.0)
         t1, x1, y1 = self.samples[-1]
         # 窓の外側で最も新しいサンプルとの差分を取る
         for t0, x0, y0 in reversed(self.samples):
             if t1 - t0 >= SPEED_WINDOW_SEC:
-                return math.hypot(x1 - x0, y1 - y0) / (t1 - t0)
+                return ((x1 - x0) / (t1 - t0), (y1 - y0) / (t1 - t0))
         t0, x0, y0 = self.samples[0]
         if t1 - t0 <= 0:
-            return 0.0
-        return math.hypot(x1 - x0, y1 - y0) / (t1 - t0)
+            return (0.0, 0.0)
+        return ((x1 - x0) / (t1 - t0), (y1 - y0) / (t1 - t0))
+
+
+def _separation_speed(estimator: "_BallSpeedEstimator", kicker, ball) -> float:
+    """キッカーから見てボールが離れていく速度 [m/s]。運びの判別に使う。"""
+    if kicker is None:
+        return 0.0
+    dx, dy = ball.x - kicker.x, ball.y - kicker.y
+    norm = math.hypot(dx, dy)
+    if norm < 1e-6:
+        return 0.0
+    vx, vy = estimator.velocity()
+    return (vx * dx + vy * dy) / norm
+
+
+def _fit_initial_speed(samples: list[tuple[float, float]]) -> tuple[float, float]:
+    """(初速 [m/s], 減速度 [m/s^2]) を最小二乗で推定する。
+
+    転がるボールの速度は v(t) = v0 - a*t なので、キック直後の窓で直線を当てる。
+    サンプルが足りない、または傾きが増加方向（接触で加速＝自由転がりでない）の
+    場合は NaN を返す。
+    """
+    if len(samples) < 4:
+        return (float("nan"), float("nan"))
+    n = len(samples)
+    sum_t = sum(s[0] for s in samples)
+    sum_v = sum(s[1] for s in samples)
+    sum_tt = sum(s[0] * s[0] for s in samples)
+    sum_tv = sum(s[0] * s[1] for s in samples)
+    denominator = n * sum_tt - sum_t * sum_t
+    if abs(denominator) < 1e-12:
+        return (float("nan"), float("nan"))
+    slope = (n * sum_tv - sum_t * sum_v) / denominator
+    intercept = (sum_v - slope * sum_t) / n
+    if slope > 0.0:
+        return (float("nan"), float("nan"))
+    return (intercept, -slope)
 
 
 def _nearest_robot(robots, x: float, y: float):
@@ -158,7 +219,10 @@ def _wait_for_placement(field: Field, expected: dict) -> float:
 
 
 def watch_pass_outcome(
-    field: Field, timeout_sec: float = 25.0, expected: dict | None = None
+    field: Field,
+    timeout_sec: float = 25.0,
+    expected: dict | None = None,
+    kick_detect_speed: float = KICK_DETECT_SPEED,
 ) -> PassTrialResult:
     """次の yellow キック1本を追跡して結果を分類する。
 
@@ -177,6 +241,7 @@ def watch_pass_outcome(
     kick_wall_time = 0.0
     ball_left_kicker = False
     prev_ball = None  # キック直前のボール位置（キック点の推定用）
+    speed_samples: list[tuple[float, float]] = []
 
     while time.time() - start_wall < timeout_sec:
         world = get_world()
@@ -187,13 +252,20 @@ def watch_pass_outcome(
         blues = world.get_blue_robots()
 
         if not tracking:
-            if speed >= KICK_DETECT_SPEED and prev_ball is not None:
+            if speed >= kick_detect_speed and prev_ball is not None:
                 kick_x, kick_y = prev_ball
                 y_id, y_d = _nearest_robot(yellows, kick_x, kick_y)
                 _b_id, b_d = _nearest_robot(blues, kick_x, kick_y)
-                if y_id is not None and y_d <= KICK_PROXIMITY and y_d <= b_d:
+                if (
+                    y_id is not None
+                    and y_d <= KICK_PROXIMITY
+                    and y_d <= b_d
+                    and _separation_speed(estimator, yellows.get(y_id), ball)
+                    >= KICK_SEPARATION_SPEED
+                ):
                     tracking = True
                     kick_wall_time = time.time()
+                    result.kick_wall_time = kick_wall_time
                     ball_left_kicker = False
                     result.kicker_id = y_id
                     result.kick_pos = (kick_x, kick_y)
@@ -210,6 +282,8 @@ def watch_pass_outcome(
         result.duration = dt
         result.end_pos = (ball.x, ball.y)
         result.kick_speed = max(result.kick_speed, speed if dt <= 0.3 else 0.0)
+        if KICK_FIT_START <= dt <= KICK_FIT_END:
+            speed_samples.append((dt, speed))
         if (
             not ball_left_kicker
             and math.hypot(ball.x - result.kick_pos[0], ball.y - result.kick_pos[1])
@@ -258,22 +332,37 @@ def watch_pass_outcome(
     result.pass_distance = math.hypot(
         result.end_pos[0] - result.kick_pos[0], result.end_pos[1] - result.kick_pos[1]
     )
+    result.kick_speed_fit, result.ball_decel_fit = _fit_initial_speed(speed_samples)
     return result
 
 
 # ─── 共通配置 ────────────────────────────────────────────────────────────────
 
 
-def receiver_positions(field: Field) -> list:
+# 受け手をハーフウェイラインからどれだけ攻撃側へ置くか（ハーフ長さ比）。
+# 既定 0.07 は既存の PASS_BUILDUP_STATIC / PASS_UNDER_MARK の配置。
+DEFAULT_RECEIVER_DEPTH = 0.07
+
+
+def receiver_positions(
+    field: Field, depth_ratio: float = DEFAULT_RECEIVER_DEPTH
+) -> list:
     """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
 
-    ハーフウェイラインをわずかに攻撃側へ越えた位置に置く。
+    既定ではハーフウェイラインをわずかに攻撃側へ越えた位置。
+
+    `depth_ratio` を上げると攻撃側の深い位置になる。isUsablePassPlan は
+    受領点が攻撃ハーフにあることを厳密に要求する（pass_plan.hpp の
+    `target.x() * getOurSideSign() < 0.0`）ので、受け手がハーフウェイ際にいると
+    走り回るうちに自陣側へ戻り、計画が明滅する。それを避けたいときに深くする。
     """
-    x = field.x(0.07) * ATTACKING_SIDE
+    x = field.x(depth_ratio) * ATTACKING_SIDE
     return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
-def setup_buildup_static(field: Field) -> dict:
+def setup_buildup_static(
+    field: Field, receiver_depth: float = DEFAULT_RECEIVER_DEPTH
+) -> dict:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
     ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
@@ -286,7 +375,7 @@ def setup_buildup_static(field: Field) -> dict:
     field.send_empty_world()
     # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
     ball_x = field.x(0.33) * DEFENDED_SIDE
-    left_receiver, right_receiver = receiver_positions(field)
+    left_receiver, right_receiver = receiver_positions(field, receiver_depth)
     facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
     # yellow (crane)
@@ -325,8 +414,128 @@ def setup_under_mark(field: Field) -> dict:
     return yellows
 
 
+# PassPlan 検証用の受け手深さ（ハーフ長さ比）。
+#
+# 既定の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
+# isUsablePassPlan の `target.x() * getOurSideSign() < 0.0`（攻撃ハーフ厳密）を
+# 割って計画が消えた。
+#
+# 0.33（≒1.5m）は実測から決めた。0.22（≒1.0m）では受け手が遮蔽列の手前に
+# なり、相手ゴールが見えないので goal_angle_bonus が 0 のままになる。
+# own_goal_penalty が幾何のみで上限 0.5 に張り付くため、ボーナス 0 だと
+# スコアの括弧が (1.0 - 0.5) = 0.5 にしかならず、迎撃スコアが少しでも落ちると
+# 下限 0.20 を割る（実測: 迎撃 0.18〜0.40 でスコア 0.09〜0.19）。
+# 逆に深すぎると遮蔽列に近づき、そちらに迎撃される。
+PASS_PLAN_RECEIVER_DEPTH = 0.33
+
+# 遮蔽列に足す余裕 [m]。出し手はキックまでにボールを運ぶので、
+# 運んだぶん「ゴールの影」がずれる。実測ではキック時に 1.0〜1.5m 運んでいた。
+BLOCKER_CARRY_MARGIN = 0.35
+
+# 受け手の y（ハーフ幅比）。
+# 0.65（≒1.95m）だと、受領点探索のリング（半径最大2.5m）がタッチライン際まで
+# 伸び、実測では y≈-2.9（ラインまで0.1m）の受領点が選ばれた。
+# そこは敵から最も遠いので迎撃評価は良いが、受け損なうと即場外になる。
+# 0.50（≒1.5m）に寄せて、場外までの余裕を作る。
+PASS_PLAN_RECEIVER_SPAN = 0.60
+
+
+def setup_pass_plan_pair(field: Field) -> dict:
+    """PassPlan の出し手・受け手ペアが成立する配置。
+
+    setup_buildup_static との違いは2点。どちらも実測から決めた。
+
+    1. **黄色をフルチーム11機置く。** INPLAY の守備系ロールは
+       defender(3) + second_threat_defender(1) + marker(2) = 6機を要求する
+       （unified_session_config.yaml）。8機だと GK と attacker を除いた6機が
+       すべて守備に吸われ、攻撃ハーフに誰も残らない。
+       実測（黄8機・3試行）では、受け手として置いた 2/3 が毎回
+       second_threat_defender と sub_attacker_skill に固定され、
+       pass_receive には自陣深くのロボットが回り、計画は最後まで
+       receiver_id=-1（候補ゼロ）のままだった。試行3では PLANNING に
+       一度も入らず、attacker も 0.3 秒ごとに入れ替わった。
+       11機なら守備系6機を賄ってなお攻撃ハーフに実体が残る。
+       優先順位は goalie(1) → emplace(0) → attacker(1) → defender(3) →
+       pass_receive(1) → sub_attacker(1) → second_threat(1) → marker(2) →
+       forward の順なので、pass_receive には確実に1機回る。
+
+    2. **受け手を攻撃ハーフの深い位置に置く。** 理由は
+       PASS_PLAN_RECEIVER_DEPTH のコメントを参照。
+
+    blue は setup_buildup_static と同じくシュートラインを塞ぐ壁を維持する。
+    Attacker は KICK 状態でシュート（ゴール可視角 3° 超）をパスより先に評価するため
+    （crane_robot_skills/src/attacker.cpp）、ゴールが開いていると計画を捨てて撃つ。
+
+    配置した yellow の座標を {id: (x, y)} で返す。
+    """
+    field.send_empty_world()
+    ball_x = field.x(0.33) * DEFENDED_SIDE
+    facing = math.atan2(0.0, ATTACKING_SIDE)
+
+    receiver_x = field.x(PASS_PLAN_RECEIVER_DEPTH) * ATTACKING_SIDE
+    yellows = {
+        0: (field.from_goal_line(DEFENDED_SIDE, 0.3), 0.0),  # GK
+        1: (ball_x + 0.4 * DEFENDED_SIDE, 0.1),  # ボール至近（出し手候補）
+        2: (receiver_x, field.y(PASS_PLAN_RECEIVER_SPAN)),  # 受け手候補（左）
+        3: (receiver_x, field.y(-PASS_PLAN_RECEIVER_SPAN)),  # 受け手候補（右）
+        # 以下は守備ロールに吸わせる実体。これが無いと守備が受け手を奪う。
+        # defender(3) + second_threat_defender(1) + marker(2) の6機ぶんを賄う。
+        4: (field.x(0.58) * DEFENDED_SIDE, field.y(-0.33)),
+        5: (field.x(0.58) * DEFENDED_SIDE, field.y(0.33)),
+        6: (field.x(0.75) * DEFENDED_SIDE, field.y(0.15)),
+        7: (field.x(0.75) * DEFENDED_SIDE, field.y(-0.15)),
+        8: (field.x(0.45) * DEFENDED_SIDE, field.y(-0.55)),
+        9: (field.x(0.45) * DEFENDED_SIDE, field.y(0.55)),
+        10: (field.x(0.30) * DEFENDED_SIDE, field.y(-0.70)),
+    }
+    for robot_id, (x, y) in yellows.items():
+        field.send_yellow_robot(robot_id, x, y, facing)
+
+    # blue: 全機静止。GK + 「ボールから見たゴールの影」だけを塞ぐ遮蔽列。
+    #
+    # 壁をボールの近くに置くと、シュートは塞げるがウィングへのパスラインにも
+    # 近くなり、迎撃スコアが潰れて計画が成立しなくなる。実測（壁を
+    # x=0.117*half_length に5機）では迎撃 0.18〜0.40 まで落ち、スコアが
+    # 下限 0.20 に届かなかった。
+    #
+    # そこで遮蔽列を相手ゴール側へ寄せ、ボールから見てゴールを覆うのに必要な
+    # 幅だけを塞ぐ。パスラインは遠く離れるので迎撃スコアを潰さない。
+    # 受領点はゴールに近く、かつ横に開いているので、そこからは遮蔽列の脇に
+    # ゴールが見える（goal_angle_bonus が乗る）。own_goal_penalty が幾何のみで
+    # 上限に張り付くため、このボーナスが無いとスコアが下限を越えない。
+    #
+    # ペナルティエリアの外に置く。中に入れると autoref が
+    # DEFENDER_IN_DEFENSE_AREA を取って INPLAY が途切れる。
+    goal_x = field.from_goal_line(ATTACKING_SIDE, 0.0)
+    block_x = field.from_goal_line(ATTACKING_SIDE, field.penalty_depth + 0.2)
+    ball_to_goal = abs(goal_x - ball_x)
+    ball_to_block = abs(block_x - ball_x)
+    # ボールから見てゴールが隠れる最小の半幅。
+    shadow_half = field.half_goal_width * ball_to_block / ball_to_goal
+    # 出し手はキックまでにボールを運ぶ（実測 1.0〜1.5m）。運んだぶん影がずれても
+    # 覆えるよう余裕を足す。
+    shadow_half += BLOCKER_CARRY_MARGIN
+    # 機数は blue の残り（GK 以外の 10 機）が上限。上限に当たったら間隔を広げて
+    # 範囲全体へ均等配分する。間隔を固定したまま機数だけ頭打ちにすると、列が
+    # -shadow_half 側にしか伸びず、ゴールの片側が丸ごと開く。
+    max_blockers = 10
+    needed = int(2.0 * shadow_half / (2.0 * ROBOT_RADIUS)) + 1
+    count = min(needed, max_blockers)
+    step = (2.0 * shadow_half / (count - 1)) if count > 1 else 0.0
+    field.send_blue_robot(0, field.from_goal_line(ATTACKING_SIDE, 0.3), 0.0, 0.0)
+    for robot_id in range(1, count + 1):
+        field.send_blue_robot(
+            robot_id, block_x, -shadow_half + (robot_id - 1) * step, 0.0
+        )
+    field.send_ball(ball_x, 0.0)
+    return yellows
+
+
 def run_pass_trial(
-    field: Field, setup_fn, timeout_sec: float = 25.0
+    field: Field,
+    setup_fn,
+    timeout_sec: float = 25.0,
+    kick_detect_speed: float = KICK_DETECT_SPEED,
 ) -> PassTrialResult:
     """1試行: STOP→配置→（反映を確認したら即）FORCE_START→パス1本を観測
 
@@ -340,7 +549,7 @@ def run_pass_trial(
     placement_wait = _wait_for_placement(field, expected)
     comm.observer.reset()
     comm.change_referee_command("FORCE_START", KICKOFF_DELAY)
-    result = watch_pass_outcome(field, timeout_sec, expected)
+    result = watch_pass_outcome(field, timeout_sec, expected, kick_detect_speed)
     result.placement_wait = placement_wait
     comm.change_referee_command("STOP", 1.0)
     return result

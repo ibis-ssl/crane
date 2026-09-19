@@ -58,8 +58,20 @@ pip install pyyaml setuptools jinja2 typeguard lark
 # 固定先は必ず main 上のcommitにすること。PRのブランチ上のcommitを指したままにすると、
 # squash mergeでブランチが消えた瞬間に到達不能になり、pip installが失敗する。
 # 症状はcrane側のCI失敗として出るので原因が分かりにくい。
+RCST_URL="git+https://github.com/ibis-ssl/robocup_scenario_test@941afdb7da384d7ef5901ca2ab814dd7689f5ba2"
+
 echo "robocup_scenario_testライブラリをインストール中..."
-pip install -v git+https://github.com/ibis-ssl/robocup_scenario_test@941afdb7da384d7ef5901ca2ab814dd7689f5ba2
+# 1回目: 依存を解決する。
+pip install -v "${RCST_URL}"
+# 2回目: 本体だけを強制的に入れ替える。
+#
+# pip はバージョン番号が一致すると取得元URLが違っても再インストールを省略する。
+# rcst は本家もフォークも 0.1.0 なので、本家版が入った venv が残っていると
+# 上記の SHA 固定が無言で効かなくなる。実際に本家 ded9751 が残った状態が発生し、
+# フォークにしかない rcst.field_geometry を import できず、scenario_test/conftest.py の
+# field フィクスチャが解決できずに全シナリオテストが collection 時点で落ちていた。
+# --no-deps を付けるのは、依存は1回目で解決済みで再ビルドが不要なため。
+pip install --force-reinstall --no-deps "${RCST_URL}"
 
 # pytestのインストール（ROS 2 Jazzy互換性のため7.4.4を指定）
 echo "pytestをインストール中..."
