@@ -18,4 +18,4 @@
 - Ctrl+Cだけでは `ssl-log-recorder` が動き続ける。`down` まで実行する。
 - ER-Force構成には実機CM4に相当する `cm4-sim` が含まれ、位置制御ループを閉じる。ホスト側のCraneは `planner:=visibility_graph` で起動する（ポート・アドレスやフィードバック受信方式は自動設定される）。詳細は[ネットワーク](../../docs/network.md)を参照する。
 
-Webデバッガーの入口は <http://localhost:8090/>。サービス・ポート・profile・設定値は[Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml)、引数と起動処理は[docker-dev.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/docker-dev.sh)を参照する。
+Webデバッガーの入口は <http://localhost:8090/>。Viewer・Annotation・Robot Manager はすべてこの同一オリジンで配信される（ロボット単位のテレメトリとテストは Viewer のサイドバータブ `?robot=<id>&tab=telemetry|test` に統合済み）。サービス・ポート・profile・設定値は[Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml)、引数と起動処理は[docker-dev.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/docker-dev.sh)を参照する。
