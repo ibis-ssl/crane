@@ -116,7 +116,16 @@ class CraneViewer {
             onEnterTest: () => this._syncTestChrome(),
             // 解除の送信はここに置く。Escape ラダーからの exitTop() も
             // ボタンからの deactivateTest() も必ずここを通るため、
-            // 「UI は off なのに crane 側はテストセッションのまま」にならない
+            // 「UI は off なのに crane 側はテストセッションのまま」にならない。
+            //
+            // 指令経路が「直接」でも同じ deactivate_robot_test を送ってよい。
+            // websocket_server.cpp の 3 ハンドラはいずれもサーバ側に状態を持たず、
+            // session_injection を publish するだけだから:
+            //   activate_move_mode   → "HALT"
+            //   activate_robot_test  → "ROBOT_TEST"
+            //   deactivate_robot_test→ "HALT"
+            // 直接経路はもともと HALT なので、解除は HALT の再送になって無害。
+            // メッセージ名に robot_test と付くが、実体は「HALT へ戻す」汎用の解除。
             onExitTest: () => {
                 this.hub.send({ type: 'deactivate_robot_test' });
                 this.logPanel?.appendLog('action', 'TEST', 'deactivate → HALT');
