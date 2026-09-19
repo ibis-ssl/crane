@@ -69,6 +69,17 @@ public:
   /// 現れ、味方ゲート修正後に残る支配的な失敗だった。
   auto shouldYieldAfterOwnPass(uint8_t robot_id) -> bool
   {
+    // 状態は必ずロボット単位で持つ。このセッションが担当するロボットは
+    // attacker の推薦で入れ替わるので、ID を見ずに持ち越すと、別のロボットが
+    // 「自分がパスを出した」状態を引き継いでボールの前で 2 秒止まる。
+    // 実測では 15 試行中 2 件しか成立せず、SELF_TOUCH がむしろ 3 件から 7 件へ
+    // 増えた（ID を持たせる前の実装）。
+    if (yield_robot_id_ != robot_id) {
+      yield_robot_id_ = robot_id;
+      holding_pass_as_kicker_ = false;
+      pass_issued_at_sec_.reset();
+    }
+
     const auto & plan = world_model->getMsg().game_analysis.pass_plan;
     const auto robot = world_model->getOurRobot(robot_id);
     const double ball_distance = robot->getDistance(world_model->ball().pos);
@@ -104,6 +115,8 @@ public:
     return true;
   }
 
+  /// 下の状態がどのロボットのものか。担当が替わったら引き継がない。
+  std::optional<uint8_t> yield_robot_id_;
   /// 自分が出し手の計画をボールを持った状態で保持しているか。
   bool holding_pass_as_kicker_ = false;
   /// 自分がパスを出したと判断した時刻 [s]。譲っていない間は無効。
