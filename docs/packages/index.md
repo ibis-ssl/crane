@@ -30,4 +30,4 @@
 | [rvo2_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/rvo2_vendor) | RVO2分散的衝突回避アルゴリズムのベンダーパッケージ |
 | [crane_bag](https://github.com/ibis-ssl/crane/tree/develop/crane_bag) | C++ rosbag2解析CLIツール |
 | [crane_mcap_tools](https://github.com/ibis-ssl/crane/tree/develop/crane_mcap_tools) | Pythonベースのrosbag/MCAP解析・SVG動画生成ツール |
-| [crane_web_debugger](https://github.com/ibis-ssl/crane/tree/develop/crane_web_debugger) | WebSocketデバッグブリッジおよびWebフロントエンドUI |
+| [crane_web_debugger](https://github.com/ibis-ssl/crane/tree/develop/crane_web_debugger) | WebSocketデバッグブリッジおよびWebフロントエンドUI（Viewer・Annotation・Robot Manager を同一オリジン 8090 で配信） |

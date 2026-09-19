@@ -1,0 +1,262 @@
+// 位置制御ゲインの遠隔調整パネル（ibis-ssl/crane#1442）
+//
+// packet_type=ibis のとき、ibis_sender は 1 秒ごとに position_control.* を読み直し、
+// 20 バイトの設定パケットとして CM4 へ送る。CM4 側で位置制御ループが閉じているので、
+// ここでの ros2 param set 相当の操作が、ロボットを再起動せずにゲインを変える唯一の経路。
+//
+// 押さえておくべき癖が 3 つある:
+//   1. 反映は「送信のたび」ではなく ibis_sender の 1 秒周期。押してすぐには変わらない
+//   2. CM4 は範囲外の値をクランプせずデータグラムごと捨てる。拒否理由は CM4 のログに
+//      しか出ないので、範囲外は送る前に弾く（websocket_server 側でも同じ範囲で弾く）
+//   3. packet_type=ssl では設定パケットを送らない。kp と deceleration は crane 側の
+//      sim 位置制御に効き、tolerance はどこにも効かない
+
+const PARAMS = [
+    {
+        name: 'position_control.kp',
+        label: '位置ゲイン',
+        unit: '',
+        min: 0, max: 20, step: 0.1,
+        help: '目標位置へ向かう P ゲイン。大きいほど機敏だが振動しやすい',
+        simEffective: true,
+    },
+    {
+        name: 'position_control.deceleration',
+        label: '減速度',
+        unit: 'm/s²',
+        min: 0, max: 20, step: 0.1,
+        help: '停止時の制動エンベロープ。小さいほど手前から緩やかに減速する',
+        simEffective: true,
+    },
+    {
+        name: 'position_control.tolerance',
+        label: '許容誤差',
+        unit: 'm',
+        min: 0, max: 1, step: 0.005,
+        help: '目標に到達したとみなす距離。packet_type=ibis でのみ効く',
+        simEffective: false,
+    },
+];
+
+// スライダを掴んでいる間は送らない。1 ドラッグで数十回 param set するのを避ける。
+const APPLY_DEBOUNCE_MS = 500;
+// ibis_sender の送信周期 1 秒ぶんの猶予を見込んだ、ロボットへの反映目安
+const ROBOT_APPLY_HINT_MS = 1000;
+
+export class PositionControlPanel {
+    constructor(viewer, root) {
+        this._viewer = viewer;
+        this._root = root;
+        this._rows = new Map();     // name -> {input, slider, status, spec}
+        this._timers = new Map();   // name -> debounce timer id
+        this._packetType = null;
+        this._build();
+    }
+
+    _build() {
+        this._root.innerHTML = '';
+
+        this._banner = document.createElement('div');
+        this._banner.className = 'pc-banner';
+        this._root.appendChild(this._banner);
+        this._setBanner('neutral', '読み込み中…');
+
+        for (const spec of PARAMS) {
+            this._root.appendChild(this._buildRow(spec));
+        }
+
+        const foot = document.createElement('div');
+        foot.className = 'pc-foot';
+        const reload = document.createElement('button');
+        reload.type = 'button';
+        reload.className = 'm3-btn m3-btn--text m3-btn--sm';
+        reload.textContent = '再取得';
+        reload.title = 'ibis_sender から現在値を読み直す';
+        reload.addEventListener('click', () => this.requestConfig());
+        foot.appendChild(reload);
+
+        const note = document.createElement('span');
+        note.className = 'pc-note';
+        note.textContent = '反映は ibis_sender の送信周期（1 秒）ごと';
+        foot.appendChild(note);
+        this._root.appendChild(foot);
+    }
+
+    _buildRow(spec) {
+        const row = document.createElement('div');
+        row.className = 'pc-row';
+
+        const head = document.createElement('div');
+        head.className = 'pc-row__head';
+        const label = document.createElement('span');
+        label.className = 'pc-row__label';
+        label.textContent = spec.label;
+        const status = document.createElement('span');
+        status.className = 'pc-row__status';
+        head.append(label, status);
+
+        const ctrl = document.createElement('div');
+        ctrl.className = 'pc-row__ctrl';
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'pc-row__slider';
+        Object.assign(slider, { min: spec.min, max: spec.max, step: spec.step, value: spec.min });
+        slider.disabled = true;
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'm3-text-input pc-row__number';
+        Object.assign(input, { min: spec.min, max: spec.max, step: spec.step });
+        input.disabled = true;
+
+        const unit = document.createElement('span');
+        unit.className = 'pc-row__unit';
+        unit.textContent = spec.unit;
+        ctrl.append(slider, input, unit);
+
+        const help = document.createElement('div');
+        help.className = 'pc-row__help';
+        help.textContent = `${spec.help} / 範囲 ${spec.min}–${spec.max}`;
+
+        row.append(head, ctrl, help);
+
+        slider.addEventListener('input', () => {
+            input.value = slider.value;
+            this._onEdit(spec.name, Number(slider.value));
+        });
+        input.addEventListener('input', () => {
+            const v = Number(input.value);
+            if (Number.isFinite(v)) slider.value = String(v);
+            this._onEdit(spec.name, v);
+        });
+
+        this._rows.set(spec.name, { spec, slider, input, status, help });
+        return row;
+    }
+
+    // ===== 送受信 =====
+
+    requestConfig() {
+        this._setBanner('neutral', '読み込み中…');
+        this._send({ type: 'get_position_control_config' });
+    }
+
+    _send(payload) {
+        const ws = this._viewer.websocket;
+        if (ws?.readyState !== WebSocket.OPEN) {
+            this._setBanner('error', 'WebSocket が未接続です');
+            return false;
+        }
+        ws.send(JSON.stringify(payload));
+        return true;
+    }
+
+    _onEdit(name, value) {
+        const row = this._rows.get(name);
+        if (!row) return;
+        const { spec } = row;
+        if (!Number.isFinite(value) || value < spec.min || value > spec.max) {
+            this._setStatus(name, 'error', `範囲外 (${spec.min}–${spec.max})`);
+            clearTimeout(this._timers.get(name));
+            return;
+        }
+        this._setStatus(name, 'pending', '未適用');
+        clearTimeout(this._timers.get(name));
+        this._timers.set(name, setTimeout(() => {
+            this._setStatus(name, 'pending', '送信中…');
+            if (this._send({ type: 'set_position_control_param', name, value })) {
+                this._viewer.logPanel?.appendLog('info', 'PARAM', `${name} = ${value}`);
+            }
+        }, APPLY_DEBOUNCE_MS));
+    }
+
+    // websocket_server の position_control_config を受ける
+    handleConfig(data) {
+        if (!data.ready) {
+            this._setBanner('error', data.message ?? 'ibis_sender が応答していません');
+            for (const [name, row] of this._rows) {
+                row.slider.disabled = true;
+                row.input.disabled = true;
+                this._setStatus(name, 'error', '—');
+            }
+            return;
+        }
+
+        const values = data.values ?? {};
+        this._packetType = values.packet_type ?? null;
+
+        for (const [name, row] of this._rows) {
+            // 範囲はサーバ（＝CM4 の受理範囲）を正とする。UI 側の定数とずれていたら合わせる。
+            const limit = data.limits?.[name];
+            if (limit) {
+                row.spec.min = limit.min;
+                row.spec.max = limit.max;
+                Object.assign(row.slider, { min: limit.min, max: limit.max });
+                Object.assign(row.input, { min: limit.min, max: limit.max });
+                row.help.textContent = `${row.spec.help} / 範囲 ${limit.min}–${limit.max}`;
+            }
+            const v = values[name];
+            if (typeof v === 'number') {
+                row.slider.value = String(v);
+                row.input.value = String(v);
+                row.slider.disabled = false;
+                row.input.disabled = false;
+                this._setStatus(name, 'ok', '適用済み');
+            } else {
+                this._setStatus(name, 'error', '取得失敗');
+            }
+            // tolerance は sim 経路では効かないので、効かないことを行ごとに示す
+            const dead = this._packetType === 'ssl' && !row.spec.simEffective;
+            row.slider.disabled = row.slider.disabled || dead;
+            row.input.disabled = row.input.disabled || dead;
+            if (dead) this._setStatus(name, 'muted', 'sim では無効');
+        }
+
+        this._syncBanner();
+    }
+
+    // websocket_server の set_position_control_param_result を受ける
+    handleSetResult(data) {
+        const name = data.name;
+        if (!this._rows.has(name)) return;
+        if (data.success) {
+            this._setStatus(name, 'ok', '適用済み');
+            // ロボットへ届くのは ibis_sender の次の送信。その間は「反映待ち」を出す
+            if (this._packetType === 'ibis') {
+                this._setStatus(name, 'ok', '送信待ち…');
+                setTimeout(() => this._setStatus(name, 'ok', '適用済み'), ROBOT_APPLY_HINT_MS);
+            }
+        } else {
+            this._setStatus(name, 'error', data.message ?? '失敗');
+            this._viewer.logPanel?.appendLog('error', 'PARAM', `${name}: ${data.message ?? '失敗'}`);
+        }
+    }
+
+    // ===== 表示 =====
+
+    _setStatus(name, kind, text) {
+        const row = this._rows.get(name);
+        if (!row) return;
+        row.status.textContent = text;
+        row.status.dataset.kind = kind;
+    }
+
+    _setBanner(kind, text) {
+        this._banner.dataset.kind = kind;
+        this._banner.textContent = text;
+    }
+
+    _syncBanner() {
+        if (this._packetType === 'ibis') {
+            this._setBanner('ok',
+                'packet_type=ibis — 1 秒ごとに CM4 へ設定パケット（UDP 12350）を送信中。'
+                + '3 項目とも実機のゲインに効きます。');
+        } else if (this._packetType === 'ssl') {
+            this._setBanner('warn',
+                'packet_type=ssl — 設定パケットは送られません。位置ゲインと減速度は '
+                + 'crane 側の sim 位置制御に効き、許容誤差は効きません。');
+        } else {
+            this._setBanner('warn', `packet_type が不明です（${this._packetType ?? '未取得'}）`);
+        }
+    }
+}

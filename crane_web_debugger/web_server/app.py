@@ -10,14 +10,31 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+try:  # uvicorn の --app-dir /app 起動とパッケージ起動の両方に対応する
+    from robot_manager import router as robot_manager_router
+except ImportError:  # pragma: no cover
+    from .robot_manager import router as robot_manager_router
+
 
 def create_app(web_root: Path) -> FastAPI:
+    """アプリを組み立てる。
+
+    【登録順は変えないこと】StaticFiles を "/" にマウントすると、Starlette は
+    登録順にマッチするので、それより後に足したルートは全部静的配信に飲まれる。
+    API ルーターは必ず最後のマウントより前に登録する。このファイルは短いので
+    追記すると自然に末尾へ書いてしまう。そこが罠になる。
+    """
     app = FastAPI(title="Crane Web Debugger HTTP")
 
+    # 1. API ルーター（"/" マウントより前）
+    app.include_router(robot_manager_router)
+
+    # 2. フォント
     fonts_dir = Path(os.environ.get("FONTS_DIR", "/app/fonts"))
     if fonts_dir.is_dir():
         app.mount("/fonts", StaticFiles(directory=str(fonts_dir)), name="fonts")
 
+    # 3. 静的配信（これ以降にルートを足しても効かない）
     app.mount(
         "/",
         StaticFiles(directory=str(web_root), html=True, follow_symlink=True),

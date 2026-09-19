@@ -165,8 +165,13 @@ if [[ $HAS_SUBCOMMAND == "false" ]]; then
     DOCKER_ARGS=("$COMPOSE_COMMAND" "${DOCKER_ARGS[@]}")
 fi
 
-if [[ $ENABLE_ROBOT_MANAGER == "false" ]] && [[ $COMPOSE_COMMAND == "up" ]] && [[ $MINIMAL == "false" ]]; then
-    DOCKER_ARGS+=(--scale robot-manager=0)
+# Robot Manager は web-debugger (8090) に内包済みなので、専用コンテナの有無ではなく
+# API の有効/無効で切り替える。--scale robot-manager=0 だった頃は MINIMAL のとき
+# 条件から漏れていたが、環境変数なら --minimal でも確実に効く。
+if [[ $ENABLE_ROBOT_MANAGER == "true" ]]; then
+    export ROBOT_MANAGER_ENABLED=1
+else
+    export ROBOT_MANAGER_ENABLED=0
 fi
 
 # 最小構成モード: シミュレータ本体、GC (8081)、Vision Client (8082)、Web Debugger (8090)、AutoRef のみを起動。

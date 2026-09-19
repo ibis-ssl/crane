@@ -8,9 +8,20 @@ services:
     environment:
       - HTTP_PORT=8090
       - WEB_ROOT=/app/web
+      # Robot Manager（旧 robot-manager サービス。8090 に内包した）。
+      # sim では既定で無効にして 192.168.20.0/24 へパケットを出さない。
+      # 実機は ./scripts/docker-dev.sh --robot-manager が 1 を立てる。
+      - ROBOT_MANAGER_ENABLED=${ROBOT_MANAGER_ENABLED:-0}
+      - NUM_ROBOTS=13
+      - ROBOT_IP_BASE=192.168.20.
+      - ROBOT_IP_OFFSET=100
+      - ROBOT_PORT=8000
+      - HTTP_TIMEOUT_SEC=0.8
     volumes:
       - ../../crane_web_debugger/web:/app/web:ro
+      # /app をディレクトリごとマウントすると /app/fonts が隠れるのでファイル単位で当てる
       - ../../crane_web_debugger/web_server/app.py:/app/app.py:ro
+      - ../../crane_web_debugger/web_server/robot_manager.py:/app/robot_manager.py:ro
     command:
       - uvicorn
       - "app:app"
@@ -21,6 +32,8 @@ services:
       - --reload
       - --reload-include
       - "app.py"
+      - --reload-include
+      - "robot_manager.py"
       - --app-dir
       - /app
       - --log-level
@@ -41,20 +54,6 @@ services:
       - /home:/home:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ../../crane_web_debugger/web/shared:/app/web/shared:ro
-    restart: unless-stopped
-
-  robot-manager:
-    image: ghcr.io/ibis-ssl/robot-manager:latest
-    container_name: crane-robot-manager
-    network_mode: host
-    environment:
-      - HTTP_PORT=8092
-      - NUM_ROBOTS=13
-      - ROBOT_IP_BASE=192.168.20.
-      - ROBOT_IP_OFFSET=100
-      - ROBOT_PORT=8000
-      - HTTP_TIMEOUT_SEC=0.8
-      - BACK_URL=http://localhost:8090
     restart: unless-stopped
 
   erforce-sim:
