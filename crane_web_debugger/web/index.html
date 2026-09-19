@@ -584,6 +584,39 @@
 
     .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
 
+    /* ロボットのホバーツールチップ / HALT 確認ダイアログ
+       (旧 main.js の style.cssText べた書きから移設) */
+    .cv-hover-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 500;
+      display: none;
+      background: var(--md-sys-color-surface-container-high);
+      color: var(--md-sys-color-on-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      box-shadow: var(--md-sys-elevation-2);
+      white-space: nowrap;
+    }
+    .cv-halt-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+      border: 2px solid var(--md-sys-color-error);
+      border-radius: var(--md-sys-shape-md);
+      padding: 16px 24px;
+      z-index: 9999;
+      font-size: 0.9rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
     /* ===== 位置制御ゲイン調整パネル (ibis-ssl/crane#1442) ===== */
     .pc-banner {
       font-size: 0.7rem;

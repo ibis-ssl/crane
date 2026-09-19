@@ -88,7 +88,7 @@ export class CanvasRenderer {
 
         // SVGレイヤー描画
         const parser = v.parser;
-        for (const [name, layer] of v.layerStore) {
+        for (const [name, layer] of v.layerStore.layers) {
             if (!v.visibleLayers.has(name)) continue;
             if (layer.dirty) {
                 layer.commands = layer.primitives.map(p => parser.parse(p)).filter(Boolean);
