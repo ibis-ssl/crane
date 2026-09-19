@@ -94,11 +94,9 @@
    * --*-dot はフィールド描画用の明るい識別色。明地では 3:1 を満たさないので
    * クローム上のドットには --crane-team-* の枠線を必ず添えること。 */
   --crane-team-yellow: #8D6209;        /* soft 上 4.81 / 白文字 5.41 */
-  --crane-on-team-yellow: #FFFFFF;
   --crane-team-yellow-soft: #FBF1D8;
   --crane-team-yellow-dot: #E0B21C;
   --crane-team-blue: #1E48C8;          /* soft 上 6.37 */
-  --crane-on-team-blue: #FFFFFF;
   --crane-team-blue-soft: #E7EDFD;
   --crane-team-blue-dot: #4C7CF5;
   --crane-test: #0C737A;
