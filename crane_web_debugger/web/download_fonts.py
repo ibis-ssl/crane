@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Download web fonts from Google Fonts CDN for local hosting.
 
-This script downloads Material Symbols Outlined, Noto Sans JP, and Roboto
-font files and generates CSS files that reference them locally.
+This script downloads Material Symbols Outlined, Noto Sans JP, Roboto, and
+IBM Plex Mono font files and generates CSS files that reference them locally.
 Run once before development, or during Docker build.
 
 Usage:
@@ -60,6 +60,15 @@ FONTS = {
         "family": "Roboto",
         "subdir": "roboto",
         "prefix": "roboto",
+    },
+    # 等幅。テーマの --md-sys-typescale-mono-font-family が参照する。
+    # 以前は 'Roboto Mono' を指定していたが一度も配信しておらず、
+    # 実際には Courier New にフォールバックしていた。
+    "ibm-plex-mono": {
+        "url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600",
+        "family": "IBM Plex Mono",
+        "subdir": "ibm-plex-mono",
+        "prefix": "ibm-plex-mono",
     },
 }
 

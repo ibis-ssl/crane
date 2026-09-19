@@ -54,8 +54,8 @@ export class RobotHud {
     }
 
     _drawHalo(ctx, cx, cy, id, primary, detail, multi, hover, tokens) {
-        const accent = tokens.selectionHalo ?? tokens.hudAccent ?? '#D0BCFF';
-        const detailColor = tokens.tertiary ?? '#7D5260';
+        const accent = tokens.select ?? '#A0C4FF';
+        const detailColor = tokens.selectDetail ?? '#7D5260';
         if (id === primary) {
             // moveMode 選択: 実線・太
             ctx.save();
@@ -103,7 +103,7 @@ export class RobotHud {
 
     _drawArrow(ctx, cx, cy, theta, cmd, tokens) {
         const hasDribble = (cmd?.dribble_power ?? 0) > 0;
-        const color = hasDribble ? (tokens.moveOverlay ?? '#B5EAD7') : (tokens.hudAccent ?? '#D0BCFF');
+        const color = hasDribble ? (tokens.overlayMove ?? '#D0BCFF') : (tokens.hudAccent ?? '#A0C4FF');
         // SVG 座標系: tipX = cx + cos(θ)*L, tipY = cy - sin(θ)*L (Y反転)
         const tipX = cx + Math.cos(theta) * ARROW_LEN;
         const tipY = cy - Math.sin(theta) * ARROW_LEN;
@@ -133,7 +133,7 @@ export class RobotHud {
 
     _drawDribblerLed(ctx, cx, cy, id, viewer, tokens) {
         const hasBall = viewer.robotFeedback?.[id]?.ball_sensor ?? false;
-        const color = hasBall ? (tokens.hudAccent ?? '#D0BCFF') : (tokens.noDataText ?? '#4A4458');
+        const color = hasBall ? (tokens.hudAccent ?? '#A0C4FF') : (tokens.inkMuted ?? '#8C929A');
         ctx.save();
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.9;
@@ -156,13 +156,13 @@ export class RobotHud {
 
         if (fsm) {
             ctx.font = '80px sans-serif';
-            ctx.fillStyle = tokens.hudText ?? '#E6E0E9';
+            ctx.fillStyle = tokens.ink ?? '#E2E4E8';
             ctx.textBaseline = 'top';
             ctx.fillText(fsm, cx, cy + FSM_Y);
         }
         if (planner) {
             ctx.font = '64px sans-serif';
-            ctx.fillStyle = tokens.noDataText ?? '#8C929A';
+            ctx.fillStyle = tokens.inkMuted ?? '#8C929A';
             ctx.textBaseline = 'top';
             ctx.fillText(formatPlannerName(planner), cx, cy + PLANNER_Y);
         }
@@ -170,8 +170,8 @@ export class RobotHud {
         // WM latency は常時表示
         if (wmEst?.latency_ms != null) {
             const latColor = wmEst.latency_ms > 100
-                ? (tokens.error ?? '#B3261E')
-                : (tokens.tertiaryContainer ?? '#F4DFF0');
+                ? (tokens.danger ?? '#B3261E')
+                : (tokens.ok ?? '#F4DFF0');
             ctx.font = '56px sans-serif';
             ctx.fillStyle = latColor;
             ctx.textBaseline = 'top';
@@ -182,8 +182,8 @@ export class RobotHud {
                 ctx.fillText(wmLabel, cx, cy + LATENCY_Y);
                 if (hwEst?.latency_ms != null) {
                     const hwColor = hwEst.latency_ms > 100
-                        ? (tokens.error ?? '#B3261E')
-                        : (tokens.tertiaryContainer ?? '#F4DFF0');
+                        ? (tokens.danger ?? '#B3261E')
+                        : (tokens.ok ?? '#F4DFF0');
                     ctx.fillStyle = hwColor;
                     ctx.fillText(`HW: ${formatLatencyRich(hwEst)}`, cx, cy + HW_LATENCY_Y);
                 }
@@ -192,8 +192,8 @@ export class RobotHud {
                 ctx.fillText(`WM: ${formatLatencyMs(wmEst)}`, cx, cy + LATENCY_Y);
                 if (hwEst?.latency_ms != null) {
                     const hwColor = hwEst.latency_ms > 100
-                        ? (tokens.error ?? '#B3261E')
-                        : (tokens.tertiaryContainer ?? '#F4DFF0');
+                        ? (tokens.danger ?? '#B3261E')
+                        : (tokens.ok ?? '#F4DFF0');
                     ctx.fillStyle = hwColor;
                     ctx.fillText(`HW: ${formatLatencyMs(hwEst)}`, cx, cy + HW_LATENCY_Y);
                 }
@@ -215,19 +215,19 @@ export class RobotHud {
 
         if (fb && !stale) {
             if (fb.error_id != null && fb.error_id !== 0) {
-                badges.push({ label: '!', color: tokens.error ?? '#B3261E' });
+                badges.push({ label: '!', color: tokens.danger ?? '#B3261E', ink: tokens.onDanger ?? '#FFFFFF' });
             }
             const v = fb.voltage;
             if (v != null && v <= VOLTAGE_CRIT) {
-                badges.push({ label: 'V', color: tokens.inversePrimary ?? '#6650A4' });
+                badges.push({ label: 'V', color: tokens.crit ?? '#6650A4', ink: tokens.onCrit ?? '#FFFFFF' });
             } else if (v != null && v <= VOLTAGE_WARN) {
-                badges.push({ label: 'V', color: tokens.warning ?? '#F9A825' });
+                badges.push({ label: 'V', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
             }
             const temps = fb.temperatures;
             if (temps && temps.length > 0) {
                 const maxT = Math.max(...temps);
                 if (maxT >= TEMP_CRIT) {
-                    badges.push({ label: 'T', color: tokens.warning ?? '#F9A825' });
+                    badges.push({ label: 'T', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
                 }
             }
         }
@@ -244,7 +244,7 @@ export class RobotHud {
             ctx.beginPath();
             ctx.arc(bx, by, BADGE_R, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = '#FFFFFF';
+            ctx.fillStyle = badges[i].ink ?? '#FFFFFF';
             ctx.globalAlpha = 1.0;
             ctx.font = `bold ${BADGE_R * 1.2}px sans-serif`;
             ctx.textAlign = 'center';

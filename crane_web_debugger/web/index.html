@@ -6,6 +6,7 @@
   <title>Crane Viewer</title>
   <link rel="stylesheet" href="/fonts/noto-sans-jp.css">
   <link rel="stylesheet" href="/fonts/roboto.css">
+  <link rel="stylesheet" href="/fonts/ibm-plex-mono.css">
   <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
   <link rel="stylesheet" href="m3e-theme.css">
   <link rel="stylesheet" href="/shared/nav/crane-nav.css">
@@ -160,7 +161,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--md-sys-color-surface-dim);
+      background-color: var(--crane-field-out);
     }
 
     #field-canvas {
@@ -175,7 +176,7 @@
       align-items: center;
       gap: 6px;
       padding: 4px var(--md-sys-spacing-sm);
-      background: var(--md-sys-color-surface-dim);
+      background: var(--md-sys-color-surface-container);
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
       flex-shrink: 0;
     }
@@ -290,21 +291,23 @@
       color: var(--md-sys-color-on-error) !important;
     }
 
+    /* C 案のチームボタン: soft 地 + チーム色インク + dot 色の枠。
+       ライト地でソリッド塗り + 白文字にすると、黄色が olive にしか見えない。 */
     .gc-btn--yellow {
-      background-color: var(--md-sys-color-team-yellow) !important;
-      color: var(--md-sys-color-on-team-yellow) !important;
-      border-color: var(--md-sys-color-team-yellow) !important;
+      background-color: var(--crane-team-yellow-soft) !important;
+      color: var(--crane-team-yellow) !important;
+      border: 1px solid var(--crane-team-yellow-dot) !important;
     }
 
     .gc-btn--blue {
-      background-color: var(--md-sys-color-team-blue) !important;
-      color: var(--md-sys-color-on-team-blue) !important;
-      border-color: var(--md-sys-color-team-blue) !important;
+      background-color: var(--crane-team-blue-soft) !important;
+      color: var(--crane-team-blue) !important;
+      border: 1px solid var(--crane-team-blue-dot) !important;
     }
 
     .gc-btn--card-yellow {
-      color: var(--md-sys-color-team-yellow) !important;
-      border-color: var(--md-sys-color-team-yellow) !important;
+      color: var(--crane-team-yellow) !important;
+      border-color: var(--crane-team-yellow) !important;
     }
 
     .gc-btn--card-red {
@@ -342,7 +345,7 @@
     }
 
     .btn-place-ball.active {
-      outline: 2px solid #fff;
+      outline: 2px solid var(--md-sys-color-primary);
       outline-offset: 1px;
     }
 
@@ -450,8 +453,8 @@
     }
 
     /* severity colors */
-    #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning,  #F9A825) !important; }
-    #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error,    #B3261E) !important; font-weight: 600; }
+    #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning) !important; }
+    #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error) !important; font-weight: 600; }
     #robot-detail-inline .rd-ok    { color: var(--md-sys-color-on-surface); }
 
     /* availability chips */
@@ -465,13 +468,13 @@
     }
 
     .rd-chip--ok {
-      background: var(--md-sys-color-tertiary-container, #FFD8E4);
-      color: var(--md-sys-color-on-tertiary-container, #31111D);
+      background: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
     }
 
     .rd-chip--ng {
-      background: var(--md-sys-color-surface-container-highest, #E6E0E9);
-      color: var(--md-sys-color-on-surface-variant, #49454F);
+      background: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-on-surface-variant);
       opacity: 0.6;
     }
   </style>

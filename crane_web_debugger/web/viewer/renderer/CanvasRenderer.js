@@ -107,7 +107,7 @@ export class CanvasRenderer {
             const robot = v.robotsOurs[v.selectedRobotId];
             if (robot) {
                 ctx.save();
-                ctx.strokeStyle = tokens.moveOverlay ?? '#D0BCFF';
+                ctx.strokeStyle = tokens.overlayMove ?? '#D0BCFF';
                 ctx.lineWidth = 20;
                 ctx.setLineDash([40, 20]);
                 ctx.globalAlpha = 0.9;
@@ -126,7 +126,7 @@ export class CanvasRenderer {
             ctx.lineWidth = 22;
             ctx.setLineDash([45, 25]);
             if (obj.type === 'ball') {
-                ctx.strokeStyle = tokens.simOverlayBall ?? '#FFA726';
+                ctx.strokeStyle = tokens.overlayBall ?? '#FFA726';
                 ctx.beginPath();
                 ctx.arc(v.ballPos.x * 1000, -v.ballPos.y * 1000, BALL_HIT_RADIUS_M * 900, 0, Math.PI * 2);
                 ctx.stroke();
@@ -134,7 +134,7 @@ export class CanvasRenderer {
                 const source = (obj.yellow === v.isYellow) ? v.robotsOurs : v.robotsTheirs;
                 const robot = source[obj.id];
                 if (robot) {
-                    ctx.strokeStyle = tokens.simOverlayRobot ?? '#D0BCFF';
+                    ctx.strokeStyle = tokens.overlayRobot ?? '#D0BCFF';
                     ctx.beginPath();
                     ctx.arc(robot.x * 1000, -robot.y * 1000, ROBOT_HIT_RADIUS_M * 1000, 0, Math.PI * 2);
                     ctx.stroke();
@@ -148,7 +148,7 @@ export class CanvasRenderer {
         // データなし表示 (M3トークン使用)
         if (v.layerStore.size === 0) {
             ctx.save();
-            ctx.fillStyle = tokens.noDataText ?? '#8C929A';
+            ctx.fillStyle = tokens.inkMuted ?? '#8C929A';
             ctx.font = `${40 * vp.dpr}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
