@@ -254,11 +254,13 @@ auto PassPlanMetric::compute(MetricContext & ctx) -> void
   }
 }
 
-auto PassPlanMetric::writeInactivePlan(int kicker_id) -> void
+auto PassPlanMetric::writeInactivePlan(int kicker_id, bool keep_selection) -> void
 {
-  receiver_hysteresis_.reset();
-  held_receiver_id_ = -1;
-  held_receive_point_.reset();
+  if (!keep_selection) {
+    receiver_hysteresis_.reset();
+    held_receiver_id_ = -1;
+    held_receive_point_.reset();
+  }
   flight_started_at_.reset();
   crane_msgs::msg::PassPlan plan;  // 既定構築（数値0）
   plan.plan_id = plan_seq_;
@@ -418,10 +420,7 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
 
   // 有効候補なし → 非アクティブ
   if (receiver_bests.empty()) {
-    receiver_hysteresis_.reset();
-    held_receiver_id_ = -1;
-    held_receive_point_.reset();
-    writeInactivePlan(kicker_id);
+    writeInactivePlan(kicker_id, /*keep_selection=*/true);
     return;
   }
 
@@ -434,10 +433,7 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
   }
   // スコアゲート
   if (overall_best->score < accept_score) {
-    receiver_hysteresis_.reset();
-    held_receiver_id_ = -1;
-    held_receive_point_.reset();
-    writeInactivePlan(kicker_id);
+    writeInactivePlan(kicker_id, /*keep_selection=*/true);
     return;
   }
 

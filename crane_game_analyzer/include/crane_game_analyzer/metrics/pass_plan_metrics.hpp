@@ -77,7 +77,14 @@ private:
   auto recomputePlan(MetricContext & ctx) -> void;
 
   // 有効プランが得られないときの非アクティブプランを cached_plan_ に書き込む
-  auto writeInactivePlan(int kicker_id) -> void;
+  /// 計画を非アクティブにして配信する。
+  ///
+  /// keep_selection を立てると、受け手・受領点の保持だけは残す。候補の可否は
+  /// ロボットの動きで毎フレーム揺れるので、1 周期たまたま候補が出なかった
+  /// だけで選択を捨てると、次の周期が別の受け手を選んで計画が明滅する。
+  /// 実測では受け手が 0.11 秒ごとに 2↔8 を往復し、キックまで計画が生き
+  /// 残らなかった。キックや INPLAY 離脱のような本当の解除では捨てる。
+  auto writeInactivePlan(int kicker_id, bool keep_selection = false) -> void;
 
   // 受け手ID選定（第1レベルヒステリシス）
   SelectionHysteresis<int> receiver_hysteresis_{SelectionHysteresis<int>::Config{
