@@ -40,6 +40,26 @@ services:
       - warning
     restart: unless-stopped
 
+  packet-forge:
+    build:
+      context: ../..
+      dockerfile: docker/dev/packet-forge/Dockerfile
+    container_name: crane-packet-forge
+    # 実機の CM4 へ直接 UDP を送り、フィードバックを multicast で受けるので host が要る
+    network_mode: host
+    environment:
+      - HTTP_PORT=8094
+      # 複数 NIC のホストでは送信元がロボット用 LAN 以外に寄ると届かない。
+      # ./scripts/docker-dev.sh real で使うときに実機側のアドレスを入れる。
+      - FORGE_INTERFACE_IP=${FORGE_INTERFACE_IP:-}
+    volumes:
+      # ページと送信コアは読み取り専用で当てる。編集すればリロードで反映される
+      - ../../crane_packet_forge/web:/app/web:ro
+      - ../../crane_packet_forge/crane_packet_forge:/app/crane_packet_forge:ro
+      # 共有テーマは crane_web_debugger が正本（ball-calibration と同じ方式）
+      - ../../crane_web_debugger/web/shared:/app/shared:ro
+    restart: unless-stopped
+
   ball-calibration:
     build:
       context: ../..
