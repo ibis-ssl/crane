@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/position_control_config.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_utils/parameter.hpp>
 #include <format>
@@ -36,6 +37,8 @@ constexpr int DEFAULT_PORT = 12345;
 constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
+// 位置制御設定パケットのフォーマット版（Orion_CM4 cm4/bridge/config_packet.h の byte 4）
+constexpr uint8_t POSITION_CONTROL_CONFIG_VERSION = 2;
 }  // namespace CommConfig
 
 class IbisSenderNode : public SenderBase
@@ -62,6 +65,9 @@ private:
   double position_control_tolerance_ = 0.01;
   double position_control_ki_ = 0.0;
   double position_control_kd_ = 0.0;
+
+  // 送ったゲインを bag に残すための publisher（sendPositionControlConfig で使う）
+  rclcpp::Publisher<crane_msgs::msg::PositionControlConfig>::SharedPtr position_control_config_pub_;
 
   int counter_{0};
 
@@ -139,6 +145,10 @@ public:
     } catch (std::exception & e) {
       RCLCPP_ERROR(get_logger(), "❌ Broadcast Socket Init Error: %s", e.what());
     }
+
+    // 1 Hz 以下の設定トピックなので、後から繋いだ購読者にも現在値が届くよう transient local。
+    position_control_config_pub_ = create_publisher<crane_msgs::msg::PositionControlConfig>(
+      "/position_control_config", rclcpp::QoS(1).transient_local());
 
     RCLCPP_INFO(
       get_logger(), "ibis_sender_node started (%s:%d)", target_address.c_str(), target_port);
@@ -325,7 +335,7 @@ private:
   }
 
   /**
-   * @brief 位置制御ゲインを CM4 へ送る（Orion_CM4 cm4/bridge/config_packet.h、20 バイト固定）
+   * @brief 位置制御ゲインを CM4 へ送る（Orion_CM4 cm4/bridge/config_packet.h、28 バイト固定）
    *
    * 位置制御ループは CM4 側で閉じているので、ゲインを変えるにはロボットへ届ける必要がある。
    * 指令パケットに相乗りさせないのは、64 バイトのレイアウトが crane / G474 / framework /
@@ -352,29 +362,44 @@ private:
     }
     last_position_control_config_send_ = now;
 
+    // 送る値と bag に残す値を二重に書かないよう、メッセージを先に組んでから
+    // そこからパケットの並びを作る。片方だけ直して記録がずれるのを防ぐため。
+    crane_msgs::msg::PositionControlConfig config_msg;
+    config_msg.header.stamp = get_clock()->now();
+    config_msg.packet_version = CommConfig::POSITION_CONTROL_CONFIG_VERSION;
+    config_msg.target_robot_id = crane_msgs::msg::PositionControlConfig::TARGET_ALL_ROBOTS;
+    config_msg.kp = static_cast<float>(get_parameter("position_control.kp").as_double());
+    config_msg.deceleration =
+      static_cast<float>(get_parameter("position_control.deceleration").as_double());
+    config_msg.tolerance =
+      static_cast<float>(get_parameter("position_control.tolerance").as_double());
+    config_msg.ki = static_cast<float>(get_parameter("position_control.ki").as_double());
+    config_msg.kd = static_cast<float>(get_parameter("position_control.kd").as_double());
+
     // 並び順は Orion_CM4 cm4/bridge/config_packet.h の byte 8..27 と対応する。
     const float values[5] = {
-      static_cast<float>(get_parameter("position_control.kp").as_double()),
-      static_cast<float>(get_parameter("position_control.deceleration").as_double()),
-      static_cast<float>(get_parameter("position_control.tolerance").as_double()),
-      static_cast<float>(get_parameter("position_control.ki").as_double()),
-      static_cast<float>(get_parameter("position_control.kd").as_double())};
+      config_msg.kp, config_msg.deceleration, config_msg.tolerance, config_msg.ki, config_msg.kd};
 
     uint8_t buf[28] = {};
     buf[0] = 'O';
     buf[1] = 'C';
     buf[2] = '4';
     buf[3] = 'C';
-    buf[4] = 2;     // version
-    buf[5] = 0xFF;  // 全機宛
+    buf[4] = config_msg.packet_version;
+    buf[5] = config_msg.target_robot_id;
     memcpy(&buf[8], values, sizeof(values));
 
+    config_msg.sent = true;
     try {
       broadcast_socket_.send_to(boost::asio::buffer(buf), position_control_config_endpoint_);
     } catch (std::exception & e) {
+      config_msg.sent = false;
       RCLCPP_WARN_THROTTLE(
         get_logger(), *get_clock(), 5000, "位置制御設定パケットの送信に失敗: %s", e.what());
     }
+
+    // 送信のたびに残す。理由と読み方は docs/cm4_position_control.md に書いてある。
+    position_control_config_pub_->publish(config_msg);
   }
 
 public:

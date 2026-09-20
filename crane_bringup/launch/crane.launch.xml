@@ -164,7 +164,7 @@ limitations under the License.
     <param name="kick_power_limit_chip" value="1.0"/>
     <param name="position_control.kp" value="2.0"/>
     <!-- CM4 側 PID の積分・微分ゲイン。0 = P 制御（従来の挙動）。
-         現地では ros2 param set /ibis_sender_node position_control.ki <値> で
+         現地では ros2 param set /ibis_sender position_control.ki <値> で
          再起動せずに変えられる。 -->
     <param name="position_control.ki" value="0.0"/>
     <param name="position_control.kd" value="0.0"/>
@@ -261,7 +261,7 @@ limitations under the License.
   <!-- 除外: /diagnostics（/diagnostics_aggで代替）, **/process_time, /parameter_events, /events/write_split -->
   <group if="$(var record)">
     <executable
-      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal --topics /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
+      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal --topics /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs /position_control_config"
     />
   </group>
 

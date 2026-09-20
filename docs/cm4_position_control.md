@@ -147,12 +147,34 @@ CM4 は受信した値をクランプせず、**データグラムごと破棄**
 設定値は 1 秒ごとに読み直して送信されるため、`ros2 param set` で変更すればロボットやノードを再起動せずに即座に反映されます。
 
 ```bash
-ros2 param set /ibis_sender_node position_control.kp 2.5
-ros2 param set /ibis_sender_node position_control.ki 1.0
-ros2 param set /ibis_sender_node position_control.kd 0.1
+ros2 param set /ibis_sender position_control.kp 2.5
+ros2 param set /ibis_sender position_control.ki 1.0
+ros2 param set /ibis_sender position_control.kd 0.1
 ```
 
 CM4 側は値が変わったときだけ `位置制御の設定を更新: kp ... / ki ... / kd ...` を出力します。反映されたかはこのログで確認してください。
+
+### 送ったゲインは `/position_control_config` に残る
+
+設定パケットを送るたびに、同じ内容を [`crane_msgs/msg/PositionControlConfig`](https://github.com/ibis-ssl/crane/blob/develop/crane_msgs/msg/PositionControlConfig.msg) として `/position_control_config` へ publish します。このトピックは `record:=true` の rosbag 記録対象に入っています。
+
+CM4 は ACK を返さず、ゲインは UDP:12350 のパケットにしか現れません。記録が無いと、後から「どのゲインで走ったか」をロボットの挙動から推定するしかなくなります（2026-09-20 の走行ログでは、整定が突然失われた時刻は特定できたものの、`kp` が 0 になったのか `tolerance` が広がったのかを bag から判別できませんでした）。
+
+publish は設定パケットの送信と同じ経路を通るので、レートは `/robot_commands` が届いているあいだ**最大 1 Hz**です。vision が落ちて world model が更新されない区間は送信も publish も止まり、トピックが途切れます。
+
+```bash
+# bag に記録されたゲインを時刻つきで読む（echo を先に起動してから再生する）
+ros2 topic echo /position_control_config &
+ros2 bag play --rate 10 <bag>
+```
+
+現在値を知りたいだけならトピックではなくパラメータを引いてください。`/robot_commands` が流れていなくても答えが返ります。
+
+```bash
+ros2 param get /ibis_sender position_control.kp
+```
+
+`sent` は UDP ソケットへ値を渡せたかどうかだけを示します。CM4 は ACK を返さないので、`sent: true` はロボットが受け取った証拠にはなりません（電源断・圏外・[受理範囲](#範囲外の値は捨てられる)外の値によるデータグラム破棄は、いずれも `sent: true` のまま記録されます）。送信に失敗した場合も値は `sent: false` として残します。
 
 ## トラブルシューティング
 
