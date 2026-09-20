@@ -98,14 +98,51 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
 
 ## パラメータ設定と動的更新
 
-Crane の [ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) は、1 秒ごとに位置制御設定パケット（20 バイト固定）をポート `12350` へブロードキャストします。
+Crane の [ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) は、1 秒ごとに位置制御設定パケット（28 バイト固定、v2）をポート `12350` へブロードキャストします。
+
+CM4 側の制御則は **PID** です。ただし `ki` / `kd` の既定は `0` で、その場合は従来どおりの P 制御に恒等的に縮退します。PID を使うときは現地で `ki` / `kd` を上げてください。
 
 ### パラメータ一覧
 
-- `position_control.kp`: 位置比例ゲイン
-- `position_control.deceleration`: 減速時の最大減速度
-- `position_control.tolerance`: 目標到達と判定する許容誤差距離
+- `position_control.kp`: 位置比例ゲイン [1/s]
+- `position_control.ki`: 積分ゲイン [1/s²]（既定 `0.0` = P 制御）。床の摩擦差やスリップで残る定常偏差を消すために使います
+- `position_control.kd`: 微分ゲイン [無次元]（既定 `0.0` = P 制御）。誤差ではなく実測速度に掛かる微分先行形なので、目標更新のたびに微分キックが出ることはありません
+- `position_control.deceleration`: 減速時の最大減速度 [m/s²]
+- `position_control.tolerance`: 目標到達と判定する許容誤差距離 [m]
 - `position_control.config_port`: 設定パケットの宛先ポート（既定: `12350`）
+
+`ki` / `kd` が効くのは `packet_type=ibis` の経路（実機および `cm4-sim` 構成）だけです。`packet_type=ssl` 経路の位置制御（[sim_position_controller.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/sim_position_controller.cpp)）は P 制御のままで、これらの値は送信も参照もされません。
+
+### 範囲外の値は捨てられる
+
+CM4 は受信した値をクランプせず、**データグラムごと破棄**して拒否理由をログに出します（黙ってクランプすると crane の表示と実機の実効値が食い違ったまま気付けないため）。検査はデータグラム単位なので、`ki` だけが範囲外でも `kp` を含めて 1 つも適用されません。
+
+| パラメータ | 受理範囲 |
+|---|---|
+| `kp` | `0 <= v <= 20` |
+| `ki` | `0 <= v <= 20` |
+| `kd` | `0 <= v <= 5` |
+| `deceleration` | `0 <= v <= 20` |
+| `tolerance` | `0 <= v <= 1.0` |
+
+### 後方互換はありません
+
+設定パケットは v2（28 バイト）のみです。CM4 は旧フォーマット（v1・20 バイト）を受理せず、crane 側も v2 しか送りません。中途半端に互換を残すと「`kp` だけ効いて `ki` / `kd` が効いていない機体」が黙って混ざり、現地では「なんとなく追従が悪い」以外の症状が出ないためです。
+
+片方だけ古いと設定パケットは `WrongSize` として全数拒否され、その機体は停止するのではなく**既定ゲイン（`kp = 2.0`）のまま走り続けます**（CM4 のログには拒否理由が出ます）。
+
+> [!IMPORTANT]
+> **リリース順序**: この変更は Orion_CM4 側の更新とセットです。crane だけ、あるいは CM4 だけを配ってはいけません。
+>
+> 1. Orion_CM4 の PID 対応をマージし、`ghcr.io/ibis-ssl/orion-cm4-sim` のイメージを発行する
+> 2. `docker/dev/docker-compose.yaml` と `docker/scenario/docker-compose.yaml` の `CM4_SIM_TAG` 既定値（commit SHA）を新しいイメージへ更新する
+> 3. 実機の CM4 へ新しいバイナリを配る（`cm4-fleet deploy`）
+>
+> 2 を飛ばすと、`cm4-sim` を挟むシミュレーションでゲイン設定が全数拒否され、`kp` の変更すら一切効かなくなります（`docker compose -f docker/dev/docker-compose.yaml logs cm4-sim` に `位置制御の設定パケットを拒否しました: WrongSize` が出ます）。
+
+### `ki` が効かないように見えるとき
+
+移動中はほぼ常に速度上限（減速エンベロープ）に張り付いており、その間 CM4 は**積分を進めません**（ワインドアップ抑制）。`ki` は目標へ詰めきったあとに残る定常偏差を消すためのもので、移動中の追従を速くするものではありません。追従そのものを速くしたい場合は `kp` を上げてください。
 
 ### 稼働中のパラメータ変更
 
@@ -113,7 +150,11 @@ Crane の [ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/cran
 
 ```bash
 ros2 param set /ibis_sender_node position_control.kp 2.5
+ros2 param set /ibis_sender_node position_control.ki 1.0
+ros2 param set /ibis_sender_node position_control.kd 0.1
 ```
+
+CM4 側は値が変わったときだけ `位置制御の設定を更新: kp ... / ki ... / kd ...` を出力します。反映されたかはこのログで確認してください。
 
 ## トラブルシューティング
 

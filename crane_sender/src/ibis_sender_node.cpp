@@ -67,6 +67,14 @@ private:
   // CM4 の position_tolerance。715 バイトの指令パケットには載らないので
   // SimPositionControllerConfig にもフィールドが無い。設定パケットで送る。
   double position_control_tolerance_ = 0.01;
+  // CM4 側 PID の積分・微分ゲイン。
+  //
+  // SimPositionControllerConfig に生やさないのは、あちらが ssl 経路
+  // (calculateSimGlobalVelocity) の P 制御だけを表す型だからである。ssl 経路に
+  // PID は無いので、フィールドを足すと「設定できるのに効かない値」が生まれる。
+  // 既定は 0 = P 制御で、CM4 側の PositionControllerConfig の既定と一致させること。
+  double position_control_ki_ = 0.0;
+  double position_control_kd_ = 0.0;
 
   // SSL type
   std::unique_ptr<UDPSender> ssl_blue_sender_;
@@ -121,9 +129,11 @@ public:
     // position_control.* の効き方は packet_type で変わる。
     //
     // packet_type=ssl: crane 側の calculateSimGlobalVelocity がこの値で位置制御する。
+    //   ただし ssl 経路は P 制御なので ki / kd は効かない（送信もしない）。
     // packet_type=ibis: 位置制御は CM4 側で閉じる。crane は 1 秒ごとに設定パケット
     //   （Orion_CM4 cm4/bridge/config_packet.h）でこの値を CM4 へ送り、CM4 の
-    //   position_controller のゲインを稼働中に上書きする。
+    //   position_controller のゲインを稼働中に上書きする。CM4 側は PID なので
+    //   ki / kd もここから送る。既定の 0 は P 制御（従来の挙動）を意味する。
     //
     // 実装の正本は CM4 側の position_controller で、crane は遠隔から設定する側である。
     // 値は 1 秒ごとに get_parameter() で読み直すので、ros2 param set で変えれば
@@ -135,6 +145,8 @@ public:
       this, "position_control.deceleration", position_controller_config_.deceleration);
     crane::get_or_declare_parameter(
       this, "position_control.tolerance", position_control_tolerance_);
+    crane::get_or_declare_parameter(this, "position_control.ki", position_control_ki_);
+    crane::get_or_declare_parameter(this, "position_control.kd", position_control_kd_);
 
     if (packet_type_str == "ssl") {
       packet_type_ = PacketType::SSL;
@@ -525,6 +537,14 @@ private:
    * ロボットの再起動は要らない。同じ値の再送は無害で（CM4 は値が変わったときだけログを
    * 出す）、CM4 が再起動しても次の送信で追いつく。範囲外の値は CM4 側でクランプされず
    * データグラムごと破棄され、拒否理由が CM4 のログに出る。
+   *
+   * 【フォーマット v2（28 バイト）について】
+   * CM4 側が PID になったので ki / kd を追加した v2 を送る。**後方互換は無い。**
+   * CM4 は旧 v1（20 バイト）を WrongSize として拒否するので、crane と CM4 は
+   * 同時に配ること。片方だけ古い機体は停止せず既定ゲイン（kp = 2.0）のまま走る。
+   * 中途半端に互換を残すと「kp だけ効いて ki/kd が効いていない機体」が黙って混ざり、
+   * 現地では「なんとなく追従が悪い」以外の症状が出ない。
+   * リリース順序は docs/cm4_position_control.md に書いてある。
    */
   void sendPositionControlConfig()
   {
@@ -534,17 +554,20 @@ private:
     }
     last_position_control_config_send_ = now;
 
-    const float values[3] = {
+    // 並び順は Orion_CM4 cm4/bridge/config_packet.h の byte 8..27 と対応する。
+    const float values[5] = {
       static_cast<float>(get_parameter("position_control.kp").as_double()),
       static_cast<float>(get_parameter("position_control.deceleration").as_double()),
-      static_cast<float>(get_parameter("position_control.tolerance").as_double())};
+      static_cast<float>(get_parameter("position_control.tolerance").as_double()),
+      static_cast<float>(get_parameter("position_control.ki").as_double()),
+      static_cast<float>(get_parameter("position_control.kd").as_double())};
 
-    uint8_t buf[20] = {};
+    uint8_t buf[28] = {};
     buf[0] = 'O';
     buf[1] = 'C';
     buf[2] = '4';
     buf[3] = 'C';
-    buf[4] = 1;     // version
+    buf[4] = 2;     // version
     buf[5] = 0xFF;  // 全機宛
     memcpy(&buf[8], values, sizeof(values));
 

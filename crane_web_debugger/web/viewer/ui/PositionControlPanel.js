@@ -1,15 +1,20 @@
 // 位置制御ゲインの遠隔調整パネル（ibis-ssl/crane#1442）
 //
 // packet_type=ibis のとき、ibis_sender は 1 秒ごとに position_control.* を読み直し、
-// 20 バイトの設定パケットとして CM4 へ送る。CM4 側で位置制御ループが閉じているので、
+// 28 バイト（v2）の設定パケットとして CM4 へ送る。CM4 側で位置制御ループが閉じているので、
 // ここでの ros2 param set 相当の操作が、ロボットを再起動せずにゲインを変える唯一の経路。
+//
+// CM4 側の制御則は PID だが、ki / kd の既定は 0 で、そのときは従来の P 制御に
+// 恒等的に縮退する。つまりこのパネルで ki / kd を上げるまで挙動は従来どおり。
 //
 // 押さえておくべき癖が 3 つある:
 //   1. 反映は「送信のたび」ではなく ibis_sender の 1 秒周期。押してすぐには変わらない
-//   2. CM4 は範囲外の値をクランプせずデータグラムごと捨てる。拒否理由は CM4 のログに
-//      しか出ないので、範囲外は送る前に弾く（websocket_server 側でも同じ範囲で弾く）
+//   2. CM4 は範囲外の値をクランプせずデータグラムごと捨てる。しかも検査はデータグラム
+//      単位なので、ki だけが範囲外でも kp を含めて 1 つも適用されない。拒否理由は
+//      CM4 のログにしか出ないので、範囲外は送る前に弾く（websocket_server 側も同じ範囲）
+//      なお設定パケットに後方互換は無い。CM4 が古い機体では kp すら変わらない
 //   3. packet_type=ssl では設定パケットを送らない。kp と deceleration は crane 側の
-//      sim 位置制御に効き、tolerance はどこにも効かない
+//      sim 位置制御に効き、tolerance / ki / kd はどこにも効かない（ssl 経路は P 制御）
 
 const PARAMS = [
     {
@@ -19,6 +24,22 @@ const PARAMS = [
         min: 0, max: 20, step: 0.1,
         help: '目標位置へ向かう P ゲイン。大きいほど機敏だが振動しやすい',
         simEffective: true,
+    },
+    {
+        name: 'position_control.ki',
+        label: '積分ゲイン',
+        unit: '',
+        min: 0, max: 20, step: 0.1,
+        help: '定常偏差（詰めきれない残り誤差）を消す I ゲイン。0 で P 制御。大きいほど粘るが行き過ぎやすい',
+        simEffective: false,
+    },
+    {
+        name: 'position_control.kd',
+        label: '微分ゲイン',
+        unit: '',
+        min: 0, max: 5, step: 0.01,
+        help: '実測速度を打ち消す D ゲイン（微分先行形）。0 で P 制御。行き過ぎと振動を抑える',
+        simEffective: false,
     },
     {
         name: 'position_control.deceleration',
