@@ -51,6 +51,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
 # Docker config
 docker/config/state-store.json.stream
