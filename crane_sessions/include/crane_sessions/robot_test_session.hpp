@@ -32,8 +32,13 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
+    std::lock_guard<std::mutex> lock(target_mutex_);
     uint8_t target_id = target_robot_id_;
-    return [target_id](const std::shared_ptr<RobotInfo> & robot) {
+    bool has_target = has_target_robot_id_;
+    return [target_id, has_target](const std::shared_ptr<RobotInfo> & robot) {
+      if (!has_target) {
+        return 0.0;
+      }
       return (robot->id == target_id) ? 0.0 : 1000.0;
     };
   }
@@ -48,6 +53,7 @@ private:
   mutable std::mutex target_mutex_;
   crane_msgs::msg::RobotCommand::SharedPtr latest_target_;
 
+  bool has_target_robot_id_ = false;
   uint8_t target_robot_id_ = 0;
   double max_velocity_ = 2.0;
   double max_acceleration_ = 2.5;

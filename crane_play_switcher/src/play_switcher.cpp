@@ -41,8 +41,10 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
     "/session_injection", 1, [&](const std_msgs::msg::String & msg) {
-      // イベント注入（次のレフェリーイベント発生まで有効）
+      // イベント注入（次のレフェリーイベント発生まで有効。
+      // ROBOT_TEST の場合は明示的解除またはHALTまで保持）
       RCLCPP_INFO_STREAM(this->get_logger(), "[SESSION_INJECTION] " << msg.data);
+      is_test_mode_injected_ = (msg.data == "ROBOT_TEST");
       play_situation_msg.command =
         getSituationCommandNamedInt(crane_msgs::msg::PlaySituation::INJECTION);
       play_situation_msg.header.stamp = now();
@@ -78,6 +80,16 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   if (referee_timeout_active_) {
     RCLCPP_WARN(get_logger(), "レフェリーメッセージの受信が復帰しました");
     referee_timeout_active_ = false;
+  }
+
+  // ROBOT_TEST 注入中は、緊急停止（HALT）以外の外部レフェリーコマンドによる自動上書きを抑制
+  if (is_test_mode_injected_) {
+    if (msg.command.value == robocup_ssl_msgs::msg::RefereeCommand::HALT) {
+      is_test_mode_injected_ = false;
+    } else {
+      latest_raw_referee = msg;
+      return;
+    }
   }
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
