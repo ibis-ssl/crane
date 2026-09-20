@@ -140,8 +140,15 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
   wm.field_info.x = m.get_d_exact(p + "/field_info/x");
   wm.field_info.y = m.get_d_exact(p + "/field_info/y");
 
+  // goal_size（ゴール判定の幅に使う。未記録の古いbagでは 0 のまま）
+  wm.goal_size.x = m.get_d_exact(p + "/goal_size/x");
+  wm.goal_size.y = m.get_d_exact(p + "/goal_size/y");
+
   // is_yellow
   wm.is_yellow = m.get_d_exact(p + "/is_yellow") != 0.0;
+
+  // on_positive_half（自陣が +x 側か）
+  wm.on_positive_half = m.get_d_exact(p + "/on_positive_half") != 0.0;
 
   auto fill_robots = [&](const std::string & prefix, std::vector<RobotInfo> & out) {
     size_t n = m.count_array(prefix);
