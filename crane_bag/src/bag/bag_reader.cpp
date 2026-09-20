@@ -63,6 +63,15 @@ BagInfo populate_bag_info(const std::string & bag_path, const mcap::McapReader &
   BagInfo info;
   info.path = bag_path;
 
+  // McapReader::channels() / schemas() は const 参照ではなく「マップを値で」返す。
+  //   auto it = reader.channels().find(id);          // 一時オブジェクトへのイテレータ
+  //   if (it != reader.channels().end()) { ... }     // しかも別の一時オブジェクトの end()
+  // と書くと、解放済みメモリを指すイテレータを別コンテナの終端と比較することになり、
+  // 実際にトピック名・型・メッセージ数が入れ替わって出力されていた。
+  // 必ずローカルにコピーしてから引くこと。
+  const auto channels = reader.channels();
+  const auto schemas = reader.schemas();
+
   const auto & stats = reader.statistics();
   if (stats.has_value()) {
     info.start_time_ns = static_cast<int64_t>(stats->messageStartTime);
@@ -70,16 +79,18 @@ BagInfo populate_bag_info(const std::string & bag_path, const mcap::McapReader &
     info.end_time_ns = end_ns;
     info.duration_sec = static_cast<double>(end_ns - info.start_time_ns) / 1e9;
     for (const auto & [ch_id, count] : stats->channelMessageCounts) {
-      auto ch_it = reader.channels().find(ch_id);
-      if (ch_it != reader.channels().end()) {
+      auto ch_it = channels.find(ch_id);
+      if (ch_it != channels.end()) {
         info.topic_counts[ch_it->second->topic] += count;
       }
     }
   }
 
-  for (const auto & [ch_id, ch] : reader.channels()) {
-    auto it = reader.schemas().find(ch->schemaId);
-    if (it != reader.schemas().end()) {
+  for (const auto & [ch_id, ch] : channels) {
+    // メッセージが 1 件も無いトピックも一覧には出す（統計には現れないため）
+    info.topic_counts.try_emplace(ch->topic, 0);
+    auto it = schemas.find(ch->schemaId);
+    if (it != schemas.end()) {
       info.topic_types[ch->topic] = it->second->name;
     }
   }
