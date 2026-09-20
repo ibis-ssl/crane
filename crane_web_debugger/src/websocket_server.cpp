@@ -1567,15 +1567,15 @@ private:
    * 位置制御ゲインの遠隔調整（ibis-ssl/crane#1442）
    *
    * packet_type=ibis のとき、ibis_sender は 1 秒ごとに position_control.* を
-   * get_parameter() で読み直し、20 バイトの設定パケットとして CM4 へ送る
+   * get_parameter() で読み直し、28 バイト（v2）の設定パケットとして CM4 へ送る
    * （Orion_CM4 cm4/bridge/config_packet.h、UDP 12350）。位置制御ループ自体は
    * CM4 側で閉じているので、ここでパラメータを書き換えることがロボットの
    * ゲインを稼働中に変える唯一の経路になる。ロボットの再起動は要らない。
    *
-   * packet_type=ssl のときは設定パケットを送らず、同じ 3 つのうち kp と
-   * deceleration を crane 側の calculateSimGlobalVelocity が使う
-   * （tolerance は sim 経路では未使用）。どちらが効いているかは UI 側で
-   * packet_type を見て出し分けるため、読み出しに packet_type を同梱する。
+   * packet_type=ssl のときは設定パケットを送らず、kp と deceleration を
+   * crane 側の calculateSimGlobalVelocity が使う（tolerance / ki / kd は
+   * sim 経路では未使用。ssl 経路は P 制御で PID ではない）。どちらが効いているかは
+   * UI 側で packet_type を見て出し分けるため、読み出しに packet_type を同梱する。
    */
   struct PositionControlParamSpec
   {
@@ -1588,8 +1588,10 @@ private:
   // CM4 は範囲外の値をクランプせずデータグラムごと捨て、拒否理由は CM4 の
   // ログにしか出ない。crane 側で弾かないと「設定できたのに何も起きない」
   // という無言の失敗になるので、ここが最後の防波堤になる。
-  static constexpr std::array<PositionControlParamSpec, 3> kPositionControlParams{
+  static constexpr std::array<PositionControlParamSpec, 5> kPositionControlParams{
     {{"position_control.kp", 0.0, 20.0},
+     {"position_control.ki", 0.0, 20.0},
+     {"position_control.kd", 0.0, 5.0},
      {"position_control.deceleration", 0.0, 20.0},
      {"position_control.tolerance", 0.0, 1.0}}};
 

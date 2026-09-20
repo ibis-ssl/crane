@@ -167,6 +167,12 @@ limitations under the License.
     <param name="chip_angle_deg" value="30.0"/>
     <param name="theta_p_gain" value="3.0"/>
     <param name="position_control.kp" value="2.0"/>
+    <!-- CM4 側 PID の積分・微分ゲイン。0 = P 制御（従来の挙動）。
+         packet_type=ibis のときだけ効く（ssl 経路は P 制御なので送らない）。
+         現地では ros2 param set /ibis_sender_node position_control.ki <値> で
+         再起動せずに変えられる。 -->
+    <param name="position_control.ki" value="0.0"/>
+    <param name="position_control.kd" value="0.0"/>
     <param name="position_control.deceleration" value="$(var robot_acceleration.deceleration_high)"/>
     <param name="position_control.tolerance" value="0.01"/>
     <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
