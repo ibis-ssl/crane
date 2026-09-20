@@ -4,7 +4,6 @@
 
 ```bash
 ./scripts/docker-dev.sh                         # ER-Force
-./scripts/docker-dev.sh --sim grsim             # grSim
 ./scripts/docker-dev.sh --minimal -d            # シミュレータ開発用の構成
 ./scripts/docker-dev.sh real                    # 実機
 ./scripts/docker-dev.sh down

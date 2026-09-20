@@ -23,7 +23,7 @@
 | [crane_msg_wrappers](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_msg_wrappers) | WorldModelWrapper等のメッセージ操作・変換ラッパー |
 | [crane_physics](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_physics) | ボール物理シミュレーション・ロボット運動学・台形速度プロファイル |
 | [crane_utils](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_utils) | 時間計測・パラメータ操作・パッケージパス解決等の共通ユーティリティ |
-| [robocup_ssl_comm](https://github.com/ibis-ssl/crane/tree/develop/consai_ros2/robocup_ssl_comm) | SSL公式通信プロトコル（Vision, Referee, grSim）の送受信 |
+| [robocup_ssl_comm](https://github.com/ibis-ssl/crane/tree/develop/consai_ros2/robocup_ssl_comm) | SSL公式通信プロトコル（Vision, Referee）の送受信 |
 | [robocup_ssl_msgs](https://github.com/ibis-ssl/crane/tree/develop/consai_ros2/robocup_ssl_msgs) | SSL公式プロトコル（Protobuf）から生成されたROS 2メッセージ |
 | [closest_point_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/closest_point_vendor) | 最近点幾何計算ライブラリのベンダーパッケージ |
 | [matplotlib_cpp_17_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/matplotlib_cpp_17_vendor) | C++17対応matplotlib描画ライブラリのベンダーパッケージ |

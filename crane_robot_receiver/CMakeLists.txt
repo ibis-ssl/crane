@@ -34,7 +34,7 @@ else()
   endmacro()
 endif()
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR} ${robocup_ssl_msgs_INCLUDE_DIRS})
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
@@ -51,15 +51,6 @@ ament_auto_add_executable(diagnostic_publisher_node
 )
 target_link_libraries(diagnostic_publisher_node fmt)
 add_backward(diagnostic_publisher_node)
-
-ament_auto_add_executable(grsim_robot_status_node
-        src/grsim_robot_status_node.cpp
-)
-# これがないと参照未解決エラーが出る
-target_link_libraries(grsim_robot_status_node
-        ${robocup_ssl_msgs_LIBRARIES}
-        robocup_ssl_msgs::robocup_ssl_msgs_proto)
-add_backward(grsim_robot_status_node)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)

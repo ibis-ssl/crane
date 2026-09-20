@@ -7,7 +7,7 @@ Crane は Vision から世界モデルを作り、セッションで役割を割
 - [環境構築・起動](setup.md) / [Docker](docker.md)
 - [試合チェックリスト](match.md) / [Vision設定](vision.md)
 - [ネットワークと実機通信](network.md) / [診断](diagnostics.md)
-- [開発・テスト](tools.md) / [ER-Forceシミュレータ](erforce_sim.md) / [grSim](grSim.md)
+- [開発・テスト](tools.md) / [ER-Forceシミュレータ](erforce_sim.md)
 
 ## 設計・拡張
 

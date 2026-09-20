@@ -1,8 +1,8 @@
 // 位置制御ゲインの遠隔調整パネル（ibis-ssl/crane#1442）
 //
-// packet_type=ibis のとき、ibis_sender は 1 秒ごとに position_control.* を読み直し、
-// 28 バイト（v2）の設定パケットとして CM4 へ送る。CM4 側で位置制御ループが閉じているので、
-// ここでの ros2 param set 相当の操作が、ロボットを再起動せずにゲインを変える唯一の経路。
+// ibis_sender は 1 秒ごとに position_control.* を読み直し、28 バイト（v2）の設定パケットと
+// して CM4 へ送る。CM4 側で位置制御ループが閉じているので、ここでの ros2 param set 相当の
+// 操作が、ロボットを再起動せずにゲインを変える唯一の経路。
 //
 // CM4 側の制御則は PID だが、ki / kd の既定は 0 で、そのときは従来の P 制御に
 // 恒等的に縮退する。つまりこのパネルで ki / kd を上げるまで挙動は従来どおり。
@@ -13,8 +13,7 @@
 //      単位なので、ki だけが範囲外でも kp を含めて 1 つも適用されない。拒否理由は
 //      CM4 のログにしか出ないので、範囲外は送る前に弾く（websocket_server 側も同じ範囲）
 //      なお設定パケットに後方互換は無い。CM4 が古い機体では kp すら変わらない
-//   3. packet_type=ssl では設定パケットを送らない。kp と deceleration は crane 側の
-//      sim 位置制御に効き、tolerance / ki / kd はどこにも効かない（ssl 経路は P 制御）
+//   3. 5 項目とも CM4 のゲインに効く。crane 側に位置制御ループは無い
 
 const PARAMS = [
     {
@@ -23,7 +22,6 @@ const PARAMS = [
         unit: '',
         min: 0, max: 20, step: 0.1,
         help: '目標位置へ向かう P ゲイン。大きいほど機敏だが振動しやすい',
-        simEffective: true,
     },
     {
         name: 'position_control.ki',
@@ -31,7 +29,6 @@ const PARAMS = [
         unit: '',
         min: 0, max: 20, step: 0.1,
         help: '定常偏差（詰めきれない残り誤差）を消す I ゲイン。0 で P 制御。大きいほど粘るが行き過ぎやすい',
-        simEffective: false,
     },
     {
         name: 'position_control.kd',
@@ -39,7 +36,6 @@ const PARAMS = [
         unit: '',
         min: 0, max: 5, step: 0.01,
         help: '実測速度を打ち消す D ゲイン（微分先行形）。0 で P 制御。行き過ぎと振動を抑える',
-        simEffective: false,
     },
     {
         name: 'position_control.deceleration',
@@ -47,15 +43,13 @@ const PARAMS = [
         unit: 'm/s²',
         min: 0, max: 20, step: 0.1,
         help: '停止時の制動エンベロープ。小さいほど手前から緩やかに減速する',
-        simEffective: true,
     },
     {
         name: 'position_control.tolerance',
         label: '許容誤差',
         unit: 'm',
         min: 0, max: 1, step: 0.005,
-        help: '目標に到達したとみなす距離。packet_type=ibis でのみ効く',
-        simEffective: false,
+        help: '目標に到達したとみなす距離',
     },
 ];
 
@@ -70,7 +64,6 @@ export class PositionControlPanel {
         this._root = root;
         this._rows = new Map();     // name -> {input, slider, status, spec}
         this._timers = new Map();   // name -> debounce timer id
-        this._packetType = null;
         this._build();
     }
 
@@ -204,7 +197,6 @@ export class PositionControlPanel {
         }
 
         const values = data.values ?? {};
-        this._packetType = values.packet_type ?? null;
 
         for (const [name, row] of this._rows) {
             // 範囲はサーバ（＝CM4 の受理範囲）を正とする。UI 側の定数とずれていたら合わせる。
@@ -226,11 +218,6 @@ export class PositionControlPanel {
             } else {
                 this._setStatus(name, 'error', '取得失敗');
             }
-            // tolerance は sim 経路では効かないので、効かないことを行ごとに示す
-            const dead = this._packetType === 'ssl' && !row.spec.simEffective;
-            row.slider.disabled = row.slider.disabled || dead;
-            row.input.disabled = row.input.disabled || dead;
-            if (dead) this._setStatus(name, 'muted', 'sim では無効');
         }
 
         this._syncBanner();
@@ -243,10 +230,8 @@ export class PositionControlPanel {
         if (data.success) {
             this._setStatus(name, 'ok', '適用済み');
             // ロボットへ届くのは ibis_sender の次の送信。その間は「反映待ち」を出す
-            if (this._packetType === 'ibis') {
-                this._setStatus(name, 'ok', '送信待ち…');
-                setTimeout(() => this._setStatus(name, 'ok', '適用済み'), ROBOT_APPLY_HINT_MS);
-            }
+            this._setStatus(name, 'ok', '送信待ち…');
+            setTimeout(() => this._setStatus(name, 'ok', '適用済み'), ROBOT_APPLY_HINT_MS);
         } else {
             this._setStatus(name, 'error', data.message ?? '失敗');
             this._viewer.logPanel?.appendLog('error', 'PARAM', `${name}: ${data.message ?? '失敗'}`);
@@ -268,16 +253,7 @@ export class PositionControlPanel {
     }
 
     _syncBanner() {
-        if (this._packetType === 'ibis') {
-            this._setBanner('ok',
-                'packet_type=ibis — 1 秒ごとに CM4 へ設定パケット（UDP 12350）を送信中。'
-                + '3 項目とも実機のゲインに効きます。');
-        } else if (this._packetType === 'ssl') {
-            this._setBanner('warn',
-                'packet_type=ssl — 設定パケットは送られません。位置ゲインと減速度は '
-                + 'crane 側の sim 位置制御に効き、許容誤差は効きません。');
-        } else {
-            this._setBanner('warn', `packet_type が不明です（${this._packetType ?? '未取得'}）`);
-        }
+        this._setBanner('ok',
+            '1 秒ごとに CM4 へ設定パケット（UDP 12350）を送信中。5 項目とも実機のゲインに効きます。');
     }
 }

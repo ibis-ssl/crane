@@ -1,12 +1,11 @@
 #!/bin/bash
 # Docker開発環境の起動スクリプト
 # Usage:
-#   ./scripts/docker-dev.sh [sim|real] [--sim erforce|grsim] [--minimal] [--robot-manager|--no-debug] [docker-compose-args...]
+#   ./scripts/docker-dev.sh [sim|real] [--minimal] [--robot-manager|--no-debug] [docker-compose-args...]
 #
 # Examples:
 #   ./scripts/docker-dev.sh                     # sim環境(ER-Force)
 #   ./scripts/docker-dev.sh --minimal           # 最小構成(シミュレータ + GCのみ)
-#   ./scripts/docker-dev.sh --sim grsim         # sim環境(grSim)
 #   ./scripts/docker-dev.sh -d                  # sim環境(バックグラウンド)
 #   ./scripts/docker-dev.sh --robot-manager     # robot-managerあり(sim環境)
 #   ./scripts/docker-dev.sh down                # 停止
@@ -22,7 +21,6 @@ COMPOSE_FILE="docker/dev/docker-compose.yaml"
 
 # 引数解析
 MODE="sim"
-SIM="erforce"
 ENABLE_ROBOT_MANAGER=""
 MINIMAL=false
 DOCKER_ARGS=()
@@ -36,14 +34,6 @@ while [[ $# -gt 0 ]]; do
     sim)
         MODE="sim"
         shift
-        ;;
-    --sim)
-        SIM="$2"
-        if [[ $SIM != "erforce" && $SIM != "grsim" ]]; then
-            echo "エラー: --sim には erforce または grsim を指定してください" >&2
-            exit 1
-        fi
-        shift 2
         ;;
     --minimal)
         MINIMAL=true
@@ -141,7 +131,7 @@ fi
 echo "=== Docker開発環境 ==="
 echo "モード: $MODE"
 if [[ $MODE == "sim" ]]; then
-    echo "シミュレータ: $SIM"
+    echo "シミュレータ: ER-Force"
 fi
 echo "最小構成 (--minimal): $MINIMAL"
 echo "robot-manager: $ENABLE_ROBOT_MANAGER"
@@ -179,11 +169,7 @@ fi
 # cm4-sim(12345) であり、これを外すと simulator-cli は 12346 で待つので指令が誰にも届かない。
 if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
     if [[ $MODE == "sim" ]]; then
-        if [[ $SIM == "erforce" ]]; then
-            DOCKER_ARGS+=("erforce-sim" "cm4-sim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
-        else
-            DOCKER_ARGS+=("grsim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
-        fi
+        DOCKER_ARGS+=("erforce-sim" "cm4-sim" "ssl-game-controller" "ssl-vision-client" "web-debugger" "autoref-erforce")
     else
         DOCKER_ARGS+=("ssl-game-controller" "ssl-vision-client" "web-debugger")
     fi
@@ -197,7 +183,7 @@ esac
 
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
-    docker compose -f "$COMPOSE_FILE" --profile "sim-${SIM}" "${DOCKER_ARGS[@]}"
+    docker compose -f "$COMPOSE_FILE" --profile sim-erforce "${DOCKER_ARGS[@]}"
 else
     # 実機環境(Visionポート変更、status-board無効)
     VISION_PORT=10006 REFEREE_PORT=10003 TRACKER_PORT=10010 docker compose -f "$COMPOSE_FILE" "${DOCKER_ARGS[@]}"
