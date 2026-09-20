@@ -455,7 +455,12 @@ class CraneViewer {
         if (!s) return;
         // 指令経路で有効化のメッセージが変わる。
         // プランナ経由 → セッション注入 ROBOT_TEST / 直接 → HALT
-        this.hub.send({ type: s.route === ROUTE_DIRECT ? 'activate_move_mode' : 'activate_robot_test' });
+        this.hub.send({
+            type: s.route === ROUTE_DIRECT ? 'activate_move_mode' : 'activate_robot_test',
+            robot_id: s.robotId,
+            max_velocity: s.maxVelocity,
+            max_acceleration: s.maxAcceleration,
+        });
         this.modes.enterTest();
         this.logPanel?.appendLog('action', 'TEST', `activate (${s.route}) robot #${s.robotId}`);
     }
@@ -573,7 +578,19 @@ class CraneViewer {
             this.layerStore.renderList(redraw);
             redraw();
         });
-        document.getElementById('btn-move-mode')?.addEventListener('click', () => this.modes.toggleMove());
+        document.getElementById('btn-move-mode')?.addEventListener('click', () => {
+            if (this.modes.test) {
+                this.deactivateTest();
+            } else {
+                const targetId = this.focusSidebar?.currentRobotId ?? this.selectedRobotId ?? Object.keys(this.state.robotsOurs)[0];
+                if (targetId !== undefined && targetId !== null) {
+                    this.focusSidebar?.open(Number(targetId), 'test');
+                    this.activateTest();
+                } else {
+                    this.modes.toggleMove();
+                }
+            }
+        });
         document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
             this.zoomLevel = Math.min(this.zoomLevel * ZOOM_BUTTON_STEP, ZOOM_MAX);
             redraw();

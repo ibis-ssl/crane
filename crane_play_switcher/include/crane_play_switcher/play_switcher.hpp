@@ -49,6 +49,8 @@ private:
 
   std::string team_name = "ibis";
 
+  bool is_test_mode_injected_ = false;
+
   struct LastCommandChangedState
   {
     rclcpp::Time stamp;

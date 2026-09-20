@@ -677,7 +677,7 @@ private:
       } else if (type == "move_robot") {
         handleMoveRobot(connection, request);
       } else if (type == "activate_robot_test") {
-        handleActivateRobotTest(connection);
+        handleActivateRobotTest(connection, request);
       } else if (type == "deactivate_robot_test") {
         handleDeactivateRobotTest(connection);
       } else if (type == "robot_test_target") {
@@ -1420,8 +1420,54 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void handleActivateRobotTest(std::shared_ptr<WebSocketConnection> connection)
+  void handleActivateRobotTest(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
+    int robot_id = request.value("robot_id", -1);
+    if (robot_id >= 0 && robot_id <= 15) {
+      crane_msgs::msg::RobotCommand cmd;
+      cmd.robot_id = static_cast<uint8_t>(robot_id);
+      cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+
+      double x = 0.0, y = 0.0, theta = 0.0;
+      {
+        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+        if (latest_world_model_) {
+          for (const auto & r : latest_world_model_->robot_info_ours) {
+            if (r.id == robot_id) {
+              x = r.pose.x;
+              y = r.pose.y;
+              theta = r.pose.theta;
+              break;
+            }
+          }
+        }
+      }
+      cmd.target_theta = theta;
+
+      crane_msgs::msg::PositionTargetMode pos_target;
+      pos_target.target_x = static_cast<float>(x);
+      pos_target.target_y = static_cast<float>(y);
+      pos_target.position_tolerance = 0.05f;
+      pos_target.speed_limit_at_target = 0.0f;
+      cmd.position_target_mode.push_back(pos_target);
+
+      crane_msgs::msg::NamedFloat vel_factor;
+      vel_factor.name = "robot_test";
+      vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
+      cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
+
+      crane_msgs::msg::NamedFloat acc_factor;
+      acc_factor.name = "robot_test";
+      acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
+      cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
+
+      robot_test_target_pub_->publish(cmd);
+      RCLCPP_INFO(
+        this->get_logger(), "Robot test mode target initialized: robot=%d at (%.2f, %.2f)",
+        robot_id, x, y);
+    }
+
     std_msgs::msg::String injection_msg;
     injection_msg.data = "ROBOT_TEST";
     session_injection_pub_->publish(injection_msg);
