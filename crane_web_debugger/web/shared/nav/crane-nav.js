@@ -5,8 +5,8 @@
  *   <script type="module" src="/shared/nav/crane-nav.js"></script>
  *   <crane-nav active="viewer"></crane-nav>
  *
- * active 属性: viewer | annotation | ball-calibration | robot-manager |
- *              game-controller | vision-client | status-board
+ * active 属性: viewer | packet-forge | annotation | ball-calibration |
+ *              robot-manager | game-controller | vision-client | status-board
  *
  * Telemetry と Robot Test は Viewer のフォーカスサイドバー
  * (/?robot=<id>&tab=telemetry|test) へ統合したので項目から外してある。
@@ -19,6 +19,7 @@
 
 const NAV_ITEMS = [
   { id: 'viewer',           label: 'Viewer',           icon: 'stadium',       port: 8090, path: '/' },
+  { id: 'packet-forge',     label: 'Packet Forge',     icon: 'construction',  port: 8094, path: '/' },
   { id: 'annotation',       label: 'Annotation',       icon: 'edit_note',     port: 8090, path: '/annotation/' },
   { id: 'ball-calibration', label: 'Ball Calibration', icon: 'sports_soccer', port: 8093, path: '/' },
   { id: 'robot-manager',    label: 'Robot Manager',    icon: 'tune',          port: 8090, path: '/robot_manager/' },
