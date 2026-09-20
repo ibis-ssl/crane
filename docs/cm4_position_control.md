@@ -8,7 +8,7 @@ Crane は、無線通信の遅延やジッターの影響を抑えて高い追�
 
 ロボット側位置制御（Robot-side Position Control）では、Crane は目標位置や終端速度を含む位置指令（ワイヤ mode 4）を送信し、ロボット側の CM4 が高周期（1000 Hz）で位置制御ループを閉じます。
 
-- **不変条件**: システム全体で位置制御ループは**ちょうど1つ**です。Crane は `packet_type=ibis` の経路で位置制御（二重ループ）を行いません。
+- **不変条件**: システム全体で位置制御ループは**ちょうど1つ**です。Crane 側に位置制御ループはありません（二重ループを作らないこと）。
 - **無線区間の分離**: 不安定な無線通信区間が制御ループの外側に出るため、通信に多少のジッターや遅延があっても安定した位置追従を維持できます。
 
 ## システム構成とデータフロー
@@ -111,8 +111,6 @@ CM4 側の制御則は **PID** です。ただし `ki` / `kd` の既定は `0` �
 - `position_control.tolerance`: 目標到達と判定する許容誤差距離 [m]
 - `position_control.config_port`: 設定パケットの宛先ポート（既定: `12350`）
 
-`ki` / `kd` が効くのは `packet_type=ibis` の経路（実機および `cm4-sim` 構成）だけです。`packet_type=ssl` 経路の位置制御（[sim_position_controller.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/sim_position_controller.cpp)）は P 制御のままで、これらの値は送信も参照もされません。
-
 ### 範囲外の値は捨てられる
 
 CM4 は受信した値をクランプせず、**データグラムごと破棄**して拒否理由をログに出します（黙ってクランプすると crane の表示と実機の実効値が食い違ったまま気付けないため）。検査はデータグラム単位なので、`ki` だけが範囲外でも `kp` を含めて 1 つも適用されません。
@@ -171,7 +169,6 @@ CM4 側は値が変わったときだけ `位置制御の設定を更新: kp ...
 
 - 送信ノード・パケット生成: [ibis_sender_node.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp)
 - パケット定義: [robot_packet.h](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/include/crane_sender/robot_packet.h)
-- シミュレータ位置制御近似: [sim_position_controller.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/sim_position_controller.cpp)
 - コンテナ構成・ポート定義: [docker-compose.yaml](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml)
 - 起動引数定義: [crane.launch.xml](https://github.com/ibis-ssl/crane/blob/develop/crane_bringup/launch/crane.launch.xml)
 - 局所経路計画: [rvo2_local_planner.md](rvo2_local_planner.md)

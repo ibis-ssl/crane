@@ -4,7 +4,7 @@
 #
 # docker-dev.sh --minimal 使用時に、Vision/Refereeマルチキャストが実際にWi-Fi経由で
 # 漏洩しアクセスポイントを過負荷で落とした実績があるため、host networkでSSLシミュレータ
-# 系コンテナ(erforce-sim/grsim + ssl-game-controller等)を起動する経路は全て
+# 系コンテナ(erforce-sim + ssl-game-controller等)を起動する経路は全て
 # この隔離設定を適用してから起動すること。
 #
 # 常に適用を試み、失敗したら起動を中断する（fail-closed）。sudoのパスワード入力が

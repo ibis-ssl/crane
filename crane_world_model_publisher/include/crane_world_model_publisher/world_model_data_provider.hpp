@@ -35,7 +35,6 @@
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-#include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
@@ -297,10 +296,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 

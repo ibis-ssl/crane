@@ -63,24 +63,6 @@ target_link_libraries(game_controller_node game_controller_component)
 
 rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
 
-# GrSim Component
-ament_auto_add_library(grsim_component SHARED
-  src/grsim_component.cpp
-)
-target_link_libraries(grsim_component ${robocup_ssl_msgs_LIBRARIES})
-
-if(CRANE_UNITY_BUILD)
-  set_target_properties(grsim_component PROPERTIES UNITY_BUILD ON)
-  set_target_properties(grsim_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
-endif()
-
-ament_auto_add_executable(grsim_node
-  src/grsim_node.cpp
-)
-target_link_libraries(grsim_node grsim_component)
-
-rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")
-
 # Tracker Component
 ament_auto_add_library(tracker_component SHARED
   src/tracker_component.cpp
@@ -119,7 +101,6 @@ rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
 
 ament_export_libraries(vision_component)
 ament_export_libraries(game_controller_component)
-ament_export_libraries(grsim_component)
 ament_export_libraries(tracker_component)
 
 if(BUILD_TESTING)
