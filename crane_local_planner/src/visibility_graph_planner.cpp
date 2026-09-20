@@ -19,11 +19,23 @@ namespace crane
 {
 namespace
 {
-auto expandedBox(const Box & source, double offset) -> Box
+auto expandedPenaltyAreaForAvoidance(const Box & source, const Point & goal_center, double offset)
+  -> Box
 {
+  constexpr double FAR = 20.0;
   Box result = source;
-  result.min_corner() -= Point(offset, offset);
-  result.max_corner() += Point(offset, offset);
+  result.min_corner().y() -= offset;
+  result.max_corner().y() += offset;
+  if (goal_center.x() < 0.0) {
+    // 負側のゴール: フィールド外側（ゴール裏）は -x 方向。
+    // ゴール裏側を -FAR まで拡張し、ゴールの後ろを通り抜ける迂回経路を塞ぐ。
+    result.min_corner().x() = -FAR;
+    result.max_corner().x() += offset;
+  } else {
+    // 正側のゴール: フィールド外側（ゴール裏）は +x 方向。
+    result.min_corner().x() -= offset;
+    result.max_corner().x() = FAR;
+  }
   return result;
 }
 
@@ -97,9 +109,11 @@ auto VisibilityGraphPlanner::buildObstacles(
                       robocup_ssl_msgs::msg::RefereeCommand::STOP;
     const double offset = stop ? penalty_area_offset_stop_ : penalty_area_offset_;
     obstacles.push_back(
-      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getOurPenaltyArea(), offset)));
+      visibility_graph::Obstacle::makeBox(expandedPenaltyAreaForAvoidance(
+        world_model->getOurPenaltyArea(), world_model->getOurGoalCenter(), offset)));
     obstacles.push_back(
-      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getTheirPenaltyArea(), offset)));
+      visibility_graph::Obstacle::makeBox(expandedPenaltyAreaForAvoidance(
+        world_model->getTheirPenaltyArea(), world_model->getTheirGoalCenter(), offset)));
   }
 
   if (!command.local_planner_config.disable_ball_avoidance) {

@@ -97,4 +97,42 @@ TEST(VisibilityGraphTest, PeriodicallyReplansAStillSafeDetour)
   EXPECT_EQ(decideReplanAction(true, false, true), ReplanAction::RUN_FULL_REPLAN);
 }
 
+TEST(VisibilityGraphTest, DetoursPenaltyAreaInFrontOfGoal)
+{
+  VisibilityGraph graph;
+  constexpr double FAR = 20.0;
+  const double half_width = 4.7;
+  const double half_height = 3.2;
+
+  // フィールド境界
+  const std::vector<Obstacle> boundary_obstacles = {
+    Obstacle::makeBox(Box(Point(-FAR, half_height), Point(FAR, FAR))),
+    Obstacle::makeBox(Box(Point(-FAR, -FAR), Point(FAR, -half_height))),
+    Obstacle::makeBox(Box(Point(half_width, -FAR), Point(FAR, FAR))),
+    Obstacle::makeBox(Box(Point(-FAR, -FAR), Point(-half_width, FAR))),
+  };
+
+  // ゴール裏側（-x方向）を -FAR まで拡張した自陣ペナルティエリア障害物
+  // ゴール位置: (-4.5, 0.0), PA前面: -3.5 + 0.1 = -3.4, PA幅: [-1.1, 1.1]
+  const Box extended_pa(Point(-FAR, -1.1), Point(-3.4, 1.1));
+  auto obstacles = boundary_obstacles;
+  obstacles.push_back(Obstacle::makeBox(extended_pa));
+
+  // ペナルティエリアの脇同士を結ぶ経路（(-4.2, 1.5) -> (-4.2, -1.5)）
+  const auto path = graph.plan(Point(-4.2, 1.5), Point(-4.2, -1.5), obstacles);
+  ASSERT_TRUE(path.has_value());
+
+  // ゴールの後ろ (x < -4.5) を通るノードが一切含まれず、
+  // ペナルティエリア前方 (x >= -3.4) を迂回すること
+  bool detoured_front = false;
+  for (const auto & pt : *path) {
+    EXPECT_GE(pt.x(), -4.5);
+    if (pt.x() >= -3.4 - 1e-3) {
+      detoured_front = true;
+    }
+  }
+  EXPECT_TRUE(detoured_front);
+  EXPECT_TRUE(graph.isPathVisible(*path, obstacles));
+}
+
 }  // namespace crane::visibility_graph
