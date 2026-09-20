@@ -225,6 +225,12 @@ RobotCommands extract_robot_commands(const RosMsgParser::FlatMessage & flat)
     cmd.dribble_power = m.get_f(ap("dribble_power"));
     cmd.stop_flag = m.get_b(ap("stop_flag"));
     cmd.chip_enable = m.get_b(ap("chip_enable"));
+    cmd.control_mode = m.get_u8(ap("control_mode"));
+    cmd.current_pose.x = m.get_d_exact(ap("current_pose/x"));
+    cmd.current_pose.y = m.get_d_exact(ap("current_pose/y"));
+    cmd.current_pose.theta = m.get_d_exact(ap("current_pose/theta"));
+    cmd.current_velocity.x = m.get_d_exact(ap("current_velocity/x"));
+    cmd.current_velocity.y = m.get_d_exact(ap("current_velocity/y"));
     cmd.planner_name = m.get_s_exact(ap("planner_name"));
 
     const std::string pf_prefix = ap("planning_factors");

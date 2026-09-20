@@ -142,40 +142,70 @@ std::string section_velocity_status(const BagData & data, double interval = kSur
   std::snprintf(
     buf, sizeof(buf), "=== ROBOT VELOCITY STATUS (every %.0fs, robot_commands) ===\n", interval);
   oss << buf;
+  oss << "  moving=実際に動いている / stalled=動けと指令されているのに止まっている / "
+         "idle=指令が停止\n";
+
+  // 「動け」と指令されているかの判定しきい値
+  constexpr double kCommandedSpeedThreshold = 0.01;  // polar: |v_r| [m/s]
+  constexpr double kCommandedDistThreshold = 0.05;   // position: 目標までの距離 [m]
+  constexpr double kActualSpeedThreshold = 0.05;     // 実速度 [m/s]
 
   for (const auto * tm : BagData::sample(data.robot_commands, interval)) {
     double t = tm->t(data.info.start_time_ns);
-    std::ostringstream zero_oss, moving_oss;
-    zero_oss << "[";
+    std::ostringstream moving_oss, stalled_oss, idle_oss;
     moving_oss << "[";
-    bool first_zero = true, first_moving = true;
+    stalled_oss << "[";
+    idle_oss << "[";
+    bool first_moving = true, first_stalled = true, first_idle = true;
 
     for (const auto & rc : tm->msg.robot_commands) {
-      double vr = 0.0;
+      const double actual_speed = std::hypot(rc.current_velocity.x, rc.current_velocity.y);
+
+      // 指令の「動け」量は制御モードごとに別のフィールドに入る。polar だけを見ていると
+      // POSITION_TARGET_MODE 運用時に全機が停止扱いになり、このセクションが無意味になる。
+      double commanded = 0.0;  // 表示用の指令量
+      bool commanded_to_move = false;
       if (!rc.polar_velocity_target_mode.empty()) {
-        vr = rc.polar_velocity_target_mode[0].target_velocity_r;
+        commanded = rc.polar_velocity_target_mode[0].target_velocity_r;
+        commanded_to_move = std::abs(commanded) >= kCommandedSpeedThreshold;
+      } else if (!rc.position_target_mode.empty()) {
+        const auto & pt = rc.position_target_mode[0];
+        commanded = std::hypot(pt.target_x - rc.current_pose.x, pt.target_y - rc.current_pose.y);
+        commanded_to_move = commanded >= kCommandedDistThreshold;
       }
-      if (std::abs(vr) < 0.01 && !rc.stop_flag) {
-        if (!first_zero) zero_oss << ", ";
-        zero_oss << static_cast<int>(rc.robot_id);
-        first_zero = false;
-      } else if (std::abs(vr) >= 0.01) {
-        char tmp[32];
-        std::snprintf(tmp, sizeof(tmp), "(%d, %.2f)", static_cast<int>(rc.robot_id), vr);
+
+      char tmp[64];
+      if (rc.stop_flag) {
+        std::snprintf(tmp, sizeof(tmp), "(%d, STOP)", static_cast<int>(rc.robot_id));
+        if (!first_idle) idle_oss << ", ";
+        idle_oss << tmp;
+        first_idle = false;
+      } else if (actual_speed >= kActualSpeedThreshold) {
+        std::snprintf(tmp, sizeof(tmp), "(%d, %.2f)", static_cast<int>(rc.robot_id), actual_speed);
         if (!first_moving) moving_oss << ", ";
         moving_oss << tmp;
         first_moving = false;
+      } else if (commanded_to_move) {
+        const char * unit = rc.polar_velocity_target_mode.empty() ? "m" : "m/s";
+        std::snprintf(
+          tmp, sizeof(tmp), "(%d, cmd=%.2f%s)", static_cast<int>(rc.robot_id), commanded, unit);
+        if (!first_stalled) stalled_oss << ", ";
+        stalled_oss << tmp;
+        first_stalled = false;
+      } else {
+        if (!first_idle) idle_oss << ", ";
+        idle_oss << static_cast<int>(rc.robot_id);
+        first_idle = false;
       }
     }
-    zero_oss << "]";
     moving_oss << "]";
-    std::string zero_str = zero_oss.str();
-    std::string moving_str = moving_oss.str();
+    stalled_oss << "]";
+    idle_oss << "]";
 
-    std::snprintf(
-      buf, sizeof(buf), "  t=%.2f: zero_v=%s, moving=%s\n", t, zero_str.c_str(),
-      moving_str.c_str());
-    oss << buf;
+    // 3 つのリストを固定長バッファに詰めると台数が増えたときに黙って切れるので、
+    // ここは stream へ直接書く。
+    oss << "  " << fmt_t(t) << ": moving=" << moving_oss.str() << ", stalled=" << stalled_oss.str()
+        << ", idle=" << idle_oss.str() << "\n";
   }
   return oss.str();
 }

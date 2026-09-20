@@ -115,6 +115,11 @@ struct RobotCommand
   float dribble_power = 0;
   bool stop_flag = false;
   bool chip_enable = false;
+  /// RobotCommand.msg の control_mode（1=POSITION_TARGET, 2=SIMPLE_VELOCITY, 3=POLAR_VELOCITY）
+  uint8_t control_mode = 0;
+  /// 指令生成時に crane が見ていた機体の位置・速度。指令と実挙動の突き合わせに使う
+  Pose2D current_pose;
+  Pose2D current_velocity;
   std::string planner_name;
   std::vector<NamedString> planning_factors;
   std::vector<PositionTarget> position_target_mode;
