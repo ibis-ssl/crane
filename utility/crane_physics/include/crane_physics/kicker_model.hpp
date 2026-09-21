@@ -47,7 +47,7 @@ public:
     std::vector<double> chip_kick_powers;     // キック力の配列 [0.0-1.0]
     std::vector<double> chip_kick_distances;  // 対応する飛行距離 [m]
 
-    // デフォルト設定値（grSim用）
+    // デフォルト設定値（かつて grSim で合わせた暫定値。実機・erforce では設定ファイルで上書きする）
     Config()
     {
       straight_kick_powers = {0.0, 0.25, 0.6, 0.9};

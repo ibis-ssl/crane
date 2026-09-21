@@ -18,7 +18,6 @@ limitations under the License.
   <!-- ============================================================ -->
   <!-- ネットワーク設定 -->
   <!-- ============================================================ -->
-  <arg name="packet_type" default="ibis" description="Packet type: ibis (binary) / ssl (RobotControl protobuf). Unknown values (including the removed 'grsim') fall back to ibis with a warning."/>
 
   <!-- ============================================================ -->
   <!-- チーム/動作モード設定 -->
@@ -153,20 +152,22 @@ limitations under the License.
   <let name="sender_kick_power_limit_straight" value="1.0" if="$(var sim)"/>
   <let name="sender_kick_power_limit_straight" value="0.5" unless="$(var sim)"/>
 
-  <!-- sender: 統合（packet_typeでプロトコルを切り替え） -->
+  <!-- sender -->
   <node pkg="crane_sender" exec="ibis_sender_node">
     <param name="no_movement" value="false"/>
     <!-- sim_mode は ibis_sender_node からは参照されていない（dead param）。feedback 受信とは無関係。 -->
     <param name="sim_mode" value="$(var sim)"/>
-    <param name="packet_type" value="$(var packet_type)"/>
     <param name="target_address" value="$(var ibis_target_address)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
     <param name="latency_ms" value="$(var sender_latency_ms)"/>
     <param name="kick_power_limit_straight" value="$(var sender_kick_power_limit_straight)"/>
     <param name="kick_power_limit_chip" value="1.0"/>
-    <param name="chip_angle_deg" value="30.0"/>
-    <param name="theta_p_gain" value="3.0"/>
     <param name="position_control.kp" value="2.0"/>
+    <!-- CM4 側 PID の積分・微分ゲイン。0 = P 制御（従来の挙動）。
+         現地では ros2 param set /ibis_sender position_control.ki <値> で
+         再起動せずに変えられる。 -->
+    <param name="position_control.ki" value="0.0"/>
+    <param name="position_control.kd" value="0.0"/>
     <param name="position_control.deceleration" value="$(var robot_acceleration.deceleration_high)"/>
     <param name="position_control.tolerance" value="0.01"/>
     <param name="robot_acceleration.acceleration" value="$(var robot_acceleration.acceleration)"/>
@@ -260,7 +261,7 @@ limitations under the License.
   <!-- 除外: /diagnostics（/diagnostics_aggで代替）, **/process_time, /parameter_events, /events/write_split -->
   <group if="$(var record)">
     <executable
-      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal --topics /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs"
+      cmd="ros2 bag record -s mcap --compression-mode file --compression-format zstd --log-level fatal --topics /world_model /control_targets /robot_commands /game_analysis /robot_feedback /referee /play_situation /robot_select_results /game_event /kick_prediction_traces /rosout /aggregated_svgs /diagnostics_agg /ping /visualizer_svgs /position_control_config"
     />
   </group>
 

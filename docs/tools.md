@@ -36,3 +36,4 @@ git diff --cached
 - ROSノードとトピックの接続: `ros2 run rqt_graph rqt_graph`
 - 起動後の異常: [診断](diagnostics.md)、[ネットワーク](network.md)
 - ログ解析: [crane_mcap_tools](https://github.com/ibis-ssl/crane/tree/develop/crane_mcap_tools)、[SSL公式ツール](https://github.com/RoboCup-SSL/ssl-go-tools)
+- 指令パケットの切り分け: [crane_packet_forge](https://github.com/ibis-ssl/crane/tree/develop/crane_packet_forge)（craneを経由せず任意のパケットを組み立てて送る。CLIとGUI）

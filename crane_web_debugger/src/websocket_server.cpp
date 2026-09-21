@@ -15,6 +15,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <boost/asio.hpp>
 #include <cctype>
@@ -396,6 +397,8 @@ public:
       this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
     local_planner_params_client_ =
       std::make_shared<rclcpp::AsyncParametersClient>(this, "local_planner");
+    ibis_sender_params_client_ =
+      std::make_shared<rclcpp::AsyncParametersClient>(this, "ibis_sender");
 
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -674,13 +677,17 @@ private:
       } else if (type == "move_robot") {
         handleMoveRobot(connection, request);
       } else if (type == "activate_robot_test") {
-        handleActivateRobotTest(connection);
+        handleActivateRobotTest(connection, request);
       } else if (type == "deactivate_robot_test") {
         handleDeactivateRobotTest(connection);
       } else if (type == "robot_test_target") {
         handleRobotTestTarget(connection, request);
       } else if (type == "set_planner_param") {
         handleSetPlannerParam(connection, request);
+      } else if (type == "get_position_control_config") {
+        handleGetPositionControlConfig(connection);
+      } else if (type == "set_position_control_param") {
+        handleSetPositionControlParam(connection, request);
       } else if (type == "sim_teleport_ball") {
         handleSimTeleportBall(connection, request);
       } else if (type == "sim_teleport_robot") {
@@ -1413,8 +1420,54 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void handleActivateRobotTest(std::shared_ptr<WebSocketConnection> connection)
+  void handleActivateRobotTest(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
+    int robot_id = request.value("robot_id", -1);
+    if (robot_id >= 0 && robot_id <= 15) {
+      crane_msgs::msg::RobotCommand cmd;
+      cmd.robot_id = static_cast<uint8_t>(robot_id);
+      cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+
+      double x = 0.0, y = 0.0, theta = 0.0;
+      {
+        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
+        if (latest_world_model_) {
+          for (const auto & r : latest_world_model_->robot_info_ours) {
+            if (r.id == robot_id) {
+              x = r.pose.x;
+              y = r.pose.y;
+              theta = r.pose.theta;
+              break;
+            }
+          }
+        }
+      }
+      cmd.target_theta = theta;
+
+      crane_msgs::msg::PositionTargetMode pos_target;
+      pos_target.target_x = static_cast<float>(x);
+      pos_target.target_y = static_cast<float>(y);
+      pos_target.position_tolerance = 0.05f;
+      pos_target.speed_limit_at_target = 0.0f;
+      cmd.position_target_mode.push_back(pos_target);
+
+      crane_msgs::msg::NamedFloat vel_factor;
+      vel_factor.name = "robot_test";
+      vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
+      cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
+
+      crane_msgs::msg::NamedFloat acc_factor;
+      acc_factor.name = "robot_test";
+      acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
+      cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
+
+      robot_test_target_pub_->publish(cmd);
+      RCLCPP_INFO(
+        this->get_logger(), "Robot test mode target initialized: robot=%d at (%.2f, %.2f)",
+        robot_id, x, y);
+    }
+
     std_msgs::msg::String injection_msg;
     injection_msg.data = "ROBOT_TEST";
     session_injection_pub_->publish(injection_msg);
@@ -1508,6 +1561,147 @@ private:
       });
     json ok = {{"type", "set_planner_param_result"}, {"success", true}};
     connection->sendMessage(ok.dump());
+  }
+
+  /**
+   * 位置制御ゲインの遠隔調整（ibis-ssl/crane#1442）
+   *
+   * ibis_sender は 1 秒ごとに position_control.* を get_parameter() で読み直し、
+   * 28 バイト（v2）の設定パケットとして CM4 へ送る（Orion_CM4
+   * cm4/bridge/config_packet.h、UDP 12350）。位置制御ループ自体は CM4 側で
+   * 閉じているので、ここでパラメータを書き換えることがロボットのゲインを
+   * 稼働中に変える唯一の経路になる。ロボットの再起動は要らない。
+   */
+  struct PositionControlParamSpec
+  {
+    const char * name;
+    double min_value;
+    double max_value;
+  };
+
+  // 範囲は CM4 側の受理範囲（config_packet.h の kConfig*Max）に合わせる。
+  // CM4 は範囲外の値をクランプせずデータグラムごと捨て、拒否理由は CM4 の
+  // ログにしか出ない。crane 側で弾かないと「設定できたのに何も起きない」
+  // という無言の失敗になるので、ここが最後の防波堤になる。
+  static constexpr std::array<PositionControlParamSpec, 5> kPositionControlParams{
+    {{"position_control.kp", 0.0, 20.0},
+     {"position_control.ki", 0.0, 20.0},
+     {"position_control.kd", 0.0, 5.0},
+     {"position_control.deceleration", 0.0, 20.0},
+     {"position_control.tolerance", 0.0, 1.0}}};
+
+  void handleGetPositionControlConfig(std::shared_ptr<WebSocketConnection> connection)
+  {
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      json err = {
+        {"type", "position_control_config"},
+        {"ready", false},
+        {"message", "ibis_sender のパラメータサービスが応答していません"}};
+      connection->sendMessage(err.dump());
+      return;
+    }
+
+    std::vector<std::string> names;
+    names.reserve(kPositionControlParams.size());
+    for (const auto & spec : kPositionControlParams) {
+      names.emplace_back(spec.name);
+    }
+
+    ibis_sender_params_client_->get_parameters(
+      names, [this, connection](std::shared_future<std::vector<rclcpp::Parameter>> future) {
+        json msg = {{"type", "position_control_config"}, {"ready", true}};
+        try {
+          json values = json::object();
+          for (const auto & param : future.get()) {
+            switch (param.get_type()) {
+              case rclcpp::ParameterType::PARAMETER_DOUBLE:
+                values[param.get_name()] = param.as_double();
+                break;
+              case rclcpp::ParameterType::PARAMETER_STRING:
+                values[param.get_name()] = param.as_string();
+                break;
+              default:
+                break;
+            }
+          }
+          json limits = json::object();
+          for (const auto & spec : kPositionControlParams) {
+            limits[spec.name] = {{"min", spec.min_value}, {"max", spec.max_value}};
+          }
+          msg["values"] = values;
+          msg["limits"] = limits;
+        } catch (const std::exception & e) {
+          msg["ready"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの読み出しに失敗: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
+  }
+
+  void handleSetPositionControlParam(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    const std::string name = request.value("name", "");
+    const auto spec = std::find_if(
+      kPositionControlParams.begin(), kPositionControlParams.end(),
+      [&name](const PositionControlParamSpec & s) { return name == s.name; });
+
+    auto reject = [&](const std::string & reason) {
+      json err = {
+        {"type", "set_position_control_param_result"},
+        {"name", name},
+        {"success", false},
+        {"message", reason}};
+      connection->sendMessage(err.dump());
+    };
+
+    if (spec == kPositionControlParams.end()) {
+      reject("未知のパラメータです: " + name);
+      return;
+    }
+    if (!request.contains("value") || !request["value"].is_number()) {
+      reject("value が数値ではありません");
+      return;
+    }
+
+    const double value = request["value"].get<double>();
+    if (!std::isfinite(value) || value < spec->min_value || value > spec->max_value) {
+      // クランプしない。丸めた値で「適用済み」と表示すると、UI の表示と
+      // ロボットの実効値が食い違ったまま気付けなくなる（CM4 側と同じ方針）。
+      std::ostringstream oss;
+      oss << "範囲外の値です (" << spec->min_value << " 〜 " << spec->max_value << ")";
+      reject(oss.str());
+      return;
+    }
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      reject("ibis_sender のパラメータサービスが応答していません");
+      return;
+    }
+
+    ibis_sender_params_client_->set_parameters(
+      {rclcpp::Parameter(name, value)},
+      [this, connection,
+       name](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future) {
+        json msg = {{"type", "set_position_control_param_result"}, {"name", name}};
+        try {
+          const auto results = future.get();
+          const bool ok = !results.empty() && results.front().successful;
+          msg["success"] = ok;
+          if (!ok) {
+            const std::string reason = results.empty() ? "結果が空です" : results.front().reason;
+            msg["message"] = reason;
+            RCLCPP_WARN(
+              this->get_logger(), "位置制御パラメータの設定に失敗 (%s): %s", name.c_str(),
+              reason.c_str());
+          }
+        } catch (const std::exception & e) {
+          msg["success"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの設定で例外: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
   }
 
   void handleSimTeleportBall(std::shared_ptr<WebSocketConnection> connection, const json & request)
@@ -1663,6 +1857,7 @@ private:
   std::mutex injection_mutex_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
   rclcpp::AsyncParametersClient::SharedPtr local_planner_params_client_;
+  rclcpp::AsyncParametersClient::SharedPtr ibis_sender_params_client_;
 
   // Cached world model state for move commands
   bool cached_is_yellow_{false};

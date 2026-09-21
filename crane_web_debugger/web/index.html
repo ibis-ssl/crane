@@ -6,6 +6,7 @@
   <title>Crane Viewer</title>
   <link rel="stylesheet" href="/fonts/noto-sans-jp.css">
   <link rel="stylesheet" href="/fonts/roboto.css">
+  <link rel="stylesheet" href="/fonts/ibm-plex-mono.css">
   <link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
   <link rel="stylesheet" href="m3e-theme.css">
   <link rel="stylesheet" href="/shared/nav/crane-nav.css">
@@ -22,80 +23,308 @@
       flex-direction: column;
     }
 
-    /* ===== Dock Layout ===== */
-    .dock-container {
-      display: grid;
+    /* ===== C-1 シェル =====
+       48px ステータスストリップ / 全画面フィールド / 56px⇄詳細サイドバー / 96px コマンドバー。
+       ドロワーはフィールドの上に重なるだけでフィールドを押しのけない。幅が変わらないので
+       開閉してもキャンバスの viewBox が揺れない。 */
+    .cv-shell {
       flex: 1;
-      overflow: hidden;
-      grid-template-columns: var(--dock-left-w, 300px) 4px 1fr 4px var(--dock-right-w, 260px);
-      grid-template-rows: 1fr var(--dock-bottom-h, 0px);
-      grid-template-areas:
-        "left ls main rs right"
-        "bottom bottom bottom bottom bottom";
-      --dock-left-w: 300px;
-      --dock-right-w: 260px;
-      --dock-bottom-h: 0px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--md-sys-color-surface-dim);
     }
 
-    /* Splitter */
-    .dock-splitter {
-      background: var(--md-sys-color-outline-variant);
-      cursor: col-resize;
-      transition: background var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
-      user-select: none;
+    /* --- ステータスストリップ --- */
+    #status-strip {
+      height: 48px;
       flex-shrink: 0;
-    }
-    .dock-splitter[data-target="left"] { grid-area: ls; }
-    .dock-splitter[data-target="right"] { grid-area: rs; }
-    .dock-splitter:hover, .dock-splitter:active { background: var(--md-sys-color-primary); }
-
-    /* Dock panels */
-    #dock-left {
-      grid-area: left;
-      background-color: var(--md-sys-color-surface-container);
-      border-right: 1px solid var(--md-sys-color-outline-variant);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
-    }
-
-    #dock-right {
-      grid-area: right;
-      background-color: var(--md-sys-color-surface-container);
-      border-left: 1px solid var(--md-sys-color-outline-variant);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
-    }
-
-    #dock-bottom {
-      grid-area: bottom;
-      background-color: var(--md-sys-color-surface-container-low);
-      border-top: 1px solid var(--md-sys-color-outline-variant);
-      overflow: hidden;
-    }
-
-    .dock-header {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      padding: 2px 4px;
+      gap: 8px;
+      padding: 0 12px;
+      background-color: var(--md-sys-color-surface);
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
-      flex-shrink: 0;
-      min-height: 28px;
     }
 
-    .dock-scroll {
+    .cv-spacer { flex: 1; }
+
+    .cv-score {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--md-sys-shape-sm);
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 1rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cv-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .cv-dot--yellow { background: var(--crane-team-yellow-dot); box-shadow: inset 0 0 0 1px var(--crane-team-yellow); }
+    .cv-dot--blue   { background: var(--crane-team-blue-dot);   box-shadow: inset 0 0 0 1px var(--crane-team-blue); }
+
+    .cv-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--md-sys-shape-sm);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.75rem;
+      color: var(--crane-ink-2);
+      white-space: nowrap;
+    }
+
+    /* 現在のコマンドは一番強く出す */
+    .cv-chip--cmd {
+      background-color: var(--md-sys-color-on-surface);
+      border-color: var(--md-sys-color-on-surface);
+      color: var(--md-sys-color-surface);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .cv-chip--quiet { color: var(--md-sys-color-on-surface-variant); }
+
+    /* --- 本体 --- */
+    .cv-body {
       flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+
+    #field-main {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* --- フィールド上に浮く操作群 --- */
+    #field-handles {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 7;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      transition: left var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized);
+    }
+    /* ドロワーが開いている間はハンドルを右へ逃がす。覆われるとドロワーを切り替えられない */
+    #field-main:has(.cv-drawer.open) #field-handles { left: 350px; }
+
+    /* ドロワー見出しと中身のセクション見出しが二重になる箇所を抑制する
+       (ログのセクション見出しはクリアボタンを持つので残す) */
+    .cv-drawer[data-drawer="layers"] .right-dock-section-header { display: none; }
+
+    #field-tools {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+    }
+
+    .cv-handle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      background-color: var(--md-sys-color-surface);
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: var(--md-sys-elevation-1);
+      transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+    .cv-handle:hover { background-color: var(--md-sys-color-surface-container-high); }
+    .cv-handle.active {
+      background-color: var(--md-sys-color-primary-container);
+      border-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary-container);
+    }
+
+    .cv-handle__count {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.7rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* --- オーバーレイドロワー --- */
+    .cv-drawer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 6;
+      width: 340px;
+      max-width: 86%;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--md-sys-color-surface);
+      border-right: 1px solid var(--md-sys-color-outline-variant);
+      box-shadow: var(--md-sys-elevation-3);
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized),
+                  visibility var(--md-sys-motion-duration-medium);
+    }
+    .cv-drawer.open { transform: none; visibility: visible; }
+
+    .cv-drawer__header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      min-height: 40px;
+      padding: 0 8px 0 12px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .cv-drawer__body {
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: var(--md-sys-spacing-sm);
     }
+    /* ログのように内側で高さを取り切る中身はパディングを持たせない */
+    .cv-drawer__body--flush {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-    /* Collapsed dock: アイコンストライプ */
-    #dock-left:has(> .dock-header [data-dock-toggle="left"]) {
-      transition: none;
+    /* --- ロボットレール ⇄ 詳細サイドバー --- */
+    #robot-side {
+      width: 56px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: var(--md-sys-color-surface);
+      border-left: 1px solid var(--md-sys-color-outline-variant);
+      transition: width var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized);
+    }
+    #robot-side[data-expanded="true"] { width: 340px; }
+
+    #robot-rail {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 0;
+      overflow-y: auto;
+    }
+    #robot-side[data-expanded="true"] #robot-rail {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      padding: 8px;
+      gap: 4px;
+    }
+
+    .cv-rail-btn {
+      width: 34px;
+      height: 30px;
+      flex-shrink: 0;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      background: transparent;
+      color: var(--crane-ink-2);
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: border-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+    .cv-rail-btn:hover { border-color: var(--md-sys-color-outline); }
+    .cv-rail-btn.selected {
+      background-color: var(--md-sys-color-primary-container);
+      border-color: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary-container);
+      font-weight: 600;
+    }
+    /* 未検出のロボットは薄く出す。番号の位置が動かないよう非表示にはしない */
+    .cv-rail-btn.absent { color: var(--crane-ink-disabled); border-style: dashed; }
+
+    /* --- コマンドバー --- */
+    #command-bar {
+      height: 96px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      background-color: var(--md-sys-color-surface);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .cv-cmd-main { flex-shrink: 0; }
+    .cv-cmd-main .gc-row { gap: 8px; margin: 0; }
+    .cv-cmd-main .gc-btn {
+      flex: 0 0 auto;
+      width: 88px;
+      height: 64px;
+      font-size: 0.82rem !important;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .cv-cmd-main .gc-btn--halt {
+      width: 150px;
+      font-size: 1.1rem !important;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    /* ラベルと行が交互に並ぶ既存マークアップを、2 列グリッドで横並びに畳む */
+    .cv-cmd-teams {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: center;
+      gap: 6px 8px;
+    }
+    .cv-cmd-teams .gc-team-label { margin: 0; justify-self: start; }
+    .cv-cmd-teams .gc-row { margin: 0; gap: 6px; align-items: center; }
+    .cv-cmd-teams .gc-btn { flex: 0 0 auto; width: 84px; height: 28px; }
+
+    /* 折り畳み時はレールだけを見せる。詳細パネルは 56px 幅からはみ出す */
+    #robot-side[data-expanded="false"] #robot-detail-dock-section { display: none; }
+    #robot-side[data-expanded="true"] #robot-detail-dock-section {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .cv-divider {
+      width: 1px;
+      height: 56px;
+      flex-shrink: 0;
+      background-color: var(--md-sys-color-outline-variant);
     }
 
     #btn-move-mode.active {
@@ -142,16 +371,6 @@
 
     #play-situation { color: var(--md-sys-color-warning); }
 
-    /* Main content area */
-    #main-content {
-      grid-area: main;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background-color: var(--md-sys-color-surface);
-      min-width: 0;
-    }
-
     /* SVG field viewer */
     #svg-container {
       flex: 1;
@@ -160,7 +379,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--md-sys-color-surface-dim);
+      background-color: var(--crane-field-out);
     }
 
     #field-canvas {
@@ -175,7 +394,7 @@
       align-items: center;
       gap: 6px;
       padding: 4px var(--md-sys-spacing-sm);
-      background: var(--md-sys-color-surface-dim);
+      background: var(--md-sys-color-surface-container);
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
       flex-shrink: 0;
     }
@@ -290,21 +509,23 @@
       color: var(--md-sys-color-on-error) !important;
     }
 
+    /* C 案のチームボタン: soft 地 + チーム色インク + dot 色の枠。
+       ライト地でソリッド塗り + 白文字にすると、黄色が olive にしか見えない。 */
     .gc-btn--yellow {
-      background-color: var(--md-sys-color-team-yellow) !important;
-      color: var(--md-sys-color-on-team-yellow) !important;
-      border-color: var(--md-sys-color-team-yellow) !important;
+      background-color: var(--crane-team-yellow-soft) !important;
+      color: var(--crane-team-yellow) !important;
+      border: 1px solid var(--crane-team-yellow-dot) !important;
     }
 
     .gc-btn--blue {
-      background-color: var(--md-sys-color-team-blue) !important;
-      color: var(--md-sys-color-on-team-blue) !important;
-      border-color: var(--md-sys-color-team-blue) !important;
+      background-color: var(--crane-team-blue-soft) !important;
+      color: var(--crane-team-blue) !important;
+      border: 1px solid var(--crane-team-blue-dot) !important;
     }
 
     .gc-btn--card-yellow {
-      color: var(--md-sys-color-team-yellow) !important;
-      border-color: var(--md-sys-color-team-yellow) !important;
+      color: var(--crane-team-yellow) !important;
+      border-color: var(--crane-team-yellow) !important;
     }
 
     .gc-btn--card-red {
@@ -342,7 +563,7 @@
     }
 
     .btn-place-ball.active {
-      outline: 2px solid #fff;
+      outline: 2px solid var(--md-sys-color-primary);
       outline-offset: 1px;
     }
 
@@ -363,7 +584,394 @@
 
     .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
 
-    /* Right dock: panel header */
+    /* ===== フォーカスサイドバーのタブ (C-2) ===== */
+    .cv-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      flex-shrink: 0;
+    }
+    .cv-tab {
+      border: none;
+      background: transparent;
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 8px 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .cv-tab:hover { color: var(--md-sys-color-on-surface); }
+    .cv-tab.active {
+      color: var(--md-sys-color-primary);
+      border-bottom-color: var(--md-sys-color-primary);
+      font-weight: 500;
+    }
+
+    /* レールの異常表示。V2a で robot_feedback が届くようになって初めて成立する */
+    .cv-rail-btn.warn {
+      border-color: var(--md-sys-color-warning);
+      color: var(--md-sys-color-warning);
+    }
+    .cv-rail-btn.danger {
+      border-color: var(--md-sys-color-error);
+      color: var(--md-sys-color-error);
+      font-weight: 700;
+    }
+
+    /* 概要タブのスパークライン */
+    .rd-spark { padding: 4px 0 0; }
+    .rd-spark-label {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+      padding-bottom: 6px;
+    }
+
+    /* ===== C-3 テストレイヤー ===== */
+    #test-ownership-pill, #test-help-bar {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 8;
+      display: none;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      letter-spacing: 0.04em;
+      background: var(--crane-field-out);
+      color: var(--crane-field-select);
+      border: 1px solid var(--crane-field-select);
+      white-space: nowrap;
+    }
+    #test-ownership-pill { top: 56px; }
+    #test-help-bar {
+      bottom: 14px;
+      font-family: var(--md-sys-typescale-font-family);
+      letter-spacing: normal;
+      color: var(--crane-field-ink-muted);
+      border-color: var(--crane-field-grid);
+    }
+    #test-ownership-pill.visible, #test-help-bar.visible { display: block; }
+
+    /* テスト中は無効化したレフェリーボタンを明確に沈める */
+    body.test-mode #command-bar [data-action]:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    /* テストタブ */
+    .rd-radio, .rd-check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 0.72rem;
+      color: var(--crane-ink-2);
+      padding: 6px 0;
+      cursor: pointer;
+    }
+    .rd-hint {
+      font-size: 0.64rem;
+      line-height: 1.5;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .rd-test__banner {
+      font-size: 0.7rem;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: var(--md-sys-shape-sm);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      margin-bottom: 8px;
+    }
+    .rd-test__banner[data-active="true"] {
+      background: var(--crane-test-soft);
+      border-color: var(--crane-test);
+      color: var(--crane-test);
+    }
+    .rd-test__limits[data-effective="false"] { opacity: 0.45; pointer-events: none; }
+    .rd-test__row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .rd-test__row label { font-size: 0.7rem; width: 68px; flex: none; color: var(--crane-ink-2); }
+    .rd-test__val {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.68rem;
+      width: 36px;
+      text-align: right;
+    }
+    .rd-test__unit { font-size: 0.62rem; color: var(--md-sys-color-on-surface-variant); width: 34px; }
+    .rd-test__target {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.68rem;
+      color: var(--crane-ink-2);
+      padding: 4px 0 8px;
+    }
+    .rd-test__actions { display: flex; gap: 8px; padding-top: 10px; }
+
+    /* テレメトリタブ */
+    .rd-chart {
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .rd-chart-note {
+      font-size: 0.62rem;
+      line-height: 1.5;
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 6px 0 2px;
+    }
+
+    /* ログタブ */
+    .rd-log {
+      max-height: 46vh;
+      overflow-y: auto;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.64rem;
+      line-height: 1.6;
+    }
+    .rd-log__empty {
+      color: var(--md-sys-color-on-surface-variant);
+      font-family: var(--md-sys-typescale-font-family);
+      font-size: 0.7rem;
+      padding: 10px 0;
+    }
+    .rd-log__row { display: flex; gap: 6px; }
+    .rd-log__time { color: var(--md-sys-color-on-surface-variant); }
+    .rd-log__tag { color: var(--md-sys-color-primary); }
+    .rd-log__msg { color: var(--crane-ink-2); word-break: break-all; }
+    .rd-log__row--warn .rd-log__msg { color: var(--md-sys-color-warning); }
+    .rd-log__row--error .rd-log__msg { color: var(--md-sys-color-error); }
+
+    /* ===== コマンドパレット (⌘K) ===== */
+    #command-palette {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 12vh;
+      background: var(--md-sys-color-scrim);
+    }
+    #command-palette.open { display: flex; }
+    .cp-box {
+      width: min(560px, 92vw);
+      background: var(--md-sys-color-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-lg, 16px);
+      box-shadow: var(--md-sys-elevation-3);
+      overflow: hidden;
+    }
+    .cp-input {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      font-family: inherit;
+      font-size: 0.92rem;
+      padding: 14px 16px;
+      outline: none;
+    }
+    .cp-list { max-height: 46vh; overflow-y: auto; }
+    .cp-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 9px 16px;
+      cursor: pointer;
+    }
+    .cp-item:hover { background: var(--md-sys-color-surface-container); }
+    .cp-item.active {
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+    }
+    .cp-empty, .cp-hint {
+      padding: 10px 16px;
+      font-size: 0.68rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .cp-hint { border-top: 1px solid var(--md-sys-color-outline-variant); }
+
+    .cv-cmdk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      font-family: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+    .cv-cmdk:hover { background: var(--md-sys-color-surface-container-high); }
+    .cv-cmdk__kbd {
+      font-family: var(--md-sys-typescale-mono-font-family);
+      font-size: 0.64rem;
+      padding: 1px 5px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-xs, 4px);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* ストリップの追加チップ */
+    .cv-chip--session .material-symbols-outlined { font-size: 14px; }
+    .cv-chip--warn {
+      background: var(--md-sys-color-warning-container);
+      color: var(--md-sys-color-on-warning-container);
+      border-color: var(--md-sys-color-warning);
+    }
+    .cv-chip--last { display: none; }
+    .cv-chip--last.visible { display: inline-flex; }
+    .cv-chip--last .material-symbols-outlined { font-size: 14px; }
+    #strip-last-action {
+      max-width: 22ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ロボットのホバーツールチップ / HALT 確認ダイアログ
+       (旧 main.js の style.cssText べた書きから移設) */
+    .cv-hover-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 500;
+      display: none;
+      background: var(--md-sys-color-surface-container-high);
+      color: var(--md-sys-color-on-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-sm);
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      box-shadow: var(--md-sys-elevation-2);
+      white-space: nowrap;
+    }
+    .cv-halt-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+      border: 2px solid var(--md-sys-color-error);
+      border-radius: var(--md-sys-shape-md);
+      padding: 16px 24px;
+      z-index: 9999;
+      font-size: 0.9rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* ===== 位置制御ゲイン調整パネル (ibis-ssl/crane#1442) ===== */
+    .pc-banner {
+      font-size: 0.7rem;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: var(--md-sys-shape-sm);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface-container);
+      color: var(--crane-ink-2);
+      margin-bottom: 10px;
+    }
+    .pc-banner[data-kind="ok"] {
+      background: var(--md-sys-color-success-container);
+      border-color: var(--md-sys-color-success);
+      color: var(--md-sys-color-on-success-container);
+    }
+    .pc-banner[data-kind="warn"] {
+      background: var(--md-sys-color-warning-container);
+      border-color: var(--md-sys-color-warning);
+      color: var(--md-sys-color-on-warning-container);
+    }
+    .pc-banner[data-kind="error"] {
+      background: var(--md-sys-color-error-container);
+      border-color: var(--md-sys-color-error);
+      color: var(--md-sys-color-on-error-container);
+    }
+
+    .pc-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .pc-row:last-of-type { border-bottom: none; }
+    .pc-row__head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pc-row__label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+    }
+    .pc-row__status {
+      margin-left: auto;
+      font-size: 0.64rem;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .pc-row__status[data-kind="ok"]      { color: var(--md-sys-color-success); }
+    .pc-row__status[data-kind="pending"] { color: var(--md-sys-color-warning); }
+    .pc-row__status[data-kind="error"]   { color: var(--md-sys-color-error); }
+    .pc-row__status[data-kind="muted"]   { color: var(--crane-ink-disabled); }
+
+    .pc-row__ctrl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pc-row__slider {
+      flex: 1;
+      min-width: 0;
+      accent-color: var(--md-sys-color-primary);
+    }
+    .pc-row__slider:disabled { accent-color: var(--crane-ink-disabled); }
+    .pc-row__number {
+      width: 74px;
+      flex: none;
+      font-size: 0.7rem;
+      padding: 3px 5px;
+      font-family: var(--md-sys-typescale-mono-font-family);
+      text-align: right;
+    }
+    .pc-row__unit {
+      width: 34px;
+      font-size: 0.64rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .pc-row__help {
+      margin-top: 5px;
+      font-size: 0.64rem;
+      line-height: 1.5;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .pc-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pc-note {
+      font-size: 0.62rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* ドロワー内のセクション (旧・右ドック) */
     .right-dock-section {
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
       display: flex;
@@ -450,8 +1058,8 @@
     }
 
     /* severity colors */
-    #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning,  #F9A825) !important; }
-    #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error,    #B3261E) !important; font-weight: 600; }
+    #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning) !important; }
+    #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error) !important; font-weight: 600; }
     #robot-detail-inline .rd-ok    { color: var(--md-sys-color-on-surface); }
 
     /* availability chips */
@@ -465,13 +1073,13 @@
     }
 
     .rd-chip--ok {
-      background: var(--md-sys-color-tertiary-container, #FFD8E4);
-      color: var(--md-sys-color-on-tertiary-container, #31111D);
+      background: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
     }
 
     .rd-chip--ng {
-      background: var(--md-sys-color-surface-container-highest, #E6E0E9);
-      color: var(--md-sys-color-on-surface-variant, #49454F);
+      background: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-on-surface-variant);
       opacity: 0.6;
     }
   </style>
@@ -486,264 +1094,379 @@
     crane WebSocket未接続 (port 8091) — craneが起動すると自動で再接続します
   </div>
 
-  <!-- Dock Container -->
-  <div class="dock-container">
+  <!-- ===== C-1 シェル =====
+       48px ステータスストリップ / 全画面フィールド / 56px⇄詳細サイドバー / 96px コマンドバー。
+       コマンドバーは .cv-shell 直下に置く。サイドバーの開閉と無関係に全幅のままになり、
+       HALT の位置が動かないことを CSS だけで保証できる。 -->
+  <div class="cv-shell">
 
-    <!-- Left Dock -->
-    <aside id="dock-left">
-      <div class="dock-header">
-        <button class="m3-icon-btn m3-icon-btn--sm" data-dock-toggle="left" title="左パネルを折り畳む/展開する">
-          <span class="material-symbols-outlined icon-sm">chevron_left</span>
-        </button>
-      </div>
-      <div class="dock-scroll">
+    <!-- 試合中に見るのはこの 4 つだけ: スコア・ステージ・現在のコマンド・接続 -->
+    <header id="status-strip">
+      <span class="cv-score" title="スコア (Game Controller)">
+        <span class="cv-dot cv-dot--yellow"></span>
+        <span id="gc-score">0 : 0</span>
+        <span class="cv-dot cv-dot--blue"></span>
+      </span>
+      <span class="cv-chip" title="ステージ">
+        <span id="gc-stage">-</span>
+      </span>
+      <span class="cv-chip cv-chip--cmd" title="現在のレフェリーコマンド">
+        <span id="gc-command">-</span>
+      </span>
 
-        <!-- Game info panel -->
-        <div class="m3-section-title">Game Info</div>
-        <div id="game-info-panel">
-          <div id="score-display">
-            <span id="score-our">0</span> : <span id="score-their">0</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Situation</span>
-            <span class="info-value" id="play-situation">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Stage</span>
-            <span class="info-value" id="game-stage">-</span>
+      <span class="cv-chip cv-chip--session" title="注入中のセッション">
+        <span class="material-symbols-outlined icon-sm">playlist_play</span><span id="strip-session">HALT</span>
+      </span>
+
+      <span class="cv-spacer"></span>
+
+      <span class="cv-chip cv-chip--last" title="直前の操作">
+        <span class="material-symbols-outlined icon-sm">history</span><span id="strip-last-action"></span>
+      </span>
+      <span class="cv-chip" title="Game Controller への接続">
+        <span class="m3-connection-dot" id="gc-connection-dot"></span>GC
+      </span>
+      <span class="cv-chip cv-chip--quiet" title="描画中のプリミティブ数">
+        Prim <span id="prim-count">0</span>
+      </span>
+    </header>
+
+    <div class="cv-body">
+
+      <main id="field-main">
+        <!-- Canvas field viewer -->
+        <div id="svg-container">
+        <canvas id="field-canvas"></canvas>
+        </div>
+
+        <!-- 押した時だけ左からフィールドの上に重なるドロワーのハンドル -->
+        <div id="field-handles">
+          <button class="cv-handle" type="button" data-drawer-toggle="layers" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">layers</span>レイヤー
+            <span class="cv-handle__count" id="layer-count">0</span>
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="log" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">terminal</span>ログ
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="match" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">sports</span>試合管理
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="session" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">tune</span>Sim / Session
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="position-control" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">speed</span>位置制御
+          </button>
+          <button class="cv-handle" type="button" data-drawer-toggle="replay" aria-expanded="false">
+            <span class="material-symbols-outlined icon-sm">history</span>リプレイ
+          </button>
+        </div>
+
+        <!-- ズーム・移動モードなどフィールド直結の操作 -->
+        <!-- C-3: テストレイヤーの所有権表示 -->
+        <div id="test-ownership-pill">TEST MODE</div>
+        <div id="test-help-bar">
+          クリック = 目標 / ドラッグ = 姿勢 / Shift+ドラッグ = 速度上限 / 右クリック = 目標消去 / Esc = 解除
+        </div>
+
+        <div id="field-tools">
+          <!-- Zoom toolbar -->
+          <div class="zoom-toolbar">
+          <button id="btn-zoom-in" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_in</span></button>
+          <button id="btn-zoom-out" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_out</span></button>
+          <button id="btn-zoom-reset" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">fit_screen</span></button>
+          <span class="divider"></span>
+          <button id="btn-move-mode" class="m3-icon-btn m3-icon-btn--sm" title="Robot move mode (Shift+click to select/move)"><span class="material-symbols-outlined icon-sm">open_with</span></button>
+          <span class="m3-text-on-surface-variant m3-label-small" id="move-status">Selected: <span id="selected-robot-label">--</span></span>
           </div>
         </div>
 
-        <!-- Game Control -->
-        <div class="m3-section-title">Game Control</div>
-        <details class="m3-expansion" id="gc-accordion" open>
-          <summary>
-            <span class="material-symbols-outlined icon-sm m3-text-primary">sports</span>
-            Game Controller
-            <span class="m3-connection-dot" id="gc-connection-dot" style="margin-left:auto;flex-shrink:0;"></span>
-          </summary>
-          <div class="m3-expansion__body">
-            <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-bottom:4px;">
-              Stage: <span id="gc-stage">-</span> &nbsp;|&nbsp; Cmd: <span id="gc-command">-</span>
+        <aside class="cv-drawer" data-drawer="layers" aria-label="レイヤー">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">layers</span>レイヤー
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <!-- Layer Control -->
+            <div class="right-dock-section" style="flex-shrink:0;">
+            <div class="right-dock-section-header">
+            <span class="material-symbols-outlined icon-sm">layers</span>
+            Layers
+            </div>
+            <div style="padding:6px;">
+            <div class="layer-controls-top">
+            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-select-all">All</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-deselect-all">None</button>
+            </div>
+            <div id="layer-list">
+            <!-- Populated by viewer/main.js -->
+            </div>
+            </div>
+            </div>
+          </div>
+        </aside>
+        <aside class="cv-drawer" data-drawer="log" aria-label="ログ">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">terminal</span>ログ
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body cv-drawer__body--flush">
+            <!-- Log Panel -->
+            <div class="right-dock-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+            <div class="right-dock-section-header">
+            <span class="material-symbols-outlined icon-sm">terminal</span>
+            Log
+            <button class="m3-icon-btn m3-icon-btn--sm" id="btn-log-clear" title="ログをクリア" style="margin-left:auto;">
+            <span class="material-symbols-outlined icon-sm">delete_sweep</span>
+            </button>
+            </div>
+            <div class="log-panel-filter">
+            <label title="Info"><input type="checkbox" class="log-level-cb" data-level="info" checked> I</label>
+            <label title="Warn"><input type="checkbox" class="log-level-cb" data-level="warn" checked> W</label>
+            <label title="Error"><input type="checkbox" class="log-level-cb" data-level="error" checked> E</label>
+            <label title="Action"><input type="checkbox" class="log-level-cb" data-level="action" checked> A</label>
+            <label title="Metric"><input type="checkbox" class="log-level-cb" data-level="metric" checked> M</label>
+            <input type="text" id="log-text-filter" placeholder="検索…">
+            </div>
+            <div id="log-panel-body">
+            <!-- Populated by LogPanel.js -->
+            </div>
+            </div>
+          </div>
+        </aside>
+        <aside class="cv-drawer" data-drawer="match" aria-label="試合管理">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">sports</span>試合管理
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <!-- Game info panel -->
+            <div class="m3-section-title">Game Info</div>
+            <div id="game-info-panel">
+            <div id="score-display">
+            <span id="score-our">0</span> : <span id="score-their">0</span>
+            </div>
+            <div class="info-row">
+            <span class="info-label">Situation</span>
+            <span class="info-value" id="play-situation">-</span>
+            </div>
+            <div class="info-row">
+            <span class="info-label">Stage</span>
+            <span class="info-value" id="game-stage">-</span>
+            </div>
             </div>
             <!-- Score -->
             <div class="gc-score-row">
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
-                data-action="gc-goals" data-team="YELLOW" data-delta="-1" title="Yellow score -1">－</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
-                data-action="gc-goals" data-team="YELLOW" data-delta="1" title="Yellow score +1">＋</button>
-              <span id="gc-score">0 : 0</span>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
-                data-action="gc-goals" data-team="BLUE" data-delta="-1" title="Blue score -1">－</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
-                data-action="gc-goals" data-team="BLUE" data-delta="1" title="Blue score +1">＋</button>
-            </div>
-            <!-- Main commands -->
-            <div class="gc-row">
-              <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
-                data-action="gc-command" data-type="HALT">HALT</button>
-              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
-                data-action="gc-command" data-type="STOP">STOP</button>
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
-                data-action="gc-command" data-type="FORCE_START">FORCE</button>
-              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
-                data-action="gc-command" data-type="NORMAL_START">START</button>
-            </div>
-            <!-- Yellow team commands -->
-            <div class="gc-team-label">Yellow</div>
-            <div class="gc-row">
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
-                data-action="gc-command" data-type="DIRECT" data-team="YELLOW">FREE KICK</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
-                data-action="gc-command" data-type="KICKOFF" data-team="YELLOW">KICKOFF</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow btn-place-ball" id="btn-place-ball-yellow"
-                data-action="ball-place" data-team="YELLOW">PLACE</button>
-            </div>
-            <!-- Blue team commands -->
-            <div class="gc-team-label">Blue</div>
-            <div class="gc-row">
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
-                data-action="gc-command" data-type="DIRECT" data-team="BLUE">FREE KICK</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
-                data-action="gc-command" data-type="KICKOFF" data-team="BLUE">KICKOFF</button>
-              <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue btn-place-ball" id="btn-place-ball-blue"
-                data-action="ball-place" data-team="BLUE">PLACE</button>
+            <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+            data-action="gc-goals" data-team="YELLOW" data-delta="-1" title="Yellow score -1">－</button>
+            <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+            data-action="gc-goals" data-team="YELLOW" data-delta="1" title="Yellow score +1">＋</button>
+            <span class="gc-score-caption">スコア</span>
+            <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+            data-action="gc-goals" data-team="BLUE" data-delta="-1" title="Blue score -1">－</button>
+            <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+            data-action="gc-goals" data-team="BLUE" data-delta="1" title="Blue score +1">＋</button>
             </div>
             <!-- Cards -->
             <div class="gc-team-label">Cards</div>
             <div class="gc-row">
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
-                data-action="gc-card-yellow" data-team="YELLOW" title="Yellow card for Yellow">Y🟨</button>
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
-                data-action="gc-card-red" data-team="YELLOW" title="Red card for Yellow">Y🟥</button>
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
-                data-action="gc-card-yellow" data-team="BLUE" title="Yellow card for Blue">B🟨</button>
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
-                data-action="gc-card-red" data-team="BLUE" title="Red card for Blue">B🟥</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
+            data-action="gc-card-yellow" data-team="YELLOW" title="Yellow card for Yellow">Y🟨</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
+            data-action="gc-card-red" data-team="YELLOW" title="Red card for Yellow">Y🟥</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
+            data-action="gc-card-yellow" data-team="BLUE" title="Yellow card for Blue">B🟨</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
+            data-action="gc-card-red" data-team="BLUE" title="Red card for Blue">B🟥</button>
             </div>
             <!-- Next Stage -->
             <div class="gc-row" style="margin-top:2px;">
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:1;"
-                data-action="gc-next-stage">Next Stage ▶</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:1;"
+            data-action="gc-next-stage">Next Stage ▶</button>
             </div>
           </div>
-        </details>
-
-        <!-- Simulation Control -->
-        <div class="m3-section-title">Sim Control</div>
-        <details class="m3-expansion" id="sim-accordion">
-          <summary>
+        </aside>
+        <aside class="cv-drawer" data-drawer="session" aria-label="Sim / Session">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">tune</span>Sim / Session
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <!-- Simulation Control -->
+            <div class="m3-section-title">Sim Control</div>
+            <details class="m3-expansion" id="sim-accordion">
+            <summary>
             <span class="material-symbols-outlined icon-sm m3-text-primary">precision_manufacturing</span>
             Simulation Control
-          </summary>
-          <div class="m3-expansion__body">
+            </summary>
+            <div class="m3-expansion__body">
             <div class="gc-row">
-              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" id="btn-sim-edit"
-                data-action="sim-edit">Sim Edit</button>
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
-                data-action="sim-reset-ball">Reset Ball</button>
+            <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" id="btn-sim-edit"
+            data-action="sim-edit">Sim Edit</button>
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
+            data-action="sim-reset-ball">Reset Ball</button>
             </div>
             <div class="sim-selected-label">Selected: <span id="sim-selected-label">mode off</span></div>
             <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-top:4px;margin-bottom:2px;">Sim endpoint (UDP)</div>
             <div style="display:flex;gap:3px;align-items:center;">
-              <input type="text" id="sim-host-input" value="127.0.0.1" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
-              <input type="number" id="sim-port-input" value="10300" class="m3-text-input" style="flex:1;font-size:0.68rem;padding:3px 5px;min-width:0;">
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:0 0 auto;padding:3px 8px !important;"
-                data-action="sim-set-endpoint">Set</button>
+            <input type="text" id="sim-host-input" value="127.0.0.1" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
+            <input type="number" id="sim-port-input" value="10300" class="m3-text-input" style="flex:1;font-size:0.68rem;padding:3px 5px;min-width:0;">
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:0 0 auto;padding:3px 8px !important;"
+            data-action="sim-set-endpoint">Set</button>
             </div>
             <div style="font-size:0.62rem;color:var(--md-sys-color-on-surface-variant);margin-top:3px;">
-              Click: select &nbsp;|&nbsp; Dblclick/Enter: teleport &nbsp;|&nbsp; Esc: cancel
+            Click: select &nbsp;|&nbsp; Dblclick/Enter: teleport &nbsp;|&nbsp; Esc: cancel
             </div>
-          </div>
-        </details>
-
-        <!-- Session Control -->
-        <div class="m3-section-title">Session Control</div>
-        <details class="m3-expansion" id="session-accordion">
-          <summary>
+            </div>
+            </details>
+            <!-- Session Control -->
+            <div class="m3-section-title">Session Control</div>
+            <details class="m3-expansion" id="session-accordion">
+            <summary>
             <span class="material-symbols-outlined icon-sm m3-text-primary">flowsheet</span>
             Session Injection
-          </summary>
-          <div class="m3-expansion__body">
+            </summary>
+            <div class="m3-expansion__body">
             <div style="font-size:0.68rem;color:var(--md-sys-color-on-surface-variant);margin-bottom:4px;">
-              Current: <span id="session-current" style="font-weight:600;color:var(--md-sys-color-primary);">-</span>
+            Current: <span id="session-current" style="font-weight:600;color:var(--md-sys-color-primary);">-</span>
             </div>
             <div style="display:flex;gap:3px;align-items:center;margin-bottom:3px;">
-              <select id="session-select" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;"></select>
-              <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" data-action="session-inject-select">Inject</button>
+            <select id="session-select" class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;"></select>
+            <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn" data-action="session-inject-select">Inject</button>
             </div>
             <div style="display:flex;gap:3px;align-items:center;margin-bottom:3px;">
-              <input type="text" id="session-custom-input" placeholder="custom name"
-                     class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
-              <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" data-action="session-inject-custom">Send</button>
+            <input type="text" id="session-custom-input" placeholder="custom name"
+            class="m3-text-input" style="flex:2;font-size:0.68rem;padding:3px 5px;">
+            <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" data-action="session-inject-custom">Send</button>
             </div>
             <div class="gc-row">
-              <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
-                      data-action="session-clear" style="flex:1;">Clear Injection (HALT)</button>
+            <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
+            data-action="session-clear" style="flex:1;">Clear Injection (HALT)</button>
             </div>
             <div style="font-size:0.62rem;color:var(--md-sys-color-on-surface-variant);margin-top:4px;">Recent:</div>
             <ul id="session-history" style="font-size:0.65rem;margin:2px 0 0;padding-left:14px;max-height:64px;overflow-y:auto;list-style:disc;"></ul>
+            </div>
+            </details>
           </div>
-        </details>
+        </aside>
+        <aside class="cv-drawer" data-drawer="position-control" aria-label="位置制御ゲイン">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">speed</span>位置制御ゲイン
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <div id="position-control-panel"></div>
+          </div>
+        </aside>
 
-      </div>
-    </aside>
+        <aside class="cv-drawer" data-drawer="replay" aria-label="リプレイ">
+          <div class="cv-drawer__header">
+            <span class="material-symbols-outlined icon-sm">history</span>リプレイ
+            <button class="m3-icon-btn m3-icon-btn--sm" data-drawer-close type="button"
+              title="閉じる" style="margin-left:auto;">
+              <span class="material-symbols-outlined icon-sm">close</span>
+            </button>
+          </div>
+          <div class="cv-drawer__body">
+            <!-- Replay (TimeScrubber) -->
+            <div id="dock-bottom" style="height:190px;overflow:hidden;">
+            <div id="time-scrubber-container" style="height:100%;"></div>
+            </div>
+          </div>
+        </aside>
+      </main>
 
-    <!-- Left Splitter -->
-    <div class="dock-splitter" data-target="left" data-axis="v" title="左パネルをリサイズ"></div>
-
-    <!-- Main Canvas Area -->
-    <main id="main-content">
-
-      <!-- Zoom toolbar -->
-      <div class="zoom-toolbar">
-        <button id="btn-zoom-in" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_in</span></button>
-        <button id="btn-zoom-out" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_out</span></button>
-        <button id="btn-zoom-reset" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">fit_screen</span></button>
-        <span class="divider"></span>
-        <button id="btn-move-mode" class="m3-icon-btn m3-icon-btn--sm" title="Robot move mode (Shift+click to select/move)"><span class="material-symbols-outlined icon-sm">open_with</span></button>
-        <span class="m3-text-on-surface-variant m3-label-small" id="move-status">Selected: <span id="selected-robot-label">--</span></span>
-        <span class="m3-text-on-surface-variant m3-label-small" style="margin-left:8px;">
-          Layers: <span id="layer-count">0</span> | Primitives: <span id="prim-count">0</span>
-        </span>
-      </div>
-
-      <!-- Canvas field viewer -->
-      <div id="svg-container">
-        <canvas id="field-canvas"></canvas>
-      </div>
-
-    </main>
-
-    <!-- Right Splitter -->
-    <div class="dock-splitter" data-target="right" data-axis="v" title="右パネルをリサイズ"></div>
-
-    <!-- Right Dock -->
-    <aside id="dock-right">
-      <div class="dock-header">
-        <button class="m3-icon-btn m3-icon-btn--sm" data-dock-toggle="right" title="右パネルを折り畳む/展開する">
-          <span class="material-symbols-outlined icon-sm">chevron_right</span>
+      <!-- 56px のロボットレール。クリックで 320px の詳細サイドバーに展開する -->
+      <aside id="robot-side" data-expanded="false">
+        <div id="robot-rail" role="group" aria-label="ロボット選択"></div>
+        <!-- Robot Detail Inline Panel -->
+        <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
+        <div class="right-dock-section-header">
+        <span class="material-symbols-outlined icon-sm">smart_toy</span>
+        ROBOT <span id="focus-robot-id">--</span>
+        <button class="m3-icon-btn m3-icon-btn--sm" id="btn-robot-detail-close" title="パネルを閉じる" style="margin-left:auto;">
+        <span class="material-symbols-outlined icon-sm">close</span>
         </button>
-      </div>
-
-      <!-- Layer Control -->
-      <div class="right-dock-section" style="flex-shrink:0;">
-        <div class="right-dock-section-header">
-          <span class="material-symbols-outlined icon-sm">layers</span>
-          Layers
         </div>
-        <div style="padding:6px;">
-          <div class="layer-controls-top">
-            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-select-all">All</button>
-            <button class="m3-btn m3-btn--sm m3-btn--outlined" id="btn-deselect-all">None</button>
-          </div>
-          <div id="layer-list">
-            <!-- Populated by viewer/main.js -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Robot Detail Inline Panel -->
-      <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
-        <div class="right-dock-section-header">
-          <span class="material-symbols-outlined icon-sm">smart_toy</span>
-          Robot Detail
-          <button class="m3-icon-btn m3-icon-btn--sm" id="btn-robot-detail-close" title="パネルを閉じる" style="margin-left:auto;">
-            <span class="material-symbols-outlined icon-sm">close</span>
-          </button>
-        </div>
+        <div class="cv-tabs" id="focus-tabs" role="tablist"><!-- FocusSidebar が生成 --></div>
         <div id="robot-detail-inline">
-          <!-- Populated by main.js -->
+        <!-- 選択中タブの中身 -->
+        </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- 96px コマンドバー: HALT の位置は何があっても動かさない -->
+    <footer id="command-bar">
+      <div class="cv-cmd-main">
+        <!-- Main commands -->
+        <div class="gc-row">
+        <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
+        data-action="gc-command" data-type="HALT">HALT</button>
+        <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
+        data-action="gc-command" data-type="STOP">STOP</button>
+        <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn"
+        data-action="gc-command" data-type="FORCE_START">FORCE</button>
+        <button class="m3-btn m3-btn--sm m3-btn--tonal gc-btn"
+        data-action="gc-command" data-type="NORMAL_START">START</button>
         </div>
       </div>
-
-      <!-- Log Panel -->
-      <div class="right-dock-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
-        <div class="right-dock-section-header">
-          <span class="material-symbols-outlined icon-sm">terminal</span>
-          Log
-          <button class="m3-icon-btn m3-icon-btn--sm" id="btn-log-clear" title="ログをクリア" style="margin-left:auto;">
-            <span class="material-symbols-outlined icon-sm">delete_sweep</span>
-          </button>
+      <span class="cv-divider"></span>
+      <div class="cv-cmd-teams">
+        <!-- Yellow team commands -->
+        <div class="gc-team-label">Yellow</div>
+        <div class="gc-row">
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+        data-action="gc-command" data-type="DIRECT" data-team="YELLOW">FREE KICK</button>
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
+        data-action="gc-command" data-type="KICKOFF" data-team="YELLOW">KICKOFF</button>
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow btn-place-ball" id="btn-place-ball-yellow"
+        data-action="ball-place" data-team="YELLOW">PLACE</button>
         </div>
-        <div class="log-panel-filter">
-          <label title="Info"><input type="checkbox" class="log-level-cb" data-level="info" checked> I</label>
-          <label title="Warn"><input type="checkbox" class="log-level-cb" data-level="warn" checked> W</label>
-          <label title="Error"><input type="checkbox" class="log-level-cb" data-level="error" checked> E</label>
-          <label title="Action"><input type="checkbox" class="log-level-cb" data-level="action" checked> A</label>
-          <label title="Metric"><input type="checkbox" class="log-level-cb" data-level="metric" checked> M</label>
-          <input type="text" id="log-text-filter" placeholder="検索…">
-        </div>
-        <div id="log-panel-body">
-          <!-- Populated by LogPanel.js -->
+        <!-- Blue team commands -->
+        <div class="gc-team-label">Blue</div>
+        <div class="gc-row">
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+        data-action="gc-command" data-type="DIRECT" data-team="BLUE">FREE KICK</button>
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
+        data-action="gc-command" data-type="KICKOFF" data-team="BLUE">KICKOFF</button>
+        <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue btn-place-ball" id="btn-place-ball-blue"
+        data-action="ball-place" data-team="BLUE">PLACE</button>
         </div>
       </div>
+      <span class="cv-divider"></span>
+      <button class="cv-cmdk" type="button" id="btn-command-palette"
+        title="コマンドパレット (⌘K / Ctrl+K)。スコア・カード・次のステージはここから">
+        <span class="material-symbols-outlined icon-sm">search</span>
+        <span class="cv-cmdk__label">コマンド</span>
+        <kbd class="cv-cmdk__kbd">⌘K</kbd>
+      </button>
+    </footer>
 
-    </aside>
-
-    <!-- Bottom Dock (TimeScrubber) -->
-    <div id="dock-bottom" style="height:var(--dock-bottom-h,0px);overflow:hidden;">
-      <div id="time-scrubber-container" style="height:100%;"></div>
+    <!-- コマンドパレット。コマンドバーに居場所が無い操作の唯一の導線 -->
+    <div id="command-palette" role="dialog" aria-modal="true" aria-label="コマンドパレット">
+      <div class="cp-box">
+        <input type="text" id="command-palette-input" class="cp-input"
+          placeholder="操作を検索 (例: カード, スコア, ステージ, ゲイン)" autocomplete="off">
+        <div id="command-palette-list" class="cp-list"></div>
+        <div class="cp-hint">↑↓ で選択 / Enter で実行 / Esc で閉じる</div>
+      </div>
     </div>
 
   </div>

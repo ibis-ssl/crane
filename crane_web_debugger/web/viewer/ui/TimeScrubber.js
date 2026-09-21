@@ -143,13 +143,7 @@ export class TimeScrubber {
     _applyFrame(tsMs) {
         const state = this._ring.seek(tsMs);
         if (!state) return;
-        this._viewer._replayMode = true;
-        this._viewer.layerStore = state.layerStore;
-        this._viewer.robotsOurs = state.robotsOurs;
-        this._viewer.robotsTheirs = state.robotsTheirs;
-        this._viewer.ballPos = state.ball;
-        this._viewer.controlTargets = state.controlTargets;
-        this._viewer.renderer?.invalidate();
+        this._viewer.applyReplayFrame(state);
     }
 
     _updateSlider() {

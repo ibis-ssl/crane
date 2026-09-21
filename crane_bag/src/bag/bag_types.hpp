@@ -70,7 +70,11 @@ struct WorldModel
 {
   BallInfo ball_info;
   FieldInfo field_info;
+  /// goal_size.y がゴール幅 [m]（goal_size.x は奥行き）
+  FieldInfo goal_size;
   bool is_yellow = false;
+  /// 自陣が +x 側かどうか。ゴール判定の自陣/敵陣を決めるのに要る
+  bool on_positive_half = false;
   std::vector<RobotInfo> robot_info_ours;
   std::vector<RobotInfo> robot_info_theirs;
   /// header/stamp [ns]。ball_contact_last_ns との比較に使う（同一クロック保証）
@@ -115,6 +119,11 @@ struct RobotCommand
   float dribble_power = 0;
   bool stop_flag = false;
   bool chip_enable = false;
+  /// RobotCommand.msg の control_mode（1=POSITION_TARGET, 2=SIMPLE_VELOCITY, 3=POLAR_VELOCITY）
+  uint8_t control_mode = 0;
+  /// 指令生成時に crane が見ていた機体の位置・速度。指令と実挙動の突き合わせに使う
+  Pose2D current_pose;
+  Pose2D current_velocity;
   std::string planner_name;
   std::vector<NamedString> planning_factors;
   std::vector<PositionTarget> position_target_mode;

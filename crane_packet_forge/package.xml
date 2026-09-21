@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>crane_packet_forge</name>
+  <version>1.0.454</version>
+  <description>ロボット指令パケットを自由に組み立てて直接送るCLIとGUI</description>
+  <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <!-- robot_packet.h を layout.py の生成元とゴールデンベクタの基準に使う -->
+  <depend>crane_robot_receiver</depend>
+  <depend>crane_sender</depend>
+  <!-- フィードバックのオフセットの生成元 -->
+  <!-- GUI が共有テーマ (web/shared) を参照する -->
+  <exec_depend>crane_web_debugger</exec_depend>
+  <exec_depend>python3-fastapi</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>crane_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

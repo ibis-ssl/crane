@@ -1,144 +1,282 @@
-import { ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './renderer/constants.js';
-import {
-    formatPlannerName, getFsmState, getControlModeLong,
-    formatLatencyRich, formatVoltage, formatTemperature,
-    formatKickState, formatErrorBadge, availabilityChips,
-} from './renderer/formatters.js';
+// Viewer の組み立て役。
+//
+// 役割は「各モジュールを繋ぐこと」と「カメラ（ズーム・パン）を持つこと」だけ。
+// ワールドモデルは ViewerState、操作モードは ModeMachine、canvas 入力は
+// PointerRouter、data-action は ActionDispatcher、WebSocket は WsHub が持つ。
+// ここに状態や分岐を書き足しそうになったら、置き場所を間違えている。
+
+import { ROBOT_HIT_RADIUS_M } from './renderer/constants.js';
 import { SvgPrimitiveParser } from './renderer/SvgPrimitiveParser.js';
 import { CanvasRenderer } from './renderer/CanvasRenderer.js';
 import { FieldLayer } from './renderer/FieldLayer.js';
 import { ThemeTokens } from './renderer/ThemeTokens.js';
+import { PointerRouter } from './renderer/PointerRouter.js';
+import { WsHub } from './ws/WsHub.js';
 import { GameControlClient } from './ws/GameControlClient.js';
-import { DockLayout } from './ui/DockLayout.js';
+import { ViewerState } from './state/ViewerState.js';
+import { ModeMachine } from './state/ModeMachine.js';
+import { LayerStore } from './state/LayerStore.js';
+import { ShellControls } from './ui/ShellControls.js';
+import { StatusStrip } from './ui/StatusStrip.js';
+import { CommandPalette } from './ui/CommandPalette.js';
+import { PositionControlPanel } from './ui/PositionControlPanel.js';
+import { ActionDispatcher } from './ui/ActionDispatcher.js';
+import { FocusSidebar } from './ui/FocusSidebar.js';
+import { OverviewTab } from './sidebar/OverviewTab.js';
+import { TelemetryTab } from './sidebar/TelemetryTab.js';
+import { TestTab } from './sidebar/TestTab.js';
+import { ROUTE_DIRECT } from './state/TestSession.js';
+import { LogTab } from './sidebar/LogTab.js';
 import { LogPanel } from './ui/LogPanel.js';
-import { MetricRing } from './ui/Sparkline.js';
-import { RingBuffer, indexBy, applyLayerUpdate } from './replay/RingBuffer.js';
+import { RingBuffer } from './replay/RingBuffer.js';
 import { TimeScrubber } from './ui/TimeScrubber.js';
+
+const WS_PORT = 8091;
+const DETAIL_REFRESH_MS = 500;
+const KEYBOARD_PAN_SPEED = 80;
+const KEYBOARD_PAN_FAST = 3;
+const HALT_CONFIRM_MS = 2000;
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 5.0;
+const ZOOM_BUTTON_STEP = 1.2;
+const HOVER_RADIUS_M = ROBOT_HIT_RADIUS_M * 2;
 
 class CraneViewer {
     constructor() {
-        this.websocket = null;
-        this.layerStore = new Map();
-        this.visibleLayers = new Set();
-        this.seenLayers = new Set();
+        // --- カメラ ---
         this.zoomLevel = 1.0;
         this.panOffset = { x: 0, y: 0 };
         this.isPanning = false;
         this.lastPanPoint = { x: 0, y: 0 };
-        this.pendingUpdateBatch = [];
-        this.flushTimer = null;
-        this.flushIntervalMs = 50;
-
-        this.robotsOurs = {};
-        this.robotsTheirs = {};
-        this.controlTargets = {};
-
-        this.moveMode = false;
-        this.selectedRobotId = null;
-        this.isYellow = false;
-        this.onPositiveHalf = false;
+        this.lastMouseField = { x: 0, y: 0 };
         this._prevFieldLength = null;
 
-        this.ballPos = { x: 0, y: 0 };
-        this.simEditMode = false;
-        this.simSelectedObj = null;
-        this.placeBallPending = null;
-        this.gcClient = new GameControlClient();
-        this._dragStartX = 0;
-        this._dragStartY = 0;
-        this._dragMoved = false;
-        this._lastMouseField = { x: 0, y: 0 };
-        this._haltPending = false;
-        this._haltTimer = null;
-        this._hoveredRobotId = null;
-        this._hoveredTooltipId = null;
-        this._multiSelect = new Set();
-        this._keysDown = new Set();
-        this._keyboardLoopRunning = false;
-        this.robotFeedback = {};
-        this._feedbackTimestamp = {};  // { robot_id: Date.now() } - 警告バッジのstale判定用
-        this.latencyEstimation = {};   // { robot_id: { source: { latency_ms, correlation, ... } } }
-        this._robotMetrics = new Map(); // id -> { posX, posY, vel }
-        this._detailRobotId = null;
-        this._replayMode = false;
-        this.ringBuffer = new RingBuffer();
-        this.timeScrubber = null;
+        // --- 状態 ---
+        this.state = new ViewerState();
+        this.modes = new ModeMachine();
+        this.layerStore = new LayerStore(() => this._refreshLayers());
 
-        this.robotUpdateTimer = null;
+        // --- 通信 ---
+        this.hub = new WsHub(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.hostname}:${WS_PORT}`);
+        this.gcClient = new GameControlClient();
+
+        // --- 描画 ---
         this.parser = new SvgPrimitiveParser();
         this.fieldLayer = new FieldLayer();
         this.themeTokens = new ThemeTokens();
         this.renderer = null;
-        this.dockLayout = null;
+        this.pointer = null;
+        this.ringBuffer = new RingBuffer();
+        this.timeScrubber = null;
+        this._replayMode = false;
+
+        // --- UI ---
+        this.shell = null;
+        this.statusStrip = null;
+        this.palette = null;
+        this.positionControl = null;
+        this.actions = null;
+        this.sidebar = null;
         this.logPanel = null;
+
+        this._detailTimer = null;
+        this._keysDown = new Set();
+        this._keyboardLoopRunning = false;
+        this._haltPending = false;
+        this._haltTimer = null;
+        this._hoveredTooltipId = null;
+        this.testSession = null;
 
         this.init();
     }
 
     init() {
         const canvas = document.getElementById('field-canvas');
-        if (canvas) {
-            this.renderer = new CanvasRenderer(canvas, this, this.fieldLayer, this.themeTokens);
-        }
+        if (canvas) this.renderer = new CanvasRenderer(canvas, this, this.fieldLayer, this.themeTokens);
         this.themeTokens.mount(() => this.renderer?.invalidate());
-        this.dockLayout = new DockLayout();
+
         const logBody = document.getElementById('log-panel-body');
         if (logBody) this.logPanel = new LogPanel(logBody);
-        this.setupWebSocket();
-        this.setupEventListeners();
-        this.setupDelegatedListeners();
-        this.setupLogPanelControls();
-        document.getElementById('btn-robot-detail-close')?.addEventListener('click', () => this.closeRobotDetail());
+
+        this.sidebar = new FocusSidebar(this);
+        this.sidebar.register('overview', new OverviewTab(this.state, this.themeTokens));
+        this.sidebar.register('telemetry', new TelemetryTab(this));
+        this.sidebar.register('test', new TestTab(this));
+        this.sidebar.register('log', new LogTab(this.logPanel));
+        this.shell = new ShellControls(this);
+        this.actions = new ActionDispatcher(this);
+        this.statusStrip = new StatusStrip(this.actions);
+        this.palette = new CommandPalette(this.actions);
+
+        const pcRoot = document.getElementById('position-control-panel');
+        if (pcRoot) this.positionControl = new PositionControlPanel(this, pcRoot);
+
+        this.modes.setHooks({
+            onEnterMove: () => this.hub.send({ type: 'activate_move_mode' }),
+            onEnterTest: () => this._syncTestChrome(),
+            // 解除の送信はここに置く。Escape ラダーからの exitTop() も
+            // ボタンからの deactivateTest() も必ずここを通るため、
+            // 「UI は off なのに crane 側はテストセッションのまま」にならない。
+            //
+            // 指令経路が「直接」でも同じ deactivate_robot_test を送ってよい。
+            // websocket_server.cpp の 3 ハンドラはいずれもサーバ側に状態を持たず、
+            // session_injection を publish するだけだから:
+            //   activate_move_mode   → "HALT"
+            //   activate_robot_test  → "ROBOT_TEST"
+            //   deactivate_robot_test→ "HALT"
+            // 直接経路はもともと HALT なので、解除は HALT の再送になって無害。
+            // メッセージ名に robot_test と付くが、実体は「HALT へ戻す」汎用の解除。
+            onExitTest: () => {
+                this.hub.send({ type: 'deactivate_robot_test' });
+                this.logPanel?.appendLog('action', 'TEST', 'deactivate → HALT');
+                this._syncTestChrome();
+            },
+            onChange: () => this.renderer?.invalidate(),
+        });
+
+        this._setupHub();
+        this._setupStaticControls();
+        if (canvas) this.pointer = new PointerRouter(this, canvas);
+        this._setupKeyboard();
+        this._setupLogPanelControls();
+
+        document.getElementById('btn-robot-detail-close')
+            ?.addEventListener('click', () => this.closeRobotDetail());
+
         const tsContainer = document.getElementById('time-scrubber-container');
         if (tsContainer) this.timeScrubber = new TimeScrubber(tsContainer, this.ringBuffer, this);
-        this.updateConnectionStatus(false);
+
+        this._setConnected(false);
+        this.sidebar.applyUrlParams();
         this.gcClient.connect(window.location.hostname);
-        this.gcClient.onStateChange = (state) => this.updateGcPanel(state);
+        this.gcClient.onStateChange = (state) => this.statusStrip.updateFromGc(state);
     }
 
-    setupWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.hostname}:8091`;
-        this.websocket = new WebSocket(wsUrl);
-        this.websocket.onopen = () => {
-            this.updateConnectionStatus(true);
-            this.logPanel?.appendLog('info', 'WS', `接続 ${wsUrl}`);
-        };
-        this.websocket.onmessage = (event) => {
-            try { this.handleMessage(JSON.parse(event.data)); } catch (e) {
-                console.error('メッセージ解析エラー:', e);
-                this.logPanel?.appendLog('error', 'WS', `メッセージ解析エラー: ${e.message}`);
+    // ===== 互換アクセサ =====
+    // CanvasRenderer / RobotHud / ShellControls が viewer 直下を読むため、
+    // ViewerState・ModeMachine への委譲を残す。新しいコードは state / modes を直接使うこと。
+    get robotsOurs() { return this.state.robotsOurs; }
+    get robotsTheirs() { return this.state.robotsTheirs; }
+    get controlTargets() { return this.state.controlTargets; }
+    get robotFeedback() { return this.state.robotFeedback; }
+    get latencyEstimation() { return this.state.latencyEstimation; }
+    get ballPos() { return this.state.ballPos; }
+    get isYellow() { return this.state.isYellow; }
+    get focusedRobotId() { return this.state.focusedRobotId; }
+    get _multiSelect() { return this.state.multiSelect; }
+    get _hoveredRobotId() { return this.state.hoveredRobotId; }
+    get _feedbackTimestamp() { return this.state.feedbackTimestamp; }
+    get _robotMetrics() { return this.state.metrics; }
+    get moveMode() { return this.modes.move; }
+    get simEditMode() { return this.modes.simEdit; }
+    get placeBallPending() { return this.modes.ballPlacement; }
+    get simSelectedObj() { return this.modes.simSelectedObj; }
+    get websocket() { return this.hub.socket; }
+    get visibleLayers() { return this.layerStore.visible; }
+
+    // ===== 受信 =====
+
+    _setupHub() {
+        const hub = this.hub;
+        hub.onStatus((ok) => {
+            this._setConnected(ok);
+            if (ok) this.positionControl?.requestConfig();
+        });
+        hub.onLog((level, tag, msg) => this.logPanel?.appendLog(level, tag, msg));
+
+        hub.subscribe('svg_data', (d) => this._onSvgData(d));
+        hub.subscribe('svg_update', (d) => this._onSvgUpdate(d));
+        hub.subscribe('world_model', (d) => this._onWorldModel(d));
+        hub.subscribe('control_targets', (d) => this._onControlTargets(d));
+        hub.subscribe('robot_commands', (d) => {
+            // robot_commands は control_targets が流れてこない構成向けのフォールバック
+            if (d.commands && Object.keys(this.state.controlTargets).length === 0) {
+                this.state.ingestControlTargets(d.commands);
+                this._scheduleDetailRefresh();
             }
-        };
-        this.websocket.onclose = () => {
-            this.updateConnectionStatus(false);
-            this.logPanel?.appendLog('warn', 'WS', '切断 — 3秒後に再接続');
-            setTimeout(() => {
-                if (!this.websocket || this.websocket.readyState === WebSocket.CLOSED) this.setupWebSocket();
-            }, 3000);
-        };
-        this.websocket.onerror = () => {
-            this.updateConnectionStatus(false);
-            this.logPanel?.appendLog('error', 'WS', '接続エラー');
-        };
+        });
+        hub.subscribe('robot_feedback', (d) => {
+            // websocket_server.cpp は "robots" キーで送る
+            if (d.robots) this.state.ingestFeedback(d.robots);
+            if (this.state.focusedRobotId !== null) this._scheduleDetailRefresh();
+        });
+        hub.subscribe('latency_estimation', (d) => {
+            if (!d.estimations) return;
+            this.state.ingestLatency(d.estimations);
+            this._refreshDetailNow();
+            this.renderer?.invalidate();
+        });
+        hub.subscribe('game_info', (d) => this.statusStrip.updateFromGameInfo(d));
+        hub.subscribe('situations_list', (d) => this._onSituationsList(d));
+        hub.subscribe('session_injection_current', (d) => this._onSessionInjection(d));
+        hub.subscribe('position_control_config', (d) => this.positionControl?.handleConfig(d));
+        hub.subscribe('set_position_control_param_result', (d) => this.positionControl?.handleSetResult(d));
+        hub.connect();
     }
 
-    handleMessage(data) {
-        switch (data.type) {
-            case 'svg_data':        this.handleSvgData(data); break;
-            case 'svg_update':      this.handleSvgUpdate(data); break;
-            case 'world_model':     this.handleWorldModel(data); break;
-            case 'control_targets': this.handleControlTargets(data); break;
-            case 'robot_commands':  this.handleRobotCommands(data); break;
-            case 'robot_feedback':     this.handleRobotFeedback(data); break;
-            case 'game_info':          this.handleGameInfo(data); break;
-            case 'latency_estimation': this.handleLatencyEstimation(data); break;
-            case 'situations_list':          this.handleSituationsList(data); break;
-            case 'session_injection_current': this.handleSessionInjectionCurrent(data); break;
+    _refreshLayers() {
+        this.renderer?.invalidate();
+        this.layerStore.renderList(() => this.renderer?.invalidate());
+        this.layerStore.renderStats();
+    }
+
+    _onSvgData(data) {
+        const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
+        if (this._replayMode) {
+            this.ringBuffer.addDelta(tsMs, 'svg_data', data);
+            return;
         }
+        this.layerStore.replaceAll(data.layers);
+        this.ringBuffer.addKeyframe(tsMs, {
+            layerStore: this.layerStore.layers,
+            robotsOurs: this.state.robotsOurs,
+            robotsTheirs: this.state.robotsTheirs,
+            ball: this.state.ballPos,
+            controlTargets: this.state.controlTargets,
+        });
+        this._refreshLayers();
     }
 
-    handleSituationsList(data) {
+    _onSvgUpdate(data) {
+        this.ringBuffer.addDelta(Date.now(), 'svg_update', data);
+        if (this._replayMode) return;
+        this.layerStore.queueUpdates(data.updates);
+    }
+
+    _onWorldModel(data) {
+        const tsMs = data.timestamp ? data.timestamp * 1e-6 : Date.now();
+        this.ringBuffer.addDelta(tsMs, 'world_model', data);
+        if (this._replayMode) return;
+
+        this.state.ingestWorldModel(data);
+
+        // field_info 動的 viewBox: フィールドサイズが変わった時だけズームをリセットする
+        if (data.field_info && this.fieldLayer.updateFromFieldInfo(data.field_info)) {
+            const newLen = data.field_info.length;
+            if (this._prevFieldLength !== null && newLen !== this._prevFieldLength) {
+                this.zoomLevel = 1.0;
+                this.panOffset = { x: 0, y: 0 };
+            }
+            this._prevFieldLength = newLen;
+            const fl = this.fieldLayer;
+            this.parser.setViewBox(fl.vbX, fl.vbY, fl.vbW, fl.vbH);
+            this.layerStore.markAllDirty();
+            this.renderer?.invalidate();
+        }
+
+        this._scheduleDetailRefresh();
+        if (this.modes.move && this.state.focusedRobotId !== null) this.renderer?.invalidate();
+        if (this.modes.simEdit) this.renderer?.invalidate();
+    }
+
+    _onControlTargets(data) {
+        this.ringBuffer.addDelta(Date.now(), 'control_targets', data);
+        if (this._replayMode) return;
+        if (data.commands) this.state.ingestControlTargets(data.commands);
+        this._scheduleDetailRefresh();
+    }
+
+    _onSituationsList(data) {
         const sel = document.getElementById('session-select');
         if (!sel) return;
         const current = sel.value;
@@ -158,7 +296,8 @@ class CraneViewer {
         }
     }
 
-    handleSessionInjectionCurrent(data) {
+    _onSessionInjection(data) {
+        this.statusStrip.updateSession(data.name);
         const currentEl = document.getElementById('session-current');
         if (currentEl) currentEl.textContent = data.name || '-';
         const historyEl = document.getElementById('session-history');
@@ -166,226 +305,12 @@ class CraneViewer {
         historyEl.innerHTML = '';
         for (const entry of (data.history || [])) {
             const li = document.createElement('li');
-            const t = new Date(entry.timestamp_ms).toLocaleTimeString();
-            li.textContent = `${t}  ${entry.name}`;
+            li.textContent = `${new Date(entry.timestamp_ms).toLocaleTimeString()}  ${entry.name}`;
             historyEl.appendChild(li);
         }
     }
 
-    handleLatencyEstimation(data) {
-        if (!data.estimations) return;
-        for (const est of data.estimations) {
-            if (!this.latencyEstimation[est.robot_id]) this.latencyEstimation[est.robot_id] = {};
-            this.latencyEstimation[est.robot_id][est.source] = {
-                latency_ms:   est.latency_ms,
-                correlation:  est.correlation,
-                samples_used: est.samples_used,
-            };
-        }
-        if (this._detailRobotId !== null) {
-            const robot = this.robotsOurs[this._detailRobotId];
-            const cmd   = this.controlTargets[this._detailRobotId];
-            if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
-        }
-        this.renderer?.invalidate();
-    }
-
-    _registerLayer(name) {
-        if (!this.seenLayers.has(name)) {
-            this.seenLayers.add(name);
-            this.visibleLayers.add(name);
-        }
-    }
-
-    handleSvgData(data) {
-        if (this._replayMode) {
-            // リプレイ中は RingBuffer にのみ tee
-            const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
-            this.ringBuffer.addDelta(tsMs, 'svg_data', data);
-            return;
-        }
-        this.layerStore.clear();
-        if (data.layers) {
-            for (const layer of data.layers) {
-                this._registerLayer(layer.layer);
-                this.layerStore.set(layer.layer, {
-                    primitives: [...layer.svg_primitives],
-                    commands: [],
-                    dirty: true,
-                });
-            }
-        }
-        const tsMs = data.stamp_ns ? data.stamp_ns / 1e6 : Date.now();
-        this.ringBuffer.addKeyframe(tsMs, {
-            layerStore: this.layerStore,
-            robotsOurs: this.robotsOurs,
-            robotsTheirs: this.robotsTheirs,
-            ball: this.ballPos,
-            controlTargets: this.controlTargets,
-        });
-        this.renderer?.invalidate();
-        this.updateLayerList();
-        this.updateStats();
-    }
-
-    handleSvgUpdate(data) {
-        const tsMs = Date.now();
-        this.ringBuffer.addDelta(tsMs, 'svg_update', data);
-        if (this._replayMode) return;
-        if (Array.isArray(data.updates) && data.updates.length > 0) {
-            this.pendingUpdateBatch.push(...data.updates);
-        }
-        this.scheduleFlushUpdates();
-    }
-
-    scheduleFlushUpdates() {
-        if (this.flushTimer) return;
-        this.flushTimer = setTimeout(() => {
-            const batch = this.pendingUpdateBatch.splice(0);
-            this.flushTimer = null;
-            if (batch.length === 0) return;
-            this.applySvgUpdates(this.coalesceLayerUpdates(batch));
-            this.renderer?.invalidate();
-            this.updateLayerList();
-            this.updateStats();
-        }, this.flushIntervalMs);
-    }
-
-    coalesceLayerUpdates(updates) {
-        const byLayer = new Map();
-        for (const upd of updates) {
-            const layer = upd.layer;
-            const op = (upd.operation || '').toLowerCase();
-            const prim = Array.isArray(upd.svg_primitives) ? upd.svg_primitives : [];
-            if (!layer || !op) continue;
-            if (!byLayer.has(layer)) byLayer.set(layer, { operation: null, svg_primitives: [] });
-            const entry = byLayer.get(layer);
-            if (op === 'replace') {
-                entry.operation = 'replace';
-                entry.svg_primitives = prim;
-            } else if (op === 'clear') {
-                entry.operation = 'clear';
-                entry.svg_primitives = [];
-            } else if (op === 'append') {
-                if (entry.operation === 'clear') {
-                    entry.operation = 'replace';
-                    entry.svg_primitives = prim;
-                } else {
-                    if (!entry.operation) entry.operation = 'append';
-                    entry.svg_primitives.push(...prim);
-                }
-            }
-        }
-        return Array.from(byLayer.entries()).map(([layer, v]) => ({ layer, ...v }));
-    }
-
-    applySvgUpdates(updates) {
-        if (!Array.isArray(updates) || updates.length === 0) return;
-        for (const upd of updates) {
-            const op = (upd.operation || '').toLowerCase();
-            if (op === 'replace' || (op === 'append' && !this.layerStore.has(upd.layer))) {
-                this._registerLayer(upd.layer);
-            }
-            applyLayerUpdate(this.layerStore, upd);
-        }
-    }
-
-    handleWorldModel(data) {
-        const tsMs = data.timestamp ? data.timestamp * 1e-6 : Date.now();
-        this.ringBuffer.addDelta(tsMs, 'world_model', data);
-        if (this._replayMode) return;
-
-        if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
-        if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
-        if (data.ball) this.ballPos = { x: data.ball.x, y: data.ball.y };
-        if (data.robots_ours) this.robotsOurs = indexBy(data.robots_ours, 'id');
-        if (data.robots_theirs) this.robotsTheirs = indexBy(data.robots_theirs, 'id');
-
-        // field_info 動的 viewBox: フィールドサイズが変わった時だけ zoom リセット
-        if (data.field_info) {
-            const changed = this.fieldLayer.updateFromFieldInfo(data.field_info);
-            if (changed) {
-                const newLen = data.field_info.length;
-                if (this._prevFieldLength !== null && newLen !== this._prevFieldLength) {
-                    this.zoomLevel = 1.0;
-                    this.panOffset = { x: 0, y: 0 };
-                }
-                this._prevFieldLength = newLen;
-                // viewBox 変化でパーサーのキャッシュを無効化
-                const fl = this.fieldLayer;
-                this.parser.setViewBox(fl.vbX, fl.vbY, fl.vbW, fl.vbH);
-                // 全レイヤーを再パース対象にする
-                for (const layer of this.layerStore.values()) layer.dirty = true;
-                this.renderer?.invalidate();
-            }
-        }
-
-        if (data.robots_ours) {
-            for (const robot of data.robots_ours) {
-                if (!this._robotMetrics.has(robot.id)) {
-                    this._robotMetrics.set(robot.id, {
-                        posX: new MetricRing(180), posY: new MetricRing(180), vel: new MetricRing(180),
-                    });
-                }
-                const m = this._robotMetrics.get(robot.id);
-                m.posX.push(robot.x ?? 0);
-                m.posY.push(robot.y ?? 0);
-                m.vel.push(Math.hypot(robot.vx ?? 0, robot.vy ?? 0));
-            }
-        }
-
-        this.scheduleRobotUpdate();
-        if (this.moveMode && this.selectedRobotId !== null) this.renderer?.invalidate();
-        if (this.simEditMode) this.renderer?.invalidate();
-    }
-
-    handleControlTargets(data) {
-        const tsMs = Date.now();
-        this.ringBuffer.addDelta(tsMs, 'control_targets', data);
-        if (this._replayMode) return;
-        if (data.commands) this.controlTargets = indexBy(data.commands, 'robot_id');
-        this.scheduleRobotUpdate();
-    }
-
-    handleRobotCommands(data) {
-        if (data.commands && Object.keys(this.controlTargets).length === 0) {
-            this.controlTargets = indexBy(data.commands, 'robot_id');
-            this.scheduleRobotUpdate();
-        }
-    }
-
-    handleRobotFeedback(data) {
-        if (data.feedback) {
-            const now = Date.now();
-            for (const fb of data.feedback) {
-                this.robotFeedback[fb.robot_id] = fb;
-                this._feedbackTimestamp[fb.robot_id] = now;
-            }
-        }
-        if (this._detailRobotId !== null) this.scheduleRobotUpdate();
-    }
-
-    handleGameInfo(data) {
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        set('score-our', data.our_score ?? 0);
-        set('score-their', data.their_score ?? 0);
-        set('play-situation', data.play_situation || '--');
-        set('game-stage', data.game_stage || '--');
-    }
-
-    scheduleRobotUpdate() {
-        if (this.robotUpdateTimer) return;
-        this.robotUpdateTimer = setTimeout(() => {
-            this.robotUpdateTimer = null;
-            if (this._detailRobotId !== null) {
-                const robot = this.robotsOurs[this._detailRobotId];
-                const cmd = this.controlTargets[this._detailRobotId];
-                if (robot) this._renderDetailPanel(this._detailRobotId, robot, cmd);
-            }
-        }, 500);
-    }
-
-    updateConnectionStatus(connected) {
+    _setConnected(connected) {
         const dot = document.getElementById('connection-dot');
         const label = document.getElementById('connection-label');
         const banner = document.getElementById('offline-banner');
@@ -394,161 +319,58 @@ class CraneViewer {
         if (banner) banner.classList.toggle('visible', !connected);
     }
 
-    toggleRobotDetail(id) {
-        if (this._detailRobotId === id) {
-            this.closeRobotDetail();
-        } else {
-            this.showRobotDetail(id);
-        }
-    }
-
-    showRobotDetail(id) {
-        const robot = this.robotsOurs[id];
-        const cmd = this.controlTargets[id];
-        if (!robot) return;
-
-        const panel = document.getElementById('robot-detail-inline');
-        if (!panel) return;
-
-        this._detailRobotId = id;
-        this._renderDetailPanel(id, robot, cmd);
-        panel.classList.add('visible');
+    // リプレイ: RingBuffer から復元したフレームで現在の表示状態を差し替える。
+    // state / layerStore は getter 経由なので、外から直接代入させない。
+    applyReplayFrame(frame) {
+        this._replayMode = true;
+        this.layerStore.layers = frame.layerStore;
+        this.state.robotsOurs = frame.robotsOurs;
+        this.state.robotsTheirs = frame.robotsTheirs;
+        this.state.ballPos = frame.ball;
+        this.state.controlTargets = frame.controlTargets;
         this.renderer?.invalidate();
     }
 
-    _renderDetailPanel(id, robot, cmd) {
-        const panel = document.getElementById('robot-detail-inline');
-        if (!panel) return;
+    // ===== フォーカス =====
 
-        // --- Command section ---
-        let commandHtml = '';
-        if (cmd) {
-            let targetHtml = '';
-            if (cmd.position_target_mode) {
-                targetHtml = `<tr><td>Target Pos</td><td>(${cmd.position_target_mode.target_x?.toFixed(2)}, ${cmd.position_target_mode.target_y?.toFixed(2)})</td></tr>`;
-            } else if (cmd.simple_velocity_target_mode) {
-                targetHtml = `<tr><td>Target Vel</td><td>(${cmd.simple_velocity_target_mode.target_vx?.toFixed(2)}, ${cmd.simple_velocity_target_mode.target_vy?.toFixed(2)})</td></tr>`;
-            }
-            commandHtml = `
-                <div class="rd-section-title">Command</div>
-                <table><tbody>
-                    <tr><td>Mode</td><td>${getControlModeLong(cmd)}</td></tr>
-                    <tr><td>Planner</td><td>${formatPlannerName(cmd.planner_name)}</td></tr>
-                    <tr><td>FSM</td><td>${getFsmState(cmd) ?? '--'}</td></tr>
-                    ${targetHtml}
-                    <tr><td>Target θ</td><td>${cmd.target_theta?.toFixed(3) ?? '--'}</td></tr>
-                </tbody></table>`;
-        }
+    toggleRobotDetail(id) {
+        if (this.state.focusedRobotId === id) this.closeRobotDetail();
+        else this.showRobotDetail(id);
+    }
 
-        // --- State section ---
-        const chips = availabilityChips(robot);
-        const chipHtml = ['vision', 'feedback', 'tracker'].map(k =>
-            `<span class="rd-chip ${chips[k] ? 'rd-chip--ok' : 'rd-chip--ng'}">${k}</span>`
-        ).join('');
-        const stateHtml = `
-            <div class="rd-section-title">State</div>
-            <table><tbody>
-                <tr><td>Pos</td><td>(${robot.x?.toFixed(3)}, ${robot.y?.toFixed(3)}) m</td></tr>
-                <tr><td>θ</td><td>${robot.theta?.toFixed(3)} rad</td></tr>
-                <tr><td>Vel</td><td>(${robot.vx?.toFixed(3)}, ${robot.vy?.toFixed(3)}) m/s</td></tr>
-                <tr><td>ω</td><td>${robot.omega?.toFixed(3)} rad/s</td></tr>
-                ${robot.acceleration_x != null ? `<tr><td>Accel</td><td>(${robot.acceleration_x?.toFixed(2)}, ${robot.acceleration_y?.toFixed(2)}, ${robot.acceleration_theta?.toFixed(2)})</td></tr>` : ''}
-                <tr><td>Avail</td><td>${chipHtml}</td></tr>
-            </tbody></table>`;
-
-        // --- Feedback section ---
-        let feedbackHtml = '';
-        const fb = this.robotFeedback[id];
-        if (fb) {
-            const volt = formatVoltage(fb.voltage);
-            const temp = formatTemperature(fb.temperatures);
-            const err = formatErrorBadge(fb);
-            const tempTitle = fb.temperatures ? fb.temperatures.map((t, i) => `[${i}] ${t.toFixed(0)}°C`).join(' ') : '';
-            feedbackHtml = `
-                <div class="rd-section-title">Feedback</div>
-                <table><tbody>
-                    <tr><td>Voltage</td><td class="rd-${volt.severity}">${volt.text}</td></tr>
-                    <tr><td>Temp</td><td class="rd-${temp.severity}" title="${tempTitle}">${temp.text}</td></tr>
-                    <tr><td>Packet</td><td class="${(fb.packet_frequency_hz ?? 0) < 80 ? 'rd-warn' : ''}">${fb.packet_frequency_hz?.toFixed(0) ?? 'N/A'} Hz</td></tr>
-                    <tr><td>Kick</td><td>${formatKickState(fb.kick_state)}</td></tr>
-                    <tr><td>Ball</td><td>${fb.ball_sensor ? '●' : '○'}</td></tr>
-                    <tr><td>Error</td><td class="${err ? 'rd-crit' : ''}">${err ? `id=${fb.error_id} ${fb.error_info ?? ''}` : 'none'}</td></tr>
-                    ${fb.motor_current ? `<tr><td>Motor I</td><td>[${fb.motor_current.map(v => v.toFixed(1)).join(', ')}]</td></tr>` : ''}
-                </tbody></table>`;
-        }
-
-        // --- Latency section ---
-        const latEst = this.latencyEstimation[id] ?? {};
-        const latRows = ['world_model', 'robot_feedback'].flatMap(src => {
-            const e = latEst[src];
-            if (!e) return [];
-            const label = src === 'world_model' ? 'WM' : 'HW';
-            const high = e.latency_ms > 100;
-            return [`<tr><td>${label}</td><td class="${high ? 'rd-warn' : ''}">${formatLatencyRich(e)}</td></tr>`];
-        }).join('');
-        const latencyHtml = latRows ? `
-            <div class="rd-section-title">Latency</div>
-            <table><tbody>${latRows}</tbody></table>` : '';
-
-        panel.innerHTML = `
-            <div class="rd-title">Robot ${id}
-                <a href="/robot_telemetry.html?id=${id}" target="_blank" class="rd-telem-link" title="Telemetry を別タブで開く">
-                    <span class="material-symbols-outlined icon-sm">open_in_new</span>
-                </a>
-            </div>
-            ${commandHtml}
-            ${stateHtml}
-            ${feedbackHtml}
-            ${latencyHtml}
-        `;
+    // tabName を渡すとそのタブで開く（URL 契約 ?robot=&tab= の受け口）
+    showRobotDetail(id, tabName = null) {
+        this.state.setFocus(id);
+        if (!this.sidebar.open(id, tabName)) return;
+        this._syncFocusLabel();
+        this.renderer?.invalidate();
     }
 
     closeRobotDetail() {
-        const panel = document.getElementById('robot-detail-inline');
-        panel?.classList.remove('visible');
-        this._detailRobotId = null;
+        this.sidebar.close();
+        this.state.setFocus(null);
+        this._syncFocusLabel();
         this.renderer?.invalidate();
     }
 
-    updateLayerList() {
-        const container = document.getElementById('layer-list');
-        if (!container) return;
-        if (this.layerStore.size === 0) {
-            container.innerHTML = '<div style="font-size:0.7rem;color:var(--md-sys-color-on-surface-variant);text-align:center;padding:6px;">No layers</div>';
-            return;
-        }
-        container.innerHTML = '';
-        for (const [name, layer] of this.layerStore) {
-            const item = document.createElement('div');
-            item.className = 'layer-item';
-            item.innerHTML = `
-                <input type="checkbox" class="m3-checkbox layer-cb" id="layer-${name}"
-                       data-layer="${name}" ${this.visibleLayers.has(name) ? 'checked' : ''}>
-                <label for="layer-${name}">${name}</label>
-                <span class="m3-ms-auto m3-text-on-surface-variant" style="font-size:0.65rem">${layer.primitives.length}</span>
-            `;
-            container.appendChild(item);
-        }
-        container.querySelectorAll('.layer-cb').forEach(cb => {
-            cb.addEventListener('change', (e) => {
-                const name = e.target.dataset.layer;
-                if (e.target.checked) this.visibleLayers.add(name);
-                else this.visibleLayers.delete(name);
-                this.renderer?.invalidate();
-            });
-        });
+    _syncFocusLabel() {
+        const label = document.getElementById('selected-robot-label');
+        if (label) label.textContent = this.state.focusedRobotId ?? '--';
     }
 
-    updateStats() {
-        const layerEl = document.getElementById('layer-count');
-        const primEl = document.getElementById('prim-count');
-        if (layerEl) layerEl.textContent = this.layerStore.size;
-        if (primEl) {
-            let total = 0;
-            for (const layer of this.layerStore.values()) total += layer.primitives.length;
-            primEl.textContent = total;
-        }
+    _scheduleDetailRefresh() {
+        if (this._detailTimer) return;
+        this._detailTimer = setTimeout(() => {
+            this._detailTimer = null;
+            this._refreshDetailNow();
+        }, DETAIL_REFRESH_MS);
     }
+
+    _refreshDetailNow() {
+        this.sidebar.refresh();
+    }
+
+    // ===== 座標とホバー =====
 
     clientToFieldCoords(clientX, clientY) {
         return this.renderer ? this.renderer.clientToFieldCoords(clientX, clientY) : { x: 0, y: 0 };
@@ -564,365 +386,228 @@ class CraneViewer {
         return { x: rect.left + svgX * vs + ox, y: rect.top + svgY * vs + oy };
     }
 
-    _updateHover(fieldX, fieldY) {
-        let closest = null;
-        let minDist = ROBOT_HIT_RADIUS_M * 2; // ホバー検出半径は選択より広め
-        for (const [id, robot] of Object.entries(this.robotsOurs)) {
-            if (!robot.available_vision && !robot.available_tracker) continue;
-            const d = Math.hypot(robot.x - fieldX, robot.y - fieldY);
-            if (d < minDist) { minDist = d; closest = Number(id); }
-        }
-        if (closest !== this._hoveredRobotId) {
-            this._hoveredRobotId = closest;
+    updateHover(fieldX, fieldY) {
+        // ホバー検出半径は選択より広め
+        const closest = this.state.nearestRobot(this.state.robotsOurs, fieldX, fieldY, HOVER_RADIUS_M)?.id ?? null;
+        if (closest !== this.state.hoveredRobotId) {
+            this.state.hoveredRobotId = closest;
             this.renderer?.invalidate();
         }
-        this._updateTooltip(closest);
+        this.updateTooltip(closest);
     }
 
-    _updateTooltip(robotId) {
+    updateTooltip(robotId) {
         let tt = document.getElementById('robot-hover-tooltip');
         if (!tt) {
             tt = document.createElement('div');
             tt.id = 'robot-hover-tooltip';
-            tt.style.cssText = [
-                'position:fixed', 'pointer-events:none', 'z-index:500',
-                'background:var(--md-sys-color-surface-container-high)',
-                'color:var(--md-sys-color-on-surface)',
-                'border:1px solid var(--md-sys-color-outline-variant)',
-                'border-radius:var(--md-sys-shape-sm)',
-                'padding:6px 10px', 'font-size:0.72rem',
-                'box-shadow:var(--md-sys-elevation-2)',
-                'white-space:nowrap', 'display:none',
-            ].join(';');
+            tt.className = 'cv-hover-tooltip';
             document.body.appendChild(tt);
         }
-        if (robotId === null) {
-            tt.style.display = 'none';
-            this._hoveredTooltipId = null;
-            return;
-        }
-
-        const robot = this.robotsOurs[robotId];
+        const robot = robotId === null ? null : this.state.robotsOurs[robotId];
         if (!robot) {
             tt.style.display = 'none';
             this._hoveredTooltipId = null;
             return;
         }
-
         const pos = this.fieldToClientCoords(robot.x, robot.y);
-        tt.style.left = (pos.x + 16) + 'px';
-        tt.style.top = (pos.y - 16) + 'px';
+        tt.style.left = `${pos.x + 16}px`;
+        tt.style.top = `${pos.y - 16}px`;
         tt.style.display = 'block';
+        if (this._hoveredTooltipId === robotId) return;
 
-        if (this._hoveredTooltipId !== robotId) {
-            this._hoveredTooltipId = robotId;
-            const cmd = this.controlTargets[robotId];
-            const fsm = cmd?.planning_factors?.[0]?.name ?? '--';
-            const planner = cmd?.planner_name ?? '--';
-            tt.innerHTML = `
+        this._hoveredTooltipId = robotId;
+        const cmd = this.state.controlTargets[robotId];
+        tt.innerHTML = `
                 <b>Robot ${robotId}</b><br>
                 Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)}) θ=${robot.theta?.toFixed(2)}<br>
-                FSM: ${fsm}<br>
-                Planner: ${planner}
+                FSM: ${cmd?.planning_factors?.[0]?.name ?? '--'}<br>
+                Planner: ${cmd?.planner_name ?? '--'}
             `;
-        }
-    }
-
-    _startKeyboardLoop() {
-        if (this._keyboardLoopRunning) return;
-        this._keyboardLoopRunning = true;
-        const PAN_SPEED = 80;
-        const loop = () => {
-            if (this._keysDown.size === 0) { this._keyboardLoopRunning = false; return; }
-            const fast = this._keysDown.has('Shift');
-            const speed = PAN_SPEED * (fast ? 3 : 1);
-            if (this._keysDown.has('a') || this._keysDown.has('ArrowLeft'))  this.panOffset.x += speed;
-            if (this._keysDown.has('d') || this._keysDown.has('ArrowRight')) this.panOffset.x -= speed;
-            if (this._keysDown.has('w') || this._keysDown.has('ArrowUp'))    this.panOffset.y += speed;
-            if (this._keysDown.has('s') || this._keysDown.has('ArrowDown'))  this.panOffset.y -= speed;
-            this.renderer?.invalidate();
-            requestAnimationFrame(loop);
-        };
-        requestAnimationFrame(loop);
     }
 
     findRobotAtPosition(fieldX, fieldY) {
-        return this._nearestRobot(this.robotsOurs, fieldX, fieldY)?.id ?? null;
+        return this.state.findRobotAtPosition(fieldX, fieldY);
     }
 
-    _nearestRobot(robotMap, fieldX, fieldY) {
-        let id = null, dist = ROBOT_HIT_RADIUS_M;
-        for (const [k, r] of Object.entries(robotMap)) {
-            // availability フラグがない（相手チーム等）場合はフィルタしない
-            const hasFlags = r.available_vision !== undefined || r.available_tracker !== undefined;
-            if (hasFlags && !r.available_vision && !r.available_tracker) continue;
-            const d = Math.hypot(r.x - fieldX, r.y - fieldY);
-            if (d < dist) { dist = d; id = Number(k); }
-        }
-        return id !== null ? { id, dist } : null;
+    // ===== 指令 =====
+
+    sendMoveCommand(robotId, targetX, targetY) {
+        const robot = this.state.robotsOurs[robotId];
+        if (!robot) return;
+        this.hub.send({
+            type: 'move_robot', robot_id: robotId,
+            target_x: targetX, target_y: targetY, target_theta: robot.theta ?? 0,
+        });
     }
+
+    // ===== テストモード =====
+    // C-3。ロボット単位ではなく crane 全体のモードで、解除は HALT を注入する。
+
+    setTestSession(session) {
+        this.testSession = session;
+        session.onChange(() => this.renderer?.invalidate());
+        this.renderer?.invalidate();
+    }
+
+    activateTest() {
+        const s = this.testSession;
+        if (!s) return;
+        // 指令経路で有効化のメッセージが変わる。
+        // プランナ経由 → セッション注入 ROBOT_TEST / 直接 → HALT
+        this.hub.send({
+            type: s.route === ROUTE_DIRECT ? 'activate_move_mode' : 'activate_robot_test',
+            robot_id: s.robotId,
+            max_velocity: s.maxVelocity,
+            max_acceleration: s.maxAcceleration,
+        });
+        this.modes.enterTest();
+        this.logPanel?.appendLog('action', 'TEST', `activate (${s.route}) robot #${s.robotId}`);
+    }
+
+    deactivateTest() { this.modes.exitTest(); }
+
+    sendTestTarget() {
+        const s = this.testSession;
+        if (!s || !this.modes.test || !s.targetPos) return;
+        if (s.route === ROUTE_DIRECT) {
+            // プランナを迂回して /control_targets へ。速度上限は乗らない
+            this.sendMoveCommand(s.robotId, s.targetPos.x, s.targetPos.y);
+            return;
+        }
+        this.hub.send({
+            type: 'robot_test_target',
+            robot_id: s.robotId,
+            target_x: s.targetPos.x,
+            target_y: s.targetPos.y,
+            target_theta: s.targetTheta,
+            max_velocity: s.maxVelocity,
+            max_acceleration: s.maxAcceleration,
+        });
+    }
+
+    sendPlannerDamping() {
+        const s = this.testSession;
+        if (!s) return;
+        this.hub.send({ type: 'set_planner_param', velocity_damping_gain: s.dampingGain });
+    }
+
+    // C-3 のピルとヘルプバー。所有権がテストレイヤーにあることを画面上で示す
+    _syncTestChrome() {
+        const pill = document.getElementById('test-ownership-pill');
+        const help = document.getElementById('test-help-bar');
+        const on = this.modes.test;
+        if (pill) {
+            pill.classList.toggle('visible', on);
+            pill.textContent = `TEST MODE · #${this.testSession?.robotId ?? '--'}`;
+        }
+        help?.classList.toggle('visible', on);
+        this.renderer?.invalidate();
+    }
+
+    activateMoveMode() { this.modes.enterMove(); }
+    deactivateMoveMode() { this.modes.exitMove(); }
+    toggleSimEditMode() { this.modes.toggleSimEdit(); this.renderer?.invalidate(); }
+    activateBallPlacement(team) { this.modes.enterBallPlacement(team); }
+    cancelBallPlacement() { this.modes.exitBallPlacement(); }
 
     simSelectAt(fieldX, fieldY) {
-        const candidates = [];
-        const ourHit = this._nearestRobot(this.robotsOurs, fieldX, fieldY);
-        const theirHit = this._nearestRobot(this.robotsTheirs, fieldX, fieldY);
-        const ballDist = Math.hypot(this.ballPos.x - fieldX, this.ballPos.y - fieldY);
-
-        if (ourHit) candidates.push({ kind: 'our', dist: ourHit.dist, id: ourHit.id });
-        if (ballDist < BALL_HIT_RADIUS_M) candidates.push({ kind: 'ball', dist: ballDist });
-        if (theirHit) candidates.push({ kind: 'their', dist: theirHit.dist, id: theirHit.id });
-
-        candidates.sort((a, b) => {
-            if (Math.abs(a.dist - b.dist) > 1e-6) return a.dist - b.dist;
-            const rank = { ball: 0, our: 1, their: 2 };
-            return rank[a.kind] - rank[b.kind];
-        });
-
-        const best = candidates[0] ?? null;
-        if (!best) {
-            this.simSelectedObj = null;
-        } else if (best.kind === 'ball') {
-            this.simSelectedObj = { type: 'ball' };
-        } else if (best.kind === 'our') {
-            const r = this.robotsOurs[best.id];
-            this.simSelectedObj = { type: 'robot', id: best.id, yellow: this.isYellow, theta: r?.theta ?? 0 };
-        } else {
-            const r = this.robotsTheirs[best.id];
-            this.simSelectedObj = { type: 'robot', id: best.id, yellow: !this.isYellow, theta: r?.theta ?? 0 };
-        }
-        this._updateSimLabel();
+        this.modes.simSelectedObj = this.state.pickSimObject(fieldX, fieldY);
+        this.modes.syncSimLabel();
         this.renderer?.invalidate();
     }
 
     simTeleportTo(fieldX, fieldY) {
-        if (!this.simSelectedObj) return;
-        const obj = this.simSelectedObj;
+        const obj = this.modes.simSelectedObj;
+        if (!obj) return;
         if (obj.type === 'ball') {
-            this.websocket?.send(JSON.stringify({ type: 'sim_teleport_ball', x: fieldX, y: fieldY, vx: 0, vy: 0 }));
+            this.hub.send({ type: 'sim_teleport_ball', x: fieldX, y: fieldY, vx: 0, vy: 0 });
         } else {
-            this.websocket?.send(JSON.stringify({
+            this.hub.send({
                 type: 'sim_teleport_robot',
                 id: obj.id,
                 team: obj.yellow ? 'yellow' : 'blue',
                 x: fieldX, y: fieldY,
-                orientation_deg: (obj.theta ?? 0) * 180 / Math.PI
-            }));
+                orientation_deg: (obj.theta ?? 0) * 180 / Math.PI,
+            });
         }
     }
 
-    resetBallToCenter() {
-        this.websocket?.send(JSON.stringify({ type: 'sim_teleport_ball', x: 0, y: 0, vx: 0, vy: 0 }));
-    }
-
-    applySimEndpoint() {
-        const host = document.getElementById('sim-host-input')?.value || '127.0.0.1';
-        const port = parseInt(document.getElementById('sim-port-input')?.value || '10300', 10);
-        this.websocket?.send(JSON.stringify({ type: 'sim_set_endpoint', host, port }));
-    }
-
-    toggleSimEditMode() {
-        this.simEditMode = !this.simEditMode;
-        const btn = document.getElementById('btn-sim-edit');
-        const canvas = document.getElementById('field-canvas');
-        if (this.simEditMode) {
-            if (this.moveMode) this.deactivateMoveMode();
-            this.cancelBallPlacement();
-            this.simSelectedObj = null;
-            btn?.classList.add('active');
-            if (canvas) canvas.style.cursor = 'crosshair';
-        } else {
-            this.simSelectedObj = null;
-            btn?.classList.remove('active');
-            if (canvas) canvas.style.cursor = 'grab';
-        }
-        this._updateSimLabel();
-        this.renderer?.invalidate();
-    }
-
-    activateBallPlacement(team) {
-        if (this.simEditMode) this.toggleSimEditMode();
-        this.cancelBallPlacement();
-        this.placeBallPending = team;
-        const canvas = document.getElementById('field-canvas');
-        if (canvas) canvas.style.cursor = 'crosshair';
-        document.getElementById(`btn-place-ball-${team.toLowerCase()}`)?.classList.add('active');
-    }
-
-    cancelBallPlacement() {
-        if (!this.placeBallPending) return;
-        const team = this.placeBallPending;
-        this.placeBallPending = null;
-        document.getElementById('field-canvas').style.cursor =
-            this.simEditMode ? 'crosshair' : 'grab';
-        document.getElementById(`btn-place-ball-${team.toLowerCase()}`)?.classList.remove('active');
-    }
-
-    _updateSimLabel() {
-        const el = document.getElementById('sim-selected-label');
-        if (!el) return;
-        if (!this.simEditMode) { el.textContent = 'mode off'; return; }
-        if (!this.simSelectedObj) { el.textContent = 'click to select'; return; }
-        const obj = this.simSelectedObj;
-        el.textContent = obj.type === 'ball' ? 'Ball' : `${obj.yellow ? 'Yellow' : 'Blue'} #${obj.id}`;
-    }
-
-    updateGcPanel(state) {
-        if (!state) return;
-        const ts = state.teamState ?? {};
-        const y = ts.YELLOW ?? {};
-        const b = ts.BLUE ?? {};
-        const scoreEl = document.getElementById('gc-score');
-        if (scoreEl) scoreEl.textContent = `${y.goals ?? 0} : ${b.goals ?? 0}`;
-        const stageEl = document.getElementById('gc-stage');
-        if (stageEl) stageEl.textContent = (state.stage ?? '--').replace('NORMAL_', '').replace('_', ' ');
-        const cmdEl = document.getElementById('gc-command');
-        if (cmdEl) cmdEl.textContent = state.command?.type ?? '--';
-    }
-
-    activateMoveMode() {
-        this.moveMode = true;
-        document.getElementById('btn-move-mode')?.classList.add('active');
-        if (this.websocket?.readyState === WebSocket.OPEN) {
-            this.websocket.send(JSON.stringify({ type: 'activate_move_mode' }));
-        }
-    }
-
-    deactivateMoveMode() {
-        this.moveMode = false;
-        this.selectedRobotId = null;
-        document.getElementById('btn-move-mode')?.classList.remove('active');
-        const label = document.getElementById('selected-robot-label');
-        if (label) label.textContent = '--';
-        this.renderer?.invalidate();
-    }
-
-    sendMoveCommand(robotId, targetX, targetY) {
-        const robot = this.robotsOurs[robotId];
-        if (!robot || this.websocket?.readyState !== WebSocket.OPEN) return;
-        this.websocket.send(JSON.stringify({
-            type: 'move_robot', robot_id: robotId,
-            target_x: targetX, target_y: targetY, target_theta: robot.theta ?? 0,
-        }));
-    }
-
-    // HALT を安全に実行: モード外から Escape を押した場合は確認ダイアログを挟む
+    // HALT を安全に実行: モード外から Escape を押した場合だけ確認を挟む。
+    // コマンドバーの HALT ボタンは data-action 経由で即時発火する
+    // （緊急停止に確認を挟まない）。この非対称は意図的。
     _requestHalt() {
         if (this._haltPending) {
-            // 2秒以内に再度 Escape → 確定 HALT
             clearTimeout(this._haltTimer);
             this._haltPending = false;
-            this._closeHaltDialog();
+            this._toggleHaltDialog(false);
             this.gcClient.newCommand('HALT');
             return;
         }
         this._haltPending = true;
-        this._showHaltDialog();
+        this._toggleHaltDialog(true);
         this._haltTimer = setTimeout(() => {
             this._haltPending = false;
-            this._closeHaltDialog();
-        }, 2000);
+            this._toggleHaltDialog(false);
+        }, HALT_CONFIRM_MS);
     }
 
-    _showHaltDialog() {
+    _toggleHaltDialog(show) {
         let dlg = document.getElementById('halt-confirm-dialog');
         if (!dlg) {
             dlg = document.createElement('div');
             dlg.id = 'halt-confirm-dialog';
-            dlg.style.cssText = [
-                'position:fixed', 'top:50%', 'left:50%',
-                'transform:translate(-50%,-50%)',
-                'background:var(--md-sys-color-error-container)',
-                'color:var(--md-sys-color-on-error-container)',
-                'border:2px solid var(--md-sys-color-error)',
-                'border-radius:var(--md-sys-shape-md)',
-                'padding:16px 24px', 'z-index:9999',
-                'font-size:0.9rem', 'text-align:center',
-                'pointer-events:none',
-            ].join(';');
+            dlg.className = 'cv-halt-dialog';
+            dlg.textContent = 'HALT ALL ROBOTS? — Press Escape again within 2s to confirm';
             document.body.appendChild(dlg);
         }
-        dlg.textContent = 'HALT ALL ROBOTS? — Press Escape again within 2s to confirm';
-        dlg.style.display = 'block';
+        dlg.style.display = show ? 'block' : 'none';
     }
 
-    _closeHaltDialog() {
-        const dlg = document.getElementById('halt-confirm-dialog');
-        if (dlg) dlg.style.display = 'none';
-    }
+    // ===== 固定コントロール =====
 
-    setupDelegatedListeners() {
-        document.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action]');
-            if (!btn) return;
-            const action = btn.dataset.action;
-            const team = btn.dataset.team;
-            const type = btn.dataset.type;
-
-            switch (action) {
-                case 'gc-command':
-                    this.gcClient.newCommand(type, team || 'UNKNOWN');
-                    this.logPanel?.appendLog('action', 'GC', `command ${type}${team ? ' for ' + team : ''}`);
-                    break;
-                case 'gc-goals': {
-                    const delta = parseInt(btn.dataset.delta ?? '0', 10);
-                    this.gcClient.updateGoals(team, delta);
-                    this.logPanel?.appendLog('action', 'GC', `goals ${team} ${delta >= 0 ? '+' : ''}${delta}`);
-                    break;
+    _setupStaticControls() {
+        const redraw = () => this.renderer?.invalidate();
+        document.getElementById('btn-select-all')?.addEventListener('click', () => {
+            this.layerStore.selectAll();
+            this.layerStore.renderList(redraw);
+            redraw();
+        });
+        document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
+            this.layerStore.deselectAll();
+            this.layerStore.renderList(redraw);
+            redraw();
+        });
+        document.getElementById('btn-move-mode')?.addEventListener('click', () => {
+            if (this.modes.test) {
+                this.deactivateTest();
+            } else {
+                const targetId = this.focusSidebar?.currentRobotId ?? this.selectedRobotId ?? Object.keys(this.state.robotsOurs)[0];
+                if (targetId !== undefined && targetId !== null) {
+                    this.focusSidebar?.open(Number(targetId), 'test');
+                    this.activateTest();
+                } else {
+                    this.modes.toggleMove();
                 }
-                case 'gc-card-yellow':
-                    this.gcClient.addYellowCard(team);
-                    this.logPanel?.appendLog('action', 'GC', `yellow card for ${team}`);
-                    break;
-                case 'gc-card-red':
-                    this.gcClient.addRedCard(team);
-                    this.logPanel?.appendLog('action', 'GC', `red card for ${team}`);
-                    break;
-                case 'gc-next-stage':
-                    this.gcClient.nextStage();
-                    this.logPanel?.appendLog('action', 'GC', 'next stage');
-                    break;
-                case 'ball-place':
-                    this.activateBallPlacement(team);
-                    this.logPanel?.appendLog('action', 'GC', `ball placement mode: ${team}`);
-                    break;
-                case 'sim-edit':
-                    this.toggleSimEditMode();
-                    break;
-                case 'sim-reset-ball':
-                    this.resetBallToCenter();
-                    this.logPanel?.appendLog('action', 'Sim', 'ball reset to center');
-                    break;
-                case 'sim-set-endpoint':
-                    this.applySimEndpoint();
-                    this.logPanel?.appendLog('action', 'Sim', 'endpoint updated');
-                    break;
-                case 'session-inject-select': {
-                    const name = document.getElementById('session-select')?.value;
-                    if (!name) break;
-                    this.websocket?.send(JSON.stringify({type: 'session_inject', name}));
-                    this.logPanel?.appendLog('action', 'Session', `inject ${name}`);
-                    break;
-                }
-                case 'session-inject-custom': {
-                    const inp = document.getElementById('session-custom-input');
-                    const name = (inp?.value || '').trim();
-                    if (!name) break;
-                    this.websocket?.send(JSON.stringify({type: 'session_inject', name}));
-                    this.logPanel?.appendLog('action', 'Session', `inject(custom) ${name}`);
-                    break;
-                }
-                case 'session-clear':
-                    this.websocket?.send(JSON.stringify({type: 'session_clear'}));
-                    this.logPanel?.appendLog('action', 'Session', 'clear → HALT');
-                    break;
             }
         });
+        document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+            this.zoomLevel = Math.min(this.zoomLevel * ZOOM_BUTTON_STEP, ZOOM_MAX);
+            redraw();
+        });
+        document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+            this.zoomLevel = Math.max(this.zoomLevel / ZOOM_BUTTON_STEP, ZOOM_MIN);
+            redraw();
+        });
+        document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
+            this.zoomLevel = 1.0;
+            this.panOffset = { x: 0, y: 0 };
+            redraw();
+        });
     }
 
-    setupLogPanelControls() {
-        document.getElementById('btn-log-clear')?.addEventListener('click', () => {
-            this.logPanel?.clear();
-        });
+    _setupLogPanelControls() {
+        document.getElementById('btn-log-clear')?.addEventListener('click', () => this.logPanel?.clear());
         document.querySelectorAll('.log-level-cb').forEach(cb => {
             cb.addEventListener('change', () => {
                 const active = [...document.querySelectorAll('.log-level-cb:checked')].map(c => c.dataset.level);
@@ -930,184 +615,70 @@ class CraneViewer {
             });
         });
         const textFilter = document.getElementById('log-text-filter');
-        textFilter?.addEventListener('input', () => {
-            this.logPanel?.setTextFilter(textFilter.value);
-        });
+        textFilter?.addEventListener('input', () => this.logPanel?.setTextFilter(textFilter.value));
     }
 
-    setupEventListeners() {
-        document.getElementById('btn-select-all')?.addEventListener('click', () => {
-            for (const name of this.layerStore.keys()) this.visibleLayers.add(name);
-            this.updateLayerList();
-            this.renderer?.invalidate();
-        });
-        document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
-            this.visibleLayers.clear();
-            this.updateLayerList();
-            this.renderer?.invalidate();
-        });
-        document.getElementById('btn-move-mode')?.addEventListener('click', () => {
-            this.moveMode ? this.deactivateMoveMode() : this.activateMoveMode();
-        });
-        document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
-            this.zoomLevel = Math.min(this.zoomLevel * 1.2, 5.0);
-            this.renderer?.invalidate();
-        });
-        document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
-            this.zoomLevel = Math.max(this.zoomLevel / 1.2, 0.1);
-            this.renderer?.invalidate();
-        });
-        document.getElementById('btn-zoom-reset')?.addEventListener('click', () => {
-            this.zoomLevel = 1.0;
-            this.panOffset = { x: 0, y: 0 };
-            this.renderer?.invalidate();
-        });
+    // ===== キーボード =====
 
-        const canvas = document.getElementById('field-canvas');
-        if (!canvas) return;
-
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.1 : 0.9;
-            // zoom-to-cursor: カーソル位置を固定点として拡縮
-            const fp = this.clientToFieldCoords(e.clientX, e.clientY);
-            const newZoom = Math.min(Math.max(this.zoomLevel * factor, 0.1), 5.0);
-            const zoomRatio = newZoom / this.zoomLevel;
-            // パンオフセットを調整してカーソル下のフィールド座標を固定
-            const fl = this.fieldLayer;
-            const svgX = fp.x * 1000;
-            const svgY = -fp.y * 1000;
-            this.panOffset.x = svgX + (this.panOffset.x - svgX) * zoomRatio;
-            this.panOffset.y = svgY + (this.panOffset.y - svgY) * zoomRatio;
-            this.zoomLevel = newZoom;
-            this.renderer?.invalidate();
-        }, { passive: false });
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            this._dragStartX = e.clientX;
-            this._dragStartY = e.clientY;
-            this._dragMoved = false;
-            if (e.ctrlKey) {
-                return;
-            }
-            if (e.shiftKey && this.moveMode) {
-                const fp = this.clientToFieldCoords(e.clientX, e.clientY);
-                const hitId = this.findRobotAtPosition(fp.x, fp.y);
-                if (hitId !== null) {
-                    this.selectedRobotId = hitId;
-                    const label = document.getElementById('selected-robot-label');
-                    if (label) label.textContent = hitId;
-                    this.renderer?.invalidate();
-                } else if (this.selectedRobotId !== null) {
-                    this.sendMoveCommand(this.selectedRobotId, fp.x, fp.y);
-                }
-            } else {
-                this.isPanning = true;
-                this.lastPanPoint = { x: e.clientX, y: e.clientY };
-                if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'grabbing';
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            const dx = e.clientX - this._dragStartX, dy = e.clientY - this._dragStartY;
-            if (Math.hypot(dx, dy) > 5) this._dragMoved = true;
-            this._lastMouseField = this.clientToFieldCoords(e.clientX, e.clientY);
-            this._updateHover(this._lastMouseField.x, this._lastMouseField.y);
-            if (!this.isPanning) return;
-            if (this.renderer) {
-                const d = this.renderer.pixelDeltaToSvgDelta(
-                    e.clientX - this.lastPanPoint.x,
-                    e.clientY - this.lastPanPoint.y
-                );
-                this.panOffset.x += d.dx;
-                this.panOffset.y += d.dy;
-            }
-            this.lastPanPoint = { x: e.clientX, y: e.clientY };
-            this.renderer?.invalidate();
-        });
-
-        canvas.addEventListener('mouseup', (e) => {
-            this.isPanning = false;
-            if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'grab';
-            if (!this._dragMoved) {
-                const fp = this.clientToFieldCoords(e.clientX, e.clientY);
-                if (e.ctrlKey) {
-                    const hitId = this.findRobotAtPosition(fp.x, fp.y);
-                    if (hitId !== null) {
-                        if (this._multiSelect.has(hitId)) this._multiSelect.delete(hitId);
-                        else this._multiSelect.add(hitId);
-                        this.renderer?.invalidate();
-                    }
-                } else if (this.placeBallPending) {
-                    const team = this.placeBallPending;
-                    this.cancelBallPlacement();
-                    this.gcClient.setBallPlacementPos(fp.x, fp.y);
-                    this.gcClient.newCommand('BALL_PLACEMENT', team);
-                } else if (this.simEditMode) {
-                    this.simSelectAt(fp.x, fp.y);
-                } else if (!e.shiftKey && !this.moveMode) {
-                    // 通常クリック: ロボットをクリックで Detail トグル、空所クリックで閉じる
-                    const hitId = this.findRobotAtPosition(fp.x, fp.y);
-                    if (hitId !== null) {
-                        this.toggleRobotDetail(hitId);
-                    } else {
-                        this.closeRobotDetail();
-                    }
-                }
-            }
-        });
-
-        canvas.addEventListener('dblclick', (e) => {
-            if (!this.simEditMode || !this.simSelectedObj) return;
-            if (this._dragMoved) return;
-            const fp = this.clientToFieldCoords(e.clientX, e.clientY);
-            this.simTeleportTo(fp.x, fp.y);
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            this.isPanning = false;
-            if (!this.simEditMode && !this.placeBallPending) canvas.style.cursor = 'default';
-            this._hoveredRobotId = null;
-            this._updateTooltip(null);
-            this.renderer?.invalidate();
-        });
-
+    _setupKeyboard() {
         document.addEventListener('keydown', (e) => {
-            // テキスト入力中はパン無効
             const tag = document.activeElement?.tagName;
             const isInput = tag === 'INPUT' || tag === 'TEXTAREA';
 
-            if (e.key === 'Escape') {
-                if (this.placeBallPending) { this.cancelBallPlacement(); return; }
-                if (this.simEditMode) { this.toggleSimEditMode(); return; }
-                if (this.moveMode) { this.deactivateMoveMode(); return; }
-                if (this._detailRobotId !== null) { this.closeRobotDetail(); return; }
-                if (this._multiSelect.size > 0) { this._multiSelect.clear(); this.renderer?.invalidate(); return; }
-                // モード外の Escape → 確認ダイアログ付き HALT
-                this._requestHalt();
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                this.palette?.toggle();
                 return;
             }
-            if (e.key === 'Enter' && this.simEditMode && this.simSelectedObj) {
-                this.simTeleportTo(this._lastMouseField.x, this._lastMouseField.y);
+            if (e.key === 'Escape') { this._onEscape(); return; }
+            if (e.key === 'Enter' && this.modes.simEdit && this.modes.simSelectedObj) {
+                this.simTeleportTo(this.lastMouseField.x, this.lastMouseField.y);
                 return;
             }
-            // WASD / 矢印 パン
-            if (!isInput) {
-                const panKeys = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'Shift'];
-                if (panKeys.includes(e.key)) {
-                    e.preventDefault();
-                    this._keysDown.add(e.key);
-                    this._startKeyboardLoop();
-                }
+            if (isInput) return;
+            const panKeys = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'Shift'];
+            if (panKeys.includes(e.key)) {
+                e.preventDefault();
+                this._keysDown.add(e.key);
+                this._startKeyboardLoop();
             }
         });
+        document.addEventListener('keyup', (e) => this._keysDown.delete(e.key));
+    }
 
-        document.addEventListener('keyup', (e) => {
-            this._keysDown.delete(e.key);
-        });
+    // Escape ラダー。3 段目までの正本は ModeMachine の LADDER。
+    //   1. コマンドパレット
+    //   2. ドロワー          ← ShellControls が capture 段階で処理して伝播を止める
+    //   3. 指令モード        ← ModeMachine.exitTop()（test → move → ballPlacement → simEdit）
+    //   4. フォーカス
+    //   5. 複数選択
+    //   6. 何も無ければ確認ダイアログ付き HALT
+    _onEscape() {
+        if (this.palette?.isOpen) { this.palette.close(); return; }
+        if (this.modes.exitTop()) { this.renderer?.invalidate(); return; }
+        if (this.state.focusedRobotId !== null) { this.closeRobotDetail(); return; }
+        if (this.state.multiSelect.size > 0) {
+            this.state.multiSelect.clear();
+            this.renderer?.invalidate();
+            return;
+        }
+        this._requestHalt();
+    }
 
-        canvas.style.cursor = 'grab';
+    _startKeyboardLoop() {
+        if (this._keyboardLoopRunning) return;
+        this._keyboardLoopRunning = true;
+        const loop = () => {
+            if (this._keysDown.size === 0) { this._keyboardLoopRunning = false; return; }
+            const speed = KEYBOARD_PAN_SPEED * (this._keysDown.has('Shift') ? KEYBOARD_PAN_FAST : 1);
+            if (this._keysDown.has('a') || this._keysDown.has('ArrowLeft')) this.panOffset.x += speed;
+            if (this._keysDown.has('d') || this._keysDown.has('ArrowRight')) this.panOffset.x -= speed;
+            if (this._keysDown.has('w') || this._keysDown.has('ArrowUp')) this.panOffset.y += speed;
+            if (this._keysDown.has('s') || this._keysDown.has('ArrowDown')) this.panOffset.y -= speed;
+            this.renderer?.invalidate();
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
     }
 }
 

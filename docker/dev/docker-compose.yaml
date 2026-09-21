@@ -8,9 +8,20 @@ services:
     environment:
       - HTTP_PORT=8090
       - WEB_ROOT=/app/web
+      # Robot Manager（旧 robot-manager サービス。8090 に内包した）。
+      # sim では既定で無効にして 192.168.20.0/24 へパケットを出さない。
+      # 実機は ./scripts/docker-dev.sh --robot-manager が 1 を立てる。
+      - ROBOT_MANAGER_ENABLED=${ROBOT_MANAGER_ENABLED:-0}
+      - NUM_ROBOTS=13
+      - ROBOT_IP_BASE=192.168.20.
+      - ROBOT_IP_OFFSET=100
+      - ROBOT_PORT=8000
+      - HTTP_TIMEOUT_SEC=0.8
     volumes:
       - ../../crane_web_debugger/web:/app/web:ro
+      # /app をディレクトリごとマウントすると /app/fonts が隠れるのでファイル単位で当てる
       - ../../crane_web_debugger/web_server/app.py:/app/app.py:ro
+      - ../../crane_web_debugger/web_server/robot_manager.py:/app/robot_manager.py:ro
     command:
       - uvicorn
       - "app:app"
@@ -21,10 +32,32 @@ services:
       - --reload
       - --reload-include
       - "app.py"
+      - --reload-include
+      - "robot_manager.py"
       - --app-dir
       - /app
       - --log-level
       - warning
+    restart: unless-stopped
+
+  packet-forge:
+    build:
+      context: ../..
+      dockerfile: docker/dev/packet-forge/Dockerfile
+    container_name: crane-packet-forge
+    # 実機の CM4 へ直接 UDP を送り、フィードバックを multicast で受けるので host が要る
+    network_mode: host
+    environment:
+      - HTTP_PORT=8094
+      # 複数 NIC のホストでは送信元がロボット用 LAN 以外に寄ると届かない。
+      # ./scripts/docker-dev.sh real で使うときに実機側のアドレスを入れる。
+      - FORGE_INTERFACE_IP=${FORGE_INTERFACE_IP:-}
+    volumes:
+      # ページと送信コアは読み取り専用で当てる。編集すればリロードで反映される
+      - ../../crane_packet_forge/web:/app/web:ro
+      - ../../crane_packet_forge/crane_packet_forge:/app/crane_packet_forge:ro
+      # 共有テーマは crane_web_debugger が正本（ball-calibration と同じ方式）
+      - ../../crane_web_debugger/web/shared:/app/shared:ro
     restart: unless-stopped
 
   ball-calibration:
@@ -41,20 +74,6 @@ services:
       - /home:/home:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ../../crane_web_debugger/web/shared:/app/web/shared:ro
-    restart: unless-stopped
-
-  robot-manager:
-    image: ghcr.io/ibis-ssl/robot-manager:latest
-    container_name: crane-robot-manager
-    network_mode: host
-    environment:
-      - HTTP_PORT=8092
-      - NUM_ROBOTS=13
-      - ROBOT_IP_BASE=192.168.20.
-      - ROBOT_IP_OFFSET=100
-      - ROBOT_PORT=8000
-      - HTTP_TIMEOUT_SEC=0.8
-      - BACK_URL=http://localhost:8090
     restart: unless-stopped
 
   erforce-sim:
@@ -79,20 +98,6 @@ services:
     restart: "no"
     profiles:
       - sim-erforce
-
-  grsim:
-    image: ghcr.io/ibis-ssl/grsim:latest
-    container_name: grsim
-    network_mode: host
-    command: |
-      grSim --headless -platform offscreen
-    volumes:
-      - ./grsim.xml:/home/default/.grsim.xml:rw
-    tty: true
-    stdin_open: true
-    restart: "no"
-    profiles:
-      - sim-grsim
 
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:latest
@@ -128,7 +133,6 @@ services:
     network_mode: host
     profiles:
       - sim-erforce
-      - sim-grsim
 
   autoref-erforce:
     image: roboticserlangen/autoref:2025.1.0

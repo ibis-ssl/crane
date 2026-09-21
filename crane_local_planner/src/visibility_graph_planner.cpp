@@ -19,11 +19,23 @@ namespace crane
 {
 namespace
 {
-auto expandedBox(const Box & source, double offset) -> Box
+auto expandedPenaltyAreaForAvoidance(const Box & source, const Point & goal_center, double offset)
+  -> Box
 {
+  constexpr double FAR = 20.0;
   Box result = source;
-  result.min_corner() -= Point(offset, offset);
-  result.max_corner() += Point(offset, offset);
+  result.min_corner().y() -= offset;
+  result.max_corner().y() += offset;
+  if (goal_center.x() < 0.0) {
+    // 負側のゴール: フィールド外側（ゴール裏）は -x 方向。
+    // ゴール裏側を -FAR まで拡張し、ゴールの後ろを通り抜ける迂回経路を塞ぐ。
+    result.min_corner().x() = -FAR;
+    result.max_corner().x() += offset;
+  } else {
+    // 正側のゴール: フィールド外側（ゴール裏）は +x 方向。
+    result.min_corner().x() -= offset;
+    result.max_corner().x() = FAR;
+  }
   return result;
 }
 
@@ -99,9 +111,11 @@ auto VisibilityGraphPlanner::buildObstacles(
                       robocup_ssl_msgs::msg::RefereeCommand::STOP;
     const double offset = stop ? penalty_area_offset_stop_ : penalty_area_offset_;
     obstacles.push_back(
-      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getOurPenaltyArea(), offset)));
+      visibility_graph::Obstacle::makeBox(expandedPenaltyAreaForAvoidance(
+        world_model->getOurPenaltyArea(), world_model->getOurGoalCenter(), offset)));
     obstacles.push_back(
-      visibility_graph::Obstacle::makeBox(expandedBox(world_model->getTheirPenaltyArea(), offset)));
+      visibility_graph::Obstacle::makeBox(expandedPenaltyAreaForAvoidance(
+        world_model->getTheirPenaltyArea(), world_model->getTheirGoalCenter(), offset)));
   }
 
   // シチュエーションに応じたボールの障害物設定
@@ -325,8 +339,12 @@ auto VisibilityGraphPlanner::planSingleRobot(
 
   // 次の移動先をサブゴールとして設定する。サブゴールまでの経路が鑑賞する場合は、経路上の次の点をサブゴールとする。
   Point subgoal = pointAtDistance(path, lookahead_distance_);
+  // pointAtDistance は経路長を超える距離を渡すと終点を返すので、subgoal までの弧長は
+  // min(lookahead, 全長) になる。迂回時のフォールバックでは path[1] までの直線長。
+  double subgoal_arc_length = std::min(lookahead_distance_, remaining_distance);
   if (!visibility_graph_.isPathVisible({current, subgoal}, obstacles) && path.size() >= 2) {
     subgoal = path[1];
+    subgoal_arc_length = (path[1] - path[0]).norm();
   }
 
   const bool final_target = (subgoal - path.back()).norm() < 1e-4;
@@ -350,43 +368,62 @@ auto VisibilityGraphPlanner::planSingleRobot(
   auto & output = result.position_target_mode.front();
   output.target_x = subgoal.x();
   output.target_y = subgoal.y();
-  if (final_target) {
-    // 最終目標のときは、入力の速度制限をそのまま使用し、
-    // 加速度制限は解決済みの値とする。
-    output.position_tolerance = input.position_tolerance;
-    output.speed_limit_at_target = input.speed_limit_at_target;
-    output.terminal_velocity_x = input.terminal_velocity_x;
-    output.terminal_velocity_y = input.terminal_velocity_y;
-  } else {
-    output.position_tolerance = std::min(input.position_tolerance, 0.02f);
 
-    // もしサブゴールが経路上の点であれば、次の経路上の点を向くようにする。
-    Vector2 direction = subgoal - current;
-    for (size_t i = 1; i + 1 < path.size(); ++i) {
-      if ((subgoal - path[i]).norm() < 1e-4) {
-        direction = path[i + 1] - path[i];
-        break;
-      }
-    }
-    if (direction.norm() > 1e-6) {
-      direction.normalize();
-    } else {
-      direction.setZero();
-    }
+  // スキルが宣言した「最終目標に到達した瞬間の速度」。
+  // 指定経路が 2 つある: setSpeedLimitAtTarget() は position_target_mode に、
+  // setTerminalVelocity() は local_planner_config に書く。後者はこれまで
+  // どこからも読まれておらず、スキルの意図が黙って捨てられていた。
+  // どちらも既定 0（= 目標で止まる）なので、大きい方を採って両方を活かす。
+  const double goal_terminal_speed = std::max(
+    {0.0, static_cast<double>(input.speed_limit_at_target),
+     static_cast<double>(command.local_planner_config.terminal_velocity)});
 
-    // 最終地点までの距離に応じて、終端速度を決定する。
-    const double terminal_speed =
-      std::min(max_velocity, std::sqrt(2.0 * planning_deceleration * remaining_distance));
-    output.speed_limit_at_target = terminal_speed;
-    output.terminal_velocity_x = direction.x() * terminal_speed;
-    output.terminal_velocity_y = direction.y() * terminal_speed;
+  // subgoal を通過してよい速度は「subgoal から先に残っている距離」で決まる。
+  // 全残距離で計算すると、subgoal が最終目標のすぐ手前にあるときに過大な通過速度を
+  // 許してしまい、final_target に切り替わった瞬間に終端速度が goal_terminal_speed へ
+  // 段差で落ちる。lookahead_distance 付近で指令速度が数倍跳ぶのはこれが原因で、
+  // 機体は急制動したまま目標手前で止まる。ここを連続にしておくこと。
+  const double distance_after_subgoal =
+    final_target ? 0.0 : std::max(0.0, remaining_distance - subgoal_arc_length);
+  const double terminal_speed = std::min(
+    max_velocity, std::sqrt(
+                    goal_terminal_speed * goal_terminal_speed +
+                    2.0 * planning_deceleration * distance_after_subgoal));
+
+  // 終端速度ベクトルの向き: 中継点では次の経路区間、最終目標では現在位置からの接近方向。
+  Vector2 direction = subgoal - current;
+  for (size_t i = 1; i + 1 < path.size(); ++i) {
+    if ((subgoal - path[i]).norm() < 1e-4) {
+      direction = path[i + 1] - path[i];
+      break;
+    }
   }
+  if (direction.norm() > 1e-6) {
+    direction.normalize();
+  } else {
+    direction.setZero();
+  }
+
+  output.position_tolerance =
+    final_target ? input.position_tolerance : std::min(input.position_tolerance, 0.02f);
+  output.speed_limit_at_target = terminal_speed;
+  output.terminal_velocity_x = direction.x() * terminal_speed;
+  output.terminal_velocity_y = direction.y() * terminal_speed;
 
   addOrUpdatePlanningFactor(
     result, "VisibilityGraphStatus", remaining_distance < 1e-6 ? "HOLD" : "OK");
   addOrUpdatePlanningFactor(
     result, "VisibilityGraphPathLength", formatPlanningDouble(remaining_distance));
   addOrUpdatePlanningFactor(result, "VisibilityGraphNodes", std::to_string(path.size()));
+  // 「残距離いくつのとき終端速度をいくつで指令したか」を bag だけで追えるようにする。
+  // これが無いと、機体が目標手前で止まったとき指令が原因か機体側が原因か切り分けられない。
+  addOrUpdatePlanningFactor(result, "VisibilityGraphFinalTarget", final_target ? "1" : "0");
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphSubgoalArc", formatPlanningDouble(subgoal_arc_length));
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphTerminalSpeed", formatPlanningDouble(terminal_speed));
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphGoalTerminalSpeed", formatPlanningDouble(goal_terminal_speed));
 
   for (const auto & obstacle : obstacles) {
     if (obstacle.type == visibility_graph::Obstacle::Type::CAPSULE && obstacle.is_dynamic_robot) {
