@@ -69,6 +69,7 @@ auto VisibilityGraphPlanner::buildObstacles(
   uint8_t robot_id, const crane_msgs::msg::RobotCommand & command) const
   -> std::vector<visibility_graph::Obstacle>
 {
+  // 味方と敵のロボットの障害物設定 移動速度に応じて
   std::vector<visibility_graph::Obstacle> obstacles;
   const auto ego = world_model->getOurRobot(robot_id);
   const Vector2 ego_velocity(command.current_velocity.x, command.current_velocity.y);
@@ -90,6 +91,7 @@ auto VisibilityGraphPlanner::buildObstacles(
     }
   }
 
+  // ペナルティエリアの障害物設定 STOPのときはマージンを変える。
   if (
     !command.local_planner_config.disable_goal_area_avoidance &&
     world_model->getMsg().play_situation.command.value != crane_msgs::msg::PlaySituation::HALT) {
@@ -102,6 +104,7 @@ auto VisibilityGraphPlanner::buildObstacles(
       visibility_graph::Obstacle::makeBox(expandedBox(world_model->getTheirPenaltyArea(), offset)));
   }
 
+  // シチュエーションに応じたボールの障害物設定
   if (!command.local_planner_config.disable_ball_avoidance) {
     double radius = 0.2;
     switch (world_model->getMsg().play_situation.command.value) {
@@ -126,6 +129,7 @@ auto VisibilityGraphPlanner::buildObstacles(
     obstacles.push_back(visibility_graph::Obstacle::makeCircle(world_model->ball().pos, radius));
   }
 
+  // ボールと、配置先の間の障害物設定（ボール配置時のみ）
   if (
     !command.local_planner_config.disable_placement_avoidance &&
     world_model->getBallPlacementTarget().has_value()) {
@@ -134,6 +138,7 @@ auto VisibilityGraphPlanner::buildObstacles(
     }
   }
 
+  // フィールドの外を障害物として設定
   if (!command.local_planner_config.disable_field_boundary) {
     const double half_width = world_model->fieldSize().x() / 2.0 + field_boundary_offset_;
     const double half_height = world_model->fieldSize().y() / 2.0 + field_boundary_offset_;
@@ -180,6 +185,7 @@ auto VisibilityGraphPlanner::selectPath(
   uint8_t robot_id, const Point & current, const Point & goal,
   const std::vector<visibility_graph::Obstacle> & obstacles) -> std::vector<Point>
 {
+  // 移動ロボットの障害物回避を最優先
   auto & state = path_states_.at(robot_id);
   if (const auto escape = visibility_graph_.nearestDynamicEscape(current, obstacles)) {
     state.path = {current, *escape};
@@ -188,8 +194,10 @@ auto VisibilityGraphPlanner::selectPath(
     return state.path;
   }
 
+  // 前回経路が、回避動作ではない(valid == true) & 目標位置が変わっていない場合 保持経路再利用
   std::vector<Point> retained;
   if (state.valid && (goal - state.goal).norm() <= goal_change_threshold_) {
+    // 一番近い経路上の点を求めて、目標位置までの経路を切り出す。
     double cross_track_distance = std::numeric_limits<double>::infinity();
     for (size_t i = 1; i < state.path.size(); ++i) {
       cross_track_distance = std::min(
@@ -200,6 +208,8 @@ auto VisibilityGraphPlanner::selectPath(
     if (!retained.empty()) {
       retained.back() = goal;
     }
+
+    // 経路が2点未満、または次の移動先と現在位置が離れているときは経路を破棄
     if (
       retained.size() < 2 || cross_track_distance > replan_cross_track_distance_ ||
       !visibility_graph_.isPathVisible(retained, obstacles)) {
@@ -209,18 +219,26 @@ auto VisibilityGraphPlanner::selectPath(
 
   // 保持経路が安全な間は高コストな全グラフ再計算を周期的に限定する。ただし、
   // 障害物が直線経路から退いた場合は即座に最短の直線へ戻す。
+
+  // 直線経路の干渉を確認する
   const std::vector<Point> direct_path{current, goal};
   const bool direct_path_visible = visibility_graph_.isPathVisible(direct_path, obstacles);
+  // 経路再生成をする時刻になったか
   const auto now = std::chrono::steady_clock::now();
   const bool full_replan_due = now >= state.next_full_replan;
+  // 経路再計画の戦略を決定
   const auto action =
     visibility_graph::decideReplanAction(!retained.empty(), direct_path_visible, full_replan_due);
+
+  // 直線経路を採用
   if (action == visibility_graph::ReplanAction::USE_DIRECT_PATH) {
     state.path = direct_path;
     state.goal = goal;
     state.valid = true;
     return state.path;
   }
+
+  // 経路を再利用
   if (action == visibility_graph::ReplanAction::REUSE_RETAINED_PATH) {
     state.path = retained;
     state.goal = goal;
@@ -228,6 +246,7 @@ auto VisibilityGraphPlanner::selectPath(
     return state.path;
   }
 
+  // 経路を再計算
   const auto new_path = visibility_graph_.plan(current, goal, obstacles);
   const double stagger = 0.02 * static_cast<double>(robot_id);
   state.next_full_replan =
@@ -236,6 +255,7 @@ auto VisibilityGraphPlanner::selectPath(
 
   std::vector<Point> selected;
   if (!retained.empty() && new_path.has_value()) {
+    // 経路の切り替えは、保持経路よりも新しい経路が十分に短い場合のみ行う。
     const double retained_length = visibility_graph::pathLength(retained);
     const double new_length = visibility_graph::pathLength(*new_path);
     selected =
@@ -302,10 +322,13 @@ auto VisibilityGraphPlanner::planSingleRobot(
   auto obstacles = buildObstacles(command.robot_id, command);
   const auto path = selectPath(command.robot_id, current, goal, obstacles);
   const double remaining_distance = visibility_graph::pathLength(path);
+
+  // 次の移動先をサブゴールとして設定する。サブゴールまでの経路が鑑賞する場合は、経路上の次の点をサブゴールとする。
   Point subgoal = pointAtDistance(path, lookahead_distance_);
   if (!visibility_graph_.isPathVisible({current, subgoal}, obstacles) && path.size() >= 2) {
     subgoal = path[1];
   }
+
   const bool final_target = (subgoal - path.back()).norm() < 1e-4;
 
   result.local_planner_config.max_velocity_factors.emplace_back(
@@ -328,12 +351,16 @@ auto VisibilityGraphPlanner::planSingleRobot(
   output.target_x = subgoal.x();
   output.target_y = subgoal.y();
   if (final_target) {
+    // 最終目標のときは、入力の速度制限をそのまま使用し、
+    // 加速度制限は解決済みの値とする。
     output.position_tolerance = input.position_tolerance;
     output.speed_limit_at_target = input.speed_limit_at_target;
     output.terminal_velocity_x = input.terminal_velocity_x;
     output.terminal_velocity_y = input.terminal_velocity_y;
   } else {
     output.position_tolerance = std::min(input.position_tolerance, 0.02f);
+
+    // もしサブゴールが経路上の点であれば、次の経路上の点を向くようにする。
     Vector2 direction = subgoal - current;
     for (size_t i = 1; i + 1 < path.size(); ++i) {
       if ((subgoal - path[i]).norm() < 1e-4) {
@@ -346,6 +373,8 @@ auto VisibilityGraphPlanner::planSingleRobot(
     } else {
       direction.setZero();
     }
+
+    // 最終地点までの距離に応じて、終端速度を決定する。
     const double terminal_speed =
       std::min(max_velocity, std::sqrt(2.0 * planning_deceleration * remaining_distance));
     output.speed_limit_at_target = terminal_speed;

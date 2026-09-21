@@ -38,6 +38,13 @@ public:
 
   auto getVisualizer() const -> VisualizerMessageBuilder::SharedPtr { return visualizer; }
 
+  /**
+   * @brief 登録済みの制限値の中から最小値を選んで解決する
+   *
+   * @param command [in, out] コマンド
+   * @param default_max_acceleration [in] デフォルトの最大加速度
+   * @return double 解決済みの最大加速度
+   */
   static auto resolveMaxAccelerationFactors(
     crane_msgs::msg::RobotCommand & command, const float default_max_acceleration) -> double
   {
@@ -52,6 +59,13 @@ public:
     return command.local_planner_config.final_planned_max_acceleration.value;
   }
 
+  /**
+   * @brief 登録済みの制限値の中から最小値を選んで解決する
+   *
+   * @param command [in, out] コマンド
+   * @param default_max_velocity [in] デフォルトの最大速度
+   * @return double 解決済みの最大速度
+   */
   static auto resolveMaxVelocityFactors(
     crane_msgs::msg::RobotCommand & command, const float default_max_velocity) -> double
   {

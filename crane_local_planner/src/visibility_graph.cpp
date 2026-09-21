@@ -254,20 +254,26 @@ auto VisibilityGraph::isEdgeVisible(
   const Point & from, const Point & to, const std::vector<Obstacle> & obstacles,
   const std::vector<ObstacleBounds> & bounds) const -> bool
 {
+  // 十分に近いなら干渉していないとみなす
   if ((to - from).norm() < EPSILON) {
     return true;
   }
+
   const double edge_min_x = std::min(from.x(), to.x());
   const double edge_max_x = std::max(from.x(), to.x());
   const double edge_min_y = std::min(from.y(), to.y());
   const double edge_max_y = std::max(from.y(), to.y());
   for (size_t index = 0; index < obstacles.size(); ++index) {
     const auto & box = bounds[index];
+
+    // 作成した矩形境界と線分が重なっていなければスキップ。
     if (
       box.max_x < edge_min_x || box.min_x > edge_max_x || box.max_y < edge_min_y ||
       box.min_y > edge_max_y) {
       continue;
     }
+
+    // 厳密チェック
     const auto & obstacle = obstacles[index];
     switch (obstacle.type) {
       case Obstacle::Type::CIRCLE: {
@@ -527,6 +533,8 @@ auto VisibilityGraph::nearestDynamicEscape(
   if (nearest == nullptr) {
     return std::nullopt;
   }
+
+  // 一番近い障害物の回避
   return nearest->projectOutside(point, config_.node_clearance);
 }
 
