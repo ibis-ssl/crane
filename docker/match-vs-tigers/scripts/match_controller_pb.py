@@ -40,21 +40,38 @@ except ImportError as e:
     print(f"google.protobuf.json_formatのインポートエラー: {e}", file=sys.stderr)
     sys.exit(1)
 
-# HALT状態でNEXT_COMMANDを送信するまでの秒数
+# HALT状態でGCの継続アクションを代行するまでの秒数
 HALT_RECOVERY_TIMEOUT = 1
 # STOP状態でGCの継続アクションを代行するまでの秒数
 STOP_CONTINUE_TIMEOUT = 3
 # 継続アクションでも動かなかった場合にFORCE_STARTを送信するまでの秒数
 STOP_RECOVERY_TIMEOUT = 15
 
-# STOP中に代行する継続アクションの優先順位。
+# 代行する継続アクションの優先順位（この一覧に無いものは絶対に送らない）。
 # ボール配置を最優先にするのは、場外のまま再開すると NO_PROGRESS_IN_GAME に
 # なるため。ステージ送りを最後にするのは、ボールを戻す前に前後半を進めない
 # ようにするため。
-STOP_CONTINUE_PRIORITY = ("BALL_PLACEMENT_START", "NEXT_COMMAND", "NEXT_STAGE")
+#
+# 許可リスト方式にしているのは、GCが END_GAME のような「押したら試合が終わる」
+# アクションも READY_MANUAL として並べてくるため。「BLOCKEDでない先頭を押す」
+# という一般則にすると試合を即終了させてしまう。
+CONTINUE_ACTION_PRIORITY = (
+    "BALL_PLACEMENT_START",
+    "NEXT_COMMAND",
+    "RESUME_FROM_HALT",
+    "NEXT_STAGE",
+)
 # 実行可能とみなす継続アクションの状態（BLOCKED / DISABLED は送っても無駄で、
 # 送る次コマンドが無い状態のNEXT_COMMANDはGCをクラッシュさせることがある）
 ACTIONABLE_STATES = ("READY_AUTO", "READY_MANUAL")
+
+# 後半が終わったステージでは NEXT_STAGE の代わりに END_GAME を送る。
+# GCのステージ連鎖は固定順で、NORMAL_SECOND_HALF の次は EXTRA_TIME_BREAK に
+# なる。延長戦はスコアが引き分けのときに意味を持つもので、CIの対戦では不要
+# （実際に 0-6 で決着しているのに延長前半まで進んでしまった）。
+# END_GAME で POST_GAME へ送れば、監視ループが stage == "POST_GAME" を見て
+# 正常に試合を終えられる。
+STAGES_TO_END_INSTEAD_OF_ADVANCE = ("NORMAL_SECOND_HALF",)
 # PREPARE_KICKOFF/PENALTY後にNORMAL_STARTを送信するまでの秒数
 PREPARE_RECOVERY_TIMEOUT = 5
 
@@ -292,25 +309,37 @@ class MatchController:
         type_name = engine_pb2.ContinueAction.Type.Name(action_type)
         return await self.send_input(input_msg, f"ContinueAction: {type_name}")
 
-    async def _fetch_continue_actions(self) -> list:
-        """GCが現在提示している継続アクションを読む"""
+    async def _fetch_continue_actions(self) -> list | None:
+        """GCが現在提示している継続アクションを読む。
+
+        Outputメッセージは {matchState, gcState, protocol, config} の形で、
+        continueActions は gcState の下にある。しかも完全な状態が入るのは
+        接続直後の1通目だけで、以降は差分なので取りこぼさないよう数通読む。
+        見つからなければ None を返す（空リストと区別する）。
+        """
         async with websockets.connect(self.gc_ws_url, open_timeout=3) as ws:
             for _ in range(5):
                 msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=3.0))
-                actions = msg.get("continueActions")
-                if actions is not None:
-                    return actions
-        return []
+                gc_state = msg.get("gcState")
+                if isinstance(gc_state, dict) and "continueActions" in gc_state:
+                    return gc_state["continueActions"]
+        return None
 
     def get_continue_actions(self) -> list:
-        """継続アクション一覧を取得する（失敗時は空リスト）"""
+        """継続アクション一覧を取得する（取得できなければ空リスト）"""
         try:
-            return asyncio.run(self._fetch_continue_actions())
+            actions = asyncio.run(self._fetch_continue_actions())
         except Exception as e:  # noqa: BLE001
-            print(f"  継続アクション取得エラー: {e}")
+            print(f"  継続アクション取得エラー: {type(e).__name__}: {e}")
             return []
+        if actions is None:
+            # 黙って空を返すと「代行すべきアクションが無い」と区別できず、
+            # 不具合が無言で握り潰される
+            print("  ⚠ 継続アクションを読めなかった（gcStateにcontinueActionsが無い）")
+            return []
+        return actions
 
-    def send_available_continue_action(self) -> bool:
+    def send_available_continue_action(self, stage: str | None = None) -> bool:
         """GCが提示している継続アクションを代行実行する。
 
         GCエンジンが autoContinue で自動実行するのは ContinueActions[0] が
@@ -320,13 +349,18 @@ class MatchController:
         並んでいても自動実行は止まる。オペレータが居ないCIではここで代わりに
         押してやる必要がある。
         """
+        priority = CONTINUE_ACTION_PRIORITY
+        if stage in STAGES_TO_END_INSTEAD_OF_ADVANCE:
+            priority = tuple(
+                "END_GAME" if name == "NEXT_STAGE" else name for name in priority
+            )
         actions = self.get_continue_actions()
         usable = {
             a.get("type"): a
             for a in actions
             if a.get("state") in ACTIONABLE_STATES and a.get("type")
         }
-        for type_name in STOP_CONTINUE_PRIORITY:
+        for type_name in priority:
             action = usable.get(type_name)
             if action is None:
                 continue
@@ -508,20 +542,16 @@ class MatchController:
 
                     # STOP/HALT 状態の処理
                     if command == "HALT":
+                        # ゴール後のHALTは NEXT_COMMAND でキックオフへ進むが、
+                        # ステージの時間が尽きているとNEXT_COMMANDはDISABLEDになり、
+                        # 必要なのはNEXT_STAGEになる。どちらが要るかはGCに聞く。
+                        # 無条件にNEXT_COMMANDを送り続けると、送る次コマンドが無い
+                        # 場合にGCがnilポインタ参照でクラッシュする
+                        # （statemachine/change_command.go:103）。
                         if stop_since is None:
                             stop_since = current_time
                         elif current_time - stop_since > HALT_RECOVERY_TIMEOUT:
-                            print(
-                                f"  HALT状態が{HALT_RECOVERY_TIMEOUT}秒超過 → NEXT_COMMANDを送信"
-                            )
-                            try:
-                                asyncio.run(
-                                    self.send_continue_action(
-                                        engine_pb2.ContinueAction.NEXT_COMMAND
-                                    )
-                                )
-                            except Exception as e:  # noqa: BLE001
-                                print(f"  NEXT_COMMANDエラー: {e}")
+                            self.send_available_continue_action(stage)
                             stop_since = None
                     elif command == "STOP":
                         if stop_since is None:
@@ -557,7 +587,7 @@ class MatchController:
                             stop_since = None
                         elif current_time - last_continue_try > STOP_CONTINUE_TIMEOUT:
                             last_continue_try = current_time
-                            self.send_available_continue_action()
+                            self.send_available_continue_action(stage)
                     elif command in (
                         "PREPARE_KICKOFF_YELLOW",
                         "PREPARE_KICKOFF_BLUE",
