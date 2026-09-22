@@ -97,6 +97,70 @@ TEST(GeometryOperationsTest, GetCircle)
   EXPECT_FALSE(invalid_circle.has_value());
 }
 
+TEST(GeometryOperationsTest, AroundBallApproachTargetStaysWithinMaxOffsetOfBall)
+{
+  // FreeKicker はフィールド境界までの余裕を周回半径 max_offset の上限にして standoff を
+  // フィールド内に保つ。その保証は「返り値がボールから base_offset..max_offset の距離にある」
+  // ことに依存する（2026-09-20 のコーナーキックの配置）。
+  const Point ball(-4.98, 4.14), target(-0.04, -4.55);
+  for (double ang = 0.0; ang < 2 * M_PI; ang += 0.1) {
+    const Point from = ball + 1.2 * Vector2(std::cos(ang), std::sin(ang));
+    const Point p = computeAroundBallApproachTargetDynamic(ball, target, from, 0.15, 0.30);
+    EXPECT_LE((p - ball).norm(), 0.30 + 1e-9);
+    EXPECT_GE((p - ball).norm(), 0.15 - 1e-9);
+  }
+}
+
+TEST(GeometryOperationsTest, SlideOntoCircleInsideBoxKeepsRadiusAndPrefersNearestAngle)
+{
+  // タッチライン y=4.5 からロボット余裕 0.14 を引いた箱（上辺 4.36）。ラインから 0.2 m の
+  // ボールに対し、真後ろ（+y）0.30 の周回目標は箱の外。半径を保ったまま最寄りの角度へ滑らせる
+  const Box box(Point(-5.86, -4.36), Point(5.86, 4.36));
+  const Point ball(-5.0, 4.3);
+  const Point slid = slideOntoCircleInsideBox(ball, Point(-5.0, 4.6), box);
+  EXPECT_TRUE(isInBox(box, slid));
+  EXPECT_NEAR((slid - ball).norm(), 0.30, 1e-9);
+  EXPECT_LE(slid.y(), 4.36 + 1e-9);
+  // 箱へ単純にクランプすると (-5.0, 4.36) でボールから 0.06 しか離れない。滑らせた点は後方寄り
+  EXPECT_GT(slid.y(), 4.3);
+  // 箱の中の点はそのまま
+  const Point inside(-4.7, 4.3);
+  EXPECT_NEAR((slideOntoCircleInsideBox(ball, inside, box) - inside).norm(), 0.0, 1e-12);
+}
+
+TEST(GeometryOperationsTest, FreeKickLatchIsReachableFromInFieldOrbitTargetNearTouchLine)
+{
+  // FreeKicker の APPROACH ラッチ条件（free_kicker.cpp と同じ定数）:
+  //   最終 standoff から 0.40 以内、かつ 自機→最終 standoff の線分がボール中心から
+  //   ロボット半径 0.09 + ボール半径 0.0215 + 0.02 以上離れている。
+  // ボールがタッチラインから 0.2 m、キック方向が内向き（-y）のとき、周回目標を箱に収めると
+  // ボールの真後ろには立てない。旧条件（ボール後方 ±45°）ではこの位置から永久にラッチできず、
+  // 6 秒タイムアウトで APPROACH をやり直し続けた
+  constexpr double ROBOT_RADIUS = 0.09;
+  constexpr double BALL_RADIUS = 0.0215;
+  constexpr double LATCH_CLEARANCE = ROBOT_RADIUS + BALL_RADIUS + 0.02;
+  constexpr double LATCH_DISTANCE = 0.40;
+  const Box box(Point(-5.86, -4.36), Point(5.86, 4.36));
+  const Point ball(-5.0, 4.3);
+  const Vector2 kick_dir(0.0, -1.0);
+  const Point final_standoff = ball - kick_dir * 0.15;
+  EXPECT_FALSE(isInBox(box, final_standoff));  // 最終 standoff 自体はラインから 0.05 で箱の外
+
+  // 箱に収めた周回目標（半径 0.30）にロボットが到達した状態
+  const Point robot = slideOntoCircleInsideBox(ball, ball - kick_dir * 0.30, box);
+  ASSERT_TRUE(isInBox(box, robot));
+  EXPECT_LT((robot - final_standoff).norm(), LATCH_DISTANCE);
+  EXPECT_GE(
+    getClosestPointAndDistance(ball, Segment(robot, final_standoff)).distance, LATCH_CLEARANCE);
+  // 旧条件は満たせない（内積 < -0.7 が必要）
+  EXPECT_GT(kick_dir.dot((robot - ball).normalized()), -0.7);
+
+  // ボールの真横 0.15 からは直線がボールに触れるのでラッチしない
+  const Point beside(ball.x() + 0.15, ball.y());
+  EXPECT_LT(
+    getClosestPointAndDistance(ball, Segment(beside, final_standoff)).distance, LATCH_CLEARANCE);
+}
+
 TEST(GeometryOperationsTest, Deg2RadAndRad2Deg)
 {
   EXPECT_DOUBLE_EQ(deg2rad(0.0), 0.0);

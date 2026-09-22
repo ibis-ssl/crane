@@ -4,11 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
+#include <cmath>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/pass.hpp>
 #include <crane_robot_skills/free_kicker.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <magic_enum/magic_enum.hpp>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane::skills
@@ -22,6 +25,20 @@ constexpr double FK_ALIGN_WAIT_SEC = 1.0;
 constexpr double FK_KICK_TIMEOUT_SEC = 3.0;
 constexpr double FK_MIN_PASS_ACCEPT_SCORE = 0.4;
 constexpr double FK_PASS_HYSTERESIS_RATIO = 0.85;
+// フィールド余裕の計算に使う実機半径。RobotInfo::geometry() は 0.06 で実機より小さい
+constexpr double FK_ROBOT_RADIUS = 0.09;
+// SSL 公式球の半径（直径 43mm）
+constexpr double FK_BALL_RADIUS = 0.0215;
+// APPROACH 目標を最終 standoff に固定してよい条件: 自機から最終 standoff への直線がボール中心から
+// これ以上離れていること。ボール回避を無効にしているので、直線上でボールに触れない保証が要る。
+// 角度（ボール後方 ±45°）で判定すると、ライン際でフィールド内に収めた周回目標からは満たせず、
+// 6 秒タイムアウトで APPROACH をやり直し続ける
+constexpr double FK_APPROACH_BALL_CLEARANCE = FK_ROBOT_RADIUS + FK_BALL_RADIUS + 0.02;
+
+auto segmentClearsBall(const Point & from, const Point & to, const Point & ball) -> bool
+{
+  return getClosestPointAndDistance(ball, Segment(from, to)).distance >= FK_APPROACH_BALL_CLEARANCE;
+}
 }  // namespace
 
 std::string FreeKicker::getStateName(int s)
@@ -41,6 +58,9 @@ void FreeKicker::resetInternalState()
   align_entry_time_ = std::nullopt;
   align_target_locked_ = Point::Zero();
   kick_actually_launched_ = false;
+  approach_final_latched_ = false;
+  latched_ball_pos_ = Point::Zero();
+  latched_standoff_ = Point::Zero();
 }
 
 void FreeKicker::initialize()
@@ -50,6 +70,16 @@ void FreeKicker::initialize()
   setParameter("kick_max_velocity", 0.5);
   setParameter("approach_distance", 0.15);
   setParameter("approach_position_tolerance", 0.05);
+  // ALIGN へ進んでよい速度上限。0.8 m/s で突入すると位置制御器が 0.09 m 過走してボールを小突く
+  // （2026-09-20 bag）。0.3 m/s なら減速度 3 m/s^2 で過走 0.015 m に収まる
+  setParameter("approach_exit_speed", 0.3);
+  // 最終 standoff からこの距離以内で、そこへの直線がボールに触れなければ目標を固定する。
+  // 周回半径 0.30 の上でボール後方 80° にいても届くよう 0.40（機体〜standoff 約 0.31）
+  setParameter("approach_final_latch_distance", 0.40);
+  // ラッチ後にボールがこれ以上動いたら解除して再判定する（固定 standoff がボールを横切らないため）
+  setParameter("approach_relatch_ball_move", 0.05);
+  // フィールドラインからロボット中心までに残す余裕（ロボット半径に加算）
+  setParameter("field_margin", 0.05);
   setParameter("target_kick_speed", 5.0);
   setParameter("target_chip_distance", 2.5);
   setParameter("shoot_min_angle_rad", deg2rad(6.0));
@@ -80,22 +110,58 @@ void FreeKicker::initialize()
 
     const Point ball_pos = world_model()->ball().pos;
     const double interval = getParameter<double>("approach_distance");
-    standoff_ = computeAroundBallApproachTargetDynamic(
-      ball_pos, kick_target_, robot()->pose.pos, interval, interval * 4.0);
+    const Vector2 kick_dir = kickDirection(ball_pos);
+    // ALIGN の align_target_locked_ と同じ式。ラッチ後はここへ終端速度 0 で減速させる
+    const Point final_standoff = ball_pos - kick_dir * interval;
+
+    if (
+      approach_final_latched_ &&
+      (ball_pos - latched_ball_pos_).norm() > getParameter<double>("approach_relatch_ball_move")) {
+      // ボールが動いた。固定 standoff へ直進すると新しいボール位置を横切りかねないので再判定
+      approach_final_latched_ = false;
+    }
+    if (!approach_final_latched_) {
+      const Point robot_pos = robot()->pose.pos;
+      const bool near_final =
+        (robot_pos - final_standoff).norm() < getParameter<double>("approach_final_latch_distance");
+      // 自機位置に依存して動く周回目標の追いかけ回しを止める。最終 standoff への直線が
+      // ボールに触れないことを幾何で確かめる（APPROACH はボール回避を無効にしている）
+      if (near_final && segmentClearsBall(robot_pos, final_standoff, ball_pos)) {
+        approach_final_latched_ = true;
+        latched_ball_pos_ = ball_pos;
+        latched_standoff_ = final_standoff;
+      }
+    }
+
+    if (approach_final_latched_) {
+      standoff_ = latched_standoff_;
+    } else {
+      // 周回半径はフィールド境界までの余裕で上限を切り、standoff をフィールド内に保つ。
+      // 以前は disableFieldBoundary() でプランナのクランプを外していたが、コーナーでは
+      // 周回目標がタッチライン外へ出てロボットが境界へ向かう原因になっていた。
+      standoff_ = keepStandoffInField(
+        ball_pos, computeAroundBallApproachTargetDynamic(
+                    ball_pos, kick_target_, robot()->pose.pos, interval,
+                    orbitRadiusLimit(ball_pos, interval)));
+    }
 
     command->setMaxVelocity("FreeKicker::APPROACH", getParameter<double>("approach_max_velocity"))
       .setTargetPosition(standoff_, 0.0)
       .lookAtFrom(kick_target_, ball_pos)
       .disableBallAvoidance()
       .disablePlacementAvoidance()
-      .disableFieldBoundary()
       .dribble(0.0)
       .setOmegaLimit(10.0);
+    command->addPlanningFactor("FreeKickerApproachLatched", approach_final_latched_ ? "1" : "0");
 
     return Status::RUNNING;
   });
+  // ラッチ済み（目標が固定）かつ到達かつ減速済みのときだけ ALIGN へ進む。
+  // #1360 で振動対策として ALIGN 側の条件を外した経緯があるため、ALIGN から出る辺は増やさない
   addTransition(s(S::APPROACH), s(S::ALIGN), [this]() -> bool {
-    return command->getTargetDistance() < getParameter<double>("approach_position_tolerance");
+    return approach_final_latched_ &&
+           command->getTargetDistance() < getParameter<double>("approach_position_tolerance") &&
+           robot()->vel.linear.norm() < getParameter<double>("approach_exit_speed");
   });
   addTransition(s(S::APPROACH), s(S::ENTRY_POINT), [this]() -> bool {
     using std::chrono::duration;
@@ -112,8 +178,8 @@ void FreeKicker::initialize()
       align_entry_time_ = std::chrono::steady_clock::now();
       // APPROACH 最終地点と整合させるため、進入時のボール位置を基準に1回だけ計算してロック
       const Point ball_pos = world_model()->ball().pos;
-      align_target_locked_ = ball_pos - (kick_target_ - ball_pos).normalized() *
-                                          getParameter<double>("approach_distance");
+      align_target_locked_ =
+        ball_pos - kickDirection(ball_pos) * getParameter<double>("approach_distance");
     }
 
     command->setTargetPosition(align_target_locked_)
@@ -140,7 +206,7 @@ void FreeKicker::initialize()
 
     command
       ->setTargetPosition(
-        world_model()->ball().pos + (kick_target_ - world_model()->ball().pos).normalized() * 0.1)
+        world_model()->ball().pos + kickDirection(world_model()->ball().pos) * 0.1)
       .lookAtFrom(kick_target_, robot()->pose.pos)
       .setMaxVelocity("FreeKicker::KICK", getParameter<double>("kick_max_velocity"))
       .disableBallAvoidance();
@@ -173,7 +239,7 @@ void FreeKicker::initialize()
     double ball_speed = world_model()->ball().vel.norm();
     if (ball_speed > FK_KICK_DETECT_VEL) {
       Vector2 ball_vel_dir = world_model()->ball().vel.normalized();
-      Vector2 intended_dir = (kick_target_ - world_model()->ball().pos).normalized();
+      Vector2 intended_dir = kickDirection(world_model()->ball().pos);
       if (ball_vel_dir.dot(intended_dir) > FK_KICK_DIRECTION_COS_THRESHOLD) {
         kick_actually_launched_ = true;
         return true;
@@ -186,6 +252,45 @@ void FreeKicker::initialize()
     command->stopHere();
     return Status::SUCCESS;
   });
+}
+
+auto FreeKicker::fieldBoxWithMargin() const -> Box
+{
+  const double margin = FK_ROBOT_RADIUS + getParameter<double>("field_margin");
+  const Point half = world_model()->fieldSize() * 0.5;
+  return Box(
+    Point(-half.x() + margin, -half.y() + margin), Point(half.x() - margin, half.y() - margin));
+}
+
+auto FreeKicker::orbitRadiusLimit(const Point & ball, double interval) const -> double
+{
+  // ボールから余裕付き境界までの距離を周回半径の上限にする。半径 <= room なら周回点は必ず箱の中。
+  // 下限 interval*2 は、追従遅れで目標がボール側へ寄ってもロボットがボールに触れないための余裕で、
+  // それを超えた分は keepStandoffInField のクランプで吸収する。
+  const Box box = fieldBoxWithMargin();
+  const double room = std::min(
+    {ball.x() - box.min_corner().x(), box.max_corner().x() - ball.x(),
+     ball.y() - box.min_corner().y(), box.max_corner().y() - ball.y()});
+  return std::clamp(room, interval * 2.0, interval * 4.0);
+}
+
+auto FreeKicker::kickDirection(const Point & ball) const -> Vector2
+{
+  const Vector2 kick_dir = kick_target_ - ball;
+  if (kick_dir.squaredNorm() < 1e-12) {
+    // kick_target_ がボールと一致する退行ケース。normalized() の NaN を避けて攻撃方向に倒す
+    return Vector2(world_model()->getAttackSideSign(), 0.0);
+  }
+  return kick_dir.normalized();
+}
+
+auto FreeKicker::keepStandoffInField(const Point & ball, const Point & standoff) const -> Point
+{
+  // 箱へ単純にクランプすると、ライン際のボール（配置位置は 0.2 m でロボット余裕 0.14 m より
+  // 内側に 0.06 m しかない）に対して standoff がボールへ寄り、ボール回避無効の APPROACH で
+  // ボールを押してしまう。ボールからの距離を保ったまま、周回円上で箱に入る最寄りの点へ滑らせる。
+  // 周回円が箱と交わらない（ボール自体が箱の外）ときは箱へクランプし、プランナ側の境界クランプに任せる
+  return slideOntoCircleInsideBox(ball, standoff, fieldBoxWithMargin());
 }
 
 Point FreeKicker::selectKickTarget()
