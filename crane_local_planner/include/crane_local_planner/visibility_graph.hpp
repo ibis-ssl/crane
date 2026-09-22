@@ -22,6 +22,10 @@ struct Obstacle
   Circle circle{Point::Zero(), 0.0};
   Box box{};
   Capsule capsule{};
+  // nearestDynamicEscape 専用の形状。経路計画用の capsule は相対速度で自機側へ伸びるため、
+  // 静止ロボットへ近づくだけで「食い込み」になり退避が誤発火する。退避判定は相手の実位置と
+  // 相手自身の予測移動だけで行う。makeCapsule では capsule と同じ形状になる。
+  Capsule escape_capsule{};
 
   // 移動するロボッか
   bool is_dynamic_robot = false;
@@ -87,12 +91,20 @@ public:
   /**
     * @brief 指定した点が、移動ロボットの障害物に食い込んでいる場合、障害物の外側に押し出す
     *
+    * 判定には Obstacle::escape_capsule（相手の実位置 + 相手自身の予測移動）を使う。
+    *
     * @param point 指定点
     * @param obstacles 障害物リスト
+    * @param inside_margin 「食い込み」と判定する符号付き距離の上限。退避中はこの値を正にして
+    *                      ヒステリシスをかけ、境界すれすれで退避と復帰を往復させない
+    * @param escape_clearance 退避先を境界からどれだけ外側に置くか（node_clearance に加算）。
+    *                         inside_margin よりロボット側の到達許容誤差ぶん以上大きくすること。
+    *                         同程度だと機体が解除線の手前で止まり、退避が固着する
     * @return std::optional<Point> 押し出したあとの点
     */
   [[nodiscard]] auto nearestDynamicEscape(
-    const Point & point, const std::vector<Obstacle> & obstacles) const -> std::optional<Point>;
+    const Point & point, const std::vector<Obstacle> & obstacles, double inside_margin = 0.0,
+    double escape_clearance = 0.0) const -> std::optional<Point>;
 
 private:
   /**
@@ -172,6 +184,91 @@ enum class ReplanAction {
  * @return double 経路の長さ
  */
 [[nodiscard]] auto pathLength(const std::vector<Point> & path) -> double;
+
+/**
+ * @brief firstWaypointBeyond の結果
+ */
+struct WaypointChoice
+{
+  size_t index = 0;         ///< path 上の添字（path.size() >= 2 なら 1 以上）
+  double arc_length = 0.0;  ///< path[0] から path[index] までの弧長
+};
+
+/**
+ * @brief 現在位置（path[0]）から十分離れた最初の中継点を選ぶ
+ *
+ * trimPathFromCurrent の射影点や plan() の押し出し始点は現在位置から 1mm 程度のことがあり、
+ * そのまま目標にすると「今いる場所へ行け、ただし終端速度は大きく」という指令になり、
+ * 終端速度ベクトルの向きだけがフレームごとに反転する。見つからなければ終点を返す。
+ *
+ * @param path 経路（2 点以上）
+ * @param min_distance 中継点までの最小弧長 [m]
+ * @return WaypointChoice 選んだ中継点の添字と弧長
+ */
+[[nodiscard]] auto firstWaypointBeyond(const std::vector<Point> & path, double min_distance)
+  -> WaypointChoice;
+
+/**
+ * @brief 既に通過した経路を切り捨てる
+ *
+ * @param current 現在位置
+ * @param path 経路
+ * @return std::vector<Point> 切り詰めた経路（先頭は current、経路が 2 点未満なら空）
+ */
+[[nodiscard]] auto trimPathFromCurrent(const Point & current, const std::vector<Point> & path)
+  -> std::vector<Point>;
+
+/**
+ * @brief 経路にそって移動量分移動した先の位置を求める
+ *
+ * @param path 複数ポイントからなる経路
+ * @param distance 移動量
+ * @return Point 移動量分移動した先の位置（経路長を超える場合は終点）
+ */
+[[nodiscard]] auto pointAtDistance(const std::vector<Point> & path, double distance) -> Point;
+
+/**
+ * @brief サブゴールの選び方
+ */
+enum class SubgoalMode {
+  LOOKAHEAD,      ///< 経路上 lookahead_distance 先の点
+  WAYPOINT,       ///< 先読み点が不可視で、最初の中継点 path[1] を採用
+  WAYPOINT_SKIP,  ///< path[1] が現在位置に近すぎるので、より先の中継点を採用
+  PATH_POINT,     ///< 読み飛ばした中継点へ直接向かえないので、経路上 min_subgoal_distance 先の点
+};
+
+[[nodiscard]] auto toString(SubgoalMode mode) -> const char *;
+
+/**
+ * @brief selectSubgoal の結果
+ */
+struct SubgoalChoice
+{
+  Point point = Point::Zero();
+  double arc_length = 0.0;  ///< 現在位置(path[0]) から point までの弧長
+  SubgoalMode mode = SubgoalMode::LOOKAHEAD;
+};
+
+/**
+ * @brief 経路からサブゴールを選ぶ
+ *
+ * 基本は経路上 lookahead_distance 先の点。そこへ現在位置から直接向かえないときは中継点へ
+ * フォールバックするが、現在位置から min_subgoal_distance 未満の中継点は読み飛ばす。
+ * 読み飛ばした先の中継点へ現在位置から直接向かうと障害物の角をかすめる場合は、
+ * 経路に沿って min_subgoal_distance だけ進んだ点を採用し、退化した path[1] には戻さない。
+ *
+ * @param graph 可視性判定に使うグラフ
+ * @param current 現在位置（path[0] と一致している前提）
+ * @param path 選択済みの経路（2 点以上）
+ * @param obstacles 障害物
+ * @param lookahead_distance 先読み距離 [m]
+ * @param min_subgoal_distance 中継点までの最小弧長 [m]
+ * @return SubgoalChoice
+ */
+[[nodiscard]] auto selectSubgoal(
+  const VisibilityGraph & graph, const Point & current, const std::vector<Point> & path,
+  const std::vector<Obstacle> & obstacles, double lookahead_distance, double min_subgoal_distance)
+  -> SubgoalChoice;
 
 /**
  * @brief 予測されたロボットの障害物を作成する

@@ -37,6 +37,8 @@ private:
     std::vector<Point> path;
     Point goal = Point::Zero();
     bool valid = false;
+    // 前周期に移動ロボットからの退避を出したか。退避判定のヒステリシスに使う
+    bool escaping = false;
     std::chrono::steady_clock::time_point next_full_replan{};
   };
   /**
@@ -63,26 +65,6 @@ private:
     const std::vector<visibility_graph::Obstacle> & obstacles) -> std::vector<Point>;
 
   /**
-  * @brief 既に通過した経路を切り捨てる
-  *
-  * @param current 現在位置
-  * @param path 経路
-  * @return std::vector<Point> 切り詰めた経路
-  */
-  [[nodiscard]] static auto trimPathFromCurrent(
-    const Point & current, const std::vector<Point> & path) -> std::vector<Point>;
-
-  /**
-  * @brief 経路にそって移動量分移動した先の位置を求める
-  *
-  * @param path 複数ポイントからなる経路
-  * @param distance 移動量
-  * @return Point 移動量分移動した先の位置
-  */
-  [[nodiscard]] static auto pointAtDistance(const std::vector<Point> & path, double distance)
-    -> Point;
-
-  /**
    * @brief 単一ロボットの経路計画を行う
    *
    * @param command 移動先の指令値
@@ -101,6 +83,13 @@ private:
   double prediction_horizon_ = 0.5;
   double safety_margin_ = 0.03;
   double lookahead_distance_ = 0.30;
+  // 先読み点が不可視で中継点へフォールバックするときの、中継点までの最小弧長 [m]
+  double min_subgoal_distance_ = 0.05;
+  // 退避中に退避を解除するために必要な障害物外側への余裕 [m]
+  double escape_release_margin_ = 0.03;
+  // 退避先を障害物境界からどれだけ外側に置くか [m]。escape_release_margin_ より
+  // ロボット側の到達許容誤差（CM4 は 0.01）ぶん以上大きくしないと退避が固着する
+  double escape_clearance_ = 0.06;
   double replan_cross_track_distance_ = 0.50;
   double route_switch_improvement_ratio_ = 0.10;
   double goal_change_threshold_ = 0.05;
