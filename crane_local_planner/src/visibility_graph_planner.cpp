@@ -14,6 +14,7 @@
 #include <crane_utils/parameter.hpp>
 #include <limits>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <string>
 
 namespace crane
 {
@@ -62,6 +63,11 @@ VisibilityGraphPlanner::VisibilityGraphPlanner(rclcpp::Node & node)
   crane::get_or_declare_parameter(node, "visibility_graph.prediction_horizon", prediction_horizon_);
   crane::get_or_declare_parameter(node, "visibility_graph.safety_margin", safety_margin_);
   crane::get_or_declare_parameter(node, "visibility_graph.lookahead_distance", lookahead_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.min_subgoal_distance", min_subgoal_distance_);
+  crane::get_or_declare_parameter(
+    node, "visibility_graph.escape_release_margin", escape_release_margin_);
+  crane::get_or_declare_parameter(node, "visibility_graph.escape_clearance", escape_clearance_);
   crane::get_or_declare_parameter(
     node, "visibility_graph.replan_cross_track_distance", replan_cross_track_distance_);
   crane::get_or_declare_parameter(
@@ -169,44 +175,25 @@ auto VisibilityGraphPlanner::buildObstacles(
   return obstacles;
 }
 
-auto VisibilityGraphPlanner::trimPathFromCurrent(
-  const Point & current, const std::vector<Point> & path) -> std::vector<Point>
-{
-  if (path.size() < 2) {
-    return {};
-  }
-  size_t best_segment = 0;
-  double best_distance = std::numeric_limits<double>::infinity();
-  Point best_projection = current;
-  for (size_t i = 1; i < path.size(); ++i) {
-    const Point projection = closestPointOnSegment(current, path[i - 1], path[i]);
-    const double distance = (current - projection).norm();
-    if (distance < best_distance) {
-      best_distance = distance;
-      best_segment = i;
-      best_projection = projection;
-    }
-  }
-  std::vector<Point> result{current};
-  if ((best_projection - current).norm() > 1e-4) {
-    result.push_back(best_projection);
-  }
-  result.insert(result.end(), path.begin() + static_cast<std::ptrdiff_t>(best_segment), path.end());
-  return result;
-}
-
 auto VisibilityGraphPlanner::selectPath(
   uint8_t robot_id, const Point & current, const Point & goal,
   const std::vector<visibility_graph::Obstacle> & obstacles) -> std::vector<Point>
 {
-  // 移動ロボットの障害物回避を最優先
+  // 移動ロボットの障害物回避を最優先。
+  // 退避中は境界から escape_release_margin_ だけ外側へ出るまで退避を続け、
+  // 境界すれすれで「退避→復帰→退避」を毎周期繰り返さないようにする
   auto & state = path_states_.at(robot_id);
-  if (const auto escape = visibility_graph_.nearestDynamicEscape(current, obstacles)) {
+  const double inside_margin = state.escaping ? escape_release_margin_ : 0.0;
+  if (
+    const auto escape = visibility_graph_.nearestDynamicEscape(
+      current, obstacles, inside_margin, escape_clearance_)) {
+    state.escaping = true;
     state.path = {current, *escape};
     state.goal = goal;
     state.valid = false;
     return state.path;
   }
+  state.escaping = false;
 
   // 前回経路が、回避動作ではない(valid == true) & 目標位置が変わっていない場合 保持経路再利用
   std::vector<Point> retained;
@@ -218,7 +205,7 @@ auto VisibilityGraphPlanner::selectPath(
         cross_track_distance,
         (current - closestPointOnSegment(current, state.path[i - 1], state.path[i])).norm());
     }
-    retained = trimPathFromCurrent(current, state.path);
+    retained = visibility_graph::trimPathFromCurrent(current, state.path);
     if (!retained.empty()) {
       retained.back() = goal;
     }
@@ -288,24 +275,6 @@ auto VisibilityGraphPlanner::selectPath(
   return selected;
 }
 
-auto VisibilityGraphPlanner::pointAtDistance(const std::vector<Point> & path, double distance)
-  -> Point
-{
-  if (path.empty()) {
-    return Point::Zero();
-  }
-  double remaining = std::max(0.0, distance);
-  for (size_t i = 1; i < path.size(); ++i) {
-    const Vector2 segment = path[i] - path[i - 1];
-    const double length = segment.norm();
-    if (length > 1e-9 && remaining <= length) {
-      return path[i - 1] + segment * (remaining / length);
-    }
-    remaining -= length;
-  }
-  return path.back();
-}
-
 auto VisibilityGraphPlanner::planSingleRobot(
   const crane_msgs::msg::RobotCommand & command, double theta_offset)
   -> crane_msgs::msg::RobotCommand
@@ -337,15 +306,11 @@ auto VisibilityGraphPlanner::planSingleRobot(
   const auto path = selectPath(command.robot_id, current, goal, obstacles);
   const double remaining_distance = visibility_graph::pathLength(path);
 
-  // 次の移動先をサブゴールとして設定する。サブゴールまでの経路が鑑賞する場合は、経路上の次の点をサブゴールとする。
-  Point subgoal = pointAtDistance(path, lookahead_distance_);
-  // pointAtDistance は経路長を超える距離を渡すと終点を返すので、subgoal までの弧長は
-  // min(lookahead, 全長) になる。迂回時のフォールバックでは path[1] までの直線長。
-  double subgoal_arc_length = std::min(lookahead_distance_, remaining_distance);
-  if (!visibility_graph_.isPathVisible({current, subgoal}, obstacles) && path.size() >= 2) {
-    subgoal = path[1];
-    subgoal_arc_length = (path[1] - path[0]).norm();
-  }
+  // 次の移動先をサブゴールとして設定する。サブゴールまでの経路が干渉する場合は、経路上の中継点をサブゴールとする。
+  const auto subgoal_choice = visibility_graph::selectSubgoal(
+    visibility_graph_, current, path, obstacles, lookahead_distance_, min_subgoal_distance_);
+  const Point subgoal = subgoal_choice.point;
+  const double subgoal_arc_length = subgoal_choice.arc_length;
 
   const bool final_target = (subgoal - path.back()).norm() < 1e-4;
 
@@ -363,7 +328,7 @@ auto VisibilityGraphPlanner::planSingleRobot(
         .set__value(stop_state_max_velocity_));
   }
   const double max_velocity = resolveMaxVelocityFactors(result, max_velocity_);
-  resolveMaxAccelerationFactors(result, planning_acceleration);
+  const double max_acceleration = resolveMaxAccelerationFactors(result, planning_acceleration);
 
   auto & output = result.position_target_mode.front();
   output.target_x = subgoal.x();
@@ -385,10 +350,23 @@ auto VisibilityGraphPlanner::planSingleRobot(
   // 機体は急制動したまま目標手前で止まる。ここを連続にしておくこと。
   const double distance_after_subgoal =
     final_target ? 0.0 : std::max(0.0, remaining_distance - subgoal_arc_length);
-  const double terminal_speed = std::min(
+  double terminal_speed = std::min(
     max_velocity, std::sqrt(
                     goal_terminal_speed * goal_terminal_speed +
                     2.0 * planning_deceleration * distance_after_subgoal));
+  const double current_speed = std::hypot(command.current_velocity.x, command.current_velocity.y);
+  if (
+    subgoal_choice.mode != visibility_graph::SubgoalMode::LOOKAHEAD &&
+    std::isfinite(current_speed)) {
+    // 近い中継点では「現在速度から弧長内で到達できる速度」を上限にする。中継点が現在位置の
+    // すぐ先にあるとき、そこで 1 m/s 超の終端速度を要求すると位置制御器には純粋な
+    // フィードフォワードとして効き、機体が物理的に追えない指令になる。
+    // current_velocity が NaN のフレームでは上限を掛けず、NaN を終端速度へ伝播させない。
+    terminal_speed = std::min(
+      terminal_speed, std::sqrt(
+                        current_speed * current_speed +
+                        2.0 * std::max(0.0, max_acceleration) * subgoal_arc_length));
+  }
 
   // 終端速度ベクトルの向き: 中継点では次の経路区間、最終目標では現在位置からの接近方向。
   Vector2 direction = subgoal - current;
@@ -421,6 +399,10 @@ auto VisibilityGraphPlanner::planSingleRobot(
   addOrUpdatePlanningFactor(
     result, "VisibilityGraphSubgoalArc", formatPlanningDouble(subgoal_arc_length));
   addOrUpdatePlanningFactor(
+    result, "VisibilityGraphSubgoalMode", visibility_graph::toString(subgoal_choice.mode));
+  addOrUpdatePlanningFactor(
+    result, "VisibilityGraphEscape", path_states_.at(command.robot_id).escaping ? "1" : "0");
+  addOrUpdatePlanningFactor(
     result, "VisibilityGraphTerminalSpeed", formatPlanningDouble(terminal_speed));
   addOrUpdatePlanningFactor(
     result, "VisibilityGraphGoalTerminalSpeed", formatPlanningDouble(goal_terminal_speed));
@@ -433,6 +415,9 @@ auto VisibilityGraphPlanner::planSingleRobot(
         obstacle.capsule.segment.first, obstacle.capsule.radius, "red", 6, 0.15);
       visualizer->drawCircle(
         obstacle.capsule.segment.second, obstacle.capsule.radius, "red", 6, 0.15);
+      // 退避判定用の形状（相手自身の予測のみ）。経路計画用と一致するときは重なって見える
+      visualizer->drawCircle(
+        obstacle.escape_capsule.segment.second, obstacle.escape_capsule.radius, "magenta", 4, 0.15);
     }
   }
   visualizer->drawPolyline(path, "cyan", 0.8, 12.0);
