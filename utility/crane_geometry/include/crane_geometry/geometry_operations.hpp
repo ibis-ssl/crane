@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>  // For std::fabs and std::sqrt
 #include <crane_geometry/boost_geometry.hpp>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -405,6 +406,48 @@ inline auto clampPoint(const Point & p, double min_x, double max_x, double min_y
 inline auto clampPoint(const Point & p, double max_x, double max_y) -> Point
 {
   return clampPoint(p, -max_x, max_x, -max_y, max_y);
+}
+
+/**
+ * @brief 中心からの距離を保ったまま、点を箱の内側へ滑らせる
+ *
+ * 点が箱の中ならそのまま返す。外なら、中心を通る同じ半径の円上で箱に入る点のうち、
+ * 元の角度に最も近いものを返す（72 分割のサンプリング）。箱へ単純にクランプすると
+ * 点が中心へ寄ってしまう場合（ボール周りの周回目標をフィールド内に収めるときなど）に使う。
+ * 円が箱と交わらないときは箱へクランプした点を返す。
+ *
+ * @param center 円の中心
+ * @param point 滑らせる点
+ * @param box 収めたい箱
+ * @return Point 箱の中に収めた点
+ */
+inline auto slideOntoCircleInsideBox(const Point & center, const Point & point, const Box & box)
+  -> Point
+{
+  if (isInBox(box, point)) {
+    return point;
+  }
+  const double radius = (point - center).norm();
+  const double base_angle = getAngle(point - center);
+  std::optional<Point> best;
+  double best_angle_diff = std::numeric_limits<double>::infinity();
+  constexpr int SAMPLES = 72;
+  for (int i = 0; i < SAMPLES; ++i) {
+    const double angle = base_angle + 2.0 * M_PI * i / SAMPLES;
+    const Point candidate = center + radius * Vector2(std::cos(angle), std::sin(angle));
+    if (!isInBox(box, candidate)) {
+      continue;
+    }
+    const double angle_diff = std::abs(getAngleDiff(angle, base_angle));
+    if (angle_diff < best_angle_diff) {
+      best_angle_diff = angle_diff;
+      best = candidate;
+    }
+  }
+  if (best.has_value()) {
+    return *best;
+  }
+  return clampPoint(point, box);
 }
 }  // namespace crane
 
