@@ -20,12 +20,6 @@ bag 解析（crane_bag pass）と異なり意図（pass_target_id）は観測で
 blue_team_on_positive_half を送らず on_positive_half が初期値 false のままになるため。
 根拠の連鎖は field_helpers.DEFENDED_SIDE のコメントに書いた）。
 
-以前このファイルは逆（+x を守り -x へ攻める）を前提に配置しており、
-attacker は自陣ゴールではなく相手ゴールの方向、つまり配置上の「後ろ」へ蹴って
-いた。その結果ボールは 3 試行とも +4.6 付近（ゴールライン 4.5 の外）へ抜けていた。
-場外判定が Division A 固定の 6.05 だったためにそれが場外と数えられず、壁で跳ね
-返ったあとの接触を SUCCESS と分類していて、配置の向きが逆であることが見えなかった。
-
 配置座標は Division を決め打ちせず vision の geometry から導出する（field_helpers）。
 ロボット間隔のようなロボットスケールの距離は絶対値のまま持つ。
 """
@@ -197,12 +191,8 @@ def _wait_for_placement(field: Field, expected: dict) -> float:
 
     確認できないまま PLACEMENT_WAIT_TIMEOUT に達したら NaN を返す。
 
-    以前はここが固定 2 秒の sleep だった（「配置反映と役割割当の安定待ち」）。
-    しかし crane は yellow 全機を制御下に置いていて、テレポート直後から自分の
-    陣形へ動かし始める。保存ログの実測では、配置 0.09 秒後には既に動き出し、
-    0.8 秒後には受け手が 0.7 m、3.8 秒後には 2.8 m 離れていた。2 秒待つと、
-    テストが作ったパスコースはキック時点では存在しない。
-    反映を確認できた時点で抜けることで、意図した配置のまま試行を始める。
+    固定 sleep に戻さないこと。crane はテレポート直後から yellow を動かすので
+    （実測はモジュール docstring）、待つほどテストが作ったパスコースは崩れる。
     """
     deadline = time.time() + PLACEMENT_WAIT_TIMEOUT
     start = time.time()
@@ -227,7 +217,7 @@ def watch_pass_outcome(
     """次の yellow キック1本を追跡して結果を分類する。
 
     expected を渡すと、キック時点で配置座標からどれだけずれていたかを
-    result.max_drift_at_kick に記録する。crane は yellow 全機を制御下に置いて
+    result.drift_at_kick に記録する。crane は yellow 全機を制御下に置いて
     いるので、テストが作った配置は放っておくと崩れる。判定そのものには
     使わないが、「意図した配置で試行できたのか」がログから分かるようにする。
     """
@@ -339,30 +329,16 @@ def watch_pass_outcome(
 # ─── 共通配置 ────────────────────────────────────────────────────────────────
 
 
-# 受け手をハーフウェイラインからどれだけ攻撃側へ置くか（ハーフ長さ比）。
-# 既定 0.07 は既存の PASS_BUILDUP_STATIC / PASS_UNDER_MARK の配置。
-DEFAULT_RECEIVER_DEPTH = 0.07
-
-
-def receiver_positions(
-    field: Field, depth_ratio: float = DEFAULT_RECEIVER_DEPTH
-) -> list:
+def receiver_positions(field: Field) -> list:
     """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
 
-    既定ではハーフウェイラインをわずかに攻撃側へ越えた位置。
-
-    `depth_ratio` を上げると攻撃側の深い位置になる。isUsablePassPlan は
-    受領点が攻撃ハーフにあることを厳密に要求する（pass_plan.hpp の
-    `target.x() * getOurSideSign() < 0.0`）ので、受け手がハーフウェイ際にいると
-    走り回るうちに自陣側へ戻り、計画が明滅する。それを避けたいときに深くする。
+    ハーフウェイラインをわずかに攻撃側へ越えた位置。
     """
-    x = field.x(depth_ratio) * ATTACKING_SIDE
+    x = field.x(0.07) * ATTACKING_SIDE
     return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
-def setup_buildup_static(
-    field: Field, receiver_depth: float = DEFAULT_RECEIVER_DEPTH
-) -> dict:
+def setup_buildup_static(field: Field) -> dict:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
     ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
@@ -375,7 +351,7 @@ def setup_buildup_static(
     field.send_empty_world()
     # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
     ball_x = field.x(0.33) * DEFENDED_SIDE
-    left_receiver, right_receiver = receiver_positions(field, receiver_depth)
+    left_receiver, right_receiver = receiver_positions(field)
     facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
     # yellow (crane)
@@ -416,7 +392,7 @@ def setup_under_mark(field: Field) -> dict:
 
 # PassPlan 検証用の受け手深さ（ハーフ長さ比）。
 #
-# 既定の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
+# receiver_positions の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
 # isUsablePassPlan の `target.x() * getOurSideSign() < 0.0`（攻撃ハーフ厳密）を
 # 割って計画が消えた。
 #
@@ -553,3 +529,21 @@ def run_pass_trial(
     result.placement_wait = placement_wait
     comm.change_referee_command("STOP", 1.0)
     return result
+
+
+def run_pass_trials(field: Field, setup_fn, label: str, trials: int = 3) -> list:
+    """`trials` 回試行して診断を出力し、outcome のリストを返す。合否判定は呼び出し側。"""
+    results = [run_pass_trial(field, setup_fn) for _ in range(trials)]
+    outcomes = [r.outcome for r in results]
+    print(f"{label} outcomes: {outcomes}")
+    # 配置が反映されるまでの待ちと、キック時点で配置からどれだけ崩れていたか。
+    # crane は yellow 全機を動かすので、ずれが大きい試行は「テストが作った
+    # パスコースとは別の状況」を見ている。判定ではなく切り分けのために出す。
+    waits = [f"{r.placement_wait:.2f}" for r in results]
+    print(f"  配置待ち[s]: {waits}")
+    for i, r in enumerate(results, 1):
+        drift = ", ".join(f"Y{k}:{v:.2f}" for k, v in sorted(r.drift_at_kick.items()))
+        print(f"  試行{i} キック時の配置ずれ[m]: {drift or '(未計測)'}")
+    for r in results:
+        print(f"  {r.to_dict()}")
+    return outcomes
