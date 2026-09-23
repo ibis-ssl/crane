@@ -98,18 +98,6 @@ Status SubAttacker::update()
   return Status::RUNNING;
 }
 
-std::vector<std::pair<double, Point>> SubAttacker::getPositionsWithScore(
-  const Segment & ball_line, const Point & next_target,
-  const WorldModelWrapper::SharedPtr & world_model)
-{
-  std::vector<std::pair<double, Point>> position_with_score;
-  for (const auto & point : getPoints(ball_line, 0.05)) {
-    double score = getPointScore(point, next_target, world_model);
-    position_with_score.push_back(std::make_pair(score, point));
-  }
-  return position_with_score;
-}
-
 double SubAttacker::getPointScore(
   const Point & p, [[maybe_unused]] const Point & next_target,
   const WorldModelWrapper::SharedPtr & world_model)
