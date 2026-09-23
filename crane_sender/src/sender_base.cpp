@@ -37,6 +37,8 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
     this, "robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
+
+  sent_commands_pub_ = create_publisher<VelocityCommandsMsg>("/sent_robot_commands", 10);
 }
 
 void SenderBase::callback(const VelocityCommandsMsg & msg)
@@ -114,6 +116,13 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
 
   previous_commands = preprocessed_msg;
   sendCommands(preprocessed_msg);
+
+  // 実際に送った内容を残す。hasUpdated() は world model を一度でも受信したかの判定なので、
+  // 起動直後を除けば /robot_commands の 1 フレームに /sent_robot_commands が 1 メッセージ対応する。
+  // 送信の成否は各サブクラスが planning_factors に残す（ibis は SenderSent）。
+  // 2026-09-20 の走行ログでは 3 番機が指令中に 0.8〜1.4 秒停止した原因を bag から判別できなかった。
+  preprocessed_msg.header.stamp = now;
+  sent_commands_pub_->publish(preprocessed_msg);
 }
 
 double SenderBase::calculateAccelerationLimit(double current_speed, double target_speed) const

@@ -176,6 +176,12 @@ ros2 param get /ibis_sender position_control.kp
 
 `sent` は UDP ソケットへ値を渡せたかどうかだけを示します。CM4 は ACK を返さないので、`sent: true` はロボットが受け取った証拠にはなりません（電源断・圏外・[受理範囲](#範囲外の値は捨てられる)外の値によるデータグラム破棄は、いずれも `sent: true` のまま記録されます）。送信に失敗した場合も値は `sent: false` として残します。
 
+### 実際に送った指令は `/sent_robot_commands` に残る
+
+`/robot_commands` は局所経路計画の出力で、送信ノードがその後に埋める `elapsed_time_ms_since_last_vision` や、パケットに載せた `is_vision_available` / `linear_velocity_limit` / `acceleration_limit` / ワイヤ制御モードは含まない。CM4 と G474 はこれらの値で安全停止するので、bag に `/robot_commands` しか無いと「指令は移動なのに機体が止まった」ときに crane 側の指令と機体側の停止を切り分けられない（2026-09-20 の走行ログでは、3 番機が指令中に 0.8〜1.4 秒停止した原因を bag から判別できなかった）。
+
+[ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) は送信直後の指令を `/sent_robot_commands`（`crane_msgs/msg/RobotCommands`）として publish し、上記の値を `planning_factors`（`SenderVisionAvailable` / `SenderWireMode` / `SenderLinearVelocityLimit` / `SenderAccelerationLimit` / `SenderElapsedVisionMs`）に載せ、UDP 送信の成否を `SenderSent`（1/0）で残す。`record:=true` の記録対象に含まれる。world model を一度も受信していない起動直後を除き、`/robot_commands` の 1 フレームにつき 1 メッセージが publish されるので、`/robot_commands` にあって `/sent_robot_commands` に無いフレームは送信ノードが処理していない、`SenderSent=0` のフレームは送信に失敗した、と切り分けられる。CM4 は ACK を返さないため、`SenderSent=1` でもロボットが受け取った証拠にはならない。
+
 ## トラブルシューティング
 
 ロボットが動かない、あるいは位置制御が効かない場合は以下の順で確認します。

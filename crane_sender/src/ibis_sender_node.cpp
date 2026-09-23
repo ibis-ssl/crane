@@ -12,6 +12,7 @@
 #include <boost/asio.hpp>
 #include <chrono>
 #include <cmath>
+#include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/position_control_config.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -289,7 +290,7 @@ private:
     return packet;
   }
 
-  void sendIbis(const crane_msgs::msg::RobotCommands & msg)
+  void sendIbis(crane_msgs::msg::RobotCommands & msg)
   {
     if (++counter_ > 200) {
       counter_ = 0;
@@ -303,12 +304,26 @@ private:
       robot_packets[i] = {static_cast<uint8_t>(i), RobotCommandSerializedV2{}};
     }
 
-    for (const auto & command : msg.robot_commands) {
+    for (auto & command : msg.robot_commands) {
       if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
         RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
         RobotCommandSerializedV2 serialized_packet;
         RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
         robot_packets[command.robot_id] = {command.robot_id, serialized_packet};
+
+        // ワイヤに載せた安全停止関連の値を /sent_robot_commands 用に残す。
+        // CM4 / G474 は is_vision_available=0 や elapsed>500ms、linear_velocity_limit=0 で止まる
+        addOrUpdatePlanningFactor(
+          command, "SenderVisionAvailable", packet.is_vision_available ? "1" : "0");
+        addOrUpdatePlanningFactor(
+          command, "SenderWireMode", std::to_string(static_cast<int>(packet.control_mode)));
+        addOrUpdatePlanningFactor(
+          command, "SenderLinearVelocityLimit", formatPlanningDouble(packet.linear_velocity_limit));
+        addOrUpdatePlanningFactor(
+          command, "SenderAccelerationLimit", formatPlanningDouble(packet.acceleration_limit));
+        addOrUpdatePlanningFactor(
+          command, "SenderElapsedVisionMs",
+          std::to_string(packet.elapsed_time_ms_since_last_vision));
       }
     }
 
@@ -321,14 +336,24 @@ private:
     }
 
     // パケット送信
+    bool sent = false;
     try {
       broadcast_socket_.send_to(boost::asio::buffer(broadcast_buf), broadcast_endpoint_);
+      sent = true;
     } catch (boost::system::system_error & e) {
       RCLCPP_ERROR(get_logger(), "❌ Packet Send Error (boost): %s", e.what());
       RCLCPP_ERROR(get_logger(), "  Error Code: %d", e.code().value());
       RCLCPP_ERROR(get_logger(), "  Error Message: %s", e.code().message().c_str());
     } catch (std::exception & e) {
       RCLCPP_ERROR(get_logger(), "❌ Packet Send Exception: %s", e.what());
+    }
+    // 送信に失敗したフレームも /sent_robot_commands には残るので、送れたかどうかを区別する。
+    // パケットに載せたロボットだけに付ける（他の Sender* factor と同じ条件）。
+    // CM4 は ACK を返さないため、1 でもロボットが受け取った証拠にはならない
+    for (auto & command : msg.robot_commands) {
+      if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
+        addOrUpdatePlanningFactor(command, "SenderSent", sent ? "1" : "0");
+      }
     }
 
     sendPositionControlConfig();
@@ -403,7 +428,7 @@ private:
   }
 
 public:
-  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override { sendIbis(msg); }
+  void sendCommands(crane_msgs::msg::RobotCommands & msg) override { sendIbis(msg); }
 };
 }  // namespace crane
 
