@@ -24,7 +24,6 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
   char comma;
   while (ss >> value) {
     result.push_back(static_cast<uint8_t>(value));
-    // 次のカンマをスキップ（もしあれば）
     ss >> comma;
   }
   return result;
@@ -40,10 +39,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 {
   using std::chrono_literals::operator""ms;
 
-  // VisualizationManager初期化（統合された可視化システム）
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
-  // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider_->setVisualizationCallbacks(
     [this](const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode) {
       visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
@@ -56,7 +53,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   auto robot_id_mask_str = crane::get_or_declare_parameter(this, "robot_id_mask", "1, 2, 3");
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
-  // game_analysisを購読して、world_modelに引き継ぐ
   latest_game_analysis_msg_.pass_target_id = -1;
   latest_game_analysis_msg_.recommended_attacker_id = -1;
   latest_game_analysis_msg_.recommended_pass_receiver_id = -1;
@@ -73,7 +69,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   auto slack_config = SlackTimeConfig::fromNode(*this);
   wrapper_->setSlackConfig(slack_config);
 
-  // デバッグ出力
   RCLCPP_INFO(get_logger(), "SlackTimeConfig loaded:");
   RCLCPP_INFO(
     get_logger(), "  robot_max_acceleration: %.2f m/s^2", slack_config.robot_max_acceleration);
@@ -93,7 +88,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       publishWorldModel();
       publishVisualization(wrapper_);
     } else {
-      // より詳細な状態を表示
       bool has_vision = data_provider_->hasVisionUpdated();
       bool has_tracker = data_provider_->hasTrackedFrameUpdated();
       bool has_geometry = data_provider_->isGeometryInitialized();
@@ -111,7 +105,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       }
     }
 
-    // 診断情報を更新
     diagnostic_helper_.forceUpdate();
   });
 }
@@ -126,7 +119,6 @@ WorldModelPublisherComponent::~WorldModelPublisherComponent()
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
-  // 遅延監視: データ取得開始
   auto msg = data_provider_->getMsg();
 
   // wrapper_->update(msg)はlatest_msg = world_modelという丸ごと代入のため、
@@ -155,10 +147,8 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
 {
-  // チーム色情報を更新
   visualization_manager_->updateTeamInfo(world_model->isYellow(), world_model->onPositiveHalf());
 
-  // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
 
   visualization_manager_->drawBallPlacement(world_model);
@@ -193,20 +183,17 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
 auto WorldModelPublisherComponent::updateDiagnostics(
   diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
 {
-  // データが利用可能かチェック
   bool available = data_provider_->available();
 
   if (available) {
     stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Vision processing is running");
 
-    // ボール検出状態
     if (wrapper_->ball().detected) {
       stat.add("ball_detected", "true");
     } else {
       stat.add("ball_detected", "false");
     }
 
-    // 検出されたロボット数
     auto our_robots = wrapper_->ours().robotsWhere().available().get();
     auto their_robots = wrapper_->theirs().robotsWhere().available().get();
     stat.add("our_robots_count", static_cast<int>(our_robots.size()));

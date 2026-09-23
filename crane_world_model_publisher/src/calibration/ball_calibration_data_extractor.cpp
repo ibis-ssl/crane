@@ -597,7 +597,6 @@ auto BallCalibrationDataExtractor::validateBallPhysics(
     const auto & [next_time, next_ball] = ball_data[index + 1];
 
     double dt_prev = (time - prev_time).seconds();
-    // double dt_next = (next_time - time).seconds();  // 未使用のためコメントアウト
 
     if (dt_prev > 1e-6) {  // 前フレームとの時間差がある場合
       double prev_speed = prev_ball.vel.norm();
