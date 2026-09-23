@@ -269,8 +269,7 @@ auto VisibilityGraphPlanner::selectPath(
   return selected;
 }
 
-auto VisibilityGraphPlanner::planSingleRobot(
-  const crane_msgs::msg::RobotCommand & command, double theta_offset)
+auto VisibilityGraphPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & command)
   -> crane_msgs::msg::RobotCommand
 {
   crane_msgs::msg::RobotCommand result = command;
@@ -415,7 +414,6 @@ auto VisibilityGraphPlanner::planSingleRobot(
   }
   visualizer->drawPolyline(path, "cyan", 0.8, 12.0);
   visualizer->drawFilledCircle(subgoal, 0.04, "orange", 0.8);
-  (void)theta_offset;
   return result;
 }
 
@@ -428,7 +426,7 @@ auto VisibilityGraphPlanner::calculateRobotCommand(
   result.is_yellow = msg.is_yellow;
   result.robot_commands.reserve(msg.robot_commands.size());
   for (const auto & command : msg.robot_commands) {
-    result.robot_commands.push_back(planSingleRobot(command, theta_offset));
+    result.robot_commands.push_back(planSingleRobot(command));
   }
   return result;
 }
