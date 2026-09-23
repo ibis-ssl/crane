@@ -236,29 +236,6 @@ void Kick::initialize()
     });
 }
 
-auto Kick::getBallExitPointFromField(const double offset) -> Point
-{
-  Segment ball_line{
-    world_model()->ball().pos,
-    world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0};
-
-  const double X = world_model()->fieldSize().x() / 2.0 - offset;
-  const double Y = world_model()->fieldSize().y() / 2.0 - offset;
-
-  std::vector<Segment> segments;
-  segments.emplace_back(Point(X, Y), Point(X, -Y));
-  segments.emplace_back(Point(-X, Y), Point(-X, -Y));
-  segments.emplace_back(Point(X, Y), Point(-X, Y));
-  segments.emplace_back(Point(X, -Y), Point(-X, -Y));
-
-  for (const auto & seg : segments) {
-    if (auto intersections = getIntersections(ball_line, seg); not intersections.empty()) {
-      return intersections.front();
-    }
-  }
-  return world_model()->ball().pos;
-}
-
 auto Kick::kickWithChip() -> void
 {
   if (getParameter<bool>("use_target_chip_distance")) {

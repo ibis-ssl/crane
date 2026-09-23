@@ -41,11 +41,6 @@ if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 8)
 endif()
 
-#rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
-
-#ament_auto_add_executable(${PROJECT_NAME}_node src/robot_skills_node.cpp)
-#target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
