@@ -10,8 +10,6 @@
 #include <openssl/sha.h>
 #include <robocup_ssl_msgs/ssl_gc_common.pb.h>
 #include <robocup_ssl_msgs/ssl_simulation_control.pb.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
@@ -475,10 +473,6 @@ public:
       broadcastCoalescedSvgUpdates(batch);
     });
 
-    // 5s timer for Pi status polling
-    pi_status_timer_ =
-      this->create_wall_timer(std::chrono::seconds(5), [this]() { pollAllPiStatus(); });
-
     websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
 
     RCLCPP_INFO(this->get_logger(), "WebSocket: ws://localhost:%d", websocket_port_);
@@ -580,9 +574,6 @@ private:
       }
     }
 
-    // 接続確立時にPiステータスを取得・送信
-    pollAllPiStatus();
-
     // 接続確立時にsituation一覧と現在のinjection状態を送信
     handleListSituations(connection);
     connection->sendMessage(createSessionInjectionCurrentMessage());
@@ -616,10 +607,6 @@ private:
         handleTimeSyncRequest(connection, request);
       } else if (type == "annotation") {
         handleAnnotation(connection, request);
-      } else if (type == "robot_control") {
-        handleRobotControl(connection, request);
-      } else if (type == "poll_pi_status") {
-        pollAllPiStatus();
       } else if (type == "activate_move_mode") {
         handleActivateMoveMode(connection);
       } else if (type == "move_robot") {
@@ -1068,29 +1055,6 @@ private:
     return game_info.dump();
   }
 
-  static std::string getRobotIp(int robot_id)
-  {
-    return "192.168.20." + std::to_string(100 + robot_id);
-  }
-
-  // レスポンスボディから "status" フィールドを抽出する。失敗時は default_failure を返す
-  static std::string parseStatusFromBody(
-    bool success, const std::string & body, const std::string & default_ok = "OK",
-    const std::string & default_failure = "Offline")
-  {
-    if (!success) return default_failure;
-    if (!body.empty()) {
-      try {
-        auto body_json = json::parse(body);
-        if (body_json.contains("status")) {
-          return body_json["status"].get<std::string>();
-        }
-      } catch (...) {
-      }
-    }
-    return default_ok;
-  }
-
   void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
   {
     json data = {{"type", "robot_feedback"}, {"robots", json::array()}};
@@ -1158,72 +1122,6 @@ private:
          {"cmd_stddev", est.cmd_stddev}});
     }
     broadcastToAll(data.dump());
-  }
-
-  // Simple blocking HTTP client with connect/read/write timeouts
-  static std::pair<bool, std::string> sendHttpRequest(
-    const std::string & host, int port, const std::string & method, const std::string & path,
-    int timeout_ms = 500)
-  {
-    try {
-      boost::asio::io_context io_context;
-      boost::asio::ip::tcp::resolver resolver(io_context);
-      boost::asio::ip::tcp::socket socket(io_context);
-      boost::asio::steady_timer timer(io_context);
-
-      boost::system::error_code ec;
-      auto endpoints = resolver.resolve(host, std::to_string(port), ec);
-      if (ec) return {false, ""};
-
-      // Async connect with timeout
-      bool connected = false;
-      timer.expires_after(std::chrono::milliseconds(timeout_ms));
-      timer.async_wait([&socket](const boost::system::error_code & timer_ec) {
-        if (!timer_ec) socket.cancel();
-      });
-      boost::asio::async_connect(
-        socket, endpoints,
-        [&](const boost::system::error_code & conn_ec, const boost::asio::ip::tcp::endpoint &) {
-          if (!conn_ec) connected = true;
-          timer.cancel();
-        });
-      io_context.run();
-      if (!connected) return {false, ""};
-
-      // Set socket read/write timeouts
-      timeval tv;
-      tv.tv_sec = 0;
-      tv.tv_usec = static_cast<suseconds_t>(timeout_ms) * 1000;
-      setsockopt(socket.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-      setsockopt(socket.native_handle(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
-      // Send HTTP request
-      std::string req = method + " " + path + " HTTP/1.0\r\n" + "Host: " + host + ":" +
-                        std::to_string(port) + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-      boost::asio::write(socket, boost::asio::buffer(req), ec);
-      if (ec) return {false, ""};
-
-      boost::asio::streambuf resp_buf;
-      boost::asio::read(socket, resp_buf, boost::asio::transfer_all(), ec);
-      // ec == eof is expected
-
-      std::istream stream(&resp_buf);
-      std::string http_ver;
-      int status_code = 0;
-      stream >> http_ver >> status_code;
-      std::string status_line_rest;
-      std::getline(stream, status_line_rest);
-
-      std::string line;
-      while (std::getline(stream, line) && line != "\r" && !line.empty()) {
-      }
-
-      std::ostringstream body_stream;
-      body_stream << stream.rdbuf();
-      return {status_code >= 200 && status_code < 300, body_stream.str()};
-    } catch (const std::exception &) {
-      return {false, ""};
-    }
   }
 
   void loadSituationNames()
@@ -1672,76 +1570,6 @@ private:
     }
   }
 
-  void handleRobotControl(std::shared_ptr<WebSocketConnection> connection, const json & request)
-  {
-    int robot_id = request.value("robot_id", -1);
-    std::string command = request.value("command", "");
-
-    if (robot_id < 0 || robot_id > 15 || command.empty()) {
-      json error = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", false},
-        {"status", "Invalid request"}};
-      connection->sendMessage(error.dump());
-      return;
-    }
-
-    static const std::map<std::string, std::pair<std::string, std::string>> kCommandMap = {
-      {"start", {"POST", "/start"}}, {"stop", {"POST", "/stop"}}, {"status", {"GET", "/status"}}};
-
-    auto it = kCommandMap.find(command);
-    if (it == kCommandMap.end()) {
-      json error = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", false},
-        {"status", "Unknown command"}};
-      connection->sendMessage(error.dump());
-      return;
-    }
-    const auto & [method, path] = it->second;
-
-    std::thread([connection, robot_id, command, method, path]() {
-      constexpr int kPiPort = 8000;
-      auto [success, body] = sendHttpRequest(getRobotIp(robot_id), kPiPort, method, path);
-      json result = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", success},
-        {"status", parseStatusFromBody(success, body)}};
-      connection->sendMessage(result.dump());
-    }).detach();
-  }
-
-  void pollAllPiStatus()
-  {
-    std::thread([this]() {
-      constexpr int kNumRobots = 13;
-      constexpr int kPiPort = 8000;
-
-      std::vector<std::future<std::pair<int, std::string>>> futures;
-      futures.reserve(kNumRobots);
-
-      for (int id = 0; id < kNumRobots; id++) {
-        futures.push_back(std::async(std::launch::async, [id]() {
-          auto [success, body] = sendHttpRequest(getRobotIp(id), kPiPort, "GET", "/status");
-          return std::make_pair(id, parseStatusFromBody(success, body, "Running", "Offline"));
-        }));
-      }
-
-      json pi_status = {{"type", "pi_status"}, {"robots", json::array()}};
-      for (auto & future : futures) {
-        auto [id, status] = future.get();
-        pi_status["robots"].push_back({{"robot_id", id}, {"status", status}});
-      }
-      broadcastToAll(pi_status.dump());
-    }).detach();
-  }
-
   void broadcastToAll(const std::string & message)
   {
     std::lock_guard<std::mutex> lock(connections_mutex_);
@@ -1782,7 +1610,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::PingStatusArray>::SharedPtr ping_sub_;
   rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_sub_;
   rclcpp::TimerBase::SharedPtr robot_feedback_timer_;
-  rclcpp::TimerBase::SharedPtr pi_status_timer_;
   crane_msgs::msg::RobotFeedbackArray::SharedPtr latest_robot_feedback_;
   bool robot_feedback_updated_{false};
   std::mutex robot_feedback_mutex_;
