@@ -662,32 +662,6 @@ auto RVO2Planner::calculateRobotCommand(
   return extractVelocityCommandsFromRVOSim(commands, theta_offset);
 }
 
-auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
-{
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  for (auto & command : msg.robot_commands) {
-    if (command.position_target_mode.empty()) {
-      continue;
-    }
-
-    initializePlanningFactors(command);
-    auto ctx = createPreprocessContext(command);
-    applyInputValidation(ctx, command);
-    if (!ctx.is_valid) {
-      continue;
-    }
-
-    if (ctx.run_target_adjustments) {
-      applyTargetAdjustmentPipeline(ctx, command);
-    } else if (!command.position_target_mode.empty()) {
-      auto & pos_mode = command.position_target_mode.front();
-      pos_mode.target_x = ctx.target_pos.x();
-      pos_mode.target_y = ctx.target_pos.y();
-      addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
-    }
-  }
-}
-
 auto RVO2Planner::adjustForFieldBoundary(
   Point & target_pos, const Point & current_pos,
   const crane_msgs::msg::RobotCommand & command) const -> void

@@ -61,8 +61,6 @@ public:
   auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
     -> crane_msgs::msg::RobotCommands override;
 
-  auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
-
 private:
   struct PreprocessContext
   {
