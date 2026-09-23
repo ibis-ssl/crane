@@ -45,8 +45,6 @@ public:
   /// 失敗を記録し、新しい seq を割り当ててファイルに書き出す。
   bool recordFailure(std::uint8_t robot_id);
 
-  std::uint64_t nextSeq() const { return next_seq_; }
-
 private:
   void load();
   bool save() const;

@@ -105,15 +105,4 @@ auto generatePlanner(
   throw std::runtime_error("Unknown session name: " + tactic_name);
 }
 
-auto getAvailablePlannerNames() -> std::vector<std::string>
-{
-  const auto & factory_map = getSessionFactoryMap();
-  std::vector<std::string> names;
-  names.reserve(factory_map.size());
-  for (const auto & [name, _] : factory_map) {
-    names.push_back(name);
-  }
-  return names;
-}
-
 }  // namespace crane
