@@ -5,7 +5,8 @@
 // PointerRouter、data-action は ActionDispatcher、WebSocket は WsHub が持つ。
 // ここに状態や分岐を書き足しそうになったら、置き場所を間違えている。
 
-import { ROBOT_HIT_RADIUS_M } from './renderer/constants.js';
+import { ROBOT_HIT_RADIUS_M, ZOOM_MIN, ZOOM_MAX } from './renderer/constants.js';
+import { getFsmState } from './renderer/formatters.js';
 import { SvgPrimitiveParser } from './renderer/SvgPrimitiveParser.js';
 import { CanvasRenderer } from './renderer/CanvasRenderer.js';
 import { FieldLayer } from './renderer/FieldLayer.js';
@@ -16,7 +17,8 @@ import { GameControlClient } from './ws/GameControlClient.js';
 import { ViewerState } from './state/ViewerState.js';
 import { ModeMachine } from './state/ModeMachine.js';
 import { LayerStore } from './state/LayerStore.js';
-import { ShellControls } from './ui/ShellControls.js';
+import { Drawers } from './ui/Drawers.js';
+import { RobotRail } from './ui/RobotRail.js';
 import { StatusStrip } from './ui/StatusStrip.js';
 import { CommandPalette } from './ui/CommandPalette.js';
 import { PositionControlPanel } from './ui/PositionControlPanel.js';
@@ -36,8 +38,6 @@ const DETAIL_REFRESH_MS = 500;
 const KEYBOARD_PAN_SPEED = 80;
 const KEYBOARD_PAN_FAST = 3;
 const HALT_CONFIRM_MS = 2000;
-const ZOOM_MIN = 0.1;
-const ZOOM_MAX = 5.0;
 const ZOOM_BUTTON_STEP = 1.2;
 const HOVER_RADIUS_M = ROBOT_HIT_RADIUS_M * 2;
 
@@ -71,7 +71,7 @@ class CraneViewer {
         this._replayMode = false;
 
         // --- UI ---
-        this.shell = null;
+        this.drawers = null;
         this.statusStrip = null;
         this.palette = null;
         this.positionControl = null;
@@ -103,7 +103,8 @@ class CraneViewer {
         this.sidebar.register('telemetry', new TelemetryTab(this));
         this.sidebar.register('test', new TestTab(this));
         this.sidebar.register('log', new LogTab(this.logPanel));
-        this.shell = new ShellControls(this);
+        this.drawers = new Drawers();
+        this.rail = new RobotRail(this);
         this.actions = new ActionDispatcher(this);
         this.statusStrip = new StatusStrip(this.actions);
         this.palette = new CommandPalette(this.actions);
@@ -153,7 +154,7 @@ class CraneViewer {
     }
 
     // ===== 互換アクセサ =====
-    // CanvasRenderer / RobotHud / ShellControls が viewer 直下を読むため、
+    // CanvasRenderer / RobotHud / PositionControlPanel が viewer 直下を読むため、
     // ViewerState・ModeMachine への委譲を残す。新しいコードは state / modes を直接使うこと。
     get robotsOurs() { return this.state.robotsOurs; }
     get robotsTheirs() { return this.state.robotsTheirs; }
@@ -166,10 +167,8 @@ class CraneViewer {
     get _multiSelect() { return this.state.multiSelect; }
     get _hoveredRobotId() { return this.state.hoveredRobotId; }
     get _feedbackTimestamp() { return this.state.feedbackTimestamp; }
-    get _robotMetrics() { return this.state.metrics; }
     get moveMode() { return this.modes.move; }
     get simEditMode() { return this.modes.simEdit; }
-    get placeBallPending() { return this.modes.ballPlacement; }
     get simSelectedObj() { return this.modes.simSelectedObj; }
     get websocket() { return this.hub.socket; }
     get visibleLayers() { return this.layerStore.visible; }
@@ -203,7 +202,7 @@ class CraneViewer {
         hub.subscribe('latency_estimation', (d) => {
             if (!d.estimations) return;
             this.state.ingestLatency(d.estimations);
-            this._refreshDetailNow();
+            this.sidebar.refresh();
             this.renderer?.invalidate();
         });
         hub.subscribe('game_info', (d) => this.statusStrip.updateFromGameInfo(d));
@@ -362,12 +361,8 @@ class CraneViewer {
         if (this._detailTimer) return;
         this._detailTimer = setTimeout(() => {
             this._detailTimer = null;
-            this._refreshDetailNow();
+            this.sidebar.refresh();
         }, DETAIL_REFRESH_MS);
-    }
-
-    _refreshDetailNow() {
-        this.sidebar.refresh();
     }
 
     // ===== 座標とホバー =====
@@ -421,13 +416,9 @@ class CraneViewer {
         tt.innerHTML = `
                 <b>Robot ${robotId}</b><br>
                 Pos: (${robot.x?.toFixed(2)}, ${robot.y?.toFixed(2)}) θ=${robot.theta?.toFixed(2)}<br>
-                FSM: ${cmd?.planning_factors?.[0]?.name ?? '--'}<br>
+                FSM: ${getFsmState(cmd) ?? '--'}<br>
                 Planner: ${cmd?.planner_name ?? '--'}
             `;
-    }
-
-    findRobotAtPosition(fieldX, fieldY) {
-        return this.state.findRobotAtPosition(fieldX, fieldY);
     }
 
     // ===== 指令 =====
@@ -504,12 +495,6 @@ class CraneViewer {
         help?.classList.toggle('visible', on);
         this.renderer?.invalidate();
     }
-
-    activateMoveMode() { this.modes.enterMove(); }
-    deactivateMoveMode() { this.modes.exitMove(); }
-    toggleSimEditMode() { this.modes.toggleSimEdit(); this.renderer?.invalidate(); }
-    activateBallPlacement(team) { this.modes.enterBallPlacement(team); }
-    cancelBallPlacement() { this.modes.exitBallPlacement(); }
 
     simSelectAt(fieldX, fieldY) {
         this.modes.simSelectedObj = this.state.pickSimObject(fieldX, fieldY);
@@ -648,7 +633,7 @@ class CraneViewer {
 
     // Escape ラダー。3 段目までの正本は ModeMachine の LADDER。
     //   1. コマンドパレット
-    //   2. ドロワー          ← ShellControls が capture 段階で処理して伝播を止める
+    //   2. ドロワー          ← Drawers が capture 段階で処理して伝播を止める
     //   3. 指令モード        ← ModeMachine.exitTop()（test → move → ballPlacement → simEdit）
     //   4. フォーカス
     //   5. 複数選択

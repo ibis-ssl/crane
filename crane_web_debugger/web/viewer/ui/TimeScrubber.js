@@ -162,8 +162,4 @@ export class TimeScrubber {
             this._timeLabel.textContent = `-${relSec}s`;
         }
     }
-
-    destroy() {
-        if (this._rafId) cancelAnimationFrame(this._rafId);
-    }
 }

@@ -18,8 +18,7 @@ export class FocusSidebar {
         this._body = document.getElementById('robot-detail-inline');
         this._tabBar = document.getElementById('focus-tabs');
         this._title = document.getElementById('focus-robot-id');
-        // 56px ⇄ 360px の切り替えはこの属性が握る。以前は #robot-detail-inline の
-        // .visible を MutationObserver で監視していたが、持ち主がここに来たので直接書く。
+        // 56px ⇄ 360px の切り替えはこの属性が握る。
         this._side = document.getElementById('robot-side');
     }
 
@@ -44,10 +43,6 @@ export class FocusSidebar {
             this._tabBar.appendChild(btn);
         }
     }
-
-    get isOpen() { return this._robotId !== null; }
-    get robotId() { return this._robotId; }
-    get activeTabName() { return this._activeName; }
 
     open(id, tabName = null) {
         if (!this._body) return false;

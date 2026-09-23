@@ -8,9 +8,10 @@
 //
 // 優先順位を別の場所にも書かないこと。
 
+import { ZOOM_MIN, ZOOM_MAX } from './constants.js';
+import { LIMITS } from '../state/TestSession.js';
+
 const DRAG_THRESHOLD_PX = 5;
-const ZOOM_MIN = 0.1;
-const ZOOM_MAX = 5.0;
 const ZOOM_STEP = 1.1;
 
 export class PointerRouter {
@@ -121,7 +122,8 @@ export class PointerRouter {
         if (this._testDragKind === 'velocity') {
             // Shift+ドラッグ: 横移動量を速度上限に写す（スライダと双方向に同期する）
             const dx = e.clientX - this._dragStart.x;
-            const next = Math.min(6, Math.max(0, (this._testDragBase.maxVelocity ?? 2) + dx / 60));
+            const lim = LIMITS.maxVelocity;
+            const next = Math.min(lim.max, Math.max(lim.min, (this._testDragBase.maxVelocity ?? lim.def) + dx / 60));
             s.patch({ maxVelocity: Math.round(next * 10) / 10 });
             return;
         }

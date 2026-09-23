@@ -1,4 +1,7 @@
 import { formatPlannerName, getFsmState, formatLatencyMs, formatLatencyRich } from './formatters.js';
+import {
+    VOLTAGE_CRIT_V, VOLTAGE_WARN_V, TEMP_CRIT_C, FEEDBACK_STALE_MS, LATENCY_WARN_MS,
+} from './constants.js';
 
 const HALO_RADIUS = 120;         // mm  C-2 の二重リング内側（実線）
 const HALO_RADIUS_OUTER = 165;   // mm  同 外側（細線）
@@ -18,13 +21,6 @@ const DRIBBLER_Y = 30;           // mm below center (front LED position)
 // ズーム閾値
 const ZOOM_MEDIUM = 1.5;
 const ZOOM_HIGH = 2.0;
-
-// 警告閾値
-const VOLTAGE_CRIT = 21.0;
-const VOLTAGE_WARN = 22.5;
-const TEMP_CRIT = 75;
-const TEMP_WARN = 60;
-const FEEDBACK_STALE_MS = 500;
 
 // 警告バッジサイズ (mm)
 const BADGE_R = 32;
@@ -59,9 +55,8 @@ export class RobotHud {
         }
     }
 
-    // フォーカス = C-2 の二重リング。moveMode 選択と Detail 表示は
-    // focusedRobotId に統合済みなので、リングも 1 種類だけ。
-    _drawHalo(ctx, cx, cy, id, focus, multi, hover, tokens, alpha = 1.0) {
+    // フォーカス = C-2 の二重リング。
+    _drawHalo(ctx, cx, cy, id, focus, multi, hover, tokens, alpha) {
         const accent = tokens.select ?? '#7FE3FF';
         ctx.save();
         ctx.setLineDash([]);
@@ -98,7 +93,7 @@ export class RobotHud {
         ctx.restore();
     }
 
-    _drawArrow(ctx, cx, cy, theta, cmd, tokens, alpha = 1.0) {
+    _drawArrow(ctx, cx, cy, theta, cmd, tokens, alpha) {
         const hasDribble = (cmd?.dribble_power ?? 0) > 0;
         const color = hasDribble ? (tokens.overlayMove ?? '#D0BCFF') : (tokens.hudAccent ?? '#A0C4FF');
         // SVG 座標系: tipX = cx + cos(θ)*L, tipY = cy - sin(θ)*L (Y反転)
@@ -128,7 +123,7 @@ export class RobotHud {
         ctx.restore();
     }
 
-    _drawDribblerLed(ctx, cx, cy, id, viewer, tokens, alpha = 1.0) {
+    _drawDribblerLed(ctx, cx, cy, id, viewer, tokens, alpha) {
         const hasBall = viewer.robotFeedback?.[id]?.ball_sensor ?? false;
         const color = hasBall ? (tokens.hudAccent ?? '#A0C4FF') : (tokens.inkMuted ?? '#8C929A');
         ctx.save();
@@ -140,7 +135,7 @@ export class RobotHud {
         ctx.restore();
     }
 
-    _drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoomLevel, alpha = 1.0) {
+    _drawLabels(ctx, cx, cy, cmd, tokens, latEst, zoomLevel, alpha) {
         const fsm = getFsmState(cmd) ?? '';
         const planner = cmd?.planner_name ?? '';
         const wmEst = latEst?.world_model;
@@ -166,7 +161,7 @@ export class RobotHud {
 
         // WM latency は常時表示
         if (wmEst?.latency_ms != null) {
-            const latColor = wmEst.latency_ms > 100
+            const latColor = wmEst.latency_ms > LATENCY_WARN_MS
                 ? (tokens.danger ?? '#B3261E')
                 : (tokens.ok ?? '#F4DFF0');
             ctx.font = '56px sans-serif';
@@ -178,7 +173,7 @@ export class RobotHud {
                 const wmLabel = `WM: ${formatLatencyRich(wmEst)}`;
                 ctx.fillText(wmLabel, cx, cy + LATENCY_Y);
                 if (hwEst?.latency_ms != null) {
-                    const hwColor = hwEst.latency_ms > 100
+                    const hwColor = hwEst.latency_ms > LATENCY_WARN_MS
                         ? (tokens.danger ?? '#B3261E')
                         : (tokens.ok ?? '#F4DFF0');
                     ctx.fillStyle = hwColor;
@@ -188,7 +183,7 @@ export class RobotHud {
                 // ズーム中: WM/HW のみ (ms)
                 ctx.fillText(`WM: ${formatLatencyMs(wmEst)}`, cx, cy + LATENCY_Y);
                 if (hwEst?.latency_ms != null) {
-                    const hwColor = hwEst.latency_ms > 100
+                    const hwColor = hwEst.latency_ms > LATENCY_WARN_MS
                         ? (tokens.danger ?? '#B3261E')
                         : (tokens.ok ?? '#F4DFF0');
                     ctx.fillStyle = hwColor;
@@ -215,15 +210,15 @@ export class RobotHud {
                 badges.push({ label: '!', color: tokens.danger ?? '#B3261E', ink: tokens.onDanger ?? '#FFFFFF' });
             }
             const v = fb.voltage;
-            if (v != null && v <= VOLTAGE_CRIT) {
+            if (v != null && v <= VOLTAGE_CRIT_V) {
                 badges.push({ label: 'V', color: tokens.crit ?? '#6650A4', ink: tokens.onCrit ?? '#FFFFFF' });
-            } else if (v != null && v <= VOLTAGE_WARN) {
+            } else if (v != null && v <= VOLTAGE_WARN_V) {
                 badges.push({ label: 'V', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
             }
             const temps = fb.temperatures;
             if (temps && temps.length > 0) {
                 const maxT = Math.max(...temps);
-                if (maxT >= TEMP_CRIT) {
+                if (maxT >= TEMP_CRIT_C) {
                     badges.push({ label: 'T', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
                 }
             }

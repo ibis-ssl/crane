@@ -13,11 +13,9 @@ export class WsHub {
         this._statusSubs = new Set();
         this._logSubs = new Set();
         this.socket = null;
-        this._closed = false;
     }
 
     connect() {
-        this._closed = false;
         this.socket = new WebSocket(this._url);
         this.socket.onopen = () => {
             this._emitStatus(true);
@@ -43,7 +41,6 @@ export class WsHub {
         };
         this.socket.onclose = () => {
             this._emitStatus(false);
-            if (this._closed) return;
             this._log('warn', 'WS', `切断 — ${RECONNECT_DELAY_MS / 1000}秒後に再接続`);
             setTimeout(() => {
                 if (!this.socket || this.socket.readyState === WebSocket.CLOSED) this.connect();

@@ -4,7 +4,7 @@
 // 「レンダラ用の選択」と「パネル用の選択」を別々に持つと必ず食い違うので、
 // focusedRobotId は 1 つだけにして、変更は setFocus() 経由に限る。
 //
-// EventTarget を継承しているので、タブは 'focus' / 'world' / 'feedback' を
+// EventTarget を継承しているので、タブは 'focus' / 'feedback' を
 // 購読すれば済む。ポーリングを書かないこと。
 
 import { MetricRing } from '../ui/Sparkline.js';
@@ -21,7 +21,6 @@ export class ViewerState extends EventTarget {
         this.controlTargets = {};
         this.ballPos = { x: 0, y: 0 };
         this.isYellow = false;
-        this.onPositiveHalf = false;
 
         this.robotFeedback = {};
         this.feedbackTimestamp = {};   // { robot_id: Date.now() } 警告バッジの stale 判定用
@@ -42,19 +41,10 @@ export class ViewerState extends EventTarget {
         return true;
     }
 
-    get focusedRobot() {
-        return this.focusedRobotId === null ? null : (this.robotsOurs[this.focusedRobotId] ?? null);
-    }
-
-    get focusedCommand() {
-        return this.focusedRobotId === null ? null : (this.controlTargets[this.focusedRobotId] ?? null);
-    }
-
     // ===== 受信 =====
 
     ingestWorldModel(data) {
         if (data.is_yellow !== undefined) this.isYellow = data.is_yellow;
-        if (data.on_positive_half !== undefined) this.onPositiveHalf = data.on_positive_half;
         if (data.ball) this.ballPos = { x: data.ball.x, y: data.ball.y };
         if (data.robots_ours) this.robotsOurs = indexBy(data.robots_ours, 'id');
         if (data.robots_theirs) this.robotsTheirs = indexBy(data.robots_theirs, 'id');
@@ -74,7 +64,6 @@ export class ViewerState extends EventTarget {
                 m.vel.push(Math.hypot(robot.vx ?? 0, robot.vy ?? 0));
             }
         }
-        this.dispatchEvent(new Event('world'));
     }
 
     ingestControlTargets(commands) {
@@ -97,7 +86,6 @@ export class ViewerState extends EventTarget {
             this.latencyEstimation[est.robot_id][est.source] = {
                 latency_ms: est.latency_ms,
                 correlation: est.correlation,
-                samples_used: est.samples_used,
             };
         }
     }
