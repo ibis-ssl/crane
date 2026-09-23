@@ -139,9 +139,6 @@ private:
     if (not command.local_planner_config.kick_power_override) {
       return command.kick_power;
     }
-    if (!kicker_model_) {
-      throw std::runtime_error("KickerModel is not initialized");
-    }
     try {
       if (command.chip_enable) {
         return kicker_model_->calculateChipKickPower(

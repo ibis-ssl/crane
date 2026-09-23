@@ -18,9 +18,6 @@ auto LocalPlannerComponent::processLatestCommands() -> void
   }
   const auto & msg = *latest_commands_;
 
-  if (!planner) {
-    return;
-  }
   auto world_model = planner->getWorldModel();
   if (!world_model || !world_model->hasUpdated()) {
     return;
