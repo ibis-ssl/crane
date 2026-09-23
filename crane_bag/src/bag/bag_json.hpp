@@ -63,11 +63,9 @@ inline void to_json(nlohmann::json & j, const Event & v)
 
 // RobotState / BallState
 // clang-format off
-// clang-format off
 // NOLINTNEXTLINE(whitespace/line_length)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RobotState, t, robot_id, x, y, theta, vx, vy, speed, dist_to_ball, detected)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BallState, t, x, y, vx, vy, speed)
-// clang-format on
 // clang-format on
 
 // ControlSnapshot
