@@ -529,3 +529,21 @@ def run_pass_trial(
     result.placement_wait = placement_wait
     comm.change_referee_command("STOP", 1.0)
     return result
+
+
+def run_pass_trials(field: Field, setup_fn, label: str, trials: int = 3) -> list:
+    """`trials` 回試行して診断を出力し、outcome のリストを返す。合否判定は呼び出し側。"""
+    results = [run_pass_trial(field, setup_fn) for _ in range(trials)]
+    outcomes = [r.outcome for r in results]
+    print(f"{label} outcomes: {outcomes}")
+    # 配置が反映されるまでの待ちと、キック時点で配置からどれだけ崩れていたか。
+    # crane は yellow 全機を動かすので、ずれが大きい試行は「テストが作った
+    # パスコースとは別の状況」を見ている。判定ではなく切り分けのために出す。
+    waits = [f"{r.placement_wait:.2f}" for r in results]
+    print(f"  配置待ち[s]: {waits}")
+    for i, r in enumerate(results, 1):
+        drift = ", ".join(f"Y{k}:{v:.2f}" for k, v in sorted(r.drift_at_kick.items()))
+        print(f"  試行{i} キック時の配置ずれ[m]: {drift or '(未計測)'}")
+    for r in results:
+        print(f"  {r.to_dict()}")
+    return outcomes
