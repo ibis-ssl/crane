@@ -46,8 +46,6 @@ OurDirectFreeKickSession::calculatePositionCommand(
         best_pass_target << 0, 0;
       }
 
-      // 経由ポイント
-
       Point intermediate_point =
         world_model->ball().pos + (world_model->ball().pos - best_pass_target).normalized() * 0.2;
 

@@ -47,7 +47,6 @@ using SessionFactory =
 
 namespace
 {
-// プランナーファクトリマップの初期化
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define PLANNER_ENTRY(name, PlannerClass) \
   {name, [](auto & wm, auto & node) { return std::make_shared<PlannerClass>(wm, node); }}
