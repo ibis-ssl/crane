@@ -274,13 +274,6 @@ void SingleBallPlacement::initialize()
       return robot()->getDistance(pull_back_target.value()) > 0.3;
     });
 
-  // ボールが離れたら始めに戻る
-  // 2025/04/12 ボールが見えなくなったときに悪影響があるので一旦解除
-  //  addTransition(
-  //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-  //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-  //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
-
   // Vision/Tracker両方が一致してボールがドリブラーから離れている場合はやり直し
   addTransition(
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL),
@@ -461,15 +454,6 @@ void SingleBallPlacement::initialize()
     }
   });
 
-  // addTransition(
-  //   SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-  //     // ロボットの向きがボールの方を向いていなかったらやり直し
-  //     using boost::math::constants::degree;
-  //     return std::abs(getAngleDiff(
-  //              getAngle(world_model()->ball().pos - robot()->pose.pos), robot()->pose.theta)) >
-  //            20 * degree<double>();
-  //   });
-
   addTransition(
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
     static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
@@ -511,12 +495,6 @@ void SingleBallPlacement::initialize()
       }
       return false;
     });
-  // ボールが離れたら始めに戻る
-  // addTransition(
-  //   SingleBallPlacementStates::MOVE_TO_TARGET,
-  //   SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-  //   [this]() { return skill_status == Status::FAILURE; });
-
   addTransition(
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
@@ -534,14 +512,6 @@ void SingleBallPlacement::initialize()
     command->dribble(0.0);
     return Status::RUNNING;
   });
-
-  // addTransition(
-  //   SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-  //   Point placement_target;
-  //   placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-  //   // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-  //   return (world_model()->ball().pos - placement_target).norm() > 0.15;
-  // });
 
   addTransition(
     static_cast<int>(SingleBallPlacementStates::SLEEP),
@@ -575,7 +545,6 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       auto placement_target = getPlacementTarget();
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-      // return (world_model()->ball().pos - placement_target).norm() > 0.15;
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
              world_model()->getMsg().ball_info.detected;
     });
