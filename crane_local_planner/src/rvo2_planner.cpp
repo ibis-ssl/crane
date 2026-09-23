@@ -750,9 +750,8 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
       }
 
       const auto decision = computePenaltyBypassDecision(
-        current_pos, target_pos, penalty_area, goal_pos, world_model->penaltyAreaSize(),
-        penalty_area_offset, PENALTY_AREA_SURROUNDING_OFFSET,
-        PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
+        current_pos, target_pos, penalty_area, goal_pos, penalty_area_offset,
+        PENALTY_AREA_SURROUNDING_OFFSET, PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
       if (!decision.crossing_detected) {
         return;
       }
