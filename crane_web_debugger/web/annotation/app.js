@@ -190,11 +190,7 @@ class CraneAnnotationApp {
 
   startTimeSyncLoop() {
     // 10秒ごとに時刻同期
-    setInterval(() => {
-      if (this.isConnected) {
-        this.requestTimeSync();
-      }
-    }, 10000);
+    setInterval(() => this.requestTimeSync(), 10000);
   }
 
   updateConnectionStatus(connected) {
@@ -216,7 +212,7 @@ class CraneAnnotationApp {
   }
 
   // アノテーション送信
-  sendAnnotation(category, label, description = '', priority = 1, options = {}) {
+  sendAnnotation(category, label, description = '', options = {}) {
     if (!this.isConnected) {
       alert('サーバーに接続されていません');
       return;
@@ -236,7 +232,7 @@ class CraneAnnotationApp {
     const annotation = {
       type: 'annotation',
       category: parseInt(category),
-      priority: parseInt(priority),
+      priority: 1,
       label: label,
       description: description,
       event_timestamp_ns: eventTime * 1000000, // ms -> ns
@@ -244,9 +240,6 @@ class CraneAnnotationApp {
       time_offset_ms: this.timeOffset,
       ...options
     };
-
-    // コンテキスト情報を追加（options経由で渡される）
-    // modalRobotsとmodalPositionは呼び出し側で処理される
 
     console.log('Sending annotation:', annotation);
     this.ws.send(JSON.stringify(annotation));
@@ -520,9 +513,7 @@ class CraneAnnotationApp {
     this.modalPreset = preset;
 
     // タイトルを更新
-    const categoryNames = ['⚠️ 問題', '✨ 良い動き', '📝 メモ'];
-    const title = preset.label || categoryNames[preset.category] || 'アノテーション';
-    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-title').textContent = preset.label;
 
     // フォームを初期化
     document.getElementById('modal-description').value = '';
@@ -551,7 +542,6 @@ class CraneAnnotationApp {
     const category = this.modalPreset.category || '0';
     const label = this.modalPreset.label || 'アノテーション';
     const description = document.getElementById('modal-description').value.trim();
-    const priority = 1; // 固定値（中）
 
     // コンテキスト情報をoptionsとして渡す
     const options = {};
@@ -569,7 +559,7 @@ class CraneAnnotationApp {
       };
     }
 
-    this.sendAnnotation(category, label, description, priority, options);
+    this.sendAnnotation(category, label, description, options);
     this.hideDetailModal();
   }
 
@@ -669,11 +659,8 @@ class CraneAnnotationApp {
     const rect = svg.getBoundingClientRect();
 
     // クリック位置をSVG座標に変換
-    const clientX = event.clientX !== undefined ? event.clientX : event.pageX;
-    const clientY = event.clientY !== undefined ? event.clientY : event.pageY;
-
-    const x = (clientX - rect.left) / rect.width * 9 - 4.5;
-    const y = (clientY - rect.top) / rect.height * 6 - 3;
+    const x = (event.clientX - rect.left) / rect.width * 9 - 4.5;
+    const y = (event.clientY - rect.top) / rect.height * 6 - 3;
 
     this.tempPosition = {
       x: Math.round(x * 100) / 100,

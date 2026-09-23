@@ -1,12 +1,9 @@
 // crane_web_debugger (8090) に内包された Robot Manager の UI。
-// もとは Orion_CM4 の別サービス (8092)。API のベースだけが変わっている。
 //
 // sim ではサーバが /robots 系を 503 で弾くうえ、ここでもポーリングを
 // 開始しない。「リンクはあるが動かない」に見えないよう、理由を画面に出す。
 
 const API_BASE = '/api/robot-manager';
-
-'use strict';
 
 // ---- 定数 ------------------------------------------------------------------
 
@@ -136,9 +133,7 @@ function renderHwDetail(robot) {
     return '<span class="m3-text-on-surface-variant">--</span>';
   }
 
-  return parts.map((p, i) =>
-    i === 0 ? p : `<span class="hw-divider">|</span>${p}`
-  ).join('');
+  return parts.join('<span class="hw-divider">|</span>');
 }
 
 // ---- ステータス分類 ---------------------------------------------------------
@@ -282,7 +277,6 @@ async function controlRobot(robotId, command) {
   }
 }
 
-window.controlRobot = controlRobot;
 
 async function startAll() {
   try {

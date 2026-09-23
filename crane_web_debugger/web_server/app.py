@@ -48,16 +48,12 @@ def create_app(web_root: Path) -> FastAPI:
 app = create_app(Path(os.environ.get("WEB_ROOT", "/app/web")))
 
 
-def _parse_args() -> argparse.Namespace:
+def main() -> None:
     parser = argparse.ArgumentParser(description="crane web debugger HTTP server")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8090)
     parser.add_argument("--web-root", type=Path, required=True)
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = _parse_args()
+    args = parser.parse_args()
     uvicorn.run(
         create_app(args.web_root), host=args.host, port=args.port, log_level="warning"
     )

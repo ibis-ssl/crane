@@ -31,7 +31,6 @@ from __future__ import annotations
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, HTTPException
@@ -60,19 +59,19 @@ def robot_ip(robot_id: int) -> str:
     return f"{ROBOT_IP_BASE}{ROBOT_IP_OFFSET + robot_id}"
 
 
-def parse_status(success: bool, body_text: str, default_ok: str = "Running") -> str:
+def parse_status(success: bool, body_text: str) -> str:
     if not success:
         return "Offline"
     if not body_text:
-        return default_ok
+        return "Running"
     try:
         body_json = json.loads(body_text)
     except json.JSONDecodeError:
-        return default_ok
+        return "Running"
     status = body_json.get("status")
     if isinstance(status, str) and status:
         return status
-    return default_ok
+    return "Running"
 
 
 def send_pi_request(robot_id: int, method: str, path: str) -> tuple[bool, str]:
@@ -82,8 +81,6 @@ def send_pi_request(robot_id: int, method: str, path: str) -> tuple[bool, str]:
         with urlopen(req, timeout=HTTP_TIMEOUT_SEC) as resp:
             ok = 200 <= resp.status < 300
             return ok, resp.read().decode("utf-8", errors="replace")
-    except (URLError, TimeoutError):
-        return False, ""
     except Exception:  # noqa: BLE001 Pi 側の不調で API 全体を落とさない
         return False, ""
 
