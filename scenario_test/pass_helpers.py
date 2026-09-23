@@ -329,30 +329,16 @@ def watch_pass_outcome(
 # ─── 共通配置 ────────────────────────────────────────────────────────────────
 
 
-# 受け手をハーフウェイラインからどれだけ攻撃側へ置くか（ハーフ長さ比）。
-# 既定 0.07 は既存の PASS_BUILDUP_STATIC / PASS_UNDER_MARK の配置。
-DEFAULT_RECEIVER_DEPTH = 0.07
-
-
-def receiver_positions(
-    field: Field, depth_ratio: float = DEFAULT_RECEIVER_DEPTH
-) -> list:
+def receiver_positions(field: Field) -> list:
     """受け手候補（左右ウィング）の座標。マーカー配置でも参照する。
 
-    既定ではハーフウェイラインをわずかに攻撃側へ越えた位置。
-
-    `depth_ratio` を上げると攻撃側の深い位置になる。isUsablePassPlan は
-    受領点が攻撃ハーフにあることを厳密に要求する（pass_plan.hpp の
-    `target.x() * getOurSideSign() < 0.0`）ので、受け手がハーフウェイ際にいると
-    走り回るうちに自陣側へ戻り、計画が明滅する。それを避けたいときに深くする。
+    ハーフウェイラインをわずかに攻撃側へ越えた位置。
     """
-    x = field.x(depth_ratio) * ATTACKING_SIDE
+    x = field.x(0.07) * ATTACKING_SIDE
     return [(x, field.y(0.49)), (x, field.y(-0.49))]
 
 
-def setup_buildup_static(
-    field: Field, receiver_depth: float = DEFAULT_RECEIVER_DEPTH
-) -> dict:
+def setup_buildup_static(field: Field) -> dict:
     """ビルドアップ配置: シュートラインを blue の壁で塞ぎ、ウィングの受け手は空ける。
 
     ボールから見て相手ゴールマウスは blue 壁で完全に遮蔽され（ゴール可視角 ≈ 0）、
@@ -365,7 +351,7 @@ def setup_buildup_static(
     field.send_empty_world()
     # ボールは自陣側。そこから攻撃側のウィングへ繋ぐのがこのシナリオ。
     ball_x = field.x(0.33) * DEFENDED_SIDE
-    left_receiver, right_receiver = receiver_positions(field, receiver_depth)
+    left_receiver, right_receiver = receiver_positions(field)
     facing = math.atan2(0.0, ATTACKING_SIDE)  # 攻撃方向を向かせる
 
     # yellow (crane)
@@ -406,7 +392,7 @@ def setup_under_mark(field: Field) -> dict:
 
 # PassPlan 検証用の受け手深さ（ハーフ長さ比）。
 #
-# 既定の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
+# receiver_positions の 0.07（≒0.3m）では浅すぎる。実測では受け手が 1.38 m 自陣側へ動き、
 # isUsablePassPlan の `target.x() * getOurSideSign() < 0.0`（攻撃ハーフ厳密）を
 # 割って計画が消えた。
 #
