@@ -38,6 +38,7 @@
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <rclcpp/parameter_client.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <set>
@@ -161,7 +162,116 @@ public:
     }
   }
 
-  void sendMessage(const std::string & message)
+  void sendMessage(const std::string & message) { sendFrame(kOpText, message); }
+
+  // 次のテキスト/バイナリメッセージを返す。ping には pong を返し、pong は読み捨てる。
+  // 断片化されたメッセージは FIN まで連結する。close 受信・切断・プロトコル違反なら nullopt
+  std::optional<std::string> receiveMessage()
+  {
+    std::string message;
+    bool in_fragmented_message = false;
+    try {
+      while (connected_) {
+        uint8_t header[2];
+        boost::asio::read(*socket_, boost::asio::buffer(header, 2));
+        const bool fin = (header[0] & 0x80) != 0;
+        const uint8_t opcode = header[0] & 0x0F;
+        const bool masked = (header[1] & 0x80) != 0;
+        uint64_t payload_length = header[1] & 0x7F;
+
+        if (payload_length == 126) {
+          uint8_t extended[2];
+          boost::asio::read(*socket_, boost::asio::buffer(extended, 2));
+          payload_length = (extended[0] << 8) | extended[1];
+        } else if (payload_length == 127) {
+          uint8_t extended[8];
+          boost::asio::read(*socket_, boost::asio::buffer(extended, 8));
+          payload_length = 0;
+          for (int i = 0; i < 8; i++) {
+            payload_length = (payload_length << 8) | extended[i];
+          }
+        }
+
+        // 制御フレームは分割できず 125 バイト以下（RFC 6455 5.5）
+        const bool is_control = (opcode & 0x08) != 0;
+        if (is_control && (!fin || payload_length > 125)) {
+          closeWithStatus(kCloseProtocolError);
+          return std::nullopt;
+        }
+        // 長さはクライアントが決める値なので、確保する前に上限で切る
+        if (!is_control && message.size() + payload_length > kMaxMessageBytes) {
+          closeWithStatus(kCloseMessageTooBig);
+          return std::nullopt;
+        }
+
+        uint8_t mask[4] = {0, 0, 0, 0};
+        if (masked) {
+          boost::asio::read(*socket_, boost::asio::buffer(mask, 4));
+        }
+        std::string payload(payload_length, '\0');
+        if (payload_length > 0) {
+          boost::asio::read(*socket_, boost::asio::buffer(payload));
+          if (masked) {
+            for (uint64_t i = 0; i < payload_length; i++) {
+              payload[i] = static_cast<char>(payload[i] ^ mask[i % 4]);
+            }
+          }
+        }
+
+        switch (opcode) {
+          case kOpClose:
+            // 受け取ったステータスコードをそのまま返して閉じる
+            sendFrame(kOpClose, payload.substr(0, 2));
+            connected_ = false;
+            return std::nullopt;
+          case kOpPing:
+            sendFrame(kOpPong, payload);
+            continue;
+          case kOpPong:
+            continue;
+          case kOpText:
+          case kOpBinary:
+            if (in_fragmented_message) {
+              closeWithStatus(kCloseProtocolError);
+              return std::nullopt;
+            }
+            message = std::move(payload);
+            break;
+          case kOpContinuation:
+            if (!in_fragmented_message) {
+              closeWithStatus(kCloseProtocolError);
+              return std::nullopt;
+            }
+            message += payload;
+            break;
+          default:
+            closeWithStatus(kCloseProtocolError);
+            return std::nullopt;
+        }
+        if (fin) return message;
+        in_fragmented_message = true;
+      }
+    } catch (const std::exception &) {
+      connected_ = false;
+    }
+    return std::nullopt;
+  }
+
+  bool isConnected() const { return connected_; }
+
+private:
+  static constexpr uint8_t kOpContinuation = 0x0;
+  static constexpr uint8_t kOpText = 0x1;
+  static constexpr uint8_t kOpBinary = 0x2;
+  static constexpr uint8_t kOpClose = 0x8;
+  static constexpr uint8_t kOpPing = 0x9;
+  static constexpr uint8_t kOpPong = 0xA;
+  static constexpr uint16_t kCloseProtocolError = 1002;
+  static constexpr uint16_t kCloseMessageTooBig = 1009;
+  // クライアントから来るのは注釈や操作要求の小さな JSON だけ
+  static constexpr uint64_t kMaxMessageBytes = 1 << 20;
+
+  void sendFrame(uint8_t opcode, const std::string & payload)
   {
     std::lock_guard<std::mutex> lock(send_mutex_);
 
@@ -169,25 +279,22 @@ public:
 
     try {
       std::vector<uint8_t> frame;
+      frame.push_back(0x80 | opcode);  // FIN=1
 
-      // FIN=1, opcode=1 (text frame)
-      frame.push_back(0x81);
-
-      // Payload length
-      if (message.length() < 126) {
-        frame.push_back(static_cast<uint8_t>(message.length()));
-      } else if (message.length() < 65536) {
+      if (payload.length() < 126) {
+        frame.push_back(static_cast<uint8_t>(payload.length()));
+      } else if (payload.length() < 65536) {
         frame.push_back(126);
-        frame.push_back((message.length() >> 8) & 0xFF);
-        frame.push_back(message.length() & 0xFF);
+        frame.push_back((payload.length() >> 8) & 0xFF);
+        frame.push_back(payload.length() & 0xFF);
       } else {
         frame.push_back(127);
         for (int i = 7; i >= 0; i--) {
-          frame.push_back((message.length() >> (i * 8)) & 0xFF);
+          frame.push_back((payload.length() >> (i * 8)) & 0xFF);
         }
       }
 
-      frame.insert(frame.end(), message.begin(), message.end());
+      frame.insert(frame.end(), payload.begin(), payload.end());
 
       boost::asio::write(*socket_, boost::asio::buffer(frame));
     } catch (const std::exception & e) {
@@ -195,61 +302,13 @@ public:
     }
   }
 
-  std::string receiveMessage()
+  void closeWithStatus(uint16_t status)
   {
-    if (!connected_) return "";
-
-    try {
-      uint8_t header[2];
-      boost::asio::read(*socket_, boost::asio::buffer(header, 2));
-
-      bool masked = (header[1] & 0x80) != 0;
-      uint64_t payload_length = header[1] & 0x7F;
-
-      // Read extended payload length if necessary
-      if (payload_length == 126) {
-        uint8_t extended[2];
-        boost::asio::read(*socket_, boost::asio::buffer(extended, 2));
-        payload_length = (extended[0] << 8) | extended[1];
-      } else if (payload_length == 127) {
-        uint8_t extended[8];
-        boost::asio::read(*socket_, boost::asio::buffer(extended, 8));
-        payload_length = 0;
-        for (int i = 0; i < 8; i++) {
-          payload_length = (payload_length << 8) | extended[i];
-        }
-      }
-
-      // Read masking key if present
-      uint32_t masking_key = 0;
-      if (masked) {
-        uint8_t mask[4];
-        boost::asio::read(*socket_, boost::asio::buffer(mask, 4));
-        masking_key = (mask[0] << 24) | (mask[1] << 16) | (mask[2] << 8) | mask[3];
-      }
-
-      std::vector<uint8_t> payload(payload_length);
-      if (payload_length > 0) {
-        boost::asio::read(*socket_, boost::asio::buffer(payload));
-
-        // Unmask payload if necessary
-        if (masked) {
-          for (uint64_t i = 0; i < payload_length; i++) {
-            payload[i] ^= ((masking_key >> (24 - (i % 4) * 8)) & 0xFF);
-          }
-        }
-      }
-
-      return std::string(payload.begin(), payload.end());
-    } catch (const std::exception & e) {
-      connected_ = false;
-      return "";
-    }
+    const std::string payload{static_cast<char>(status >> 8), static_cast<char>(status & 0xFF)};
+    sendFrame(kOpClose, payload);
+    connected_ = false;
   }
 
-  bool isConnected() const { return connected_; }
-
-private:
   std::string generateAcceptKey(const std::string & key)
   {
     // WebSocket GUID as per RFC 6455
@@ -570,7 +629,7 @@ private:
         fb_msg = latest_robot_feedback_;
       }
       if (fb_msg) {
-        broadcastRobotFeedback(fb_msg);
+        connection->sendMessage(createRobotFeedbackMessage(fb_msg));
       }
     }
 
@@ -578,14 +637,10 @@ private:
     handleListSituations(connection);
     connection->sendMessage(createSessionInjectionCurrentMessage());
 
-    while (connection->isConnected() && running_) {
-      std::string message = connection->receiveMessage();
-      if (!message.empty()) {
-        handleWebSocketMessage(connection, message);
-      } else {
-        // Connection closed or error
-        break;
-      }
+    while (running_) {
+      auto message = connection->receiveMessage();
+      if (!message) break;
+      if (!message->empty()) handleWebSocketMessage(connection, *message);
     }
 
     {
@@ -601,7 +656,7 @@ private:
   {
     try {
       json request = json::parse(message);
-      std::string type = request["type"];
+      const std::string type = request.value("type", "");
 
       if (type == "time_sync_request") {
         handleTimeSyncRequest(connection, request);
@@ -967,7 +1022,7 @@ private:
 
     json response = {
       {"type", "time_sync_response"},
-      {"client_send_time_ms", request["client_send_time_ms"]},
+      {"client_send_time_ms", request.at("client_send_time_ms")},
       {"server_receive_time_ms", T2},
       {"server_send_time_ms", T2},  // 処理時間が短いため同じ
       {"ros_time_ns", this->get_clock()->now().nanoseconds()}};
@@ -1055,7 +1110,8 @@ private:
     return game_info.dump();
   }
 
-  void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
+  static std::string createRobotFeedbackMessage(
+    const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
   {
     json data = {{"type", "robot_feedback"}, {"robots", json::array()}};
     for (const auto & robot : msg->feedback) {
@@ -1079,7 +1135,12 @@ private:
         {"values", robot.values}};
       data["robots"].push_back(robot_json);
     }
-    broadcastToAll(data.dump());
+    return data.dump();
+  }
+
+  void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
+  {
+    broadcastToAll(createRobotFeedbackMessage(msg));
   }
 
   void broadcastPingStatus(const crane_msgs::msg::PingStatusArray::SharedPtr msg)
