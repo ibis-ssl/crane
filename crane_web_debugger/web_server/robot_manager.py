@@ -68,6 +68,9 @@ def parse_status(success: bool, body_text: str) -> str:
         body_json = json.loads(body_text)
     except json.JSONDecodeError:
         return "Running"
+    # Pi が object 以外の JSON を返しても、この 1 台のせいで /robots を 500 にしない
+    if not isinstance(body_json, dict):
+        return "Running"
     status = body_json.get("status")
     if isinstance(status, str) and status:
         return status
@@ -92,6 +95,8 @@ def _merge_passthrough(result: dict, ok: bool, body: str) -> dict:
     try:
         body_json = json.loads(body)
     except json.JSONDecodeError:
+        return result
+    if not isinstance(body_json, dict):
         return result
     for key, value in body_json.items():
         if key not in result:
