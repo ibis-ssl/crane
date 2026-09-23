@@ -367,8 +367,7 @@ private:
 
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
-  auto convertTrackedRobot(
-    const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  auto convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot)
     -> crane_msgs::msg::RobotInfo;
 };
 }  // namespace crane
