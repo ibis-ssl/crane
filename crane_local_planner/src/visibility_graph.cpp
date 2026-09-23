@@ -566,7 +566,7 @@ auto firstWaypointBeyond(const std::vector<Point> & path, double min_distance) -
 {
   WaypointChoice choice;
   if (path.size() < 2) {
-    choice.index = path.empty() ? 0 : path.size() - 1;
+    choice.index = 0;
     return choice;
   }
   double arc = 0.0;
