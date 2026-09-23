@@ -11,7 +11,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
-# Default to C++20
 if (NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
 endif ()
@@ -25,17 +24,13 @@ endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
-# find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(magic_enum REQUIRED)
 ament_auto_find_build_dependencies()
 
-# for matplotlib
 find_package(Python COMPONENTS Interpreter Development NumPy REQUIRED)
-#find_package(PythonLibs REQUIRED)
-#include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 include_directories(${Python_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 
 ament_auto_add_library(${PROJECT_NAME} SHARED
