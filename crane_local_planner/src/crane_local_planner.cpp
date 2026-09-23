@@ -18,9 +18,6 @@ auto LocalPlannerComponent::processLatestCommands() -> void
   }
   const auto & msg = *latest_commands_;
 
-  if (!planner) {
-    return;
-  }
   auto world_model = planner->getWorldModel();
   if (!world_model || !world_model->hasUpdated()) {
     return;
@@ -97,18 +94,12 @@ auto LocalPlannerComponent::processLatestCommands() -> void
           continue;
         }
         const auto & raw_pos_mode = raw_command.position_target_mode.front();
-        const auto target_x = raw_pos_mode.target_x;
-        const auto target_y = raw_pos_mode.target_y;
-
-        // 位置目標の可視化
         planner->getVisualizer()->drawLine(
-          Point(raw_command.current_pose.x, raw_command.current_pose.y), Point(target_x, target_y),
-          "yellow", 20, 0.3);
+          Point(raw_command.current_pose.x, raw_command.current_pose.y),
+          Point(raw_pos_mode.target_x, raw_pos_mode.target_y), "yellow", 20, 0.3);
 
         crane_msgs::msg::RobotCommand command = raw_command;
         auto & pos_mode = command.position_target_mode.front();
-        pos_mode.target_x = target_x;
-        pos_mode.target_y = target_y;
 
         // 半面練習モード: 移動範囲をレフェリー信号基準の自陣側にクランプ
         if (world_model->isPracticeModeEnabled()) {
@@ -118,8 +109,6 @@ auto LocalPlannerComponent::processLatestCommands() -> void
             pos_mode.target_x = std::min(pos_mode.target_x, 0.0f);
           }
         }
-        pos_mode.position_tolerance = raw_pos_mode.position_tolerance;
-        pos_mode.speed_limit_at_target = raw_pos_mode.speed_limit_at_target;
         auto robot = world_model->getOurRobot(command.robot_id);
         command.current_pose.x = robot->pose.pos.x();                   // フィールド座標系
         command.current_pose.y = robot->pose.pos.y();                   // フィールド座標系
@@ -180,14 +169,12 @@ auto LocalPlannerComponent::processLatestCommands() -> void
       "Unhandled unknown exception in local_planner timer. Publishing empty /robot_commands");
     publishFallback();
   }
-  // 診断情報を更新
   diagnostic_helper_.forceUpdate();
 }
 
 auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)
   -> void
 {
-  // プランナーの状態をチェック
   if (!planner) {
     stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "プランナーが初期化されていません");
     return;

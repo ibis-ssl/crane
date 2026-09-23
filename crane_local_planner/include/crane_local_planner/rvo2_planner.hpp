@@ -61,8 +61,6 @@ public:
   auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
     -> crane_msgs::msg::RobotCommands override;
 
-  auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
-
 private:
   struct PreprocessContext
   {
@@ -134,8 +132,6 @@ private:
     const crane_msgs::msg::RobotCommand & command) const -> void;
 
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
-
-  crane_msgs::msg::RobotCommands pre_commands;
 
   auto toRVO(const Point & point) -> RVO::Vector2 { return RVO::Vector2(point.x(), point.y()); }
 

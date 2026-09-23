@@ -27,7 +27,6 @@ struct Obstacle
   // 相手自身の予測移動だけで行う。makeCapsule では capsule と同じ形状になる。
   Capsule escape_capsule{};
 
-  // 移動するロボッか
   bool is_dynamic_robot = false;
 
   static auto makeCircle(const Point & center, double radius) -> Obstacle;
@@ -66,7 +65,7 @@ public:
   void configure(const Config & config) { config_ = config; }
 
   /**
-   * @brief
+   * @brief start から goal まで、障害物を避ける可視グラフ上の最短経路を求める
    *
    * @param start 経路の始点
    * @param goal 経路の終点

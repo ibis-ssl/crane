@@ -68,11 +68,9 @@ private:
    * @brief 単一ロボットの経路計画を行う
    *
    * @param command 移動先の指令値
-   * @param theta_offset (現状未使用)
    * @return crane_msgs::msg::RobotCommand 経路計画結果の移動先
    */
-  [[nodiscard]] auto planSingleRobot(
-    const crane_msgs::msg::RobotCommand & command, double theta_offset)
+  [[nodiscard]] auto planSingleRobot(const crane_msgs::msg::RobotCommand & command)
     -> crane_msgs::msg::RobotCommand;
 
   visibility_graph::VisibilityGraph visibility_graph_;

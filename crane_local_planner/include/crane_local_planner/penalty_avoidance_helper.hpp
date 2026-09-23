@@ -72,10 +72,9 @@ inline auto intersectsSegmentAABB(const Point & a, const Point & b, const Box & 
 
 inline auto computePenaltyBypassDecision(
   const Point & current_pos, const Point & target_pos, const Box & penalty_area,
-  const Point & goal_pos, const Point & penalty_area_size, double penalty_area_offset,
-  double surrounding_offset, bool force_waypoint_on_crossing) -> PenaltyBypassDecision
+  const Point & goal_pos, double penalty_area_offset, double surrounding_offset,
+  bool force_waypoint_on_crossing) -> PenaltyBypassDecision
 {
-  (void)penalty_area_size;
   PenaltyBypassDecision decision;
   Box expanded = penalty_area;
   expanded.min_corner() -= Point(penalty_area_offset, penalty_area_offset);

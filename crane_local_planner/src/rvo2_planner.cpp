@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <boost/stacktrace.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_utils/parameter.hpp>
@@ -204,7 +203,6 @@ auto RVO2Planner::applyInputValidation(
       ctx.current_pose_position.y());
     ctx.is_valid = false;
     ctx.current_pose_position = Point(20.0, 20.0);
-    ctx.current_estimated_position = ctx.current_pose_position;
     ctx.target_vel = Velocity::Zero();
     ctx.max_vel = 0.0;
     setPlanningStage(command, "INPUT_INVALID");
@@ -226,10 +224,6 @@ auto RVO2Planner::applyInputValidation(
 auto RVO2Planner::applyTargetAdjustmentPipeline(
   PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) -> void
 {
-  if (command.position_target_mode.empty()) {
-    return;
-  }
-
   setPlanningStage(command, "TARGET_ADJUSTMENT");
   Point before = ctx.target_pos;
   adjustForFieldBoundary(ctx.target_pos, ctx.current_pose_position, command);
@@ -477,7 +471,7 @@ auto RVO2Planner::updateActiveAllyAgent(
 
   if (ctx.run_target_adjustments) {
     applyTargetAdjustmentPipeline(ctx, command);
-  } else if (!command.position_target_mode.empty()) {
+  } else {
     auto & pos_mode = command.position_target_mode.front();
     pos_mode.target_x = ctx.target_pos.x();
     pos_mode.target_y = ctx.target_pos.y();
@@ -654,7 +648,6 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     commands.robot_commands.emplace_back(command);
   }
 
-  pre_commands = msg;
   return commands;
 }
 
@@ -663,35 +656,8 @@ auto RVO2Planner::calculateRobotCommand(
 {
   crane_msgs::msg::RobotCommands commands = msg;
   reflectWorldToRVOSim(commands);
-  // RVOシミュレータ更新
   rvo_sim->doStep();
   return extractVelocityCommandsFromRVOSim(commands, theta_offset);
-}
-
-auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
-{
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  for (auto & command : msg.robot_commands) {
-    if (command.position_target_mode.empty()) {
-      continue;
-    }
-
-    initializePlanningFactors(command);
-    auto ctx = createPreprocessContext(command);
-    applyInputValidation(ctx, command);
-    if (!ctx.is_valid) {
-      continue;
-    }
-
-    if (ctx.run_target_adjustments) {
-      applyTargetAdjustmentPipeline(ctx, command);
-    } else if (!command.position_target_mode.empty()) {
-      auto & pos_mode = command.position_target_mode.front();
-      pos_mode.target_x = ctx.target_pos.x();
-      pos_mode.target_y = ctx.target_pos.y();
-      addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
-    }
-  }
 }
 
 auto RVO2Planner::adjustForFieldBoundary(
@@ -704,7 +670,6 @@ auto RVO2Planner::adjustForFieldBoundary(
   const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
   const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
 
-  // フィールド境界のBox
   Box field_box;
   field_box.min_corner() << -max_x, -max_y;
   field_box.max_corner() << max_x, max_y;
@@ -717,13 +682,11 @@ auto RVO2Planner::adjustForFieldBoundary(
   // 現在位置から目標位置への線分
   Segment move_line(current_pos, target_pos);
 
-  // フィールド境界の4辺
   Segment top_edge(Point(-max_x, max_y), Point(max_x, max_y));
   Segment bottom_edge(Point(-max_x, -max_y), Point(max_x, -max_y));
   Segment right_edge(Point(max_x, -max_y), Point(max_x, max_y));
   Segment left_edge(Point(-max_x, -max_y), Point(-max_x, max_y));
 
-  // 各辺との交点を計算
   std::vector<Point> all_intersections;
   for (const auto & edge : {top_edge, bottom_edge, right_edge, left_edge}) {
     auto intersections = getIntersections(move_line, edge);
@@ -787,9 +750,8 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
       }
 
       const auto decision = computePenaltyBypassDecision(
-        current_pos, target_pos, penalty_area, goal_pos, world_model->penaltyAreaSize(),
-        penalty_area_offset, PENALTY_AREA_SURROUNDING_OFFSET,
-        PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
+        current_pos, target_pos, penalty_area, goal_pos, penalty_area_offset,
+        PENALTY_AREA_SURROUNDING_OFFSET, PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING);
       if (!decision.crossing_detected) {
         return;
       }
@@ -869,17 +831,16 @@ auto RVO2Planner::adjustForPlacementAvoidance(
     if (isInPlacementArea(current_pos, 0.2)) {
       auto [distance, closest_point] =
         getClosestPointAndDistance(placement_area.segment, current_pos);
-      // 0.6m離れる
       Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
       if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
-        // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
+        // 一番近いフィールド外のポイントがだめなので逆方向に離れる
         target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
 
         if (
           const auto & segment = placement_area.segment;
           (closest_point == segment.first || closest_point == segment.second)) {
           // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
-          // 垂直方向に0.6m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
+          // 垂直方向に離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
           Vector2 vertical_vec =
             getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
           std::array<Point, 2> target_candidates = {

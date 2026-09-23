@@ -221,17 +221,13 @@ auto VisibilityGraphPlanner::selectPath(
   // 保持経路が安全な間は高コストな全グラフ再計算を周期的に限定する。ただし、
   // 障害物が直線経路から退いた場合は即座に最短の直線へ戻す。
 
-  // 直線経路の干渉を確認する
   const std::vector<Point> direct_path{current, goal};
   const bool direct_path_visible = visibility_graph_.isPathVisible(direct_path, obstacles);
-  // 経路再生成をする時刻になったか
   const auto now = std::chrono::steady_clock::now();
   const bool full_replan_due = now >= state.next_full_replan;
-  // 経路再計画の戦略を決定
   const auto action =
     visibility_graph::decideReplanAction(!retained.empty(), direct_path_visible, full_replan_due);
 
-  // 直線経路を採用
   if (action == visibility_graph::ReplanAction::USE_DIRECT_PATH) {
     state.path = direct_path;
     state.goal = goal;
@@ -239,7 +235,6 @@ auto VisibilityGraphPlanner::selectPath(
     return state.path;
   }
 
-  // 経路を再利用
   if (action == visibility_graph::ReplanAction::REUSE_RETAINED_PATH) {
     state.path = retained;
     state.goal = goal;
@@ -247,7 +242,6 @@ auto VisibilityGraphPlanner::selectPath(
     return state.path;
   }
 
-  // 経路を再計算
   const auto new_path = visibility_graph_.plan(current, goal, obstacles);
   const double stagger = 0.02 * static_cast<double>(robot_id);
   state.next_full_replan =
@@ -275,8 +269,7 @@ auto VisibilityGraphPlanner::selectPath(
   return selected;
 }
 
-auto VisibilityGraphPlanner::planSingleRobot(
-  const crane_msgs::msg::RobotCommand & command, double theta_offset)
+auto VisibilityGraphPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand & command)
   -> crane_msgs::msg::RobotCommand
 {
   crane_msgs::msg::RobotCommand result = command;
@@ -336,8 +329,7 @@ auto VisibilityGraphPlanner::planSingleRobot(
 
   // スキルが宣言した「最終目標に到達した瞬間の速度」。
   // 指定経路が 2 つある: setSpeedLimitAtTarget() は position_target_mode に、
-  // setTerminalVelocity() は local_planner_config に書く。後者はこれまで
-  // どこからも読まれておらず、スキルの意図が黙って捨てられていた。
+  // setTerminalVelocity() は local_planner_config に書く。
   // どちらも既定 0（= 目標で止まる）なので、大きい方を採って両方を活かす。
   const double goal_terminal_speed = std::max(
     {0.0, static_cast<double>(input.speed_limit_at_target),
@@ -422,7 +414,6 @@ auto VisibilityGraphPlanner::planSingleRobot(
   }
   visualizer->drawPolyline(path, "cyan", 0.8, 12.0);
   visualizer->drawFilledCircle(subgoal, 0.04, "orange", 0.8);
-  (void)theta_offset;
   return result;
 }
 
@@ -435,7 +426,7 @@ auto VisibilityGraphPlanner::calculateRobotCommand(
   result.is_yellow = msg.is_yellow;
   result.robot_commands.reserve(msg.robot_commands.size());
   for (const auto & command : msg.robot_commands) {
-    result.robot_commands.push_back(planSingleRobot(command, theta_offset));
+    result.robot_commands.push_back(planSingleRobot(command));
   }
   return result;
 }
