@@ -18,7 +18,6 @@
 #include <array>
 #include <atomic>
 #include <boost/asio.hpp>
-#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <crane_msgs/msg/human_annotation.hpp>
@@ -37,7 +36,6 @@
 #include <deque>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <filesystem>
-#include <fstream>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -69,7 +67,7 @@ public:
     endpoint_ = *endpoints.begin();
   }
 
-  void sendTeleportBall(float x, float y, float vx = 0.0f, float vy = 0.0f)
+  void sendTeleportBall(float x, float y, float vx, float vy)
   {
     robocup_ssl::SimulatorCommand cmd;
     auto * ball = cmd.mutable_control()->mutable_teleport_ball();
@@ -111,17 +109,6 @@ private:
   std::mutex mutex_;
 };
 
-// Simple WebSocket frame implementation
-struct WebSocketFrame
-{
-  bool fin;
-  uint8_t opcode;
-  bool masked;
-  uint64_t payload_length;
-  uint32_t masking_key;
-  std::string payload;
-};
-
 class WebSocketConnection
 {
 public:
@@ -137,7 +124,6 @@ public:
   bool handshake()
   {
     try {
-      // Read HTTP request
       boost::asio::streambuf buffer;
       boost::asio::read_until(*socket_, buffer, "\r\n\r\n");
 
@@ -145,7 +131,6 @@ public:
       std::string line;
       std::string websocket_key;
 
-      // Parse HTTP headers
       while (std::getline(request_stream, line) && line != "\r") {
         if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
@@ -159,10 +144,8 @@ public:
         return false;
       }
 
-      // Generate WebSocket accept key
       std::string accept_key = generateAcceptKey(websocket_key);
 
-      // Send WebSocket handshake response
       std::string response =
         "HTTP/1.1 101 Switching Protocols\r\n"
         "Upgrade: websocket\r\n"
@@ -206,7 +189,6 @@ public:
         }
       }
 
-      // Payload
       frame.insert(frame.end(), message.begin(), message.end());
 
       boost::asio::write(*socket_, boost::asio::buffer(frame));
@@ -223,8 +205,6 @@ public:
       uint8_t header[2];
       boost::asio::read(*socket_, boost::asio::buffer(header, 2));
 
-      // bool fin = (header[0] & 0x80) != 0;  // unused
-      // uint8_t opcode = header[0] & 0x0F;   // unused
       bool masked = (header[1] & 0x80) != 0;
       uint64_t payload_length = header[1] & 0x7F;
 
@@ -250,7 +230,6 @@ public:
         masking_key = (mask[0] << 24) | (mask[1] << 16) | (mask[2] << 8) | mask[3];
       }
 
-      // Read payload
       std::vector<uint8_t> payload(payload_length);
       if (payload_length > 0) {
         boost::asio::read(*socket_, boost::asio::buffer(payload));
@@ -271,14 +250,6 @@ public:
   }
 
   bool isConnected() const { return connected_; }
-
-  void close()
-  {
-    connected_ = false;
-    if (socket_) {
-      socket_->close();
-    }
-  }
 
 private:
   std::string generateAcceptKey(const std::string & key)
@@ -317,7 +288,7 @@ private:
 class WebSocketDebugServer : public rclcpp::Node
 {
 public:
-  WebSocketDebugServer() : Node("websocket_debug_server"), websocket_port_(8091)
+  WebSocketDebugServer() : Node("websocket_debug_server")
   {
     websocket_port_ = crane::get_or_declare_parameter(this, "websocket_port", 8091);
 
@@ -349,7 +320,7 @@ public:
           std::lock_guard<std::mutex> lock(game_info_mutex_);
           latest_play_situation_ = msg;
         }
-        broadcastGameInfo(msg);
+        broadcastToAll(createGameInfoMessage(msg));
       });
 
     aggregated_svgs_sub_ =
@@ -508,8 +479,7 @@ public:
     pi_status_timer_ =
       this->create_wall_timer(std::chrono::seconds(5), [this]() { pollAllPiStatus(); });
 
-    // Start servers
-    startServers();
+    websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
 
     RCLCPP_INFO(this->get_logger(), "WebSocket: ws://localhost:%d", websocket_port_);
   }
@@ -517,12 +487,6 @@ public:
   ~WebSocketDebugServer() { stopServers(); }
 
 private:
-  void startServers()
-  {
-    // Start WebSocket server in separate thread
-    websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
-  }
-
   void stopServers()
   {
     running_ = false;
@@ -559,7 +523,6 @@ private:
           continue;
         }
 
-        // Handle WebSocket connection in separate thread
         std::thread([this, socket]() { handleWebSocketConnection(socket); }).detach();
       }
     } catch (const std::exception & e) {
@@ -589,7 +552,7 @@ private:
     {
       std::lock_guard<std::mutex> lock(game_info_mutex_);
       if (latest_play_situation_) {
-        sendGameInfoToConnection(connection, latest_play_situation_);
+        connection->sendMessage(createGameInfoMessage(latest_play_situation_));
       }
     }
 
@@ -601,7 +564,7 @@ private:
         wm_msg = latest_world_model_;
       }
       if (wm_msg) {
-        sendWorldModelToConnection(connection, wm_msg);
+        connection->sendMessage(createWorldModelMessage(wm_msg));
       }
     }
 
@@ -622,22 +585,8 @@ private:
 
     // 接続確立時にsituation一覧と現在のinjection状態を送信
     handleListSituations(connection);
-    {
-      json history_json = json::array();
-      std::string current;
-      {
-        std::lock_guard<std::mutex> lock(injection_mutex_);
-        current = current_injection_;
-        for (const auto & [n, ts] : injection_history_) {
-          history_json.push_back({{"name", n}, {"timestamp_ms", ts}});
-        }
-      }
-      json state_msg = {
-        {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
-      connection->sendMessage(state_msg.dump());
-    }
+    connection->sendMessage(createSessionInjectionCurrentMessage());
 
-    // Message processing loop
     while (connection->isConnected() && running_) {
       std::string message = connection->receiveMessage();
       if (!message.empty()) {
@@ -648,7 +597,6 @@ private:
       }
     }
 
-    // Clean up connection
     {
       std::lock_guard<std::mutex> lock(connections_mutex_);
       connections_.erase(connection);
@@ -822,15 +770,6 @@ private:
     }
 
     return world_model.dump();
-  }
-
-  void sendWorldModelToConnection(
-    std::shared_ptr<WebSocketConnection> connection,
-    const crane_msgs::msg::WorldModel::SharedPtr msg)
-  {
-    if (connection->isConnected()) {
-      connection->sendMessage(createWorldModelMessage(msg));
-    }
   }
 
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
@@ -1104,10 +1043,8 @@ private:
       msg.metadata_json = request["metadata"].dump();
     }
 
-    // パブリッシュ
     annotation_pub_->publish(msg);
 
-    // 確認レスポンス
     json response = {
       {"type", "annotation_ack"}, {"success", true}, {"timestamp_ns", default_timestamp}};
     connection->sendMessage(response.dump());
@@ -1129,20 +1066,6 @@ private:
       {"game_event", msg->reason_text}};
 
     return game_info.dump();
-  }
-
-  void sendGameInfoToConnection(
-    std::shared_ptr<WebSocketConnection> connection,
-    const crane_msgs::msg::PlaySituation::SharedPtr msg)
-  {
-    if (connection->isConnected()) {
-      connection->sendMessage(createGameInfoMessage(msg));
-    }
-  }
-
-  void broadcastGameInfo(const crane_msgs::msg::PlaySituation::SharedPtr msg)
-  {
-    broadcastToAll(createGameInfoMessage(msg));
   }
 
   static std::string getRobotIp(int robot_id)
@@ -1280,7 +1203,6 @@ private:
       boost::asio::write(socket, boost::asio::buffer(req), ec);
       if (ec) return {false, ""};
 
-      // Read full response
       boost::asio::streambuf resp_buf;
       boost::asio::read(socket, resp_buf, boost::asio::transfer_all(), ec);
       // ec == eof is expected
@@ -1292,7 +1214,6 @@ private:
       std::string status_line_rest;
       std::getline(stream, status_line_rest);
 
-      // Skip headers
       std::string line;
       while (std::getline(stream, line) && line != "\r" && !line.empty()) {
       }
@@ -1349,7 +1270,7 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void broadcastSessionInjectionCurrent()
+  std::string createSessionInjectionCurrentMessage()
   {
     json history_json = json::array();
     std::string current;
@@ -1362,7 +1283,12 @@ private:
     }
     json msg = {
       {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
-    broadcastToAll(msg.dump());
+    return msg.dump();
+  }
+
+  void broadcastSessionInjectionCurrent()
+  {
+    broadcastToAll(createSessionInjectionCurrentMessage());
   }
 
   void handleActivateMoveMode(std::shared_ptr<WebSocketConnection> connection)
@@ -1420,15 +1346,39 @@ private:
     connection->sendMessage(result.dump());
   }
 
+  // robot_test セッション向けの位置指令。max_velocity / max_acceleration は request から読む
+  static crane_msgs::msg::RobotCommand makeRobotTestCommand(
+    int robot_id, float x, float y, double theta, const json & request)
+  {
+    crane_msgs::msg::RobotCommand cmd;
+    cmd.robot_id = static_cast<uint8_t>(robot_id);
+    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    cmd.target_theta = theta;
+
+    crane_msgs::msg::PositionTargetMode pos_target;
+    pos_target.target_x = x;
+    pos_target.target_y = y;
+    pos_target.position_tolerance = 0.05f;
+    pos_target.speed_limit_at_target = 0.0f;
+    cmd.position_target_mode.push_back(pos_target);
+
+    crane_msgs::msg::NamedFloat vel_factor;
+    vel_factor.name = "robot_test";
+    vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
+    cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
+
+    crane_msgs::msg::NamedFloat acc_factor;
+    acc_factor.name = "robot_test";
+    acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
+    cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
+    return cmd;
+  }
+
   void handleActivateRobotTest(
     std::shared_ptr<WebSocketConnection> connection, const json & request)
   {
     int robot_id = request.value("robot_id", -1);
     if (robot_id >= 0 && robot_id <= 15) {
-      crane_msgs::msg::RobotCommand cmd;
-      cmd.robot_id = static_cast<uint8_t>(robot_id);
-      cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-
       double x = 0.0, y = 0.0, theta = 0.0;
       {
         std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
@@ -1443,26 +1393,8 @@ private:
           }
         }
       }
-      cmd.target_theta = theta;
-
-      crane_msgs::msg::PositionTargetMode pos_target;
-      pos_target.target_x = static_cast<float>(x);
-      pos_target.target_y = static_cast<float>(y);
-      pos_target.position_tolerance = 0.05f;
-      pos_target.speed_limit_at_target = 0.0f;
-      cmd.position_target_mode.push_back(pos_target);
-
-      crane_msgs::msg::NamedFloat vel_factor;
-      vel_factor.name = "robot_test";
-      vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
-      cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
-
-      crane_msgs::msg::NamedFloat acc_factor;
-      acc_factor.name = "robot_test";
-      acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
-      cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
-
-      robot_test_target_pub_->publish(cmd);
+      robot_test_target_pub_->publish(makeRobotTestCommand(
+        robot_id, static_cast<float>(x), static_cast<float>(y), theta, request));
       RCLCPP_INFO(
         this->get_logger(), "Robot test mode target initialized: robot=%d at (%.2f, %.2f)",
         robot_id, x, y);
@@ -1495,33 +1427,14 @@ private:
       return;
     }
 
-    crane_msgs::msg::RobotCommand cmd;
-    cmd.robot_id = static_cast<uint8_t>(robot_id);
-    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    cmd.target_theta = request.value("target_theta", 0.0);
-
-    crane_msgs::msg::PositionTargetMode pos_target;
-    pos_target.target_x = request.value("target_x", 0.0f);
-    pos_target.target_y = request.value("target_y", 0.0f);
-    pos_target.position_tolerance = 0.05f;
-    pos_target.speed_limit_at_target = 0.0f;
-    cmd.position_target_mode.push_back(pos_target);
-
-    crane_msgs::msg::NamedFloat vel_factor;
-    vel_factor.name = "robot_test";
-    vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
-    cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
-
-    crane_msgs::msg::NamedFloat acc_factor;
-    acc_factor.name = "robot_test";
-    acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
-    cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
-
-    robot_test_target_pub_->publish(cmd);
+    const float target_x = request.value("target_x", 0.0f);
+    const float target_y = request.value("target_y", 0.0f);
+    robot_test_target_pub_->publish(makeRobotTestCommand(
+      robot_id, target_x, target_y, request.value("target_theta", 0.0), request));
 
     RCLCPP_DEBUG(
-      this->get_logger(), "Robot test target: robot=%d, x=%.2f, y=%.2f", robot_id,
-      pos_target.target_x, pos_target.target_y);
+      this->get_logger(), "Robot test target: robot=%d, x=%.2f, y=%.2f", robot_id, target_x,
+      target_y);
 
     json result = {{"type", "robot_test_target_result"}, {"robot_id", robot_id}, {"success", true}};
     connection->sendMessage(result.dump());
