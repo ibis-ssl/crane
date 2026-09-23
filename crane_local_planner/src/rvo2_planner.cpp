@@ -204,7 +204,6 @@ auto RVO2Planner::applyInputValidation(
       ctx.current_pose_position.y());
     ctx.is_valid = false;
     ctx.current_pose_position = Point(20.0, 20.0);
-    ctx.current_estimated_position = ctx.current_pose_position;
     ctx.target_vel = Velocity::Zero();
     ctx.max_vel = 0.0;
     setPlanningStage(command, "INPUT_INVALID");
@@ -226,10 +225,6 @@ auto RVO2Planner::applyInputValidation(
 auto RVO2Planner::applyTargetAdjustmentPipeline(
   PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) -> void
 {
-  if (command.position_target_mode.empty()) {
-    return;
-  }
-
   setPlanningStage(command, "TARGET_ADJUSTMENT");
   Point before = ctx.target_pos;
   adjustForFieldBoundary(ctx.target_pos, ctx.current_pose_position, command);
@@ -477,7 +472,7 @@ auto RVO2Planner::updateActiveAllyAgent(
 
   if (ctx.run_target_adjustments) {
     applyTargetAdjustmentPipeline(ctx, command);
-  } else if (!command.position_target_mode.empty()) {
+  } else {
     auto & pos_mode = command.position_target_mode.front();
     pos_mode.target_x = ctx.target_pos.x();
     pos_mode.target_y = ctx.target_pos.y();
