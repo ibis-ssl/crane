@@ -99,7 +99,8 @@ class CraneAnnotationApp {
         this.isConnected = false;
         this.updateConnectionStatus(false);
         // 3秒後に再接続
-        setTimeout(() => this.connect(), 3000);
+        // 失敗は onerror で記録済み。次の onclose がまた再接続を仕掛ける
+        setTimeout(() => this.connect().catch(() => {}), 3000);
       };
 
       this.ws.onerror = (err) => {

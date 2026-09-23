@@ -63,6 +63,9 @@ class CraneViewer {
         // --- 描画 ---
         this.parser = new SvgPrimitiveParser();
         this.fieldLayer = new FieldLayer();
+        // % 位置のテキストは parser の viewBox で解決する。既定値のままだと境界ぶんずれるので、
+        // field_info が既定サイズのまま届いて更新が走らない場合に備えて最初に揃える
+        this.parser.setViewBox(this.fieldLayer.vbX, this.fieldLayer.vbY, this.fieldLayer.vbW, this.fieldLayer.vbH);
         this.themeTokens = new ThemeTokens();
         this.renderer = null;
         this.pointer = null;
@@ -147,6 +150,7 @@ class CraneViewer {
         const tsContainer = document.getElementById('time-scrubber-container');
         if (tsContainer) this.timeScrubber = new TimeScrubber(tsContainer, this.ringBuffer, this);
 
+        this._mountConnectionIndicator();
         this._setConnected(false);
         this.sidebar.applyUrlParams();
         this.gcClient.connect(window.location.hostname);
@@ -307,6 +311,18 @@ class CraneViewer {
             li.textContent = `${new Date(entry.timestamp_ms).toLocaleTimeString()}  ${entry.name}`;
             historyEl.appendChild(li);
         }
+    }
+
+    // <crane-nav> はモジュールで定義されるので、HTML 末尾のインラインスクリプトからは
+    // #crane-nav-status がまだ見えない。DOMContentLoaded 後の init() から入れる。
+    _mountConnectionIndicator() {
+        const statusEl = document.getElementById('crane-nav-status');
+        if (!statusEl) return;
+        statusEl.innerHTML =
+            '<span class="m3-inline-flex m3-items-center m3-gap-xs">' +
+            '<span class="m3-connection-dot" id="connection-dot"></span>' +
+            '<span class="m3-body-small m3-text-on-surface-variant" id="connection-label">disconnected</span>' +
+            '</span>';
     }
 
     _setConnected(connected) {
@@ -567,9 +583,10 @@ class CraneViewer {
             if (this.modes.test) {
                 this.deactivateTest();
             } else {
-                const targetId = this.focusSidebar?.currentRobotId ?? this.selectedRobotId ?? Object.keys(this.state.robotsOurs)[0];
+                const targetId = this.state.focusedRobotId ?? Object.keys(this.state.robotsOurs)[0];
                 if (targetId !== undefined && targetId !== null) {
-                    this.focusSidebar?.open(Number(targetId), 'test');
+                    // テストタブを開くと TestTab.activate() がこのロボットの testSession を作る
+                    this.showRobotDetail(Number(targetId), 'test');
                     this.activateTest();
                 } else {
                     this.modes.toggleMove();

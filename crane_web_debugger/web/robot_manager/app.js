@@ -35,8 +35,6 @@ let pendingControlIds = new Set();
 // ---- DOM参照 ---------------------------------------------------------------
 
 const tableBody = document.getElementById('table-body');
-const connDot = document.getElementById('conn-dot');
-const connText = document.getElementById('conn-text');
 const runningCount = document.getElementById('running-count');
 const stoppedCount = document.getElementById('stopped-count');
 const offlineCount = document.getElementById('offline-count');
@@ -47,9 +45,20 @@ const stopAllBtn = document.getElementById('stop-all-btn');
 
 // ---- 接続状態 --------------------------------------------------------------
 
+// 表示先は <crane-nav> の #crane-nav-status。nav はモジュールスクリプトで定義されるので、
+// このスクリプトの評価時点ではまだ存在しない。呼ばれるたびに探す。
 function setConnected(ok) {
-  connDot.className = ok ? 'm3-connection-dot connected' : 'm3-connection-dot';
-  connText.textContent = ok ? '接続済み' : '切断';
+  const slot = document.getElementById('crane-nav-status');
+  if (!slot) return;
+  if (!slot.querySelector('.m3-connection-dot')) {
+    slot.innerHTML =
+      '<span class="m3-inline-flex m3-items-center m3-gap-xs">' +
+      '<span class="m3-connection-dot"></span>' +
+      '<span class="m3-body-small m3-text-on-surface-variant"></span>' +
+      '</span>';
+  }
+  slot.querySelector('.m3-connection-dot').classList.toggle('connected', ok);
+  slot.querySelector('.m3-body-small').textContent = ok ? '接続済み' : '切断';
 }
 
 // ---- エラーデコード ---------------------------------------------------------

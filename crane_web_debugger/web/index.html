@@ -1433,18 +1433,5 @@
   </div>
 
   <script type="module" src="viewer/main.js"></script>
-  <script>
-    // crane-nav 内のステータスエリアに接続インジケータを配置
-    (function () {
-      const statusEl = document.getElementById('crane-nav-status');
-      if (statusEl) {
-        statusEl.innerHTML =
-          '<span class="m3-inline-flex m3-items-center m3-gap-xs">' +
-          '<span class="m3-connection-dot" id="connection-dot"></span>' +
-          '<span class="m3-body-small m3-text-on-surface-variant" id="connection-label">disconnected</span>' +
-          '</span>';
-      }
-    })();
-  </script>
 </body>
 </html>
