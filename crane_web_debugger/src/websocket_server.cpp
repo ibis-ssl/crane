@@ -10,6 +10,7 @@
 #include <openssl/sha.h>
 #include <robocup_ssl_msgs/ssl_gc_common.pb.h>
 #include <robocup_ssl_msgs/ssl_simulation_control.pb.h>
+#include <sys/socket.h>
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
@@ -18,6 +19,7 @@
 #include <boost/asio.hpp>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <crane_msgs/msg/human_annotation.hpp>
 #include <crane_msgs/msg/latency_estimation_array.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
@@ -532,7 +534,15 @@ public:
       broadcastCoalescedSvgUpdates(batch);
     });
 
-    websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
+    try {
+      ws_acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(
+        ws_io_context_,
+        boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
+      RCLCPP_INFO(this->get_logger(), "WebSocket server listening on port %d", websocket_port_);
+      websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+    }
 
     RCLCPP_INFO(this->get_logger(), "WebSocket: ws://localhost:%d", websocket_port_);
   }
@@ -545,6 +555,8 @@ private:
     running_ = false;
 
     if (ws_acceptor_) {
+      // close() だけではブロック中の accept() が戻らない。shutdown で起こす
+      ::shutdown(ws_acceptor_->native_handle(), SHUT_RDWR);
       boost::system::error_code ec;
       ws_acceptor_->close(ec);
     }
@@ -553,17 +565,22 @@ private:
     if (websocket_thread_.joinable()) {
       websocket_thread_.join();
     }
+
+    // 接続スレッドは this を握っている。ノードを壊す前に全員を受信待ちから起こして抜けさせる
+    std::unique_lock<std::mutex> lock(sockets_mutex_);
+    for (const auto & socket : sockets_) {
+      boost::system::error_code ec;
+      socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    }
+    if (!sockets_cv_.wait_for(lock, std::chrono::seconds(3), [this] { return sockets_.empty(); })) {
+      RCLCPP_WARN(
+        this->get_logger(), "%zu WebSocket connection thread(s) did not exit", sockets_.size());
+    }
   }
 
   void runWebSocketServer()
   {
     try {
-      ws_acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(
-        ws_io_context_,
-        boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
-
-      RCLCPP_INFO(this->get_logger(), "WebSocket server listening on port %d", websocket_port_);
-
       while (running_) {
         auto socket = std::make_shared<boost::asio::ip::tcp::socket>(ws_io_context_);
         boost::system::error_code ec;
@@ -576,7 +593,16 @@ private:
           continue;
         }
 
-        std::thread([this, socket]() { handleWebSocketConnection(socket); }).detach();
+        {
+          std::lock_guard<std::mutex> lock(sockets_mutex_);
+          sockets_.insert(socket);
+        }
+        std::thread([this, socket]() {
+          handleWebSocketConnection(socket);
+          std::lock_guard<std::mutex> lock(sockets_mutex_);
+          sockets_.erase(socket);
+          sockets_cv_.notify_all();
+        }).detach();
       }
     } catch (const std::exception & e) {
       if (running_) {
@@ -603,9 +629,13 @@ private:
 
     // 接続確立時に最新のゲーム情報を送信
     {
-      std::lock_guard<std::mutex> lock(game_info_mutex_);
-      if (latest_play_situation_) {
-        connection->sendMessage(createGameInfoMessage(latest_play_situation_));
+      crane_msgs::msg::PlaySituation::SharedPtr play_situation;
+      {
+        std::lock_guard<std::mutex> lock(game_info_mutex_);
+        play_situation = latest_play_situation_;
+      }
+      if (play_situation) {
+        connection->sendMessage(createGameInfoMessage(play_situation));
       }
     }
 
@@ -1633,11 +1663,15 @@ private:
 
   void broadcastToAll(const std::string & message)
   {
-    std::lock_guard<std::mutex> lock(connections_mutex_);
-    for (auto connection : connections_) {
-      if (connection->isConnected()) {
-        connection->sendMessage(message);
-      }
+    // 送信はブロッキングなので、一覧のコピーだけをロック中に取る。
+    // ロックを持ったまま送ると、遅いクライアント 1 台が接続の出入りまで止める
+    std::vector<std::shared_ptr<WebSocketConnection>> targets;
+    {
+      std::lock_guard<std::mutex> lock(connections_mutex_);
+      targets.assign(connections_.begin(), connections_.end());
+    }
+    for (const auto & connection : targets) {
+      connection->sendMessage(message);
     }
   }
 
@@ -1699,6 +1733,11 @@ private:
   // WebSocket connections
   std::set<std::shared_ptr<WebSocketConnection>> connections_;
   std::mutex connections_mutex_;
+
+  // 接続スレッドが生きている間のソケット。stopServers がこれを空になるまで待つ
+  std::set<std::shared_ptr<boost::asio::ip::tcp::socket>> sockets_;
+  std::mutex sockets_mutex_;
+  std::condition_variable sockets_cv_;
 
   // Game info cache
   crane_msgs::msg::PlaySituation::SharedPtr latest_play_situation_;
