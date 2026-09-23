@@ -909,7 +909,7 @@ auto WorldModelDataProvider::processTrackedFrame(
                        : static_cast<int>(Color::BLUE);
 
     auto & robot = robot_info_[team_index][robot_id];
-    robot = convertTrackedRobot(tracked_robot, team_index);
+    robot = convertTrackedRobot(tracked_robot);
     robot.vision.stamp = now;
   }
 }
@@ -1042,8 +1042,7 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
 }
 
 auto WorldModelDataProvider::convertTrackedRobot(
-  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, [[maybe_unused]] int team_index)
-  -> crane_msgs::msg::RobotInfo
+  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot) -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;
   auto now = node.get_clock()->now();
