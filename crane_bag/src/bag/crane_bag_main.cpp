@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <nlohmann/json.hpp>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -406,11 +405,7 @@ static void cmd_kick_stats(const Args & args)
   }
 
   auto stats = crane::bag::compute_kick_stats(data.kick_prediction_traces);
-  if (args.format == "json") {
-    nlohmann::json j = stats;
-    std::printf("%s\n", j.dump(2).c_str());
-    return;
-  }
+  if (print_json(args, stats)) return;
   std::printf("%s", crane::bag::format_kick_stats(stats).c_str());
 }
 
