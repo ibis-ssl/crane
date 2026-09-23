@@ -133,8 +133,6 @@ private:
 
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
-  crane_msgs::msg::RobotCommands pre_commands;
-
   auto toRVO(const Point & point) -> RVO::Vector2 { return RVO::Vector2(point.x(), point.y()); }
 
   auto toPoint(const RVO::Vector2 & vector) -> Point { return Point(vector.x(), vector.y()); }

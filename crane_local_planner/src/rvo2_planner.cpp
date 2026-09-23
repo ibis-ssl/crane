@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <boost/stacktrace.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_utils/parameter.hpp>
@@ -649,7 +648,6 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     commands.robot_commands.emplace_back(command);
   }
 
-  pre_commands = msg;
   return commands;
 }
 
