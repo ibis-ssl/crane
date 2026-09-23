@@ -100,7 +100,6 @@ auto LocalPlannerComponent::processLatestCommands() -> void
         const auto target_x = raw_pos_mode.target_x;
         const auto target_y = raw_pos_mode.target_y;
 
-        // 位置目標の可視化
         planner->getVisualizer()->drawLine(
           Point(raw_command.current_pose.x, raw_command.current_pose.y), Point(target_x, target_y),
           "yellow", 20, 0.3);
@@ -180,14 +179,12 @@ auto LocalPlannerComponent::processLatestCommands() -> void
       "Unhandled unknown exception in local_planner timer. Publishing empty /robot_commands");
     publishFallback();
   }
-  // 診断情報を更新
   diagnostic_helper_.forceUpdate();
 }
 
 auto LocalPlannerComponent::updateDiagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat)
   -> void
 {
-  // プランナーの状態をチェック
   if (!planner) {
     stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "プランナーが初期化されていません");
     return;

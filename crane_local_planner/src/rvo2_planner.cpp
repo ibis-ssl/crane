@@ -663,7 +663,6 @@ auto RVO2Planner::calculateRobotCommand(
 {
   crane_msgs::msg::RobotCommands commands = msg;
   reflectWorldToRVOSim(commands);
-  // RVOシミュレータ更新
   rvo_sim->doStep();
   return extractVelocityCommandsFromRVOSim(commands, theta_offset);
 }
@@ -704,7 +703,6 @@ auto RVO2Planner::adjustForFieldBoundary(
   const double max_x = world_model->fieldSize().x() / 2.0 + FIELD_BOUNDARY_OFFSET;
   const double max_y = world_model->fieldSize().y() / 2.0 + FIELD_BOUNDARY_OFFSET;
 
-  // フィールド境界のBox
   Box field_box;
   field_box.min_corner() << -max_x, -max_y;
   field_box.max_corner() << max_x, max_y;
@@ -717,13 +715,11 @@ auto RVO2Planner::adjustForFieldBoundary(
   // 現在位置から目標位置への線分
   Segment move_line(current_pos, target_pos);
 
-  // フィールド境界の4辺
   Segment top_edge(Point(-max_x, max_y), Point(max_x, max_y));
   Segment bottom_edge(Point(-max_x, -max_y), Point(max_x, -max_y));
   Segment right_edge(Point(max_x, -max_y), Point(max_x, max_y));
   Segment left_edge(Point(-max_x, -max_y), Point(-max_x, max_y));
 
-  // 各辺との交点を計算
   std::vector<Point> all_intersections;
   for (const auto & edge : {top_edge, bottom_edge, right_edge, left_edge}) {
     auto intersections = getIntersections(move_line, edge);
@@ -869,17 +865,16 @@ auto RVO2Planner::adjustForPlacementAvoidance(
     if (isInPlacementArea(current_pos, 0.2)) {
       auto [distance, closest_point] =
         getClosestPointAndDistance(placement_area.segment, current_pos);
-      // 0.6m離れる
       Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
       if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
-        // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
+        // 一番近いフィールド外のポイントがだめなので逆方向に離れる
         target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
 
         if (
           const auto & segment = placement_area.segment;
           (closest_point == segment.first || closest_point == segment.second)) {
           // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
-          // 垂直方向に0.6m離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
+          // 垂直方向に離れた点を複数選択して、フィールド内かつ配置エリア外の点を選択する
           Vector2 vertical_vec =
             getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
           std::array<Point, 2> target_candidates = {
