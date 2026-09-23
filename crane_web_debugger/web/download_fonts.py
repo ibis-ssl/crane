@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """Download web fonts from Google Fonts CDN for local hosting.
 
 This script downloads Material Symbols Outlined, Noto Sans JP, Roboto, and

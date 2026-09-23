@@ -1,3 +1,9 @@
+# Copyright (c) 2026 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """Robot Manager: Raspberry Pi 上のロボットプロセスを操作するプロキシ。
 
 もとは Orion_CM4 の host/robot-manager/server.py として別サービス・別イメージで

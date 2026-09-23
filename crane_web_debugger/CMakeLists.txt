@@ -43,4 +43,9 @@ include_directories(${robocup_ssl_msgs_INCLUDE_DIRS})
 target_link_libraries(crane_websocket_server ${Boost_LIBRARIES} ${robocup_ssl_msgs_LIBRARIES} ${YAML_CPP_LIBRARIES})
 target_link_libraries(crane_websocket_server OpenSSL::SSL OpenSSL::Crypto)
 
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
 ament_auto_package(INSTALL_TO_SHARE web)

@@ -1,3 +1,9 @@
+# Copyright (c) 2026 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """HTTP server for crane_web_debugger."""
 
 from __future__ import annotations
@@ -13,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 try:  # uvicorn の --app-dir /app 起動とパッケージ起動の両方に対応する
     from robot_manager import router as robot_manager_router
 except ImportError:  # pragma: no cover
-    from .robot_manager import router as robot_manager_router
+    from .robot_manager import router as robot_manager_router  # type: ignore[no-redef]
 
 
 def create_app(web_root: Path) -> FastAPI:
