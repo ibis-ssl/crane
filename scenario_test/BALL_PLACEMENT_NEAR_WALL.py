@@ -23,7 +23,6 @@ PLACER_OFFSET_FROM_BALL = 0.8
 
 
 def distance(x1: float, y1: float, x2: float, y2: float) -> float:
-    """2点間の距離を計算"""
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 

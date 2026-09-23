@@ -1,15 +1,10 @@
 """自陣ペナルティエリア内のボールを外へ出すシナリオテスト。
 
-ペナルティエリアの範囲は vision の geometry から導出する。以前は
-`|x| >= 6.0 and |y| <= 1.8` と Division A のゴールライン座標を直書きしており、
-フィールド内の点はどれもこの条件を満たさなかった（x=6.0 はゴールラインそのもの）。
-つまり「ボールはペナルティエリア外にある」という判定が crane の振る舞いに
-関係なく常に真で、このテストは何も検証していなかった。
+ペナルティエリアの範囲は vision の geometry から導出する。座標を直書きすると
+区分が違うだけで「エリア外」の判定が常に真になり、何も検証しなくなる。
 
-あわせてボールを置く側も直した。以前は +x 側、つまり crane から見て相手陣の
-ペナルティエリアに置いており、そこのボールを片付けるのは誰の仕事でもない。
-実測でも、ロボットを +x 側に置いても自陣（-x 側）のゴール前へ帰るだけで
-ボールは 8 秒間 1mm も動かなかった。守る側は field_helpers.DEFENDED_SIDE。
+ボールは守る側（field_helpers.DEFENDED_SIDE）のエリアに置く。相手陣のエリアの
+ボールを片付けるのは誰の仕事でもなく、crane は自陣へ帰るだけで動かさない。
 """
 
 import time
@@ -38,9 +33,8 @@ def test_emit_from_penalty_01(field: Field):
     field.send_ball(ball_x, ball_y)
     field.send_yellow_robot(0, field.from_goal_line(DEFENDED_SIDE, 0.3), 0, 0)
 
-    # 配置が効いたことを vision で確かめてから始める。このテストは長いあいだ
-    # 「ボールがペナルティエリア外」という条件が常に真で何も検証していなかったので、
-    # 出発点が本当にエリア内であることを前提条件として明示する。
+    # 配置が効いたことを vision で確かめてから始める。出発点がエリア外だと
+    # 下の「エリアを出た」判定が即成立し、何も検証しないまま通ってしまう。
     time.sleep(1.0)
     placed = field.comm.observer.get_world().get_ball()
     assert field.is_in_penalty_area(placed.x, placed.y), (

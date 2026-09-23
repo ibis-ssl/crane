@@ -53,11 +53,7 @@ def _trial(outcome="SUCCESS", *, kicker=1, receiver=2, end_pos=(1.0, 0.0)):
 
 
 def test_poll_holds_back_incomplete_line(tmp_path):
-    """書きかけの行は取り込まず、完成してから読む。
-
-    以前は `for line in fp` で読んでおり、先読みバッファのせいで tell() が使えず、
-    書きかけの行をそのまま JSON として食って壊れていた。
-    """
+    """書きかけの行は取り込まず、完成してから読む（理由は PassPlanLog.poll）。"""
     path = tmp_path / "log.jsonl"
     _write(path, [_plan(1.0, "PLANNING")], trailing_partial=True)
     log = PassPlanLog(str(path))

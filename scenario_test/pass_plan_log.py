@@ -185,11 +185,9 @@ class _RecorderProcess:
         # PATH の先頭が venv なので、`python3` と書くと venv 側が選ばれる。
         # その python には rclpy も numpy も無く、rclpy.node の import が
         # ModuleNotFoundError: numpy で落ちる（rosgraph_msgs 経由）。
-        # setsid 相当（start_new_session）でプロセスグループを分け、確実に止められるようにする。
         # tracker_node も一緒に上げる。crane 本体は tracked_frame を内部で parse
         # するだけで ROS トピックには出さないため、Tracker のキック検出
         # （蹴ったロボット・初速・キック時刻）を取るには受信ノードが別途要る。
-        # ポートは crane.launch.xml の tracker_port と揃える（既定 10010 ではない）。
         # start_new_session でプロセスグループを分けているので、stop() の killpg で
         # 両方まとめて止まる。
         script = os.path.join(scenario_dir, "pass_plan_recorder.py")

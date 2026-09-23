@@ -20,12 +20,6 @@ bag 解析（crane_bag pass）と異なり意図（pass_target_id）は観測で
 blue_team_on_positive_half を送らず on_positive_half が初期値 false のままになるため。
 根拠の連鎖は field_helpers.DEFENDED_SIDE のコメントに書いた）。
 
-以前このファイルは逆（+x を守り -x へ攻める）を前提に配置しており、
-attacker は自陣ゴールではなく相手ゴールの方向、つまり配置上の「後ろ」へ蹴って
-いた。その結果ボールは 3 試行とも +4.6 付近（ゴールライン 4.5 の外）へ抜けていた。
-場外判定が Division A 固定の 6.05 だったためにそれが場外と数えられず、壁で跳ね
-返ったあとの接触を SUCCESS と分類していて、配置の向きが逆であることが見えなかった。
-
 配置座標は Division を決め打ちせず vision の geometry から導出する（field_helpers）。
 ロボット間隔のようなロボットスケールの距離は絶対値のまま持つ。
 """
@@ -197,12 +191,8 @@ def _wait_for_placement(field: Field, expected: dict) -> float:
 
     確認できないまま PLACEMENT_WAIT_TIMEOUT に達したら NaN を返す。
 
-    以前はここが固定 2 秒の sleep だった（「配置反映と役割割当の安定待ち」）。
-    しかし crane は yellow 全機を制御下に置いていて、テレポート直後から自分の
-    陣形へ動かし始める。保存ログの実測では、配置 0.09 秒後には既に動き出し、
-    0.8 秒後には受け手が 0.7 m、3.8 秒後には 2.8 m 離れていた。2 秒待つと、
-    テストが作ったパスコースはキック時点では存在しない。
-    反映を確認できた時点で抜けることで、意図した配置のまま試行を始める。
+    固定 sleep に戻さないこと。crane はテレポート直後から yellow を動かすので
+    （実測はモジュール docstring）、待つほどテストが作ったパスコースは崩れる。
     """
     deadline = time.time() + PLACEMENT_WAIT_TIMEOUT
     start = time.time()
@@ -227,7 +217,7 @@ def watch_pass_outcome(
     """次の yellow キック1本を追跡して結果を分類する。
 
     expected を渡すと、キック時点で配置座標からどれだけずれていたかを
-    result.max_drift_at_kick に記録する。crane は yellow 全機を制御下に置いて
+    result.drift_at_kick に記録する。crane は yellow 全機を制御下に置いて
     いるので、テストが作った配置は放っておくと崩れる。判定そのものには
     使わないが、「意図した配置で試行できたのか」がログから分かるようにする。
     """
