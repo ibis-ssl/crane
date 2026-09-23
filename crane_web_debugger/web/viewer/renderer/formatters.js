@@ -1,4 +1,6 @@
-import { CONTROL_MODE_SHORT, CONTROL_MODE_LONG } from './constants.js';
+import {
+    CONTROL_MODE_LONG, VOLTAGE_CRIT_V, VOLTAGE_WARN_V, TEMP_CRIT_C, TEMP_WARN_C,
+} from './constants.js';
 
 export function formatPlannerName(name, maxLen = 20) {
     if (!name) return '--';
@@ -7,11 +9,6 @@ export function formatPlannerName(name, maxLen = 20) {
 
 export function getFsmState(cmd) {
     return cmd?.planning_factors?.[0]?.name ?? null;
-}
-
-export function getControlModeShort(cmd) {
-    if (!cmd) return '--';
-    return CONTROL_MODE_SHORT[cmd.control_mode] ?? `M${cmd.control_mode}`;
 }
 
 export function getControlModeLong(cmd) {
@@ -32,7 +29,7 @@ export function formatLatencyMs(latEst) {
 }
 
 // severity: 'ok' | 'warn' | 'crit'
-export function formatVoltage(v, warnV = 22.5, critV = 21.0) {
+export function formatVoltage(v, warnV = VOLTAGE_WARN_V, critV = VOLTAGE_CRIT_V) {
     if (v == null) return { text: 'N/A', severity: 'ok' };
     const text = `${v.toFixed(1)} V`;
     if (v <= critV) return { text, severity: 'crit' };
@@ -44,8 +41,8 @@ export function formatTemperature(temps) {
     if (!temps || temps.length === 0) return { max: null, text: 'N/A', severity: 'ok' };
     const max = Math.max(...temps);
     const text = `max ${max.toFixed(0)} °C`;
-    if (max >= 75) return { max, text, severity: 'crit' };
-    if (max >= 60) return { max, text, severity: 'warn' };
+    if (max >= TEMP_CRIT_C) return { max, text, severity: 'crit' };
+    if (max >= TEMP_WARN_C) return { max, text, severity: 'warn' };
     return { max, text, severity: 'ok' };
 }
 

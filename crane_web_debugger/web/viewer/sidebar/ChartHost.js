@@ -6,8 +6,7 @@
 //     可視化しても戻らない → 生成は「可視になってから requestAnimationFrame 1 フレーム後」
 //  2. タブ切替で destroy() を忘れるとリスナが残りゾンビ更新になる
 //     → FocusSidebar が deactivate() を必ず呼び、そこで destroy する
-//  3. 受信のたびに update() を呼ぶと重い（旧 robot_telemetry.js は
-//     1 メッセージで 3 回呼んでいた）→ flush() を rAF スロットルして 1 フレーム 1 回
+//  3. 受信のたびに update() を呼ぶと重い → flush() を rAF スロットルして 1 フレーム 1 回
 //
 // Chart.js 本体は /assets/chart.umd.min.js に同梱済み（CDN は使わない。会場オフライン前提）。
 // 読み込みはテレメトリタブを最初に開いた時だけ。Viewer の初期表示に 200KB を負わせない。
@@ -15,7 +14,7 @@
 const CHART_SRC = '/assets/chart.umd.min.js';
 let loadPromise = null;
 
-export function loadChartJs() {
+function loadChartJs() {
     if (window.Chart) return Promise.resolve(window.Chart);
     if (loadPromise) return loadPromise;
     loadPromise = new Promise((resolve, reject) => {
@@ -31,7 +30,6 @@ export function loadChartJs() {
     return loadPromise;
 }
 
-// 旧 robot_test.js と robot_telemetry.js に同じものが 2 本あった。ここ 1 つにする。
 export function makeDataset(label, color, dashed = false) {
     return {
         label,
@@ -111,12 +109,6 @@ export class ChartHost {
             this._dirty = false;
             this._chart?.update('none');
         });
-    }
-
-    reset() {
-        if (!this._chart) return;
-        for (const ds of this._chart.data.datasets) ds.data = [];
-        this._chart.update('none');
     }
 
     destroy() {

@@ -1,3 +1,9 @@
+# Copyright (c) 2026 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """Robot Manager: Raspberry Pi 上のロボットプロセスを操作するプロキシ。
 
 もとは Orion_CM4 の host/robot-manager/server.py として別サービス・別イメージで
@@ -31,7 +37,6 @@ from __future__ import annotations
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, HTTPException
@@ -60,19 +65,22 @@ def robot_ip(robot_id: int) -> str:
     return f"{ROBOT_IP_BASE}{ROBOT_IP_OFFSET + robot_id}"
 
 
-def parse_status(success: bool, body_text: str, default_ok: str = "Running") -> str:
+def parse_status(success: bool, body_text: str) -> str:
     if not success:
         return "Offline"
     if not body_text:
-        return default_ok
+        return "Running"
     try:
         body_json = json.loads(body_text)
     except json.JSONDecodeError:
-        return default_ok
+        return "Running"
+    # Pi が object 以外の JSON を返しても、この 1 台のせいで /robots を 500 にしない
+    if not isinstance(body_json, dict):
+        return "Running"
     status = body_json.get("status")
     if isinstance(status, str) and status:
         return status
-    return default_ok
+    return "Running"
 
 
 def send_pi_request(robot_id: int, method: str, path: str) -> tuple[bool, str]:
@@ -82,8 +90,6 @@ def send_pi_request(robot_id: int, method: str, path: str) -> tuple[bool, str]:
         with urlopen(req, timeout=HTTP_TIMEOUT_SEC) as resp:
             ok = 200 <= resp.status < 300
             return ok, resp.read().decode("utf-8", errors="replace")
-    except (URLError, TimeoutError):
-        return False, ""
     except Exception:  # noqa: BLE001 Pi 側の不調で API 全体を落とさない
         return False, ""
 
@@ -95,6 +101,8 @@ def _merge_passthrough(result: dict, ok: bool, body: str) -> dict:
     try:
         body_json = json.loads(body)
     except json.JSONDecodeError:
+        return result
+    if not isinstance(body_json, dict):
         return result
     for key, value in body_json.items():
         if key not in result:

@@ -54,8 +54,6 @@ export class ActionDispatcher {
     }
 
     // 直前の操作。C-1 のステータスストリップに出す
-    get lastAction() { return this._last; }
-
     onLastAction(fn) {
         this._lastSubs.add(fn);
         return () => this._lastSubs.delete(fn);
@@ -69,7 +67,7 @@ export class ActionDispatcher {
     }
 
     _note(label) {
-        this._last = { label, at: Date.now() };
+        this._last = { label };
         for (const fn of this._lastSubs) fn(this._last);
     }
 
@@ -137,7 +135,7 @@ export class ActionDispatcher {
                 log('Session', 'clear → HALT');
             },
             // パレット専用（DOM 側に対応するボタンは無い）
-            'drawer': (d) => v.shell?.openDrawer(d.name),
+            'drawer': (d) => v.drawers?.open(d.name),
         };
     }
 }

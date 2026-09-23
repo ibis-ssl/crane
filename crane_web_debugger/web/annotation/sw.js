@@ -1,5 +1,5 @@
 // Service Worker for Crane Annotation Tool
-const CACHE_NAME = 'crane-annotation-v4';
+const CACHE_NAME = 'crane-annotation-v5';
 const urlsToCache = [
   './index.html',
   './app.js',

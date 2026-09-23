@@ -28,8 +28,6 @@ export class Drawers {
         }, true);
     }
 
-    get openName() { return this._open; }
-
     toggle(name) { this._open === name ? this.close() : this.open(name); }
 
     open(name) {

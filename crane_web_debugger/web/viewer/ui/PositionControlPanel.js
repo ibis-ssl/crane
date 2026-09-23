@@ -220,7 +220,8 @@ export class PositionControlPanel {
             }
         }
 
-        this._syncBanner();
+        this._setBanner('ok',
+            '1 秒ごとに CM4 へ設定パケット（UDP 12350）を送信中。5 項目とも実機のゲインに効きます。');
     }
 
     // websocket_server の set_position_control_param_result を受ける
@@ -228,7 +229,6 @@ export class PositionControlPanel {
         const name = data.name;
         if (!this._rows.has(name)) return;
         if (data.success) {
-            this._setStatus(name, 'ok', '適用済み');
             // ロボットへ届くのは ibis_sender の次の送信。その間は「反映待ち」を出す
             this._setStatus(name, 'ok', '送信待ち…');
             setTimeout(() => this._setStatus(name, 'ok', '適用済み'), ROBOT_APPLY_HINT_MS);
@@ -250,10 +250,5 @@ export class PositionControlPanel {
     _setBanner(kind, text) {
         this._banner.dataset.kind = kind;
         this._banner.textContent = text;
-    }
-
-    _syncBanner() {
-        this._setBanner('ok',
-            '1 秒ごとに CM4 へ設定パケット（UDP 12350）を送信中。5 項目とも実機のゲインに効きます。');
     }
 }

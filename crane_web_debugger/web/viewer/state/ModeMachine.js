@@ -1,7 +1,7 @@
 // フィールドの操作モードと、その DOM 側の副作用（ボタンの active、カーソル）を
 // 1 箇所に集める。
 //
-// 【排他の規則】現行の振る舞いをそのまま明文化したもので、変更ではない。
+// 【排他の規則】
 //   - test は他のすべてと共存しない（C-3 の「他レイヤーのクリックは透過しません」）
 //   - simEdit は move / ballPlacement のどちらとも共存しない
 //   - move と ballPlacement は共存する（移動モードのまま配置位置を指す運用がある）
@@ -12,9 +12,8 @@
 
 const LADDER = ['test', 'move', 'ballPlacement', 'simEdit'];
 
-export class ModeMachine extends EventTarget {
+export class ModeMachine {
     constructor() {
-        super();
         this.test = false;
         this.move = false;
         this.simEdit = false;
@@ -139,8 +138,6 @@ export class ModeMachine extends EventTarget {
         return null;
     }
 
-    get anyActive() { return LADDER.some(n => this.is(n)); }
-
     // ===== 表示 =====
 
     _syncCursor() {
@@ -160,7 +157,6 @@ export class ModeMachine extends EventTarget {
 
     _changed() {
         this.syncSimLabel();
-        this.dispatchEvent(new Event('change'));
         this._hooks.onChange?.();
     }
 }

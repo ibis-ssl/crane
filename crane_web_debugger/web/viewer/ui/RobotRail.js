@@ -3,15 +3,12 @@
 // 番号の位置は動かさない。未検出でも薄く残し、異常があれば枠で示す。
 // 「いつもの場所に 7 番が居る」ことが、試合中に目で探す時間をいちばん削る。
 //
-// 異常表示は robot_feedback が実際に届いていることが前提（Viewer は長らく
-// data.feedback を読んでいて常に空だった。f7abe31 で修正済み）。
+// 異常表示は robot_feedback が実際に届いていることが前提。
+
+import { FEEDBACK_STALE_MS, VOLTAGE_CRIT_V, VOLTAGE_WARN_V, TEMP_CRIT_C } from '../renderer/constants.js';
 
 const RAIL_ROBOT_COUNT = 13;
 const RAIL_REFRESH_MS = 500;
-const FEEDBACK_STALE_MS = 500;
-const VOLTAGE_CRIT = 21.0;
-const VOLTAGE_WARN = 22.5;
-const TEMP_CRIT = 75;
 
 export class RobotRail {
     constructor(viewer) {
@@ -61,9 +58,9 @@ export class RobotRail {
         // stale なフィードバックで警告を出し続けない（切断直後の残像になる）
         if (now - (this._v.state.feedbackTimestamp[id] ?? 0) > FEEDBACK_STALE_MS) return 'none';
         if ((fb.error_id ?? 0) !== 0) return 'danger';
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_CRIT) return 'danger';
-        if (Math.max(...(fb.temperatures ?? [0])) >= TEMP_CRIT) return 'danger';
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN) return 'warn';
+        if (fb.voltage != null && fb.voltage <= VOLTAGE_CRIT_V) return 'danger';
+        if (Math.max(...(fb.temperatures ?? [0])) >= TEMP_CRIT_C) return 'danger';
+        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN_V) return 'warn';
         return 'none';
     }
 
@@ -71,9 +68,9 @@ export class RobotRail {
         const fb = this._v.state.robotFeedback[id] ?? {};
         const parts = [];
         if ((fb.error_id ?? 0) !== 0) parts.push(`エラー id=${fb.error_id}`);
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN) parts.push(`電圧 ${fb.voltage.toFixed(1)}V`);
+        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN_V) parts.push(`電圧 ${fb.voltage.toFixed(1)}V`);
         const maxT = Math.max(...(fb.temperatures ?? [0]));
-        if (maxT >= TEMP_CRIT) parts.push(`温度 ${maxT.toFixed(0)}℃`);
+        if (maxT >= TEMP_CRIT_C) parts.push(`温度 ${maxT.toFixed(0)}℃`);
         return parts.join(' / ') || '正常';
     }
 }

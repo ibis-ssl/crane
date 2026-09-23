@@ -46,11 +46,6 @@ export class CanvasRenderer {
         this._rafId = requestAnimationFrame(loop);
     }
 
-    stop() {
-        if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
-        this._resizeObserver.disconnect();
-    }
-
     // viewBox座標系 → CSS座標へのビューポート変換パラメータを計算
     _getVP() {
         const fl = this.fieldLayer;

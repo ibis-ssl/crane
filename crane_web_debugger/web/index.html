@@ -483,7 +483,6 @@
 
     .log-entry[data-level="error"] { color: var(--md-sys-color-error); }
     .log-entry[data-level="warn"]  { color: var(--md-sys-color-warning); }
-    .log-entry[data-level="info"]  { color: var(--md-sys-color-on-surface-variant); }
     .log-entry[data-level="action"]{ color: var(--md-sys-color-primary); }
     .log-entry[data-level="metric"]{ color: var(--md-sys-color-tertiary); }
 
@@ -611,7 +610,7 @@
       font-weight: 500;
     }
 
-    /* レールの異常表示。V2a で robot_feedback が届くようになって初めて成立する */
+    /* レールの異常表示 */
     .cv-rail-btn.warn {
       border-color: var(--md-sys-color-warning);
       color: var(--md-sys-color-warning);
@@ -842,8 +841,7 @@
       white-space: nowrap;
     }
 
-    /* ロボットのホバーツールチップ / HALT 確認ダイアログ
-       (旧 main.js の style.cssText べた書きから移設) */
+    /* ロボットのホバーツールチップ / HALT 確認ダイアログ */
     .cv-hover-tooltip {
       position: fixed;
       pointer-events: none;
@@ -971,7 +969,7 @@
       color: var(--md-sys-color-on-surface-variant);
     }
 
-    /* ドロワー内のセクション (旧・右ドック) */
+    /* ドロワー内のセクション */
     .right-dock-section {
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
       display: flex;
@@ -1004,26 +1002,6 @@
     }
 
     #robot-detail-inline.visible { display: block; }
-
-    #robot-detail-inline .rd-title {
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: var(--md-sys-color-primary);
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    #robot-detail-inline .rd-telem-link {
-      color: var(--md-sys-color-on-surface-variant);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      opacity: 0.7;
-    }
-
-    #robot-detail-inline .rd-telem-link:hover { opacity: 1; }
 
     #robot-detail-inline .rd-section-title {
       font-size: 0.62rem;
@@ -1060,7 +1038,6 @@
     /* severity colors */
     #robot-detail-inline .rd-warn  { color: var(--md-sys-color-warning) !important; }
     #robot-detail-inline .rd-crit  { color: var(--md-sys-color-error) !important; font-weight: 600; }
-    #robot-detail-inline .rd-ok    { color: var(--md-sys-color-on-surface); }
 
     /* availability chips */
     .rd-chip {
@@ -1088,7 +1065,6 @@
 
   <crane-nav active="viewer"></crane-nav>
 
-  <!-- Offline banner -->
   <div class="m3-offline-banner" id="offline-banner">
     <span class="material-symbols-outlined">wifi_off</span>
     crane WebSocket未接続 (port 8091) — craneが起動すると自動で再接続します
@@ -1134,7 +1110,6 @@
     <div class="cv-body">
 
       <main id="field-main">
-        <!-- Canvas field viewer -->
         <div id="svg-container">
         <canvas id="field-canvas"></canvas>
         </div>
@@ -1170,14 +1145,13 @@
         </div>
 
         <div id="field-tools">
-          <!-- Zoom toolbar -->
           <div class="zoom-toolbar">
           <button id="btn-zoom-in" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_in</span></button>
           <button id="btn-zoom-out" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">zoom_out</span></button>
           <button id="btn-zoom-reset" class="m3-icon-btn m3-icon-btn--sm"><span class="material-symbols-outlined icon-sm">fit_screen</span></button>
           <span class="divider"></span>
           <button id="btn-move-mode" class="m3-icon-btn m3-icon-btn--sm" title="Robot move mode (Shift+click to select/move)"><span class="material-symbols-outlined icon-sm">open_with</span></button>
-          <span class="m3-text-on-surface-variant m3-label-small" id="move-status">Selected: <span id="selected-robot-label">--</span></span>
+          <span class="m3-text-on-surface-variant m3-label-small">Selected: <span id="selected-robot-label">--</span></span>
           </div>
         </div>
 
@@ -1190,7 +1164,6 @@
             </button>
           </div>
           <div class="cv-drawer__body">
-            <!-- Layer Control -->
             <div class="right-dock-section" style="flex-shrink:0;">
             <div class="right-dock-section-header">
             <span class="material-symbols-outlined icon-sm">layers</span>
@@ -1217,7 +1190,6 @@
             </button>
           </div>
           <div class="cv-drawer__body cv-drawer__body--flush">
-            <!-- Log Panel -->
             <div class="right-dock-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
             <div class="right-dock-section-header">
             <span class="material-symbols-outlined icon-sm">terminal</span>
@@ -1249,7 +1221,6 @@
             </button>
           </div>
           <div class="cv-drawer__body">
-            <!-- Game info panel -->
             <div class="m3-section-title">Game Info</div>
             <div id="game-info-panel">
             <div id="score-display">
@@ -1264,7 +1235,6 @@
             <span class="info-value" id="game-stage">-</span>
             </div>
             </div>
-            <!-- Score -->
             <div class="gc-score-row">
             <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
             data-action="gc-goals" data-team="YELLOW" data-delta="-1" title="Yellow score -1">－</button>
@@ -1276,7 +1246,6 @@
             <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
             data-action="gc-goals" data-team="BLUE" data-delta="1" title="Blue score +1">＋</button>
             </div>
-            <!-- Cards -->
             <div class="gc-team-label">Cards</div>
             <div class="gc-row">
             <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-yellow"
@@ -1288,7 +1257,6 @@
             <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn gc-btn--card-red"
             data-action="gc-card-red" data-team="BLUE" title="Red card for Blue">B🟥</button>
             </div>
-            <!-- Next Stage -->
             <div class="gc-row" style="margin-top:2px;">
             <button class="m3-btn m3-btn--sm m3-btn--outlined gc-btn" style="flex:1;"
             data-action="gc-next-stage">Next Stage ▶</button>
@@ -1304,9 +1272,8 @@
             </button>
           </div>
           <div class="cv-drawer__body">
-            <!-- Simulation Control -->
             <div class="m3-section-title">Sim Control</div>
-            <details class="m3-expansion" id="sim-accordion">
+            <details class="m3-expansion">
             <summary>
             <span class="material-symbols-outlined icon-sm m3-text-primary">precision_manufacturing</span>
             Simulation Control
@@ -1331,9 +1298,8 @@
             </div>
             </div>
             </details>
-            <!-- Session Control -->
             <div class="m3-section-title">Session Control</div>
-            <details class="m3-expansion" id="session-accordion">
+            <details class="m3-expansion">
             <summary>
             <span class="material-symbols-outlined icon-sm m3-text-primary">flowsheet</span>
             Session Injection
@@ -1383,8 +1349,7 @@
             </button>
           </div>
           <div class="cv-drawer__body">
-            <!-- Replay (TimeScrubber) -->
-            <div id="dock-bottom" style="height:190px;overflow:hidden;">
+            <div style="height:190px;overflow:hidden;">
             <div id="time-scrubber-container" style="height:100%;"></div>
             </div>
           </div>
@@ -1394,7 +1359,6 @@
       <!-- 56px のロボットレール。クリックで 320px の詳細サイドバーに展開する -->
       <aside id="robot-side" data-expanded="false">
         <div id="robot-rail" role="group" aria-label="ロボット選択"></div>
-        <!-- Robot Detail Inline Panel -->
         <div class="right-dock-section" style="flex-shrink:0;" id="robot-detail-dock-section">
         <div class="right-dock-section-header">
         <span class="material-symbols-outlined icon-sm">smart_toy</span>
@@ -1415,7 +1379,6 @@
     <!-- 96px コマンドバー: HALT の位置は何があっても動かさない -->
     <footer id="command-bar">
       <div class="cv-cmd-main">
-        <!-- Main commands -->
         <div class="gc-row">
         <button class="m3-btn m3-btn--sm m3-btn--filled gc-btn gc-btn--halt"
         data-action="gc-command" data-type="HALT">HALT</button>
@@ -1429,7 +1392,6 @@
       </div>
       <span class="cv-divider"></span>
       <div class="cv-cmd-teams">
-        <!-- Yellow team commands -->
         <div class="gc-team-label">Yellow</div>
         <div class="gc-row">
         <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow"
@@ -1439,7 +1401,6 @@
         <button class="m3-btn m3-btn--sm gc-btn gc-btn--yellow btn-place-ball" id="btn-place-ball-yellow"
         data-action="ball-place" data-team="YELLOW">PLACE</button>
         </div>
-        <!-- Blue team commands -->
         <div class="gc-team-label">Blue</div>
         <div class="gc-row">
         <button class="m3-btn m3-btn--sm gc-btn gc-btn--blue"
@@ -1472,18 +1433,5 @@
   </div>
 
   <script type="module" src="viewer/main.js"></script>
-  <script>
-    // crane-nav 内のステータスエリアに接続インジケータを配置
-    (function () {
-      const statusEl = document.getElementById('crane-nav-status');
-      if (statusEl) {
-        statusEl.innerHTML =
-          '<span class="m3-inline-flex m3-items-center m3-gap-xs" id="connection-indicator">' +
-          '<span class="m3-connection-dot" id="connection-dot"></span>' +
-          '<span class="m3-body-small m3-text-on-surface-variant" id="connection-label">disconnected</span>' +
-          '</span>';
-      }
-    })();
-  </script>
 </body>
 </html>

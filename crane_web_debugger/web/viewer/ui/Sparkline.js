@@ -14,7 +14,6 @@ export class Sparkline {
         this._canvas.height = Math.round(this._h * dpr);
         this._ctx = this._canvas.getContext('2d');
         this._ctx.scale(dpr, dpr);
-        this._dpr = dpr;
 
         container.appendChild(this._canvas);
     }
@@ -31,7 +30,6 @@ export class Sparkline {
         const W = this._w, H = this._h;
         ctx.clearRect(0, 0, W, H);
 
-        // 背景
         ctx.fillStyle = tokens?.surfaceContainer ?? 'rgba(0,0,0,0.04)';
         ctx.fillRect(0, 0, W, H);
 
@@ -65,7 +63,6 @@ export class Sparkline {
             ctx.restore();
         }
 
-        // 系列描画
         for (const s of this._series) {
             const data = s.data;
             if (!data || data.length < 2) continue;

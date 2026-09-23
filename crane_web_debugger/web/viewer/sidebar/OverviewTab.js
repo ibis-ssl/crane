@@ -10,9 +10,9 @@ import {
     formatLatencyRich, formatVoltage, formatTemperature,
     formatKickState, formatErrorBadge, availabilityChips,
 } from '../renderer/formatters.js';
+import { LATENCY_WARN_MS } from '../renderer/constants.js';
 
 const PACKET_FREQ_WARN_HZ = 80;
-const LATENCY_WARN_MS = 100;
 const SPARK_SAMPLES = 180;
 const SPARK_W = 320;
 const SPARK_H = 34;
@@ -22,8 +22,6 @@ export class OverviewTab {
         this._state = state;
         this._themeTokens = themeTokens;
         this._root = null;
-        this._sparkPos = null;
-        this._sparkVel = null;
     }
 
     get label() { return '概要'; }
@@ -37,8 +35,6 @@ export class OverviewTab {
 
     deactivate() {
         this._root = null;
-        this._sparkPos = null;
-        this._sparkVel = null;
     }
 
     refresh(id) {
@@ -75,20 +71,20 @@ export class OverviewTab {
 
         const posHost = this._root.querySelector('#spark-pos-host');
         if (posHost) {
-            this._sparkPos = new Sparkline(posHost, { width: SPARK_W, height: SPARK_H });
-            this._sparkPos.setSeries([
+            const sparkPos = new Sparkline(posHost, { width: SPARK_W, height: SPARK_H });
+            sparkPos.setSeries([
                 { color: token('--crane-chart-1', '#5B4BE0'), data: metrics.posX.latest(SPARK_SAMPLES) },
                 { color: token('--crane-chart-2', '#00959F'), data: metrics.posY.latest(SPARK_SAMPLES) },
             ]);
-            this._sparkPos.render(chrome);
+            sparkPos.render(chrome);
         }
         const velHost = this._root.querySelector('#spark-vel-host');
         if (velHost) {
-            this._sparkVel = new Sparkline(velHost, { width: SPARK_W, height: SPARK_H });
-            this._sparkVel.setSeries([
+            const sparkVel = new Sparkline(velHost, { width: SPARK_W, height: SPARK_H });
+            sparkVel.setSeries([
                 { color: token('--crane-chart-3', '#B02D6B'), data: metrics.vel.latest(SPARK_SAMPLES) },
             ]);
-            this._sparkVel.render(chrome);
+            sparkVel.render(chrome);
         }
     }
 
