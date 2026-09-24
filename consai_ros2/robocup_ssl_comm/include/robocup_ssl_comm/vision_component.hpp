@@ -57,13 +57,8 @@ private:
 
   std::mutex frames_mutex_;
 
-  // カメラ別の最新フレームデータを保存
   std::map<uint32_t, robocup_ssl_msgs::msg::SSLDetectionFrame> camera_frames_;
-
-  // カメラ別のタイムスタンプを保存（フレームの有効性確認用）
   std::map<uint32_t, std::chrono::steady_clock::time_point> camera_timestamps_;
-
-  // 統合フレームの生成頻度・最大フレーム有効期間（コンストラクタでキャッシュ）
   std::chrono::milliseconds publish_interval_ms_;
   std::chrono::milliseconds max_camera_age_ms_;
 };

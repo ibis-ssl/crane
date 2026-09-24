@@ -71,7 +71,6 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 
 void Vision::on_timer()
 {
-  // 全カメラのデータをマージして統合フレームをパブリッシュ
   robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
   {
     std::lock_guard<std::mutex> lock(frames_mutex_);
@@ -177,20 +176,17 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
 {
   robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
 
-  // 統合フレームのメタデータを設定（最新のカメラデータから取得）
   uint32_t latest_camera_id = 0;
   double latest_t_capture = 0.0;
   double latest_t_sent = 0.0;
   uint32_t latest_frame_number = 0;
 
-  // 有効な全カメラのデータを統合
   for (const auto & [camera_id, frame] : camera_frames_) {
     if (!is_camera_frame_valid(camera_id)) {
       RCLCPP_DEBUG(get_logger(), "Camera %u frame is too old, skipping", camera_id);
       continue;
     }
 
-    // 最新のフレーム情報を記録
     if (frame.t_capture > latest_t_capture) {
       latest_camera_id = camera_id;
       latest_t_capture = frame.t_capture;
@@ -198,31 +194,26 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
       latest_frame_number = frame.frame_number;
     }
 
-    // ボールデータをマージ（confidenceでフィルタリング）
     for (const auto & ball : frame.balls) {
-      if (ball.confidence > 0.5) {  // confidenceの閾値
+      if (ball.confidence > 0.5) {
         merged_frame.balls.push_back(ball);
       }
     }
 
-    // 黄色ロボットデータをマージ
     for (const auto & robot : frame.robots_yellow) {
-      if (robot.confidence > 0.5) {  // confidenceの閾値
+      if (robot.confidence > 0.5) {
         merged_frame.robots_yellow.push_back(robot);
       }
     }
 
-    // 青色ロボットデータをマージ
     for (const auto & robot : frame.robots_blue) {
-      if (robot.confidence > 0.5) {  // confidenceの閾値
+      if (robot.confidence > 0.5) {
         merged_frame.robots_blue.push_back(robot);
       }
     }
   }
 
-  // 統合フレームのメタデータを設定
-  merged_frame.camera_id =
-    latest_camera_id;  // 最新のカメラID（統合フレームであることを示すため0にすることも可能）
+  merged_frame.camera_id = latest_camera_id;
   merged_frame.t_capture = latest_t_capture;
   merged_frame.t_sent = latest_t_sent;
   merged_frame.frame_number = latest_frame_number;

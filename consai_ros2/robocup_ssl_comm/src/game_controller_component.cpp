@@ -80,7 +80,6 @@ void GameController::on_timer()
     return;
   }
 
-  // Use proto2ros Convert API to convert protobuf message to ROS message
   auto referee_msg = std::make_unique<robocup_ssl_msgs::msg::Referee>();
   robocup_ssl_msgs::conversions::Convert(*packet, referee_msg.get());
   pub_referee->publish(std::move(referee_msg));
