@@ -340,6 +340,44 @@ private:
   std::mutex send_mutex_;
 };
 
+// 最新のメッセージだけを残し、タイマーで間引いて配信するためのバッファ
+template <typename MsgT>
+class LatestMessage
+{
+public:
+  using Ptr = typename MsgT::SharedPtr;
+
+  // 保存し、これが初めての受信だったかを返す
+  bool store(const Ptr & msg)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    const bool first = (latest_ == nullptr);
+    latest_ = msg;
+    updated_ = true;
+    return first;
+  }
+
+  // 前回取り出してから更新があれば最新を返し、なければ nullptr を返す
+  Ptr takeIfUpdated()
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!updated_ || !latest_) return nullptr;
+    updated_ = false;
+    return latest_;
+  }
+
+  Ptr latest() const
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return latest_;
+  }
+
+private:
+  mutable std::mutex mutex_;
+  Ptr latest_;
+  bool updated_{false};
+};
+
 class WebSocketDebugServer : public rclcpp::Node
 {
 public:
@@ -349,13 +387,7 @@ public:
 
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
-        bool first_msg = false;
-        {
-          std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-          first_msg = (latest_world_model_ == nullptr);
-          latest_world_model_ = msg;
-          world_model_updated_ = true;
-        }
+        const bool first_msg = world_model_.store(msg);
         // 初回受信時は全クライアントへ即座にブロードキャスト（10Hzタイマー待ち不要）
         if (first_msg) {
           RCLCPP_INFO(this->get_logger(), "world_model 初回受信 - 即座にブロードキャスト");
@@ -380,9 +412,7 @@ public:
       this->create_subscription<crane_visualization_interfaces::msg::SvgSnapshot>(
         "/aggregated_svgs", 10,
         [this](const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg) {
-          std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
-          latest_svg_snapshot_ = msg;
-          svg_snapshot_updated_ = true;
+          svg_snapshot_.store(msg);
         });
 
     // High-frequency incremental SVG updates — accumulate, flush at 20Hz
@@ -425,9 +455,7 @@ public:
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
       "/robot_feedback", 10, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        latest_robot_feedback_ = msg;
-        robot_feedback_updated_ = true;
+        robot_feedback_.store(msg);
       });
 
     ping_sub_ = this->create_subscription<crane_msgs::msg::PingStatusArray>(
@@ -443,73 +471,33 @@ public:
     latency_estimation_sub_ = this->create_subscription<crane_msgs::msg::LatencyEstimationArray>(
       "/latency_estimation", 10,
       [this](const crane_msgs::msg::LatencyEstimationArray::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
-        latest_latency_estimation_ = msg;
-        latency_estimation_updated_ = true;
+        latency_estimation_.store(msg);
       });
 
-    latency_estimation_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::LatencyEstimationArray::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
-        if (!latency_estimation_updated_ || !latest_latency_estimation_) return;
-        msg = latest_latency_estimation_;
-        latency_estimation_updated_ = false;
-      }
-      broadcastLatencyEstimation(msg);
-    });
+    latency_estimation_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), latency_estimation_,
+      [this](const auto & msg) { broadcastLatencyEstimation(msg); });
 
-    robot_feedback_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::RobotFeedbackArray::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        if (!robot_feedback_updated_ || !latest_robot_feedback_) return;
-        msg = latest_robot_feedback_;
-        robot_feedback_updated_ = false;
-      }
-      broadcastRobotFeedback(msg);
-    });
+    robot_feedback_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), robot_feedback_,
+      [this](const auto & msg) { broadcastRobotFeedback(msg); });
 
     // control_targets subscription (cached, broadcast at 10Hz via timer)
     control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/control_targets", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(control_targets_mutex_);
-        latest_control_targets_ = msg;
-        control_targets_updated_ = true;
-      });
+      "/control_targets", 10,
+      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { control_targets_.store(msg); });
 
-    control_targets_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::RobotCommands::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(control_targets_mutex_);
-        if (!control_targets_updated_ || !latest_control_targets_) return;
-        msg = latest_control_targets_;
-        control_targets_updated_ = false;
-      }
-      broadcastControlTargets(msg);
-    });
+    control_targets_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), control_targets_,
+      [this](const auto & msg) { broadcastControlTargets(msg); });
 
-    world_model_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::WorldModel::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        if (!world_model_updated_ || !latest_world_model_) return;
-        msg = latest_world_model_;
-        world_model_updated_ = false;
-      }
-      broadcastWorldModel(msg);
-    });
+    world_model_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), world_model_,
+      [this](const auto & msg) { broadcastWorldModel(msg); });
 
-    svg_snapshot_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() {
-      crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
-        if (!svg_snapshot_updated_ || !latest_svg_snapshot_) return;
-        msg = latest_svg_snapshot_;
-        svg_snapshot_updated_ = false;
-      }
-      broadcastSvgData(msg);
-    });
+    svg_snapshot_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(200), svg_snapshot_,
+      [this](const auto & msg) { broadcastSvgData(msg); });
 
     svg_updates_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), [this]() {
       std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> batch;
@@ -598,6 +586,15 @@ private:
     }
   }
 
+  template <typename MsgT, typename Broadcast>
+  rclcpp::TimerBase::SharedPtr createThrottleTimer(
+    std::chrono::milliseconds period, LatestMessage<MsgT> & buffer, Broadcast broadcast)
+  {
+    return this->create_wall_timer(period, [&buffer, broadcast]() {
+      if (auto msg = buffer.takeIfUpdated()) broadcast(msg);
+    });
+  }
+
   void handleWebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
   {
     auto connection = std::make_shared<WebSocketConnection>(socket);
@@ -626,23 +623,13 @@ private:
     }
 
     {
-      crane_msgs::msg::WorldModel::SharedPtr wm_msg;
-      {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        wm_msg = latest_world_model_;
-      }
-      if (wm_msg) {
+      if (auto wm_msg = world_model_.latest()) {
         connection->sendMessage(createWorldModelMessage(wm_msg));
       }
     }
 
     {
-      crane_msgs::msg::RobotFeedbackArray::SharedPtr fb_msg;
-      {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        fb_msg = latest_robot_feedback_;
-      }
-      if (fb_msg) {
+      if (auto fb_msg = robot_feedback_.latest()) {
         connection->sendMessage(createRobotFeedbackMessage(fb_msg));
       }
     }
@@ -1343,16 +1330,13 @@ private:
     int robot_id = request.value("robot_id", -1);
     if (robot_id >= 0 && robot_id <= 15) {
       double x = 0.0, y = 0.0, theta = 0.0;
-      {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        if (latest_world_model_) {
-          for (const auto & r : latest_world_model_->robot_info_ours) {
-            if (r.id == robot_id) {
-              x = r.pose.x;
-              y = r.pose.y;
-              theta = r.pose.theta;
-              break;
-            }
+      if (const auto world_model = world_model_.latest()) {
+        for (const auto & r : world_model->robot_info_ours) {
+          if (r.id == robot_id) {
+            x = r.pose.x;
+            y = r.pose.y;
+            theta = r.pose.theta;
+            break;
           }
         }
       }
@@ -1679,23 +1663,17 @@ private:
   rclcpp::Subscription<crane_msgs::msg::PingStatusArray>::SharedPtr ping_sub_;
   rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_sub_;
   rclcpp::TimerBase::SharedPtr robot_feedback_timer_;
-  crane_msgs::msg::RobotFeedbackArray::SharedPtr latest_robot_feedback_;
-  bool robot_feedback_updated_{false};
-  std::mutex robot_feedback_mutex_;
+  LatestMessage<crane_msgs::msg::RobotFeedbackArray> robot_feedback_;
 
   // Control targets monitoring
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub_;
   rclcpp::TimerBase::SharedPtr control_targets_timer_;
-  crane_msgs::msg::RobotCommands::SharedPtr latest_control_targets_;
-  bool control_targets_updated_{false};
-  std::mutex control_targets_mutex_;
+  LatestMessage<crane_msgs::msg::RobotCommands> control_targets_;
 
   // Latency estimation monitoring
   rclcpp::Subscription<crane_msgs::msg::LatencyEstimationArray>::SharedPtr latency_estimation_sub_;
   rclcpp::TimerBase::SharedPtr latency_estimation_timer_;
-  crane_msgs::msg::LatencyEstimationArray::SharedPtr latest_latency_estimation_;
-  bool latency_estimation_updated_{false};
-  std::mutex latency_estimation_mutex_;
+  LatestMessage<crane_msgs::msg::LatencyEstimationArray> latency_estimation_;
 
   // Server components
   std::thread websocket_thread_;
@@ -1718,15 +1696,11 @@ private:
   std::mutex game_info_mutex_;
 
   // World model throttle (10Hz)
-  crane_msgs::msg::WorldModel::SharedPtr latest_world_model_;
-  bool world_model_updated_{false};
-  std::mutex world_model_throttle_mutex_;
+  LatestMessage<crane_msgs::msg::WorldModel> world_model_;
   rclcpp::TimerBase::SharedPtr world_model_timer_;
 
   // SVG snapshot throttle (5Hz)
-  crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr latest_svg_snapshot_;
-  bool svg_snapshot_updated_{false};
-  std::mutex svg_snapshot_mutex_;
+  LatestMessage<crane_visualization_interfaces::msg::SvgSnapshot> svg_snapshot_;
   rclcpp::TimerBase::SharedPtr svg_snapshot_timer_;
 
   // SVG updates coalescing (20Hz)
