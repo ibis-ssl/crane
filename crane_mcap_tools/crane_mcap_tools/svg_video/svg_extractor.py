@@ -47,7 +47,6 @@ class SvgExtractor:
         self.snapshot_topic = snapshot_topic
         self.update_topic = update_topic
 
-        # メッセージ型キャッシュ
         self._msg_types: dict[str, Any] = {}
 
     def _get_message_type(self, type_name: str) -> Any:
@@ -75,21 +74,17 @@ class SvgExtractor:
 
         logger.info(f"Reading MCAP file: {mcap_path}")
 
-        # 時刻範囲をナノ秒に変換
         start_time_ns = (
             int(start_time_sec * 1e9) if start_time_sec is not None else None
         )
         end_time_ns = int(end_time_sec * 1e9) if end_time_sec is not None else None
 
-        # rosbag2_pyを使用してMCAPを読み込み
         try:
             reader = open_sequential_reader(mcap_path)
 
-            # トピックフィルタリング
             topic_types = reader.get_all_topics_and_types()
             topics_map = {t.name: t.type for t in topic_types}
 
-            # トピックの存在確認（どちらかあればOK）
             has_snapshot = self.snapshot_topic in topics_map
             has_update = self.update_topic in topics_map
 
@@ -110,7 +105,6 @@ class SvgExtractor:
             while reader.has_next():
                 topic, data, timestamp = reader.read_next()
 
-                # 時刻フィルタリング
                 if start_time_ns is not None and timestamp < start_time_ns:
                     continue
                 if end_time_ns is not None and timestamp > end_time_ns:
@@ -123,19 +117,15 @@ class SvgExtractor:
 
             logger.info(f"Collected {len(messages)} messages")
 
-            # タイムスタンプ順にソート
             messages.sort(key=lambda x: x[0])
 
-            # 累積レイヤー状態
             current_layers: dict[str, list[str]] = {}
             last_epoch = 0
 
-            # メッセージを処理してフレームを生成
             for timestamp, topic, msg in messages:
                 epoch = msg.epoch
                 seq = msg.seq
 
-                # epoch更新時は状態をリセット
                 if epoch != last_epoch:
                     logger.info(
                         f"Epoch changed: {last_epoch} -> {epoch}, resetting state"

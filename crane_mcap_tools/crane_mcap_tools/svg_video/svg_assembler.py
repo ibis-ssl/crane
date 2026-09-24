@@ -36,7 +36,6 @@ class SvgAssembler:
         self.grid_color = grid_color
         self.grid_opacity = grid_opacity
 
-        # viewBoxを事前パース（キャッシュ）
         self._viewbox_tuple = self._parse_viewbox()
 
         # 固定部分をキャッシュ（遅延初期化）
@@ -61,7 +60,6 @@ class SvgAssembler:
         if visible_layers is None:
             visible_layers = set(layers.keys())
 
-        # 固定部分のキャッシュ（初回のみ生成）
         if self._cached_header is None:
             self._cached_header = [
                 '<?xml version="1.0" encoding="UTF-8"?>',
@@ -74,23 +72,19 @@ class SvgAssembler:
             self._cached_background = self._generate_background()
             self._cached_grid = self._generate_grid()
 
-        # キャッシュからコピーして使用
         svg_parts = list(self._cached_header)
         svg_parts.extend(self._cached_defs)
         svg_parts.append(self._cached_background)
         svg_parts.append(self._cached_grid)
 
-        # 各レイヤーをグループとして追加
         for layer_name, primitives in layers.items():
             if layer_name in visible_layers and primitives:
                 svg_parts.append(f'  <g class="layer-{self._escape_xml(layer_name)}">')
                 for primitive in primitives:
-                    # プリミティブをインデント
                     indented_primitive = self._indent_primitive(primitive)
                     svg_parts.append(indented_primitive)
                 svg_parts.append("  </g>")
 
-        # SVGクロージング
         svg_parts.append("</svg>")
 
         return "\n".join(svg_parts)
@@ -111,7 +105,7 @@ class SvgAssembler:
 
     def _generate_background(self) -> str:
         """背景レクトを生成."""
-        x, y, w, h = self._viewbox_tuple  # キャッシュしたviewBoxを使用
+        x, y, w, h = self._viewbox_tuple
         return (
             f'  <rect x="{x}" y="{y}" width="{w}" height="{h}" '
             f'fill="{self.background_color}"/>'
@@ -119,7 +113,7 @@ class SvgAssembler:
 
     def _generate_grid(self) -> str:
         """グリッドレクトを生成."""
-        x, y, w, h = self._viewbox_tuple  # キャッシュしたviewBoxを使用
+        x, y, w, h = self._viewbox_tuple
         return (
             f'  <rect x="{x}" y="{y}" width="{w}" height="{h}" '
             f'fill="url(#grid)" opacity="{self.grid_opacity}"/>'

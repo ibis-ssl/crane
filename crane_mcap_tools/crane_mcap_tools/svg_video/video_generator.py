@@ -55,7 +55,6 @@ class VideoGenerator:
         self.width = width
         self.height = height
 
-        # ffmpegの存在確認
         try:
             subprocess.run(
                 ["ffmpeg", "-version"],
@@ -82,9 +81,7 @@ class VideoGenerator:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # ffmpegコマンド構築
         if self.input_format == InputFormat.RAW_RGBA:
-            # RAW RGBA入力の場合
             cmd = [
                 "ffmpeg",
                 "-y",  # 出力ファイルを上書き
@@ -109,7 +106,6 @@ class VideoGenerator:
                 str(output_path),
             ]
         else:
-            # PNG入力の場合（従来の方法）
             cmd = [
                 "ffmpeg",
                 "-y",  # 出力ファイルを上書き
@@ -135,7 +131,6 @@ class VideoGenerator:
         if verbose:
             logger.info(f"Running ffmpeg: {' '.join(cmd)}")
 
-        # ffmpegプロセスを起動
         # DEVNULL を使用してデッドロックを防ぐ
         process = subprocess.Popen(
             cmd,
@@ -154,11 +149,9 @@ class VideoGenerator:
                     if frame_count % 100 == 0:
                         logger.info(f"Processed {frame_count} frames...")
 
-            # 入力完了を通知
             if process.stdin:
                 process.stdin.close()
 
-            # プロセスの完了を待機
             process.wait()
 
             if process.returncode != 0:
@@ -172,7 +165,6 @@ class VideoGenerator:
             )
 
         except Exception:
-            # エラー時はプロセスを終了
             process.kill()
             raise
 
@@ -196,7 +188,6 @@ class VideoGenerator:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # ffmpegコマンド構築（ファイル入力版）
         cmd = [
             "ffmpeg",
             "-y",
