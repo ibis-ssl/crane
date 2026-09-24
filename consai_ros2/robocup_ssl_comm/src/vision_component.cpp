@@ -22,8 +22,6 @@
 #include <utility>
 #include <vector>
 
-using namespace std::chrono_literals;
-
 namespace robocup_ssl_comm
 {
 Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
