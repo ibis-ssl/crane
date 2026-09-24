@@ -82,51 +82,35 @@ class VideoGenerator:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         if self.input_format == InputFormat.RAW_RGBA:
-            cmd = [
-                "ffmpeg",
-                "-y",  # 出力ファイルを上書き
+            input_args = [
                 "-f",
-                "rawvideo",  # RAW入力
+                "rawvideo",
                 "-pix_fmt",
-                "rgba",  # 入力ピクセルフォーマット
+                "rgba",
                 "-s",
-                f"{self.width}x{self.height}",  # 入力サイズ
-                "-r",
-                str(self.fps),  # フレームレート
-                "-i",
-                "-",  # 標準入力から読み込み
-                "-c:v",
-                self.codec,  # 出力コーデック
-                "-crf",
-                str(self.crf),  # 品質
-                "-pix_fmt",
-                self.pixel_format,  # 出力ピクセルフォーマット
-                "-preset",
-                self.preset,  # プリセット
-                str(output_path),
+                f"{self.width}x{self.height}",
             ]
         else:
-            cmd = [
-                "ffmpeg",
-                "-y",  # 出力ファイルを上書き
-                "-f",
-                "image2pipe",  # パイプ入力
-                "-vcodec",
-                "png",  # 入力コーデック
-                "-r",
-                str(self.fps),  # フレームレート
-                "-i",
-                "-",  # 標準入力から読み込み
-                "-c:v",
-                self.codec,  # 出力コーデック
-                "-crf",
-                str(self.crf),  # 品質
-                "-pix_fmt",
-                self.pixel_format,  # ピクセルフォーマット
-                "-preset",
-                self.preset,  # プリセット
-                str(output_path),
-            ]
+            input_args = ["-f", "image2pipe", "-vcodec", "png"]
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            *input_args,
+            "-r",
+            str(self.fps),
+            "-i",
+            "-",  # 標準入力から読み込み
+            "-c:v",
+            self.codec,
+            "-crf",
+            str(self.crf),
+            "-pix_fmt",
+            self.pixel_format,
+            "-preset",
+            self.preset,
+            str(output_path),
+        ]
 
         if verbose:
             logger.info(f"Running ffmpeg: {' '.join(cmd)}")
