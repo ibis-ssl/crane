@@ -21,7 +21,6 @@ auto SessionRegistry::getOrCreatePlanner(
   auto matched_planner = std::ranges::find_if(
     prev_planners, [&session_name](const auto & planner) { return planner->name == session_name; });
 
-  // 見つかれば再利用、見つからなければ新規生成
   SessionBase::SharedPtr result_planner;
   if (matched_planner != prev_planners.end()) {
     RCLCPP_DEBUG(
@@ -34,7 +33,6 @@ auto SessionRegistry::getOrCreatePlanner(
     result_planner = generatePlanner(session_name, world_model, node);
   }
 
-  // パラメータを設定（新規・再利用どちらでも）
   if (!params.empty()) {
     result_planner->setSessionParameters(params);
   }
