@@ -268,18 +268,14 @@ private:
 
     const auto available_ids = world_model->ours().robotsWhere().available().getIds();
 
-    std::array<std::pair<uint8_t, RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM>
-      robot_packets{};
-    for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
-      robot_packets[i] = {static_cast<uint8_t>(i), RobotCommandSerializedV2{}};
-    }
+    std::array<RobotCommandSerializedV2, CommConfig::AI_CMD_V2_ROBOT_NUM> robot_packets{};
 
     for (auto & command : msg.robot_commands) {
       if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
         RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
         RobotCommandSerializedV2 serialized_packet;
         RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
-        robot_packets[command.robot_id] = {command.robot_id, serialized_packet};
+        robot_packets[command.robot_id] = serialized_packet;
 
         // ワイヤに載せた安全停止関連の値を /sent_robot_commands 用に残す。
         // CM4 / G474 は is_vision_available=0 や elapsed>500ms、linear_velocity_limit=0 で止まる
@@ -301,7 +297,7 @@ private:
     for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
       int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
       broadcast_buf[offset] = static_cast<char>(i);
-      memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
+      memcpy(&broadcast_buf[offset + 1], robot_packets[i].data, CommConfig::AI_CMD_V2_SIZE);
     }
 
     bool sent = false;
