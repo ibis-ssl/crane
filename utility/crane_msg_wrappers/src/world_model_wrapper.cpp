@@ -74,7 +74,6 @@ auto BallContact::update(bool is_contacted) -> void
 WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
 : ball_owner_calculator_(std::make_unique<BallOwnerCalculator>(this)), point_checker(this)
 {
-  // メモリ確保
   // ヒトサッカーの台数は超えないはず
   constexpr uint8_t MAX_ROBOT_NUM = 20;
   for (uint8_t i = 0; i < MAX_ROBOT_NUM; i++) {
@@ -96,7 +95,6 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void { this->update(*msg); });
   }
 
-  // 診断情報の購読（集約された診断情報）
   diagnostics_agg_sub_ = node.create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
     "/diagnostics_agg", 10,
     [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void {
@@ -123,7 +121,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
   theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  // BallInfoメッセージからBall構造体への変換
   ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
   ball_.side_hysteresis.update(ball_.pos.y());
@@ -137,7 +134,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->id = robot.id;
     info->available_vision = robot.available_vision;
     info->available_feedback = robot.available_feedback && !robot.has_error;
-    // ハードウェア診断結果を反映（診断エラーがある場合のみfalse、それ以外はtrue）
     info->available_hardware =
       robot_diagnostic_errors_.count(robot.id) == 0 || !robot_diagnostic_errors_[robot.id];
 
@@ -151,7 +147,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       info->ball_contact.update((info->kicker_center() - ball_.pos).norm() < 0.1);
       // ボールセンサは味方だけ
       info->ball_sensor = robot.ball_sensor;
-      // モーター温度情報を転送
       info->motor_temperatures = robot.motor_temperatures;
       if (robot.last_ball_sensor_stamp.sec == 0 && robot.last_ball_sensor_stamp.nanosec == 0) {
         info->ball_sensor_stamp = std::nullopt;
@@ -346,10 +341,8 @@ auto WorldModelWrapper::getBallSlackTime(
     return std::nullopt;
   }
 
-  // ボール位置を計算: ball_origin + ball_velocity * time
   Point intercept_point = ball_origin + ball_velocity * time;
 
-  // NaN値チェック
   if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
     RCLCPP_WARN(
       rclcpp::get_logger("WorldModelWrapper"),
@@ -366,12 +359,9 @@ auto WorldModelWrapper::getBallSlackTime(
                  robot->pose.pos, robot->vel.linear, intercept_point, ball_velocity,
                  config.robot_max_acceleration, config.robot_max_velocity, config.circling_radius));
     }),
-    ranges::less{}, [](const auto & pair) {
-      return pair.second;  // 移動時間が小さい順にソート
-    });
+    ranges::less{}, [](const auto & pair) { return pair.second; });
 
   double slack_time = time - best_robot.second;
-  // slack_timeのNaN値チェック
   if (!std::isfinite(slack_time)) {
     RCLCPP_WARN(
       rclcpp::get_logger("WorldModelWrapper"),
@@ -456,7 +446,6 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          // 有効なスラックタイムのみを抽出
          |
          ranges::views::filter([&](const auto & opt_slack) {
-           // 有効なスラックタイムかチェック
            return opt_slack.has_value() && point_checker.isFieldInside(opt_slack->intercept_point);
          }) |
          ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); }) |
@@ -528,7 +517,6 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
     }
   }
 
-  // max_slackは名前の通り一番Slackが大きい位置
   auto max_slack = ranges::max(
     slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.slack_time; });
 
@@ -558,7 +546,6 @@ auto BallOwnerCalculator::updateScore(bool our_team) -> void
                              .get()
                          : world_model_->theirs().robotsWhere().available().get();
 
-  // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
                   return calculateScore(robot);
                 }) |
@@ -574,7 +561,6 @@ auto BallOwnerCalculator::updateScore(bool our_team) -> void
     }
   }
 
-  // スコアの高い順にソート
   ranges::sort(
     scores, [](const BallOwnerScore & a, const BallOwnerScore & b) { return a.score > b.score; });
 
@@ -611,7 +597,6 @@ auto BallOwnerCalculator::calculateScore(const std::shared_ptr<RobotInfo> & robo
   return score;
 }
 
-// WorldModelWrapperの公開メソッド実装
 auto WorldModelWrapper::setBallOwnerCalculatorEnabled(bool enabled) -> void
 {
   ball_owner_calculator_enabled_ = enabled;
@@ -707,14 +692,11 @@ auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const
 auto WorldModelWrapper::diagnosticsCallback(
   const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) -> void
 {
-  // 診断メッセージを解析してロボットのエラー状態を更新
   for (const auto & status : msg->status) {
     // 診断名の形式: "SSL_System/Team/Robot_X/..."
-    // ロボットIDを抽出
     std::string name = status.name;
     size_t robot_pos = name.find("Robot_");
     if (robot_pos != std::string::npos) {
-      // "Robot_"の後の数字を抽出
       size_t id_start = robot_pos + 6;  // "Robot_"の長さ
       size_t id_end = name.find("/", id_start);
       if (id_end == std::string::npos) {
@@ -724,11 +706,9 @@ auto WorldModelWrapper::diagnosticsCallback(
       try {
         uint8_t robot_id = static_cast<uint8_t>(std::stoi(id_str));
 
-        // ERRORレベルの診断がある場合のみhas_errorをtrueに設定
         if (status.level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
           robot_diagnostic_errors_[robot_id] = true;
         } else if (status.level == diagnostic_msgs::msg::DiagnosticStatus::OK) {
-          // OKの場合はエラーをクリア
           robot_diagnostic_errors_[robot_id] = false;
         }
         // WARNの場合は現状を維持（エラーとして扱わない）
@@ -742,7 +722,6 @@ auto WorldModelWrapper::diagnosticsCallback(
 auto WorldModelWrapper::updateRobotTimestamps(
   RobotInfo & info, const crane_msgs::msg::RobotInfo & robot_msg, const rclcpp::Time & now) -> void
 {
-  // タイムスタンプの伝播（tracker）
   if (
     robot_msg.last_tracker_detection_stamp.sec > 0 ||
     robot_msg.last_tracker_detection_stamp.nanosec > 0) {
@@ -751,7 +730,6 @@ auto WorldModelWrapper::updateRobotTimestamps(
     info.last_tracker_detection_stamp = std::nullopt;
   }
 
-  // タイムスタンプの伝播（feedback）
   if (
     robot_msg.last_feedback_detection_stamp.sec > 0 ||
     robot_msg.last_feedback_detection_stamp.nanosec > 0) {
@@ -760,7 +738,6 @@ auto WorldModelWrapper::updateRobotTimestamps(
     info.last_feedback_detection_stamp = std::nullopt;
   }
 
-  // タイムアウト判定（0.1秒）
   constexpr double TRACKER_TIMEOUT_SEC = 0.1;
   if (info.last_tracker_detection_stamp.has_value()) {
     auto elapsed = (now - *info.last_tracker_detection_stamp).seconds();
