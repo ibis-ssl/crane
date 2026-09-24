@@ -17,9 +17,6 @@
 #include <crane_msgs/msg/position_control_config.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_utils/parameter.hpp>
-#include <format>
-#include <iomanip>
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -31,7 +28,6 @@
 namespace crane
 {
 
-// 通信設定の定数
 namespace CommConfig
 {
 constexpr int DEFAULT_PORT = 12345;
@@ -50,7 +46,6 @@ private:
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 
-  // ブロードキャスト送信用ソケット
   boost::asio::io_service broadcast_io_service_;
   boost::asio::ip::udp::endpoint broadcast_endpoint_;
   boost::asio::ip::udp::socket broadcast_socket_;
@@ -90,7 +85,6 @@ public:
         }
       });
 
-    // 送信先アドレスとポートの設定
     const std::string target_address =
       crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
     const int target_port =
@@ -114,7 +108,6 @@ public:
     crane::get_or_declare_parameter(this, "position_control.kd", position_control_kd_);
 
     try {
-      // ブロードキャスト許可フラグを設定
       broadcast_socket_.set_option(boost::asio::socket_base::broadcast(true));
       RCLCPP_INFO(get_logger(), "✓ SO_BROADCAST flag set");
 
@@ -128,7 +121,6 @@ public:
       position_control_config_endpoint_ = boost::asio::ip::udp::endpoint(
         boost::asio::ip::address::from_string(target_address), position_control_config_port);
 
-      // インターフェース情報の確認（デバッグ用）
       checkNetworkInterfaces();
 
       RCLCPP_INFO(get_logger(), "【Real Robot Broadcast Mode Initialized】");
@@ -170,13 +162,11 @@ private:
     for (struct ifaddrs * ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
       if (ifa->ifa_addr == nullptr) continue;
 
-      // IPv4アドレスのみ表示
       if (ifa->ifa_addr->sa_family == AF_INET) {
         struct sockaddr_in * addr_in = reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr);
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(addr_in->sin_addr), ip_str, INET_ADDRSTRLEN);
 
-        // ブロードキャストアドレス情報も取得
         char broadcast_str[INET_ADDRSTRLEN] = "N/A";
         if (ifa->ifa_flags & IFF_BROADCAST && ifa->ifa_broadaddr) {
           struct sockaddr_in * broadcast_in =
@@ -188,14 +178,12 @@ private:
                               " IP: " + std::string(ip_str) +
                               " Broadcast: " + std::string(broadcast_str);
 
-        // インターフェースの状態を表示
         if (ifa->ifa_flags & IFF_UP) log_msg += " [UP]";
         if (ifa->ifa_flags & IFF_RUNNING) log_msg += " [RUNNING]";
         if (ifa->ifa_flags & IFF_BROADCAST) log_msg += " [BROADCAST]";
 
         RCLCPP_INFO(get_logger(), "%s", log_msg.c_str());
 
-        // 設定されたブロードキャストアドレスとの照合
         if (std::string(broadcast_str) == CommConfig::BROADCAST_ADDRESS) {
           RCLCPP_INFO(get_logger(), "    ✅ Matches configured broadcast address!");
         }
@@ -205,7 +193,6 @@ private:
     freeifaddrs(interfaces);
   }
 
-  // IBIS バイナリパケット生成
   RobotCommandV2 createRobotPacket(
     const crane_msgs::msg::RobotCommand & command, int counter,
     const std::vector<uint8_t> & available_ids)
@@ -290,7 +277,7 @@ private:
     return packet;
   }
 
-  void sendIbis(crane_msgs::msg::RobotCommands & msg)
+  void sendCommands(crane_msgs::msg::RobotCommands & msg) override
   {
     if (++counter_ > 200) {
       counter_ = 0;
@@ -327,7 +314,6 @@ private:
       }
     }
 
-    // パケット組み立て
     char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
     for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
       int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
@@ -335,7 +321,6 @@ private:
       memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
     }
 
-    // パケット送信
     bool sent = false;
     try {
       broadcast_socket_.send_to(boost::asio::buffer(broadcast_buf), broadcast_endpoint_);
@@ -426,9 +411,6 @@ private:
     // 送信のたびに残す。理由と読み方は docs/cm4_position_control.md に書いてある。
     position_control_config_pub_->publish(config_msg);
   }
-
-public:
-  void sendCommands(crane_msgs::msg::RobotCommands & msg) override { sendIbis(msg); }
 };
 }  // namespace crane
 
