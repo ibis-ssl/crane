@@ -21,22 +21,17 @@ auto BallHorizonMetric::compute(MetricContext & ctx) -> void
 {
   const auto & ball = ctx.world_model->ball();
 
-  // ボールラインの長さを計算
-  ctx.analysis.ball_horizon = [&]() {
-    Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
-    auto robots = ctx.world_model->theirs().robotsWhere().available().get();
-    auto ball_line_lengths =
-      robots |
-      ranges::views::transform(
-        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
-      // 距離が0.5m以下のものを抽出
-      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
-      // ball.posとの距離を計算
-      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-          return (pair.closest_point - ball.pos).norm();
-        });
-    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
-  }();
+  Segment ball_line = ball.getTrajectorySegmentByTime(3.0);
+  auto robots = ctx.world_model->theirs().robotsWhere().available().get();
+  auto ball_line_lengths =
+    robots | ranges::views::transform([&](const auto & robot) {
+      return getClosestPointAndDistance(ball_line, robot->pose.pos);
+    }) |
+    ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; }) |
+    ranges::views::transform(
+      [&](const ClosestPoint & pair) -> double { return (pair.closest_point - ball.pos).norm(); });
+  ctx.analysis.ball_horizon =
+    ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
 }
 
 }  // namespace crane::metrics

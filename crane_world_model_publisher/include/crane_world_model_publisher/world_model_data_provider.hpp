@@ -13,6 +13,7 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
+#include <chrono>
 #include <cmath>
 #include <crane_comm/unicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
@@ -34,7 +35,6 @@
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-#include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
@@ -192,9 +192,19 @@ private:
   std::unique_ptr<crane::AsyncUdpReceiver> multicast_receiver_;
 
   // asioスレッドからROS2スレッドへの安全な受け渡し用バッファ
+  struct TimedPacket
+  {
+    std::string data;
+    std::chrono::steady_clock::time_point recv_time;
+  };
   std::mutex recv_mutex_;
-  std::vector<std::string> pending_vision_packets_;
-  std::vector<std::string> pending_tracker_packets_;
+  std::vector<TimedPacket> pending_vision_packets_;
+  std::vector<TimedPacket> pending_tracker_packets_;
+
+  // 直近処理したTrackerフレームのUDP受信時刻・パース完了時刻（DelayCheckpoints用、steady_clock基準）
+  std::chrono::steady_clock::time_point last_tracker_udp_recv_steady_{};
+  std::chrono::steady_clock::time_point last_tracker_parsed_steady_{};
+  bool has_tracker_delay_checkpoint_{false};
 
   // データ状態
   crane_msgs::msg::BallInfo ball_info_;
@@ -273,7 +283,7 @@ private:
     double penalty_area_h;
   } game_data;
 
-  bool on_positive_half;
+  bool on_positive_half = false;
 
   bool is_emplace_positive_side;
 
@@ -286,10 +296,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
-
-  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
@@ -314,6 +320,14 @@ private:
   Box area_mask;
 
   bool geometry_initialized = false;
+
+  // 設定ファイル(field_geometry_div_*.yaml)で暫定初期化したか。
+  // この値はvision geometry受信までのブートストラップにすぎず、実行時の権威ではない。
+  bool geometry_from_config_ = false;
+
+  // vision geometryを一度でも受信したか。
+  // 偽のまま試合が進むと、設定ファイルの推測値でcraneが判断し続けることになる。
+  bool vision_geometry_received_ = false;
 
   auto processDetectionFrame(const robocup_ssl::SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const robocup_ssl::SSL_GeometryData & geometry) -> bool;
@@ -353,8 +367,7 @@ private:
 
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
-  auto convertTrackedRobot(
-    const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  auto convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot)
     -> crane_msgs::msg::RobotInfo;
 };
 }  // namespace crane

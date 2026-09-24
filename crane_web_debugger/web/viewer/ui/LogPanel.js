@@ -7,6 +7,10 @@ export class LogPanel {
         this._autoScroll = true;
         this._levelFilter = new Set(['info', 'warn', 'error', 'action', 'metric']);
         this._textFilter = '';
+        // DOM とは別に素の記録も持つ。サイドバーのログタブが、同じ行を
+        // もう一度貯めることなくロボット単位で絞り込めるようにするため。
+        this.entries = [];
+        this._appendSubs = new Set();
 
         this._setupScrollTracking();
     }
@@ -19,6 +23,8 @@ export class LogPanel {
         const ts = new Date().toLocaleTimeString('ja', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const text = `[${ts}][${tag}] ${msg}`;
         entry.textContent = text;
+        this.entries.push({ time: ts, level, tag, msg });
+        if (this.entries.length > this._maxEntries) this.entries.shift();
 
         const levelOk = this._levelFilter.has(level);
         const textOk = !this._textFilter || text.includes(this._textFilter);
@@ -34,6 +40,12 @@ export class LogPanel {
         if (this._autoScroll) {
             this._body.scrollTop = this._body.scrollHeight;
         }
+        for (const fn of this._appendSubs) fn(this.entries[this.entries.length - 1]);
+    }
+
+    onAppend(fn) {
+        this._appendSubs.add(fn);
+        return () => this._appendSubs.delete(fn);
     }
 
     setLevelFilter(levels) {
@@ -47,6 +59,7 @@ export class LogPanel {
     }
 
     clear() {
+        this.entries = [];
         this._body.innerHTML = '';
         this._count = 0;
     }

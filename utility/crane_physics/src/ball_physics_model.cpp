@@ -383,7 +383,10 @@ auto BallPhysicsModel::loadConfigFromYAML(const std::string & yaml_file_path) ->
 auto BallPhysicsModel::getDefaultConfig() -> Config
 {
   Config config;
-  config.deceleration = 0.7;       // 転がり時の減速度 (m/s²)
+  // ER-Force シミュレータ実測値。Config の既定値・erforce_ball_physics.yaml・
+  // pass_kick::kDefaultDeceleration と揃えること。片方だけ更新すると
+  // 経路（yaml 経由か既定値か）によって物理が変わる。
+  config.deceleration = 0.36;      // 転がり時の減速度 (m/s²)
   config.gravity = -9.81;          // 重力加速度 (m/s²)
   config.air_resistance = 0.0;     // 空気抵抗係数
   config.height_threshold = 0.05;  // 飛行判定の高度閾値 (m)

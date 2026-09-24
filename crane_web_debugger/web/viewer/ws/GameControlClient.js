@@ -35,11 +35,6 @@ export class GameControlClient {
             this.ws.send(JSON.stringify({ change }));
     }
 
-    _sendInput(input) {
-        if (this.ws?.readyState === WebSocket.OPEN)
-            this.ws.send(JSON.stringify(input));
-    }
-
     newCommand(type, forTeam = 'UNKNOWN') {
         this._sendChange({ newCommandChange: { command: { type, forTeam } } });
     }
@@ -60,6 +55,7 @@ export class GameControlClient {
 
     nextStage() {
         const ca = this.state?.continueActions?.[0];
-        if (ca) this._sendInput({ continueAction: ca });
+        if (ca && this.ws?.readyState === WebSocket.OPEN)
+            this.ws.send(JSON.stringify({ continueAction: ca }));
     }
 }

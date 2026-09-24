@@ -8,6 +8,7 @@
 #define CRANE_GAME_ANALYZER__METRICS__SUB_ATTACKER_METRICS_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
+#include <rclcpp/time.hpp>
 
 #include "metric_base.hpp"
 #include "metric_context.hpp"
@@ -48,6 +49,16 @@ private:
   // ヒステリシス用状態（位置の急変を防ぐ）
   Point last_position_{0.0, 0.0};
   bool has_last_position_ = false;
+
+  // 計算結果の再利用用状態（スロットル中に前回結果を再送出する）
+  bool last_has_position_ = false;
+  float last_score_ = 0.0f;
+
+  // 計算頻度スロットル用状態
+  // DPPS探索(候補点2560個)は元々オンデマンド用にチューニングされたパラメータで、
+  // ヒステリシス閾値(0.5m)より高頻度の探索は無駄になるため計算間隔を制限する
+  rclcpp::Time last_compute_time_;
+  bool has_computed_ = false;
 };
 
 }  // namespace crane::metrics

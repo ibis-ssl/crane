@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <crane_sessions/latency_measurement_session.hpp>
+#include <crane_utils/time.hpp>
 #include <string>
 
 namespace crane
@@ -27,7 +28,7 @@ LatencyMeasurementSession::calculatePositionCommand(const std::vector<RobotIdent
     return {Status::RUNNING, robot_commands};
   }
 
-  const double t_sec = (clock_->now() - start_time_).seconds();
+  const double t_sec = crane::getElapsedSec(start_time_, clock_->now());
   const size_t n = robots.size();
 
   for (size_t idx = 0; idx < n; ++idx) {

@@ -5,10 +5,12 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_geometry/ddps.hpp>
-#include <crane_physics/pass.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_robot_skills/attacker.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_map>
 
 namespace crane::skills
 {
@@ -20,13 +22,11 @@ std::string Attacker::getStateName(int s)
 namespace
 {
 constexpr double GOAL_ANGLE_THRESHOLD_DEG = 3.0;
-constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
+constexpr double GOAL_ANGLE_THRESHOLD_RAD = deg2rad(GOAL_ANGLE_THRESHOLD_DEG);
 constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 0.5;
-constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
 constexpr double BALL_CONTROL_DISTANCE = 1.0;
 constexpr double CHIP_KICK_DISTANCE = 2.0;
 constexpr double MOVING_BALL_VELOCITY = 1.0;
-constexpr double ENEMY_NEAR_BALL_DISTANCE = 2.0;
 constexpr double ENEMY_SLACK_RECEIVE_THRESHOLD = 0.3;  // RECEIVE抑制: 敵がこの秒数以上早いと諦める
 constexpr double MIN_PASS_SCORE_ATTACKER = 0.2;        // パス品質の下限（二重チェック用）
 constexpr double KICK_TIMEOUT_SEC = 3.0;               // KICK状態でボール無接触の場合のタイムアウト
@@ -134,7 +134,7 @@ void Attacker::initialize()
   addStateFunction(static_cast<int>(AttackerState::RECEIVE), [this]() -> Status {
     auto redirect_target = [&]() -> Point {
       double angle = GoalKick::getBestAngleToShootFromPoint(
-        10.0 * M_PI / 180., robot()->pose.pos, world_model(), visualizer);
+        deg2rad(10.0), robot()->pose.pos, world_model(), visualizer);
       Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
       Segment goal_line;
       goal_line.first << world_model()->getAttackGoalCenter().x(),
@@ -152,12 +152,11 @@ void Attacker::initialize()
 
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestAttackGoalAngleRangeFromPoint(robot()->pose.pos);
-    double angle_diff_deg =
-      std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
-      180.0 / M_PI;
+    double angle_diff_deg = rad2deg(
+      std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)));
 
     // ゴールが見えている && リダイレクト角度が45度以内
-    bool redirect = goal_angle_width * 180.0 / M_PI > 10. && angle_diff_deg < 45.;
+    bool redirect = rad2deg(goal_angle_width) > 10. && angle_diff_deg < 45.;
 
     if (redirect) {
       printTextOnRobot("RECEIVE::REDIRECT");
@@ -225,28 +224,13 @@ void Attacker::initialize()
 
     double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
 
-    // パスは pass_target_id がある場合のみ検討
-    if (world_model()->getMsg().game_analysis.pass_target_id >= 0) {
-      auto target_id = static_cast<uint8_t>(world_model()->getMsg().game_analysis.pass_target_id);
-      if (target_id != robot()->id) {
-        // pass_scores からスコアを参照して低品質パスを拒否
-        const auto & pass_scores = world_model()->getMsg().game_analysis.pass_scores;
-        double target_score = 0.0;
-        for (const auto & s : pass_scores) {
-          if (s.id == target_id) {
-            target_score = s.value;
-            break;
-          }
-        }
-        if (target_score >= MIN_PASS_SCORE_ATTACKER) {
-          pass_receiver_id = target_id;
-          kick_target = world_model()->getOurRobot(target_id)->pose.pos;
-        } else {
-          pass_receiver_id = std::nullopt;
-        }
-      } else {
-        pass_receiver_id = std::nullopt;
-      }
+    const auto & pass_plan = world_model()->getMsg().game_analysis.pass_plan;
+    if (
+      isUsablePassPlan(pass_plan, *world_model()) &&
+      pass_plan.state == crane_msgs::msg::PassPlan::STATE_PLANNING &&
+      pass_plan.kicker_id == robot()->id && pass_plan.score >= MIN_PASS_SCORE_ATTACKER) {
+      pass_receiver_id = static_cast<uint8_t>(pass_plan.receiver_id);
+      kick_target = Point(pass_plan.receive_point.x, pass_plan.receive_point.y);
     } else {
       // 未選択時はパスしない
       pass_receiver_id = std::nullopt;
@@ -256,8 +240,33 @@ void Attacker::initialize()
       std::abs(world_model()->getAttackGoalCenter().x() - world_model()->ball().pos.x());
 
     using boost::math::constants::degree;
+    // KICK 状態でどの分岐を選んだかは printTextOnRobot（可視化専用）にしか出ず、
+    // ログからは追えない。「パス計画を持っていたのにシュートを選んだ」のか
+    // 「そもそも計画が無かった」のかを後から切り分けられるようにする。
+    //
+    // 特に FINAL_GUARD はゴールが開いていなくても 6.0 m/s のストレートを撃つため、
+    // 実測ではパスと見分けがつかない速いボールが飛ぶ。どちらが飛んだのかを
+    // ログだけで判定できないと、シナリオ検証の失敗原因を取り違える。
+    //
+    // 出力は「そのロボットの分岐が変わったとき」だけにする。時間 throttle だと
+    // クロックが呼び出し箇所ごとに共有されるため、複数ロボットが同時に KICK に
+    // 居ると 1 秒に 1 行しか出ず、実際に蹴った機体の分岐が落ちる。
+    auto log_branch = [&](const char * branch) {
+      static std::unordered_map<uint8_t, std::string> last_branch;
+      auto & previous = last_branch[robot()->id];
+      if (previous == branch) {
+        return;
+      }
+      previous = branch;
+      RCLCPP_INFO(
+        rclcpp::get_logger("Attacker"),
+        "KICK分岐: robot=%d %s ゴール可視角=%.2f°(シュート閾値 %.1f°) パス計画=%s",
+        static_cast<int>(robot()->id), branch, goal_angle_width / degree<double>(),
+        GOAL_ANGLE_THRESHOLD_DEG, pass_receiver_id.has_value() ? "あり" : "なし");
+    };
     if (goal_angle_width > GOAL_ANGLE_THRESHOLD_RAD) {
       // GOAL_KICK
+      log_branch("GOAL_KICK");
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", GOAL_ANGLE_THRESHOLD_DEG);
       goal_kick_skill.setParameter("use_target_kick_speed", true);
@@ -266,19 +275,26 @@ void Attacker::initialize()
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
+      log_branch("STANDARD_PASS");
       printTextOnRobot("KICK::STANDARD_PASS");
-      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
       kick_skill.setParameter("target", kick_target);
-      configurePassKick(kick_target, kick_skill);
+      kick_skill.setParameter("chip_kick", false);
+      kick_skill.setParameter("use_target_chip_distance", false);
+      kick_skill.setParameter("use_target_kick_speed", true);
+      kick_skill.setParameter("target_kick_speed", static_cast<double>(pass_plan.kick_speed));
+      kick_skill.setParameter("with_dribble", false);
+      kick_skill.setParameter("dribble_power", 0.0);
       return kick_skill.run();
-    } else if (goal_angle_width > LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0) {
+    } else if (goal_angle_width > deg2rad(LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG)) {
       // LOW_CHANCE_GOAL_KICK
+      log_branch("LOW_CHANCE_GOAL_KICK");
       printTextOnRobot("KICK::LOW_CHANCE_GOAL_KICK");
       return goal_kick_skill.run();
     } else if (
       robot()->getDistance(world_model()->ball().pos) < BALL_CONTROL_DISTANCE &&
       x_diff_with_their_goal >= world_model()->fieldSize().x() * 0.5) {
       // MOVE_BALL_TO_OPPONENT_HALF
+      log_branch("MOVE_BALL_TO_OPPONENT_HALF");
       printTextOnRobot("KICK::MOVE_BALL_TO_OPPONENT_HALF");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", true);
@@ -289,6 +305,7 @@ void Attacker::initialize()
     } else {
       // FINAL_GUARD: ゴール角度が不十分でも強ストレートでクリア
       // チップキックはGK越えで直接ゴールに入るとファウルになるため使用不可
+      log_branch("FINAL_GUARD");
       printTextOnRobot("KICK::FINAL_GUARD");
       kick_skill.setParameter("target", world_model()->getAttackGoalCenter());
       kick_skill.setParameter("chip_kick", false);
@@ -309,97 +326,10 @@ void Attacker::onPostUpdate()
   }
 }
 
-void Attacker::configurePassKick(const Point & target, KickOld & kick_skill)
-{
-  auto pass_analysis = getPassAnalysis(
-    world_model()->ball().pos, target, world_model()->theirs().robotsWhere().available().get());
-
-  if (pass_analysis.need_chip || shouldUseChipKick(target)) {
-    kick_skill.setParameter("chip_kick", true);
-    kick_skill.setParameter("with_dribble", true);
-    kick_skill.setParameter("dribble_power", 0.7);
-    if (pass_analysis.need_chip) {
-      kick_skill.setParameter("use_target_chip_distance", true);
-      kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
-    } else {
-      kick_skill.setParameter("kick_power", 0.9);
-    }
-  } else {
-    kick_skill.setParameter("chip_kick", false);
-    kick_skill.setParameter("use_target_kick_speed", true);
-    kick_skill.setParameter(
-      "target_kick_speed", std::clamp((world_model()->ball().pos - target).norm(), 2.0, 4.0));
-    kick_skill.setParameter("dribble_power", 0.0);
-  }
-}
-
-bool Attacker::shouldUseChipKick(const Point & target)
-{
-  Segment kick_line{world_model()->ball().pos, target};
-  if (
-    auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-      kick_line, world_model()->theirs().robotsWhere().available().get());
-    nearest_enemy.has_value()) {
-    return nearest_enemy->distance < PASS_OBSTACLE_DISTANCE &&
-           nearest_enemy->robot->getDistance(world_model()->ball().pos) < ENEMY_NEAR_BALL_DISTANCE;
-  }
-  return false;
-}
-
 double Attacker::evaluateGoalAngle(const Point & position)
 {
   auto [best_angle, goal_angle_width] =
     world_model()->getLargestAttackGoalAngleRangeFromPoint(position);
   return goal_angle_width;
-}
-
-double Attacker::calculatePassScore(const Point & target)
-{
-  double score = 1.0;
-
-  // パス距離の評価（1.5m〜4mが最適、1.0m以下は大幅減点）
-  const double pass_distance = (target - world_model()->ball().pos).norm();
-  if (pass_distance < 1.0) {
-    // 1.0m以下の超近距離パスは大幅減点
-    score *= pass_distance;  // 0.5mなら0.5倍、0.3mなら0.3倍
-  } else {
-    // 1.0m以上は距離に応じてボーナス（最大+2.0）
-    score += std::clamp((pass_distance - 1.0) * 0.5, 0.0, 2.0);
-  }
-
-  // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-  double goal_angle_width = evaluateGoalAngle(target);
-  score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-
-  // 自ゴールから遠いほうが良い（reverse_attack時は攻撃対象ゴールの反対側）
-  auto defense_goal_posts = world_model()->isPracticeReverseAttack()
-                              ? world_model()->getTheirGoalPosts()
-                              : world_model()->getOurGoalPosts();
-  auto [best_angle, own_goal_angle_width] =
-    world_model()->getLargestGoalAngleRangeFromPoint(target, defense_goal_posts, {});
-  score -= std::clamp(own_goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-
-  // 攻撃対象ゴールに近いときはスコアを上げる
-  double normed_distance_to_their_goal = ((target - world_model()->getAttackGoalCenter()).norm() -
-                                          (world_model()->fieldSize().x() * 0.5)) /
-                                         (world_model()->fieldSize().x() * 0.5);
-  score *= (1.0 - normed_distance_to_their_goal);
-
-  // パスがブロックされているかチェックし、ブロックされていたら諦め、近くにいるときはスコアを下げる
-  Segment ball_to_target{world_model()->ball().pos, target};
-  const auto enemy_robots = world_model()->theirs().robotsWhere().available().get();
-  if (
-    auto nearest_enemy =
-      world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-    nearest_enemy) {
-    if (
-      nearest_enemy->robot->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&
-      nearest_enemy->distance < PASS_OBSTACLE_DISTANCE) {
-      return 0.0;  // パスがブロックされている
-    }
-    score *= std::clamp(nearest_enemy->distance / 2.0, 0.0, 1.0);
-  }
-
-  return score;
 }
 }  // namespace crane::skills

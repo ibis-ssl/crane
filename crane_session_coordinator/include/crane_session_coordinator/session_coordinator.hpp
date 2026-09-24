@@ -19,7 +19,6 @@
 #include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
-#include <deque>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -42,8 +41,6 @@ class SessionCoordinatorComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit SessionCoordinatorComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-
-  auto request(const std::string & situation, std::vector<uint8_t> selectable_robot_ids) -> void;
 
   auto assign(const std::string & event_name) -> void;
 
@@ -90,11 +87,7 @@ private:
 
   bool world_model_ready = false;
 
-  bool initial_assignment_done = false;
-
   std::string initial_session_name;
-
-  std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
   VisualizerMessageBuilder::SharedPtr visualizer =
     std::make_shared<VisualizerMessageBuilder>("coordinator");

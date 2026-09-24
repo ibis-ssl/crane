@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/ddps.hpp>
+#include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/receive.hpp>
@@ -71,7 +72,16 @@ public:
       return {static_cast<SessionBase::Status>(status), {receive_skill->getRobotCommand()}};
     }
 
-    // Pre-pass: no alignment needed; just stop and face the ball
+    const auto & plan = world_model->getMsg().game_analysis.pass_plan;
+    if (isUsablePassPlan(plan, *world_model) && plan.receiver_id == robots.front().id) {
+      receive_skill->commander()
+        ->lookAtBall()
+        .setDribblerTargetPosition(Point(plan.receive_point.x, plan.receive_point.y))
+        .kickStraight(0.0);
+      return {SessionBase::Status::RUNNING, {receive_skill->getRobotCommand()}};
+    }
+
+    // 有効な計画がなければボールを見て待機する。
     receive_skill->commander()->stopHere().lookAtBall();
     return {SessionBase::Status::RUNNING, {receive_skill->getRobotCommand()}};
   }
@@ -80,7 +90,12 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     auto game_analysis = getGameAnalysis();
-    return [game_analysis](const std::shared_ptr<RobotInfo> & robot) {
+    game_analysis.pass_plan = world_model->getMsg().game_analysis.pass_plan;
+    const bool has_plan = isUsablePassPlan(game_analysis.pass_plan, *world_model);
+    return [game_analysis, has_plan](const std::shared_ptr<RobotInfo> & robot) {
+      if (has_plan) {
+        return robot->id == game_analysis.pass_plan.receiver_id ? -100.0 : 100.0;
+      }
       // recommended_pass_receiver_id が設定されている場合そのロボットを最優先
       if (
         game_analysis.recommended_pass_receiver_id >= 0 &&

@@ -5,14 +5,13 @@ TIGERs対戦試合制御スクリプト (Protocol Buffers版)
 ssl-game-controllerのProtocol Buffersメッセージを使用して試合を制御・監視します。
 """
 
-import time
-import sys
+import asyncio
+import json
 import os
 import socket
 import struct
-import asyncio
-import json
-from typing import List, Tuple, Optional
+import sys
+import time
 
 try:
     import websockets
@@ -25,11 +24,11 @@ except ImportError as e:
 sys.path.insert(0, "/app/proto")
 try:
     from api import ssl_gc_api_pb2
-    from state import ssl_gc_referee_message_pb2 as referee_pb2
-    from state import ssl_gc_game_event_pb2 as game_event_pb2
     from engine import ssl_gc_engine_pb2 as engine_pb2
-    from state import ssl_gc_common_pb2 as common_pb2
     from ssl_simulation import ssl_simulation_control_pb2
+    from state import ssl_gc_common_pb2 as common_pb2
+    from state import ssl_gc_game_event_pb2 as game_event_pb2
+    from state import ssl_gc_referee_message_pb2 as referee_pb2
 except ImportError as e:
     print(f"protobufモジュールのインポートエラー: {e}", file=sys.stderr)
     print("protoファイルをコンパイルしてください", file=sys.stderr)
@@ -41,10 +40,38 @@ except ImportError as e:
     print(f"google.protobuf.json_formatのインポートエラー: {e}", file=sys.stderr)
     sys.exit(1)
 
-# HALT状態でNEXT_COMMANDを送信するまでの秒数
+# HALT状態でGCの継続アクションを代行するまでの秒数
 HALT_RECOVERY_TIMEOUT = 1
-# STOP状態が続いた場合にFORCE_STARTを送信するまでの秒数
+# STOP状態でGCの継続アクションを代行するまでの秒数
+STOP_CONTINUE_TIMEOUT = 3
+# 継続アクションでも動かなかった場合にFORCE_STARTを送信するまでの秒数
 STOP_RECOVERY_TIMEOUT = 15
+
+# 代行する継続アクションの優先順位（この一覧に無いものは絶対に送らない）。
+# ボール配置を最優先にするのは、場外のまま再開すると NO_PROGRESS_IN_GAME に
+# なるため。ステージ送りを最後にするのは、ボールを戻す前に前後半を進めない
+# ようにするため。
+#
+# 許可リスト方式にしているのは、GCが END_GAME のような「押したら試合が終わる」
+# アクションも READY_MANUAL として並べてくるため。「BLOCKEDでない先頭を押す」
+# という一般則にすると試合を即終了させてしまう。
+CONTINUE_ACTION_PRIORITY = (
+    "BALL_PLACEMENT_START",
+    "NEXT_COMMAND",
+    "RESUME_FROM_HALT",
+    "NEXT_STAGE",
+)
+# 実行可能とみなす継続アクションの状態（BLOCKED / DISABLED は送っても無駄で、
+# 送る次コマンドが無い状態のNEXT_COMMANDはGCをクラッシュさせることがある）
+ACTIONABLE_STATES = ("READY_AUTO", "READY_MANUAL")
+
+# 後半が終わったステージでは NEXT_STAGE の代わりに END_GAME を送る。
+# GCのステージ連鎖は固定順で、NORMAL_SECOND_HALF の次は EXTRA_TIME_BREAK に
+# なる。延長戦はスコアが引き分けのときに意味を持つもので、CIの対戦では不要
+# （実際に 0-6 で決着しているのに延長前半まで進んでしまった）。
+# END_GAME で POST_GAME へ送れば、監視ループが stage == "POST_GAME" を見て
+# 正常に試合を終えられる。
+STAGES_TO_END_INSTEAD_OF_ADVANCE = ("NORMAL_SECOND_HALF",)
 # PREPARE_KICKOFF/PENALTY後にNORMAL_STARTを送信するまでの秒数
 PREPARE_RECOVERY_TIMEOUT = 5
 
@@ -66,8 +93,8 @@ class MatchController:
 
         self.yellow_score = 0
         self.blue_score = 0
-        self.events: List[Tuple[float, str]] = []
-        self.start_time: Optional[float] = None
+        self.events: list[tuple[float, str]] = []
+        self.start_time: float | None = None
         self.match_duration = 0.0
 
         # ファウル・カード追跡
@@ -75,7 +102,7 @@ class MatchController:
         self.foul_counters = {"YELLOW": 0, "BLUE": 0}
         self.max_allowed_bots = {"YELLOW": 0, "BLUE": 0}
         # (elapsed_sec, team_name, event_type) のリスト
-        self.foul_event_log: List[Tuple[float, str, str]] = []
+        self.foul_event_log: list[tuple[float, str, str]] = []
         # event_type -> count per team
         self.foul_event_counts: dict = {"YELLOW": {}, "BLUE": {}}
 
@@ -94,7 +121,7 @@ class MatchController:
 
     def _create_multicast_socket(
         self, address: str, port: int, timeout: float = 1.0
-    ) -> Optional[socket.socket]:
+    ) -> socket.socket | None:
         """マルチキャストUDPソケットを作成"""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -104,14 +131,14 @@ class MatchController:
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
             sock.settimeout(timeout)
             return sock
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
                 f"✗ マルチキャストソケット作成エラー ({address}:{port}): {e}",
                 file=sys.stderr,
             )
             return None
 
-    def create_referee_socket(self) -> Optional[socket.socket]:
+    def create_referee_socket(self) -> socket.socket | None:
         """レフェリーメッセージ受信用のマルチキャストソケットを作成"""
         sock = self._create_multicast_socket(self.referee_address, self.referee_port)
         if sock:
@@ -134,7 +161,7 @@ class MatchController:
                 (self.sim_host, self.sim_control_port),
             )
             print(f"✓ ボールをテレポート: ({x:.2f}, {y:.2f})")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  ボールテレポートエラー: {e}")
 
     def teleport_ball_to_center(self) -> None:
@@ -153,15 +180,17 @@ class MatchController:
             # Blueにペナルティ → Yellowがキック → Blue側ゴール(-x方向)へ
             # ペナルティスポット: センターから +PENALTY_SPOT_OFFSET = +2.0 m
             self.teleport_ball_to_position(PENALTY_SPOT_OFFSET, 0.0)
-        elif command in ("BALL_PLACEMENT_YELLOW", "BALL_PLACEMENT_BLUE"):
-            if referee_msg.HasField("designated_position"):
-                # SSL referee protobufはミリメートル単位、ssl-simulation-protocolはメートル単位
-                self.teleport_ball_to_position(
-                    referee_msg.designated_position.x / 1000.0,
-                    referee_msg.designated_position.y / 1000.0,
-                )
+        elif command in (
+            "BALL_PLACEMENT_YELLOW",
+            "BALL_PLACEMENT_BLUE",
+        ) and referee_msg.HasField("designated_position"):
+            # SSL referee protobufはミリメートル単位、ssl-simulation-protocolはメートル単位
+            self.teleport_ball_to_position(
+                referee_msg.designated_position.x / 1000.0,
+                referee_msg.designated_position.y / 1000.0,
+            )
 
-    def _extract_event_team(self, ev) -> Optional[str]:
+    def _extract_event_team(self, ev) -> str | None:
         """ゲームイベントからチーム名を抽出する"""
         field_name = ev.WhichOneof("event")
         if not field_name:
@@ -170,7 +199,7 @@ class MatchController:
             sub = getattr(ev, field_name)
             if sub.HasField("by_team"):
                 return common_pb2.Team.Name(sub.by_team)
-        except Exception:
+        except (AttributeError, ValueError):
             pass
         return None
 
@@ -184,7 +213,7 @@ class MatchController:
                 if result:
                     print("✓ Game Controller準備完了")
                     return True
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
             time.sleep(2)
         print("✗ Game Controllerの起動タイムアウト", file=sys.stderr)
@@ -214,7 +243,7 @@ class MatchController:
                     command = referee_pb2.Referee.Command.Name(referee_msg.command)
                     print(f"✓ レフェリーメッセージ受信確認 (command={command})")
                     return True
-                except socket.timeout:
+                except TimeoutError:
                     continue
         finally:
             sock.close()
@@ -237,7 +266,7 @@ class MatchController:
                     if len(data) > 0:
                         print("✓ Visionデータ受信確認")
                         return True
-                except socket.timeout:
+                except TimeoutError:
                     continue
         finally:
             sock.close()
@@ -266,19 +295,94 @@ class MatchController:
                 except asyncio.TimeoutError:
                     print("  応答タイムアウト（正常）")
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ WebSocket通信エラー: {e}", file=sys.stderr)
             return False
 
-    async def send_continue_action(self, action_type) -> bool:
+    async def send_continue_action(self, action_type, for_team=None) -> bool:
         """ContinueActionを送信（GC UIの「Continue」ボタンと同等）"""
         input_msg = ssl_gc_api_pb2.Input()
         input_msg.continue_action.type = action_type
-        input_msg.continue_action.for_team = common_pb2.UNKNOWN
+        input_msg.continue_action.for_team = (
+            common_pb2.UNKNOWN if for_team is None else for_team
+        )
         type_name = engine_pb2.ContinueAction.Type.Name(action_type)
         return await self.send_input(input_msg, f"ContinueAction: {type_name}")
 
-    def get_current_command(self) -> Optional[str]:
+    async def _fetch_continue_actions(self) -> list | None:
+        """GCが現在提示している継続アクションを読む。
+
+        Outputメッセージは {matchState, gcState, protocol, config} の形で、
+        continueActions は gcState の下にある。しかも完全な状態が入るのは
+        接続直後の1通目だけで、以降は差分なので取りこぼさないよう数通読む。
+        見つからなければ None を返す（空リストと区別する）。
+        """
+        async with websockets.connect(self.gc_ws_url, open_timeout=3) as ws:
+            for _ in range(5):
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=3.0))
+                gc_state = msg.get("gcState")
+                if isinstance(gc_state, dict) and "continueActions" in gc_state:
+                    return gc_state["continueActions"]
+        return None
+
+    def get_continue_actions(self) -> list:
+        """継続アクション一覧を取得する（取得できなければ空リスト）"""
+        try:
+            actions = asyncio.run(self._fetch_continue_actions())
+        except Exception as e:  # noqa: BLE001
+            print(f"  継続アクション取得エラー: {type(e).__name__}: {e}")
+            return []
+        if actions is None:
+            # 黙って空を返すと「代行すべきアクションが無い」と区別できず、
+            # 不具合が無言で握り潰される
+            print("  ⚠ 継続アクションを読めなかった（gcStateにcontinueActionsが無い）")
+            return []
+        return actions
+
+    def send_available_continue_action(self, stage: str | None = None) -> bool:
+        """GCが提示している継続アクションを代行実行する。
+
+        GCエンジンが autoContinue で自動実行するのは ContinueActions[0] が
+        READY_AUTO のときだけ（process_continue.go の defaultAction は
+        先頭要素を無条件に返す）。前半の時間切れで NEXT_STAGE(READY_MANUAL)
+        が先頭に入ると、その後ろに BALL_PLACEMENT_START(READY_AUTO) が
+        並んでいても自動実行は止まる。オペレータが居ないCIではここで代わりに
+        押してやる必要がある。
+        """
+        priority = CONTINUE_ACTION_PRIORITY
+        if stage in STAGES_TO_END_INSTEAD_OF_ADVANCE:
+            priority = tuple(
+                "END_GAME" if name == "NEXT_STAGE" else name for name in priority
+            )
+        actions = self.get_continue_actions()
+        usable = {
+            a.get("type"): a
+            for a in actions
+            if a.get("state") in ACTIONABLE_STATES and a.get("type")
+        }
+        for type_name in priority:
+            action = usable.get(type_name)
+            if action is None:
+                continue
+            team_name = action.get("forTeam", "UNKNOWN")
+            print(f"  継続アクションを代行: {type_name} ({team_name})")
+            try:
+                asyncio.run(
+                    self.send_continue_action(
+                        engine_pb2.ContinueAction.Type.Value(type_name),
+                        common_pb2.Team.Value(team_name),
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                print(f"  {type_name}エラー: {e}")
+                return False
+            return True
+        if actions:
+            offered = ", ".join(f"{a.get('type')}({a.get('state')})" for a in actions)
+            print(f"  実行可能な継続アクションなし: {offered}")
+        return False
+
+    def get_current_command(self) -> str | None:
         """現在のコマンドをレフェリーメッセージから取得"""
         try:
             sock = self._create_multicast_socket(
@@ -293,7 +397,7 @@ class MatchController:
                 return referee_pb2.Referee.Command.Name(referee_msg.command)
             finally:
                 sock.close()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  コマンド確認失敗: {e}")
             return None
 
@@ -352,7 +456,8 @@ class MatchController:
         self.start_time = time.time()
         last_print_time = time.time()
         print_interval = 10.0
-        stop_since: Optional[float] = None
+        stop_since: float | None = None
+        last_continue_try = 0.0
         prev_yellow_score = 0
         prev_blue_score = 0
         last_event_count = 0
@@ -406,7 +511,7 @@ class MatchController:
                         for ev in referee_msg.game_events[last_event_count:]:
                             try:
                                 ev_type = game_event_pb2.GameEvent.Type.Name(ev.type)
-                            except Exception:
+                            except Exception:  # noqa: BLE001
                                 ev_type = str(ev.type)
                             new_event_types.append(ev_type)
 
@@ -437,26 +542,23 @@ class MatchController:
 
                     # STOP/HALT 状態の処理
                     if command == "HALT":
+                        # ゴール後のHALTは NEXT_COMMAND でキックオフへ進むが、
+                        # ステージの時間が尽きているとNEXT_COMMANDはDISABLEDになり、
+                        # 必要なのはNEXT_STAGEになる。どちらが要るかはGCに聞く。
+                        # 無条件にNEXT_COMMANDを送り続けると、送る次コマンドが無い
+                        # 場合にGCがnilポインタ参照でクラッシュする
+                        # （statemachine/change_command.go:103）。
                         if stop_since is None:
                             stop_since = current_time
                         elif current_time - stop_since > HALT_RECOVERY_TIMEOUT:
-                            print(
-                                f"  HALT状態が{HALT_RECOVERY_TIMEOUT}秒超過 → NEXT_COMMANDを送信"
-                            )
-                            try:
-                                asyncio.run(
-                                    self.send_continue_action(
-                                        engine_pb2.ContinueAction.NEXT_COMMAND
-                                    )
-                                )
-                            except Exception as e:
-                                print(f"  NEXT_COMMANDエラー: {e}")
+                            self.send_available_continue_action(stage)
                             stop_since = None
                     elif command == "STOP":
                         if stop_since is None:
                             stop_since = current_time
-                        elif current_time - stop_since > STOP_RECOVERY_TIMEOUT:
-                            if has_possible_goal:
+                            last_continue_try = current_time
+                        elif has_possible_goal:
+                            if current_time - stop_since > STOP_RECOVERY_TIMEOUT:
                                 print("  POSSIBLE_GOAL検出 → ACCEPT_GOALを送信")
                                 try:
                                     asyncio.run(
@@ -464,21 +566,28 @@ class MatchController:
                                             engine_pb2.ContinueAction.ACCEPT_GOAL
                                         )
                                     )
-                                except Exception as e:
+                                except Exception as e:  # noqa: BLE001
                                     print(f"  ACCEPT_GOALエラー: {e}")
-                            else:
-                                print(
-                                    f"  ⚠ STOP状態が{STOP_RECOVERY_TIMEOUT}秒超過 → FORCE_STARTを送信"
-                                )
-                                try:
-                                    asyncio.run(
-                                        self.send_continue_action(
-                                            engine_pb2.ContinueAction.FORCE_START
-                                        )
+                                stop_since = None
+                        elif current_time - stop_since > STOP_RECOVERY_TIMEOUT:
+                            # 継続アクションでも動かないときだけの最終手段。
+                            # FORCE_STARTはボール配置を飛ばして再開するため、
+                            # ボールが場外のままだとNO_PROGRESS_IN_GAMEを繰り返す。
+                            print(
+                                f"  ⚠ 継続アクション後もSTOPが{STOP_RECOVERY_TIMEOUT}秒継続 → FORCE_STARTを送信"
+                            )
+                            try:
+                                asyncio.run(
+                                    self.send_continue_action(
+                                        engine_pb2.ContinueAction.FORCE_START
                                     )
-                                except Exception as e:
-                                    print(f"  FORCE_STARTエラー: {e}")
+                                )
+                            except Exception as e:  # noqa: BLE001
+                                print(f"  FORCE_STARTエラー: {e}")
                             stop_since = None
+                        elif current_time - last_continue_try > STOP_CONTINUE_TIMEOUT:
+                            last_continue_try = current_time
+                            self.send_available_continue_action(stage)
                     elif command in (
                         "PREPARE_KICKOFF_YELLOW",
                         "PREPARE_KICKOFF_BLUE",
@@ -495,7 +604,7 @@ class MatchController:
                                         engine_pb2.ContinueAction.NORMAL_START
                                     )
                                 )
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 print(f"  NORMAL_STARTエラー: {e}")
                             stop_since = None
                     else:
@@ -516,7 +625,7 @@ class MatchController:
                         print(f"  試合終了: stage={stage}, elapsed={int(elapsed)}秒")
                         break
 
-                except socket.timeout:
+                except TimeoutError:
                     # パケットなしの場合もタイムアウト確認
                     if self.start_time and time.time() - self.start_time > max_duration:
                         self.match_duration = time.time() - self.start_time
@@ -551,8 +660,10 @@ class MatchController:
 
                 if self.events:
                     f.write("\n=== イベント履歴 ===\n")
-                    for timestamp, event_desc in self.events:
-                        f.write(f"[{timestamp:6.1f}s] {event_desc}\n")
+                    f.writelines(
+                        f"[{timestamp:6.1f}s] {event_desc}\n"
+                        for timestamp, event_desc in self.events
+                    )
 
                 # ファウル・カード詳細
                 f.write("\n=== ファウル・カード詳細 ===\n")
@@ -570,17 +681,23 @@ class MatchController:
                     counts = self.foul_event_counts.get(team_key, {})
                     if counts:
                         f.write("  ファウル内訳:\n")
-                        for ev_type, cnt in sorted(counts.items(), key=lambda x: -x[1]):
-                            f.write(f"    {ev_type}: {cnt}回\n")
+                        f.writelines(
+                            f"    {ev_type}: {cnt}回\n"
+                            for ev_type, cnt in sorted(
+                                counts.items(), key=lambda x: -x[1]
+                            )
+                        )
 
                 if self.foul_event_log:
                     f.write("\n=== ファウル時系列 ===\n")
-                    for t, team, ev_type in self.foul_event_log:
-                        f.write(f"[{t:6.1f}s] {team}: {ev_type}\n")
+                    f.writelines(
+                        f"[{t:6.1f}s] {team}: {ev_type}\n"
+                        for t, team, ev_type in self.foul_event_log
+                    )
 
             print(f"✓ 試合結果を保存: {filename}")
             print(f"  結果: {result_str}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ 結果保存エラー: {e}", file=sys.stderr)
 
     def run(self) -> int:

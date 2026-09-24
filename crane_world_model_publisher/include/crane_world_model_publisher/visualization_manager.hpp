@@ -35,7 +35,6 @@ public:
   explicit VisualizationManager(rclcpp::Node & node);
   ~VisualizationManager() = default;
 
-  // 可視化（直接実装）
   auto drawFieldGeometry(
     const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode = false) -> void;
   auto drawVisionDetections(
@@ -46,13 +45,11 @@ public:
     const std::string & command_text) -> void;
   auto drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
-  // 軌跡履歴可視化
   auto drawTrajectoryHistory(
     const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
     const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
     const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void;
 
-  // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
   crane::VisualizerMessageBuilder::SharedPtr vision_builder;
   crane::VisualizerMessageBuilder::SharedPtr tracked_builder;

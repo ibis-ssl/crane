@@ -11,6 +11,8 @@
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/diagnostic_publisher.hpp>
+#include <crane_utils/parameter.hpp>
+#include <crane_utils/time.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
@@ -162,7 +164,6 @@ auto RobotData::communicationDiagnosticCallback(
     stat.add("feedback_valid_packet_count", feedback->valid_packet_count);
     stat.add("feedback_invalid_packet_count", feedback->invalid_packet_count);
     stat.add("feedback_sync_error_count", feedback->sync_error_count);
-    stat.add("feedback_checksum_error_count", feedback->checksum_error_count);
     stat.add("feedback_size_mismatch_count", feedback->size_mismatch_count);
     stat.add("feedback_counter_jump_count", feedback->counter_jump_count);
     if (ping != ping_msg.ping.end()) {
@@ -302,11 +303,9 @@ auto RobotData::robotErrorDiagnosticCallback(
 
 DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_node")
 {
-  declare_parameter("sim_mode", true);
-  sim_mode_ = get_parameter("sim_mode").as_bool();
-
-  declare_parameter("max_robot_id", 12);  // サポートする最大ロボットID
-  int max_robot_id = get_parameter("max_robot_id").as_int();
+  sim_mode_ = crane::get_or_declare_parameter(this, "sim_mode", true);
+  int max_robot_id =
+    crane::get_or_declare_parameter(this, "max_robot_id", 12);  // サポートする最大ロボットID
 
   // 可視化用のCraneVisualizerBufferを初期化
   CraneVisualizerBuffer::activate(*this);
@@ -418,7 +417,7 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
       }
 
       // 古いエラーは表示しない
-      if ((now - error_info.timestamp).seconds() > ERROR_DISPLAY_TIMEOUT) {
+      if (crane::isTimeout(error_info.timestamp, ERROR_DISPLAY_TIMEOUT, now)) {
         continue;
       }
 

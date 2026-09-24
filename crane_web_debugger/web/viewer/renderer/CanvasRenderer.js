@@ -1,3 +1,4 @@
+import { TestLayer } from './TestLayer.js';
 import { ROBOT_HIT_RADIUS_M, BALL_HIT_RADIUS_M } from './constants.js';
 import { svgArcToCanvas } from './SvgPathUtils.js';
 import { RobotHud } from './RobotHud.js';
@@ -45,11 +46,6 @@ export class CanvasRenderer {
         this._rafId = requestAnimationFrame(loop);
     }
 
-    stop() {
-        if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
-        this._resizeObserver.disconnect();
-    }
-
     // viewBox座標系 → CSS座標へのビューポート変換パラメータを計算
     _getVP() {
         const fl = this.fieldLayer;
@@ -88,7 +84,7 @@ export class CanvasRenderer {
 
         // SVGレイヤー描画
         const parser = v.parser;
-        for (const [name, layer] of v.layerStore) {
+        for (const [name, layer] of v.layerStore.layers) {
             if (!v.visibleLayers.has(name)) continue;
             if (layer.dirty) {
                 layer.commands = layer.primitives.map(p => parser.parse(p)).filter(Boolean);
@@ -102,12 +98,18 @@ export class CanvasRenderer {
         // ロボット HUD (方向矢印/FSM/planner/ハロー/ドリブラーLED)
         this._robotHud.draw(ctx, v, tokens);
 
+        // C-3: テスト中は下地を沈め、テストレイヤーが入力を受け取っていることを示す
+        if (v.modes?.test) {
+            TestLayer.drawDim(ctx, fl, tokens);
+            TestLayer.draw(ctx, fl, tokens, v.testSession, v.robotsOurs[v.focusedRobotId]);
+        }
+
         // ロボット移動モードのオーバーレイ (M3トークン使用)
-        if (v.moveMode && v.selectedRobotId !== null) {
-            const robot = v.robotsOurs[v.selectedRobotId];
+        if (v.moveMode && v.focusedRobotId !== null) {
+            const robot = v.robotsOurs[v.focusedRobotId];
             if (robot) {
                 ctx.save();
-                ctx.strokeStyle = tokens.moveOverlay ?? '#D0BCFF';
+                ctx.strokeStyle = tokens.overlayMove ?? '#D0BCFF';
                 ctx.lineWidth = 20;
                 ctx.setLineDash([40, 20]);
                 ctx.globalAlpha = 0.9;
@@ -126,7 +128,7 @@ export class CanvasRenderer {
             ctx.lineWidth = 22;
             ctx.setLineDash([45, 25]);
             if (obj.type === 'ball') {
-                ctx.strokeStyle = tokens.simOverlayBall ?? '#FFA726';
+                ctx.strokeStyle = tokens.overlayBall ?? '#FFA726';
                 ctx.beginPath();
                 ctx.arc(v.ballPos.x * 1000, -v.ballPos.y * 1000, BALL_HIT_RADIUS_M * 900, 0, Math.PI * 2);
                 ctx.stroke();
@@ -134,7 +136,7 @@ export class CanvasRenderer {
                 const source = (obj.yellow === v.isYellow) ? v.robotsOurs : v.robotsTheirs;
                 const robot = source[obj.id];
                 if (robot) {
-                    ctx.strokeStyle = tokens.simOverlayRobot ?? '#D0BCFF';
+                    ctx.strokeStyle = tokens.overlayRobot ?? '#D0BCFF';
                     ctx.beginPath();
                     ctx.arc(robot.x * 1000, -robot.y * 1000, ROBOT_HIT_RADIUS_M * 1000, 0, Math.PI * 2);
                     ctx.stroke();
@@ -148,7 +150,7 @@ export class CanvasRenderer {
         // データなし表示 (M3トークン使用)
         if (v.layerStore.size === 0) {
             ctx.save();
-            ctx.fillStyle = tokens.noDataText ?? '#8C929A';
+            ctx.fillStyle = tokens.inkMuted ?? '#8C929A';
             ctx.font = `${40 * vp.dpr}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';

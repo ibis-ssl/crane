@@ -6,6 +6,7 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/center_stop_kick.hpp>
+#include <crane_utils/time.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -120,12 +121,12 @@ void CenterStopKick::initialize()
     auto now = rclcpp::Clock().now();
 
     // 初回入室時の処理
-    if (result_check_start_.seconds() == 0) {
+    if (!crane::isValidTime(result_check_start_)) {
       result_check_start_ = now;
     }
 
     // ボール停止確認（1秒待機）
-    if ((now - result_check_start_).seconds() < 1.0) {
+    if (crane::getElapsedSec(result_check_start_, now) < 1.0) {
       visualizer->drawDebugLabel(robot()->pose.pos, "結果確認中...");
       return Status::RUNNING;
     }
@@ -177,7 +178,7 @@ void CenterStopKick::initialize()
         return false;
       }
 
-      bool should_transition = (now - last_ball_motion_time_).seconds() > stop_time_threshold_;
+      bool should_transition = crane::isTimeout(last_ball_motion_time_, stop_time_threshold_, now);
       // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
@@ -210,14 +211,14 @@ void CenterStopKick::initialize()
     static_cast<int>(CenterStopKickState::KICK_COMPLETE),
     static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> bool {
       // result_check_start_が設定されている場合のみリトライ判定
-      if (result_check_start_.seconds() == 0) {
+      if (!crane::isValidTime(result_check_start_)) {
         return false;
       }
 
       auto now = rclcpp::Clock().now();
 
       // 1秒未満は待機
-      if ((now - result_check_start_).seconds() < 1.0) {
+      if (crane::getElapsedSec(result_check_start_, now) < 1.0) {
         return false;
       }
 
@@ -298,7 +299,7 @@ bool CenterStopKick::isKickCompleted() const
 
   // キック後にボールが動き始めるまで少し待つ
   auto now = rclcpp::Clock().now();
-  if ((now - kick_start_time_).seconds() < 0.2) {
+  if (crane::getElapsedSec(kick_start_time_, now) < 0.2) {
     return false;
   }
 
@@ -321,7 +322,7 @@ bool CenterStopKick::isKickCompleted() const
   }
 
   // タイムアウト（キック実行から3秒経過）
-  if ((now - kick_start_time_).seconds() > 3.0) {
+  if (crane::isTimeout(kick_start_time_, 3.0, now)) {
     RCLCPP_WARN(
       rclcpp::get_logger("CenterStopKick"), "キック完了タイムアウト。キック完了と判定します");
     return true;

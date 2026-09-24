@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <crane_utils/parameter.hpp>
 #include <memory>
 #include <string>
 
@@ -19,8 +20,7 @@ namespace joystick
 JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
 : Node("crane_teleop", options)
 {
-  declare_parameter("robot_id", 1);
-  get_parameter("robot_id", robot_id);
+  crane::get_or_declare_parameter(this, "robot_id", robot_id);
   robot_id_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
   robot_id_callback_handle =
     robot_id_subscriber->add_parameter_callback("robot_id", [&](const rclcpp::Parameter & p) {

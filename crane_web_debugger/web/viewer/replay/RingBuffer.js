@@ -25,8 +25,8 @@ export function applyLayerUpdate(layerStore, upd) {
 }
 
 export class RingBuffer {
-    constructor(windowMs = DEFAULT_WINDOW_MS) {
-        this.windowMs = windowMs;
+    constructor() {
+        this.windowMs = DEFAULT_WINDOW_MS;
         this._keyframes = []; // { tsMs, state: {layerStore, robots, ball, controlTargets} }
         this._deltas = [];    // { tsMs, type, data }
         this._keyframeInterval = 1000;

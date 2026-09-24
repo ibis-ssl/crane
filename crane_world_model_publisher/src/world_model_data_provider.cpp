@@ -11,10 +11,11 @@
 #include <sys/socket.h>
 #include <yaml-cpp/yaml.h>
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_utils/package.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
@@ -39,23 +40,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 {
   using std::chrono_literals::operator""ms;
 
-  // VisionStreamProcessorの機能を統合：パラメータ設定
-  node.declare_parameter("vision_address", config_.vision_address);
-  node.declare_parameter("vision_port", config_.vision_port);
-  node.declare_parameter("confidence_threshold", config_.confidence_threshold);
+  // VisionStreamProcessorの機能を統合：パラメータ設定と取得
+  crane::get_or_declare_parameter(node, "vision_address", config_.vision_address);
+  crane::get_or_declare_parameter(node, "vision_port", config_.vision_port);
+  crane::get_or_declare_parameter(node, "confidence_threshold", config_.confidence_threshold);
   // Tracker/legacy切替パラメータ
-  node.declare_parameter("tracker_address", std::string("224.5.23.2"));
-  node.declare_parameter("tracker_port", 10010);
-  node.declare_parameter("use_udp_detection", false);
-  node.declare_parameter("feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
-  node.declare_parameter("robot_vision_hold_sec", robot_vision_hold_sec_);
-
-  config_.vision_address = node.get_parameter("vision_address").get_value<std::string>();
-  config_.vision_port = node.get_parameter("vision_port").get_value<int>();
-  config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
-  use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
-  feedback_stale_timeout_ms_ = node.get_parameter("feedback_stale_timeout_ms").get_value<int>();
-  robot_vision_hold_sec_ = node.get_parameter("robot_vision_hold_sec").get_value<double>();
+  config_.tracker_address = crane::get_or_declare_parameter(node, "tracker_address", "224.5.23.2");
+  config_.tracker_port = crane::get_or_declare_parameter(node, "tracker_port", 10010);
+  use_udp_detection_ = crane::get_or_declare_parameter(node, "use_udp_detection", false);
+  crane::get_or_declare_parameter(node, "feedback_stale_timeout_ms", feedback_stale_timeout_ms_);
+  crane::get_or_declare_parameter(node, "robot_vision_hold_sec", robot_vision_hold_sec_);
 
   // Initialize UDP receivers
 
@@ -66,7 +60,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     multicast_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
-        pending_vision_packets_.emplace_back(buf.data(), size);
+        pending_vision_packets_.push_back(
+          TimedPacket{std::string(buf.data(), size), std::chrono::steady_clock::now()});
       }
     });
     RCLCPP_INFO(
@@ -79,14 +74,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // AsyncUdpReceiver初期化（Tracker UDP）
   try {
-    config_.tracker_address = node.get_parameter("tracker_address").get_value<std::string>();
-    config_.tracker_port = node.get_parameter("tracker_port").get_value<int>();
     tracker_receiver_ = std::make_unique<crane::AsyncUdpReceiver>(
       asio_ctx_.io_context, config_.tracker_address, config_.tracker_port);
     tracker_receiver_->startReceive([this](const std::vector<char> & buf, size_t size) {
       if (size > 0) {
         std::lock_guard<std::mutex> lock(recv_mutex_);
-        pending_tracker_packets_.emplace_back(buf.data(), size);
+        pending_tracker_packets_.push_back(
+          TimedPacket{std::string(buf.data(), size), std::chrono::steady_clock::now()});
       }
     });
     RCLCPP_INFO(
@@ -127,26 +121,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   area_mask.max_corner() << 20., 10.;
 
   // フィールドジオメトリ設定ファイルの読み込み
-  node.declare_parameter("field_geometry_config_path", "");
   std::string field_geometry_config_path =
-    node.get_parameter("field_geometry_config_path").as_string();
+    crane::get_or_declare_parameter(node, "field_geometry_config_path", "");
   if (!field_geometry_config_path.empty()) {
-    // ファイル名だけの場合はconfigディレクトリと結合
-    std::string full_config_path = field_geometry_config_path;
-    if (!std::filesystem::path(field_geometry_config_path).is_absolute()) {
-      try {
-        std::string package_share_dir =
-          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-        full_config_path =
-          std::filesystem::path(package_share_dir) / "config" / field_geometry_config_path;
-      } catch (const std::exception & ex) {
-        RCLCPP_WARN(
-          node.get_logger(),
-          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", ex.what());
-      }
-    }
+    std::string full_config_path = crane::resolve_package_path(
+      node.get_logger(), "crane_world_model_publisher", field_geometry_config_path);
 
     if (loadFieldGeometryFromConfig(full_config_path)) {
+      geometry_from_config_ = true;
       geometry_initialized = true;
       updateGeometryIfNeeded();
     }
@@ -173,6 +155,18 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           config_.tracker_address.c_str(), config_.tracker_port);
       }
     }
+
+    // 設定ファイルの寸法は vision geometry が来るまでの暫定値でしかない。
+    // vision geometry が来ないままだと、craneは推測したフィールドで判断し続ける。
+    // フィールドが実際と違っても何も壊れないので黙って進んでしまう種類の不具合であり、
+    // 明示的に鳴らしておかないと切り分けができない。
+    if (geometry_from_config_ && !vision_geometry_received_) {
+      RCLCPP_WARN_THROTTLE(
+        this->node.get_logger(), *this->node.get_clock(), 10000,
+        "vision geometryを未受信のため、設定ファイルの寸法(field=%.3fx%.3f)で動作しています。"
+        "実際のフィールドと異なる可能性があります (%s:%d)",
+        game_data.field_w, game_data.field_h, config_.vision_address.c_str(), config_.vision_port);
+    }
   });
 
   // /play_situationのトピック統計はsession_controllerで取得
@@ -184,11 +178,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     "/robot_feedback", 1,
     [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { robot_feedback = *msg; });
 
-  node.declare_parameter("team_name", "ibis-ssl");
-  game_data.team_name = node.get_parameter("team_name").as_string();
+  game_data.team_name = crane::get_or_declare_parameter(node, "team_name", "ibis-ssl");
 
-  node.declare_parameter("initial_team_color", "BLUE");
-  auto initial_team_color = node.get_parameter("initial_team_color").as_string();
+  auto initial_team_color = crane::get_or_declare_parameter(node, "initial_team_color", "BLUE");
   if (initial_team_color == "BLUE") {
     game_data.our_color = Color::BLUE;
     game_data.their_color = Color::YELLOW;
@@ -199,8 +191,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     our_team_color_ = TeamColor::YELLOW;
   }
 
-  node.declare_parameter("is_emplace_positive_side", true);
-  is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
+  is_emplace_positive_side =
+    crane::get_or_declare_parameter(node, "is_emplace_positive_side", true);
 
   // 半面練習モード: session coordinator からの /practice_mode トピックを購読
   sub_practice_mode = node.create_subscription<crane_msgs::msg::PracticeMode>(
@@ -259,12 +251,31 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // direct UDP from Tracker; no ROS topic subscription
 }
 
-WorldModelDataProvider::~WorldModelDataProvider() = default;
+WorldModelDataProvider::~WorldModelDataProvider()
+{
+  if (udp_timer) {
+    udp_timer->cancel();
+  }
+  if (status_check_timer_) {
+    status_check_timer_->cancel();
+  }
+  if (multicast_receiver_) {
+    multicast_receiver_->stop();
+  }
+  if (tracker_receiver_) {
+    tracker_receiver_->stop();
+  }
+  asio_ctx_.work_guard.reset();
+  asio_ctx_.io_context.stop();
+  if (asio_ctx_.thread.joinable()) {
+    asio_ctx_.thread.join();
+  }
+}
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
   // asioスレッドからのパケットを取り出す（最小限のロック）
-  std::vector<std::string> vision_packets, tracker_packets;
+  std::vector<TimedPacket> vision_packets, tracker_packets;
   {
     std::lock_guard<std::mutex> lock(recv_mutex_);
     vision_packets.swap(pending_vision_packets_);
@@ -272,10 +283,10 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   }
 
   // Visionパケット処理（ROS2スレッドから安全に実行）
-  for (const auto & raw : vision_packets) {
+  for (const auto & vision_packet : vision_packets) {
     try {
       robocup_ssl::SSL_WrapperPacket packet;
-      if (packet.ParseFromString(raw)) {
+      if (packet.ParseFromString(vision_packet.data)) {
         if (packet.has_detection()) {
           // Vision ボール生データは常に更新（isBallTrulyLostFromDribblerのクロスリファレンス用）
           if (!packet.detection().balls().empty()) {
@@ -307,15 +318,19 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   }
 
   // Trackerパケット処理（ROS2スレッドから安全に実行）
-  for (const auto & raw : tracker_packets) {
+  for (const auto & tracker_packet : tracker_packets) {
     try {
       robocup_ssl::TrackerWrapperPacket wrapper_packet;
-      if (wrapper_packet.ParseFromString(raw) && wrapper_packet.has_tracked_frame()) {
+      if (
+        wrapper_packet.ParseFromString(tracker_packet.data) && wrapper_packet.has_tracked_frame()) {
         auto tracked_frame_msg = parseTrackedFrameFromWrapper(wrapper_packet);
         latest_tracked_frame = tracked_frame_msg;
         has_tracked_frame_updated_ = true;
         last_tracker_recv_time_ = node.get_clock()->now();
         processTrackedFrame(tracked_frame_msg);
+        last_tracker_udp_recv_steady_ = tracker_packet.recv_time;
+        last_tracker_parsed_steady_ = std::chrono::steady_clock::now();
+        has_tracker_delay_checkpoint_ = true;
       }
     } catch (const std::exception & ex) {
       RCLCPP_WARN(node.get_logger(), "Trackerパケットパースエラー: %s", ex.what());
@@ -374,6 +389,24 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
   crane_msgs::msg::WorldModel msg;
+
+  // Trackerフレームの実際のUDP受信時刻・パース完了時刻を計測用に記録する。
+  // ここで最初にチェックポイントを追加することで、以降にmergeされるチェックポイント群の
+  // 基準時刻（reference_timestamp_ns）となり、asioバッファ〜publishまでの
+  // キュー待ち遅延を計測できるようにする。
+  // has_tracker_delay_checkpoint_ はここで消費したら false に戻す：
+  // 戻さないとTracker途絶中も直近の古い受信時刻を毎サイクル再送出し続け、
+  // 見かけ上の遅延が際限なく増大してベースライン計測のp95/maxを汚染するため。
+  if (has_tracker_delay_checkpoint_) {
+    auto to_ns = [](const std::chrono::steady_clock::time_point & tp) {
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(tp.time_since_epoch()).count();
+    };
+    DelayMonitorWrapper::addDelayCheckpointAt(
+      msg.delay_checkpoints, "tracker_udp_received", to_ns(last_tracker_udp_recv_steady_));
+    DelayMonitorWrapper::addDelayCheckpointAt(
+      msg.delay_checkpoints, "tracker_parsed", to_ns(last_tracker_parsed_steady_));
+    has_tracker_delay_checkpoint_ = false;
+  }
 
   // Basic game configuration
   msg.is_yellow = (game_data.our_color == Color::YELLOW);
@@ -776,6 +809,7 @@ auto WorldModelDataProvider::convertFieldGeometry(
 
   field_geometry_.center_circle_radius = 0.5;  // 標準SSL値
   field_geometry_.is_valid = true;
+  vision_geometry_received_ = true;
 }
 
 auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & config_path) -> bool
@@ -806,8 +840,9 @@ auto WorldModelDataProvider::loadFieldGeometryFromConfig(const std::string & con
 
     RCLCPP_INFO(
       node.get_logger(),
-      "設定ファイルからフィールド情報を読み込みました: field=%.3fx%.3f, goal=%.3fx%.3f, "
-      "penalty_area=%.3fx%.3f",
+      "設定ファイルからフィールド情報を暫定的に読み込みました(vision "
+      "geometry受信で上書きされます): "
+      "field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
       field_geometry_.field_width, field_geometry_.field_height, field_geometry_.goal_width,
       field_geometry_.goal_height, field_geometry_.penalty_area_width,
       field_geometry_.penalty_area_height);
@@ -874,7 +909,7 @@ auto WorldModelDataProvider::processTrackedFrame(
                        : static_cast<int>(Color::BLUE);
 
     auto & robot = robot_info_[team_index][robot_id];
-    robot = convertTrackedRobot(tracked_robot, team_index);
+    robot = convertTrackedRobot(tracked_robot);
     robot.vision.stamp = now;
   }
 }
@@ -1007,8 +1042,7 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
 }
 
 auto WorldModelDataProvider::convertTrackedRobot(
-  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, [[maybe_unused]] int team_index)
-  -> crane_msgs::msg::RobotInfo
+  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot) -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;
   auto now = node.get_clock()->now();

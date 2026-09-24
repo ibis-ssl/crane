@@ -3,6 +3,14 @@
 # デフォルト設定
 USE_LOCAL ?= 1
 CRANE_TAG ?= local-scenario
+# 標準構成では crane が mode 4（位置指令）を出し、cm4-sim が位置制御ループを閉じる。
+# mode 4 を出すのは visibility_graph だけ。
+PLANNER ?= visibility_graph
+
+# crane -> cm4-sim 経路への劣化注入（無線区間の模擬）。
+RX_DELAY_MS ?= 0
+RX_JITTER_MS ?= 0
+RX_LOSS_RATE ?= 0.0
 
 help:
 	@echo "利用可能なターゲット:"
@@ -14,16 +22,21 @@ help:
 	@echo "  scenario-test-clean       - シナリオテスト環境のクリーンアップ"
 	@echo ""
 	@echo "環境変数:"
-	@echo "  TEST=<テスト名>  - 実行するテスト名（例: TEST=STOP_ROBOT_SPEED）"
-	@echo "  USE_LOCAL=1      - ローカルのワークスペースを使用（デフォルト）"
-	@echo "  USE_LOCAL=0      - Dockerイメージを使用（リモートモード）"
-	@echo "  CRANE_TAG=<タグ> - 使用するDockerイメージタグ（リモートモード時、デフォルト: local-scenario）"
+	@echo "  TEST=<テスト名>       - 実行するテスト名（例: TEST=STOP_ROBOT_SPEED）"
+	@echo "  PLANNER=<プランナー>  - 経路計画アルゴリズム（visibility_graph または rvo2、デフォルト: visibility_graph）"
+	@echo "  USE_LOCAL=1           - ローカルのワークスペースを使用（デフォルト）"
+	@echo "  USE_LOCAL=0           - Dockerイメージを使用（リモートモード）"
+	@echo "  CRANE_TAG=<タグ>      - 使用するDockerイメージタグ（リモートモード時、デフォルト: local-scenario）"
+	@echo "  RX_DELAY_MS/RX_JITTER_MS/RX_LOSS_RATE - crane→cm4-sim経路への劣化注入"
+	@echo "  CM4_SIM_TAG=<タグ>    - cm4-simのイメージタグ（デフォルト: composeで固定したcommit SHA）"
 	@echo ""
 	@echo "使用例:"
-	@echo "  make scenario-test-setup                  # 初回のみ実行"
-	@echo "  make scenario-test                        # 全テスト実行"
-	@echo "  make scenario-test TEST=STOP_ROBOT_SPEED  # 個別テスト実行"
-	@echo "  USE_LOCAL=0 make scenario-test            # リモートモードで実行"
+	@echo "  make scenario-test-setup                                  # 初回のみ実行"
+	@echo "  make scenario-test                                        # 全テスト実行"
+	@echo "  make scenario-test TEST=STOP_ROBOT_SPEED                  # 個別テスト実行"
+	@echo "  make scenario-test PLANNER=rvo2 TEST=STOP_ROBOT_SPEED     # rvo2（mode 3）で実行"
+	@echo "  USE_LOCAL=0 make scenario-test                            # リモートモードで実行"
+	@echo "  make scenario-test RX_DELAY_MS=30 RX_LOSS_RATE=0.02       # 無線劣化を注入して実行"
 
 scenario-test-setup:
 	@echo "=== シナリオテスト環境のセットアップ ==="
@@ -52,10 +65,15 @@ scenario-test:
 		echo "先に 'make scenario-test-setup' を実行してください"; \
 		exit 1; \
 	fi
-	@bash scripts/scenario_test/run_test.sh $(TEST)
+	@PLANNER=$(PLANNER) \
+		RX_DELAY_MS=$(RX_DELAY_MS) \
+		RX_JITTER_MS=$(RX_JITTER_MS) \
+		RX_LOSS_RATE=$(RX_LOSS_RATE) \
+		bash scripts/scenario_test/run_test.sh $(TEST)
 
 scenario-test-docker-up:
 	@echo "=== Docker環境を起動中 ==="
+	@./scripts/ensure-sim-network-confined.sh
 	@if [ "$(USE_LOCAL)" = "1" ]; then \
 		docker compose -f docker/scenario/docker-compose.local.yaml up -d; \
 		echo "Docker環境が起動しました（ローカルモード）"; \

@@ -4,9 +4,9 @@ import argparse
 from datetime import datetime
 
 import rclpy
-from crane_msgs.msg import RobotCommands
 from rclpy.node import Node
 
+from crane_msgs.msg import RobotCommands
 
 DEFAULT_FACTOR_KEYS = [
     "Attacker",
@@ -68,7 +68,7 @@ class PlanningFactorDebugger(Node):
         if command.polar_velocity_target_mode:
             vel_r = command.polar_velocity_target_mode[0].target_velocity_r
             vel_theta = command.polar_velocity_target_mode[0].target_velocity_theta
-        now = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        now = datetime.now().astimezone().strftime("%H:%M:%S.%f")[:-3]
 
         key_values = [f"{key}={factors.get(key, '-')}" for key in self.factor_keys]
         print(

@@ -82,7 +82,7 @@ class LogData:
     ball_timeline: list[BallSnapshot]
     robot_timeline: dict[tuple[str, int], list[RobotSnapshot]]
 
-    def time_slice(self, start: float, end: float) -> "LogData":
+    def time_slice(self, start: float, end: float) -> LogData:
         """指定時間範囲のデータを返す."""
         ref = [r for r in self.referee_states if start <= r.t <= end]
         ball = [b for b in self.ball_timeline if start <= b.t <= end]

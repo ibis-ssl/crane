@@ -14,6 +14,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "bag_pass.hpp"
+
 namespace crane::bag
 {
 
@@ -172,19 +174,34 @@ std::vector<Event> detect_goals(const BagData & data)
   std::vector<Event> events;
   if (data.world_models.empty()) return events;
 
-  const auto & field_info = data.world_models.front().msg.field_info;
-  double half_length = field_info.x / 2.0;
-  constexpr double GOAL_HALF_WIDTH = 0.5;
+  // フィールドジオメトリは vision から遅れて届くので、最初のメッセージには既定値
+  // （Division B 相当）が入っていることがある。フレームごとの値を使わないと、
+  // 本来のフィールドより狭い閾値でゴールを誤検出する。
+  // 自陣/敵陣も on_positive_half を見ないと符号が逆になる。
+  constexpr double GOAL_HALF_WIDTH_FALLBACK = 0.5;
 
   bool prev_in_goal = false;
 
   for (const auto & tm : data.world_models) {
-    const auto & ball = tm.msg.ball_info;
+    const auto & wm = tm.msg;
+    const double half_length = wm.field_info.x / 2.0;
+    if (half_length <= 0.0) {
+      prev_in_goal = false;
+      continue;
+    }
+    // goal_size.y がゴール幅。未記録の古い bag では従来の固定値へフォールバックする。
+    const double goal_half_width =
+      wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : GOAL_HALF_WIDTH_FALLBACK;
+
+    const auto & ball = wm.ball_info;
     double bx = ball.position.x, by = ball.position.y;
-    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= GOAL_HALF_WIDTH);
+    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= goal_half_width);
 
     if (in_goal && !prev_in_goal) {
-      const char * side = (bx > 0) ? "THEIR_GOAL" : "OUR_GOAL";
+      // on_positive_half == true なら自陣ゴールは +x 側
+      // （crane_world_model_publisher の our_goal_x と同じ規約）。
+      const bool in_our_goal = (bx > 0) == wm.on_positive_half;
+      const char * side = in_our_goal ? "OUR_GOAL" : "THEIR_GOAL";
       char buf[128];
       std::snprintf(buf, sizeof(buf), "GOAL: %s ball=(%.2f,%.2f)", side, bx, by);
       Event e;
@@ -332,6 +349,56 @@ std::vector<Event> detect_fouls(const BagData & data)
   return events;
 }
 
+std::vector<Event> detect_pass_attempt_events(const BagData & data)
+{
+  std::vector<Event> events;
+  for (const auto & pe : detect_pass_events(data)) {
+    std::string toucher_note;
+    if (pe.first_toucher_id >= 0 && pe.first_toucher_id != pe.intended_receiver_id) {
+      toucher_note = std::string(" toucher=") + (pe.first_toucher_ours ? "our" : "their") +
+                     std::to_string(pe.first_toucher_id);
+    }
+    char buf[192];
+    std::snprintf(
+      buf, sizeof(buf), "PASS: %d -> %d %s d=%.2fm v=%.2fm/s%s", pe.kicker_id,
+      pe.intended_receiver_id, to_string(pe.outcome).c_str(), pe.pass_distance, pe.kick_speed,
+      toucher_note.c_str());
+    Event e;
+    e.timestamp_ns = pe.timestamp_ns;
+    e.t = pe.t;
+    e.event_type = EVENT_PASS;
+    e.description = buf;
+    events.push_back(e);
+  }
+  return events;
+}
+
+bool event_types_require_full_world_model(const std::vector<std::string> & types)
+{
+  const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
+  return std::find(target.begin(), target.end(), EVENT_PASS) != target.end();
+}
+
+std::unordered_set<std::string> topics_for_event_types(const std::vector<std::string> & types)
+{
+  const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
+  std::unordered_set<std::string> topics;
+  for (const auto & t : target) {
+    if (t == EVENT_PLAY) {
+      topics.insert("/play_situation");
+    } else if (t == EVENT_ROLE) {
+      topics.insert("/robot_select_results");
+    } else if (t == EVENT_KICK) {
+      topics.insert("/robot_commands");
+    } else if (t == EVENT_BALL_SPEED || t == EVENT_GOAL || t == EVENT_PASS) {
+      topics.insert("/world_model");
+    } else if (t == EVENT_FOUL) {
+      topics.insert("/referee");
+    }
+  }
+  return topics;
+}
+
 std::vector<Event> detect_events(const BagData & data, const std::vector<std::string> & types)
 {
   const std::vector<std::string> & target = types.empty() ? ALL_EVENT_TYPES : types;
@@ -351,6 +418,7 @@ std::vector<Event> detect_events(const BagData & data, const std::vector<std::st
   append_if(EVENT_BALL_SPEED, [&] { return detect_ball_speed_spikes(data); });
   append_if(EVENT_GOAL, [&] { return detect_goals(data); });
   append_if(EVENT_FOUL, [&] { return detect_fouls(data); });
+  append_if(EVENT_PASS, [&] { return detect_pass_attempt_events(data); });
 
   std::sort(all.begin(), all.end(), [](const Event & a, const Event & b) {
     return a.timestamp_ns < b.timestamp_ns;

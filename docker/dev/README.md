@@ -1,119 +1,20 @@
-# Docker開発環境(統合版)
+# Docker開発環境
 
-このディレクトリは、シミュレーション環境(sim)と実機環境(real)を統合したDocker環境です。
-
-## 使用方法
-
-### スクリプトを使用した起動(推奨)
-
-リポジトリルートから以下のコマンドを実行します。
+シミュレーションと実機で共用する。リポジトリルートから起動スクリプトを使う。
 
 ```bash
-# シミュレーション環境(デフォルト: ER-Force) + ssl-log-recorder自動起動
-./scripts/docker-dev.sh
-
-# シミュレーション環境(grSim)
-./scripts/docker-dev.sh --sim grsim
-
-# シミュレーション環境(ER-Force、明示指定)
-./scripts/docker-dev.sh --sim erforce
-
-# 実機環境 + ssl-log-recorder自動起動
-./scripts/docker-dev.sh real
-
-# バックグラウンド起動
-./scripts/docker-dev.sh -d
-./scripts/docker-dev.sh --sim grsim -d
-
-# robot-manager なしで起動
-./scripts/docker-dev.sh --no-debug
-
-# 停止
+./scripts/docker-dev.sh                         # ER-Force
+./scripts/docker-dev.sh --minimal -d            # シミュレータ開発用の構成
+./scripts/docker-dev.sh real                    # 実機
 ./scripts/docker-dev.sh down
 ```
 
-**注1**: `up` 実行時（フォアグラウンド/バックグラウンドの両方）に
-`ssl-log-recorder` (`robocupssl/ssl-log-recorder:latest`) が自動的に起動し、
-ログはリポジトリルートに保存されます。
+## 運用上の注意
 
-**注2**: `ssl-log-recorder` は `./scripts/docker-dev.sh down` 実行時に停止します。
-`up` を Ctrl+C で終了した場合は recorder は継続起動します。
+- simではマルチキャストをループバックへ限定し、物理インターフェースへの送出をiptablesで遮断する。ルート設定だけでは直接送出するツールを防げず、過去にアクセスポイントが過負荷で停止した。起動スクリプトの隔離確認を省略しない。realでは隔離を解除してから起動する。設定手順は[Docker運用](../../docs/docker.md)を参照する。
+- Robot Manager は `web-debugger` (8090) に内包している（`/robot_manager/`、API は `/api/robot-manager/*`）。以前は Orion_CM4 側が管理する別サービス (8092) だったが、共通テーマをコピーして持っていてドリフトの温床だったため取り込んだ。Orion_CM4 には Pi 側 API の契約文書だけが残る。
+- 実機への HTTP ポーリングは、環境変数 `ROBOT_MANAGER_ENABLED`（既定 `0`）で止める。`0` のときサーバは `/robots` 系をネットワークに一切触れずに 503 で返し、クライアントもポーリングを開始しない。したがって sim では 192.168.20.0/24 へパケットが 1 つも出ない。実機で使うには `./scripts/docker-dev.sh --robot-manager` を指定する（`--minimal` と併用しても効く）。
+- Ctrl+Cだけでは `ssl-log-recorder` が動き続ける。`down` まで実行する。
+- ER-Force構成には実機CM4に相当する `cm4-sim` が含まれ、位置制御ループを閉じる。ホスト側のCraneは `planner:=visibility_graph` で起動する（ポート・アドレスやフィードバック受信方式は自動設定される）。詳細は[ネットワーク](../../docs/network.md)を参照する。
 
-**注3**: `robot-manager` は Docker Compose サービスとして常時定義されています。
-
-- URL: <http://localhost:8092>
-- `--no-debug` オプションで無効化可能（`robot-manager` のみ停止）
-- イメージは [ibis-ssl/Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) リポジトリで管理・ビルドされます（`ghcr.io/ibis-ssl/robot-manager:latest`）
-
-### robot-manager の手動操作
-
-`robot-manager` を個別に操作したい場合は、以下のスクリプトを使用できます。
-
-```bash
-# robot-manager を起動
-./scripts/start-debug-tools.sh
-
-# robot-manager を停止
-./scripts/stop-debug-tools.sh
-```
-
-### Docker Composeコマンドでの直接起動
-
-```bash
-# シミュレーション環境(ER-Force)
-docker compose -f docker/dev/docker-compose.yaml --profile sim-erforce up
-
-# シミュレーション環境(grSim)
-docker compose -f docker/dev/docker-compose.yaml --profile sim-grsim up
-
-# 実機環境
-VISION_PORT=10006 docker compose -f docker/dev/docker-compose.yaml up
-
-# 停止
-docker compose -f docker/dev/docker-compose.yaml down
-```
-
-## sim/real の差分
-
-| 項目 | sim (ER-Force) | sim (grSim) | real |
-|------|----------------|-------------|------|
-| Vision ポート | 10020 | 10020 | 10006 |
-| ssl-status-board | 有効 | 有効 | 無効 |
-| profile | `sim-erforce` | `sim-grsim` | なし |
-
-環境変数 `VISION_PORT` とDocker Composeの `profiles` 機能を使用して切り替えています。
-
-## サービス一覧
-
-- **web-debugger**: Crane デバッグ統合ポータル（ポータル/Viewer/Telemetry/Robot Test/Annotation）
-- **ball-calibration**: ボール物理パラメータ最適化 UI（SSL ログ入力）
-- **robot-manager**: ROS非依存のロボット管理Webアプリ（Start/Stop/Status）
-- **ssl-game-controller**: RoboCup SSLのゲームコントローラー
-- **ssl-vision-client**: SSL Vision クライアント
-- **ssl-status-board**: ステータスボード(simのみ)
-- **autoref-tigers**: Tigers Mannheimのオートレフェリー
-- **voicevox**: 音声合成エンジン
-- **erforce-sim**: ER-Forceシミュレータ（`sim-erforce` profile時のみ）
-- **grsim**: grSimシミュレータ（`sim-grsim` profile時のみ）
-
-## Web UI ポート一覧
-
-| サービス | URL | 説明 |
-|---------|-----|------|
-| web-debugger (Viewer) | <http://localhost:8090/> | フィールドビジュアライザ（デフォルトページ） |
-| web-debugger (Telemetry) | <http://localhost:8090/robot_telemetry.html> | ロボットテレメトリ |
-| web-debugger (Robot Test) | <http://localhost:8090/robot_test.html> | ロボット動作テスト |
-| web-debugger (Annotation) | <http://localhost:8090/annotation/> | 試合アノテーション (PWA) |
-| ball-calibration | <http://localhost:8093/> | ボール物理キャリブレーション |
-| robot-manager | <http://localhost:8092/> | ロボットハードウェア管理 |
-| ssl-game-controller | <http://localhost:8081/> | SSL ゲームコントローラー |
-| ssl-vision-client | <http://localhost:8082/> | SSL ビジョンクライアント |
-| ssl-status-board | <http://localhost:8083/> | ステータスボード |
-
-各ページの上部に共通ナビゲーションバーが表示され、ページ間を直接移動できます。
-
-## 設定ファイル
-
-- `docker-compose.yaml`: サービス定義
-- `.env`: 環境変数(Visionポートなどのデフォルト設定)
-- `config/`: ゲームコントローラー設定ファイル
+Webデバッガーの入口は <http://localhost:8090/>。Viewer・Annotation・Robot Manager はすべてこの同一オリジンで配信される（ロボット単位のテレメトリとテストは Viewer のサイドバータブ `?robot=<id>&tab=telemetry|test` に統合済み）。サービス・ポート・profile・設定値は[Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml)、引数と起動処理は[docker-dev.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/docker-dev.sh)を参照する。

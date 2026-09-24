@@ -42,8 +42,6 @@ void computeSlackForTeam(
 namespace crane::metrics
 {
 
-// OurSlackMetric実装
-
 OurSlackMetric::OurSlackMetric() : MetricBase(MetricId::OUR_SLACK, "OurSlack") {}
 
 auto OurSlackMetric::compute(MetricContext & ctx) -> void
@@ -101,8 +99,6 @@ auto OurSlackMetric::visualize(
     }
   }
 }
-
-// TheirSlackMetric実装
 
 TheirSlackMetric::TheirSlackMetric() : MetricBase(MetricId::THEIR_SLACK, "TheirSlack") {}
 

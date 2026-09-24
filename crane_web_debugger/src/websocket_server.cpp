@@ -11,16 +11,15 @@
 #include <robocup_ssl_msgs/ssl_gc_common.pb.h>
 #include <robocup_ssl_msgs/ssl_simulation_control.pb.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <array>
 #include <atomic>
 #include <boost/asio.hpp>
-#include <cctype>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <crane_msgs/msg/human_annotation.hpp>
 #include <crane_msgs/msg/latency_estimation_array.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
@@ -30,16 +29,17 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_utils/package.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <deque>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <filesystem>
-#include <fstream>
 #include <future>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <rclcpp/parameter_client.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <set>
@@ -67,7 +67,7 @@ public:
     endpoint_ = *endpoints.begin();
   }
 
-  void sendTeleportBall(float x, float y, float vx = 0.0f, float vy = 0.0f)
+  void sendTeleportBall(float x, float y, float vx, float vy)
   {
     robocup_ssl::SimulatorCommand cmd;
     auto * ball = cmd.mutable_control()->mutable_teleport_ball();
@@ -109,17 +109,6 @@ private:
   std::mutex mutex_;
 };
 
-// Simple WebSocket frame implementation
-struct WebSocketFrame
-{
-  bool fin;
-  uint8_t opcode;
-  bool masked;
-  uint64_t payload_length;
-  uint32_t masking_key;
-  std::string payload;
-};
-
 class WebSocketConnection
 {
 public:
@@ -135,7 +124,6 @@ public:
   bool handshake()
   {
     try {
-      // Read HTTP request
       boost::asio::streambuf buffer;
       boost::asio::read_until(*socket_, buffer, "\r\n\r\n");
 
@@ -143,11 +131,9 @@ public:
       std::string line;
       std::string websocket_key;
 
-      // Parse HTTP headers
       while (std::getline(request_stream, line) && line != "\r") {
         if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
-          // Remove leading/trailing whitespace
           websocket_key.erase(0, websocket_key.find_first_not_of(" \t\r\n"));
           websocket_key.erase(websocket_key.find_last_not_of(" \t\r\n") + 1);
         }
@@ -157,10 +143,8 @@ public:
         return false;
       }
 
-      // Generate WebSocket accept key
       std::string accept_key = generateAcceptKey(websocket_key);
 
-      // Send WebSocket handshake response
       std::string response =
         "HTTP/1.1 101 Switching Protocols\r\n"
         "Upgrade: websocket\r\n"
@@ -178,7 +162,116 @@ public:
     }
   }
 
-  void sendMessage(const std::string & message)
+  void sendMessage(const std::string & message) { sendFrame(kOpText, message); }
+
+  // 次のテキスト/バイナリメッセージを返す。ping には pong を返し、pong は読み捨てる。
+  // 断片化されたメッセージは FIN まで連結する。close 受信・切断・プロトコル違反なら nullopt
+  std::optional<std::string> receiveMessage()
+  {
+    std::string message;
+    bool in_fragmented_message = false;
+    try {
+      while (connected_) {
+        uint8_t header[2];
+        boost::asio::read(*socket_, boost::asio::buffer(header, 2));
+        const bool fin = (header[0] & 0x80) != 0;
+        const uint8_t opcode = header[0] & 0x0F;
+        const bool masked = (header[1] & 0x80) != 0;
+        uint64_t payload_length = header[1] & 0x7F;
+
+        if (payload_length == 126) {
+          uint8_t extended[2];
+          boost::asio::read(*socket_, boost::asio::buffer(extended, 2));
+          payload_length = (extended[0] << 8) | extended[1];
+        } else if (payload_length == 127) {
+          uint8_t extended[8];
+          boost::asio::read(*socket_, boost::asio::buffer(extended, 8));
+          payload_length = 0;
+          for (int i = 0; i < 8; i++) {
+            payload_length = (payload_length << 8) | extended[i];
+          }
+        }
+
+        // 制御フレームは分割できず 125 バイト以下（RFC 6455 5.5）
+        const bool is_control = (opcode & 0x08) != 0;
+        if (is_control && (!fin || payload_length > 125)) {
+          closeWithStatus(kCloseProtocolError);
+          return std::nullopt;
+        }
+        // 長さはクライアントが決める値なので、確保する前に上限で切る
+        if (!is_control && message.size() + payload_length > kMaxMessageBytes) {
+          closeWithStatus(kCloseMessageTooBig);
+          return std::nullopt;
+        }
+
+        uint8_t mask[4] = {0, 0, 0, 0};
+        if (masked) {
+          boost::asio::read(*socket_, boost::asio::buffer(mask, 4));
+        }
+        std::string payload(payload_length, '\0');
+        if (payload_length > 0) {
+          boost::asio::read(*socket_, boost::asio::buffer(payload));
+          if (masked) {
+            for (uint64_t i = 0; i < payload_length; i++) {
+              payload[i] = static_cast<char>(payload[i] ^ mask[i % 4]);
+            }
+          }
+        }
+
+        switch (opcode) {
+          case kOpClose:
+            // 受け取ったステータスコードをそのまま返して閉じる
+            sendFrame(kOpClose, payload.substr(0, 2));
+            connected_ = false;
+            return std::nullopt;
+          case kOpPing:
+            sendFrame(kOpPong, payload);
+            continue;
+          case kOpPong:
+            continue;
+          case kOpText:
+          case kOpBinary:
+            if (in_fragmented_message) {
+              closeWithStatus(kCloseProtocolError);
+              return std::nullopt;
+            }
+            message = std::move(payload);
+            break;
+          case kOpContinuation:
+            if (!in_fragmented_message) {
+              closeWithStatus(kCloseProtocolError);
+              return std::nullopt;
+            }
+            message += payload;
+            break;
+          default:
+            closeWithStatus(kCloseProtocolError);
+            return std::nullopt;
+        }
+        if (fin) return message;
+        in_fragmented_message = true;
+      }
+    } catch (const std::exception &) {
+      connected_ = false;
+    }
+    return std::nullopt;
+  }
+
+  bool isConnected() const { return connected_; }
+
+private:
+  static constexpr uint8_t kOpContinuation = 0x0;
+  static constexpr uint8_t kOpText = 0x1;
+  static constexpr uint8_t kOpBinary = 0x2;
+  static constexpr uint8_t kOpClose = 0x8;
+  static constexpr uint8_t kOpPing = 0x9;
+  static constexpr uint8_t kOpPong = 0xA;
+  static constexpr uint16_t kCloseProtocolError = 1002;
+  static constexpr uint16_t kCloseMessageTooBig = 1009;
+  // クライアントから来るのは注釈や操作要求の小さな JSON だけ
+  static constexpr uint64_t kMaxMessageBytes = 1 << 20;
+
+  void sendFrame(uint8_t opcode, const std::string & payload)
   {
     std::lock_guard<std::mutex> lock(send_mutex_);
 
@@ -186,26 +279,22 @@ public:
 
     try {
       std::vector<uint8_t> frame;
+      frame.push_back(0x80 | opcode);  // FIN=1
 
-      // FIN=1, opcode=1 (text frame)
-      frame.push_back(0x81);
-
-      // Payload length
-      if (message.length() < 126) {
-        frame.push_back(static_cast<uint8_t>(message.length()));
-      } else if (message.length() < 65536) {
+      if (payload.length() < 126) {
+        frame.push_back(static_cast<uint8_t>(payload.length()));
+      } else if (payload.length() < 65536) {
         frame.push_back(126);
-        frame.push_back((message.length() >> 8) & 0xFF);
-        frame.push_back(message.length() & 0xFF);
+        frame.push_back((payload.length() >> 8) & 0xFF);
+        frame.push_back(payload.length() & 0xFF);
       } else {
         frame.push_back(127);
         for (int i = 7; i >= 0; i--) {
-          frame.push_back((message.length() >> (i * 8)) & 0xFF);
+          frame.push_back((payload.length() >> (i * 8)) & 0xFF);
         }
       }
 
-      // Payload
-      frame.insert(frame.end(), message.begin(), message.end());
+      frame.insert(frame.end(), payload.begin(), payload.end());
 
       boost::asio::write(*socket_, boost::asio::buffer(frame));
     } catch (const std::exception & e) {
@@ -213,83 +302,22 @@ public:
     }
   }
 
-  std::string receiveMessage()
+  void closeWithStatus(uint16_t status)
   {
-    if (!connected_) return "";
-
-    try {
-      uint8_t header[2];
-      boost::asio::read(*socket_, boost::asio::buffer(header, 2));
-
-      // bool fin = (header[0] & 0x80) != 0;  // unused
-      // uint8_t opcode = header[0] & 0x0F;   // unused
-      bool masked = (header[1] & 0x80) != 0;
-      uint64_t payload_length = header[1] & 0x7F;
-
-      // Read extended payload length if necessary
-      if (payload_length == 126) {
-        uint8_t extended[2];
-        boost::asio::read(*socket_, boost::asio::buffer(extended, 2));
-        payload_length = (extended[0] << 8) | extended[1];
-      } else if (payload_length == 127) {
-        uint8_t extended[8];
-        boost::asio::read(*socket_, boost::asio::buffer(extended, 8));
-        payload_length = 0;
-        for (int i = 0; i < 8; i++) {
-          payload_length = (payload_length << 8) | extended[i];
-        }
-      }
-
-      // Read masking key if present
-      uint32_t masking_key = 0;
-      if (masked) {
-        uint8_t mask[4];
-        boost::asio::read(*socket_, boost::asio::buffer(mask, 4));
-        masking_key = (mask[0] << 24) | (mask[1] << 16) | (mask[2] << 8) | mask[3];
-      }
-
-      // Read payload
-      std::vector<uint8_t> payload(payload_length);
-      if (payload_length > 0) {
-        boost::asio::read(*socket_, boost::asio::buffer(payload));
-
-        // Unmask payload if necessary
-        if (masked) {
-          for (uint64_t i = 0; i < payload_length; i++) {
-            payload[i] ^= ((masking_key >> (24 - (i % 4) * 8)) & 0xFF);
-          }
-        }
-      }
-
-      return std::string(payload.begin(), payload.end());
-    } catch (const std::exception & e) {
-      connected_ = false;
-      return "";
-    }
-  }
-
-  bool isConnected() const { return connected_; }
-
-  void close()
-  {
+    const std::string payload{static_cast<char>(status >> 8), static_cast<char>(status & 0xFF)};
+    sendFrame(kOpClose, payload);
     connected_ = false;
-    if (socket_) {
-      socket_->close();
-    }
   }
 
-private:
   std::string generateAcceptKey(const std::string & key)
   {
     // WebSocket GUID as per RFC 6455
     const std::string websocket_magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     std::string concat = key + websocket_magic;
 
-    // Calculate SHA-1 hash
     unsigned char hash[SHA_DIGEST_LENGTH];
     SHA1(reinterpret_cast<const unsigned char *>(concat.c_str()), concat.length(), hash);
 
-    // Base64 encode
     BIO *bmem, *b64;
     BUF_MEM * bptr;
 
@@ -312,24 +340,54 @@ private:
   std::mutex send_mutex_;
 };
 
+// 最新のメッセージだけを残し、タイマーで間引いて配信するためのバッファ
+template <typename MsgT>
+class LatestMessage
+{
+public:
+  using Ptr = typename MsgT::SharedPtr;
+
+  // 保存し、これが初めての受信だったかを返す
+  bool store(const Ptr & msg)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    const bool first = (latest_ == nullptr);
+    latest_ = msg;
+    updated_ = true;
+    return first;
+  }
+
+  // 前回取り出してから更新があれば最新を返し、なければ nullptr を返す
+  Ptr takeIfUpdated()
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!updated_ || !latest_) return nullptr;
+    updated_ = false;
+    return latest_;
+  }
+
+  Ptr latest() const
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return latest_;
+  }
+
+private:
+  mutable std::mutex mutex_;
+  Ptr latest_;
+  bool updated_{false};
+};
+
 class WebSocketDebugServer : public rclcpp::Node
 {
 public:
-  WebSocketDebugServer() : Node("websocket_debug_server"), websocket_port_(8091)
+  WebSocketDebugServer() : Node("websocket_debug_server")
   {
-    this->declare_parameter("websocket_port", 8091);
-    websocket_port_ = this->get_parameter("websocket_port").as_int();
+    websocket_port_ = crane::get_or_declare_parameter(this, "websocket_port", 8091);
 
-    // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
-        bool first_msg = false;
-        {
-          std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-          first_msg = (latest_world_model_ == nullptr);
-          latest_world_model_ = msg;
-          world_model_updated_ = true;
-        }
+        const bool first_msg = world_model_.store(msg);
         // 初回受信時は全クライアントへ即座にブロードキャスト（10Hzタイマー待ち不要）
         if (first_msg) {
           RCLCPP_INFO(this->get_logger(), "world_model 初回受信 - 即座にブロードキャスト");
@@ -343,21 +401,18 @@ public:
 
     play_situation_sub_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        // 最新のメッセージをキャッシュ
         {
           std::lock_guard<std::mutex> lock(game_info_mutex_);
           latest_play_situation_ = msg;
         }
-        broadcastGameInfo(msg);
+        broadcastToAll(createGameInfoMessage(msg));
       });
 
     aggregated_svgs_sub_ =
       this->create_subscription<crane_visualization_interfaces::msg::SvgSnapshot>(
         "/aggregated_svgs", 10,
         [this](const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg) {
-          std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
-          latest_svg_snapshot_ = msg;
-          svg_snapshot_updated_ = true;
+          svg_snapshot_.store(msg);
         });
 
     // High-frequency incremental SVG updates — accumulate, flush at 20Hz
@@ -369,11 +424,9 @@ public:
           pending_svg_updates_.push_back(msg);
         });
 
-    // Human annotation publisher
     annotation_pub_ =
       this->create_publisher<crane_msgs::msg::HumanAnnotation>("/human_annotations", 10);
 
-    // Robot move command publishers
     move_command_pub_ =
       this->create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
     session_injection_pub_ =
@@ -396,13 +449,13 @@ public:
       this->create_publisher<crane_msgs::msg::RobotCommand>("/robot_test/target", 10);
     local_planner_params_client_ =
       std::make_shared<rclcpp::AsyncParametersClient>(this, "local_planner");
+    ibis_sender_params_client_ =
+      std::make_shared<rclcpp::AsyncParametersClient>(this, "ibis_sender");
 
     // Robot feedback subscription (cached, broadcast at 10Hz via timer)
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
       "/robot_feedback", 10, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        latest_robot_feedback_ = msg;
-        robot_feedback_updated_ = true;
+        robot_feedback_.store(msg);
       });
 
     ping_sub_ = this->create_subscription<crane_msgs::msg::PingStatusArray>(
@@ -418,79 +471,34 @@ public:
     latency_estimation_sub_ = this->create_subscription<crane_msgs::msg::LatencyEstimationArray>(
       "/latency_estimation", 10,
       [this](const crane_msgs::msg::LatencyEstimationArray::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
-        latest_latency_estimation_ = msg;
-        latency_estimation_updated_ = true;
+        latency_estimation_.store(msg);
       });
 
-    latency_estimation_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::LatencyEstimationArray::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(latency_estimation_mutex_);
-        if (!latency_estimation_updated_ || !latest_latency_estimation_) return;
-        msg = latest_latency_estimation_;
-        latency_estimation_updated_ = false;
-      }
-      broadcastLatencyEstimation(msg);
-    });
+    latency_estimation_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), latency_estimation_,
+      [this](const auto & msg) { broadcastLatencyEstimation(msg); });
 
-    // 100ms timer for robot_feedback broadcast (10Hz throttle)
-    robot_feedback_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::RobotFeedbackArray::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        if (!robot_feedback_updated_ || !latest_robot_feedback_) return;
-        msg = latest_robot_feedback_;
-        robot_feedback_updated_ = false;
-      }
-      broadcastRobotFeedback(msg);
-    });
+    robot_feedback_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), robot_feedback_,
+      [this](const auto & msg) { broadcastRobotFeedback(msg); });
 
     // control_targets subscription (cached, broadcast at 10Hz via timer)
     control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/control_targets", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
-        std::lock_guard<std::mutex> lock(control_targets_mutex_);
-        latest_control_targets_ = msg;
-        control_targets_updated_ = true;
-      });
+      "/control_targets", 10,
+      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { control_targets_.store(msg); });
 
-    // 100ms timer for control_targets broadcast (10Hz throttle)
-    control_targets_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::RobotCommands::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(control_targets_mutex_);
-        if (!control_targets_updated_ || !latest_control_targets_) return;
-        msg = latest_control_targets_;
-        control_targets_updated_ = false;
-      }
-      broadcastControlTargets(msg);
-    });
+    control_targets_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), control_targets_,
+      [this](const auto & msg) { broadcastControlTargets(msg); });
 
-    // 100ms timer for world_model broadcast (10Hz throttle)
-    world_model_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      crane_msgs::msg::WorldModel::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        if (!world_model_updated_ || !latest_world_model_) return;
-        msg = latest_world_model_;
-        world_model_updated_ = false;
-      }
-      broadcastWorldModel(msg);
-    });
+    world_model_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(100), world_model_,
+      [this](const auto & msg) { broadcastWorldModel(msg); });
 
-    // 200ms timer for aggregated_svgs broadcast (5Hz throttle)
-    svg_snapshot_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() {
-      crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(svg_snapshot_mutex_);
-        if (!svg_snapshot_updated_ || !latest_svg_snapshot_) return;
-        msg = latest_svg_snapshot_;
-        svg_snapshot_updated_ = false;
-      }
-      broadcastSvgData(msg);
-    });
+    svg_snapshot_timer_ = createThrottleTimer(
+      std::chrono::milliseconds(200), svg_snapshot_,
+      [this](const auto & msg) { broadcastSvgData(msg); });
 
-    // 50ms timer for visualizer_svgs broadcast (20Hz coalescing)
     svg_updates_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), [this]() {
       std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> batch;
       {
@@ -501,12 +509,15 @@ public:
       broadcastCoalescedSvgUpdates(batch);
     });
 
-    // 5s timer for Pi status polling
-    pi_status_timer_ =
-      this->create_wall_timer(std::chrono::seconds(5), [this]() { pollAllPiStatus(); });
-
-    // Start servers
-    startServers();
+    try {
+      ws_acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(
+        ws_io_context_,
+        boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
+      RCLCPP_INFO(this->get_logger(), "WebSocket server listening on port %d", websocket_port_);
+      websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+    }
 
     RCLCPP_INFO(this->get_logger(), "WebSocket: ws://localhost:%d", websocket_port_);
   }
@@ -514,40 +525,74 @@ public:
   ~WebSocketDebugServer() { stopServers(); }
 
 private:
-  void startServers()
-  {
-    // Start WebSocket server in separate thread
-    websocket_thread_ = std::thread([this]() { this->runWebSocketServer(); });
-  }
-
   void stopServers()
   {
     running_ = false;
 
+    if (ws_acceptor_) {
+      // close() だけではブロック中の accept() が戻らない。shutdown で起こす
+      ::shutdown(ws_acceptor_->native_handle(), SHUT_RDWR);
+      boost::system::error_code ec;
+      ws_acceptor_->close(ec);
+    }
+    ws_io_context_.stop();
+
     if (websocket_thread_.joinable()) {
       websocket_thread_.join();
+    }
+
+    // 接続スレッドは this を握っている。ノードを壊す前に全員を受信待ちから起こして抜けさせる
+    std::unique_lock<std::mutex> lock(sockets_mutex_);
+    for (const auto & socket : sockets_) {
+      boost::system::error_code ec;
+      socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    }
+    if (!sockets_cv_.wait_for(lock, std::chrono::seconds(3), [this] { return sockets_.empty(); })) {
+      RCLCPP_WARN(
+        this->get_logger(), "%zu WebSocket connection thread(s) did not exit", sockets_.size());
     }
   }
 
   void runWebSocketServer()
   {
     try {
-      boost::asio::io_context io_context;
-      boost::asio::ip::tcp::acceptor acceptor(
-        io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), websocket_port_));
-
-      RCLCPP_INFO(this->get_logger(), "WebSocket server listening on port %d", websocket_port_);
-
       while (running_) {
-        auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
-        acceptor.accept(*socket);
+        auto socket = std::make_shared<boost::asio::ip::tcp::socket>(ws_io_context_);
+        boost::system::error_code ec;
+        ws_acceptor_->accept(*socket, ec);
+        if (ec) {
+          if (!running_ || ec == boost::asio::error::operation_aborted) {
+            break;
+          }
+          RCLCPP_WARN(this->get_logger(), "WebSocket accept failed: %s", ec.message().c_str());
+          continue;
+        }
 
-        // Handle WebSocket connection in separate thread
-        std::thread([this, socket]() { handleWebSocketConnection(socket); }).detach();
+        {
+          std::lock_guard<std::mutex> lock(sockets_mutex_);
+          sockets_.insert(socket);
+        }
+        std::thread([this, socket]() {
+          handleWebSocketConnection(socket);
+          std::lock_guard<std::mutex> lock(sockets_mutex_);
+          sockets_.erase(socket);
+          sockets_cv_.notify_all();
+        }).detach();
       }
     } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+      if (running_) {
+        RCLCPP_ERROR(this->get_logger(), "WebSocket server error: %s", e.what());
+      }
     }
+  }
+
+  template <typename MsgT, typename Broadcast>
+  rclcpp::TimerBase::SharedPtr createThrottleTimer(
+    std::chrono::milliseconds period, LatestMessage<MsgT> & buffer, Broadcast broadcast)
+  {
+    return this->create_wall_timer(period, [&buffer, broadcast]() {
+      if (auto msg = buffer.takeIfUpdated()) broadcast(msg);
+    });
   }
 
   void handleWebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
@@ -566,70 +611,38 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "WebSocket connection established");
 
-    // 接続確立時に最新のゲーム情報を送信
     {
-      std::lock_guard<std::mutex> lock(game_info_mutex_);
-      if (latest_play_situation_) {
-        sendGameInfoToConnection(connection, latest_play_situation_);
-      }
-    }
-
-    // 接続確立時に最新の世界モデルを送信
-    {
-      crane_msgs::msg::WorldModel::SharedPtr wm_msg;
+      crane_msgs::msg::PlaySituation::SharedPtr play_situation;
       {
-        std::lock_guard<std::mutex> lock(world_model_throttle_mutex_);
-        wm_msg = latest_world_model_;
+        std::lock_guard<std::mutex> lock(game_info_mutex_);
+        play_situation = latest_play_situation_;
       }
-      if (wm_msg) {
-        sendWorldModelToConnection(connection, wm_msg);
+      if (play_situation) {
+        connection->sendMessage(createGameInfoMessage(play_situation));
       }
     }
 
-    // 接続確立時に最新のロボットフィードバックを送信
     {
-      crane_msgs::msg::RobotFeedbackArray::SharedPtr fb_msg;
-      {
-        std::lock_guard<std::mutex> lock(robot_feedback_mutex_);
-        fb_msg = latest_robot_feedback_;
-      }
-      if (fb_msg) {
-        broadcastRobotFeedback(fb_msg);
+      if (auto wm_msg = world_model_.latest()) {
+        connection->sendMessage(createWorldModelMessage(wm_msg));
       }
     }
 
-    // 接続確立時にPiステータスを取得・送信
-    pollAllPiStatus();
+    {
+      if (auto fb_msg = robot_feedback_.latest()) {
+        connection->sendMessage(createRobotFeedbackMessage(fb_msg));
+      }
+    }
 
-    // 接続確立時にsituation一覧と現在のinjection状態を送信
     handleListSituations(connection);
-    {
-      json history_json = json::array();
-      std::string current;
-      {
-        std::lock_guard<std::mutex> lock(injection_mutex_);
-        current = current_injection_;
-        for (const auto & [n, ts] : injection_history_) {
-          history_json.push_back({{"name", n}, {"timestamp_ms", ts}});
-        }
-      }
-      json state_msg = {
-        {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
-      connection->sendMessage(state_msg.dump());
+    connection->sendMessage(createSessionInjectionCurrentMessage());
+
+    while (running_) {
+      auto message = connection->receiveMessage();
+      if (!message) break;
+      if (!message->empty()) handleWebSocketMessage(connection, *message);
     }
 
-    // Message processing loop
-    while (connection->isConnected() && running_) {
-      std::string message = connection->receiveMessage();
-      if (!message.empty()) {
-        handleWebSocketMessage(connection, message);
-      } else {
-        // Connection closed or error
-        break;
-      }
-    }
-
-    // Clean up connection
     {
       std::lock_guard<std::mutex> lock(connections_mutex_);
       connections_.erase(connection);
@@ -643,28 +656,28 @@ private:
   {
     try {
       json request = json::parse(message);
-      std::string type = request["type"];
+      const std::string type = request.value("type", "");
 
       if (type == "time_sync_request") {
         handleTimeSyncRequest(connection, request);
       } else if (type == "annotation") {
         handleAnnotation(connection, request);
-      } else if (type == "robot_control") {
-        handleRobotControl(connection, request);
-      } else if (type == "poll_pi_status") {
-        pollAllPiStatus();
       } else if (type == "activate_move_mode") {
         handleActivateMoveMode(connection);
       } else if (type == "move_robot") {
         handleMoveRobot(connection, request);
       } else if (type == "activate_robot_test") {
-        handleActivateRobotTest(connection);
+        handleActivateRobotTest(connection, request);
       } else if (type == "deactivate_robot_test") {
         handleDeactivateRobotTest(connection);
       } else if (type == "robot_test_target") {
         handleRobotTestTarget(connection, request);
       } else if (type == "set_planner_param") {
         handleSetPlannerParam(connection, request);
+      } else if (type == "get_position_control_config") {
+        handleGetPositionControlConfig(connection);
+      } else if (type == "set_position_control_param") {
+        handleSetPositionControlParam(connection, request);
       } else if (type == "sim_teleport_ball") {
         handleSimTeleportBall(connection, request);
       } else if (type == "sim_teleport_robot") {
@@ -787,27 +800,16 @@ private:
       world_model["robots_theirs"].push_back(robot_json);
     }
 
-    // WorldModelの遅延監視情報を追加
     world_model["delay_checkpoints"] =
       to_delay_checkpoints_json(msg->delay_checkpoints.checkpoints);
     world_model["delay_reference_timestamp_ns"] = msg->delay_checkpoints.reference_timestamp_ns;
 
-    // WorldModel遅延分析情報
     if (!msg->delay_checkpoints.checkpoints.empty()) {
       world_model["delay_analysis"] =
         compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
     }
 
     return world_model.dump();
-  }
-
-  void sendWorldModelToConnection(
-    std::shared_ptr<WebSocketConnection> connection,
-    const crane_msgs::msg::WorldModel::SharedPtr msg)
-  {
-    if (connection->isConnected()) {
-      connection->sendMessage(createWorldModelMessage(msg));
-    }
   }
 
   void broadcastWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
@@ -1018,7 +1020,7 @@ private:
 
     json response = {
       {"type", "time_sync_response"},
-      {"client_send_time_ms", request["client_send_time_ms"]},
+      {"client_send_time_ms", request.at("client_send_time_ms")},
       {"server_receive_time_ms", T2},
       {"server_send_time_ms", T2},  // 処理時間が短いため同じ
       {"ros_time_ns", this->get_clock()->now().nanoseconds()}};
@@ -1030,28 +1032,23 @@ private:
   {
     auto msg = crane_msgs::msg::HumanAnnotation();
 
-    // ヘッダー設定
     msg.header.stamp = this->get_clock()->now();
     msg.header.frame_id = "human_annotation";
 
-    // 基本フィールド
     msg.category = request.value("category", 0);
     msg.priority = request.value("priority", 1);
     msg.label = request.value("label", "");
     msg.description = request.value("description", "");
 
-    // 時刻関連
     msg.event_timestamp_ns = request.value("event_timestamp_ns", 0L);
     msg.client_timestamp_ms = request.value("client_timestamp_ms", 0L);
     msg.time_offset_ms = request.value("time_offset_ms", 0);
 
-    // デフォルトのタイムスタンプ
     int64_t default_timestamp = this->get_clock()->now().nanoseconds();
     if (msg.event_timestamp_ns == 0) {
       msg.event_timestamp_ns = default_timestamp;
     }
 
-    // 位置情報
     if (request.contains("position")) {
       msg.has_position = true;
       msg.position.x = request["position"].value("x", 0.0);
@@ -1061,7 +1058,6 @@ private:
       msg.has_position = false;
     }
 
-    // ロボットコンテキスト
     if (request.contains("related_robot_ids")) {
       msg.has_robot_context = true;
       for (const auto & id : request["related_robot_ids"]) {
@@ -1076,15 +1072,12 @@ private:
       msg.has_robot_context = false;
     }
 
-    // メタデータ
     if (request.contains("metadata")) {
       msg.metadata_json = request["metadata"].dump();
     }
 
-    // パブリッシュ
     annotation_pub_->publish(msg);
 
-    // 確認レスポンス
     json response = {
       {"type", "annotation_ack"}, {"success", true}, {"timestamp_ns", default_timestamp}};
     connection->sendMessage(response.dump());
@@ -1108,44 +1101,8 @@ private:
     return game_info.dump();
   }
 
-  void sendGameInfoToConnection(
-    std::shared_ptr<WebSocketConnection> connection,
-    const crane_msgs::msg::PlaySituation::SharedPtr msg)
-  {
-    if (connection->isConnected()) {
-      connection->sendMessage(createGameInfoMessage(msg));
-    }
-  }
-
-  void broadcastGameInfo(const crane_msgs::msg::PlaySituation::SharedPtr msg)
-  {
-    broadcastToAll(createGameInfoMessage(msg));
-  }
-
-  static std::string getRobotIp(int robot_id)
-  {
-    return "192.168.20." + std::to_string(100 + robot_id);
-  }
-
-  // レスポンスボディから "status" フィールドを抽出する。失敗時は default_failure を返す
-  static std::string parseStatusFromBody(
-    bool success, const std::string & body, const std::string & default_ok = "OK",
-    const std::string & default_failure = "Offline")
-  {
-    if (!success) return default_failure;
-    if (!body.empty()) {
-      try {
-        auto body_json = json::parse(body);
-        if (body_json.contains("status")) {
-          return body_json["status"].get<std::string>();
-        }
-      } catch (...) {
-      }
-    }
-    return default_ok;
-  }
-
-  void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
+  static std::string createRobotFeedbackMessage(
+    const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
   {
     json data = {{"type", "robot_feedback"}, {"robots", json::array()}};
     for (const auto & robot : msg->feedback) {
@@ -1169,7 +1126,12 @@ private:
         {"values", robot.values}};
       data["robots"].push_back(robot_json);
     }
-    broadcastToAll(data.dump());
+    return data.dump();
+  }
+
+  void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
+  {
+    broadcastToAll(createRobotFeedbackMessage(msg));
   }
 
   void broadcastPingStatus(const crane_msgs::msg::PingStatusArray::SharedPtr msg)
@@ -1214,80 +1176,12 @@ private:
     broadcastToAll(data.dump());
   }
 
-  // Simple blocking HTTP client with connect/read/write timeouts
-  static std::pair<bool, std::string> sendHttpRequest(
-    const std::string & host, int port, const std::string & method, const std::string & path,
-    int timeout_ms = 500)
-  {
-    try {
-      boost::asio::io_context io_context;
-      boost::asio::ip::tcp::resolver resolver(io_context);
-      boost::asio::ip::tcp::socket socket(io_context);
-      boost::asio::steady_timer timer(io_context);
-
-      boost::system::error_code ec;
-      auto endpoints = resolver.resolve(host, std::to_string(port), ec);
-      if (ec) return {false, ""};
-
-      // Async connect with timeout
-      bool connected = false;
-      timer.expires_after(std::chrono::milliseconds(timeout_ms));
-      timer.async_wait([&socket](const boost::system::error_code & timer_ec) {
-        if (!timer_ec) socket.cancel();
-      });
-      boost::asio::async_connect(
-        socket, endpoints,
-        [&](const boost::system::error_code & conn_ec, const boost::asio::ip::tcp::endpoint &) {
-          if (!conn_ec) connected = true;
-          timer.cancel();
-        });
-      io_context.run();
-      if (!connected) return {false, ""};
-
-      // Set socket read/write timeouts
-      timeval tv;
-      tv.tv_sec = 0;
-      tv.tv_usec = static_cast<suseconds_t>(timeout_ms) * 1000;
-      setsockopt(socket.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-      setsockopt(socket.native_handle(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
-      // Send HTTP request
-      std::string req = method + " " + path + " HTTP/1.0\r\n" + "Host: " + host + ":" +
-                        std::to_string(port) + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-      boost::asio::write(socket, boost::asio::buffer(req), ec);
-      if (ec) return {false, ""};
-
-      // Read full response
-      boost::asio::streambuf resp_buf;
-      boost::asio::read(socket, resp_buf, boost::asio::transfer_all(), ec);
-      // ec == eof is expected
-
-      std::istream stream(&resp_buf);
-      std::string http_ver;
-      int status_code = 0;
-      stream >> http_ver >> status_code;
-      std::string status_line_rest;
-      std::getline(stream, status_line_rest);
-
-      // Skip headers
-      std::string line;
-      while (std::getline(stream, line) && line != "\r" && !line.empty()) {
-      }
-
-      std::ostringstream body_stream;
-      body_stream << stream.rdbuf();
-      return {status_code >= 200 && status_code < 300, body_stream.str()};
-    } catch (const std::exception &) {
-      return {false, ""};
-    }
-  }
-
   void loadSituationNames()
   {
     try {
-      auto share_dir = ament_index_cpp::get_package_share_directory("crane_session_coordinator");
-      std::string config_path = share_dir + "/config/unified_session_config.yaml";
-      YAML::Node config = YAML::LoadFile(config_path);
+      auto config_path = crane::resolve_package_path(
+        this->get_logger(), "crane_session_coordinator", "unified_session_config.yaml");
+      YAML::Node config = YAML::LoadFile(config_path.string());
       std::lock_guard<std::mutex> lock(injection_mutex_);
       cached_situation_names_.clear();
       if (config["situations"]) {
@@ -1326,7 +1220,7 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void broadcastSessionInjectionCurrent()
+  std::string createSessionInjectionCurrentMessage()
   {
     json history_json = json::array();
     std::string current;
@@ -1339,7 +1233,12 @@ private:
     }
     json msg = {
       {"type", "session_injection_current"}, {"name", current}, {"history", history_json}};
-    broadcastToAll(msg.dump());
+    return msg.dump();
+  }
+
+  void broadcastSessionInjectionCurrent()
+  {
+    broadcastToAll(createSessionInjectionCurrentMessage());
   }
 
   void handleActivateMoveMode(std::shared_ptr<WebSocketConnection> connection)
@@ -1397,8 +1296,57 @@ private:
     connection->sendMessage(result.dump());
   }
 
-  void handleActivateRobotTest(std::shared_ptr<WebSocketConnection> connection)
+  // robot_test セッション向けの位置指令。max_velocity / max_acceleration は request から読む
+  static crane_msgs::msg::RobotCommand makeRobotTestCommand(
+    int robot_id, float x, float y, double theta, const json & request)
   {
+    crane_msgs::msg::RobotCommand cmd;
+    cmd.robot_id = static_cast<uint8_t>(robot_id);
+    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    cmd.target_theta = theta;
+
+    crane_msgs::msg::PositionTargetMode pos_target;
+    pos_target.target_x = x;
+    pos_target.target_y = y;
+    pos_target.position_tolerance = 0.05f;
+    pos_target.speed_limit_at_target = 0.0f;
+    cmd.position_target_mode.push_back(pos_target);
+
+    crane_msgs::msg::NamedFloat vel_factor;
+    vel_factor.name = "robot_test";
+    vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
+    cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
+
+    crane_msgs::msg::NamedFloat acc_factor;
+    acc_factor.name = "robot_test";
+    acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
+    cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
+    return cmd;
+  }
+
+  void handleActivateRobotTest(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    int robot_id = request.value("robot_id", -1);
+    if (robot_id >= 0 && robot_id <= 15) {
+      double x = 0.0, y = 0.0, theta = 0.0;
+      if (const auto world_model = world_model_.latest()) {
+        for (const auto & r : world_model->robot_info_ours) {
+          if (r.id == robot_id) {
+            x = r.pose.x;
+            y = r.pose.y;
+            theta = r.pose.theta;
+            break;
+          }
+        }
+      }
+      robot_test_target_pub_->publish(makeRobotTestCommand(
+        robot_id, static_cast<float>(x), static_cast<float>(y), theta, request));
+      RCLCPP_INFO(
+        this->get_logger(), "Robot test mode target initialized: robot=%d at (%.2f, %.2f)",
+        robot_id, x, y);
+    }
+
     std_msgs::msg::String injection_msg;
     injection_msg.data = "ROBOT_TEST";
     session_injection_pub_->publish(injection_msg);
@@ -1426,33 +1374,14 @@ private:
       return;
     }
 
-    crane_msgs::msg::RobotCommand cmd;
-    cmd.robot_id = static_cast<uint8_t>(robot_id);
-    cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    cmd.target_theta = request.value("target_theta", 0.0);
-
-    crane_msgs::msg::PositionTargetMode pos_target;
-    pos_target.target_x = request.value("target_x", 0.0f);
-    pos_target.target_y = request.value("target_y", 0.0f);
-    pos_target.position_tolerance = 0.05f;
-    pos_target.speed_limit_at_target = 0.0f;
-    cmd.position_target_mode.push_back(pos_target);
-
-    crane_msgs::msg::NamedFloat vel_factor;
-    vel_factor.name = "robot_test";
-    vel_factor.value = static_cast<float>(request.value("max_velocity", 2.0));
-    cmd.local_planner_config.max_velocity_factors.push_back(vel_factor);
-
-    crane_msgs::msg::NamedFloat acc_factor;
-    acc_factor.name = "robot_test";
-    acc_factor.value = static_cast<float>(request.value("max_acceleration", 2.5));
-    cmd.local_planner_config.max_acceleration_factors.push_back(acc_factor);
-
-    robot_test_target_pub_->publish(cmd);
+    const float target_x = request.value("target_x", 0.0f);
+    const float target_y = request.value("target_y", 0.0f);
+    robot_test_target_pub_->publish(makeRobotTestCommand(
+      robot_id, target_x, target_y, request.value("target_theta", 0.0), request));
 
     RCLCPP_DEBUG(
-      this->get_logger(), "Robot test target: robot=%d, x=%.2f, y=%.2f", robot_id,
-      pos_target.target_x, pos_target.target_y);
+      this->get_logger(), "Robot test target: robot=%d, x=%.2f, y=%.2f", robot_id, target_x,
+      target_y);
 
     json result = {{"type", "robot_test_target_result"}, {"robot_id", robot_id}, {"success", true}};
     connection->sendMessage(result.dump());
@@ -1492,6 +1421,147 @@ private:
       });
     json ok = {{"type", "set_planner_param_result"}, {"success", true}};
     connection->sendMessage(ok.dump());
+  }
+
+  /**
+   * 位置制御ゲインの遠隔調整（ibis-ssl/crane#1442）
+   *
+   * ibis_sender は 1 秒ごとに position_control.* を get_parameter() で読み直し、
+   * 28 バイト（v2）の設定パケットとして CM4 へ送る（Orion_CM4
+   * cm4/bridge/config_packet.h、UDP 12350）。位置制御ループ自体は CM4 側で
+   * 閉じているので、ここでパラメータを書き換えることがロボットのゲインを
+   * 稼働中に変える唯一の経路になる。ロボットの再起動は要らない。
+   */
+  struct PositionControlParamSpec
+  {
+    const char * name;
+    double min_value;
+    double max_value;
+  };
+
+  // 範囲は CM4 側の受理範囲（config_packet.h の kConfig*Max）に合わせる。
+  // CM4 は範囲外の値をクランプせずデータグラムごと捨て、拒否理由は CM4 の
+  // ログにしか出ない。crane 側で弾かないと「設定できたのに何も起きない」
+  // という無言の失敗になるので、ここが最後の防波堤になる。
+  static constexpr std::array<PositionControlParamSpec, 5> kPositionControlParams{
+    {{"position_control.kp", 0.0, 20.0},
+     {"position_control.ki", 0.0, 20.0},
+     {"position_control.kd", 0.0, 5.0},
+     {"position_control.deceleration", 0.0, 20.0},
+     {"position_control.tolerance", 0.0, 1.0}}};
+
+  void handleGetPositionControlConfig(std::shared_ptr<WebSocketConnection> connection)
+  {
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      json err = {
+        {"type", "position_control_config"},
+        {"ready", false},
+        {"message", "ibis_sender のパラメータサービスが応答していません"}};
+      connection->sendMessage(err.dump());
+      return;
+    }
+
+    std::vector<std::string> names;
+    names.reserve(kPositionControlParams.size());
+    for (const auto & spec : kPositionControlParams) {
+      names.emplace_back(spec.name);
+    }
+
+    ibis_sender_params_client_->get_parameters(
+      names, [this, connection](std::shared_future<std::vector<rclcpp::Parameter>> future) {
+        json msg = {{"type", "position_control_config"}, {"ready", true}};
+        try {
+          json values = json::object();
+          for (const auto & param : future.get()) {
+            switch (param.get_type()) {
+              case rclcpp::ParameterType::PARAMETER_DOUBLE:
+                values[param.get_name()] = param.as_double();
+                break;
+              case rclcpp::ParameterType::PARAMETER_STRING:
+                values[param.get_name()] = param.as_string();
+                break;
+              default:
+                break;
+            }
+          }
+          json limits = json::object();
+          for (const auto & spec : kPositionControlParams) {
+            limits[spec.name] = {{"min", spec.min_value}, {"max", spec.max_value}};
+          }
+          msg["values"] = values;
+          msg["limits"] = limits;
+        } catch (const std::exception & e) {
+          msg["ready"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの読み出しに失敗: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
+  }
+
+  void handleSetPositionControlParam(
+    std::shared_ptr<WebSocketConnection> connection, const json & request)
+  {
+    const std::string name = request.value("name", "");
+    const auto spec = std::find_if(
+      kPositionControlParams.begin(), kPositionControlParams.end(),
+      [&name](const PositionControlParamSpec & s) { return name == s.name; });
+
+    auto reject = [&](const std::string & reason) {
+      json err = {
+        {"type", "set_position_control_param_result"},
+        {"name", name},
+        {"success", false},
+        {"message", reason}};
+      connection->sendMessage(err.dump());
+    };
+
+    if (spec == kPositionControlParams.end()) {
+      reject("未知のパラメータです: " + name);
+      return;
+    }
+    if (!request.contains("value") || !request["value"].is_number()) {
+      reject("value が数値ではありません");
+      return;
+    }
+
+    const double value = request["value"].get<double>();
+    if (!std::isfinite(value) || value < spec->min_value || value > spec->max_value) {
+      // クランプしない。丸めた値で「適用済み」と表示すると、UI の表示と
+      // ロボットの実効値が食い違ったまま気付けなくなる（CM4 側と同じ方針）。
+      std::ostringstream oss;
+      oss << "範囲外の値です (" << spec->min_value << " 〜 " << spec->max_value << ")";
+      reject(oss.str());
+      return;
+    }
+    if (!ibis_sender_params_client_->service_is_ready()) {
+      reject("ibis_sender のパラメータサービスが応答していません");
+      return;
+    }
+
+    ibis_sender_params_client_->set_parameters(
+      {rclcpp::Parameter(name, value)},
+      [this, connection,
+       name](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future) {
+        json msg = {{"type", "set_position_control_param_result"}, {"name", name}};
+        try {
+          const auto results = future.get();
+          const bool ok = !results.empty() && results.front().successful;
+          msg["success"] = ok;
+          if (!ok) {
+            const std::string reason = results.empty() ? "結果が空です" : results.front().reason;
+            msg["message"] = reason;
+            RCLCPP_WARN(
+              this->get_logger(), "位置制御パラメータの設定に失敗 (%s): %s", name.c_str(),
+              reason.c_str());
+          }
+        } catch (const std::exception & e) {
+          msg["success"] = false;
+          msg["message"] = e.what();
+          RCLCPP_WARN(this->get_logger(), "位置制御パラメータの設定で例外: %s", e.what());
+        }
+        connection->sendMessage(msg.dump());
+      });
   }
 
   void handleSimTeleportBall(std::shared_ptr<WebSocketConnection> connection, const json & request)
@@ -1549,83 +1619,17 @@ private:
     }
   }
 
-  void handleRobotControl(std::shared_ptr<WebSocketConnection> connection, const json & request)
-  {
-    int robot_id = request.value("robot_id", -1);
-    std::string command = request.value("command", "");
-
-    if (robot_id < 0 || robot_id > 15 || command.empty()) {
-      json error = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", false},
-        {"status", "Invalid request"}};
-      connection->sendMessage(error.dump());
-      return;
-    }
-
-    static const std::map<std::string, std::pair<std::string, std::string>> kCommandMap = {
-      {"start", {"POST", "/start"}}, {"stop", {"POST", "/stop"}}, {"status", {"GET", "/status"}}};
-
-    auto it = kCommandMap.find(command);
-    if (it == kCommandMap.end()) {
-      json error = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", false},
-        {"status", "Unknown command"}};
-      connection->sendMessage(error.dump());
-      return;
-    }
-    const auto & [method, path] = it->second;
-
-    std::thread([connection, robot_id, command, method, path]() {
-      constexpr int kPiPort = 8000;
-      auto [success, body] = sendHttpRequest(getRobotIp(robot_id), kPiPort, method, path);
-      json result = {
-        {"type", "robot_control_result"},
-        {"robot_id", robot_id},
-        {"command", command},
-        {"success", success},
-        {"status", parseStatusFromBody(success, body)}};
-      connection->sendMessage(result.dump());
-    }).detach();
-  }
-
-  void pollAllPiStatus()
-  {
-    std::thread([this]() {
-      constexpr int kNumRobots = 13;
-      constexpr int kPiPort = 8000;
-
-      std::vector<std::future<std::pair<int, std::string>>> futures;
-      futures.reserve(kNumRobots);
-
-      for (int id = 0; id < kNumRobots; id++) {
-        futures.push_back(std::async(std::launch::async, [id]() {
-          auto [success, body] = sendHttpRequest(getRobotIp(id), kPiPort, "GET", "/status");
-          return std::make_pair(id, parseStatusFromBody(success, body, "Running", "Offline"));
-        }));
-      }
-
-      json pi_status = {{"type", "pi_status"}, {"robots", json::array()}};
-      for (auto & future : futures) {
-        auto [id, status] = future.get();
-        pi_status["robots"].push_back({{"robot_id", id}, {"status", status}});
-      }
-      broadcastToAll(pi_status.dump());
-    }).detach();
-  }
-
   void broadcastToAll(const std::string & message)
   {
-    std::lock_guard<std::mutex> lock(connections_mutex_);
-    for (auto connection : connections_) {
-      if (connection->isConnected()) {
-        connection->sendMessage(message);
-      }
+    // 送信はブロッキングなので、一覧のコピーだけをロック中に取る。
+    // ロックを持ったまま送ると、遅いクライアント 1 台が接続の出入りまで止める
+    std::vector<std::shared_ptr<WebSocketConnection>> targets;
+    {
+      std::lock_guard<std::mutex> lock(connections_mutex_);
+      targets.assign(connections_.begin(), connections_.end());
+    }
+    for (const auto & connection : targets) {
+      connection->sendMessage(message);
     }
   }
 
@@ -1647,6 +1651,7 @@ private:
   std::mutex injection_mutex_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommand>::SharedPtr robot_test_target_pub_;
   rclcpp::AsyncParametersClient::SharedPtr local_planner_params_client_;
+  rclcpp::AsyncParametersClient::SharedPtr ibis_sender_params_client_;
 
   // Cached world model state for move commands
   bool cached_is_yellow_{false};
@@ -1658,48 +1663,44 @@ private:
   rclcpp::Subscription<crane_msgs::msg::PingStatusArray>::SharedPtr ping_sub_;
   rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_sub_;
   rclcpp::TimerBase::SharedPtr robot_feedback_timer_;
-  rclcpp::TimerBase::SharedPtr pi_status_timer_;
-  crane_msgs::msg::RobotFeedbackArray::SharedPtr latest_robot_feedback_;
-  bool robot_feedback_updated_{false};
-  std::mutex robot_feedback_mutex_;
+  LatestMessage<crane_msgs::msg::RobotFeedbackArray> robot_feedback_;
 
   // Control targets monitoring
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub_;
   rclcpp::TimerBase::SharedPtr control_targets_timer_;
-  crane_msgs::msg::RobotCommands::SharedPtr latest_control_targets_;
-  bool control_targets_updated_{false};
-  std::mutex control_targets_mutex_;
+  LatestMessage<crane_msgs::msg::RobotCommands> control_targets_;
 
   // Latency estimation monitoring
   rclcpp::Subscription<crane_msgs::msg::LatencyEstimationArray>::SharedPtr latency_estimation_sub_;
   rclcpp::TimerBase::SharedPtr latency_estimation_timer_;
-  crane_msgs::msg::LatencyEstimationArray::SharedPtr latest_latency_estimation_;
-  bool latency_estimation_updated_{false};
-  std::mutex latency_estimation_mutex_;
+  LatestMessage<crane_msgs::msg::LatencyEstimationArray> latency_estimation_;
 
   // Server components
   std::thread websocket_thread_;
   int websocket_port_;
   std::atomic<bool> running_{true};
+  boost::asio::io_context ws_io_context_;
+  std::unique_ptr<boost::asio::ip::tcp::acceptor> ws_acceptor_;
 
   // WebSocket connections
   std::set<std::shared_ptr<WebSocketConnection>> connections_;
   std::mutex connections_mutex_;
+
+  // 接続スレッドが生きている間のソケット。stopServers がこれを空になるまで待つ
+  std::set<std::shared_ptr<boost::asio::ip::tcp::socket>> sockets_;
+  std::mutex sockets_mutex_;
+  std::condition_variable sockets_cv_;
 
   // Game info cache
   crane_msgs::msg::PlaySituation::SharedPtr latest_play_situation_;
   std::mutex game_info_mutex_;
 
   // World model throttle (10Hz)
-  crane_msgs::msg::WorldModel::SharedPtr latest_world_model_;
-  bool world_model_updated_{false};
-  std::mutex world_model_throttle_mutex_;
+  LatestMessage<crane_msgs::msg::WorldModel> world_model_;
   rclcpp::TimerBase::SharedPtr world_model_timer_;
 
   // SVG snapshot throttle (5Hz)
-  crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr latest_svg_snapshot_;
-  bool svg_snapshot_updated_{false};
-  std::mutex svg_snapshot_mutex_;
+  LatestMessage<crane_visualization_interfaces::msg::SvgSnapshot> svg_snapshot_;
   rclcpp::TimerBase::SharedPtr svg_snapshot_timer_;
 
   // SVG updates coalescing (20Hz)

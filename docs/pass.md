@@ -1,119 +1,44 @@
-# パス連携システム
+# パス連携
 
-- 本ドキュメントは Crane におけるパスの上位決定・受け手予約・受取準備・スイッチ抑制の仕組みを説明します。
-- 目的: キック中に受け手が別スキルへ移行して取りこぼす事象を低減し、安定したパス連携を実現すること。
+通常プレーでは `PassPlan` を出し手・受け手の共通契約として使います。受け手の現在位置ではなく、計画された受領点へ直進パスを送り、受け手はキック前からその地点へ先回りします。
 
-## 全体像
+## 処理の流れ
 
-- 上位層でパス先ロボットを決定し、WorldModel の GameAnalysis に載せて配信。
-- Attacker は配信されたパス先に基づいてキックを実施。
-- 受け手側は PassReceiverTactic が予約（指名）し、Receive スキルを割り当てて受け準備。
-- 頻繁なパス先フリップを抑制するため、上位層の選定にヒステリシスを導入。
+1. `PassPlanMetric` が各受け手の現在点・周辺点を交互に評価します。受け手の先着可否と敵の迎撃を同じキック初速・ボール減速で判定し、最低スコアを満たす計画を選びます。
+2. 割当処理が出し手・受け手を一組として確保します。固定割当などで実現できない場合は、その周期のパス実行を拒否します。
+3. `Attacker` はシュートを優先し、パスを選ぶ場合は計画の受領点・初速をそのまま使います。`PassReceiverSession` は受領点へ移動し、キック後は実測ボール軌道に対して `Receive` を実行します。
+4. 飛行中は計画の受け手・受領点を保持します。停止・方向逸脱・相手のキック・タイムアウトなどで解除します。フリーキックとGKの排出は専用の判断経路です。
 
-## 関係コンポーネント
+## メッセージ契約
 
-- `crane_world_model_publisher`:
-  - `PassTargetSelector` が `GameAnalysis.pass_scores` を算出し、`pass_target_id` を選定・配信。
-  - 連続切替え抑制（ヒステリシス）と可視化出力を実装。
-- `crane_session_coordinator`:
-  - `GameAnalysis.pass_target_id` を参照してパス連携を調整。
-  - `pass_receive` セッションで受け手ロボットに Receive スキルを割当（予約）。
-- `crane_robot_skills::Attacker`:
-  - `pass_target_id` を優先してパス先・キックターゲットを決定。
-- `PassReceiverTactic`:
-  - 受け手ロボットに `Receive` を割当。キック中は能動受取、キック前はその場停止しつつボールを注視。
+契約は [`PassPlan.msg`](https://github.com/ibis-ssl/crane/blob/develop/crane_msgs/msg/PassPlan.msg) が正本です。`pass_target_id` / `pass_scores` は比較用の旧評価として残しています。有効な計画がない場合、受け手セッションは従来の推薦を使いますが、出し手は旧評価でパスを代行しません。
 
-## メッセージ拡張
+迎撃評価は経路の離散サンプルによる近似です。計画の成立は実機での成功保証ではありません。
 
-- `crane_msgs/msg/analysis/GameAnalysis.msg` に以下を追加:
-  - `int32 pass_target_id` (-1 の場合は未選択)
-- 既存の `FloatWithID[] pass_scores` は維持（降順、先頭が最良）。
+## 検証
 
-## 選定とスイッチ抑制（上位レイヤ）
+「誰かに渡った」ではなく「予定した受け手が・予定した地点で受け取った」を確かめます。シナリオテスト `PASS_PLAN_AS_PLANNED` がキック時点の計画をラッチし、実際に蹴ったロボット・最初に触れた味方・接触点を計画と照合します。許容誤差はテスト側の定数です。
 
-- 実装: `crane_world_model_publisher` の `PassTargetSelector::update()` が `pass_scores` を計算し、ヒステリシスを考慮して `pass_target_id` を決定。
-- 抑制パラメータ（ROS 2 パラメータ）:
-  - `pass_target.min_hold_duration_sec` 既定 0.5
-  - `pass_target.min_improvement_margin` 既定 0.2
-- 振る舞い:
-  - 最後に選ばれたターゲットは最低0.5秒保持される（値はパラメータで可変）。
-  - 改善値がしきい値を超えた場合のみ切り替え（わずかな差でのフリップを防止）。
+計画は `/world_model` に埋め込まれて配信されるだけで、採否の理由はどこにも出ません。テストは併走する記録プロセスで `/world_model` と `/robot_select_results` を購読し、共通ゲートの各条件と割当結果を時系列で残します。落ちた段はこの記録から特定します。
 
-## パス評価の基準点（動くボール対応）
+このテストと既存のパステストはシミュレータのばらつきが大きいため、CI マトリクスには入れていません。ローカルで複数試行し、成功率で判断してください。1 回の結果で可否を決めないでください。
 
-- パス評価時に使用するボール基準点は次の通り:
-  - ボール停止時: 現在のボール位置。
-  - ボール移動時: 予測停止位置（`getPredictedPosition(getStopTime())`）。
-- これにより、移動中のボールでも一貫したパス線（基準点→受け手）評価が可能になり、誤評価を低減します。
+判定に使う量は推定ではなく実測で出します。キック初速は EKF 推定のボール速度から取り（vision の位置差分は外れ値が大きく、実際には無いシュートを「撃った」と読み違えます）、転がり減速度は回帰で求めて試行ごとに出力します。計画側は設定の減速度を前提に初速を逆算するので、実測値と並べないと設定が効いているかが分かりません。
 
-## Attacker の動作
+実測で分かっている制約:
 
-- `AttackerState::KICK` と `FORCED_PASS` で `game_analysis.pass_target_id >= 0` を優先。
-- パス先が自分自身またはキーパーの場合はフォールバック（従来ロジック）。
+- 支配的な失敗要因は受領点の誤差ではなく、キック時点で計画が生き残っているかです。スコアは 10Hz で大きく変動するため、生成側は保持中に閾値を緩めるヒステリシスを持ちます。
+- `own_goal_penalty` は遮蔽を考慮しない純幾何のため、フィールドのほぼ全域で上限に張り付きます。結果としてゴール角ボーナスが無い受領点は成立しません。
+- キック初速を上げると飛行時間が縮み、敵の迎撃余地と受け手の到達余地が同時に縮みます。実測（パス距離 3.0m）では受け手の到達半径が 1.76m から 0.46m まで落ち、成立する受領点がほとんど無くなります。迎撃されにくさより候補の枯渇が先に効くため、初速は上げない方が良いです。
+- 受け手と敵の到達余地は、同じ台形プロファイルで見積もっています。受け手側だけに先着マージンがあるぶん不利なので、両者の能力値は揃えておかないと、届く受領点まで「間に合わない」として捨てます。
+- 計画がキック時点で失効していると、`Attacker` はパスではなくクリアを蹴ります。ボールが自陣にある間はチップで前進し、相手ハーフに入ると FINAL_GUARD 分岐がゴール中央へ 6.0 m/s のストレートを撃ちます。どちらもボール軌道だけではパスと区別できないため、検証ではまず `KICK分岐` ログの分岐名を見てください。`STANDARD_PASS` が出ていなければ、受領点の誤差を論じる意味はありません。
+- 受領点の選定は敵しか見ていませんでした。迎撃評価も遮蔽評価も敵専用なので、パス経路を横切る味方が先にボールへ触れて計画が空振りします。現在は受け手と同じ運動モデルで味方の先着も判定し、先着する味方がいる受領点は候補から落とします。
+- **飛行状態（`STATE_BALL_IN_FLIGHT`）の推定に依存しないでください。** ボールが飛んでいるかどうかの推定は現状安定しておらず、特に実機で安定しません。シミュレータで期待どおり動いても、それは実機での動作を意味しません。この状態を前提に組んだ判断は、実機では静かに無効化されます。現状 `AttackerSkillSession` の「出し手を止める」分岐がこの状態を条件にしているため、実機では効きません。新しい判断を足すときは、飛行状態ではなく、そのロボット自身が確実に知っている事実（自分が計画どおりキック指令を出したか等）を根拠にしてください。
+- 物理定数は ER-Force の実測に揃えてあります（減速度 0.36 m/s²、キック初速は指令値の約 1.36 倍）。定数が散在していると yaml を直しても一部の経路が旧値で動くため、シナリオ検証では計画の初速・到達時間から到達速度を逆算し、設定が効いていることを毎回確かめてください。
 
-## 受け手予約と受取準備
+## 実装リファレンス
 
-- `TacticCoordinator` が `GameAnalysis.pass_target_id` を参照。
-- `PassReceiverTactic` が該当 ID を予約し、`Receive` スキルを割り当てて実行。
-  - ボールが十分動いている、または `ongoing_kick.is_kicker_friend` が真のときは能動受け取り（`Receive::update()` 実行）。
-  - キック前は整列動作を行わず、その場で停止しボールを注視。
-  - 2025シーズンでは、PassTargetSelectorの確定まで待機する「遅延切替」ロジックが標準となり、受け手のスキルフリップが減少。
-
-## セッション設定（例）
-
-統一設定ファイル `crane_session_coordinator/config/unified_session_config.yaml` で設定：
-
-```yaml
-situations:
-  INPLAY:
-    sessions:
-      - name: attacker_skill
-        capacity: 1
-      - name: pass_receive
-        capacity: 1
-      # その他のセッション
-```
-
-推奨順序: `attacker_skill` の直後に `pass_receive` を配置。
-
-## Receive スキル主要パラメータ
-
-- `policy`: `closest`（既定）, `min_slack`, `max_slack`
-- `enable_active_receive`: true（既定）
-- `enable_redirect`: false（既定）、`redirect_target`, `redirect_kick_power`
-- `robot_acc_for_prediction`: 2.5（既定）
-- `robot_max_vel_for_prediction`: 5.0（既定）
-- `enable_software_bumper`: true（既定）、`software_bumper_start_time`
-
-## WorldModelPublisher パラメータ
-
-- `pass_target.min_hold_duration_sec`: ターゲットの最低保持時間（秒）
-- `pass_target.min_improvement_margin`: 早期切替のための最小改善幅
-
-## 動作確認手順（抜粋）
-
-- ビルド（ワークスペースルートで実行）
-  - `colcon build --symlink-install --packages-select crane_msgs crane_world_model_publisher crane_robot_skills crane_session_coordinator`
-- 起動（例）
-  - `ros2 launch crane_bringup crane.launch.xml sim:=true`
-- 可視化・デバッグ
-  - 受け手整列点やスコアは可視化トピックに反映（Session/WorldModel の可視化レイヤ参照）。
-  - `ongoing_kick`, `pass_scores`, `pass_target_id` は `/world_model` を購読して確認。
-
-## チューニング指針
-
-- スイッチ抑制が強すぎる場合: `pass_target.min_hold_duration_sec` を0.3程度に短縮、または `min_improvement_margin` を小さく。
-- 受け取り遅延がある場合: `Receive` の `robot_acc_for_prediction`, `robot_max_vel_for_prediction` を上げる。
-
-## 既知の注意点
-
-- 受け手が物理的に不達な位置にいる場合は Receive 側が `closest` へフォールバック。
-- `pass_target_id` が未選択（-1）の場合、Attacker はパス分岐に入らず、PassReceiverTactic はロボットを取得しません（受け手予約なし）。
-
-## 変更ファイル一覧（実装反映）
-
-- `crane_msgs/msg/analysis/GameAnalysis.msg`: `pass_target_id` の追加
-- `crane_world_model_publisher`: `pass_target_id` の選定とスイッチ抑制
-- `crane_robot_skills/src/attacker.cpp`: 上位決定の優先適用
-- `crane_sessions/include/crane_sessions/pass_receiver_tactic.hpp`: 受取準備ロジックの最適化
-- `crane_session_coordinator/config/unified_session_config.yaml`: `pass_receive` の追加
+- [PassPlanMetric](https://github.com/ibis-ssl/crane/blob/develop/crane_game_analyzer/src/metrics/pass_plan_metrics.cpp)
+- [PassReceiverSession](https://github.com/ibis-ssl/crane/blob/develop/crane_sessions/include/crane_sessions/pass_receiver_session.hpp)
+- [Attacker](https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/src/attacker.cpp)
+- [オフェンス戦術](./offense.md) / [Attacker スキル](./attacker.md)

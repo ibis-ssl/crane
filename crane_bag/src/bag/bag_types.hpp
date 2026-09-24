@@ -47,6 +47,18 @@ struct RobotInfo
   Pose2D pose;
   Point2D velocity;
   bool available_vision = false;
+  /// ball_contact/last_contacted_time [ns]（WorldModel header と同一クロック）
+  int64_t ball_contact_last_ns = 0;
+};
+
+/// WorldModel.game_analysis.ongoing_kick[<=1] の抜粋（パス解析用）
+struct OngoingKickInfo
+{
+  bool present = false;
+  int32_t kicker_id = -1;
+  bool is_kicker_friend = false;
+  Point2D origin;
+  double direction = 0.0;
 };
 
 struct FieldInfo
@@ -58,9 +70,19 @@ struct WorldModel
 {
   BallInfo ball_info;
   FieldInfo field_info;
+  /// goal_size.y がゴール幅 [m]（goal_size.x は奥行き）
+  FieldInfo goal_size;
   bool is_yellow = false;
+  /// 自陣が +x 側かどうか。ゴール判定の自陣/敵陣を決めるのに要る
+  bool on_positive_half = false;
   std::vector<RobotInfo> robot_info_ours;
   std::vector<RobotInfo> robot_info_theirs;
+  /// header/stamp [ns]。ball_contact_last_ns との比較に使う（同一クロック保証）
+  int64_t header_stamp_ns = 0;
+  // ─ 内包 game_analysis の抜粋（パス解析用。未記録の古いbagでは既定値）─
+  int32_t pass_target_id = -1;
+  int32_t recommended_pass_receiver_id = -1;
+  OngoingKickInfo ongoing_kick;
 };
 
 // ─── PlaySituation ────────────────────────────────────────────────────────────
@@ -97,6 +119,11 @@ struct RobotCommand
   float dribble_power = 0;
   bool stop_flag = false;
   bool chip_enable = false;
+  /// RobotCommand.msg の control_mode（1=POSITION_TARGET, 2=SIMPLE_VELOCITY, 3=POLAR_VELOCITY）
+  uint8_t control_mode = 0;
+  /// 指令生成時に crane が見ていた機体の位置・速度。指令と実挙動の突き合わせに使う
+  Pose2D current_pose;
+  Pose2D current_velocity;
   std::string planner_name;
   std::vector<NamedString> planning_factors;
   std::vector<PositionTarget> position_target_mode;
@@ -128,6 +155,29 @@ struct SelectResult
 struct RobotSelectResults
 {
   std::vector<SelectResult> results;
+};
+
+// ─── KickPredictionTrace ────────────────────────────────────────────────────
+
+/// /kick_prediction_traces（キック予実トレース）のプレーン構造体。
+/// prediction_point[<=1] / actual[<=1] は has_* フラグ付きでフラット化。
+struct KickPredictionTraceData
+{
+  int64_t reference_timestamp_ns = 0;
+  uint32_t trace_id = 0;
+  bool has_prediction = false;
+  std::string source;
+  double kick_power = 0;
+  bool is_chip_kick = false;
+  double predicted_ball_speed = 0;
+  double predicted_stop_distance = 0;
+  bool has_actual = false;
+  double actual_ball_speed = 0;
+  double actual_stop_distance = 0;
+  double speed_error = 0;             // 実測 - 予測 [m/s]
+  double speed_error_percent = 0;     // 予測比 [%]
+  double distance_error = 0;          // 実測 - 予測 [m]
+  double distance_error_percent = 0;  // 予測比 [%]
 };
 
 // ─── Log (rosout) ─────────────────────────────────────────────────────────────

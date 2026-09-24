@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_sessions/free_kicker_skill_session.hpp>
+#include <crane_utils/package.hpp>
 #include <robocup_ssl_msgs/msg/game_event_type.hpp>
 #include <robocup_ssl_msgs/msg/team.hpp>
 
@@ -24,9 +24,7 @@ std::filesystem::path FreeKickerSkillSession::resolveHistoryFilePath() const
   }
 
   const auto config_path =
-    std::filesystem::path(
-      ament_index_cpp::get_package_share_directory("crane_session_coordinator")) /
-    "config" / "free_kicker_history.yaml";
+    crane::resolve_package_path("crane_session_coordinator", "free_kicker_history.yaml");
   try {
     return std::filesystem::weakly_canonical(config_path);
   } catch (const std::exception &) {

@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_bag)
 
+# 既定を Release にする。CMAKE_BUILD_TYPE 未指定だと GCC は最適化なし（-O0）になり、
+# 経路計画のような毎周期の計算が桁違いに遅くなる。CI と docker は明示的に Release を
+# 指定しているので、これはローカルビルドを同じ条件に揃えるためのもの。
+# デバッグ時は -DCMAKE_BUILD_TYPE=Debug または RelWithDebInfo を明示する。
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -25,6 +33,8 @@ ament_auto_add_executable(crane_bag
   src/bag/bag_tracking.cpp
   src/bag/bag_control.cpp
   src/bag/bag_referee.cpp
+  src/bag/bag_pass.cpp
+  src/bag/bag_kick_stats.cpp
   src/bag/msg_extractors.cpp
 )
 target_include_directories(crane_bag PRIVATE src/bag)
@@ -37,5 +47,17 @@ target_link_libraries(crane_bag
   mcap_vendor::mcap
   magic_enum::magic_enum
 )
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+
+  # パスイベント検出器の単体テスト（bag_pass は rosx_introspection 非依存の純関数）
+  ament_auto_add_gtest(test_bag_pass test/test_bag_pass.cpp src/bag/bag_pass.cpp)
+  target_include_directories(test_bag_pass PRIVATE src/bag)
+
+  ament_auto_add_gtest(test_kick_stats test/test_kick_stats.cpp src/bag/bag_kick_stats.cpp)
+  target_include_directories(test_kick_stats PRIVATE src/bag)
+endif()
 
 ament_auto_package()

@@ -86,11 +86,6 @@ def generate_launch_description():
             ),
             ComposableNode(
                 package="robocup_ssl_comm",
-                plugin="robocup_ssl_comm::GrSim",
-                name="grsim",
-            ),
-            ComposableNode(
-                package="robocup_ssl_comm",
                 plugin="robocup_ssl_comm::Tracker",
                 name="tracker",
                 parameters=[

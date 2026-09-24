@@ -1,38 +1,7 @@
-# ER-Force Simulator
+# ER-Forceシミュレータ
 
-## 環境構築
+Craneで使うシミュレータは [ibis-ssl/framework](https://github.com/ibis-ssl/framework) です。通常は [Docker開発環境](docker.md)から起動します。
 
-```bash
-git clone git@github.com:ibis-ssl/framework.git
-cd framework
-sudo apt install cmake protobuf-compiler libprotobuf-dev qtbase5-dev libqt5opengl5-dev g++ libusb-1.0-0-dev libsdl2-dev libqt5svg5-dev libssl-dev
-mkdir build && cd build
-cmake ..
-make
-```
+単独ビルド・起動はframework側のREADMEと `simulator-cli --help` を参照してください。フィールド形状や物理条件の選択肢もシミュレータ側が正本です。
 
-`make -j`などで並列数が多くしすぎるとなぜかビルドに失敗することがあるので注意
-
-## 実行
-
-```bash
-./build/bin/simulator-cli -g <geometry> --realisim <realism>
-```
-
-### geometry
-
-- 2014
-- 2017
-- 2018
-- 2019
-- 2020
-- 2020B
-- 2023
-- 2023B
-
-### realism
-
-- None
-- Friendly
-- RC2021
-- Realistic
+Craneと組み合わせる際は、送信形式・フィールド形状・Vision/Refereeの接続先を合わせ、[ネットワーク隔離](network.md)を適用してください。

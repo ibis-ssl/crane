@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packet Forge - ibis-ssl</title>
+<link rel="stylesheet" href="/fonts/noto-sans-jp.css">
+<link rel="stylesheet" href="/fonts/roboto.css">
+<link rel="stylesheet" href="/fonts/ibm-plex-mono.css">
+<link rel="stylesheet" href="/fonts/material-symbols-outlined.css">
+<link rel="stylesheet" href="/shared/theme/m3e-theme.css">
+<link rel="stylesheet" href="/shared/nav/crane-nav.css">
+<script type="module" src="/shared/nav/crane-nav.js"></script>
+<style>
+  /* このページ固有のスタイル。色は必ずトークン経由で取る。
+     フィールドキャンバスだけは --crane-field-* を使う（常にダークで描く）。
+     クローム側に --crane-field-* を、キャンバスに --md-sys-color-* を使わない。 */
+
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--md-sys-color-surface-dim);
+    color: var(--md-sys-color-on-surface);
+    font-family: "Noto Sans JP", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  /* 共有テーマに text input が無い（index.html の inline にしか無い）ので持つ */
+  .m3-text-input {
+    background: var(--md-sys-color-surface-container-high);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-xs, 4px);
+    color: var(--md-sys-color-on-surface);
+    outline: none;
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 3px 6px;
+  }
+  .m3-text-input:focus { border-color: var(--md-sys-color-primary); }
+  input[type="range"] { accent-color: var(--md-sys-color-primary); width: 100%; }
+
+  /* ===== 送信バー ===== */
+  .pf-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    flex-shrink: 0;
+  }
+  .pf-bar__group { display: flex; align-items: center; gap: 5px; }
+  .pf-bar__label {
+    font-size: 0.62rem; color: var(--md-sys-color-on-surface-variant);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .pf-bar__spacer { flex: 1 1 auto; }
+  .pf-readout {
+    font-size: 0.7rem; color: var(--crane-ink-2);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .pf-readout b { color: var(--md-sys-color-on-surface); font-weight: 600; }
+
+  /* ===== 警告帯（拒否はしない。見せるだけ） ===== */
+  .pf-warnings { padding: 0 12px; flex-shrink: 0; }
+  .pf-warnings:empty { display: none; }
+  .pf-warning {
+    display: flex; gap: 6px; align-items: flex-start;
+    background: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+    border-radius: var(--md-sys-shape-xs, 4px);
+    padding: 5px 8px; margin: 6px 0; font-size: 0.7rem; line-height: 1.5;
+  }
+  .pf-warning--conflict {
+    background: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+  }
+
+  /* ===== 区間スケジュール ===== */
+  .pf-steps {
+    padding: 6px 12px 8px; flex-shrink: 0;
+    background: var(--md-sys-color-surface-container-low);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  }
+  .pf-steps__head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pf-steps__hint { font-size: 0.64rem; color: var(--md-sys-color-on-surface-variant); }
+  .pf-step {
+    display: flex; align-items: center; gap: 8px; padding: 3px 0;
+    font-size: 0.7rem;
+  }
+  .pf-step--active { background: var(--md-sys-color-primary-container); border-radius: 4px; }
+  .pf-step__index {
+    width: 22px; text-align: center;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .pf-step__fields { flex: 1 1 auto; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .pf-step__error { color: var(--md-sys-color-error); font-size: 0.64rem; }
+
+  /* ===== 3 ペイン ===== */
+  .pf-main {
+    flex: 1 1 auto; min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.1fr) minmax(300px, 0.8fr);
+    gap: 8px; padding: 8px;
+  }
+  .pf-pane {
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-sm, 8px);
+    display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  }
+  .pf-pane__header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; flex-shrink: 0;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    font-size: 0.72rem; font-weight: 600;
+  }
+  .pf-pane__body { flex: 1 1 auto; overflow: auto; min-height: 0; }
+  .pf-pane--field .pf-pane__body { overflow: hidden; position: relative; }
+  #field-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+
+  .pf-hint {
+    font-size: 0.62rem; color: var(--md-sys-color-on-surface-variant);
+    padding: 5px 10px; border-top: 1px solid var(--md-sys-color-outline-variant);
+    line-height: 1.6;
+  }
+
+  /* ===== フィールド編集 ===== */
+  .pf-group { border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+  .pf-group__title {
+    font-size: 0.64rem; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--md-sys-color-on-surface-variant);
+    background: var(--md-sys-color-surface-container-low);
+    padding: 5px 10px; position: sticky; top: 0; z-index: 1;
+  }
+  .pf-row { padding: 6px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .pf-row + .pf-row { border-top: 1px solid var(--md-sys-color-outline-variant); }
+  .pf-row--inactive { opacity: 0.45; }
+  .pf-row__head { display: flex; align-items: center; gap: 8px; }
+  .pf-row__label { font-size: 0.72rem; flex: 1 1 auto; color: var(--crane-ink-2); }
+  .pf-row__key {
+    font-size: 0.6rem; color: var(--md-sys-color-on-surface-variant);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .pf-row__controls { display: flex; align-items: center; gap: 8px; }
+  .pf-row__controls input[type="range"] { flex: 1 1 auto; min-width: 60px; }
+  .pf-row__num { width: 82px; flex: 0 0 auto; text-align: right; }
+  .pf-row__unit {
+    font-size: 0.64rem; color: var(--md-sys-color-on-surface-variant);
+    min-width: 34px; flex: 0 0 auto;
+  }
+  .pf-row__raw {
+    font-size: 0.6rem; color: var(--md-sys-color-on-surface-variant);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .pf-row__note {
+    font-size: 0.62rem; line-height: 1.5;
+    color: var(--md-sys-color-on-warning-container);
+  }
+  .pf-flags { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 10px; padding: 6px 10px; }
+  .pf-flag { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; }
+  .pf-flag--undefined .pf-flag__label { color: var(--md-sys-color-on-surface-variant); font-style: italic; }
+  .pf-seg { display: flex; gap: 4px; padding: 6px 10px; flex-wrap: wrap; }
+
+  /* ===== バイトペイン ===== */
+  .pf-bytes {
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    gap: 2px; padding: 8px;
+  }
+  .pf-byte {
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 3px; padding: 3px 1px; text-align: center; cursor: pointer;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    background: var(--md-sys-color-surface-container-low);
+  }
+  .pf-byte:hover { background: var(--md-sys-color-surface-container-high); }
+  .pf-byte__index { display: block; font-size: 0.52rem; color: var(--md-sys-color-on-surface-variant); }
+  .pf-byte__value { display: block; font-size: 0.74rem; }
+  .pf-byte--unused { opacity: 0.5; }
+  .pf-byte--override {
+    border-color: var(--md-sys-color-error);
+    background: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+  }
+  .pf-byte--highlight { outline: 2px solid var(--md-sys-color-primary); outline-offset: -2px; }
+  .pf-byte[data-group="identity"]  { border-left: 3px solid var(--crane-chart-1); }
+  .pf-byte[data-group="vision"]    { border-left: 3px solid var(--crane-chart-2); }
+  .pf-byte[data-group="target"]    { border-left: 3px solid var(--crane-chart-3); }
+  .pf-byte[data-group="actuator"]  { border-left: 3px solid var(--crane-chart-4); }
+  .pf-byte[data-group="limits"]    { border-left: 3px solid var(--crane-chart-5); }
+  .pf-byte[data-group="timing"]    { border-left: 3px solid var(--crane-chart-6); }
+  .pf-byte[data-group="flags"]     { border-left: 3px solid var(--crane-chart-7); }
+  .pf-byte[data-group="mode"]      { border-left: 3px solid var(--crane-chart-8); }
+  .pf-byte[data-group="mode_args"] { border-left: 3px solid var(--crane-chart-9, var(--crane-chart-2)); }
+
+  /* ===== フィードバック帯 ===== */
+  .pf-feedback {
+    flex-shrink: 0; border-top: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container);
+    padding: 6px 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    font-size: 0.7rem; min-height: 34px;
+  }
+  .pf-stat { display: flex; align-items: baseline; gap: 5px; }
+  .pf-stat__label { font-size: 0.6rem; color: var(--md-sys-color-on-surface-variant); }
+  .pf-stat__value { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .pf-stat__value[data-severity="warn"] { color: var(--md-sys-color-warning); font-weight: 600; }
+  .pf-stat__value[data-severity="crit"] { color: var(--md-sys-color-error); font-weight: 600; }
+  .pf-stat__value[data-severity="ok"]   { color: var(--md-sys-color-on-surface); }
+
+  .pf-dialog-backdrop {
+    position: fixed; inset: 0; background: var(--md-sys-color-scrim);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+  }
+  .pf-dialog-backdrop[data-open="true"] { display: flex; }
+  .pf-dialog {
+    background: var(--md-sys-color-surface); border-radius: var(--md-sys-shape-md, 12px);
+    padding: 16px; min-width: 300px; max-width: 560px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+  .pf-dialog h3 { margin: 0 0 10px; font-size: 0.86rem; }
+  .pf-dialog textarea {
+    width: 100%; min-height: 220px; resize: vertical;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem;
+  }
+  .pf-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+  @media (max-width: 1100px) {
+    .pf-main { grid-template-columns: 1fr; grid-auto-rows: minmax(240px, auto); }
+  }
+</style>
+</head>
+<body>
+
+<crane-nav active="packet-forge"></crane-nav>
+
+<!-- 送信バー -->
+<div class="pf-bar">
+  <div class="pf-bar__group">
+    <span class="pf-bar__label">robot</span>
+    <select id="robot-select" class="m3-select"></select>
+  </div>
+  <div class="pf-bar__group">
+    <span class="pf-bar__label">宛先</span>
+    <select id="target-select" class="m3-select">
+      <option value="real">実機 192.168.20.(100+N)</option>
+      <option value="sim">sim 127.0.0.1</option>
+      <option value="custom">任意 IP</option>
+    </select>
+    <input type="text" id="target-custom" class="m3-text-input" style="width:120px;display:none" placeholder="127.0.0.1">
+  </div>
+  <label class="pf-flag">
+    <input type="checkbox" id="broadcast-check" class="m3-checkbox">
+    <span>broadcast</span>
+  </label>
+  <div class="pf-bar__group">
+    <span class="pf-bar__label">rate</span>
+    <input type="number" id="rate-input" class="m3-text-input" style="width:66px" value="62.5" step="0.5" min="0.5">
+    <span class="pf-bar__label">Hz</span>
+  </div>
+  <div class="pf-bar__group">
+    <span class="pf-bar__label">duration</span>
+    <input type="number" id="duration-input" class="m3-text-input" style="width:66px" placeholder="∞" step="1" min="0">
+    <span class="pf-bar__label">s</span>
+  </div>
+  <label class="pf-flag" title="check_counter を巡回させない。250ms 変化しないと受信側は AI 断とみなす">
+    <input type="checkbox" id="freeze-check" class="m3-checkbox">
+    <span>counter 固定</span>
+  </label>
+  <label class="pf-flag" title="終了時に速度 0 + STOP_EMERGENCY を 5 回送る">
+    <input type="checkbox" id="stop-on-exit-check" class="m3-checkbox" checked>
+    <span>終了時に停止指令</span>
+  </label>
+
+  <div class="pf-bar__spacer"></div>
+
+  <div class="pf-readout">
+    <span>counter <b id="counter-readout" class="mono">-</b></span>
+    <span>送信 <b id="sent-readout" class="mono">0</b></span>
+    <span><b id="rate-readout" class="mono">0.0</b> Hz</span>
+    <span id="source-readout" class="mono"></span>
+  </div>
+
+  <button id="btn-send" class="m3-btn m3-btn--filled m3-btn--sm">
+    <span class="material-symbols-outlined icon-sm">play_arrow</span>送信
+  </button>
+  <button id="btn-stop" class="m3-btn m3-btn--error m3-btn--sm" style="display:none">
+    <span class="material-symbols-outlined icon-sm">stop</span>停止
+  </button>
+  <button id="btn-steps" class="m3-btn m3-btn--outlined m3-btn--sm"
+          title="区間スケジュール。時間で値を切り替える">
+    <span class="material-symbols-outlined icon-sm">timeline</span>steps<span id="steps-count"></span>
+  </button>
+  <button id="btn-spec" class="m3-btn m3-btn--outlined m3-btn--sm" title="spec の入出力と CLI コマンド">
+    <span class="material-symbols-outlined icon-sm">code</span>spec
+  </button>
+</div>
+
+<!-- 区間スケジュール -->
+<div class="pf-steps" id="steps-panel" hidden>
+  <div class="pf-steps__head">
+    <span class="pf-bar__label">区間スケジュール</span>
+    <span class="pf-steps__hint">
+      上から順に実行し、最後の区間が終わると送信を止めます。空なら duration まで送り続けます。
+    </span>
+    <div class="pf-bar__spacer"></div>
+    <button id="btn-step-add" class="m3-btn m3-btn--tonal m3-btn--sm">区間を追加</button>
+  </div>
+  <div id="steps-rows"></div>
+</div>
+
+<div class="pf-warnings" id="warnings"></div>
+
+<div class="pf-main">
+  <!-- 左: フィールド -->
+  <section class="pf-pane pf-pane--field">
+    <div class="pf-pane__header">
+      <span class="material-symbols-outlined icon-sm">stadium</span>
+      フィールド
+      <div class="pf-bar__spacer"></div>
+      <select id="click-mode" class="m3-select" style="font-size:0.66rem">
+        <option value="target_global_pos">クリック → target_global_pos</option>
+        <option value="vision_global_pos">クリック → vision_global_pos</option>
+      </select>
+    </div>
+    <div class="pf-pane__body"><canvas id="field-canvas"></canvas></div>
+    <div class="pf-hint">
+      クリックで座標を入れる。ドラッグで target_global_theta（クリック点から引いた向き）。
+      ホイールでズーム。
+    </div>
+  </section>
+
+  <!-- 中央: フィールド編集 -->
+  <section class="pf-pane pf-pane--editor">
+    <div class="pf-pane__header">
+      <span class="material-symbols-outlined icon-sm">tune</span>
+      フィールド
+      <div class="pf-bar__spacer"></div>
+      <select id="base-select" class="m3-select" style="font-size:0.66rem"
+              title="未指定の 2 バイト値をどう埋めるか">
+        <option value="neutral">base: neutral (0.0 を符号化)</option>
+        <option value="zeros">base: zeros (生ゼロ = -range)</option>
+      </select>
+    </div>
+    <div class="pf-pane__body" id="editor"></div>
+  </section>
+
+  <!-- 右: バイト -->
+  <aside class="pf-pane pf-pane--bytes">
+    <div class="pf-pane__header">
+      <span class="material-symbols-outlined icon-sm">grid_on</span>
+      64 バイト
+      <div class="pf-bar__spacer"></div>
+      <button id="btn-clear-overrides" class="m3-btn m3-btn--text m3-btn--sm">上書きを消す</button>
+    </div>
+    <div class="pf-pane__body"><div class="pf-bytes" id="bytes"></div></div>
+    <div class="pf-hint">
+      クリックで生バイトを上書き（フィールドより後に適用され常に勝つ）。
+      赤枠が上書き中。byte 38 以降は crane が書かない未使用領域。
+    </div>
+  </aside>
+</div>
+
+<!-- フィードバック帯 -->
+<div class="pf-feedback">
+  <button id="btn-watch" class="m3-btn m3-btn--tonal m3-btn--sm">
+    <span class="material-symbols-outlined icon-sm">hearing</span>フィードバック購読
+  </button>
+  <span id="feedback-endpoint" class="pf-stat__label mono"></span>
+  <div id="feedback-stats" class="pf-readout" style="gap:14px"></div>
+</div>
+
+<!-- spec ダイアログ -->
+<div class="pf-dialog-backdrop" id="spec-backdrop">
+  <div class="pf-dialog">
+    <h3>packet spec</h3>
+    <textarea id="spec-text" class="m3-text-input" spellcheck="false"></textarea>
+    <h3 style="margin-top:12px">同じ内容の CLI コマンド</h3>
+    <textarea id="spec-cli" class="m3-text-input" spellcheck="false" style="min-height:90px" readonly></textarea>
+    <div class="pf-dialog__actions">
+      <button id="btn-spec-apply" class="m3-btn m3-btn--filled m3-btn--sm">spec を適用</button>
+      <button id="btn-spec-close" class="m3-btn m3-btn--text m3-btn--sm">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/forge.js"></script>
+</body>
+</html>

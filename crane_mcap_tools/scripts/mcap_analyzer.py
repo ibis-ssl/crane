@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 
 from crane_mcap_tools.mcap_analysis import (
-    MCAPAnnotationExtractor,
     GeminiAnalysisClient,
+    MCAPAnnotationExtractor,
     ReportGenerator,
 )
 from crane_mcap_tools.mcap_analysis.prompts import (
@@ -237,8 +237,8 @@ def main() -> int:
         logger.error(f"必要なパッケージがインストールされていません: {e}")
         return 1
 
-    except Exception as e:
-        logger.exception(f"予期しないエラーが発生しました: {e}")
+    except Exception:
+        logger.exception("予期しないエラーが発生しました")
         return 1
 
 

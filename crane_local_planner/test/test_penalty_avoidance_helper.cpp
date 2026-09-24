@@ -22,13 +22,12 @@ auto makeOurPA() -> Box
 }
 
 auto ourGoal() -> Point { return Point(-FIELD_HALF_X, 0.0); }
-auto paSize() -> Point { return Point(PA_DEPTH, PA_HALF_WIDTH * 2.0); }
 }  // namespace
 
 TEST(PenaltyAvoidanceHelperTest, NoCrossingDoesNotOverrideTarget)
 {
   const auto decision = computePenaltyBypassDecision(
-    Point(-2.0, 2.5), Point(-1.0, 2.5), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2, true);
+    Point(-2.0, 2.5), Point(-1.0, 2.5), makeOurPA(), ourGoal(), 0.1, 0.2, true);
   EXPECT_FALSE(decision.crossing_detected);
   EXPECT_FALSE(decision.target_overridden);
 }
@@ -36,7 +35,7 @@ TEST(PenaltyAvoidanceHelperTest, NoCrossingDoesNotOverrideTarget)
 TEST(PenaltyAvoidanceHelperTest, CrossingOverridesTargetWithWaypoint)
 {
   const auto decision = computePenaltyBypassDecision(
-    Point(-3.0, 0.0), Point(-5.9, 0.0), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2, true);
+    Point(-3.0, 0.0), Point(-5.9, 0.0), makeOurPA(), ourGoal(), 0.1, 0.2, true);
   EXPECT_TRUE(decision.crossing_detected);
   EXPECT_TRUE(decision.target_overridden);
   EXPECT_NEAR(decision.waypoint.x(), -3.9, 1e-6);
@@ -47,7 +46,7 @@ TEST(PenaltyAvoidanceHelperTest, OutsideBypassWaypointDoesNotReTriggerCrossing)
 {
   // 1st step: crossing target is overridden to a bypass waypoint (bottom side).
   const auto first = computePenaltyBypassDecision(
-    Point(-3.0, 0.0), Point(-5.9, -0.6), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2, true);
+    Point(-3.0, 0.0), Point(-5.9, -0.6), makeOurPA(), ourGoal(), 0.1, 0.2, true);
   ASSERT_TRUE(first.crossing_detected);
   ASSERT_TRUE(first.target_overridden);
   ASSERT_EQ(first.selected_side, PenaltyBypassSide::BOTTOM);
@@ -55,7 +54,7 @@ TEST(PenaltyAvoidanceHelperTest, OutsideBypassWaypointDoesNotReTriggerCrossing)
   // 2nd step: once robot is on the bypass waypoint, heading to opposite-side outside target
   // should not be considered as crossing anymore.
   const auto second = computePenaltyBypassDecision(
-    first.waypoint, Point(-3.9, 2.5), makeOurPA(), ourGoal(), paSize(), 0.1, 0.2, true);
+    first.waypoint, Point(-3.9, 2.5), makeOurPA(), ourGoal(), 0.1, 0.2, true);
   EXPECT_FALSE(second.crossing_detected);
   EXPECT_FALSE(second.target_overridden);
 }
@@ -63,7 +62,7 @@ TEST(PenaltyAvoidanceHelperTest, OutsideBypassWaypointDoesNotReTriggerCrossing)
 TEST(PenaltyAvoidanceHelperTest, VerticalSegmentThroughPenaltyIsDetectedAsCrossing)
 {
   const auto decision = computePenaltyBypassDecision(
-    Point(-4.95, -3.61), Point(-4.75, 3.08), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+    Point(-4.95, -3.61), Point(-4.75, 3.08), makeOurPA(), ourGoal(), 0.3, 0.2, true);
   EXPECT_TRUE(decision.crossing_detected);
   EXPECT_TRUE(decision.target_overridden);
 }
@@ -78,7 +77,7 @@ TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsBOTTOMWhenTargetIsAbove
   expanded.max_corner() += Point(0.3, 0.3);
 
   const auto step1 = computePenaltyBypassDecision(
-    Point(-4.95, -3.61), Point(-4.75, 3.08), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+    Point(-4.95, -3.61), Point(-4.75, 3.08), makeOurPA(), ourGoal(), 0.3, 0.2, true);
   ASSERT_TRUE(step1.crossing_detected);
   EXPECT_EQ(step1.selected_side, PenaltyBypassSide::BOTTOM);
   // current → BOTTOM ウェイポイントは PA を横断しない
@@ -86,7 +85,7 @@ TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsBOTTOMWhenTargetIsAbove
 
   // Step 2: BOTTOM ウェイポイントから再計画 → TOP fully_good → TOP 選択
   const auto step2 = computePenaltyBypassDecision(
-    step1.waypoint, Point(-4.75, 3.08), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+    step1.waypoint, Point(-4.75, 3.08), makeOurPA(), ourGoal(), 0.3, 0.2, true);
   ASSERT_TRUE(step2.crossing_detected);
   EXPECT_EQ(step2.selected_side, PenaltyBypassSide::TOP);
   EXPECT_FALSE(intersectsSegmentAABB(step2.waypoint, Point(-4.75, 3.08), expanded));
@@ -102,7 +101,7 @@ TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsTOPWhenTargetIsBelowPA)
   expanded.max_corner() += Point(0.3, 0.3);
 
   const auto step1 = computePenaltyBypassDecision(
-    Point(-4.75, 3.08), Point(-4.95, -3.61), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+    Point(-4.75, 3.08), Point(-4.95, -3.61), makeOurPA(), ourGoal(), 0.3, 0.2, true);
   ASSERT_TRUE(step1.crossing_detected);
   EXPECT_EQ(step1.selected_side, PenaltyBypassSide::TOP);
   // current → TOP ウェイポイントは PA を横断しない
@@ -110,7 +109,7 @@ TEST(PenaltyAvoidanceHelperTest, ReachabilityCheckSelectsTOPWhenTargetIsBelowPA)
 
   // Step 2: TOP ウェイポイントから再計画 → BOTTOM fully_good → BOTTOM 選択
   const auto step2 = computePenaltyBypassDecision(
-    step1.waypoint, Point(-4.95, -3.61), makeOurPA(), ourGoal(), paSize(), 0.3, 0.2, true);
+    step1.waypoint, Point(-4.95, -3.61), makeOurPA(), ourGoal(), 0.3, 0.2, true);
   ASSERT_TRUE(step2.crossing_detected);
   EXPECT_EQ(step2.selected_side, PenaltyBypassSide::BOTTOM);
   EXPECT_FALSE(intersectsSegmentAABB(step2.waypoint, Point(-4.95, -3.61), expanded));
@@ -123,14 +122,13 @@ TEST(PenaltyAvoidanceHelperTest, RosbagScenario_RobotBelowPA_TargetAbovePA)
 {
   const Box our_pa(Point(4.2, -1.8), Point(6.0, 1.8));
   const Point goal(6.0, 0.0);
-  const Point pa_size(1.8, 3.6);
   Box expanded = our_pa;
   expanded.min_corner() -= Point(0.3, 0.3);
   expanded.max_corner() += Point(0.3, 0.3);
 
   // Step 1: PA 下方から横断 → current→TOP 不達のため BOTTOM 選択
   const auto step1 = computePenaltyBypassDecision(
-    Point(5.318, -3.763), Point(5.194, 3.243), our_pa, goal, pa_size, 0.3, 0.2, true);
+    Point(5.318, -3.763), Point(5.194, 3.243), our_pa, goal, 0.3, 0.2, true);
   ASSERT_TRUE(step1.crossing_detected);
   ASSERT_TRUE(step1.target_overridden);
   EXPECT_EQ(step1.selected_side, PenaltyBypassSide::BOTTOM);
@@ -138,8 +136,8 @@ TEST(PenaltyAvoidanceHelperTest, RosbagScenario_RobotBelowPA_TargetAbovePA)
   EXPECT_FALSE(intersectsSegmentAABB(Point(5.318, -3.763), step1.waypoint, expanded));
 
   // Step 2: BOTTOM ウェイポイントから再計画 → TOP fully_good → TOP 選択
-  const auto step2 = computePenaltyBypassDecision(
-    step1.waypoint, Point(5.194, 3.243), our_pa, goal, pa_size, 0.3, 0.2, true);
+  const auto step2 =
+    computePenaltyBypassDecision(step1.waypoint, Point(5.194, 3.243), our_pa, goal, 0.3, 0.2, true);
   ASSERT_TRUE(step2.crossing_detected);
   EXPECT_EQ(step2.selected_side, PenaltyBypassSide::TOP);
   // TOP ウェイポイント → ターゲットは PA を横断しない

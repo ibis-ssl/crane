@@ -14,7 +14,6 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -32,9 +31,6 @@ private:
   bool fake_over = false;
 
   int fake_count = 0;
-
-  // 前回のロボットロール情報を保存（calculatePositionCommand()で使用）
-  std::unordered_map<uint8_t, RobotRole> cached_prev_roles;
 
 public:
   COMPOSITION_PUBLIC
