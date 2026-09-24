@@ -8,7 +8,7 @@
 #define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
 #include <algorithm>
-#include <cmath>  // For std::fabs and std::sqrt
+#include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <limits>
 #include <optional>
@@ -133,8 +133,8 @@ inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(
 inline auto getVerticalVec(const Point & v) -> Point
 {
   Point vertical_v;
-  vertical_v.x() = v.y();   // Corrected syntax
-  vertical_v.y() = -v.x();  // Corrected syntax
+  vertical_v.x() = v.y();
+  vertical_v.y() = -v.x();
   return vertical_v;
 }
 
@@ -190,7 +190,6 @@ inline auto getIntersections(const Circle & circle, const Segment & segment) -> 
   const double c = to_start.squaredNorm() - circle.radius * circle.radius;
   const double discriminant = b * b - 4.0 * a * c;
   if (discriminant < 0.0) {
-    // 交差しない
     return intersections;
   }
   const double sqrt_d = std::sqrt(discriminant);
@@ -244,11 +243,9 @@ inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> s
   double p3_sq = p3.x() * p3.x() + p3.y() * p3.y();
 
   circle.center.x() =
-    (p1_sq * (p2.y() - p3.y()) + p2_sq * (p3.y() - p1.y()) + p3_sq * (p1.y() - p2.y())) /
-    D;  // Corrected syntax
+    (p1_sq * (p2.y() - p3.y()) + p2_sq * (p3.y() - p1.y()) + p3_sq * (p1.y() - p2.y())) / D;
   circle.center.y() =
-    (p1_sq * (p3.x() - p2.x()) + p2_sq * (p1.x() - p3.x()) + p3_sq * (p2.x() - p1.x())) /
-    D;  // Corrected syntax
+    (p1_sq * (p3.x() - p2.x()) + p2_sq * (p1.x() - p3.x()) + p3_sq * (p2.x() - p1.x())) / D;
 
   circle.radius = std::sqrt(
     (circle.center.x() - p1.x()) * (circle.center.x() - p1.x()) +
@@ -321,13 +318,11 @@ inline auto computeAroundBallApproachTargetDynamic(
   const Point & ball, const Point & desired_opposite, const Point & from, double base_offset,
   double max_offset, double epsilon = 1e-4) -> Point
 {
-  // 進捗（回り込みの達成度）を評価
   Vector2 a = (desired_opposite - ball).normalized();
   Vector2 b = (from - ball).normalized();
   double dot = a.dot(b);
-  double progress = std::clamp((1.0 - dot) / 2.0, 0.0, 1.0);  // [0,1]
+  double progress = std::clamp((1.0 - dot) / 2.0, 0.0, 1.0);
 
-  // 有効オフセット（初期はmax_offset、完了でbase_offset）
   double offset_eff = max_offset + (base_offset - max_offset) * progress;
   offset_eff =
     std::clamp(offset_eff, std::min(base_offset, max_offset), std::max(base_offset, max_offset));
