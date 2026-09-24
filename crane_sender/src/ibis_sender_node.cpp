@@ -274,7 +274,7 @@ private:
     for (auto & command : msg.robot_commands) {
       if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
         RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
-        RobotCommandSerializedV2 serialized_packet;
+        RobotCommandSerializedV2 serialized_packet{};
         RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
         robot_packets[command.robot_id] = serialized_packet;
 
