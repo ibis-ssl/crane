@@ -141,9 +141,8 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
   if (not world_model_ready) {
     world_model_ready = true;
 
-    if (!initial_assignment_done && !initial_session_name.empty()) {
+    if (!initial_session_name.empty()) {
       assign(initial_session_name);
-      initial_assignment_done = true;
     }
   }
 

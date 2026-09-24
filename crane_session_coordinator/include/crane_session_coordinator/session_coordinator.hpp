@@ -87,8 +87,6 @@ private:
 
   bool world_model_ready = false;
 
-  bool initial_assignment_done = false;
-
   std::string initial_session_name;
 
   VisualizerMessageBuilder::SharedPtr visualizer =
