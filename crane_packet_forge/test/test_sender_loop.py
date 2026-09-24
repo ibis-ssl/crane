@@ -95,8 +95,8 @@ def run_session(
 def test_check_counter_is_contiguous_including_the_stop_sequence() -> None:
     """本体と停止指令の間でカウンタが飛ばない。
 
-    以前ここで 1 つ飛んでいた（29 の次が 31）。受信側は「変化していること」しか
-    見ないので動作には響かないが、ログを突き合わせたときに欠落に見える。
+    受信側は「変化していること」しか見ないので動作には響かないが、
+    ログを突き合わせたときに欠落に見える。
     """
     packets = run_session(3, {"control_mode": 3, "flags.is_vision_available": True})
     assert len(packets) > STOP_REPEAT
