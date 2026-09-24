@@ -33,7 +33,6 @@ auto RobotData::updateErrorMap(
 
   if (is_new) {
     error_map[error_type] = {error_type, message, level, timestamp};
-    has_error_changed = true;
     return true;
   }
   return false;
@@ -43,7 +42,6 @@ auto RobotData::removeError(const std::string & error_type) -> bool
 {
   if (error_map.contains(error_type)) {
     error_map.erase(error_type);
-    has_error_changed = true;
     return true;
   }
   return false;
@@ -109,10 +107,6 @@ auto RobotData::initializeDiagnostics(
       }
       robotErrorDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
-
-  // 診断情報の直接パブリッシャーを作成（後方互換性のため維持）
-  direct_publisher = node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
-    fmt::format("/diagnostics/robot_{:02d}", robot_id), 10);
 }
 
 auto RobotData::communicationDiagnosticCallback(
@@ -305,7 +299,6 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
     for (auto & robot_data : robots_data) {
       if (robot_data->updater) {
         robot_data->updater->force_update();
-        robot_data->last_update_time = now();
       }
     }
   });
