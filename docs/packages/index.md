@@ -1,91 +1,33 @@
-# Craneパッケージドキュメント ポータル
-
-Craneを構成する全パッケージのドキュメント一覧。
-
-## プロジェクト概要
-
-**Crane** は ibis-ssl チームが開発するRoboCup Small Size League (SSL) 用の自律ロボットサッカーシステムです。ROS 2 Jazzy ベースで構築された、小型自律ロボットチームによるサッカー試合を制御するAIフレームワークです。
-
-### システム特徴
-
-- **リアルタイム制御**: SSL競技規定に準拠した高精度な制御系
-- **マルチロボット協調**: RVO2アルゴリズムによる衝突回避
-- **プラグインアーキテクチャ**: 戦略・スキルの拡張性
-- **3D物理モデル**: ボール軌道の高精度予測
-
-### 最近の開発活動
-
-- **2026年1-3月**: コード品質改善キャンペーン（#1129-#1172）。全パッケージを対象にリファクタリング・バグ修正・効率化を実施
-- **2025年6月**: JapanOpen2025での実戦運用完了
-- **開発状況**: リファクタリングフェーズ（品質・保守性向上）
-
----
-
-## 📦 パッケージ一覧
-
-### 🔥 Core系
+# パッケージ一覧
 
 | パッケージ名 | 役割 |
-|-------------|------|
-| [crane_msgs](./crane_msgs.md) | メッセージ定義基盤 |
-| [crane_world_model_publisher](./crane_world_model_publisher.md) | 世界状態推定・トラッキング |
-| [crane_robot_skills](./crane_robot_skills.md) | ロボットスキルライブラリ |
-| [crane_local_planner](./crane_local_planner.md) | 経路計画・衝突回避 |
-| [crane_game_analyzer](./crane_game_analyzer.md) | 試合状況分析 |
-| [crane_play_switcher](./crane_play_switcher.md) | プレイ自動選択 |
-| [crane_sender](./crane_sender.md) | ロボットコマンド送信 |
-| [crane_bringup](./crane_bringup.md) | システム起動統合 |
-| [crane_robot_receiver](./crane_robot_receiver.md) | ロボット状態受信 |
-| [crane_visualization_interfaces](./crane_visualization_interfaces.md) | 可視化インターフェース |
-| [crane_speaker](./crane_speaker.md) | 音声出力システム |
-| [crane_teleop](./crane_teleop.md) | 遠隔操作 |
-| [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 |
-
-### 🎯 Session系
-
-| パッケージ名 | 役割 |
-|-------------|------|
-| [crane_session_coordinator](./crane_session_coordinator.md) | 試合統括・ゲーム状態管理 |
-| [crane_sessions](./crane_sessions.md) | 戦略セッションプラグイン |
-
-### 🔧 Utility系
-
-| パッケージ名 | 役割 |
-|-------------|------|
-| [crane_geometry](./crane_geometry.md) | 幾何学計算ライブラリ |
-| [crane_physics](./crane_physics.md) | 物理計算・ボールモデル |
-| [crane_comm](./crane_comm.md) | 通信ユーティリティ |
-| [crane_msg_wrappers](./crane_msg_wrappers.md) | メッセージラッパー |
-| [crane_lint_common](./crane_lint_common.md) | 共通リント設定 |
-| [crane_utils](./crane_utils.md) | 共通ユーティリティ関数 |
-
-### 📡 SSL通信系
-
-| パッケージ名 | 役割 |
-|-------------|------|
-| [robocup_ssl_comm](./robocup_ssl_comm.md) | SSL通信プロトコル処理 |
-| [robocup_ssl_msgs](./robocup_ssl_msgs.md) | SSL公式メッセージ定義 |
-
-### 📚 3rdparty
-
-| パッケージ名 | 役割 |
-|-------------|------|
-| [rvo2_vendor](./rvo2_vendor.md) | RVO2衝突回避アルゴリズム |
-| [matplotlib_cpp_17_vendor](./matplotlib_cpp_17_vendor.md) | C++17対応matplotlib |
-| [closest_point_vendor](./closest_point_vendor.md) | 最近点計算ライブラリ |
-
-### 🛠️ 開発ツール系
-
-| パッケージ名 | 役割 |
-|-------------|------|
-| [crane_bag](./crane_bag.md) | C++ rosbag解析CLIツール |
-| [crane_mcap_tools](./crane_mcap_tools.md) | Python解析・SVG動画生成 |
-| [crane_web_debugger](./crane_web_debugger.md) | WebSocketデバッグサーバー + キャリブレーションUI |
-
----
-
-## 🔗 関連リンク
-
-- [メインドキュメント](../index.md)
-- [アーキテクチャ概要](../../README.md)
-- [開発ログ](../logs/)
+|---|---|
+| [crane_bringup](https://github.com/ibis-ssl/crane/tree/develop/crane_bringup) | システム統合起動とパラメータ・ノード管理 |
+| [crane_game_analyzer](https://github.com/ibis-ssl/crane/tree/develop/crane_game_analyzer) | 試合状況のリアルタイム分析・定量評価・ヒステリシス安定化 |
+| [crane_latency_estimator](https://github.com/ibis-ssl/crane/tree/develop/crane_latency_estimator) | システム内処理遅延・通信レイテンシの計測・推定 |
+| [crane_local_planner](https://github.com/ibis-ssl/crane/tree/develop/crane_local_planner) | 局所経路計画と動的障害物・ルールエリア衝突回避 |
+| [crane_msgs](https://github.com/ibis-ssl/crane/tree/develop/crane_msgs) | Craneシステム共通のROS 2メッセージ・サービス定義 |
+| [crane_play_switcher](https://github.com/ibis-ssl/crane/tree/develop/crane_play_switcher) | 審判コマンド解釈とプレイ状況（PlaySituation）遷移判定 |
+| [crane_robot_receiver](https://github.com/ibis-ssl/crane/tree/develop/crane_robot_receiver) | ロボットフィードバック受信・通信/バッテリー/ハードウェア健全性監視 |
+| [crane_robot_skills](https://github.com/ibis-ssl/crane/tree/develop/crane_robot_skills) | 個別ロボット行動（Attacker, Goalie, Kick等）のスキル実装ライブラリ |
+| [crane_sender](https://github.com/ibis-ssl/crane/tree/develop/crane_sender) | 実機ロボット（Ibis）および各種シミュレータへのコマンドパケット送信 |
+| [crane_session_coordinator](https://github.com/ibis-ssl/crane/tree/develop/crane_session_coordinator) | ゲーム状態管理・設定駆動型ロボット役割（セッション）割り当て |
+| [crane_sessions](https://github.com/ibis-ssl/crane/tree/develop/crane_sessions) | 攻守・セットプレー等のマルチロボット協調戦略（セッション）実装 |
+| [crane_speaker](https://github.com/ibis-ssl/crane/tree/develop/crane_speaker) | システム状態・試合イベントの音声アナウンス |
+| [crane_teleop](https://github.com/ibis-ssl/crane/tree/develop/crane_teleop) | ジョイスティック・キーボードによるロボット手動遠隔操作 |
+| [crane_visualization_interfaces](https://github.com/ibis-ssl/crane/tree/develop/crane_visualization_interfaces) | SVG可視化メッセージ定義・描画ラッパー・データ集約とスナップショット配信 |
+| [crane_world_model_publisher](https://github.com/ibis-ssl/crane/tree/develop/crane_world_model_publisher) | Vision/Trackerデータ統合・3Dボール物理・世界モデル配信 |
+| [crane_comm](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_comm) | UDP/マルチキャスト通信・診断付きパブリッシャー等の通信基盤 |
+| [crane_geometry](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_geometry) | 幾何計算・図形交差・座標変換（Eigen/Boost.Geometry統合） |
+| [crane_lint_common](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_lint_common) | C++/Python/ROS 2コーディング規約および静的解析共通設定 |
+| [crane_msg_wrappers](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_msg_wrappers) | WorldModelWrapper等のメッセージ操作・変換ラッパー |
+| [crane_physics](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_physics) | ボール物理シミュレーション・ロボット運動学・台形速度プロファイル |
+| [crane_utils](https://github.com/ibis-ssl/crane/tree/develop/utility/crane_utils) | 時間計測・パラメータ操作・パッケージパス解決等の共通ユーティリティ |
+| [robocup_ssl_comm](https://github.com/ibis-ssl/crane/tree/develop/consai_ros2/robocup_ssl_comm) | SSL公式通信プロトコル（Vision, Referee）の送受信 |
+| [robocup_ssl_msgs](https://github.com/ibis-ssl/crane/tree/develop/consai_ros2/robocup_ssl_msgs) | SSL公式プロトコル（Protobuf）から生成されたROS 2メッセージ |
+| [closest_point_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/closest_point_vendor) | 最近点幾何計算ライブラリのベンダーパッケージ |
+| [matplotlib_cpp_17_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/matplotlib_cpp_17_vendor) | C++17対応matplotlib描画ライブラリのベンダーパッケージ |
+| [rvo2_vendor](https://github.com/ibis-ssl/crane/tree/develop/3rdparty/rvo2_vendor) | RVO2分散的衝突回避アルゴリズムのベンダーパッケージ |
+| [crane_bag](https://github.com/ibis-ssl/crane/tree/develop/crane_bag) | C++ rosbag2解析CLIツール |
+| [crane_mcap_tools](https://github.com/ibis-ssl/crane/tree/develop/crane_mcap_tools) | Pythonベースのrosbag/MCAP解析・SVG動画生成ツール |
+| [crane_web_debugger](https://github.com/ibis-ssl/crane/tree/develop/crane_web_debugger) | WebSocketデバッグブリッジおよびWebフロントエンドUI（Viewer・Annotation・Robot Manager を同一オリジン 8090 で配信） |

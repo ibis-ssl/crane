@@ -1,10 +1,40 @@
 #!/usr/bin/env bash
-# ホスト側でマルチキャストが通るように lo を有効化し 224.0.0.0/4 をループバックへ向ける。
-# network_mode: host で動く Docker コンテナ同士の multicast 通信（SSL Vision/Referee/Tracker など）を
-# ホスト内で完結させるための前提設定。OS 再起動で失われるので必要に応じて再実行する。
+# シミュレータ利用時、SSL Vision/Referee/Tracker のマルチキャストがホスト内で
+# 完結するように設定する（simモード専用。realモードでは使用しないこと）。
 #
-# 冪等: すでに設定済みならスキップ。
+# 1. lo にマルチキャストを有効化し、224.0.0.0/4 の送信経路を lo に向ける。
+#    network_mode: host で動く Docker コンテナ同士の multicast 通信を
+#    ホスト内で完結させるための前提設定。
+# 2. 224.5.23.0/24 (SSL Vision: 224.5.23.2, Game Controller: 224.5.23.1) と
+#    224.5.20.0/24 (ロボット feedback: 224.5.20.(100+id)) について、
+#    lo 以外のインターフェースへの送出を iptables で強制遮断する。
+#    ssl-game-controller 等の一部ツールは送信元アドレスを各インターフェースのIPに
+#    明示バインドしてマルチキャストを送信するため、1. のルーティング設定だけでは
+#    Wi-Fi/LAN への漏洩を防げない（送信元バインドがルーティングテーブルより優先される）。
+#    実際に Wi-Fi アクセスポイントが高頻度マルチキャストで過負荷になり落ちた実績があるため、
+#    ルーティングとは独立してパケットフィルタでも確実に遮断する。
+#    ホスト内の同一ネームスペースへの配送は IP_MULTICAST_LOOP により
+#    物理インターフェースの状態に関わらず継続されるため、lo 以外への送出を
+#    遮断するだけでコンテナ間通信は維持される。
+#
+# 冪等: すでに設定済みならスキップ。OS再起動やdockerネットワークの作り直しで失われるので
+# 必要に応じて再実行すること。realモードで起動する際は scripts/restore-real-network.sh で
+# 必ず解除すること（残っていると実機Vision/Refereeを受信できなくなる）。
 set -euo pipefail
+
+# 224.5.20.0/24 は cm4_sim がロボット feedback を実機と同じ形で再配信する帯。
+# 実機では crane は受信専用でこの帯に送出しないが、シミュレータ構成では
+# cm4_sim と scenario_test/inject_feedback.py が送出側になる。
+readonly MULTICAST_SUBNETS=("224.5.23.0/24" "224.5.20.0/24")
+readonly IPTABLES_COMMENT="crane-sim-multicast-confine"
+
+# iptables -C はroot権限が無いと「ルール不在」ではなく Permission denied で失敗し、
+# 判定を誤って sudo iptables -I が毎回実行され、遮断ルールが際限なく重複追加される。
+# 誤判定を防ぐため、スクリプト全体をsudoで実行することを必須にする。
+if [[ $EUID -ne 0 ]]; then
+    echo "[setup-multicast] root権限が必要です。次のように実行してください: sudo $0" >&2
+    exit 1
+fi
 
 need_multicast=false
 if ! ip link show lo | grep -q MULTICAST; then
@@ -16,8 +46,19 @@ if ! ip route show 224.0.0.0/4 | grep -q "dev lo"; then
     need_route=true
 fi
 
-if [[ $need_multicast == false && $need_route == false ]]; then
-    echo "[setup-multicast] すでに設定済み (lo MULTICAST 有効 / 224.0.0.0/4 ルート済み)"
+missing_subnets=()
+for subnet in "${MULTICAST_SUBNETS[@]}"; do
+    if ! iptables -C OUTPUT -d "$subnet" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP 2>/dev/null; then
+        missing_subnets+=("$subnet")
+    fi
+done
+need_egress_block=false
+if [[ ${#missing_subnets[@]} -gt 0 ]]; then
+    need_egress_block=true
+fi
+
+if [[ $need_multicast == false && $need_route == false && $need_egress_block == false ]]; then
+    echo "[setup-multicast] すでに設定済み (lo MULTICAST 有効 / 224.0.0.0/4 ルート済み / ${MULTICAST_SUBNETS[*]} 遮断済み)"
     exit 0
 fi
 
@@ -30,4 +71,8 @@ if [[ $need_route == true ]]; then
     echo "  - 224.0.0.0/4 を lo に向ける"
     sudo ip route replace 224.0.0.0/4 dev lo
 fi
+for subnet in "${missing_subnets[@]}"; do
+    echo "  - ${subnet} の lo 以外への送出を iptables で遮断"
+    sudo iptables -I OUTPUT -d "$subnet" ! -o lo -m comment --comment "$IPTABLES_COMMENT" -j DROP
+done
 echo "[setup-multicast] 完了"

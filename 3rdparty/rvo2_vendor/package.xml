@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rvo2_vendor</name>
-  <version>1.0.372</version>
-  <description>TODO: Package description</description>
+  <version>1.0.481</version>
+  <description>Vendor package for the RVO2 multi-agent collision avoidance library (snape/RVO2)</description>
   <maintainer email="pythagora.yoshimoto@gmail.com">groundstation</maintainer>
   <license>TODO: License declaration</license>
 

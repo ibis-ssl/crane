@@ -12,8 +12,8 @@ from .svg_renderer import (
 from .video_generator import VideoGenerator
 
 __all__ = [
-    "SvgExtractor",
     "SvgAssembler",
+    "SvgExtractor",
     "VideoGenerator",
     "create_renderer",
     "list_available_backends",

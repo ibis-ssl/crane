@@ -41,7 +41,6 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   RCLCPP_INFO(node_.get_logger(), "VisualizationManager initialized with direct builders");
 }
 
-// Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
   const robocup_ssl::SSL_GeometryData & geometry_data, [[maybe_unused]] bool half_court_mode)
   -> void

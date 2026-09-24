@@ -8,9 +8,20 @@ services:
     environment:
       - HTTP_PORT=8090
       - WEB_ROOT=/app/web
+      # Robot Manager（旧 robot-manager サービス。8090 に内包した）。
+      # sim では既定で無効にして 192.168.20.0/24 へパケットを出さない。
+      # 実機は ./scripts/docker-dev.sh --robot-manager が 1 を立てる。
+      - ROBOT_MANAGER_ENABLED=${ROBOT_MANAGER_ENABLED:-0}
+      - NUM_ROBOTS=13
+      - ROBOT_IP_BASE=192.168.20.
+      - ROBOT_IP_OFFSET=100
+      - ROBOT_PORT=8000
+      - HTTP_TIMEOUT_SEC=0.8
     volumes:
       - ../../crane_web_debugger/web:/app/web:ro
+      # /app をディレクトリごとマウントすると /app/fonts が隠れるのでファイル単位で当てる
       - ../../crane_web_debugger/web_server/app.py:/app/app.py:ro
+      - ../../crane_web_debugger/web_server/robot_manager.py:/app/robot_manager.py:ro
     command:
       - uvicorn
       - "app:app"
@@ -21,10 +32,32 @@ services:
       - --reload
       - --reload-include
       - "app.py"
+      - --reload-include
+      - "robot_manager.py"
       - --app-dir
       - /app
       - --log-level
       - warning
+    restart: unless-stopped
+
+  packet-forge:
+    build:
+      context: ../..
+      dockerfile: docker/dev/packet-forge/Dockerfile
+    container_name: crane-packet-forge
+    # 実機の CM4 へ直接 UDP を送り、フィードバックを multicast で受けるので host が要る
+    network_mode: host
+    environment:
+      - HTTP_PORT=8094
+      # 複数 NIC のホストでは送信元がロボット用 LAN 以外に寄ると届かない。
+      # ./scripts/docker-dev.sh real で使うときに実機側のアドレスを入れる。
+      - FORGE_INTERFACE_IP=${FORGE_INTERFACE_IP:-}
+    volumes:
+      # ページと送信コアは読み取り専用で当てる。編集すればリロードで反映される
+      - ../../crane_packet_forge/web:/app/web:ro
+      - ../../crane_packet_forge/crane_packet_forge:/app/crane_packet_forge:ro
+      # 共有テーマは crane_web_debugger が正本（ball-calibration と同じ方式）
+      - ../../crane_web_debugger/web/shared:/app/shared:ro
     restart: unless-stopped
 
   ball-calibration:
@@ -43,22 +76,8 @@ services:
       - ../../crane_web_debugger/web/shared:/app/web/shared:ro
     restart: unless-stopped
 
-  robot-manager:
-    image: ghcr.io/ibis-ssl/robot-manager:latest
-    container_name: crane-robot-manager
-    network_mode: host
-    environment:
-      - HTTP_PORT=8092
-      - NUM_ROBOTS=13
-      - ROBOT_IP_BASE=192.168.20.
-      - ROBOT_IP_OFFSET=100
-      - ROBOT_PORT=8000
-      - HTTP_TIMEOUT_SEC=0.8
-      - BACK_URL=http://localhost:8090
-    restart: unless-stopped
-
   erforce-sim:
-    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:${SIMULATOR_CLI_TAG:-a52b6bd}
     container_name: erforce-sim
     network_mode: host
     entrypoint: ["tini", "--"]
@@ -66,26 +85,19 @@ services:
       ./bin/simulator-cli
       -g 2023
       --realism Realistic
+      --ibis-port ${IBIS_PORT:-12346}
       --ibis-use-referee
-      --ibis-feedback-team-name ibis
-      --ibis-referee-port 11003
-    restart: "no"
-    profiles:
-      - sim-erforce
-
-  grsim:
-    image: ghcr.io/ibis-ssl/grsim:latest
-    container_name: grsim
-    network_mode: host
-    command: |
-      grSim --headless -platform offscreen
-    volumes:
-      - ./grsim.xml:/home/default/.grsim.xml:rw
+      --ibis-feedback-team-name ${IBIS_FEEDBACK_TEAM_NAME:-ibis}
+      --ibis-referee-port ${REFEREE_PORT:-11003}
+    # simulator-cli の log() は flush しないため、TTY が無いと stdout が
+    # ブロックバッファリングされ、コンテナ停止時にログが丸ごと失われる。
+    # ibis の警告（mode 4 受信、指令の位置照合失敗など）は切り分けの要なので、
+    # scenario 側の compose と同じく TTY を割り当てて行バッファリングにする。
     tty: true
     stdin_open: true
     restart: "no"
     profiles:
-      - sim-grsim
+      - sim-erforce
 
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:latest
@@ -121,7 +133,6 @@ services:
     network_mode: host
     profiles:
       - sim-erforce
-      - sim-grsim
 
   autoref-erforce:
     image: roboticserlangen/autoref:2025.1.0
@@ -129,7 +140,7 @@ services:
       - --vision-port
       - "${VISION_PORT:-10020}"
       - --tracker-port
-      - "11010"
+      - "${TRACKER_PORT:-11010}"
       - --gc-port
       - "${REFEREE_PORT:-11003}"
     network_mode: host
@@ -171,3 +182,45 @@ services:
     # image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021
+
+  # 実機の CM4 に相当するプロセス。sim-erforce の標準構成に含まれる。
+  #
+  #   crane(ホスト) --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+  #
+  # 位置制御ループは cm4-sim が閉じる。crane 本体は dev では docker ではなく
+  # ホスト上で起動するので、あわせて次のように起動すること:
+  #   ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph
+  #
+  # feedback は常に multicast (224.5.20.xxx) で受信するように crane 側で固定されているため、
+  # cm4-sim が unicast ポート (127.0.0.1:50100+id) を排他的に利用できる。
+  #
+  # --feedback-port-base は simulator-cli の --ibis-feedback-port-base と揃える。
+  # これは cm4-sim が simulator-cli からの unicast を受ける「入力側」で、
+  # multicast 再配信先 224.5.20.(100+id):50100+id とは独立している。
+  # crane_robot_receiver は 50100 を直書きしているため再配信側は既定のままにすること。
+  #
+  # イメージは docker/scenario/docker-compose.yaml と同じ commit SHA に固定する。
+  # 詳細: framework/docs/robot-side-position-control.md
+  cm4-sim:
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-d7a2e07c47cf09c6d359e391f1cf2828f4fe7f5a}
+    container_name: cm4-sim
+    network_mode: host
+    entrypoint: ["tini", "--"]
+    command: >
+      cm4_sim
+      --robot-ids ${CM4_ROBOT_IDS:-0,1,2,3,4,5,6,7,8,9,10}
+      --in-port ${CRANE_TARGET_PORT:-12345}
+      --out-addr 127.0.0.1
+      --out-port ${IBIS_PORT:-12346}
+      --feedback-port-base 50100
+      --multicast-if 127.0.0.1
+      --rate-hz ${CM4_RATE_HZ:-1000}
+      --rx-delay-ms ${RX_DELAY_MS:-0}
+      --rx-jitter-ms ${RX_JITTER_MS:-0}
+      --rx-loss-rate ${RX_LOSS_RATE:-0.0}
+      --seed ${CM4_SEED:-0}
+    tty: true
+    stdin_open: true
+    restart: "no"
+    profiles:
+      - sim-erforce

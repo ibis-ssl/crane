@@ -64,8 +64,21 @@ private:
     double best_enemy_slack) const;
   Point computeFallbackTarget();
 
+  // APPROACH の周回目標をフィールド内に保つための補助
+  auto fieldBoxWithMargin() const -> Box;
+  auto orbitRadiusLimit(const Point & ball, double interval) const -> double;
+  auto keepStandoffInField(const Point & ball, const Point & standoff) const -> Point;
+  // ボールから kick_target_ への単位ベクトル。一致する退行ケースでは攻撃方向（NaN を作らない）
+  auto kickDirection(const Point & ball) const -> Vector2;
+
   Point kick_target_{Point::Zero()};
   Point standoff_{Point::Zero()};
+  // APPROACH 後半で目標を最終 standoff に固定したか（ラッチ）。
+  // 自機位置に依存して動く周回目標を追い続けると ALIGN 突入条件が満たせず、
+  // 満たしたときには減速していない。ラッチ時のボール位置からボールが離れたら解除して再判定する
+  bool approach_final_latched_ = false;
+  Point latched_ball_pos_{Point::Zero()};
+  Point latched_standoff_{Point::Zero()};
   bool target_locked_ = false;
   bool use_chip_ = false;
   bool last_chose_shoot_ = false;

@@ -1,127 +1,70 @@
-# ネットワーク設定
+# ネットワークと実機通信
 
-## ROS関連
+## シミュレーションの隔離
 
-<https://autowarefoundation.github.io/autoware-documentation/pr-347/installation/additional-settings-for-developers/#network-settings-for-ros-2>
+host network のシミュレータは、起動前にマルチキャストをホスト内へ隔離します。物理Wi-Fi/LANへの漏洩でアクセスポイントが過負荷になった事例があります。
 
-### ローカルホストでマルチキャスト
-
-Docker 開発環境（`network_mode: host`）では、ホスト内で完結する UDP multicast
-（SSL Vision/Referee/Tracker、ROS 2 DDS など）を正しく疎通させるために、
-lo インターフェイスのマルチキャスト有効化と `224.0.0.0/4` のループバック向けルートが必要。
-
-一括で適用するヘルパーを用意している:
+リポジトリルートで手動適用する場合:
 
 ```bash
-./scripts/setup-multicast.sh
+sudo ./scripts/setup-multicast.sh
 ```
 
-このスクリプトは冪等で、以下を実行する（sudo パスワードの入力が必要）:
+[setup-multicast.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/setup-multicast.sh) は、ループバックのマルチキャスト有効化・経路設定と、物理インターフェースへのSSLマルチキャスト送出の遮断を行います。送信元をインターフェースに束縛するツールがあるため、経路設定だけでは不十分です。
 
-- `sudo ip link set multicast on lo`
-- `sudo ip route replace 224.0.0.0/4 dev lo`
+Docker開発・シナリオ・対戦テストの起動スクリプトは隔離を適用し、失敗時は起動を中断します。Composeを直接起動するときも、この前提を満たしてください。
 
-**OS 再起動で失われる**ので、再起動後に `erforce-sim | Sending UDP datagram failed`
-や `ssl-game-controller | messageGen unresponsive` が出たら再実行すること。
+再起動やファイアウォール設定変更後は再確認します。Game Controllerの起動直後だけの `operation not permitted` は遮断による場合がありますが、`Sending UDP datagram failed` や `messageGen unresponsive` が連続する場合は経路・隔離状態を確認して再適用します。シミュレーション中に遮断ルールだけを外さないでください。
 
-手動で個別に実行したい場合は:
+## 実機へ切り替える
 
-```bash
-sudo ip link set multicast on lo
+1. シミュレータとローカルのGame Controllerを停止する。
+2. `./scripts/docker-dev.sh real` を使う。Crane用の遮断ルールを解除し、ループバック向けマルチキャスト経路が残っていれば起動を中断する。
+3. 経路の警告が出た場合は、他用途のDDS通信への影響を確認し、スクリプトが表示する解除手順を実行してから再起動する。大会ネットワーク側のインターフェースへ経路を合わせる。
+4. `sim:=false` で起動し、[試合チェック](match.md)で実際の受信と指令を確認する。
+
+解除の正本は [restore-real-network.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/restore-real-network.sh)。単に `sim:=false` を指定してもホストの隔離設定は解除されません。
+
+## 接続先を確認する
+
+| 通信 | 設定・実装 |
+|---|---|
+| Vision / Referee / Tracker、送信先の起動設定 | [crane.launch.xml](https://github.com/ibis-ssl/crane/blob/develop/crane_bringup/launch/crane.launch.xml) |
+| ロボットへの送信形式・宛先 | [ibis_sender_node.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) |
+| ロボットのフィードバック受信 | [crane_robot_receiver](https://github.com/ibis-ssl/crane/tree/develop/crane_robot_receiver) |
+| Docker側のサービス接続 | [開発環境のCompose](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/docker-compose.yaml) |
+
+送受信側のアドレス・ポート・チーム設定を合わせ、起動ログと使用中の設定で確認します。
+
+## シミュレーションの標準構成
+
+実機CM4に相当する `cm4-sim` が経路に入り、位置制御ループを閉じます。Craneは位置指令（ワイヤmode 4）を送るだけで、不安定な無線経路に相当する区間が制御ループの外側に出ます。
+
+```text
+crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+  ^                       ^                          |
+  |                       +-- unicast feedback 127.0.0.1:50100+id --+
+  +-- multicast feedback 224.5.20.(100+id):50100+id（cm4-simが再配信）--+
 ```
 
-### マルチキャストアドレスとデバイスの対応の確認
+mode 4 を出すのは `planner:=visibility_graph` だけです。`rvo2` は mode 3 を出し、`cm4-sim` はそれを位置制御せずそのまま転送します。
 
-```bash
-netstat -g
-```
+Crane は常にフィードバックを multicast 側で受信するよう設定されています。同じ unicast ポートを Crane と `cm4-sim` が受信すると、`SO_REUSEPORT` の振り分けは送信元を含む 4-tuple ハッシュで決まるため、片方だけに全パケットが配送されます。Crane 側が当たると `cm4-sim` は位置信号を受け取れず、位置制御が動きません。Crane を multicast 受信にすることで、unicast は `cm4-sim` が独占できます。
 
-### マルチキャストアドレスへのルートの追加
+同じ理由で、feedbackを観測したいときに `cm4-sim` と同じunicastポート（`--feedback-port-base` が示す `127.0.0.1:50100+id`）を別プロセスでbindしてはいけません。配送が片方に偏り、「位置制御が効いていない」ように見えます。観測は再配信先の `224.5.20.(100+id):50100+id` で行います。再配信自体は `cm4_sim --no-feedback-relay` で止められます。
 
-```bash
-sudo ip route add <address> dev <device>
-```
+詳しいアーキテクチャ・起動手順・制約は [CM4・cm4-simでの位置制御](cm4_position_control.md)、サービス定義は[シナリオ用Compose](https://github.com/ibis-ssl/crane/blob/develop/docker/scenario/docker-compose.yaml)です。
 
-```mermaid
-graph TD
-    subgraph official
-        GameController[Game Controller]
-        AutoRef[Auto Ref]
-        Vision[SSL Vision]
-    end
+## 通信仕様を変更するとき
 
-    OfficialHub[大会用スイッチングハブ]
+実機指令は Crane → UDP → [Orion_CM4](https://github.com/ibis-ssl/Orion_CM4) → UART → [G474_Orion_main](https://github.com/ibis-ssl/G474_Orion_main) と渡ります。
 
-    subgraph AIPC
-        OfficialInterface[大会サーバー用Interface]
-        ibisInterface[ロボット用Interface]
-        crane[crane (Core AI Logic)]
-        crane_sender[crane_sender]
-        crane_robot_receiver[crane_robot_receiver]
-    end
+1. Craneの [robot_packet.h](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/include/crane_sender/robot_packet.h) を基準に、Orion_CM4の `robot_packet.h` とG474の `Core/Inc/robot_packet.h` を同期する。
+2. 構造体サイズ・配置・エンディアン、制御モード、[座標・単位](coordinates.md)の解釈を全プログラムで確認する。UART設定はCM4とG474で合わせる。
+3. 各プログラムをビルドし、実際の受信・制御・フィードバック、タイミングと欠損時の挙動を統合テストする。
 
-    SwitchingHub[スイッチングハブ]
-    Router[ルーター]
+ヘッダーにモードが定義されていても、実機側で制御が実装されているとは限りません。[局所経路計画の実機制約](rvo2_local_planner.md)も確認してください。
 
-    Robots[ロボット]
-    PC[開発PC]
+## 動かないとき
 
-    Net[インターネット]
-
-    GameController -- UDP Multicast --> OfficialHub
-    AutoRef -- UDP Multicast --> OfficialHub
-    Vision -- UDP Multicast --> OfficialHub
-
-    OfficialHub -- UDP Multicast --> SwitchingHub
-    SwitchingHub -- UDP Multicast --> OfficialInterface
-    OfficialInterface -- UDP Multicast --> crane
-    crane -- ROS --> crane_sender
-    crane_sender -- UDP to 192.168.20.1xx --> ibisInterface
-
-    ibisInterface -- UDP to 192.168.20.1xx --> SwitchingHub
-    SwitchingHub -- UDP to 192.168.20.1xx --> Router
-    Router -- AICommand --> Robots
-    Robots -- RobotFeedback --> Router
-    Router -- UDP to 192.168.20.1xx --> SwitchingHub
-    SwitchingHub -- RobotFeedback UDP Multicast --> ibisInterface
-    ibisInterface -- RobotFeedback UDP Multicast --> crane_robot_receiver
-    crane_robot_receiver -- ROS  --> crane
-
-```
-
-## アドレス・ポートなど
-
-### 公式ツールなど
-
-- Vision
-  - アドレス：224.5.23.2
-  - ポート
-    - 10006
-      - 本番で使われることが多い
-      - `ssl-vision`のデフォルトポート
-    - 10020
-      - シミュレーションなどで使われることが多い
-      - `grSim`のデフォルトポート
-- Game Controller
-  - アドレス：224.5.23.1
-  - ポート
-    - 10003
-      - デフォルト
-      - 本番で使われる
-    - 11003
-      - grSimなどのシミュレーション環境でのデフォルト（crane設定）
-    - 11111
-      - ポート被り防止などに使用可能
-- Tracker
-  - アドレス：224.5.23.2
-  - ポート：10010
-  - 参考：<https://github.com/RoboCup-SSL/ssl-game-controller/blob/master/proto/ssl_vision_detection_tracked.proto#L8>
-
-### ibis
-
-- ロボットのCM4
-  - アドレス：192.168.20.100+機体番号
-  - コマンド用ポート：12345
-- ロボットからのフィードバック
-  - アドレス：224.5.20.100
-  - ポート：50100+機体番号
+[診断](diagnostics.md)を確認し、Craneの指令生成、UDP送信、CM4の受信・UART中継、G474の解釈、フィードバックの順に切り分けます。届いているのに動作が違う場合は、モード・座標・単位・パケット互換性を確認します。

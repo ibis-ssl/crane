@@ -4,21 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <yaml-cpp/yaml.h>
-
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
-#include <crane_sessions/session_factory.hpp>
-#include <crane_utils/stream.hpp>
+#include <crane_utils/package.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_utils/time.hpp>
-#include <filesystem>
 #include <fstream>
-#include <range/v3/action/sort.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/join.hpp>
-#include <range/v3/view/transform.hpp>
 #include <std_msgs/msg/string.hpp>
 
 #include "crane_session_coordinator/configuration_manager.hpp"
@@ -41,19 +32,16 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
 
   world_model->setBallOwnerCalculatorEnabled(true);
 
-  // 設定管理の初期化
-  declare_parameter<std::string>("session_config_file_name", "unified_session_config.yaml");
-  auto session_config_file_name = get_parameter("session_config_file_name").as_string();
-  config_manager_ = std::make_shared<ConfigurationManager>(
-    ament_index_cpp::get_package_share_directory("crane_session_coordinator"),
-    session_config_file_name, get_logger());
+  auto session_config_file_name = crane::get_or_declare_parameter(
+    this, "session_config_file_name", "unified_session_config.yaml");
+  auto session_config_path = crane::resolve_package_path(
+    get_logger(), "crane_session_coordinator", session_config_file_name);
+  config_manager_ = std::make_shared<ConfigurationManager>(session_config_path, get_logger());
 
-  // プランナー管理の初期化
   session_registry_ = std::make_shared<SessionRegistry>();
 
   last_planning_time_ = get_clock()->now();
 
-  // ロボット割当マネージャーの初期化
   robot_allocator_ =
     std::make_unique<RobotAllocator>(config_manager_, session_registry_, get_logger());
 
@@ -80,8 +68,7 @@ SessionCoordinatorComponent::SessionCoordinatorComponent(const rclcpp::NodeOptio
     assign(play_situation.command.name);
   });
 
-  declare_parameter("initial_session", "HALT");
-  initial_session_name = get_parameter("initial_session").as_string();
+  initial_session_name = crane::get_or_declare_parameter(this, "initial_session", "HALT");
 
   world_model->addCallback([this]() { onWorldModelUpdate(); });
 
@@ -125,10 +112,8 @@ auto SessionCoordinatorComponent::assign(const std::string & event_name) -> void
         session_name, world_model->ours().robotsWhere().available().getIds(), world_model,
         static_cast<rclcpp::Node &>(*this), play_situation);
 
-      // 結果をパブリッシュ
       robot_select_results_pub->publish(results);
 
-      // 全セッションの割当状況をログ出力
       robot_allocator_->logAssignmentIfChanged(robot_allocator_->buildAssignmentLog());
     } catch (const std::exception & e) {
       std::stringstream what;
@@ -156,17 +141,14 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
   if (not world_model_ready) {
     world_model_ready = true;
 
-    // 初期セッションを割り当て
-    if (!initial_assignment_done && !initial_session_name.empty()) {
+    if (!initial_session_name.empty()) {
       assign(initial_session_name);
-      initial_assignment_done = true;
     }
   }
 
   // 遅延監視: WorldModel受信完了とTacticCoordinator処理開始
   world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
 
-  // ロボット変動検出と再割当
   auto observed_robot_ids = world_model->ours().robotsWhere().available().getIds();
   if (
     robot_allocator_->detectRobotChange(observed_robot_ids) &&
@@ -174,14 +156,29 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
     assign(play_situation.command.name);
   }
 
-  // コマンド収集と構築
+  const auto & pass_plan = world_model->getMsg().game_analysis.pass_plan;
+  if (
+    (pass_plan.state == crane_msgs::msg::PassPlan::STATE_PLANNING ||
+     pass_plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT) &&
+    !play_situation.command.name.empty()) {
+    bool kicker_assigned = false;
+    bool receiver_assigned = false;
+    for (const auto & session : session_registry_->getAllPlanners()) {
+      for (const auto & robot : session->getRobots()) {
+        kicker_assigned |= session->name == "attacker_skill" && robot.id == pass_plan.kicker_id;
+        receiver_assigned |= session->name == "pass_receive" && robot.id == pass_plan.receiver_id;
+      }
+    }
+    if (!kicker_assigned || !receiver_assigned) {
+      assign(play_situation.command.name);
+    }
+  }
   auto msg = collectCommands();
 
   position_commands_pub.publish(msg);
   visualizer->flush();
   CraneVisualizerBuffer::publish();
 
-  // 診断情報を更新
   planning_count_++;
   last_planning_time_ = now();
   diagnostic_helper_.forceUpdate();
@@ -219,9 +216,36 @@ auto SessionCoordinatorComponent::updateDiagnostics(
 
 auto SessionCoordinatorComponent::collectCommands() -> crane_msgs::msg::RobotCommands
 {
+  // 割当(10Hz)と計画配信は非同期。毎周期、実際の割当が計画のペアと一致するか検証する。
+  auto & plan = world_model->getEditableMsg().game_analysis.pass_plan;
+  const auto assigned_to = [&](const std::string & name, int id) {
+    for (const auto & session : session_registry_->getAllPlanners()) {
+      if (session->name == name) {
+        return std::ranges::any_of(
+          session->getRobots(), [&](const auto & robot) { return robot.id == id; });
+      }
+    }
+    return false;
+  };
+  if (
+    (plan.state == crane_msgs::msg::PassPlan::STATE_PLANNING ||
+     plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT) &&
+    (!assigned_to("attacker_skill", plan.kicker_id) ||
+     !assigned_to("pass_receive", plan.receiver_id))) {
+    // この書き換えはローカルコピーにしか効かず /world_model には出ないので、
+    // 外から見ると「計画はあるのに出し手がパスしない」という無言の失敗になる。
+    // どちらの役が外れて拒否したのかをログに残す。
+    RCLCPP_INFO_THROTTLE(
+      get_logger(), *get_clock(), 1000,
+      "PassPlan 実行拒否: 計画(出し手%d/受け手%d) と割当が不一致 "
+      "(attacker_skill に %d: %s, pass_receive に %d: %s)",
+      plan.kicker_id, plan.receiver_id, plan.kicker_id,
+      assigned_to("attacker_skill", plan.kicker_id) ? "あり" : "なし", plan.receiver_id,
+      assigned_to("pass_receive", plan.receiver_id) ? "あり" : "なし");
+    plan.state = crane_msgs::msg::PassPlan::STATE_ABORTED;
+  }
   crane_msgs::msg::RobotCommands msg;
 
-  // メタデータを設定
   msg.header = world_model->getMsg().header;
   msg.on_positive_half = world_model->onPositiveHalf();
   msg.is_yellow = world_model->isYellow();
@@ -230,7 +254,6 @@ auto SessionCoordinatorComponent::collectCommands() -> crane_msgs::msg::RobotCom
   DelayMonitorWrapper::addDelayCheckpoint(
     msg.delay_checkpoints, "session_controller_end", "strategy_computed");
 
-  // 全プランナーからコマンドを収集
   for (const auto & session : session_registry_->getAllPlanners()) {
     session->setGameAnalysis(latest_game_analysis_);
 

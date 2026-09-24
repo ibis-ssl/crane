@@ -26,22 +26,8 @@ constexpr double toSvgX(double x) { return x * SCALE; }
 constexpr double toSvgY(double y) { return -y * SCALE; }
 }  // namespace SvgCoord
 
-// 基本色定数（よく使う色のみ）
-namespace SvgColors
-{
-constexpr const char * White = "white";
-constexpr const char * Black = "black";
-constexpr const char * Red = "red";
-constexpr const char * Green = "green";
-constexpr const char * Blue = "blue";
-constexpr const char * Yellow = "yellow";
-constexpr const char * Cyan = "cyan";
-constexpr const char * None = "none";
-}  // namespace SvgColors
-
 // 前方宣言
 struct SvgCircleBuilder;
-struct SvgPolygonBuilder;
 struct SvgPolyLineBuilder;
 struct SvgLineBuilder;
 struct SvgRectBuilder;
@@ -69,23 +55,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
 
-  // Operation modifiers
-  [[nodiscard]] auto asReplace() -> VisualizerMessageBuilder &
-  {
-    operation = "replace";
-    return *this;
-  }
-  [[nodiscard]] auto asAppend() -> VisualizerMessageBuilder &
-  {
-    operation = "append";
-    return *this;
-  }
-  [[nodiscard]] auto asClear() -> VisualizerMessageBuilder &
-  {
-    operation = "clear";
-    return *this;
-  }
-
   // Duration modifier
   [[nodiscard]] auto withDuration(double seconds) -> VisualizerMessageBuilder &
   {
@@ -97,8 +66,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   auto line() -> SvgLineBuilder;
 
-  auto polygon() -> SvgPolygonBuilder;
-
   auto polyline() -> SvgPolyLineBuilder;
 
   auto text() -> SvgTextBuilder;
@@ -107,22 +74,11 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   auto path() -> SvgPathBuilder;
 
-  // 便利メソッド: よく使うパターンのヘルパー（宣言のみ）
-  [[nodiscard]] auto circleAt(Point center, double radius) -> SvgCircleBuilder;
-
-  [[nodiscard]] auto lineFrom(Point start, Point end) -> SvgLineBuilder;
-
-  [[nodiscard]] auto lineFrom(const Segment & seg) -> SvgLineBuilder;
-
   // 高レベル描画メソッド
   auto arrow(
     Point start, Vector2 direction, double length, const std::string & color = "white",
     double stroke_width = 10.0, double arrowhead_length = 0.35, double arrowhead_width = 0.20)
     -> void;
-
-  auto velocityArrow(
-    Point pos, Vector2 velocity, const std::string & color = "lime", double scale = 1.0,
-    double stroke_width = 20.0) -> void;
 
   auto labeledCircle(
     Point center, double radius, const std::string & label,
@@ -201,15 +157,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     double stroke_opacity = 1.0, double stroke_width = 10.0, double id_font_size = 150.0,
     const std::string & id_color = "white", double id_offset_x = -0.05, double id_offset_y = -0.05)
     -> void;
-
-  // 軌跡描画の便利関数
-  auto drawTrajectory(
-    const std::vector<Point> & points, const std::string & color = "white",
-    double base_opacity = 1.0, int sampling_interval = 1, double stroke_width = 15.0) -> void;
-
-  auto drawFadingTrajectory(
-    const std::vector<Point> & points, const std::string & color = "white", int segments = 10,
-    double stroke_width = 15.0, int sampling_interval = 1) -> void;
 };
 
 // スタイル属性の共通基底クラス（CRTP パターン）
@@ -246,20 +193,14 @@ struct SvgStyleBuilder
 struct SvgBuilderBase
 {
   std::shared_ptr<VisualizerMessageBuilder> builder;
-  bool auto_build = false;  // RAII用フラグ
-  bool built = false;       // 二重build防止
+  bool built = false;  // 二重build防止
 
   explicit SvgBuilderBase(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : builder(builder)
   {
   }
 
-  virtual ~SvgBuilderBase()
-  {
-    if (auto_build && !built) {
-      build();
-    }
-  }
+  virtual ~SvgBuilderBase() = default;
 
   [[nodiscard]] virtual auto getSvgString() const -> std::string = 0;
 
@@ -269,14 +210,6 @@ struct SvgBuilderBase
       builder->add(getSvgString());
       built = true;
     }
-  }
-
-  // RAII有効化（メソッドチェーンで使えるよう自身の参照を返す）
-  template <typename Derived>
-  [[nodiscard]] auto raii() -> Derived &
-  {
-    auto_build = true;
-    return static_cast<Derived &>(*this);
   }
 };
 
@@ -546,50 +479,6 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
   }
 };
 
-struct SvgPolygonBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPolygonBuilder>
-{
-  std::vector<Point> points;
-
-  explicit SvgPolygonBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
-  : SvgBuilderBase(builder)
-  {
-  }
-
-  auto getSvgString() const -> std::string override
-  {
-    using SvgCoord::SCALE;
-    using SvgCoord::toSvgX;
-    using SvgCoord::toSvgY;
-    std::ostringstream points_str;
-    for (const auto & p : points) {
-      points_str << std::format("{:.3f},{:.3f} ", toSvgX(p.x()), toSvgY(p.y()));
-    }
-    return std::format(
-      "<polygon points=\"{}\" fill=\"{}\" fill-opacity=\"{:.2f}\" "
-      "stroke=\"{}\" stroke-opacity=\"{:.2f}\" stroke-width=\"{:.2f}\" />",
-      points_str.str(), fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
-  }
-
-  [[nodiscard]] auto addPoint(double x, double y) -> SvgPolygonBuilder &
-  {
-    points.emplace_back(x, y);
-    return *this;
-  }
-
-  [[nodiscard]] auto addPoint(Point p) -> SvgPolygonBuilder &
-  {
-    points.push_back(p);
-    return *this;
-  }
-
-  // 便利メソッド: 複数の点を一度に設定
-  [[nodiscard]] auto setPoints(const std::vector<Point> & pts) -> SvgPolygonBuilder &
-  {
-    points = pts;
-    return *this;
-  }
-};
-
 struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBuilder>
 {
   explicit SvgPathBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
@@ -630,110 +519,6 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
     }
 
     auto lineTo(Point p) -> SvgPathDefinitionBuilder & { return lineTo(p.x(), p.y()); }
-
-    auto horizontalTo(double x) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path += std::format(" H{:.3f}", toSvgX(x));
-      return *this;
-    }
-
-    auto verticalTo(double y) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path += std::format(" V{:.3f}", toSvgY(y));
-      return *this;
-    }
-
-    auto closePath() -> SvgPathDefinitionBuilder &
-    {
-      path += " Z";
-      return *this;
-    }
-
-    auto cubicBezierTo(double x1, double y1, double x2, double y2, double x, double y)
-      -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path += std::format(
-        " C{:.3f},{:.3f} {:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x2),
-        toSvgY(y2), toSvgX(x), toSvgY(y));
-      return *this;
-    }
-
-    auto cubicBezierTo(Point p1, Point p2, Point p) -> SvgPathDefinitionBuilder &
-    {
-      return cubicBezierTo(p1.x(), p1.y(), p2.x(), p2.y(), p.x(), p.y());
-    }
-
-    auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path +=
-        std::format(" S{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x2), toSvgY(y2), toSvgX(x), toSvgY(y));
-      return *this;
-    }
-
-    auto smoothCubicBezierTo(Point p2, Point p) -> SvgPathDefinitionBuilder &
-    {
-      return smoothCubicBezierTo(p2.x(), p2.y(), p.x(), p.y());
-    }
-
-    auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path +=
-        std::format(" Q{:.3f},{:.3f} {:.3f},{:.3f}", toSvgX(x1), toSvgY(y1), toSvgX(x), toSvgY(y));
-      return *this;
-    }
-
-    auto quadraticBezierTo(Point p1, Point p) -> SvgPathDefinitionBuilder &
-    {
-      return quadraticBezierTo(p1.x(), p1.y(), p.x(), p.y());
-    }
-
-    auto smoothQuadraticBezierTo(double x, double y) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path += std::format(" T{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
-      return *this;
-    }
-
-    auto smoothQuadraticBezierTo(Point p) -> SvgPathDefinitionBuilder &
-    {
-      return smoothQuadraticBezierTo(p.x(), p.y());
-    }
-
-    auto arcTo(
-      double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
-      double y) -> SvgPathDefinitionBuilder &
-    {
-      using SvgCoord::SCALE;
-      using SvgCoord::toSvgX;
-      using SvgCoord::toSvgY;
-      path += std::format(
-        " A{:.3f},{:.3f} {:.3f} {},{} {:.3f},{:.3f}", toSvgX(rx), toSvgY(ry), x_axis_rotation,
-        static_cast<int>(large_arc_flag), static_cast<int>(sweep_flag), toSvgX(x), toSvgY(y));
-      return *this;
-    }
-
-    auto arcTo(Point r, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, Point p)
-      -> SvgPathDefinitionBuilder &
-    {
-      return arcTo(r.x(), r.y(), x_axis_rotation, large_arc_flag, sweep_flag, p.x(), p.y());
-    }
   } definition;
 };
 
@@ -813,22 +598,6 @@ struct CraneVisualizerBuffer
     s_seq = 0;
   }
 };
-
-// 便利メソッドの実装（全てのクラス定義の後にインライン関数として定義）
-inline auto VisualizerMessageBuilder::circleAt(Point center, double radius) -> SvgCircleBuilder
-{
-  return circle().center(center).radius(radius);
-}
-
-inline auto VisualizerMessageBuilder::lineFrom(Point start, Point end) -> SvgLineBuilder
-{
-  return line().start(start).end(end);
-}
-
-inline auto VisualizerMessageBuilder::lineFrom(const Segment & seg) -> SvgLineBuilder
-{
-  return line().fromSegment(seg);
-}
 
 }  // namespace crane
 #endif  // CRANE_VISUALIZATION_INTERFACES__CRANE_VISUALIZER_WRAPPER_HPP_

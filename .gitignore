@@ -51,6 +51,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
 # Docker config
 docker/config/state-store.json.stream
@@ -75,8 +76,13 @@ scenario_test_env/
 ssl-log-recorder
 ssl-go-tools/
 *.log.gz
+
+# crane.launch.xml の ros2 bag record が生成する記録（1回で数百MB〜数GB）
+rosbag2_*/
 *.mp4
 *.avi
+# ssl-log-recorder の avi 生成中に残る索引の一時ファイル。*.avi では拾えない
+*.avi.idx_
 
 # Match vs TIGERs results
 docker/match-vs-tigers/results/

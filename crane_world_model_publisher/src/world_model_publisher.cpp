@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
@@ -23,7 +24,6 @@ static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_
   char comma;
   while (ss >> value) {
     result.push_back(static_cast<uint8_t>(value));
-    // 次のカンマをスキップ（もしあれば）
     ss >> comma;
   }
   return result;
@@ -39,10 +39,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 {
   using std::chrono_literals::operator""ms;
 
-  // VisualizationManager初期化（統合された可視化システム）
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
-  // DataProviderのVisualization callbackをVisualizationManagerに接続
   data_provider_->setVisualizationCallbacks(
     [this](const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode) {
       visualization_manager_->drawFieldGeometry(geometry_data, half_court_mode);
@@ -52,12 +50,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         msg, field_w, field_h, data_provider_->getLatestPlaySituation().command.name);
     });
 
-  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
-  std::string robot_id_mask_str;
-  get_parameter("robot_id_mask", robot_id_mask_str);
+  auto robot_id_mask_str = crane::get_or_declare_parameter(this, "robot_id_mask", "1, 2, 3");
   data_provider_->setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
-  // game_analysisを購読して、world_modelに引き継ぐ
   latest_game_analysis_msg_.pass_target_id = -1;
   latest_game_analysis_msg_.recommended_attacker_id = -1;
   latest_game_analysis_msg_.recommended_pass_receiver_id = -1;
@@ -74,7 +69,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   auto slack_config = SlackTimeConfig::fromNode(*this);
   wrapper_->setSlackConfig(slack_config);
 
-  // デバッグ出力
   RCLCPP_INFO(get_logger(), "SlackTimeConfig loaded:");
   RCLCPP_INFO(
     get_logger(), "  robot_max_acceleration: %.2f m/s^2", slack_config.robot_max_acceleration);
@@ -94,7 +88,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       publishWorldModel();
       publishVisualization(wrapper_);
     } else {
-      // より詳細な状態を表示
       bool has_vision = data_provider_->hasVisionUpdated();
       bool has_tracker = data_provider_->hasTrackedFrameUpdated();
       bool has_geometry = data_provider_->isGeometryInitialized();
@@ -112,25 +105,30 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       }
     }
 
-    // 診断情報を更新
     diagnostic_helper_.forceUpdate();
   });
 }
 
-WorldModelPublisherComponent::~WorldModelPublisherComponent() = default;
+WorldModelPublisherComponent::~WorldModelPublisherComponent()
+{
+  if (timer) {
+    timer->cancel();
+  }
+  data_provider_.reset();
+}
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
-  // 遅延監視: データ取得開始
   auto msg = data_provider_->getMsg();
-  wrapper_->clearDelayCheckpoints();
 
-  // VisionタイムスタンプをWorldModelWrapperに統合
-  wrapper_->mergeDelayCheckpoints(msg.delay_checkpoints);
-
-  // ROS 2でのVisionパケット受信時刻を追加
-  wrapper_->addDelayCheckpoint("vision_packet_received", "ros2_received");
-  wrapper_->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+  // wrapper_->update(msg)はlatest_msg = world_modelという丸ごと代入のため、
+  // update()より後にwrapper_へ追加したチェックポイントしか生き残らない。
+  // そのため、update()より前に打刻したいチェックポイントはmsg.delay_checkpoints側に
+  // 直接積んでおく（update()の代入でそのままwrapper_に引き継がれる）。
+  DelayMonitorWrapper::addDelayCheckpoint(
+    msg.delay_checkpoints, "vision_packet_received", "ros2_received");
+  DelayMonitorWrapper::addDelayCheckpoint(
+    msg.delay_checkpoints, "data_provider_getMsg", "vision_processed");
 
   wrapper_->update(msg);
   wrapper_->addDelayCheckpoint("wrapper_updated", "");
@@ -141,16 +139,16 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   postProcessWorldModel(wrapper_);
   wrapper_->addDelayCheckpoint("post_processed", "");
 
+  // publish()より後に打刻すると、そのタイムスタンプは配信されるメッセージには
+  // 物理的に反映できない（getMsg()のコピーは既にpublish済み）ため、publish直前に打刻する。
+  wrapper_->addDelayCheckpoint("world_model_published", "");
   pub_world_model.publish(wrapper_->getMsg());
-  wrapper_->addDelayCheckpoint("world_model_published", "30Hz");
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
 {
-  // チーム色情報を更新
   visualization_manager_->updateTeamInfo(world_model->isYellow(), world_model->onPositiveHalf());
 
-  // VisualizationManagerによる統合可視化処理
   visualization_manager_->drawTrackedObjects(world_model);
 
   visualization_manager_->drawBallPlacement(world_model);
@@ -185,20 +183,17 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
 auto WorldModelPublisherComponent::updateDiagnostics(
   diagnostic_updater::DiagnosticStatusWrapper & stat) -> void
 {
-  // データが利用可能かチェック
   bool available = data_provider_->available();
 
   if (available) {
     stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Vision processing is running");
 
-    // ボール検出状態
     if (wrapper_->ball().detected) {
       stat.add("ball_detected", "true");
     } else {
       stat.add("ball_detected", "false");
     }
 
-    // 検出されたロボット数
     auto our_robots = wrapper_->ours().robotsWhere().available().get();
     auto their_robots = wrapper_->theirs().robotsWhere().available().get();
     stat.add("our_robots_count", static_cast<int>(our_robots.size()));

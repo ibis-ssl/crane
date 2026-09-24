@@ -42,13 +42,6 @@ public:
     return static_cast<KickState>(SkillBaseWithState::getCurrentState());
   }
 
-  /**
-   * @brief ボールがフィールドから出る位置を取得
-   * @param offset 出る位置を内側にずらすオフセット
-   * @return ボールが出る位置
-   */
-  auto getBallExitPointFromField(const double offset = 0.3) -> Point;
-
 private:
   void initialize();
 

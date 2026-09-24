@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
 """Download web fonts from Google Fonts CDN for local hosting.
 
-This script downloads Material Symbols Outlined, Noto Sans JP, and Roboto
-font files and generates CSS files that reference them locally.
+This script downloads Material Symbols Outlined, Noto Sans JP, Roboto, and
+IBM Plex Mono font files and generates CSS files that reference them locally.
 Run once before development, or during Docker build.
 
 Usage:
@@ -12,8 +18,8 @@ Usage:
 import argparse
 import os
 import re
-import urllib.request
 import sys
+import urllib.request
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -28,7 +34,6 @@ FONTS = {
             "?family=Material+Symbols+Outlined"
             ":opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..200"
         ),
-        "family": "Material Symbols Outlined",
         "subdir": ".",
         "prefix": "material-symbols",
         "extra_css": (
@@ -51,23 +56,29 @@ FONTS = {
     },
     "noto-sans-jp": {
         "url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700",
-        "family": "Noto Sans JP",
         "subdir": "noto-sans-jp",
         "prefix": "noto-sans-jp",
     },
     "roboto": {
         "url": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700",
-        "family": "Roboto",
         "subdir": "roboto",
         "prefix": "roboto",
+    },
+    # 等幅。テーマの --md-sys-typescale-mono-font-family が参照する。
+    # 以前は 'Roboto Mono' を指定していたが一度も配信しておらず、
+    # 実際には Courier New にフォールバックしていた。
+    "ibm-plex-mono": {
+        "url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600",
+        "subdir": "ibm-plex-mono",
+        "prefix": "ibm-plex-mono",
     },
 }
 
 
-def download_css(url: str) -> str:
+def fetch(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=60) as resp:
-        return resp.read().decode("utf-8")
+        return resp.read()
 
 
 def process_font(name: str, cfg: dict, output_dir: str) -> None:
@@ -78,7 +89,7 @@ def process_font(name: str, cfg: dict, output_dir: str) -> None:
     os.makedirs(font_dir, exist_ok=True)
 
     print(f"=== Downloading {name} ===")
-    css_text = download_css(cfg["url"])
+    css_text = fetch(cfg["url"]).decode("utf-8")
 
     urls = re.findall(r"url\((https://fonts\.gstatic\.com/[^)]+\.woff2)\)", css_text)
     unique_urls = list(dict.fromkeys(urls))
@@ -89,14 +100,12 @@ def process_font(name: str, cfg: dict, output_dir: str) -> None:
         local_path = os.path.join(font_dir, local_name)
         print(f"  {local_name} ...", end=" ", flush=True)
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                data = resp.read()
+            data = fetch(url)
             with open(local_path, "wb") as f:
                 f.write(data)
             print(f"{len(data):,} bytes")
             url_map[url] = f"{subdir}/{local_name}" if subdir != "." else local_name
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"FAILED: {e}")
             sys.exit(1)
 
@@ -122,8 +131,6 @@ def main():
         help="Output directory for font files (default: assets/fonts/ next to this script)",
     )
     args = parser.parse_args()
-
-    os.makedirs(args.output_dir, exist_ok=True)
 
     for name, cfg in FONTS.items():
         process_font(name, cfg, args.output_dir)

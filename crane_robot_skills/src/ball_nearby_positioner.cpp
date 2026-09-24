@@ -75,7 +75,9 @@ auto BallNearByPositioner::update() -> Status
       return target +
              getNormVec(base_angle + normalized_offset * angle_interval) * distance_from_target;
     } else if (policy == "straight") {
-      return target_to_base + getVerticalVec(target_to_base.normalized()) * offset;
+      Vector2 base_dir =
+        target_to_base.squaredNorm() > 1e-6 ? target_to_base.normalized() : Vector2(1.0, 0.0);
+      return target + target_to_base + getVerticalVec(base_dir) * offset;
     } else {
       throw std::runtime_error(
         "[BallNearByPositioner] 予期しないパラメータ「line_policy」が入力されています: " + policy);

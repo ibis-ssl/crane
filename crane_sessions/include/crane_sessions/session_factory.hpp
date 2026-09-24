@@ -10,7 +10,6 @@
 #include <crane_sessions/session_base.hpp>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace rclcpp
 {
@@ -30,10 +29,6 @@ struct WorldModelWrapper;
 auto generatePlanner(
   const std::string & tactic_name, WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   -> SessionBase::SharedPtr;
-
-/// @brief 利用可能なプランナー名の一覧を取得
-/// @return プランナー名のベクター
-auto getAvailablePlannerNames() -> std::vector<std::string>;
 
 }  // namespace crane
 

@@ -8,7 +8,7 @@
 /* === Semantic aliases for annotation-specific usage === */
 :root {
   --annot-danger: var(--md-sys-color-error);
-  --annot-success: #27AE60;
+  --annot-success: var(--md-sys-color-success);
   --annot-info: var(--md-sys-color-info);
   --annot-warning: var(--md-sys-color-warning);
 }
@@ -48,7 +48,7 @@ body {
 
 .indicator.online {
   background: var(--annot-success);
-  box-shadow: 0 0 8px var(--annot-success);
+  box-shadow: 0 0 0 3px var(--md-sys-color-success-container);
 }
 
 .indicator.offline {
@@ -618,7 +618,7 @@ body {
   background: var(--annot-success);
   border-color: var(--md-sys-color-primary);
   color: white;
-  box-shadow: 0 0 12px var(--annot-success);
+  box-shadow: 0 0 0 3px var(--md-sys-color-success-container);
 }
 
 /* Field map */

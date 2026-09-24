@@ -13,9 +13,10 @@ JSONデータファイルからキックイベントのグラフを生成する�
 
 import argparse
 import json
-import sys
 import os
+import sys
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -202,10 +203,10 @@ def main():
             if not args.no_display:
                 try:
                     plt.show()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     print(f"ディスプレイエラー（ファイルは保存済み）: {e}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"エラー: {e}", file=sys.stderr)
         sys.exit(1)
 

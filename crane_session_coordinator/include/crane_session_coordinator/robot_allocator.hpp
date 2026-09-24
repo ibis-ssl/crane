@@ -119,6 +119,13 @@ private:
   std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
   std::string prev_assignment_log_;
 
+  /// セッション名 -> 前フレームの割当順序。
+  /// 割り当てられるロボットの集合が同じでも順序が入れ替わると、
+  /// SessionBase::setAllocatedRobots() が順序込み比較で onRobotsChanged() を発火させ、
+  /// 各セッションが持つヒステリシス状態（forwardの目標点など）が破棄される。
+  /// これを避けるため、集合が変わらない限り前フレームの順序を維持する。
+  std::unordered_map<std::string, std::vector<uint8_t>> prev_allocation_order_;
+
   AllocationState allocation_state_;
   AllocationCostConfig allocation_cost_config_;
 };

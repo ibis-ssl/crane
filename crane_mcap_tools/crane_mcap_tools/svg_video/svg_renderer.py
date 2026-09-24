@@ -33,7 +33,7 @@ def create_renderer(
 
     Args:
         backend: レンダリングバックエンド名
-                 ("auto", "cairosvg", "resvg", "rsvg" のいずれか)
+                 ("auto", "cairosvg", "resvg" のいずれか)
                  Noneまたは"auto"の場合、利用可能な最適なバックエンドを自動選択
         width: 出力画像幅（ピクセル）
         height: 出力画像高さ（ピクセル）
@@ -47,23 +47,19 @@ def create_renderer(
         ValueError: 指定されたバックエンドが利用不可能な場合
         RuntimeError: 利用可能なバックエンドが存在しない場合
     """
-    # バックエンド名 -> クラスのマッピング
     backend_map = {cls.get_name(): cls for cls in _RENDERER_CLASSES}
 
     if backend is None or backend == "auto":
-        # 自動選択: 利用可能な最初のレンダラーを使用
         for renderer_cls in _RENDERER_CLASSES:
             if renderer_cls.is_available():
                 logger.info(f"Using {renderer_cls.get_name()} renderer (auto-selected)")
                 return renderer_cls(width, height, dpi, output_format)
 
-        # 利用可能なレンダラーが1つもない
         raise RuntimeError(
             "No SVG renderer backend is available. "
             "Please install at least one: pip install cairosvg"
         )
 
-    # 明示的なバックエンド指定
     if backend not in backend_map:
         available = ", ".join(backend_map.keys())
         raise ValueError(f"Unknown backend: {backend}. Available backends: {available}")

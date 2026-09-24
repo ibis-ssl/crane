@@ -36,7 +36,7 @@ def parse_layer_list(layer_str: str | None) -> set[str] | None:
     """レイヤーリスト文字列をパース."""
     if layer_str is None:
         return None
-    return set(layer.strip() for layer in layer_str.split(",") if layer.strip())
+    return {layer.strip() for layer in layer_str.split(",") if layer.strip()}
 
 
 # グローバル変数でレンダラー設定を保持
@@ -612,8 +612,8 @@ Examples:
     except KeyboardInterrupt:
         logger.warning("Interrupted by user")
         return 130
-    except Exception as e:
-        logger.exception(f"Error: {e}")
+    except Exception:
+        logger.exception("Error")
         return 1
 
 

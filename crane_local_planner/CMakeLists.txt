@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_local_planner)
 
+# 既定を Release にする。CMAKE_BUILD_TYPE 未指定だと GCC は最適化なし（-O0）になり、
+# 経路計画のような毎周期の計算が桁違いに遅くなる。CI と docker は明示的に Release を
+# 指定しているので、これはローカルビルドを同じ条件に揃えるためのもの。
+# デバッグ時は -DCMAKE_BUILD_TYPE=Debug または RelWithDebInfo を明示する。
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -24,13 +32,15 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/rvo2_planner.cpp
+  src/visibility_graph.cpp
+  src/visibility_graph_planner.cpp
   src/crane_local_planner.cpp
 )
 
 option(CRANE_UNITY_BUILD "Enable unity build" ON)
 if(CRANE_UNITY_BUILD)
   set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
-  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 2)
+  set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 3)
 endif()
 
 target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb Eigen3::Eigen)
@@ -50,6 +60,12 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_penalty_avoidance_helper test/test_penalty_avoidance_helper.cpp)
   target_include_directories(test_penalty_avoidance_helper PUBLIC include)
   target_link_libraries(test_penalty_avoidance_helper Eigen3::Eigen)
+  ament_auto_add_gtest(test_visibility_graph
+    test/test_visibility_graph.cpp
+    src/visibility_graph.cpp
+  )
+  target_include_directories(test_visibility_graph PUBLIC include)
+  target_link_libraries(test_visibility_graph Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

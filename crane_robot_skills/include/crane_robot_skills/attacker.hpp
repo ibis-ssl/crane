@@ -71,17 +71,11 @@ protected:
   void onPostUpdate() override;
 
 private:
-  void configurePassKick(const Point & target, KickOld & kick_skill);
-
   // KICK状態の進捗タイムアウト用
   std::chrono::steady_clock::time_point kick_state_entry_time{};
   bool in_kick_state = false;
 
-  bool shouldUseChipKick(const Point & target);
-
   double evaluateGoalAngle(const Point & position);
-
-  double calculatePassScore(const Point & target);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_

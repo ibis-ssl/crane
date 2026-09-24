@@ -1,70 +1,25 @@
-# RVO2 Local Planner
+# 局所経路計画
 
-## 概要
+## 目的
 
-**RVO2 Local Planner**は、[RVO2 Library (Reciprocal Velocity Obstacles)](https://gamma.cs.unc.edu/RVO2/) をベースにしたローカルパスプランナーです。Velocity Obstacle (VO) の概念を用いて、動的な障害物（他のロボット）を回避しながら目標位置へ移動する速度ベクトルを計算します。また、SSL特有のルール（ペナルティエリア侵入禁止など）やボール回避のロジックも統合されています。
+上位スキルの目標を、他ロボット・ボール・ペナルティエリア・プレイスメント領域・フィールド境界を考慮した実行可能なコマンドへ変換します。
 
-## 実装詳細
+## プランナー
 
-### コアアルゴリズム
+- `rvo2`（既定）: RVO2で他ロボットとの衝突を回避し、速度・加減速制約を適用する。実機とシミュレーションで使用する。
+- `visibility_graph`: 相対速度から予測した障害物を可視グラフで回避し、先読み位置指令（`POSITION_TARGET_MODE`）を生成する。
 
-- **RVO2 Simulator**: ロボットをエージェントとして登録し、相互の衝突回避速度を計算します。
-- **BangBangTrajectory**: 現在位置・速度から目標位置へ最短時間で到達するための軌道を生成し、それをRVOの推奨速度（Preferred Velocity）として入力します。
+実機で位置目標モード（`POSITION_TARGET_MODE` / ワイヤ mode 4）を運用する場合は、ロボット側に位置制御ループを実行する CM4（[Orion_CM4](https://github.com/ibis-ssl/Orion_CM4)）が必要です。詳細は [CM4・cm4-simでの位置制御](cm4_position_control.md) を参照してください。CM4 による位置制御を行わない実機環境では、速度目標モード（mode 3）を出力する既定の `rvo2` を選択します。
 
-### パラメータ設定
+## 制約
 
-ROS 2パラメータを通じて、RVOシミュレーションの挙動を調整可能です。
+- ペナルティエリア回避、ボール回避、プレイスメント領域回避を無効化・拡大するときは、競技ルールと実機挙動への影響を確認する。ペナルティエリアのグローバル回避マージンを安易に拡大しない。
+- プランナーのパラメータ、障害物の扱い、再計画と速度制約は実装を正本とする。文書に既定値を転載しない。
 
-| パラメータ名 | デフォルト値 | 説明 |
-|------------|-------------|------|
-| `rvo_time_step` | 0.1 | シミュレーションのタイムステップ [s] |
-| `rvo_neighbor_dist` | 1.0 | 近傍エージェントを探索する距離 [m] |
-| `rvo_max_neighbors` | 10 | 考慮する最大エージェント数 |
-| `rvo_time_horizon` | 2.0 | 何秒先の衝突まで考慮するか（対エージェント） [s] |
-| `rvo_time_horizon_obst` | 1.0 | 何秒先の衝突まで考慮するか（対静的障害物） [s] |
-| `rvo_radius` | 0.15 | エージェントの半径 [m] |
-| `rvo_max_speed` | 4.0 | エージェントの最大速度 [m/s] |
+## 実装リファレンス
 
-### 回避ロジック
-
-RVO2による動的障害物回避に加え、以下のルールベースの回避ロジックが実装されています。これらは目標位置（Target Position）を修正することで実現されます。
-
-#### 1. ペナルティエリア回避
-
-自チームおよび相手チームのペナルティエリアへの侵入を防ぎます。
-
-- **侵入検知**: 目標位置がペナルティエリア内、または移動経路がペナルティエリアを横切る場合。
-- **回避動作**:
-  - 目標位置がエリア内の場合：エリア外の最近傍点へ修正。
-  - 経路が横切る場合：ペナルティエリアの角を経由する迂回ルートを設定。
-
-#### 2. ボール回避
-
-ルール（ボールから一定距離を保つ）およびボールとの衝突防止のため、ボール周辺を回避します。
-
-- **無効化フラグ**: `disable_ball_avoidance` がtrueの場合は無効。
-- **距離閾値**: 試合状況（STOP, FREE_KICK等）に応じて 0.2m ~ 0.7m の範囲で変動。
-- **回避動作**: 目標位置または経路がボールに近い場合、ボールから離れる方向に目標をずらします。
-
-#### 3. ボールプレイスメントエリア回避
-
-ボールプレイスメント中、配置エリア（ボールと配置点周辺）への侵入を防ぎます。
-
-- **回避動作**: 現在位置や目標位置が配置エリア内の場合、エリア外へ退避する目標位置を計算します。
-
-### 速度・加速度制御
-
-- **BangBangTrajectory**: 目標位置への到達時間を最小化する速度プロファイルを生成。
-- **減速制御**: 目標付近でのオーバーシュートを防ぐため、距離に応じた減速（Planning Deceleration）を適用。
-- **回転制御**: 加速初期に進行方向とロボットの向きが大きく異なる場合、回転を優先するために角速度制限を調整。
-
-## 依存関係
-
-- **RVO2 Library**: コアアルゴリズム
-- **crane_msgs**: 通信メッセージ
-- **crane_physics**: 軌道生成（BangBangTrajectory）
-- **crane_world_model_publisher**: 環境情報の取得
-
-## 関連リンク
-
-- [RVO2 Library Documentation](https://gamma.cs.unc.edu/RVO2/)
+- [LocalPlannerComponent](https://github.com/ibis-ssl/crane/blob/develop/crane_local_planner/include/crane_local_planner/local_planner.hpp)
+- [RVO2Planner](https://github.com/ibis-ssl/crane/blob/develop/crane_local_planner/src/rvo2_planner.cpp)
+- [VisibilityGraphPlanner](https://github.com/ibis-ssl/crane/blob/develop/crane_local_planner/src/visibility_graph_planner.cpp)
+- [テスト](https://github.com/ibis-ssl/crane/tree/develop/crane_local_planner/test)
+- [ルール制約](./rule.md) / [座標・単位](./coordinates.md) / [CM4・cm4-simでの位置制御](cm4_position_control.md)

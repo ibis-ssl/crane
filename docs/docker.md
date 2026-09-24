@@ -1,27 +1,13 @@
-# docker立ち上げ
+# Docker環境
 
-## 準備
+Docker Engine と Compose V2 を使用します。導入は [Docker公式手順](https://docs.docker.com/engine/install/ubuntu/)、起動・停止は [開発環境README](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/README.md)を参照してください。
 
-Docker Compose V2 は通常 Docker Engine に同梱されています (Docker Desktop や Linux 向けの Docker Engine インストールに含まれる `docker-compose-plugin` パッケージなど)。
-最新のDocker環境では、`docker compose` (ハイフンなし) コマンドとして利用可能です。
+host network のシミュレーションでは、起動前のマルチキャスト隔離が必要です。実機へ切り替える際は解除が必要になるため、[ネットワーク設定](network.md)を確認してください。
 
-もし個別にインストールまたはアップデートが必要な場合は、[公式Dockerドキュメント](https://docs.docker.com/compose/install/)を参照してください。
-以前記載されていた手動ダウンロード・インストール方法は特定バージョン (`v2.5.0`) に固定されており、古くなっている可能性があります。
+## 用途別の入口
 
-**注意:** Docker Compose V1 (ハイフンありの `docker-compose`) はサポートが終了しており、使用は推奨されません。
+- [開発・シミュレーション・実機](https://github.com/ibis-ssl/crane/blob/develop/docker/dev/README.md)
+- [シナリオテスト](https://github.com/ibis-ssl/crane/blob/develop/scenario_test/README.md)
+- [TIGERs対戦テスト](https://github.com/ibis-ssl/crane/blob/develop/docker/match-vs-tigers/README.md)
 
-## 起動
-
-### ツール群
-
-各環境の起動手順は `docker/README.md` を参照してください。
-
-### grSim
-
-起動方法は `docs/setup.md` のGrSimセクションを参照してください。
-
-## 閲覧
-
-- [game-controller](http://localhost:8081)
-- [vision client](http://localhost:8082)
-- [status board](http://localhost:8083)
+Docker側のツール群を起動した後、ホスト側のCraneは[環境構築・起動](setup.md#起動)に従って起動します。

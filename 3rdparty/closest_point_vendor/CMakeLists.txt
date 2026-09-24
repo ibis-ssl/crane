@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
 project(closest_point_vendor)
 
+# 既定を Release にする。CMAKE_BUILD_TYPE 未指定だと GCC は最適化なし（-O0）になり、
+# 経路計画のような毎周期の計算が桁違いに遅くなる。CI と docker は明示的に Release を
+# 指定しているので、これはローカルビルドを同じ条件に揃えるためのもの。
+# デバッグ時は -DCMAKE_BUILD_TYPE=Debug または RelWithDebInfo を明示する。
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
@@ -27,46 +35,44 @@ macro(build_closest_point)
   set(closest_point_source_path ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/src/closest_point-ext)
   set(closest_point_cmake_file_path ${closest_point_source_path}/CMakeLists.txt)
 
-  # Check if already built or if SKIP_VENDOR_CLONE is set
+  # ビルド済み/SKIP_VENDOR_CLONE の場合は ExternalProject の作成のみをスキップする。
+  # 注意: macro内でreturn()すると呼び出し元のファイルスコープを抜けてしまい、
+  # 再configure時に install()/ament_package() が登録されずパッケージが空になる。
   if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/${PROJECT_NAME}/boost)
-    message(STATUS "closest_point_vendor already built, skipping")
-    return()
-  endif()
-
-  if(DEFINED ENV{SKIP_VENDOR_CLONE} OR SKIP_VENDOR_CLONE)
+    message(STATUS "closest_point_vendor already built, skipping external project")
+  elseif(DEFINED ENV{SKIP_VENDOR_CLONE} OR SKIP_VENDOR_CLONE)
     message(STATUS "SKIP_VENDOR_CLONE is set, skipping closest_point_vendor clone")
-    return()
-  endif()
-
-  # Check if source already exists to enable offline build
-  set(CLOSEST_POINT_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/src/closest_point-ext)
-  if(EXISTS ${CLOSEST_POINT_SOURCE_DIR}/.git)
-    message(STATUS "既存のclosest_pointソースを検出しました。オフラインモードで利用します: ${CLOSEST_POINT_SOURCE_DIR}")
-    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 1)
   else()
-    message(STATUS "closest_pointソースが見つかりません。GitHubからダウンロードします")
-    set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 0)
-  endif()
+    # Check if source already exists to enable offline build
+    set(CLOSEST_POINT_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/src/closest_point-ext)
+    if(EXISTS ${CLOSEST_POINT_SOURCE_DIR}/.git)
+      message(STATUS "既存のclosest_pointソースを検出しました。オフラインモードで利用します: ${CLOSEST_POINT_SOURCE_DIR}")
+      set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 1)
+    else()
+      message(STATUS "closest_pointソースが見つかりません。GitHubからダウンロードします")
+      set(UPDATE_DISCONNECTED_FLAG UPDATE_DISCONNECTED 0)
+    endif()
 
-  externalproject_add(closest_point-ext
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
-    INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-    GIT_REPOSITORY https://github.com/artemp/closest_point.git
-    GIT_TAG master
-    GIT_SHALLOW ON
-    GIT_PROGRESS ON
-    ${UPDATE_DISCONNECTED_FLAG}
-    TIMEOUT 6000
-    PATCH_COMMAND
-      COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}
-      COMMAND echo project( closest_point_vendor ) >> ${closest_point_cmake_file_path}
-      COMMAND echo install( DIRECTORY boost DESTINATION include/${PROJECT_NAME} FILES_MATCHING PATTERN "*.hpp*" ) >> ${closest_point_cmake_file_path}
-    CMAKE_ARGS
-      ${cmake_configure_args}
-    ${cmake_commands}
-    CMAKE_ARGS
-      ${cmake_configure_args}
-  )
+    externalproject_add(closest_point-ext
+      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
+      INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+      GIT_REPOSITORY https://github.com/artemp/closest_point.git
+      GIT_TAG master
+      GIT_SHALLOW ON
+      GIT_PROGRESS ON
+      ${UPDATE_DISCONNECTED_FLAG}
+      TIMEOUT 6000
+      PATCH_COMMAND
+        COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}
+        COMMAND echo project( closest_point_vendor ) >> ${closest_point_cmake_file_path}
+        COMMAND echo install( DIRECTORY boost DESTINATION include/${PROJECT_NAME} FILES_MATCHING PATTERN "*.hpp*" ) >> ${closest_point_cmake_file_path}
+      CMAKE_ARGS
+        ${cmake_configure_args}
+      ${cmake_commands}
+      CMAKE_ARGS
+        ${cmake_configure_args}
+    )
+  endif()
   install(
     DIRECTORY
       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/

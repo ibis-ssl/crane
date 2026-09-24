@@ -34,8 +34,6 @@ public:
     initialize();
   }
 
-  auto getBallExitPointFromField(const double offset = 0.3) -> Point;
-
 private:
   void initialize();
 

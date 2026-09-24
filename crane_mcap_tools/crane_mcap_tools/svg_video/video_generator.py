@@ -5,9 +5,9 @@
 
 import logging
 import subprocess
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,10 @@ class VideoGenerator:
         self.width = width
         self.height = height
 
-        # ffmpegの存在確認
         try:
             subprocess.run(
                 ["ffmpeg", "-version"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 check=True,
             )
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -83,60 +81,40 @@ class VideoGenerator:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # ffmpegコマンド構築
         if self.input_format == InputFormat.RAW_RGBA:
-            # RAW RGBA入力の場合
-            cmd = [
-                "ffmpeg",
-                "-y",  # 出力ファイルを上書き
+            input_args = [
                 "-f",
-                "rawvideo",  # RAW入力
+                "rawvideo",
                 "-pix_fmt",
-                "rgba",  # 入力ピクセルフォーマット
+                "rgba",
                 "-s",
-                f"{self.width}x{self.height}",  # 入力サイズ
-                "-r",
-                str(self.fps),  # フレームレート
-                "-i",
-                "-",  # 標準入力から読み込み
-                "-c:v",
-                self.codec,  # 出力コーデック
-                "-crf",
-                str(self.crf),  # 品質
-                "-pix_fmt",
-                self.pixel_format,  # 出力ピクセルフォーマット
-                "-preset",
-                self.preset,  # プリセット
-                str(output_path),
+                f"{self.width}x{self.height}",
             ]
         else:
-            # PNG入力の場合（従来の方法）
-            cmd = [
-                "ffmpeg",
-                "-y",  # 出力ファイルを上書き
-                "-f",
-                "image2pipe",  # パイプ入力
-                "-vcodec",
-                "png",  # 入力コーデック
-                "-r",
-                str(self.fps),  # フレームレート
-                "-i",
-                "-",  # 標準入力から読み込み
-                "-c:v",
-                self.codec,  # 出力コーデック
-                "-crf",
-                str(self.crf),  # 品質
-                "-pix_fmt",
-                self.pixel_format,  # ピクセルフォーマット
-                "-preset",
-                self.preset,  # プリセット
-                str(output_path),
-            ]
+            input_args = ["-f", "image2pipe", "-vcodec", "png"]
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            *input_args,
+            "-r",
+            str(self.fps),
+            "-i",
+            "-",  # 標準入力から読み込み
+            "-c:v",
+            self.codec,
+            "-crf",
+            str(self.crf),
+            "-pix_fmt",
+            self.pixel_format,
+            "-preset",
+            self.preset,
+            str(output_path),
+        ]
 
         if verbose:
             logger.info(f"Running ffmpeg: {' '.join(cmd)}")
 
-        # ffmpegプロセスを起動
         # DEVNULL を使用してデッドロックを防ぐ
         process = subprocess.Popen(
             cmd,
@@ -155,11 +133,9 @@ class VideoGenerator:
                     if frame_count % 100 == 0:
                         logger.info(f"Processed {frame_count} frames...")
 
-            # 入力完了を通知
             if process.stdin:
                 process.stdin.close()
 
-            # プロセスの完了を待機
             process.wait()
 
             if process.returncode != 0:
@@ -172,10 +148,9 @@ class VideoGenerator:
                 f"Video generation completed: {output_path} ({frame_count} frames)"
             )
 
-        except Exception as e:
-            # エラー時はプロセスを終了
+        except Exception:
             process.kill()
-            raise e
+            raise
 
     def generate_from_directory(
         self,
@@ -197,7 +172,6 @@ class VideoGenerator:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # ffmpegコマンド構築（ファイル入力版）
         cmd = [
             "ffmpeg",
             "-y",

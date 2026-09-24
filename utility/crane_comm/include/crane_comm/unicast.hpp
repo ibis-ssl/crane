@@ -159,6 +159,13 @@ public:
     socket_.cancel(ec);
   }
 
+  ~AsyncUdpReceiver()
+  {
+    stop();
+    boost::system::error_code ec;
+    socket_.close(ec);
+  }
+
 private:
   void doReceive()
   {

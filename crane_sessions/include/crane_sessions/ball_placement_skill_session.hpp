@@ -44,7 +44,6 @@ protected:
 
 private:
   /// 試行開始時点の味方チームの ball_placement_failures 値。
-  /// determineAssignmentResult からの参照後にリセットするため mutable 不要。
   std::optional<std::uint32_t> initial_ball_placement_failures_;
 
   std::uint32_t getCurrentBallPlacementFailures() const;

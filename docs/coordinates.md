@@ -1,113 +1,48 @@
 # 座標系仕様
 
-このドキュメントでは、Craneプロジェクトで使用される座標系について説明します。
+## 目的
 
-## フィールド座標系（グローバル座標系）
+Craneシステム全体における位置・姿勢・速度・表示の表現を統一するための座標系および単位規約を定めます。
 
-SSL-Visionから受信する標準的な座標系です。
+## 座標系および単位契約
 
-### 座標軸の定義
+### 1. フィールド座標系（グローバル座標系）
 
-- **X軸**: フィールドの長辺方向（ゴールライン間の方向）
-- **Y軸**: フィールドの短辺方向（サイドライン間の方向）  
-- **Z軸**: 地面に垂直な方向（上向きが正）
+SSL-Visionおよび内部世界モデルで使用される共通座標系です。
 
-### 原点とスケール
+- **原点**: フィールド中央（Center Circle中心）
+- **単位**: メートル [m]
+- **X軸**: フィールド長辺方向（ゴール間方向）。自チームゴールが負、相手チームゴールが正。
+- **Y軸**: フィールド短辺方向（サイドライン間方向）。
+- **Z軸**: 地面に垂直な方向（鉛直上向きが正）。
 
-- **原点**: フィールド中央
-- **単位**: メートル（m）
-- **範囲**:
-  - X: ±6.0m（標準的な12m×9mフィールドの場合）
-  - Y: ±4.5m（標準的な12m×9mフィールドの場合）
+### 2. ロボット座標系（ローカル座標系）
 
-### チーム方向
+各ロボットの中心を原点とする機体固定座標系です。
 
-- **自チームゴール**: 一般的にX軸の負の方向
-- **相手チームゴール**: 一般的にX軸の正の方向
+- **原点**: ロボット中心
+- **単位**: メートル [m]
+- **X軸**: ロボット前方（キッカー開口部方向）
+- **Y軸**: ロボット左方
+- **Z軸**: ロボット上方
 
-## ロボット座標系（ローカル座標系）
+### 3. 角度・回転規約
 
-個々のロボットを基準とした座標系です。
+- **単位**: ラジアン [rad]
+- **範囲**: $[-\pi, \pi]$
+- **基準（0 rad）**: フィールド座標系X軸正方向
+- **回転方向**: 反時計回り（CCW）が正（右手系）
 
-### 座標軸の定義
+### 4. 可視化（SVG）座標系
 
-- **X軸**: ロボットの前方向（キッカーがある方向）
-- **Y軸**: ロボットの左方向
-- **Z軸**: ロボットの上方向
+外部表示ツール（Foxglove、Webビューア等）向けのSVG描画における規約です。
 
-### 角度表現
+- **単位**: ミリメートル [mm]（フィールド座標系 [m] の値を1000倍して変換）
+- **軸反転**: SVG規格に従い、Y軸は下向きが正（内部ラッパー `VisualizerMessageBuilder` で自動反転処理）
 
-- **回転角θ**: Z軸周りの回転（右手座標系）
-- **範囲**: -π ≤ θ ≤ π（ラジアン）
-- **0度**: フィールド座標系のX軸正方向
-- **正の回転**: 反時計回り
+## 実装リファレンス
 
-## 座標変換
-
-### フィールド座標からロボット座標への変換
-
-```cpp
-// フィールド座標系の点をロボット座標系に変換
-Point transformToRobotFrame(const Point& field_point, const RobotPose& robot_pose) {
-  Point relative = field_point - robot_pose.pos;
-  double cos_theta = std::cos(-robot_pose.theta);
-  double sin_theta = std::sin(-robot_pose.theta);
-
-  return Point{
-    relative.x() * cos_theta - relative.y() * sin_theta,
-    relative.x() * sin_theta + relative.y() * cos_theta
-  };
-}
-```
-
-### ロボット座標からフィールド座標への変換
-
-```cpp
-// ロボット座標系の点をフィールド座標系に変換
-Point transformToFieldFrame(const Point& robot_point, const RobotPose& robot_pose) {
-  double cos_theta = std::cos(robot_pose.theta);
-  double sin_theta = std::sin(robot_pose.theta);
-
-  Point rotated{
-    robot_point.x() * cos_theta - robot_point.y() * sin_theta,
-    robot_point.x() * sin_theta + robot_point.y() * cos_theta
-  };
-
-  return rotated + robot_pose.pos;
-}
-```
-
-## 実装上の注意点
-
-### データ型
-
-- **Point型**: `Vector2`のエイリアス（2D座標）
-- **Vector3型**: `Vector3`（3D座標、z成分含む）
-- **角度**: `double`型、ラジアン単位
-
-### 幾何学ライブラリ
-
-座標計算には`crane_geometry`パッケージや、`RobotInfo`のメソッドを使用：
-
-```cpp
-#include <crane_geometry/geometry_operations.hpp>
-#include <crane_physics/robot_info.hpp>
-
-// 角度の正規化
-double normalized_angle = crane::normalizeAngle(angle);
-
-// 2点間距離 (Eigenの機能を使用)
-double distance = (point1 - point2).norm();
-
-// ロボットからの距離 (RobotInfoのメソッドを使用)
-double dist_to_ball = robot->getDistance(ball_pos);
-
-// 点1から点2への方向（角度）
-double angle = crane::getAngle(point2 - point1);
-```
-
-## 関連ドキュメント
-
-- [crane_geometry パッケージ](./packages/crane_geometry.md) - 幾何学計算ライブラリ
-- [crane_physics パッケージ](./packages/crane_physics.md) - 物理計算と座標変換
-- [SSL-Vision 仕様](https://ssl.robocup.org/ssl-vision/) - 公式座標系仕様
+- 幾何学演算・角度正規化: [geometry_operations.hpp](https://github.com/ibis-ssl/crane/blob/develop/utility/crane_geometry/include/crane_geometry/geometry_operations.hpp)
+- 可視化座標変換: [crane_visualizer_wrapper.hpp](https://github.com/ibis-ssl/crane/blob/develop/crane_visualization_interfaces/include/crane_visualization_interfaces/crane_visualizer_wrapper.hpp)
+- ロボット運動モデル: [robot_info.hpp](https://github.com/ibis-ssl/crane/blob/develop/utility/crane_physics/include/crane_physics/robot_info.hpp)
+- 関連ドキュメント: [可視化の設計契約](./visualizer.md) | [局所経路計画](./rvo2_local_planner.md)

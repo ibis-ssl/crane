@@ -1,75 +1,135 @@
 /*
  * Material 3 Expressive Design System for Crane Web Debugger
  * ============================================================
- * Dark theme optimized for debug tool usage.
- * Based on M3 Expressive guidelines: expressive color, shape, motion, typography.
+ * ライトテーマ。デザイン C 案（コマンドバー＋ロボット注目サイドバー）に準拠。
+ *
+ * 【重要】クローム（UI シャーシ）はライト、フィールド描画はダークで据え置く。
+ * フィールド用の色は --crane-field-* に分離してあり、viewer/renderer/ThemeTokens.js
+ * はそちらだけを読む。クローム系トークンをフィールド描画に流用すると、
+ * 暗い芝の上でダーク文字になり HUD が消える。
+ *
+ * 【インクの 3 段階】主要テキスト = on-surface / 本文 = --crane-ink-2 /
+ * 10-11px の補助ラベル = on-surface-variant。
+ * 配色は WCAG AA (4.5:1、非テキストは 3:1) を満たすよう実測して補正済み。
  */
 
 /* ===== DESIGN TOKENS ===== */
 :root {
-  /* --- Color: Primary (Blue) --- */
-  --md-sys-color-primary: #A0C4FF;
-  --md-sys-color-on-primary: #003060;
-  --md-sys-color-primary-container: #1A3A5C;
-  --md-sys-color-on-primary-container: #C8E0FF;
+  /* --- Color: Primary (アクセント) --- */
+  --md-sys-color-primary: #5B4BE0;              /* 白地 5.95 */
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #EDEAFD;
+  --md-sys-color-on-primary-container: #4034B4; /* container 上 7.51 */
 
-  /* --- Color: Secondary --- */
-  --md-sys-color-secondary: #B8C8E0;
-  --md-sys-color-on-secondary: #1E2A3A;
-  --md-sys-color-secondary-container: #2A3A50;
-  --md-sys-color-on-secondary-container: #D8E4F0;
+  /* --- Color: Secondary (中立) --- */
+  --md-sys-color-secondary: #555C6B;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #EFF1F4;
+  --md-sys-color-on-secondary-container: #14161C;
 
-  /* --- Color: Tertiary (Purple accent) --- */
-  --md-sys-color-tertiary: #D0BCFF;
-  --md-sys-color-on-tertiary: #381E72;
-  --md-sys-color-tertiary-container: #4F378B;
-  --md-sys-color-on-tertiary-container: #EADDFF;
+  /* --- Color: Tertiary (テストモードのティール) --- */
+  --md-sys-color-tertiary: #0C737A;             /* 白地 5.60 */
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #DFF3F4;
+  --md-sys-color-on-tertiary-container: #0A666D;/* container 上 5.83 */
 
   /* --- Color: Error --- */
-  --md-sys-color-error: #FFB4AB;
-  --md-sys-color-on-error: #690005;
-  --md-sys-color-error-container: #93000A;
-  --md-sys-color-on-error-container: #FFDAD6;
+  --md-sys-color-error: #C22E22;                /* 白文字を載せて 5.66 */
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-error-container: #FBEAE8;
+  --md-sys-color-on-error-container: #C22E22;   /* container 上 4.86 */
 
-  /* --- Color: Surface --- */
-  --md-sys-color-surface: #121826;
-  --md-sys-color-surface-dim: #0D1117;
-  --md-sys-color-surface-bright: #1E2A40;
-  --md-sys-color-surface-container-lowest: #0A0E18;
-  --md-sys-color-surface-container-low: #141C2E;
-  --md-sys-color-surface-container: #1A2440;
-  --md-sys-color-surface-container-high: #213052;
-  --md-sys-color-surface-container-highest: #2A3C64;
-  --md-sys-color-on-surface: #E2E4E8;
-  --md-sys-color-on-surface-variant: #8C929A;
-  --md-sys-color-outline: #4A5568;
-  --md-sys-color-outline-variant: #2D3748;
-  --md-sys-color-inverse-surface: #E2E4E8;
-  --md-sys-color-inverse-on-surface: #121826;
-  --md-sys-color-scrim: rgba(0, 0, 0, 0.6);
+  /* --- Color: Surface (トーナルランプ) --- */
+  --md-sys-color-surface: #FFFFFF;              /* カード・パネルの既定面 */
+  --md-sys-color-surface-dim: #EFF1F4;          /* ページ背景 */
+  --md-sys-color-surface-bright: #FFFFFF;
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #FAFBFC;
+  --md-sys-color-surface-container: #F7F8FA;    /* アプリバー・テーブルヘッダ */
+  --md-sys-color-surface-container-high: #EFF1F4; /* hover・chip */
+  --md-sys-color-surface-container-highest: #E7EAEF;
+  --md-sys-color-on-surface: #14161C;           /* 主要テキスト 18.08 */
+  --md-sys-color-on-surface-variant: #646B78;   /* 補助ラベル 4.74-5.36 */
+  --md-sys-color-outline: #646B78;              /* 境界が唯一の手がかりの要素 */
+  --md-sys-color-outline-variant: #E3E6EC;      /* 装飾的な罫線 */
+  --md-sys-color-inverse-surface: #14161C;
+  --md-sys-color-inverse-on-surface: #FFFFFF;
+  --md-sys-color-scrim: rgba(20, 22, 28, 0.32); /* 明地でダークの 0.6 は重すぎる */
 
-  /* --- Color: Semantic (status) --- */
-  --md-sys-color-success: #66BB6A;
-  --md-sys-color-on-success: #003300;
-  --md-sys-color-success-container: #1B3A1B;
-  --md-sys-color-warning: #FFA726;
-  --md-sys-color-on-warning: #3E2800;
-  --md-sys-color-warning-container: #4A3000;
-  --md-sys-color-info: #42A5F5;
+  /* --- Color: Semantic (status) ---
+   * 「インク」と「フィル」を分ける。ボタンはソリッド地＋白文字、
+   * バッジは soft フィル＋ on-*-container インク。 */
+  --md-sys-color-success: #0B7A54;              /* 白文字 5.35 */
+  --md-sys-color-on-success: #FFFFFF;
+  --md-sys-color-success-container: #E2F3EB;
+  --md-sys-color-on-success-container: #0B7A54; /* container 上 4.65 */
+  --md-sys-color-warning: #8C5A00;              /* 白文字 5.87 */
+  --md-sys-color-on-warning: #FFFFFF;
+  --md-sys-color-warning-container: #FAF0DC;
+  --md-sys-color-on-warning-container: #8C5A00; /* container 上 5.19 */
+  --md-sys-color-info: #1E48C8;
 
-  /* --- Color: Field (Canvas専用 — M3 標準色にないフィールド芝・グリッド色) --- */
-  --md-sys-color-field-turf: #0E3D10;
-  --md-sys-color-field-grid: #1D5A22;
+  /* --- インクの中間段階（本文）と無効テキスト --- */
+  --crane-ink-2: #555C6B;                       /* 本文。on-surface-variant で代用しない */
+  --crane-ink-disabled: #868E9C;                /* 無効コントロール専用 (WCAG 対象外) */
 
-  /* --- Color: Team (GC パネルのチームカラーボタン用) --- */
-  --md-sys-color-team-yellow: #C49000;
-  --md-sys-color-on-team-yellow: #1A1200;
-  --md-sys-color-team-blue: #1D4ED8;
-  --md-sys-color-on-team-blue: #FFFFFF;
+  /* --- チャート系列（線・塗り専用。軸ラベルと凡例の文字は --crane-chart-ink） --- */
+  --crane-chart-1: #5B4BE0;   /* Estimated */
+  --crane-chart-2: #00959F;   /* Vision / Mouse */
+  --crane-chart-3: #B02D6B;   /* Target / Command */
+  --crane-chart-4: #C07400;   /* Odometry / Gyro */
+  --crane-chart-5: #0B7A54;   /* 以下は ball-calibration の多系列用 */
+  --crane-chart-6: #C22E22;
+  --crane-chart-7: #6E4C9E;
+  --crane-chart-8: #1E48C8;
+  --crane-chart-9: #8C5A00;
+  --crane-chart-10: #4A5568;
+  --crane-chart-paper: #FFFFFF;
+  --crane-chart-plot: #FAFBFC;
+  --crane-chart-grid: #E3E6EC;
+  --crane-chart-zero: #CED3DC;
+  --crane-chart-ink: #555C6B;
+
+  /* --- Color: Team / Test（ライトなクローム上） ---
+   * --*-dot はフィールド描画用の明るい識別色。明地では 3:1 を満たさないので
+   * クローム上のドットには --crane-team-* の枠線を必ず添えること。 */
+  --crane-team-yellow: #8D6209;        /* soft 上 4.81 / 白文字 5.41 */
+  --crane-team-yellow-soft: #FBF1D8;
+  --crane-team-yellow-dot: #E0B21C;
+  --crane-team-blue: #1E48C8;          /* soft 上 6.37 */
+  --crane-team-blue-soft: #E7EDFD;
+  --crane-team-blue-dot: #4C7CF5;
+  --crane-test: #0C737A;
+  --crane-test-soft: #DFF3F4;
+
+  /* =======================================================================
+   * Field — Canvas 上のダーク描画専用。クロームの明暗とは独立に保つ。
+   *
+   * viewer/renderer/ThemeTokens.js はこの群「だけ」を読む。暗い芝の上に
+   * 描かれるため、クローム系トークン (--md-sys-color-on-surface 等) を
+   * 流用すると、クロームをライトにした瞬間に文字が芝へ溶けて消える。
+   * ======================================================================= */
+  --crane-field-turf: #12291B;          /* 芝 */
+  --crane-field-out: #0C1C13;           /* フィールド外周・レターボックス */
+  --crane-field-grid: #1B3A26;          /* 1m グリッド */
+  --crane-field-ink: #FFFFFF;           /* HUD 主テキスト (FSM) */
+  --crane-field-ink-muted: rgba(255, 255, 255, 0.62);     /* HUD 補助テキスト (planner・データなし) */
+  --crane-field-hud-accent: #A0C4FF;    /* 向き矢印・ドリブラ LED */
+  --crane-field-select: #7FE3FF;        /* フォーカスのハロー */
+  --crane-field-overlay-move: #3DD68C;  /* 移動モードの輪・ドリブル時の矢印 */
+  --crane-field-overlay-ball: #FF7A1A;  /* sim edit: ボール */
+  --crane-field-overlay-robot: #7FE3FF; /* sim edit: ロボット */
+  --crane-field-danger: #FF8A7A;        /* 警告バッジ(!)・レイテンシ超過 */
+  --crane-field-on-danger: #2A0806;
+  --crane-field-warn: #FFC44D;          /* 警告バッジ(V/T) */
+  --crane-field-on-warn: #2A2000;       /* #F9A825 に白文字は 1.9:1 で読めない */
+  --crane-field-crit: #C9A7FF;          /* 電圧 CRIT バッジ */
+  --crane-field-on-crit: #2A0A3A;
+  --crane-field-ok: rgba(255, 255, 255, 0.70);            /* レイテンシ正常 */
 
   /* --- Typography --- */
   --md-sys-typescale-font-family: 'Roboto', 'Noto Sans JP', system-ui, sans-serif;
-  --md-sys-typescale-mono-font-family: 'Roboto Mono', 'Courier New', monospace;
+  --md-sys-typescale-mono-font-family: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* --- Shape (M3E: more rounded, organic) --- */
   --md-sys-shape-none: 0;
@@ -82,11 +142,12 @@
 
   /* --- Elevation (dark theme shadows) --- */
   --md-sys-elevation-0: none;
-  --md-sys-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.15), 0 1px 2px 0 rgba(0,0,0,0.3);
-  --md-sys-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px 0 rgba(0,0,0,0.3);
-  --md-sys-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px 0 rgba(0,0,0,0.3);
-  --md-sys-elevation-4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px 0 rgba(0,0,0,0.3);
-  --md-sys-elevation-5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px 0 rgba(0,0,0,0.3);
+  /* C 案はフラット＋1px 枠。面の分離は影ではなく境界線で担保する。 */
+  --md-sys-elevation-1: 0 1px 2px rgba(20, 22, 28, 0.05);
+  --md-sys-elevation-2: 0 1px 3px rgba(20, 22, 28, 0.07);
+  --md-sys-elevation-3: 0 4px 12px rgba(20, 22, 28, 0.08);
+  --md-sys-elevation-4: 0 8px 20px rgba(20, 22, 28, 0.10);
+  --md-sys-elevation-5: 0 12px 28px rgba(20, 22, 28, 0.12);
 
   /* --- Spacing --- */
   --md-sys-spacing-xs: 4px;
@@ -122,7 +183,8 @@ html {
 
 body {
   font-family: var(--md-sys-typescale-font-family);
-  background-color: var(--md-sys-color-surface);
+  /* ページ地は surface-dim (#EFF1F4)、カード・パネルが surface (#FFFFFF)。 */
+  background-color: var(--md-sys-color-surface-dim);
   color: var(--md-sys-color-on-surface);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -271,6 +333,7 @@ a:hover {
 .m3-btn--tonal {
   background-color: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .m3-btn--tonal:hover {
@@ -370,6 +433,7 @@ a:hover {
   background-color: var(--md-sys-color-surface-container-low);
   color: var(--md-sys-color-on-surface);
   box-shadow: var(--md-sys-elevation-1);
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .m3-card--elevated:hover {
@@ -424,21 +488,22 @@ a:hover {
 .m3-badge--secondary {
   background-color: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .m3-badge--success {
-  background-color: var(--md-sys-color-success);
-  color: var(--md-sys-color-on-success);
+  background-color: var(--md-sys-color-success-container);
+  color: var(--md-sys-color-on-success-container);
 }
 
 .m3-badge--error {
-  background-color: var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error);
+  background-color: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
 }
 
 .m3-badge--warning {
-  background-color: var(--md-sys-color-warning);
-  color: var(--md-sys-color-on-warning);
+  background-color: var(--md-sys-color-warning-container);
+  color: var(--md-sys-color-on-warning-container);
 }
 
 
@@ -457,7 +522,7 @@ a:hover {
   text-transform: uppercase;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--md-sys-color-outline);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
   background-color: var(--md-sys-color-surface-container);
 }
 
@@ -473,7 +538,7 @@ a:hover {
 }
 
 .m3-data-table tbody tr:hover {
-  background-color: var(--md-sys-color-surface-container-low);
+  background-color: var(--md-sys-color-surface-container-high);
 }
 
 .m3-data-table tbody tr:last-child td {
@@ -645,7 +710,7 @@ details.m3-expansion .m3-expansion__body {
   font-family: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%238C929A'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23555C6B'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 4px center;
   background-size: 20px;
@@ -705,7 +770,7 @@ details.m3-expansion .m3-expansion__body {
 
 .m3-connection-dot.connected {
   background-color: var(--md-sys-color-success);
-  box-shadow: 0 0 8px var(--md-sys-color-success);
+  box-shadow: 0 0 0 3px var(--md-sys-color-success-container);
 }
 
 /* ===== OFFLINE BANNER ===== */
@@ -714,7 +779,7 @@ details.m3-expansion .m3-expansion__body {
   align-items: center;
   gap: var(--md-sys-spacing-sm);
   background-color: var(--md-sys-color-warning-container);
-  color: var(--md-sys-color-on-warning);
+  color: var(--md-sys-color-on-warning-container);
   padding: 10px var(--md-sys-spacing-lg);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -746,6 +811,7 @@ details.m3-expansion .m3-expansion__body {
   display: flex;
   flex-direction: column;
   box-shadow: var(--md-sys-elevation-4);
+  border-left: 1px solid var(--md-sys-color-outline-variant);
   transition: right var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized);
 }
 
@@ -817,7 +883,7 @@ details.m3-expansion .m3-expansion__body {
 }
 
 
-/* ===== SCROLLBAR (for dark theme) ===== */
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -828,12 +894,12 @@ details.m3-expansion .m3-expansion__body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--md-sys-color-surface-container-highest);
+  background: #CED3DC;
   border-radius: var(--md-sys-shape-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--md-sys-color-outline);
+  background: var(--md-sys-color-on-surface-variant);
 }
 
 

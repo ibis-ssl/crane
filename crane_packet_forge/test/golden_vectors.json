@@ -1,0 +1,111 @@
+{
+  "_comment": "robot_packet.h から生成した基準ベクタ。再生成は ros2 run crane_packet_forge dump_golden。手で編集しない",
+  "base": "neutral",
+  "vectors": [
+    {
+      "name": "neutral_defaults",
+      "fields": {},
+      "hex": "00007fff7fff7fff7fff00007fff7fff7fff0000000000037fff7fff000000007fff7fff7fff0000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "mode3_distinct",
+      "fields": {
+        "header": 0,
+        "check_counter": 137,
+        "vision_global_pos.x": 1.234,
+        "vision_global_pos.y": -2.3450000000000002,
+        "vision_global_theta": 0.75,
+        "target_global_theta": -1.25,
+        "target_global_pos.x": 3.456,
+        "target_global_pos.y": -4.5670000000000002,
+        "terminal_velocity": 0.78900000000000003,
+        "kick_power": 0.34999999999999998,
+        "dribble_power": 0.84999999999999998,
+        "acceleration_limit": 2.5,
+        "linear_velocity_limit": 3.25,
+        "angular_velocity_limit": 5.5,
+        "latency_time_ms": 300,
+        "elapsed_time_ms_since_last_vision": 421,
+        "control_mode": 3,
+        "polar.target_global_velocity_r": 1.75,
+        "polar.target_global_velocity_theta": -2.125,
+        "flags.is_vision_available": 1,
+        "flags.enable_chip": 1,
+        "flags.stop_emergency": 1
+      },
+      "hex": "008984d176d69e8d4d11071189c38cb1957b012c01a50b0386d577b2000000008d7f6e2883140000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "mode4_distinct",
+      "fields": {
+        "check_counter": 200,
+        "vision_global_pos.x": -5.5,
+        "vision_global_pos.y": 6.25,
+        "vision_global_theta": -3,
+        "target_global_theta": 3,
+        "target_global_pos.x": -1.5,
+        "target_global_pos.y": 2.75,
+        "terminal_velocity": 1.125,
+        "kick_power": 1,
+        "dribble_power": 0.050000000000000003,
+        "acceleration_limit": 8.75,
+        "linear_velocity_limit": 6.5,
+        "angular_velocity_limit": 12.25,
+        "latency_time_ms": 65535,
+        "elapsed_time_ms_since_last_vision": 501,
+        "control_mode": 4,
+        "position_target.terminal_velocity_x": -0.875,
+        "position_target.terminal_velocity_y": 1.625,
+        "flags.is_vision_available": 1
+      },
+      "hex": "00c86a83986905c4fa391401a22d9963afd9ffff01f501047c948658000000007a238abd84640000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "theta_range_probe",
+      "fields": {
+        "vision_global_theta": 1,
+        "target_global_theta": 1,
+        "control_mode": 3,
+        "polar.target_global_velocity_r": 1,
+        "polar.target_global_velocity_theta": 1
+      },
+      "hex": "00007fff7fffa8bda8bd00007fff7fff7fff00000000000383e783e7000000007fff7fff7fff0000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "clamp_positive",
+      "fields": {
+        "vision_global_pos.x": 100,
+        "vision_global_pos.y": 32.767000000000003,
+        "vision_global_theta": 6.2800000000000002,
+        "target_global_theta": 3.1415926535897931,
+        "target_global_pos.x": 32.767000000000003,
+        "target_global_pos.y": 40,
+        "terminal_velocity": 32.767000000000003,
+        "acceleration_limit": 32.767000000000003,
+        "linear_velocity_limit": 50,
+        "angular_velocity_limit": 32.767000000000003,
+        "polar.target_global_velocity_r": 32.767000000000003,
+        "polar.target_global_velocity_theta": 100
+      },
+      "hex": "0000fffefffefffefffe0000fffefffefffe000000000003fffefffe00000000fffefffefffe0000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "clamp_negative",
+      "fields": {
+        "vision_global_pos.x": -100,
+        "vision_global_pos.y": -32.767000000000003,
+        "vision_global_theta": -6.2800000000000002,
+        "target_global_theta": -3.1415926535897931,
+        "target_global_pos.x": -32.767000000000003,
+        "target_global_pos.y": -40,
+        "terminal_velocity": -32.767000000000003,
+        "acceleration_limit": -32.767000000000003,
+        "linear_velocity_limit": -50,
+        "angular_velocity_limit": -32.767000000000003,
+        "polar.target_global_velocity_r": -32.767000000000003,
+        "polar.target_global_velocity_theta": -100
+      },
+      "hex": "00000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

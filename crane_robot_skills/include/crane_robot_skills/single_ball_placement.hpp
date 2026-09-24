@@ -9,6 +9,7 @@
 
 #include <crane_geometry/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <crane_utils/time.hpp>
 #include <memory>
 
 #include "receive.hpp"
@@ -90,7 +91,7 @@ private:
     if (
       last_ball_sensor_active_time_.has_value() &&
       now.get_clock_type() == last_ball_sensor_active_time_->get_clock_type() &&
-      (now - *last_ball_sensor_active_time_).seconds() <= BALL_SENSOR_ACTIVE_TIMEOUT_SEC) {
+      !crane::isTimeout(*last_ball_sensor_active_time_, BALL_SENSOR_ACTIVE_TIMEOUT_SEC, now)) {
       auto clock = rclcpp::Clock(RCL_ROS_TIME).make_shared();
       RCLCPP_INFO_THROTTLE(
         rclcpp::get_logger("SingleBallPlacement"), *clock, 500,
@@ -101,8 +102,10 @@ private:
     rclcpp::Time vision_stamp(ball_info.vision.stamp, RCL_ROS_TIME);
     rclcpp::Time tracker_stamp(ball_info.tracker.stamp, RCL_ROS_TIME);
 
-    double vision_age = (vision_stamp.nanoseconds() > 0) ? (now - vision_stamp).seconds() : -1.0;
-    double tracker_age = (tracker_stamp.nanoseconds() > 0) ? (now - tracker_stamp).seconds() : -1.0;
+    double vision_age =
+      crane::isValidTime(vision_stamp) ? crane::getElapsedSec(vision_stamp, now) : -1.0;
+    double tracker_age =
+      crane::isValidTime(tracker_stamp) ? crane::getElapsedSec(tracker_stamp, now) : -1.0;
 
     Point vision_pos(ball_info.vision.pos.x, ball_info.vision.pos.y);
     Point tracker_pos(ball_info.tracker.pos.x, ball_info.tracker.pos.y);

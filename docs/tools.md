@@ -1,156 +1,39 @@
-# 開発ツールと設定
+# 開発・テスト
 
-このドキュメントでは、Craneプロジェクトの開発に役立つツールや設定について説明します。
+初回の取得・ビルドは[環境構築](setup.md)を参照してください。
 
-## コード品質ツール
+## 変更後の確認
 
-### 1. clang-format
-
-C++コードを自動フォーマットするためのツールです。プロジェクトのルートにある`.clang-format`ファイルに基づいてフォーマットされます。
-
-ROS 2環境では`ament_clang_format`コマンドを使用できます：
+以下は ROS ワークスペースルートで実行します。`crane_physics` は変更したパッケージに置き換えてください。共有APIを変更した場合は利用側もビルド・テストします。
 
 ```bash
-# 特定のファイルやディレクトリをフォーマット
-ament_clang_format --reformat <フォーマットしたいファイルかフォルダ>
-
-# 現在のディレクトリ以下をすべてフォーマット
-ament_clang_format --reformat .
+cd ~/ibis_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --packages-up-to crane_physics
+source install/local_setup.bash
+colcon test --packages-select crane_physics --event-handlers console_cohesion+
+colcon test-result --verbose
 ```
 
-### 2. ruff
+動作シナリオの検証は [シナリオテスト手順](https://github.com/ibis-ssl/crane/blob/develop/scenario_test/README.md)に従います。実行対象・補助コマンドは [Makefile](https://github.com/ibis-ssl/crane/blob/develop/Makefile)、CIの検証範囲は [workflows](https://github.com/ibis-ssl/crane/tree/develop/.github/workflows) が正本です。
 
-Pythonコードのリンターとフォーマッターです。pre-commitフックとして設定されています。
+## コミット前
 
-### 3. cpplint
-
-C++コードの静的解析ツールです。Googleのコーディング規約に基づいてコードをチェックします。
-
-## コミット前の自動チェック
-
-### pre-commit
-
-コミット前に自動でコードチェックとフォーマットを行うツールです。下記の手順でインストールして利用できます。
+pre-commit を導入し、リポジトリルートで実行します。
 
 ```bash
-# インストール
-sudo apt install -y python3-venv pipx
 pipx install pre-commit
-
-# Craneプロジェクトで設定
-cd ~/ibis_ws/src/crane
 pre-commit install
-
-# 手動で全ファイルに対して実行（初回実行時は時間がかかります）
-pre-commit run -a
+pre-commit run --files <変更したファイル>
+git diff --check
+git diff --cached
 ```
 
-現在の設定ファイルへのリンク（メインブランチ）：
-[.pre-commit-config.yaml](https://github.com/ibis-ssl/crane/blob/main/.pre-commit-config.yaml)
-または、リポジトリルートからの相対パス: `../.pre-commit-config.yaml` (ドキュメントファイルからの相対位置によります)
+フックはファイルを修正することがあるため、実行後の差分も確認します。全体検査は `pre-commit run --all-files`。チェック項目や書式は [.pre-commit-config.yaml](https://github.com/ibis-ssl/crane/blob/develop/.pre-commit-config.yaml) を参照してください。
 
-### pre-commitで実行される主なチェック
+## 調査の入口
 
-- **基本チェック**:
-  - JSON/TOML/XML/YAMLファイルの構文チェック
-  - マージ競合のチェック
-  - 秘密鍵の検出
-  - ファイル末尾の改行チェック
-  - 行末の空白チェック
-
-- **言語固有チェック**:
-  - C++: clang-format, cpplint
-  - Python: ruff (リンターとフォーマッター)
-  - シェルスクリプト: shellcheck, shfmt
-  - YAML: yamllint
-
-## SSL関連ツール
-
-### ssl-go-tools
-
-RoboCup SSL関連のGo言語製ツール集です。試合のログ記録やデータ解析に役立ちます。
-
-```bash
-# インストール
-sudo apt install -y golang-go
-go install github.com/RoboCup-SSL/ssl-go-tools/cmd/...@latest
-echo 'export PATH="$(go env GOPATH)/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-詳細は[GitHub リポジトリ](https://github.com/RoboCup-SSL/ssl-go-tools)を参照してください。
-
-#### ssl-auto-recorder
-
-Refereeの信号やビジョンデータを自動で記録するツールです。
-
-```bash
-# 基本的な使用方法 (実機モードのポート)
-ssl-auto-recorder -referee-address "224.5.23.1:10003" -vision-address "224.5.23.2:10006"
-
-# シミュレーションモードのポート
-ssl-auto-recorder -referee-address "224.5.23.1:11003" -vision-address "224.5.23.2:10020"
-
-# HTTPサーバーを立ち上げてログを提供
-ssl-auto-recorder -http-serve -http-port "8084"
-```
-
-主なオプションとプロジェクトでのデフォルト値：
-
-| オプション | 実機 (`sim:=false`) | シミュレーション (`sim:=true`) |
-|-----------|--------------------|----------------------------|
-| `-referee-address` | `224.5.23.1:10003` | `224.5.23.1:11003` |
-| `-vision-address` | `224.5.23.2:10006` | `224.5.23.2:10020` |
-| `-vision-tracker-address` | `224.5.23.2:10010` | `224.5.23.2:11010` |
-
-#### ssl-match-client
-
-試合の状態を表示するクライアントツールです。
-
-```bash
-ssl-match-client -address 224.5.23.1:11003
-```
-
-#### ssl-vision-tracker-tool
-
-Vision Tracker情報を表示するためのツールです。
-
-```bash
-ssl-vision-tracker-tool -tracker-address 224.5.23.2:10010
-```
-
-## VS Code拡張機能
-
-以下のVS Code拡張機能を使用すると開発効率が向上します：
-
-- [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) - C/C++のコード補完とデバッグ
-- [CMake](https://marketplace.visualstudio.com/items?itemName=twxs.cmake) - CMakeファイルのシンタックスハイライト
-- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) - Pythonのコード補完とデバッグ
-- [ROS](https://marketplace.visualstudio.com/items?itemName=ms-iot.vscode-ros) - ROS開発のサポート
-- [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) - YAMLファイルのサポート
-- [XML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-xml) - XMLファイルのサポート
-
-## コマンドライン便利ツール
-
-### colcon
-
-ROSパッケージのビルドツールです。以下のようなコマンドが便利です：
-
-```bash
-# 特定のパッケージのみビルド
-colcon build --symlink-install --packages-select crane_robot_skills
-
-# 依存関係のあるパッケージも含めてビルド
-colcon build --symlink-install --packages-up-to crane_robot_skills
-
-# 変更のあったパッケージのみビルド
-colcon build --symlink-install --packages-select-by-dep --packages-above crane_robot_skills
-```
-
-### rqt_graph
-
-実行中のROSノードとトピックの接続関係を視覚化します：
-
-```bash
-ros2 run rqt_graph rqt_graph
-```
+- ROSノードとトピックの接続: `ros2 run rqt_graph rqt_graph`
+- 起動後の異常: [診断](diagnostics.md)、[ネットワーク](network.md)
+- ログ解析: [crane_mcap_tools](https://github.com/ibis-ssl/crane/tree/develop/crane_mcap_tools)、[SSL公式ツール](https://github.com/RoboCup-SSL/ssl-go-tools)
+- 指令パケットの切り分け: [crane_packet_forge](https://github.com/ibis-ssl/crane/tree/develop/crane_packet_forge)（craneを経由せず任意のパケットを組み立てて送る。CLIとGUI）

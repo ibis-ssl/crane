@@ -14,7 +14,6 @@ export class Sparkline {
         this._canvas.height = Math.round(this._h * dpr);
         this._ctx = this._canvas.getContext('2d');
         this._ctx.scale(dpr, dpr);
-        this._dpr = dpr;
 
         container.appendChild(this._canvas);
     }
@@ -24,13 +23,14 @@ export class Sparkline {
         this._series = series.slice(0, 5);
     }
 
+    // tokens はクローム系（サイドバーのライト面に置くため）。
+    // フィールド系 (--crane-field-*) を渡してはいけない。
     render(tokens) {
         const ctx = this._ctx;
         const W = this._w, H = this._h;
         ctx.clearRect(0, 0, W, H);
 
-        // 背景
-        ctx.fillStyle = tokens?.bgDim ?? 'rgba(0,0,0,0.3)';
+        ctx.fillStyle = tokens?.surfaceContainer ?? 'rgba(0,0,0,0.04)';
         ctx.fillRect(0, 0, W, H);
 
         if (this._series.length === 0) return;
@@ -53,7 +53,7 @@ export class Sparkline {
         // ゼロ軸 (正負跨ぎ時のみ)
         if (minVal < 0 && maxVal > 0) {
             ctx.save();
-            ctx.strokeStyle = tokens?.hudTextMuted ?? 'rgba(200,200,200,0.2)';
+            ctx.strokeStyle = tokens?.outlineVariant ?? 'rgba(128,128,128,0.35)';
             ctx.lineWidth = 0.5;
             const zy = toY(0);
             ctx.beginPath();
@@ -63,7 +63,6 @@ export class Sparkline {
             ctx.restore();
         }
 
-        // 系列描画
         for (const s of this._series) {
             const data = s.data;
             if (!data || data.length < 2) continue;

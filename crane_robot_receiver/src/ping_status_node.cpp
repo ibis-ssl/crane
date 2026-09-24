@@ -42,6 +42,9 @@ private:
   {
     auto message = crane_msgs::msg::PingStatusArray();
     for (int id = 0; auto & ping : ping_statuses) {
+      if (!rclcpp::ok()) {
+        return;
+      }
       std::string command = "ping -c 1 -W 0.4 " + ping.first + " | grep 'time='";
       std::array<char, 128> buffer;
       std::string result;

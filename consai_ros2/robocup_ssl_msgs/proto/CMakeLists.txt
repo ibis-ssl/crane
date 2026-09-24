@@ -2,10 +2,6 @@
 
 # List all proto files
 set(PROTO_FILES
-  grSim_Commands.proto
-  grSim_Packet.proto
-  grSim_Replacement.proto
-  grSim_Robotstatus.proto
   ssl_gc_common.proto
   ssl_gc_game_event.proto
   ssl_gc_geometry.proto

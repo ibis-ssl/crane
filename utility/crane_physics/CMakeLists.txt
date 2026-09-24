@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_physics)
 
+# 既定を Release にする。CMAKE_BUILD_TYPE 未指定だと GCC は最適化なし（-O0）になり、
+# 経路計画のような毎周期の計算が桁違いに遅くなる。CI と docker は明示的に Release を
+# 指定しているので、これはローカルビルドを同じ条件に揃えるためのもの。
+# デバッグ時は -DCMAKE_BUILD_TYPE=Debug または RelWithDebInfo を明示する。
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -45,6 +53,18 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_travel_time test/test_travel_time.cpp)
   target_include_directories(test_travel_time PUBLIC include)
   target_link_libraries(test_travel_time Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_pass_kick test/test_pass_kick.cpp)
+  target_include_directories(test_pass_kick PUBLIC include)
+  target_link_libraries(test_pass_kick Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_pass_feasibility test/test_pass_feasibility.cpp)
+  target_include_directories(test_pass_feasibility PUBLIC include)
+  target_link_libraries(test_pass_feasibility Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_pass_rating_math test/test_pass_rating_math.cpp)
+  ament_auto_add_gtest(test_pass_interception test/test_pass_interception.cpp)
+  target_include_directories(test_pass_rating_math PUBLIC include)
 
   ament_auto_add_gtest(test_pid_controller test/test_pid_controller.cpp)
   target_include_directories(test_pid_controller PUBLIC include)
