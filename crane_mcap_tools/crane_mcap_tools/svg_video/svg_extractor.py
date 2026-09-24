@@ -49,10 +49,6 @@ class SvgExtractor:
 
         self._msg_types: dict[str, Any] = {}
 
-    def _get_message_type(self, type_name: str) -> Any:
-        """メッセージ型を取得（キャッシュあり）."""
-        return get_message_type(type_name, self._msg_types)
-
     def extract_from_mcap(
         self,
         mcap_path: str | Path,
@@ -111,7 +107,7 @@ class SvgExtractor:
                     break
 
                 if topic in [self.snapshot_topic, self.update_topic]:
-                    msg_type = self._get_message_type(topics_map[topic])
+                    msg_type = get_message_type(topics_map[topic], self._msg_types)
                     msg = deserialize_message(data, msg_type)
                     messages.append((timestamp, topic, msg))
 
