@@ -341,10 +341,6 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
     -> std::optional<SlackTimeResult>;
 
   [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
-    const Point & ball_origin, const Vector2 & ball_velocity, const RobotList & robots,
-    const SlackTimeConfig & config) -> std::vector<SlackTimeResult>;
-
-  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
     const RobotList & robots, const SlackTimeConfig & config) -> std::vector<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
