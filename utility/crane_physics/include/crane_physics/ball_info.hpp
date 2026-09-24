@@ -445,12 +445,6 @@ public:
     return getClosestPointAndDistance(position, trajectory);
   }
 
-  // 後方互換性エイリアス
-  [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
-  {
-    return getTrajectorySegmentByTime(time_horizon);
-  }
-
   // 状態遷移サポート付きボールシーケンス生成
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const
     -> std::vector<std::pair<Point, double>>
