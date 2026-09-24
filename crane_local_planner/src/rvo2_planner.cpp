@@ -105,8 +105,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
 
-  // friend robots -> 0~19
-  // enemy robots -> 20~39
   for (size_t i = 0; i < MAX_ROBOT_NUM * 2; i++) {
     rvo_sim->addAgent(RETIRED_AGENT_POS);
   }
@@ -568,9 +566,7 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
     addOrUpdatePlanningFactor(command, "RVO2PrefSpeed", formatPlanningDouble(pref_vel.norm()));
 
-    // 速度修正をトレースに記録（RVO2による修正）
     if (enable_velocity_plan_trace && !command.velocity_plan_trace.empty()) {
-      // RVO2による修正を記録
       if ((vel - pref_vel).norm() > 0.01) {  // 1cm/s以上の差がある場合のみ記録
         VelocityPlanTracker::addCorrection(command.velocity_plan_trace[0], "rvo2", pref_vel, vel);
       }
@@ -627,7 +623,7 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
       double move_angle = getAngle(vel);
       double angle_diff = getAngleDiff(robot->pose.theta, move_angle);
 
-      constexpr double ANGLE_THRESHOLD = deg2rad(15.0);  // 15度
+      constexpr double ANGLE_THRESHOLD = deg2rad(15.0);
       bool is_forward_or_backward =
         (std::abs(angle_diff) <= ANGLE_THRESHOLD) ||                 // 前方
         (std::abs(std::abs(angle_diff) - M_PI) <= ANGLE_THRESHOLD);  // 後方
@@ -674,12 +670,10 @@ auto RVO2Planner::adjustForFieldBoundary(
   field_box.min_corner() << -max_x, -max_y;
   field_box.max_corner() << max_x, max_y;
 
-  // 目標位置がフィールド内ならそのまま
   if (isInBox(field_box, target_pos)) {
     return;
   }
 
-  // 現在位置から目標位置への線分
   Segment move_line(current_pos, target_pos);
 
   Segment top_edge(Point(-max_x, max_y), Point(max_x, max_y));
@@ -736,7 +730,6 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
           target_pos += (target_pos - current_pos).normalized() * 0.05;  // 5cmずつ離れていく
         }
       } else if (isInBox(penalty_area, target_pos, penalty_area_offset)) {
-        // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
         if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
           target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
         }
@@ -764,7 +757,6 @@ auto RVO2Planner::adjustForPenaltyAreaAvoidance(
       }
     };
 
-    // 自陣と敵陣の両方のペナルティエリアを回避
     avoidPenaltyArea(world_model->getOurPenaltyArea(), world_model->getOurGoalCenter());
     avoidPenaltyArea(world_model->getTheirPenaltyArea(), world_model->getTheirGoalCenter());
   }

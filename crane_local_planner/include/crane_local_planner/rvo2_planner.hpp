@@ -172,7 +172,6 @@ private:
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
 
-  // 速度計画トレース有効化フラグ
   bool enable_velocity_plan_trace = false;
 };
 }  // namespace crane

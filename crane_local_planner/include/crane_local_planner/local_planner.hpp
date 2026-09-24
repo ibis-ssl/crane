@@ -69,7 +69,6 @@ public:
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
 
-    // 練習用モードの設定
     bool half_court_practice_mode =
       crane::get_or_declare_parameter(this, "half_court_practice_mode", false);
 

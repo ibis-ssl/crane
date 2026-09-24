@@ -65,7 +65,6 @@ auto LocalPlannerComponent::processLatestCommands() -> void
       }
     }
 
-    // 位置指令を検証して処理
     // 【座標系の設計】
     // - 位置・速度のベクトル成分(x,y)：フィールド座標系のまま（theta_offset未適用）
     // - 角度(theta)：theta_offsetを適用（half_court_practice_mode対応）
