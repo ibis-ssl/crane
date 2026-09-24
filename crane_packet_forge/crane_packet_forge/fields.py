@@ -274,7 +274,7 @@ FIELDS: tuple[FieldDef, ...] = (
         ui_max=65535,
         ui_step=1,
         size=2,
-        note="crane は uint8 へキャストして送るバグがあり 256ms 以上が折り返す。ここは素の uint16。",
+        note="素の uint16。crane は RobotCommand.latency_ms を 0〜65535 に寄せて送る。",
     ),
     FieldDef(
         "elapsed_time_ms_since_last_vision",

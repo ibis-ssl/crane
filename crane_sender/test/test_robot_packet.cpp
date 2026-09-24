@@ -7,7 +7,10 @@
 #include <crane_sender/robot_packet.h>
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <crane_sender/latency_time.hpp>
 #include <random>
+#include <utility>
 
 TEST(RobotPacket, EncodeDecode)
 {
@@ -217,6 +220,26 @@ TEST(RobotPacket, ModeArgsUnionMustNotBeDecodedWithoutControlMode)
   // 終端速度ベクトルが「極座標の r / theta」として無言で読まれてしまう
   EXPECT_NEAR(1.25, misread.mode_args.polar_velocity.target_global_velocity_r, MAX_ERROR_32);
   EXPECT_NEAR(-0.75, misread.mode_args.polar_velocity.target_global_velocity_theta, MAX_ERROR_32);
+}
+
+// latency_ms から送信バイトまで。255 を超える値が 8bit に切り詰められないこと
+TEST(RobotPacket, LatencyTimeBytes)
+{
+  const auto serialize_latency = [](float latency_ms) {
+    RobotCommandV2 packet{};
+    packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+    packet.latency_time_ms = crane::toLatencyTimeMs(latency_ms);
+    RobotCommandSerializedV2 serialized{};
+    RobotCommandSerializedV2_serialize(&serialized, &packet);
+    return std::make_pair(
+      serialized.data[LATENCY_TIME_MS_HIGH], serialized.data[LATENCY_TIME_MS_LOW]);
+  };
+
+  EXPECT_EQ(serialize_latency(300.0f), std::make_pair(uint8_t{0x01}, uint8_t{0x2C}));
+  EXPECT_EQ(serialize_latency(65535.0f), std::make_pair(uint8_t{0xFF}, uint8_t{0xFF}));
+  EXPECT_EQ(serialize_latency(70000.0f), std::make_pair(uint8_t{0xFF}, uint8_t{0xFF}));
+  EXPECT_EQ(serialize_latency(-1.0f), std::make_pair(uint8_t{0x00}, uint8_t{0x00}));
+  EXPECT_EQ(serialize_latency(NAN), std::make_pair(uint8_t{0x00}, uint8_t{0x00}));
 }
 
 int main(int argc, char ** argv)

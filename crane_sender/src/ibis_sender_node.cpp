@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "crane_sender/latency_time.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
@@ -216,7 +217,7 @@ private:
         : selected_acceleration;
     packet.linear_velocity_limit = resolved_max_velocity;
     packet.angular_velocity_limit = command.omega_limit;
-    packet.latency_time_ms = static_cast<uint16_t>(command.latency_ms);
+    packet.latency_time_ms = toLatencyTimeMs(command.latency_ms);
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
     // ROS 側とワイヤ側で control_mode の番号が異なる点に注意（意図的な対応付け）:
