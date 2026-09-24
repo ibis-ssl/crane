@@ -21,13 +21,6 @@ class VisibilityGraphPlanner : public LocalPlannerBase
 {
 public:
   explicit VisibilityGraphPlanner(rclcpp::Node & node);
-  /**
-  * @brief 指令値の計算を行う
-  *
-  * @param msg 移動指令値
-  * @param theta_offset
-  * @return crane_msgs::msg::RobotCommands 計算後の指令値
-  */
   auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
     -> crane_msgs::msg::RobotCommands override;
 

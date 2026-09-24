@@ -195,10 +195,8 @@ auto VisibilityGraphPlanner::selectPath(
   }
   state.escaping = false;
 
-  // 前回経路が、回避動作ではない(valid == true) & 目標位置が変わっていない場合 保持経路再利用
   std::vector<Point> retained;
   if (state.valid && (goal - state.goal).norm() <= goal_change_threshold_) {
-    // 一番近い経路上の点を求めて、目標位置までの経路を切り出す。
     double cross_track_distance = std::numeric_limits<double>::infinity();
     for (size_t i = 1; i < state.path.size(); ++i) {
       cross_track_distance = std::min(
@@ -210,7 +208,6 @@ auto VisibilityGraphPlanner::selectPath(
       retained.back() = goal;
     }
 
-    // 経路が2点未満、または次の移動先と現在位置が離れているときは経路を破棄
     if (
       retained.size() < 2 || cross_track_distance > replan_cross_track_distance_ ||
       !visibility_graph_.isPathVisible(retained, obstacles)) {
@@ -299,7 +296,6 @@ auto VisibilityGraphPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand
   const auto path = selectPath(command.robot_id, current, goal, obstacles);
   const double remaining_distance = visibility_graph::pathLength(path);
 
-  // 次の移動先をサブゴールとして設定する。サブゴールまでの経路が干渉する場合は、経路上の中継点をサブゴールとする。
   const auto subgoal_choice = visibility_graph::selectSubgoal(
     visibility_graph_, current, path, obstacles, lookahead_distance_, min_subgoal_distance_);
   const Point subgoal = subgoal_choice.point;
