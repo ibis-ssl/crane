@@ -120,7 +120,6 @@ void SenderBase::callback(const VelocityCommandsMsg & msg)
   // 実際に送った内容を残す。hasUpdated() は world model を一度でも受信したかの判定なので、
   // 起動直後を除けば /robot_commands の 1 フレームに /sent_robot_commands が 1 メッセージ対応する。
   // 送信の成否は各サブクラスが planning_factors に残す（ibis は SenderSent）。
-  // 2026-09-20 の走行ログでは 3 番機が指令中に 0.8〜1.4 秒停止した原因を bag から判別できなかった。
   preprocessed_msg.header.stamp = now;
   sent_commands_pub_->publish(preprocessed_msg);
 }
