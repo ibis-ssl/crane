@@ -253,7 +253,7 @@ inline auto getOptimalAssignments(
     }
   }
 
-  // ダミーロボットのコストは0に設定（実際には使用されない）
+  // ダミーロボットのコストは大きな値に設定（実際には使用されない）
   for (size_t i = num_robots; i < matrix_size; ++i) {
     for (size_t j = 0; j < matrix_size; ++j) {
       cost[i][j] = 1e9;
