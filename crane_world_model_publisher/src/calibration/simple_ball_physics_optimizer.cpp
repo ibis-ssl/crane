@@ -14,6 +14,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <regex>
 
+#include "crane_world_model_publisher/calibration/fixed_deceleration_fit.hpp"
+
 namespace crane
 {
 
@@ -325,31 +327,11 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
     current_iteration++;
 
     for (const auto & trajectory : all_trajectories) {
-      if (trajectory.time_points.size() < config_.min_data_points_per_trajectory) continue;
-
-      // 固定減速度を仮定した初速度推定（v(t) = v0 - decel * t）
-      // 傾きを -decel に固定したモデルの最適 v0 は残差 (v + decel * t) の平均で与えられる。
-      // 自由回帰の切片を使うと傾きが 1 に固定されず v0 が候補 decel と無関係な定数になり、
-      // 各 decel 候補の RMSE 評価が歪んでグローバル減速度選定がバイアスするため、
-      // 制約付き（固定傾き）推定 v0 = mean(v + decel * t) を用いる。
-      double v0_sum = 0.0;
-      for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-        v0_sum += trajectory.velocities[i] + decel * trajectory.time_points[i];
-      }
-      double estimated_v0 = v0_sum / trajectory.time_points.size();
-
-      // 固定減速度モデルでの予測誤差を計算
-      double rmse = 0.0;
-      for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-        double predicted_velocity = estimated_v0 - decel * trajectory.time_points[i];
-        double error = trajectory.velocities[i] - predicted_velocity;
-        rmse += error * error;
-      }
-      rmse = std::sqrt(rmse / trajectory.time_points.size());
-
-      // 品質フィルタリング
-      if (estimated_v0 > 0.1 && rmse < 2.0) {  // 合理的な初速度と誤差
-        total_rmse += rmse;
+      const auto fit = fitFixedDeceleration(
+        trajectory.time_points, trajectory.velocities, decel,
+        config_.min_data_points_per_trajectory);
+      if (fit.accepted) {
+        total_rmse += fit.rmse;
         valid_trajectories++;
       }
     }
