@@ -17,9 +17,6 @@
 #include <crane_msgs/msg/position_control_config.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_utils/parameter.hpp>
-#include <format>
-#include <iomanip>
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
