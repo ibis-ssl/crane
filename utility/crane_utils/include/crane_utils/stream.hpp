@@ -23,7 +23,6 @@ inline auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::os
       // uint8_t の場合は int にキャストして数字表示
       os << static_cast<int>(vec[i]);
     } else {
-      // それ以外の場合はそのまま出力
       os << vec[i];
     }
 
