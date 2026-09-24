@@ -175,12 +175,7 @@ auto RobotData::communicationDiagnosticCallback(
 
     stat.summary(level, message);
     stat.add("ping_ms", ping->ping_ms);
-
-    if (level > 0) {
-      updateErrorMap("communication", message, level, now_time);
-    } else {
-      removeError("communication");
-    }
+    updateErrorMap("communication", message, level, now_time);
   } else {
     if (sim_mode) {
       std::string message = "Simulation mode (no ping data)";

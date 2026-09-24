@@ -371,7 +371,6 @@ public:
     io_thread_ = std::thread([this]() { io_context_.run(); });
 
     using std::chrono::operator""ms;
-    using std::chrono::operator""s;
 
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
@@ -382,7 +381,6 @@ public:
         if (!robot_feedback) continue;
 
         // 古いデータは入れない(100msより古いデータはVisionより価値が薄い可能性が高い)
-        using std::chrono::operator""ms;
         if ((now - robot_feedback->received_stamp) >= 100ms) continue;
 
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
