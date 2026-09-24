@@ -20,6 +20,8 @@
 #include <set>
 #include <sstream>
 
+#include "crane_world_model_publisher/calibration/vision_ball_velocity.hpp"
+
 namespace crane
 {
 
@@ -84,53 +86,21 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
           // Vision生データから速度を時間微分で計算（スパイク対策強化版）
           auto current_time = rclcpp::Time(bag_message->recv_timestamp);
           if (!ball_data.empty()) {
-            auto & [prev_time, prev_ball] = ball_data.back();
-            double dt = (current_time - prev_time).seconds();
-
-            // 適切な時間間隔チェック（動的調整）
-            const double min_dt = 1e-5;  // より厳格な最小時間間隔
-            const double max_dt = 0.2;   // 最大時間間隔（200ms）
-
-            if (dt >= min_dt && dt <= max_dt) {
-              // 速度差分は両端点の平滑化状態を一致させるため生の位置同士で計算する。
-              // （現在位置のみ平滑化すると過去側へ引っ張られ、前回の生位置との差分に
-              //   バイアス（符号反転・過小評価）が入り、キック検出に影響するため）
-              Point position_diff = vision_ball.pos - prev_ball.pos;
-              double pos_z_diff = vision_ball.pos_z - prev_ball.pos_z;
-
-              Point raw_velocity = position_diff / dt;
-              double raw_velocity_z = pos_z_diff / dt;
-
+            const auto & [prev_time, prev_ball] = ball_data.back();
+            const double dt = (current_time - prev_time).seconds();
+            const auto raw_velocity =
+              calibration::computeVisionVelocity(ball_data, vision_ball, dt);
+            if (raw_velocity) {
               // 速度妥当性チェックと外れ値除去
-              auto validated_velocity = validateAndFilterVelocity(ball_data, raw_velocity, dt);
+              auto validated_velocity = validateAndFilterVelocity(ball_data, raw_velocity->vel, dt);
               auto validated_velocity_z =
-                validateAndFilterVelocityScalar(ball_data, raw_velocity_z, dt);
+                validateAndFilterVelocityScalar(ball_data, raw_velocity->vel_z, dt);
 
               vision_ball.vel = validated_velocity.first ? validated_velocity.second : Point(0, 0);
               vision_ball.vel_z = validated_velocity_z.first ? validated_velocity_z.second : 0.0;
-
-              // 速度から状態を推定
-              double speed = vision_ball.vel.norm();
-              if (speed < 0.05) {
-                vision_ball.state = Ball::State::STOPPED;
-              } else if (vision_ball.pos_z > 0.02 || std::abs(vision_ball.vel_z) > 0.1) {
-                vision_ball.state = Ball::State::FLYING;
-              } else {
-                vision_ball.state = Ball::State::ROLLING;
-              }
+              vision_ball.state = calibration::classifyBallState(vision_ball);
             } else {
-              // 不適切な時間間隔の場合は前回の速度を維持または停止状態
-              if (dt > max_dt) {
-                // 長時間のギャップ後は停止状態とする
-                vision_ball.vel = Point(0, 0);
-                vision_ball.vel_z = 0;
-                vision_ball.state = Ball::State::STOPPED;
-              } else {
-                // 短すぎる時間間隔の場合は前回速度を維持
-                vision_ball.vel = prev_ball.vel;
-                vision_ball.vel_z = prev_ball.vel_z;
-                vision_ball.state = prev_ball.state;
-              }
+              calibration::holdVelocityForInvalidDt(prev_ball, dt, vision_ball);
             }
           } else {
             // 最初のデータポイント
