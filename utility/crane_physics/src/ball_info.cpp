@@ -339,14 +339,10 @@ auto Ball::ParabolicPhysics::getGroundIntersection() const -> std::pair<Point, d
   double t1 = (-b + sqrt_discriminant) / (2 * a);
   double t2 = (-b - sqrt_discriminant) / (2 * a);
 
-  double landing_time;
-  if (t1 > 1e-6 && t2 > 1e-6) {
-    landing_time = std::min(t1, t2);
-  } else if (t1 > 1e-6) {
-    landing_time = t1;
-  } else if (t2 > 1e-6) {
-    landing_time = t2;
-  } else {
+  // 大きい方の根が下降して地面に達する時刻。小さい方は z0 < 0 から上昇して地面を通過する時刻
+  // （BallPhysicsModel::getFlyingLandingTime と同じ選び方）
+  const double landing_time = std::max(t1, t2);
+  if (landing_time <= 1e-6) {
     return {Point(initial_position_.x(), initial_position_.y()), 0.0};
   }
 
@@ -487,15 +483,9 @@ Ball::ParabolicPhysics::Point3DStamped Ball::ParabolicPhysics::getGroundPoint()
   double t1 = (-b + sqrt_discriminant) / (2 * a);
   double t2 = (-b - sqrt_discriminant) / (2 * a);
 
-  // 正の時間で最初に地面に到達する時間を選択
-  double landing_time;
-  if (t1 > 1e-6 && t2 > 1e-6) {
-    landing_time = std::min(t1, t2);
-  } else if (t1 > 1e-6) {
-    landing_time = t1;
-  } else if (t2 > 1e-6) {
-    landing_time = t2;
-  } else {
+  // 大きい方の根が下降して地面に達する時刻（getGroundIntersection と同じ選び方）
+  const double landing_time = std::max(t1, t2);
+  if (landing_time <= 1e-6) {
     // 両方とも負または零の場合、既に地面より下にいる
     return {initial_position_, 0.0};
   }

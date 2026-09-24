@@ -170,6 +170,22 @@ TEST_F(BallParabolicPhysicsTest, GetGroundPointNoGroundImpact)
   EXPECT_NEAR(ground_point.position.z(), expected_z, 0.1);
 }
 
+TEST_F(BallParabolicPhysicsTest, GroundPointRisingFromBelowGroundUsesDescendingRoot)
+{
+  // 根は約 0.005 秒（上昇中の地面通過）と約 0.403 秒（下降して着地）。着地は後者
+  auto ball = createBall(Point3D(0.0, 0.0, -0.01), Point3D(1.0, 0.0, 2.0));
+  auto physics = ball.getParabolicPhysics();
+  const double expected_time = (2.0 + std::sqrt(4.0 - 2.0 * 9.81 * 0.01)) / 9.81;
+
+  auto [landing_pos, landing_time] = physics.getGroundIntersection();
+  EXPECT_NEAR(landing_time, expected_time, 1e-9);
+  EXPECT_NEAR(landing_pos.x(), expected_time, 1e-9);
+
+  auto ground_point = physics.getGroundPoint();
+  EXPECT_NEAR(ground_point.time, expected_time, 1e-9);
+  EXPECT_NEAR(ground_point.position.x(), expected_time, 1e-9);
+}
+
 TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityInsufficientData)
 {
   // データが不十分な場合のテスト
