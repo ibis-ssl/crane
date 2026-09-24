@@ -44,11 +44,9 @@ auto RobotAllocator::allocate(
 
   const auto & session_capacities = session_capacities_opt.value();
 
-  // 前回のプランナーリストを保存し、新しいリストをクリア
   auto prev_available_planners = session_registry_->getAllPlanners();
   session_registry_->clear();
 
-  // SessionRequirementリストを構築
   std::vector<SessionRequirement> requirements;
   int priority = 0;
   for (const auto & session_capacity : session_capacities) {
@@ -56,7 +54,6 @@ auto RobotAllocator::allocate(
       continue;
     }
 
-    // プランナー生成
     auto session = session_registry_->getOrCreatePlanner(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
@@ -99,10 +96,8 @@ auto RobotAllocator::allocate(
       }
     }
 
-    // 適性関数を取得
     auto suitability_func = session->getRobotSuitabilityFunc();
 
-    // 動的ロボット数を取得してクランプ
     int desired = session->getDesiredRobotNumber(session_capacity.max_robots);
     int effective_max = std::min(desired, session_capacity.max_robots);
 
@@ -112,11 +107,9 @@ auto RobotAllocator::allocate(
       suitability_func, session_capacity.fixed_robots);
   }
 
-  // グリーディ方式でロボットを割当
   auto allocation = allocateRobotsGreedy(
     requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
 
-  // 割当結果を適用
   crane_msgs::msg::RobotSelectResults results;
   for (const auto & [allocated_name, robot_ids] : allocation) {
     // session_capacitiesを1回だけ検索（フォールバック生成とmin/max取得の両方で使い回す）
@@ -124,7 +117,6 @@ auto RobotAllocator::allocate(
       session_capacities.begin(), session_capacities.end(),
       [&allocated_name](const auto & s) { return s.session_name == allocated_name; });
 
-    // Sessionを取得または再生成
     auto session_it = std::find_if(
       session_registry_->getAllPlanners().begin(), session_registry_->getAllPlanners().end(),
       [&allocated_name](const auto & t) { return t->name == allocated_name; });
@@ -139,11 +131,9 @@ auto RobotAllocator::allocate(
     }
 
     if (session) {
-      // ロボット割当をSessionに反映
       // GlobalRobotAllocatorが選択したロボットを直接設定（getSelectedRobotsをバイパス）
       session->setAllocatedRobots(robot_ids);
 
-      // レジストリに追加
       if (session_it == session_registry_->getAllPlanners().end()) {
         session_registry_->addPlanner(session);
       }
@@ -158,7 +148,6 @@ auto RobotAllocator::allocate(
       // 次フレームの順序安定化のために割当順序を保存する
       prev_allocation_order_.insert_or_assign(allocated_name, robot_ids);
 
-      // RobotSelectResult を構築
       crane_msgs::msg::RobotSelectResult result;
       result.name = allocated_name;
 
