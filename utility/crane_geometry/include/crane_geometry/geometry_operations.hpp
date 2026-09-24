@@ -236,6 +236,12 @@ inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> s
   return circle;
 }
 
+/**
+ * @brief 線分を separated_num + 1 等分する、端点を含まない separated_num 個の内分点を返す
+ *
+ * 点は始点 segment1.first 側から終点 segment1.second 側へ順に並ぶ。
+ * separated_num が 0 以下のときと、線分の長さが 0 のときは空配列を返す。
+ */
 inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> std::vector<Point>
 {
   std::vector<Point> points;
