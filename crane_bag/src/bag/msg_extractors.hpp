@@ -14,7 +14,7 @@
 /// rosx_introspection の FlatMessage からプレーン構造体へ変換する関数群。
 /// FlatMessage はトピック名をルートとしたフィールドパス→値のフラットなkey-valueリスト。
 /// 例: "/world_model/ball_info/position/x" → 1.23
-/// 配列要素は "/topic/array_field.N/subfield" の形式（N はゼロ始まりのインデックス）。
+/// 配列要素は "/topic/array_field[N]/subfield" の形式（N はゼロ始まりのインデックス）。
 
 namespace crane::bag
 {

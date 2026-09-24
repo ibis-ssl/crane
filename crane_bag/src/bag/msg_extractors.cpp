@@ -43,7 +43,6 @@ struct FlatValueMap
     }
   }
 
-  // 完全パスで各型の値を返す
   double get_d_exact(const std::string & path, double def = 0.0) const
   {
     auto it = numeric.find(path);
@@ -67,7 +66,6 @@ struct FlatValueMap
     return it != text.end() ? it->second : def;
   }
 
-  // keys を順に検索し最初に見つかった非ゼロ値を返す
   std::optional<double> find_first_nonzero(std::initializer_list<std::string> keys) const
   {
     for (const auto & k : keys) {
@@ -129,14 +127,12 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
 
   WorldModel wm;
 
-  // ball_info
   wm.ball_info.position.x = m.get_d_exact(p + "/ball_info/position/x");
   wm.ball_info.position.y = m.get_d_exact(p + "/ball_info/position/y");
   wm.ball_info.position.z = m.get_d_exact(p + "/ball_info/position/z");
   wm.ball_info.velocity.x = m.get_d_exact(p + "/ball_info/velocity/x");
   wm.ball_info.velocity.y = m.get_d_exact(p + "/ball_info/velocity/y");
 
-  // field_info
   wm.field_info.x = m.get_d_exact(p + "/field_info/x");
   wm.field_info.y = m.get_d_exact(p + "/field_info/y");
 
@@ -144,7 +140,6 @@ WorldModel extract_world_model(const RosMsgParser::FlatMessage & flat)
   wm.goal_size.x = m.get_d_exact(p + "/goal_size/x");
   wm.goal_size.y = m.get_d_exact(p + "/goal_size/y");
 
-  // is_yellow
   wm.is_yellow = m.get_d_exact(p + "/is_yellow") != 0.0;
 
   // on_positive_half（自陣が +x 側か）
@@ -307,8 +302,8 @@ RobotSelectResults extract_robot_select_results(const RosMsgParser::FlatMessage 
     size_t n_robots = m.count_array(robots_prefix);
     r.selected_robots.resize(n_robots);
     for (size_t j = 0; j < n_robots; ++j) {
-      // selected_robots の要素はプリミティブ (uint8) → "selected_robots.j" にサブフィールドなし
-      // rosx_introspectionはプリミティブ配列要素を "array.j" として格納する
+      // selected_robots の要素はプリミティブ (uint8) なのでサブフィールドを持たず、
+      // "selected_robots[j]" がそのままキーになる
       const std::string elem_key = robots_prefix + "[" + std::to_string(j) + "]";
       auto it = m.numeric.find(elem_key);
       r.selected_robots[j] = (it != m.numeric.end()) ? static_cast<uint8_t>(it->second) : 0;
@@ -361,7 +356,6 @@ Referee extract_referee(const RosMsgParser::FlatMessage & flat)
   ref.designated_position_y = m.get_f(p + "/designated_position/y");
   ref.next_command_value = m.get_i32(p + "/next_command/value");
 
-  // game_events
   const std::string ge_prefix = p + "/game_events";
   size_t n_ge = m.count_array(ge_prefix);
   ref.game_events.resize(n_ge);

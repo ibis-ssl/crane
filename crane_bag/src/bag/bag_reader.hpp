@@ -90,7 +90,7 @@ inline std::pair<int64_t, int64_t> make_ns_range(
 /// 巨大な /world_model 等の無駄な展開を避ける。
 struct ReadOptions
 {
-  /// デシリアライズ対象トピック。空 = 既存の全デフォルトターゲット（後方互換）。
+  /// デシリアライズ対象トピック。空 = 全デフォルトターゲット。
   std::unordered_set<std::string> topics;
 
   /// 相対秒の時間範囲フィルタ。
