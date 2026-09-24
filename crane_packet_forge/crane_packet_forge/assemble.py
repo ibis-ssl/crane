@@ -22,9 +22,8 @@ from . import fields as F
 from . import layout as L
 from .spec import BASE_NEUTRAL, PacketSpec
 
-# base=neutral の既定値。robot_bench の build_command と同じ発想で、
-# 2 バイトフィールドには 0.0 を「符号化して」入れる。生ゼロのままだと
-# 0x0000 は -range（-32.767 m/s 等）を意味してしまう。
+# base=neutral の既定値。2 バイトフィールドには 0.0 を「符号化して」入れる。
+# 生ゼロのままだと 0x0000 は -range（-32.767 m/s 等）を意味してしまう。
 NEUTRAL_DEFAULTS: dict[str, Any] = {}
 for _f in F.ALL_FIELDS:
     if _f.kind is F.FLAG:

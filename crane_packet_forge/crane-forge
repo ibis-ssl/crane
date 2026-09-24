@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ワークスペースを source していなくても動く入口（robot_bench の ./bench 相当）。
+# ワークスペースを source していなくても動く入口。
 # パッケージのあるディレクトリを PYTHONPATH に足して cli を呼ぶだけ。
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

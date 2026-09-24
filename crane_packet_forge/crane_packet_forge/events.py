@@ -6,8 +6,7 @@
 
 """イベント出力。人間向けの 1 行と、機械向けの JSONL を同じ場所から出す。
 
-robot_bench は JSONL をファイル (--log) にしか出せず、stdout は常に人間向けだった。
-エージェントから使うときに困るので、ここでは --json で stdout 自体を JSONL にする。
+エージェントから使えるように、--json では stdout 自体を JSONL にする。
 """
 
 from __future__ import annotations
