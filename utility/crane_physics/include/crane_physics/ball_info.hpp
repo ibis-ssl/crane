@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-// 必要な物理モデルクラスのインクルード
 namespace crane
 {
 class BallPhysicsModel;
@@ -195,7 +194,7 @@ struct Ball
         return landing_time;
       }
     }
-    return std::nullopt;  // フォールバック
+    return std::nullopt;
   }
 
   [[nodiscard]] auto getStopTime() const -> double;
@@ -225,7 +224,6 @@ private:
     Point to_target = target_position - pos;
     Point ball_direction = vel.normalized();
 
-    // 目標をボールの軌道線に投影
     double projection_length = to_target.dot(ball_direction);
 
     // 投影が負の場合、最近点は現在位置
@@ -233,7 +231,6 @@ private:
       return std::make_optional(0.0);
     }
 
-    // 投影された距離に到達する時間を取得
     return getRollingTimeToReachDistance(projection_length);
   }
 
@@ -249,7 +246,7 @@ private:
     double best_time = 0.0;
 
     auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-    constexpr double time_step = 0.01;  // 10ms間隔
+    constexpr double time_step = 0.01;
 
     for (double t = 0.0; t <= landing_time; t += time_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -265,7 +262,7 @@ private:
     // 最適時間周辺でより小さなステップで結果を精密化
     double start_time = std::max(0.0, best_time - time_step);
     double end_time = std::min(landing_time, best_time + time_step);
-    constexpr double fine_step = 0.001;  // 精密化のための1ms間隔
+    constexpr double fine_step = 0.001;
 
     for (double t = start_time; t <= end_time; t += fine_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -310,7 +307,6 @@ private:
         for (int iter = 0; iter < 100; ++iter) {
           double t_mid = (t_min + t_max) / 2.0;
 
-          // t_midでの累積距離を計算
           double cumulative_distance = 0.0;
           if (t_mid <= landing_time) {
             // まだ飛行中 - 3D軌道距離を計算
@@ -333,7 +329,6 @@ private:
           }
         }
 
-        // 最良の近似値を返す
         return (t_min + t_max) / 2.0;
       }
     }
@@ -380,12 +375,10 @@ public:
     Point end_point = Point::Zero();
     switch (state) {
       case State::STOPPED:
-        // 停止しているボールについて、現在位置にゼロ長セグメントを作成
         end_point = pos;
         break;
 
       case State::ROLLING:
-        // 転がりボールについて、物理対応予測を使用
         end_point = getPredictedPosition(time_horizon);
         break;
 
@@ -413,7 +406,6 @@ public:
         break;
 
       case State::ROLLING:
-        // 指定距離を移動するのに必要な時間を計算
         if (auto time_to_distance = getTimeToTravelDistance(distance)) {
           end_point = getPredictedPosition(*time_to_distance);
         } else {
@@ -469,20 +461,16 @@ public:
       return sequence;
     }
 
-    // 時間シーケンスを生成
     auto time_sequence = generateSequence(0.0, t_horizon, t_step);
 
-    // 潜在的な遷移を持つ異なる状態を処理
     switch (state) {
       case State::STOPPED:
-        // ボールは動かない
         for (double t : time_sequence) {
           sequence.emplace_back(pos, t);
         }
         break;
 
       case State::ROLLING:
-        // シンプルな転がり物理計算
         for (double t : time_sequence) {
           sequence.emplace_back(getPredictedPosition(t), t);
         }
@@ -530,7 +518,6 @@ public:
     return sequence;
   }
 
-  // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
   void toMsg(BallInfoMsg & msg) const;
 
