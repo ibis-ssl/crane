@@ -318,11 +318,6 @@ private:
             cumulative_distance = (Point(pos_3d.x(), pos_3d.y()) - pos).norm();
           } else {
             // 着地して転がり中
-            (void)(landing_pos - pos).norm();  // distance_to_landing: 将来の物理計算で使用予定
-            (void)(t_mid - landing_time);      // time_after_landing: 将来の物理計算で使用予定
-            (void)parabolic.getPredictedVelocity2D(
-              landing_time);  // landing_vel: 将来の物理計算で使用予定
-
             // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
             cumulative_distance = distance;  // 完全一致として処理
           }
@@ -497,8 +492,6 @@ public:
         // より複雑：飛行 → 着地 → 転がり遷移
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        (void)parabolic.getPredictedVelocity2D(
-          landing_time);  // landing_vel: 将来の物理計算で使用予定
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
@@ -507,8 +500,6 @@ public:
             sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
           } else {
             // 着地して転がり中
-            (void)(t - landing_time);  // time_after_landing: 将来の物理計算で使用予定
-
             // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
             sequence.emplace_back(landing_pos, t);  // 着地位置を使用
           }
