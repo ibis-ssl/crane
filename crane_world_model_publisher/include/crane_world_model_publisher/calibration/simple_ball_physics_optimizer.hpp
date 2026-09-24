@@ -32,7 +32,7 @@ public:
     bool is_chip_kick;                              // チップキックフラグ
     double fitting_r_squared;                       // フィッティングR²値
     double trajectory_duration;                     // 軌道継続時間 [s]
-    std::pair<double, double> confidence_interval;  // 信頼区間
+    std::pair<double, double> confidence_interval;  // v0 ± 1.96×残差RMS（v0 の信頼区間ではない）
   };
 
   /**
@@ -131,7 +131,7 @@ private:
   auto optimizeGlobalDeceleration(const std::vector<TrajectoryData> & all_trajectories) -> double;
 
   /**
-   * @brief 個別軌道の初速度推定（線形回帰）
+   * @brief 個別軌道の初速度推定（減速度を固定した当てはめ）
    */
   auto estimateInitialVelocity(const TrajectoryData & trajectory, double deceleration)
     -> KickPowerVelocityPair;

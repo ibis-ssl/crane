@@ -14,6 +14,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <regex>
 
+#include "crane_world_model_publisher/calibration/initial_velocity_fit.hpp"
+
 namespace crane
 {
 
@@ -407,43 +409,15 @@ auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
     return result;
   }
 
-  // 速度vs時間の固定傾きモデル: v(t) = v0 - deceleration * t
-  // ここで固定された減速度を使用して初速度を推定
-  // v0 = v(t) + deceleration * t を各時刻で算出し平均をとる
-  double v0_sum = 0.0;
-  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-    v0_sum += trajectory.velocities[i] + deceleration * trajectory.time_points[i];
-  }
-  double estimated_initial_velocity = v0_sum / trajectory.time_points.size();
+  // 減速度を固定して v0 だけを推定する（t の原点は最初の ROLLING 点）
+  const auto fit = fitInitialVelocityWithFixedDeceleration(
+    trajectory.time_points, trajectory.velocities, deceleration);
+  result.estimated_initial_velocity = fit.initial_velocity;
+  result.fitting_r_squared = fit.r_squared;
 
-  // 固定傾きモデルでの決定係数(R^2)を算出
-  double mean_velocity = 0.0;
-  for (size_t i = 0; i < trajectory.velocities.size(); ++i) {
-    mean_velocity += trajectory.velocities[i];
-  }
-  mean_velocity /= trajectory.velocities.size();
-
-  double ss_res = 0.0;
-  double ss_tot = 0.0;
-  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-    double predicted_velocity =
-      estimated_initial_velocity - deceleration * trajectory.time_points[i];
-    double residual = trajectory.velocities[i] - predicted_velocity;
-    ss_res += residual * residual;
-    double deviation = trajectory.velocities[i] - mean_velocity;
-    ss_tot += deviation * deviation;
-  }
-  double r_squared = (ss_tot > 0.0) ? (1.0 - ss_res / ss_tot) : 0.0;
-
-  result.estimated_initial_velocity = estimated_initial_velocity;
-  result.fitting_r_squared = r_squared;
-
-  // 信頼区間の計算
-  double velocity_std = std::sqrt(ss_res / trajectory.time_points.size());
-
-  double confidence_margin = 1.96 * velocity_std;  // 95%信頼区間
-  result.confidence_interval = {
-    estimated_initial_velocity - confidence_margin, estimated_initial_velocity + confidence_margin};
+  // 残差 RMS の ±1.96 倍。点数を反映しないので v0 の 95% 信頼区間ではなく、個々の点のばらつきの幅
+  const double margin = 1.96 * fit.residual_rms;
+  result.confidence_interval = {fit.initial_velocity - margin, fit.initial_velocity + margin};
 
   return result;
 }

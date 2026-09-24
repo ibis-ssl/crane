@@ -80,6 +80,10 @@ install(PROGRAMS
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  # ヘッダだけで完結するテストなので、較正コードを含むコンポーネントにはリンクしない
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_initial_velocity_fit test/test_initial_velocity_fit.cpp)
+  target_include_directories(test_initial_velocity_fit PRIVATE include)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE launch config)
