@@ -138,23 +138,6 @@ inline auto getVerticalVec(const Point & v) -> Point
   return vertical_v;
 }
 
-inline auto getReachTime(
-  const double distance, const double v0, const double acc, const double max_vel) -> double
-{
-  // x = v0*t + 1/2*a*t^2 より
-  double t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
-  if (max_vel == -1.f) {
-    return t;
-  } else {
-    double acc_end_time = (max_vel - v0) / acc;
-    if (t > acc_end_time) {
-      return (distance + 0.5f * std::pow(max_vel - v0, 2.f) / acc) / max_vel;
-    } else {
-      return t;
-    }
-  }
-}
-
 inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   -> std::vector<Point>
 {
