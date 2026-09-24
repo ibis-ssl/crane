@@ -38,11 +38,17 @@ class SvgAssembler:
 
         self._viewbox_tuple = self._parse_viewbox()
 
-        # 固定部分をキャッシュ（遅延初期化）
-        self._cached_header: list[str] | None = None
-        self._cached_defs: list[str] | None = None
-        self._cached_background: str | None = None
-        self._cached_grid: str | None = None
+        # レイヤー以外の固定部分はコンストラクタ引数だけで決まるので、ここで組み立てる
+        self._fixed_parts = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<svg xmlns="http://www.w3.org/2000/svg"',
+            f'     viewBox="{self.viewbox}"',
+            '     width="100%" height="100%"',
+            '     preserveAspectRatio="xMidYMid meet">',
+            *self._generate_defs(),
+            self._generate_background(),
+            self._generate_grid(),
+        ]
 
     def assemble(
         self, layers: dict[str, list[str]], visible_layers: set[str] | None = None
@@ -60,22 +66,7 @@ class SvgAssembler:
         if visible_layers is None:
             visible_layers = set(layers.keys())
 
-        if self._cached_header is None:
-            self._cached_header = [
-                '<?xml version="1.0" encoding="UTF-8"?>',
-                '<svg xmlns="http://www.w3.org/2000/svg"',
-                f'     viewBox="{self.viewbox}"',
-                '     width="100%" height="100%"',
-                '     preserveAspectRatio="xMidYMid meet">',
-            ]
-            self._cached_defs = self._generate_defs()
-            self._cached_background = self._generate_background()
-            self._cached_grid = self._generate_grid()
-
-        svg_parts = list(self._cached_header)
-        svg_parts.extend(self._cached_defs)
-        svg_parts.append(self._cached_background)
-        svg_parts.append(self._cached_grid)
+        svg_parts = list(self._fixed_parts)
 
         for layer_name, primitives in layers.items():
             if layer_name in visible_layers and primitives:
