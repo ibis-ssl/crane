@@ -35,7 +35,6 @@
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <deque>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <filesystem>
 #include <future>
 #include <memory>
 #include <mutex>
