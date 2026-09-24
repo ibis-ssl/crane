@@ -280,7 +280,7 @@ private:
     return packet;
   }
 
-  void sendIbis(crane_msgs::msg::RobotCommands & msg)
+  void sendCommands(crane_msgs::msg::RobotCommands & msg) override
   {
     if (++counter_ > 200) {
       counter_ = 0;
@@ -414,9 +414,6 @@ private:
     // 送信のたびに残す。理由と読み方は docs/cm4_position_control.md に書いてある。
     position_control_config_pub_->publish(config_msg);
   }
-
-public:
-  void sendCommands(crane_msgs::msg::RobotCommands & msg) override { sendIbis(msg); }
 };
 }  // namespace crane
 
