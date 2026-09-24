@@ -1226,56 +1226,6 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
     plot_filename.str().c_str());
 }
 
-auto BallCalibrationDataExtractor::applySmoothingFilter(
-  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & current_pos) const
-  -> Point
-{
-  if (ball_data.size() < 2) {
-    return current_pos;  // データ不足時はそのまま返す
-  }
-
-  // 5点移動平均（現在位置 + 過去4点）
-  constexpr size_t window_size = 5;
-  constexpr double weights[] = {0.4, 0.25, 0.15, 0.15, 0.05};  // 新しいデータにより重みを置く
-
-  Point weighted_pos = current_pos * weights[0];
-  double total_weight = weights[0];
-
-  size_t available_points = std::min(window_size - 1, ball_data.size());
-  for (size_t i = 0; i < available_points; ++i) {
-    const Point & prev_pos = ball_data[ball_data.size() - 1 - i].second.pos;
-    weighted_pos += prev_pos * weights[i + 1];
-    total_weight += weights[i + 1];
-  }
-
-  return weighted_pos / total_weight;
-}
-
-auto BallCalibrationDataExtractor::applySmoothingFilterScalar(
-  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double current_value) const
-  -> double
-{
-  if (ball_data.size() < 2) {
-    return current_value;  // データ不足時はそのまま返す
-  }
-
-  // 5点移動平均（現在値 + 過去4点）
-  constexpr size_t window_size = 5;
-  constexpr double weights[] = {0.4, 0.25, 0.15, 0.15, 0.05};  // 新しいデータにより重みを置く
-
-  double weighted_value = current_value * weights[0];
-  double total_weight = weights[0];
-
-  size_t available_points = std::min(window_size - 1, ball_data.size());
-  for (size_t i = 0; i < available_points; ++i) {
-    double prev_value = ball_data[ball_data.size() - 1 - i].second.pos_z;
-    weighted_value += prev_value * weights[i + 1];
-    total_weight += weights[i + 1];
-  }
-
-  return weighted_value / total_weight;
-}
-
 auto BallCalibrationDataExtractor::validateAndFilterVelocity(
   const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & raw_velocity,
   double dt) const -> std::pair<bool, Point>

@@ -8,6 +8,7 @@
 #define CRANE_WORLD_MODEL_PUBLISHER__CALIBRATION__BALL_CALIBRATION_DATA_EXTRACTOR_HPP_
 
 #include <crane_msgs/msg/robot_command.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <crane_physics/ball_info.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <memory>
@@ -163,26 +164,6 @@ private:
    * @param world_model_msg world_modelメッセージ
    */
   auto updateFieldInfo(const crane_msgs::msg::WorldModel & world_model_msg) -> void;
-
-  /**
-   * @brief 位置データに移動平均フィルタを適用（速度計算前のノイズ除去）
-   * @param ball_data 過去のボールデータ
-   * @param current_pos 現在の位置
-   * @return フィルタ適用後の位置
-   */
-  auto applySmoothingFilter(
-    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & current_pos) const
-    -> Point;
-
-  /**
-   * @brief スカラー値に移動平均フィルタを適用
-   * @param ball_data 過去のボールデータ
-   * @param current_value 現在の値
-   * @return フィルタ適用後の値
-   */
-  auto applySmoothingFilterScalar(
-    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double current_value) const
-    -> double;
 
   /**
    * @brief 速度の妥当性チェックと外れ値フィルタリング
