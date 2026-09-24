@@ -13,7 +13,6 @@
 namespace crane
 {
 
-// Ball クラスのコンストラクタ実装
 Ball::Ball() : physics_model_(std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault()))
 {
 }
@@ -25,7 +24,6 @@ Ball::Ball(std::shared_ptr<BallPhysicsModel> model) : physics_model_(model)
   }
 }
 
-// Ball クラスのメソッド実装
 auto Ball::setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void
 {
   physics_model_ =
@@ -33,8 +31,6 @@ auto Ball::setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void
 }
 
 auto Ball::getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel> { return physics_model_; }
-
-// Ball クラスのその他実装
 
 auto Ball::getPredictedPosition(double time_ahead) const -> Point
 {
@@ -154,7 +150,6 @@ auto Ball::getRollingTimeToReachDistance(double distance) const -> std::optional
   return std::nullopt;
 }
 
-// fromMsgメソッドでBallPhysicsModelを設定
 void Ball::updatePhysicsConfigFromMsg(const crane_msgs::msg::BallPhysicsConfig & physics_config)
 {
   // deceleration <= 0 はメッセージが未設定（ゼロ初期化）と判断し、現在の設定を維持する
@@ -179,7 +174,6 @@ void Ball::updatePhysicsConfigFromMsg(const crane_msgs::msg::BallPhysicsConfig &
   physics_model_->setConfig(config);
 }
 
-// テンプレート関数の実装
 template <typename BallInfoMsg>
 void Ball::toMsg(BallInfoMsg & msg) const
 {
@@ -198,13 +192,13 @@ void Ball::toMsg(BallInfoMsg & msg) const
   // ボール状態
   switch (state) {
     case State::STOPPED:
-      msg.state = BallInfoMsg::STOPPED;  // STOPPED
+      msg.state = BallInfoMsg::STOPPED;
       break;
     case State::ROLLING:
-      msg.state = BallInfoMsg::ROLLING;  // ROLLING
+      msg.state = BallInfoMsg::ROLLING;
       break;
     case State::FLYING:
-      msg.state = BallInfoMsg::FLYING;  // FLYING
+      msg.state = BallInfoMsg::FLYING;
       break;
   }
 
@@ -248,21 +242,20 @@ void Ball::fromMsg(const BallInfoMsg & msg)
 
   // ボール状態
   switch (msg.state) {
-    case BallInfoMsg::STOPPED:  // STOPPED
+    case BallInfoMsg::STOPPED:
       state = State::STOPPED;
       break;
-    case BallInfoMsg::ROLLING:  // ROLLING
+    case BallInfoMsg::ROLLING:
       state = State::ROLLING;
       break;
-    case BallInfoMsg::FLYING:  // FLYING
+    case BallInfoMsg::FLYING:
       state = State::FLYING;
       break;
     default:
-      state = State::STOPPED;  // デフォルトは停止
+      state = State::STOPPED;
       break;
   }
 
-  // BallPhysicsModel設定から物理モデルを設定
   updatePhysicsConfigFromMsg(msg.physics_config);
 
   // Fallback 推定情報
