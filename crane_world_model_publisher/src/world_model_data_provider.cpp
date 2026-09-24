@@ -297,9 +297,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
                 return std::make_pair(b.x() / 1000.0, b.y() / 1000.0);
               });
             }
-            updateVisionBallState(
-              balls.at(static_cast<int>(idx)),
-              static_cast<uint32_t>(packet.detection().camera_id()));
+            updateVisionBallState(balls.at(static_cast<int>(idx)), packet.detection());
             integrateBallInfo();
           }
           if (use_udp_detection_) {
@@ -613,8 +611,7 @@ auto WorldModelDataProvider::processDetectionFrame(
       idx = selectClosestBallToOurGoal(
         balls, [](const auto & b) { return std::make_pair(b.x() / 1000.0, b.y() / 1000.0); });
     }
-    updateVisionBallState(
-      balls.at(static_cast<int>(idx)), static_cast<uint32_t>(detection.camera_id()));
+    updateVisionBallState(balls.at(static_cast<int>(idx)), detection);
   }
 
   // Vision/Tracker状態を統合してball_info_を更新
@@ -744,8 +741,10 @@ auto WorldModelDataProvider::estimateFallbackBall(const rclcpp::Time & now) -> v
 }
 
 auto WorldModelDataProvider::updateVisionBallState(
-  const robocup_ssl::SSL_DetectionBall & ssl_ball, uint32_t camera_id) -> void
+  const robocup_ssl::SSL_DetectionBall & ssl_ball,
+  const robocup_ssl::SSL_DetectionFrame & detection) -> void
 {
+  const auto camera_id = static_cast<uint32_t>(detection.camera_id());
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
   double y = ssl_ball.y() / 1000.0;
@@ -768,6 +767,7 @@ auto WorldModelDataProvider::updateVisionBallState(
   vision_ball_state_.raw_position.x = x;
   vision_ball_state_.raw_position.y = y;
   vision_ball_state_.raw_position.z = z;
+  vision_ball_state_.frame_key = {camera_id, detection.frame_number(), detection.t_capture()};
 
   // フォールバック用: 最終観測情報を記録
   last_known_ball_position_ = Eigen::Vector3d(x, y, z);
@@ -963,14 +963,21 @@ auto WorldModelDataProvider::updateTrackerBallState(
 auto WorldModelDataProvider::integrateBallInfo() -> void
 {
   auto now = node.get_clock()->now();
-  constexpr double TIMEOUT_SEC = 0.1;
 
   // タイムアウトチェック
-  if ((now - vision_ball_state_.last_detect_time).seconds() > TIMEOUT_SEC) {
+  if ((now - vision_ball_state_.last_detect_time).seconds() > BALL_DETECTION_TIMEOUT_SEC) {
     vision_ball_state_.detected = false;
   }
-  if ((now - tracker_ball_state_.last_detect_time).seconds() > TIMEOUT_SEC) {
+  if ((now - tracker_ball_state_.last_detect_time).seconds() > BALL_DETECTION_TIMEOUT_SEC) {
     tracker_ball_state_.detected = false;
+  }
+
+  // Tracker 検出中も Vision 差分の履歴は更新しておく。同じフレームの再入力では速度は変わらない
+  Eigen::Vector3d vision_velocity = Eigen::Vector3d::Zero();
+  if (vision_ball_state_.detected) {
+    vision_velocity = vision_ball_velocity_estimator_.update(
+      vision_ball_state_.frame_key, vision_ball_state_.position,
+      vision_ball_state_.last_detect_time.seconds());
   }
 
   // 統合フラグ設定
@@ -991,27 +998,6 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
     ball_info_.position.x = vision_ball_state_.position.x();
     ball_info_.position.y = vision_ball_state_.position.y();
     ball_info_.position.z = vision_ball_state_.position.z();
-
-    // Tracker未検出時はVision連続フレームの有限差分で速度を推定する。
-    // (現在pos - 前回pos) / dt。前回値が無い、または dt<=0 の場合のみ速度0とする。
-    Eigen::Vector3d vision_velocity = Eigen::Vector3d::Zero();
-    if (prev_vision_ball_valid_) {
-      const double dt = (vision_ball_state_.last_detect_time - prev_vision_ball_stamp_).seconds();
-      if (dt > 0.0) {
-        vision_velocity = (vision_ball_state_.position - prev_vision_ball_position_) / dt;
-
-        // Visionノイズ・誤検出による非現実的な速度を抑制するためクランプする。
-        // (SSLボール最高速 6.5m/s を上回る値は外れ値とみなしスケールダウン)
-        constexpr double MAX_BALL_SPEED = 6.5;  // m/s
-        const double speed = vision_velocity.norm();
-        if (!std::isfinite(speed)) {
-          vision_velocity = Eigen::Vector3d::Zero();
-        } else if (speed > MAX_BALL_SPEED) {
-          vision_velocity *= (MAX_BALL_SPEED / speed);
-        }
-      }
-    }
-
     ball_info_.velocity.x = vision_velocity.x();
     ball_info_.velocity.y = vision_velocity.y();
     ball_info_.velocity.z = vision_velocity.z();
@@ -1028,11 +1014,6 @@ auto WorldModelDataProvider::integrateBallInfo() -> void
   if (vision_ball_state_.detected) {
     ball_info_.vision.stamp = vision_ball_state_.last_detect_time;
     ball_info_.vision.pos = vision_ball_state_.raw_position;
-
-    // 次回のVision単独速度推定（有限差分）のため前回Vision位置・時刻を更新する。
-    prev_vision_ball_position_ = vision_ball_state_.position;
-    prev_vision_ball_stamp_ = vision_ball_state_.last_detect_time;
-    prev_vision_ball_valid_ = true;
   }
 
   // Tracker情報の更新（常にTrackerの生データを保持）
