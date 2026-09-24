@@ -7,7 +7,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from rclpy.serialization import deserialize_message
 
@@ -51,7 +51,7 @@ class AnnotationContext:
     world_model_context: list[WorldModelSnapshot] = field(default_factory=list)
 
     # カテゴリ名マッピング
-    CATEGORY_NAMES = {
+    CATEGORY_NAMES: ClassVar[dict[int, str]] = {
         0: "ISSUE",
         1: "OBSERVATION",
         2: "QUESTION",
@@ -62,7 +62,7 @@ class AnnotationContext:
     }
 
     # 重要度名マッピング
-    PRIORITY_NAMES = {
+    PRIORITY_NAMES: ClassVar[dict[int, str]] = {
         0: "LOW",
         1: "MEDIUM",
         2: "HIGH",

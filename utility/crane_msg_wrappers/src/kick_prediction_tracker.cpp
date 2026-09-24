@@ -40,12 +40,10 @@ void KickPredictionTracker::recordActual(
   crane_msgs::msg::KickPredictionTrace & trace, double actual_ball_speed,
   double actual_stop_distance)
 {
-  // 予測点がない場合は何もしない
   if (trace.prediction_point.empty()) {
     return;
   }
 
-  // 予測点を取得
   const auto & prediction = trace.prediction_point.front();
 
   crane_msgs::msg::KickPredictionActual actual;
@@ -55,13 +53,11 @@ void KickPredictionTracker::recordActual(
   actual.actual_ball_speed = static_cast<float>(actual_ball_speed);
   actual.actual_stop_distance = static_cast<float>(actual_stop_distance);
 
-  // 速度誤差を計算
   actual.speed_error = actual.actual_ball_speed - actual.predicted_ball_speed;
   actual.speed_error_percent = (actual.predicted_ball_speed > 0.0f)
                                  ? (actual.speed_error / actual.predicted_ball_speed * 100.0f)
                                  : 0.0f;
 
-  // 距離誤差を計算
   actual.distance_error = actual.actual_stop_distance - actual.predicted_stop_distance;
   actual.distance_error_percent =
     (actual.predicted_stop_distance > 0.0f)

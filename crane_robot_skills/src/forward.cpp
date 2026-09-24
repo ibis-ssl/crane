@@ -57,8 +57,14 @@ auto Forward::update() -> Status
     ranges::views::transform([&](const Point & p) {
       double score = 1.0;
       // ボールの受取やすさ
+      // ボール位置からp方向へ1.5m進めた点までの線分で敵との最近接距離を評価
+      const Point ball_to_p = p - ball.pos;
+      const double ball_to_p_norm = ball_to_p.norm();
+      // p == ball.pos のときはゼロ長線分になるため、ボール位置のみの点で評価
       Segment segment{
-        p, ball.pos + (p - ball.vel).normalized() * 1.5};  // ボール近くはチップで無視可能
+        p, ball_to_p_norm < 1e-6
+             ? ball.pos
+             : (ball.pos + ball_to_p / ball_to_p_norm * 1.5)};  // ボール近くはチップで無視可能
       auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(segment, available_enemy_robots);
       if (nearest_enemy) {

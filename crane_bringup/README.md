@@ -1,13 +1,9 @@
 # crane_bringup
 
-- joystick_example
-  - ジョイスティックを使ってロボットを動かす最低限の構成
-    - joy_node
-    - crane_teleop
-    - crane_sender
-      - 送り先はGrSim
-- play_switcher
-  - ツール郡との通信ノード
-  - world_model_publisher
-  - play_switcher
-- wait_planner
+Craneのノード構成と起動設定をまとめるパッケージです。
+
+- [環境構築・起動](../docs/setup.md)
+- [起動引数とノード構成](launch/crane.launch.xml)
+- [設定ファイル](config/)
+
+実機起動前に[ネットワーク切替](../docs/network.md#実機へ切り替える)を確認してください。

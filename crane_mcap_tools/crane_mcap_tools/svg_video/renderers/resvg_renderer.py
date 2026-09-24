@@ -33,7 +33,6 @@ class ResvgPyRenderer(SvgRendererBase):
         """
         super().__init__(width, height, dpi, output_format)
 
-        # resvg_pyのインポート
         try:
             import resvg_py
 
@@ -43,7 +42,6 @@ class ResvgPyRenderer(SvgRendererBase):
                 "resvg-py is required. Install with: pip install resvg-py"
             ) from e
 
-        # RAW出力用にPILを準備
         if output_format == OutputFormat.RAW_RGBA:
             try:
                 from PIL import Image
@@ -65,7 +63,6 @@ class ResvgPyRenderer(SvgRendererBase):
             画像バイト列（PNG or RAW RGBA、output_formatに依存）
         """
         try:
-            # resvg_pyでレンダリング（PNG形式で出力）
             png_bytes = self._svg_to_bytes(
                 svg_string=svg_string,
                 width=self.width,
@@ -74,14 +71,11 @@ class ResvgPyRenderer(SvgRendererBase):
             )
 
             if self.output_format == OutputFormat.RAW_RGBA:
-                # PNGをRAW RGBAに変換
                 img = self._Image.open(io.BytesIO(png_bytes))
-                # RGBAモードに変換（透明度を保持）
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
                 return img.tobytes()
             else:
-                # PNG形式のまま返す
                 return png_bytes
 
         except Exception as e:

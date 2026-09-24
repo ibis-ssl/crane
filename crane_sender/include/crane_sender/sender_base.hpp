@@ -28,11 +28,10 @@ protected:
 
   const rclcpp::Subscription<VelocityCommandsMsg>::SharedPtr sub_commands;
 
-  virtual void sendCommands(const VelocityCommandsMsg & msg) = 0;
+  // 送信実装。送信内容の記録のために、実際にワイヤへ載せた値を planning_factors へ追記してよい
+  virtual void sendCommands(VelocityCommandsMsg & msg) = 0;
 
   double calculateAccelerationLimit(double current_speed, double target_speed) const;
-
-  double delay_s{};
 
   std::shared_ptr<WorldModelWrapper> world_model;
 
@@ -55,6 +54,11 @@ private:
   double kick_power_limit_chip{1.0};
 
   VelocityCommandsMsg previous_commands;
+
+  // 実際に送った指令（前処理済み + 送信側の planning_factors）。/robot_commands には
+  // elapsed_time_ms_since_last_vision や is_vision_available が載らず、bag だけでは
+  // 機体停止が crane 側の指令か機体側の安全停止か切り分けられないため残す
+  rclcpp::Publisher<VelocityCommandsMsg>::SharedPtr sent_commands_pub_;
 };
 }  // namespace crane
 

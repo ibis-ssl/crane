@@ -42,16 +42,15 @@ void VelocityPlanTracker::addCorrection(
   correction.after_vel_x = static_cast<float>(after_vel.x());
   correction.after_vel_y = static_cast<float>(after_vel.y());
 
-  // 速度変化量を計算
   Eigen::Vector2d delta = after_vel - before_vel;
   correction.velocity_delta = static_cast<float>(delta.norm());
 
   // 方向変化を計算（度）
-  double before_angle = std::atan2(before_vel.y(), before_vel.x());
-  double after_angle = std::atan2(after_vel.y(), after_vel.x());
+  double before_angle = getAngle(before_vel);
+  double after_angle = getAngle(after_vel);
   double angle_diff = normalizeAngle(after_angle - before_angle);
 
-  correction.direction_delta_deg = static_cast<float>(angle_diff * 180.0 / M_PI);
+  correction.direction_delta_deg = static_cast<float>(rad2deg(angle_diff));
 
   trace.corrections.push_back(correction);
 }
@@ -60,12 +59,10 @@ void VelocityPlanTracker::recordActual(
   crane_msgs::msg::VelocityPlanTrace & trace, const Eigen::Vector2d & actual_pos,
   const Eigen::Vector2d & actual_vel)
 {
-  // 最新の計画点がない場合は何もしない
   if (trace.plan_points.empty()) {
     return;
   }
 
-  // 最新の計画点を取得
   const auto & latest_plan = trace.plan_points.back();
 
   crane_msgs::msg::VelocityPlanActual actual;
@@ -81,12 +78,10 @@ void VelocityPlanTracker::recordActual(
   actual.actual_pos_x = static_cast<float>(actual_pos.x());
   actual.actual_pos_y = static_cast<float>(actual_pos.y());
 
-  // 速度誤差を計算
   Eigen::Vector2d planned_vel(latest_plan.predicted_vel_x, latest_plan.predicted_vel_y);
   Eigen::Vector2d vel_error = actual_vel - planned_vel;
   actual.velocity_error = static_cast<float>(vel_error.norm());
 
-  // 位置誤差を計算
   Eigen::Vector2d planned_pos(latest_plan.predicted_pos_x, latest_plan.predicted_pos_y);
   Eigen::Vector2d pos_error = actual_pos - planned_pos;
   actual.position_error = static_cast<float>(pos_error.norm());

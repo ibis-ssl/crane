@@ -131,28 +131,6 @@ public:
     return msg;
   }
 
-  bool isSameConfiguration(SessionBase * other_session)
-  {
-    // 名前が異なる場合は別の設定
-    if (name != other_session->name) {
-      return false;
-    }
-
-    // どちらかのrobotsが空の場合は、名前のみで判定（ロボット割り当て前の比較用）
-    if (robots.empty() || other_session->robots.empty()) {
-      return true;
-    }
-
-    // 両方ともrobotsが設定されている場合は、ロボット構成も比較
-    return robots.size() == other_session->robots.size() && [&]() {
-      std::vector<RobotIdentifier> ours = this->robots;
-      std::vector<RobotIdentifier> others = other_session->robots;
-      std::ranges::sort(ours, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
-      std::ranges::sort(others, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
-      return ours == others;
-    }();
-  }
-
   Status getStatus() const { return status; }
 
   const std::vector<RobotIdentifier> & getRobots() const { return robots; }

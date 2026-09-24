@@ -7,7 +7,6 @@
 #include "bag_tracking.hpp"
 
 #include <cmath>
-#include <limits>
 
 namespace crane::bag
 {

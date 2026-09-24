@@ -1,303 +1,61 @@
 # シナリオテスト
 
-このディレクトリには、Craneの動作を検証するシナリオテストが含まれています。
+シミュレータと自動審判を使い、pytestでCraneの動作を検証する。テスト名と合格条件は[各テスト](https://github.com/ibis-ssl/crane/tree/develop/scenario_test)を正本とする。
 
-## 概要
+## 準備と実行
 
-シナリオテストは、grSim（シミュレータ）とautoref（自動審判）を使用して、実際のゲームシナリオでCraneの動作を検証します。pytestフレームワークと[robocup_scenario_test](https://github.com/SSL-Roots/robocup_scenario_test)ライブラリを使用しています。
+Docker Compose、Python 3.12のvenv、ビルド済みROS 2ワークスペースが必要。
+セットアップはPython依存を取得し、protocがなければsudoで導入する。ログ取得・失敗動画の生成にはネットワークアクセス、Go、ffmpegも必要となる。
 
-## テスト一覧
-
-| テスト名 | 説明 |
-|---------|------|
-| `STOP_ROBOT_SPEED` | STOP状態でのロボット速度制限テスト（1.5m/s以下） |
-| `emit_from_penalty_01` | ペナルティエリアからのボール排出テスト |
-| `STOP_AVOID_BALL` | STOP状態でのボール回避テスト（0.4m以上離れる） |
-| `PENALTY_AREA_BYPASS_STABILITY` | ペナルティ横断回避時の侵入防止・安定性テスト |
-
-## 前提条件
-
-### 必須
-
-- Docker（grSimとautorefを実行するため）
-- Python 3.12以上
-- `protobuf-compiler`（自動インストールされます）
-
-### ローカルモード（デフォルト）の場合
-
-- ワークスペースが既にビルドされていること
-- ベースDockerイメージ：`ghcr.io/ibis-ssl/crane:base`
-
-### リモートモードの場合
-
-- シナリオテスト用Dockerイメージがビルドされていること
-
-## セットアップ
-
-### 初回のみ実行
+以下はリポジトリルートで実行する。
 
 ```bash
-# リポジトリルートで実行
 make scenario-test-setup
-```
-
-このコマンドは以下を実行します：
-
-- Python仮想環境の作成（`scenario_test_env/`）
-- 必要なライブラリのインストール（robocup_scenario_test、pytestなど）
-- ローカルモードの場合：セットアップ完了
-- リモートモードの場合：Dockerイメージのビルドも実行
-
-## テストの実行
-
-### 基本的な使い方
-
-```bash
-# 全テストを実行
-make scenario-test
-
-# 個別テストを実行
 make scenario-test TEST=STOP_ROBOT_SPEED
-make scenario-test TEST=emit_from_penalty_01
-```
-
-### ローカルモード vs リモートモード
-
-#### ローカルモード（デフォルト、推奨）
-
-ローカルでビルドしたワークスペースを使用します。開発中のコード変更がすぐに反映されます。
-
-```bash
-# デフォルトでローカルモード
+make scenario-test RX_DELAY_MS=30 RX_LOSS_RATE=0.02 TEST=STOP_ROBOT_SPEED
 make scenario-test
-
-# 明示的にローカルモードを指定
-USE_LOCAL=1 make scenario-test
 ```
 
-**メリット：**
+経路には実機CM4に相当する `cm4-sim` が入る（`crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli`）。位置制御ループは `cm4-sim` が閉じるため、既定のplannerは mode 4 を出す `visibility_graph`。`RX_DELAY_MS` などはCraneから `cm4-sim` への区間、すなわち無線に相当する部分に劣化を注入する。構成の詳細は[ネットワーク](../docs/network.md)を参照する。
 
-- コード変更が即座に反映される
-- Dockerイメージのビルドが不要（ベースイメージのみ）
-- TDDサイクルが高速
-
-**前提条件：**
-
-- ワークスペースルート（`ibis_ws_3/`）で`colcon build`が完了していること
-- ベースイメージ（`ghcr.io/ibis-ssl/crane:base`）がpullされていること
-
-#### リモートモード
-
-Dockerイメージ内でビルドされたCraneを使用します。CIと同じ環境でテストしたい場合に使用します。
+既定のローカルモードはホストでCraneを起動する。コード変更後はワークスペースルートで対象パッケージを再ビルドし、環境を再読み込みしてから再実行する。
 
 ```bash
-# リモートモードで実行
-USE_LOCAL=0 make scenario-test
-
-# カスタムイメージタグを指定
-USE_LOCAL=0 CRANE_TAG=my-custom-tag make scenario-test
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --packages-select <変更したパッケージ>
+source install/local_setup.bash
 ```
 
-**メリット：**
-
-- CIと同じ環境で検証できる
-- ローカルビルドの状態に依存しない
-
-**前提条件：**
-
-- Dockerイメージがビルドされていること（`make scenario-test-build`）
-
-## 高度な使い方
-
-### Docker環境の手動制御
-
-テストを繰り返し実行する場合、Docker環境を起動したままにすることで高速化できます。
+イメージ内のCraneを検証する場合は、リポジトリルートで次を使う。
 
 ```bash
-# Docker環境を起動
-make scenario-test-docker-up
+make scenario-test-build
+USE_LOCAL=0 make scenario-test TEST=STOP_ROBOT_SPEED
+```
 
-# テストを実行（Docker環境は起動済み）
-# ※ このケースでは、スクリプトを直接使用
+タグなどの選択は `make help` と[Makefile](https://github.com/ibis-ssl/crane/blob/develop/Makefile)を参照する。
+
+## ネットワークと終了確認
+
+シミュレータはhost networkを使う。起動スクリプトがホストのマルチキャスト隔離を確認するため、sudoを要求する場合がある。ループバックへのルートだけでなく物理インターフェースへの遮断が必要。[Docker運用](../docs/docker.md)の隔離手順に従い、実機運用前には解除する。
+
+通常終了時はCraneとコンテナを停止する。途中の環境エラーや中断時は残存プロセス・コンテナを確認する。手動のDocker起動・停止は `make scenario-test-docker-up` / `make scenario-test-docker-down` を使うが、ローカルモードのCraneは別途起動が必要。
+
+## 結果の読み方
+
+- 合否はpytestの結果で確認する。環境の起動失敗とシナリオのassert失敗を区別する。
+- 通信ログはリポジトリルートの `*.log.gz`、ローカルCraneログは `/tmp/crane_local.log`。失敗時は最新の通信ログ1件から動画生成を試みるため、動画がないことだけでは成功と判断できない。
+- CIの保存物・実行条件は[ワークフロー](https://github.com/ibis-ssl/crane/blob/develop/.github/workflows/scenario_test.yaml)、起動・後処理は[run_test.sh](https://github.com/ibis-ssl/crane/blob/develop/scripts/scenario_test/run_test.sh)を参照する。
+- `make scenario-test-clean` は仮想環境、対象イメージ、取得ツール、ログ・動画を削除する。必要な記録は先に退避する。
+
+## パス成功率の比較
+
+シミュレータとCraneを起動した状態で、リポジトリルートから実行する。
+
+```bash
 source scenario_test_env/bin/activate
-pytest scenario_test/STOP_ROBOT_SPEED.py --vision_port=10020
-
-# Docker環境を停止
-make scenario-test-docker-down
+cd scenario_test
+python measure_pass_rate.py --trials 20 --scenario buildup --out pass_rate_before.json
 ```
 
-### 生成されるファイル
-
-- `*.log.gz`: 通信ログ
-- `*.mp4`: テスト失敗時の動画
-
-### 環境のクリーンアップ
-
-```bash
-# Python仮想環境、Dockerイメージ、ログファイルなどを削除
-make scenario-test-clean
-```
-
-## トラブルシューティング
-
-### Python仮想環境が見つからない
-
-```text
-エラー: Python仮想環境が見つかりません
-```
-
-**解決方法：**
-
-```bash
-make scenario-test-setup
-```
-
-### ベースイメージが見つからない（ローカルモード）
-
-```text
-Error response from daemon: pull access denied for ghcr.io/ibis-ssl/crane:base
-```
-
-**解決方法：**
-
-```bash
-docker pull ghcr.io/ibis-ssl/crane:base
-```
-
-### ワークスペースがビルドされていない（ローカルモード）
-
-```text
-bash: ../install/setup.bash: No such file or directory
-```
-
-**解決方法：**
-
-```bash
-# ワークスペースルートでビルド
-cd /path/to/ibis_ws_3
-colcon build --symlink-install
-```
-
-### テストがタイムアウトする
-
-Docker環境の起動に時間がかかる場合があります。`run_test.sh`の待機時間を調整してください。
-
-```bash
-# run_test.sh の該当箇所
-sleep 5  # 必要に応じて増やす
-```
-
-## CI/CDとの互換性
-
-このローカルテスト環境は、GitHub Actions（`.github/workflows/scenario_test.yaml`）と互換性があります。CIでは以下の違いがあります：
-
-- CIでは常にリモートモード（Dockerイメージをビルドして使用）
-- CIでは全テストが並列実行される
-- CIではテスト失敗時に自動的に動画とログがアーティファクトとしてアップロードされる
-
-## 開発ワークフロー
-
-### TDD（テスト駆動開発）の例
-
-1. **テストを実行して失敗を確認**
-
-   ```bash
-   make scenario-test TEST=STOP_ROBOT_SPEED
-   ```
-
-2. **コードを修正**
-   エディタで`crane_tactics/`などを編集
-
-3. **ワークスペースを再ビルド**
-
-   ```bash
-   cd /path/to/ibis_ws_3
-   colcon build --symlink-install --packages-select crane_tactics
-   ```
-
-4. **テストを再実行**
-
-   ```bash
-   make scenario-test TEST=STOP_ROBOT_SPEED
-   ```
-
-5. **成功するまで2-4を繰り返す**
-
-6. **全テストを実行して回帰がないか確認**
-
-   ```bash
-   make scenario-test
-   ```
-
-### デバッグワークフロー
-
-1. **テスト実行（ログは自動記録、失敗時は動画も自動生成）**
-
-   ```bash
-   make scenario-test TEST=STOP_ROBOT_SPEED
-   ```
-
-2. **テスト失敗時：生成された動画を確認**
-
-   ```bash
-   ls -lh *.mp4
-   # vlcなどで再生
-   vlc *.mp4
-   ```
-
-3. **ログを解析**
-
-   ```bash
-   gunzip -c *.log.gz > test.log
-   # ログを解析ツールで確認
-   ```
-
-## エージェント向けの推奨事項
-
-このテスト環境は、AIエージェントがテスト駆動開発を行いやすいように設計されています。
-
-### 推奨ワークフロー
-
-1. **初回セットアップ**
-
-   ```bash
-   make scenario-test-setup
-   ```
-
-2. **機能実装前にテストを実行（Red）**
-
-   ```bash
-   make scenario-test TEST=<新機能のテスト>
-   ```
-
-3. **機能を実装（Green）**
-   - コードを編集
-   - ワークスペースを再ビルド
-
-4. **テストを実行して成功を確認**
-
-   ```bash
-   make scenario-test TEST=<新機能のテスト>
-   ```
-
-5. **リファクタリング**
-   - コードを改善
-   - テストで回帰がないことを確認
-
-6. **全テストで回帰テスト**
-
-   ```bash
-   make scenario-test
-   ```
-
-### ヒント
-
-- **高速フィードバック**: ローカルモードは変更がすぐに反映されるため、TDDサイクルが高速です
-- **詳細なデバッグ**: `LOGGING=1 VIDEO=1`を使用すると、テスト失敗時の詳細な情報が得られます
-- **個別テスト実行**: 開発中は`TEST=<テスト名>`で個別テストのみを実行すると効率的です
-
-## 参考リンク
-
-- [robocup_scenario_test](https://github.com/SSL-Roots/robocup_scenario_test): シナリオテストライブラリ
-- [grSim](https://github.com/RoboCup-SSL/grSim): SSLシミュレータ
-- [ssl-go-tools](https://github.com/RoboCup-SSL/ssl-go-tools): SSL関連ツール（ログレコーダーなど）
+これはassertを行わないA/B比較用の計測。vision情報によるヒューリスティックで、判定は[pass_helpers.py](https://github.com/ibis-ssl/crane/blob/develop/scenario_test/pass_helpers.py)を参照する。bagからの詳細KPIには `crane_bag pass` を使う。

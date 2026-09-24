@@ -14,8 +14,6 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-
-from ssl_log_extractor import extract_ball_timeline_and_trajectories
 from models import (
     AddTrajectoryRequest,
     LoadPathRequest,
@@ -28,6 +26,7 @@ from models import (
     TrajectoryInfo,
 )
 from optimizer import compute_predicted_trajectories, run_optimization
+from ssl_log_extractor import extract_ball_timeline_and_trajectories
 from yaml_exporter import build_yaml_preview, build_yaml_string
 
 logging.basicConfig(level=logging.INFO)
@@ -342,8 +341,8 @@ async def delete_trajectory(event_id: int) -> dict:
 @app.get("/api/bootstrap/{event_id}")
 async def get_bootstrap(event_id: int, n_boot: int = 300) -> dict:
     """指定軌道のブートストラップ分布を返す (UI ヒストグラム用)."""
-    from robust_fit import bootstrap_ci, pick_fit_fn
     import numpy as np
+    from robust_fit import bootstrap_ci, pick_fit_fn
 
     result: OptimizationResult | None = _state["optimization_result"]
     if result is None:
@@ -440,5 +439,5 @@ async def update_manual_params(req: ManualParamsRequest) -> dict:
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("HTTP_PORT", 8090))
+    port = int(os.environ.get("HTTP_PORT", "8090"))
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

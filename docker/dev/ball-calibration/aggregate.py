@@ -9,7 +9,6 @@ import logging
 from typing import Literal
 
 import numpy as np
-
 from models import RobustAggregateStats
 from robust_fit import FitResult
 

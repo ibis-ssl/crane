@@ -32,7 +32,14 @@ namespace offset
 {
 constexpr int SYNC_0 = 0;
 constexpr int SYNC_1 = 1;
-constexpr int CHECKSUM = 2;
+// byte 2 はチェックサムではない。
+// G474 ファームウェア (Core/Src/ai_comm.c の sendRobotInfo()) は
+// `buf[2] = 10;  // CRC, 10:dummy` と定数を書くだけで、CRC は計算していない。
+// Orion_CM4 の doc/feedback_packet.md も
+// 「byte 2 はチェックサムではありません」
+// 「受信側でこの判定を有効にしてはいけません」と明記している。
+// 検証に使うと実機パケットが全て破棄されるため、オフセットの記録だけ残す。
+constexpr int DUMMY_CRC = 2;
 constexpr int COUNTER = 3;
 
 constexpr int YAW_ANGLE = 4;
@@ -90,14 +97,15 @@ constexpr int KICK_STATE_SCALE = 10;
 constexpr int FLOAT_SIZE = 4;
 constexpr uint8_t SYNC_0_VALUE = 0xAB;
 constexpr uint8_t SYNC_1_VALUE = 0xEA;
+// offset::DUMMY_CRC にファームウェアが書く固定値。検証には使わない（上記コメント参照）。
+constexpr uint8_t DUMMY_CRC_VALUE = 10;
 
 struct PacketValidationResult
 {
   bool size_valid = false;
   bool sync_valid = false;
-  bool checksum_valid = false;
 
-  [[nodiscard]] auto valid() const -> bool { return size_valid && sync_valid && checksum_valid; }
+  [[nodiscard]] auto valid() const -> bool { return size_valid && sync_valid; }
 };
 
 template <typename BufferT>
@@ -106,28 +114,20 @@ inline auto readRawByte(const BufferT & buffer, size_t offset) -> uint8_t
   return static_cast<uint8_t>(buffer[offset]);
 }
 
+// received_size は今回の受信で実際に届いたバイト数。
+// buffer は使い回しの受信バッファで BUFFER_SIZE (2048) 長のまま渡されるため、
+// buffer.size() をパケット長と見なしてはならない。
 template <typename BufferT>
-inline auto computeChecksum(const BufferT & buffer) -> uint8_t
-{
-  uint32_t checksum = 0;
-  for (size_t i = offset::COUNTER; i < PACKET_SIZE; ++i) {
-    checksum += readRawByte(buffer, i);
-  }
-  return static_cast<uint8_t>(checksum & 0xFF);
-}
-
-template <typename BufferT>
-inline auto validatePacket(const BufferT & buffer) -> PacketValidationResult
+inline auto validatePacket(const BufferT & buffer, size_t received_size) -> PacketValidationResult
 {
   PacketValidationResult result;
-  result.size_valid = buffer.size() == PACKET_SIZE;
+  result.size_valid = received_size == PACKET_SIZE && buffer.size() >= PACKET_SIZE;
   if (!result.size_valid) {
     return result;
   }
 
   result.sync_valid = readRawByte(buffer, offset::SYNC_0) == SYNC_0_VALUE &&
                       readRawByte(buffer, offset::SYNC_1) == SYNC_1_VALUE;
-  result.checksum_valid = readRawByte(buffer, offset::CHECKSUM) == computeChecksum(buffer);
   return result;
 }
 
@@ -215,8 +215,6 @@ struct RobotFeedback
   uint32_t invalid_packet_count = 0;
 
   uint32_t sync_error_count = 0;
-
-  uint32_t checksum_error_count = 0;
 
   uint32_t size_mismatch_count = 0;
 

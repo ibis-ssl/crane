@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 
 namespace crane::skills
@@ -22,7 +23,7 @@ void GoalKick::initialize()
 Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
-    getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball().pos,
+    deg2rad(getParameter<double>("キック角度の最低要求精度[deg]")), world_model()->ball().pos,
     world_model(), visualizer);
 
   Point target = world_model()->ball().pos + getNormVec(best_angle) * 0.5;

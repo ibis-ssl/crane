@@ -1,6 +1,6 @@
 services:
   erforce-sim:
-    image: ghcr.io/ibis-ssl/framework-simulatorcli:latest
+    image: ghcr.io/ibis-ssl/framework-simulatorcli:${SIMULATOR_CLI_TAG:-a52b6bd}
     container_name: match_erforce_sim
     network_mode: host
     entrypoint: ["tini", "--"]
@@ -64,7 +64,7 @@ services:
       bash -c "
       cd /root/crane-rosbag &&
       source /root/ibis_ws/install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false vision_port:=10020 referee_port:=11003 team:=ibis
+      ros2 launch crane_bringup crane.launch.xml sim:=true speak:=false team:=ibis
       "
     tty: true
     stdin_open: true

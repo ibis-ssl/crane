@@ -97,6 +97,14 @@ auto KickEventDetector::update(
         // 実績を記録
         KickPredictionTracker::recordActual(
           *ongoing_kick_trace_, actual_ball_speed, actual_stop_distance);
+
+        // 完了トレースとして保持（従来はここで破棄され予実データがbagに残らなかった）
+        if (!ongoing_kick_trace_->actual.empty()) {
+          completed_traces_.push_back(*ongoing_kick_trace_);
+          if (completed_traces_.size() > COMPLETED_TRACE_QUEUE_SIZE) {
+            completed_traces_.erase(completed_traces_.begin());
+          }
+        }
       }
 
       kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball().pos);
@@ -337,6 +345,13 @@ auto KickEventDetector::filterByDistanceIncrease(
 auto KickEventDetector::setKickerModel(std::shared_ptr<KickerModel> kicker_model) -> void
 {
   kicker_model_ = kicker_model;
+}
+
+auto KickEventDetector::takeCompletedTraces() -> std::vector<crane_msgs::msg::KickPredictionTrace>
+{
+  std::vector<crane_msgs::msg::KickPredictionTrace> traces = std::move(completed_traces_);
+  completed_traces_.clear();
+  return traces;
 }
 
 auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::RobotCommands & commands) -> void

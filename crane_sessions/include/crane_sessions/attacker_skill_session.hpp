@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
+#include <crane_msg_wrappers/pass_plan.hpp>
 #include <crane_msg_wrappers/position_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_robot_skills/attacker.hpp>
@@ -17,6 +18,7 @@
 #include <functional>
 #include <magic_enum/magic_enum.hpp>
 #include <memory>
+#include <optional>
 #include <range/v3/algorithm/contains.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -32,6 +34,17 @@ class AttackerSkillSession : public SessionBase
 {
   // アロケータのhysteresis_bonus(1.5m)を確実に上回り、game_analyzer推奨の切替を保証するマージン
   static constexpr double RECOMMENDED_ATTACKER_MARGIN = 2.0;
+
+  // パスを出したあと出し手を止めるガードは置かない。
+  //
+  // 以前は plan.state == STATE_BALL_IN_FLIGHT を条件に停止させていたが、ボールが
+  // 飛んでいるかどうかの推定は現状安定しておらず、特に実機で安定しないため、
+  // そこに依存した判断は実機で静かに無効化される（docs/pass.md の制約）。
+  //
+  // 位置の直接観測だけで代替する実装も試したが、実測では成立が 7/15 から 3/15 へ
+  // 落ちた。抑えたかった SELF_TOUCH は 3 件のまま変わらず、得るものが無かった。
+  // どちらの推定にも依存せず、出し手は普通にボールを追う。実機での挙動が最も
+  // 予測しやすい形を採る。
 
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
@@ -53,7 +66,6 @@ public:
       skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
       visualizer->layer = "skill/" + skill->name;
     }
-
     std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
     {
       visualizer->circle()
@@ -81,6 +93,7 @@ public:
   {
     auto wm = world_model;                   // shared_ptrをコピー
     auto game_analysis = getGameAnalysis();  // GameAnalysisをコピー
+    game_analysis.pass_plan = wm->getMsg().game_analysis.pass_plan;
 
     // デバッグ用：推奨ロボットIDをログ出力
     static int last_logged_id = -999;
@@ -93,6 +106,15 @@ public:
     }
 
     return [wm, game_analysis](const std::shared_ptr<RobotInfo> & robot) {
+      if (isUsablePassPlan(game_analysis.pass_plan, *wm)) {
+        if (robot->id == game_analysis.pass_plan.receiver_id) {
+          return 1000.0;
+        }
+        if (robot->id == game_analysis.pass_plan.kicker_id) {
+          return 0.0;
+        }
+        return robot->getDistance(wm->ball().pos) + RECOMMENDED_ATTACKER_MARGIN;
+      }
       // game_analysisで推奨ロボットが設定されている場合、そのロボットを最優先
       if (
         game_analysis.recommended_attacker_id >= 0 &&

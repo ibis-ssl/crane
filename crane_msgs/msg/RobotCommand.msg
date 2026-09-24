@@ -23,6 +23,9 @@ geometry_msgs/Pose2D current_velocity
 
 geometry_msgs/Pose2D current_pose
 
+# フィールド座標のベクトルを送信座標へ回転する角度（半面練習モード等）
+float32 field_coordinate_theta_offset 0.0
+
 bool enable_local_feedback
 
 float32 target_theta

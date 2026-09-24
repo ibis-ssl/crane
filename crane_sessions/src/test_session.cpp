@@ -6,8 +6,10 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_sessions/test_session.hpp>
+#include <crane_utils/package.hpp>
+#include <crane_utils/time.hpp>
 #include <filesystem>
 #include <range/v3/algorithm/count.hpp>
 
@@ -16,10 +18,7 @@ namespace crane
 TestSession::TestSession(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
 : SessionBase("test", world_model), topics_interface(node.get_node_topics_interface())
 {
-  config_file_path =
-    (std::filesystem::path(ament_index_cpp::get_package_share_directory("crane_sessions")) /
-     "config" / "test_planner.yaml")
-      .string();
+  config_file_path = crane::resolve_package_path("crane_sessions", "test_planner.yaml").string();
   if (not loadConfigFromFile(config_file_path)) {
     RCLCPP_WARN(
       rclcpp::get_logger("TestSession"), "設定の読込に失敗: %s", config_file_path.c_str());
@@ -59,10 +58,10 @@ TestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robot
 
   // 待機時間経過後、次のウェイポイントに遷移
   if (sleep_until.has_value()) {
-    double remaining_sec = (*sleep_until - now).seconds();
+    double remaining_sec = crane::getElapsedSec(now, *sleep_until);
     if (remaining_sec > 0.1) {  // 0.1秒以上残っている場合のみログ出力（頻度削減）
       static rclcpp::Time last_log_time;
-      if ((now - last_log_time).seconds() > 1.0) {  // 1秒ごとにログ
+      if (crane::isTimeout(last_log_time, 1.0, now)) {  // 1秒ごとにログ
         RCLCPP_INFO(
           rclcpp::get_logger("TestSession"), "Sleeping... remaining: %.1f sec", remaining_sec);
         last_log_time = now;
@@ -145,7 +144,7 @@ auto TestSession::loadConfigFromFile(const std::string & path) -> bool
           // 3要素目がある場合は角度（度）として読み込み、ラジアンに変換
           if (w["position"].size() >= 3) {
             double theta_deg = w["position"][2].as<double>();
-            wp.theta = theta_deg * M_PI / 180.0;
+            wp.theta = deg2rad(theta_deg);
           }
         } else {
           RCLCPP_WARN(rclcpp::get_logger("TestSession"), "position が無い経由点をスキップしました");

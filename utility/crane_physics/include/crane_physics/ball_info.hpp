@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-// 必要な物理モデルクラスのインクルード
 namespace crane
 {
 class BallPhysicsModel;
@@ -138,7 +137,7 @@ struct Ball
       return false;
     } else {
       Vector2 dir = (p - pos).normalized();
-      return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
+      return dir.dot(vel.normalized()) > cos(deg2rad(angle_threshold_deg));
     }
   }
 
@@ -150,7 +149,7 @@ struct Ball
     } else {
       Vector2 dir = (p - pos).normalized();
       // 内積が負の場合、ボールはその点から離れている
-      return dir.dot(vel.normalized()) < -cos(angle_threshold_deg * M_PI / 180.0);
+      return dir.dot(vel.normalized()) < -cos(deg2rad(angle_threshold_deg));
     }
   }
 
@@ -195,7 +194,7 @@ struct Ball
         return landing_time;
       }
     }
-    return std::nullopt;  // フォールバック
+    return std::nullopt;
   }
 
   [[nodiscard]] auto getStopTime() const -> double;
@@ -225,7 +224,6 @@ private:
     Point to_target = target_position - pos;
     Point ball_direction = vel.normalized();
 
-    // 目標をボールの軌道線に投影
     double projection_length = to_target.dot(ball_direction);
 
     // 投影が負の場合、最近点は現在位置
@@ -233,7 +231,6 @@ private:
       return std::make_optional(0.0);
     }
 
-    // 投影された距離に到達する時間を取得
     return getRollingTimeToReachDistance(projection_length);
   }
 
@@ -249,7 +246,7 @@ private:
     double best_time = 0.0;
 
     auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-    constexpr double time_step = 0.01;  // 10ms間隔
+    constexpr double time_step = 0.01;
 
     for (double t = 0.0; t <= landing_time; t += time_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -265,7 +262,7 @@ private:
     // 最適時間周辺でより小さなステップで結果を精密化
     double start_time = std::max(0.0, best_time - time_step);
     double end_time = std::min(landing_time, best_time + time_step);
-    constexpr double fine_step = 0.001;  // 精密化のための1ms間隔
+    constexpr double fine_step = 0.001;
 
     for (double t = start_time; t <= end_time; t += fine_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -310,7 +307,6 @@ private:
         for (int iter = 0; iter < 100; ++iter) {
           double t_mid = (t_min + t_max) / 2.0;
 
-          // t_midでの累積距離を計算
           double cumulative_distance = 0.0;
           if (t_mid <= landing_time) {
             // まだ飛行中 - 3D軌道距離を計算
@@ -318,11 +314,6 @@ private:
             cumulative_distance = (Point(pos_3d.x(), pos_3d.y()) - pos).norm();
           } else {
             // 着地して転がり中
-            (void)(landing_pos - pos).norm();  // distance_to_landing: 将来の物理計算で使用予定
-            (void)(t_mid - landing_time);      // time_after_landing: 将来の物理計算で使用予定
-            (void)parabolic.getPredictedVelocity2D(
-              landing_time);  // landing_vel: 将来の物理計算で使用予定
-
             // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
             cumulative_distance = distance;  // 完全一致として処理
           }
@@ -338,7 +329,6 @@ private:
           }
         }
 
-        // 最良の近似値を返す
         return (t_min + t_max) / 2.0;
       }
     }
@@ -385,12 +375,10 @@ public:
     Point end_point = Point::Zero();
     switch (state) {
       case State::STOPPED:
-        // 停止しているボールについて、現在位置にゼロ長セグメントを作成
         end_point = pos;
         break;
 
       case State::ROLLING:
-        // 転がりボールについて、物理対応予測を使用
         end_point = getPredictedPosition(time_horizon);
         break;
 
@@ -418,7 +406,6 @@ public:
         break;
 
       case State::ROLLING:
-        // 指定距離を移動するのに必要な時間を計算
         if (auto time_to_distance = getTimeToTravelDistance(distance)) {
           end_point = getPredictedPosition(*time_to_distance);
         } else {
@@ -458,12 +445,6 @@ public:
     return getClosestPointAndDistance(position, trajectory);
   }
 
-  // 後方互換性エイリアス
-  [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
-  {
-    return getTrajectorySegmentByTime(time_horizon);
-  }
-
   // 状態遷移サポート付きボールシーケンス生成
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const
     -> std::vector<std::pair<Point, double>>
@@ -474,20 +455,16 @@ public:
       return sequence;
     }
 
-    // 時間シーケンスを生成
     auto time_sequence = generateSequence(0.0, t_horizon, t_step);
 
-    // 潜在的な遷移を持つ異なる状態を処理
     switch (state) {
       case State::STOPPED:
-        // ボールは動かない
         for (double t : time_sequence) {
           sequence.emplace_back(pos, t);
         }
         break;
 
       case State::ROLLING:
-        // シンプルな転がり物理計算
         for (double t : time_sequence) {
           sequence.emplace_back(getPredictedPosition(t), t);
         }
@@ -497,8 +474,6 @@ public:
         // より複雑：飛行 → 着地 → 転がり遷移
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        (void)parabolic.getPredictedVelocity2D(
-          landing_time);  // landing_vel: 将来の物理計算で使用予定
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
@@ -507,8 +482,6 @@ public:
             sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
           } else {
             // 着地して転がり中
-            (void)(t - landing_time);  // time_after_landing: 将来の物理計算で使用予定
-
             // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
             sequence.emplace_back(landing_pos, t);  // 着地位置を使用
           }
@@ -539,7 +512,6 @@ public:
     return sequence;
   }
 
-  // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
   void toMsg(BallInfoMsg & msg) const;
 
@@ -548,6 +520,11 @@ public:
 
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
+
+  // ボールが上下どちら側にあるか。センター付近ではvisionノイズ（stdev 1mm程度）で
+  // 符号が毎フレーム反転するため、±0.2mのデッドバンドを跨いだときだけ切り替える。
+  Hysteresis side_hysteresis = Hysteresis(-0.2, 0.2);
+
   friend class WorldModelWrapper;
 };
 }  // namespace crane

@@ -14,13 +14,32 @@ const state = {
   predictedData: [],
 };
 
+// Plotly の配色は共有テーマ (--crane-chart-*) から読む。
+// ここに色をベタ書きするとテーマとドリフトするので、必ずトークン経由にすること。
+// app.js は </body> 直前で読み込まれ、<head> の CSS は適用済みなので load 時に確定してよい。
+function readChartTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (k, fallback) => cs.getPropertyValue(k).trim() || fallback;
+  return {
+    paper: v('--crane-chart-paper', '#FFFFFF'),
+    plot: v('--crane-chart-plot', '#FAFBFC'),
+    grid: v('--crane-chart-grid', '#E3E6EC'),
+    zero: v('--crane-chart-zero', '#CED3DC'),
+    ink: v('--crane-chart-ink', '#555C6B'),
+    series: Array.from({ length: 10 }, (_, i) =>
+      v(`--crane-chart-${i + 1}`, '#5B4BE0')),
+  };
+}
+
+const CHART_THEME = readChartTheme();
+
 const PLOT_LAYOUT_BASE = {
-  paper_bgcolor: '#141C2E',
-  plot_bgcolor: '#0D1117',
-  font: { color: '#E2E4E8', size: 11 },
+  paper_bgcolor: CHART_THEME.paper,
+  plot_bgcolor: CHART_THEME.plot,
+  font: { color: CHART_THEME.ink, size: 11 },
   margin: { l: 45, r: 15, t: 30, b: 40 },
-  xaxis: { gridcolor: '#2D3748', zerolinecolor: '#4A5568' },
-  yaxis: { gridcolor: '#2D3748', zerolinecolor: '#4A5568' },
+  xaxis: { gridcolor: CHART_THEME.grid, zerolinecolor: CHART_THEME.zero },
+  yaxis: { gridcolor: CHART_THEME.grid, zerolinecolor: CHART_THEME.zero },
 };
 
 const timelineState = {
@@ -129,7 +148,7 @@ function makeRangeShape([x0, x1]) {
   return {
     type: 'rect', xref: 'x', yref: 'paper',
     x0, x1, y0: 0, y1: 1,
-    fillcolor: '#4F378B', opacity: 0.25, line: { width: 0 },
+    fillcolor: CHART_THEME.series[0], opacity: 0.18, line: { width: 0 },
   };
 }
 
@@ -183,8 +202,8 @@ async function showTrajectoryPreview(eventId) {
     Plotly.newPlot('previewXY', [{
       x: d.positions_x, y: d.positions_y,
       mode: 'lines+markers',
-      marker: { size: 4, color: '#A0C4FF' },
-      line: { color: '#4F378B', width: 2 },
+      marker: { size: 4, color: CHART_THEME.series[0] },
+      line: { color: CHART_THEME.series[0], width: 2 },
       name: 'XY軌跡',
     }], {
       ...PLOT_LAYOUT_BASE,
@@ -209,8 +228,8 @@ async function showTrajectoryPreview(eventId) {
     Plotly.newPlot('previewVT', [{
       x: d.time_points, y: d.velocities,
       mode: 'lines+markers',
-      marker: { size: 4, color: '#FFA726' },
-      line: { color: '#FFA726', width: 2 },
+      marker: { size: 4, color: CHART_THEME.series[3] },
+      line: { color: CHART_THEME.series[3], width: 2 },
       name: '速度',
     }], vtLayout, { displayModeBar: false, responsive: true });
 
@@ -317,8 +336,7 @@ async function runOptimization() {
 function renderVerifyCharts() {
   if (!state.predictedData || state.predictedData.length === 0) return;
 
-  const colors = ['#A0C4FF', '#FFA726', '#FFB4AB', '#66BB6A', '#D0BCFF',
-    '#4cc9f0', '#f72585', '#b5e48c', '#fca311', '#64dfdf'];
+  const colors = CHART_THEME.series;
 
   const vtTraces = [];
   state.predictedData.forEach((traj, i) => {
@@ -345,7 +363,7 @@ function renderVerifyCharts() {
     title: { text: `速度 vs 時間 (decel = ${decel.toFixed(3)} m/s²)`, font: { size: 12 } },
     xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: '時間 (s)' },
     yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: '速度 (m/s)' },
-    legend: { font: { size: 9 }, bgcolor: '#141C2E', bordercolor: '#2D3748' },
+    legend: { font: { size: 9, color: CHART_THEME.ink }, bgcolor: CHART_THEME.paper, bordercolor: CHART_THEME.grid },
     margin: { ...PLOT_LAYOUT_BASE.margin, t: 35 },
   }, { responsive: true });
 
@@ -442,7 +460,7 @@ async function loadTimeline() {
       x: data.time_points,
       y: data.velocities,
       mode: 'lines',
-      line: { color: '#A0C4FF', width: 1 },
+      line: { color: CHART_THEME.series[0], width: 1 },
       name: 'ボール速度',
       hovertemplate: 't=%{x:.3f}s<br>v=%{y:.3f}m/s<extra></extra>',
     }], {

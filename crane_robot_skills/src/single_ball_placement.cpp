@@ -7,6 +7,7 @@
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
+#include <crane_utils/time.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <memory>
 
@@ -273,13 +274,6 @@ void SingleBallPlacement::initialize()
       return robot()->getDistance(pull_back_target.value()) > 0.3;
     });
 
-  // ボールが離れたら始めに戻る
-  // 2025/04/12 ボールが見えなくなったときに悪影響があるので一旦解除
-  //  addTransition(
-  //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-  //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-  //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
-
   // Vision/Tracker両方が一致してボールがドリブラーから離れている場合はやり直し
   addTransition(
     static_cast<int>(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL),
@@ -460,15 +454,6 @@ void SingleBallPlacement::initialize()
     }
   });
 
-  // addTransition(
-  //   SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-  //     // ロボットの向きがボールの方を向いていなかったらやり直し
-  //     using boost::math::constants::degree;
-  //     return std::abs(getAngleDiff(
-  //              getAngle(world_model()->ball().pos - robot()->pose.pos), robot()->pose.theta)) >
-  //            20 * degree<double>();
-  //   });
-
   addTransition(
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
     static_cast<int>(SingleBallPlacementStates::SLEEP), [this]() {
@@ -494,12 +479,12 @@ void SingleBallPlacement::initialize()
       bool feedback_timeout =
         robot()->ball_sensor_stamp.has_value() &&
         now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
-        (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
+        crane::isTimeout(*(robot()->ball_sensor_stamp), 1.0, now);
       if (feedback_timeout && !robot()->ball_sensor) {
         RCLCPP_INFO(
           rclcpp::get_logger("SingleBallPlacement"),
           "Ball sensor is not working, so return to ENTRY_POINT: %fs",
-          std::abs((now - *(robot()->ball_sensor_stamp)).seconds()));
+          crane::getDiffSec(*(robot()->ball_sensor_stamp), now));
         return true;
       }
       if (isBallTrulyLostFromDribbler(0.2)) {
@@ -510,12 +495,6 @@ void SingleBallPlacement::initialize()
       }
       return false;
     });
-  // ボールが離れたら始めに戻る
-  // addTransition(
-  //   SingleBallPlacementStates::MOVE_TO_TARGET,
-  //   SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-  //   [this]() { return skill_status == Status::FAILURE; });
-
   addTransition(
     static_cast<int>(SingleBallPlacementStates::MOVE_TO_TARGET),
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT),
@@ -533,14 +512,6 @@ void SingleBallPlacement::initialize()
     command->dribble(0.0);
     return Status::RUNNING;
   });
-
-  // addTransition(
-  //   SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-  //   Point placement_target;
-  //   placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-  //   // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-  //   return (world_model()->ball().pos - placement_target).norm() > 0.15;
-  // });
 
   addTransition(
     static_cast<int>(SingleBallPlacementStates::SLEEP),
@@ -574,7 +545,6 @@ void SingleBallPlacement::initialize()
     static_cast<int>(SingleBallPlacementStates::ENTRY_POINT), [this]() {
       auto placement_target = getPlacementTarget();
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-      // return (world_model()->ball().pos - placement_target).norm() > 0.15;
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
              world_model()->getMsg().ball_info.detected;
     });
@@ -609,15 +579,15 @@ bool SingleBallPlacement::isOutsideFieldTimeout() const
 {
   if (!robot_outside_field_since_) return false;
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-  return (now - *robot_outside_field_since_).seconds() >
-         getParameter<double>("outside_field_timeout");
+  return crane::isTimeout(
+    *robot_outside_field_since_, getParameter<double>("outside_field_timeout"), now);
 }
 
 bool SingleBallPlacement::isApproachTimeout() const
 {
   if (!approach_since_) return false;
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-  return (now - *approach_since_).seconds() > getParameter<double>("approach_timeout");
+  return crane::isTimeout(*approach_since_, getParameter<double>("approach_timeout"), now);
 }
 
 bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
@@ -627,7 +597,7 @@ bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
     RCLCPP_WARN(
       rclcpp::get_logger("SingleBallPlacement"),
       "[%s] Robot outside field for %.1fs → ENTRY_POINT (retry)", state_name,
-      (rclcpp::Clock(RCL_ROS_TIME).now() - *robot_outside_field_since_).seconds());
+      crane::getElapsedSec(*robot_outside_field_since_, rclcpp::Clock(RCL_ROS_TIME).now()));
     robot_outside_field_since_ = std::nullopt;
     return true;
   }
@@ -635,7 +605,7 @@ bool SingleBallPlacement::checkAndLogTimeout(const char * state_name)
     RCLCPP_WARN(
       rclcpp::get_logger("SingleBallPlacement"),
       "[%s] Approach time exceeded %.1fs → ENTRY_POINT (retry)", state_name,
-      (rclcpp::Clock(RCL_ROS_TIME).now() - *approach_since_).seconds());
+      crane::getElapsedSec(*approach_since_, rclcpp::Clock(RCL_ROS_TIME).now()));
     approach_since_ = std::nullopt;
     return true;
   }

@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <nlohmann/json.hpp>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -15,6 +14,8 @@
 #include "bag_control.hpp"
 #include "bag_events.hpp"
 #include "bag_json.hpp"
+#include "bag_kick_stats.hpp"
+#include "bag_pass.hpp"
 #include "bag_reader.hpp"
 #include "bag_referee.hpp"
 #include "bag_survey.hpp"
@@ -26,9 +27,11 @@ using crane::bag::detect_events;
 using crane::bag::detect_factor_transitions;
 using crane::bag::extract_referee_transitions;
 using crane::bag::format_factor_pairs;
+using crane::bag::ReadOptions;
 using crane::bag::RefereeSnapshot;
 using crane::bag::run_survey;
 using crane::bag::sample_referee;
+using crane::bag::topics_for_event_types;
 using crane::bag::track_ball;
 using crane::bag::track_robot;
 
@@ -65,7 +68,7 @@ static Args parse_args(int argc, char ** argv)
     std::fprintf(
       stderr,
       "使い方: crane_bag <command> <bag_path> [options]\n"
-      "コマンド: info, survey, track, events, control, referee\n");
+      "コマンド: info, survey, track, events, control, referee, pass, kick_stats\n");
     std::exit(1);
   }
 
@@ -144,7 +147,17 @@ static void cmd_info(const Args & args)
 static void cmd_survey(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path);
+  ReadOptions opts;
+  // survey が参照するトピックのみ（referee は不要）。
+  opts.topics = {"/play_situation", "/robot_select_results", "/world_model", "/control_targets",
+                 "/robot_commands", "/game_analysis",        "/rosout"};
+  // 各セクションのサンプリング間隔と一致させ、出力を変えずに展開件数を削減する。
+  // robot_select_results(.back()) と rosout(全件dedup) はダウンサンプルしない。
+  opts.downsample_interval_sec = {
+    {"/world_model", crane::bag::kSurveySampleInterval},
+    {"/robot_commands", crane::bag::kSurveyVelocityInterval},
+    {"/game_analysis", crane::bag::kSurveySampleInterval}};
+  auto data = BagReader::read(args.bag_path, opts);
   std::printf("%s\n", run_survey(data).c_str());
 }
 
@@ -155,10 +168,17 @@ static void cmd_track(const Args & args)
     std::exit(1);
   }
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/world_model"};
+  opts.time_range = args.time_range;
+  // 読み込み時に interval 間隔へ間引く。track 側は再サンプルせず全件を通す（interval=0）。
+  // read のダウンサンプルは track_ball/track_robot と同一の貪欲規則のため、
+  // 「windowed ストリームへの単一の貪欲パス」となり、従来の track 単独サンプルと一致する。
+  opts.downsample_interval_sec = {{"/world_model", args.interval}};
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (args.ball) {
-    auto states = track_ball(data, args.interval);
+    auto states = track_ball(data, 0.0);
     if (states.empty()) {
       std::printf("ボールのデータが見つかりません\n");
       return;
@@ -175,7 +195,7 @@ static void cmd_track(const Args & args)
   bool is_ours = !args.enemy;
   const char * side = is_ours ? "ours" : "enemy";
 
-  auto states = track_robot(data, args.robot_id, is_ours, args.interval);
+  auto states = track_robot(data, args.robot_id, is_ours, 0.0);
   if (states.empty()) {
     std::printf("robot=%d (%s) のデータが見つかりません\n", args.robot_id, side);
     return;
@@ -195,7 +215,15 @@ static void cmd_track(const Args & args)
 static void cmd_events(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path);
+  ReadOptions opts;
+  // 要求された event type の検出に必要なトピックのみ読む（空 = 全タイプ）。
+  opts.topics = topics_for_event_types(args.event_types);
+  // goal/ball_speed は world_model を全件走査するが ball/field しか使わないため、
+  // ロボット配列を破棄する高速デシリアライズを有効化する。
+  // ただし pass 検出はロボット配列・game_analysis を必要とするため全量読みに切り替える。
+  opts.world_model_ball_only = opts.topics.count("/world_model") > 0 &&
+                               !crane::bag::event_types_require_full_world_model(args.event_types);
+  auto data = BagReader::read(args.bag_path, opts);
   auto events = detect_events(data, args.event_types);
 
   if (print_json(args, events)) return;
@@ -218,7 +246,10 @@ static void cmd_control(const Args & args)
     std::exit(1);
   }
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/control_targets"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (args.changes_only) {
     auto transitions = detect_factor_transitions(data, args.robot_id);
@@ -270,7 +301,10 @@ static void cmd_control(const Args & args)
 static void cmd_referee(const Args & args)
 {
   std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
-  auto data = BagReader::read(args.bag_path, args.time_range);
+  ReadOptions opts;
+  opts.topics = {"/referee"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
 
   if (data.referees.empty()) {
     std::printf("/referee トピックが見つかりません\n");
@@ -310,6 +344,71 @@ static void cmd_referee(const Args & args)
   }
 }
 
+static void cmd_pass(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  ReadOptions opts;
+  // 接触タイミングの精度が要るため全レートで読む（ダウンサンプルなし）
+  opts.topics = {"/world_model"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
+
+  if (data.world_models.empty()) {
+    std::printf("/world_model トピックが見つかりません\n");
+    return;
+  }
+
+  auto events = crane::bag::detect_pass_events(data);
+  auto summary = crane::bag::summarize_passes(events);
+
+  if (args.format == "json") {
+    nlohmann::json j;
+    j["events"] = events;
+    j["summary"] = summary;
+    std::printf("%s\n", j.dump(2).c_str());
+    return;
+  }
+
+  std::printf("%s", crane::bag::format_pass_summary(summary).c_str());
+  if (!events.empty()) {
+    std::printf("\n=== PASS EVENTS (%zu) ===\n", events.size());
+    for (const auto & e : events) {
+      std::string notes;
+      if (
+        e.first_toucher_id >= 0 &&
+        !(e.first_toucher_ours && e.first_toucher_id == e.intended_receiver_id)) {
+        notes += std::string("  toucher=") + (e.first_toucher_ours ? "our" : "their") +
+                 std::to_string(e.first_toucher_id);
+      }
+      if (e.reserved_receiver_id >= 0 && e.reserved_receiver_id != e.intended_receiver_id) {
+        notes += "  reserved=" + std::to_string(e.reserved_receiver_id);
+      }
+      std::printf(
+        "  t=%8.2f  %d -> %-2d  %-14s d=%5.2fm v=%4.2fm/s fwd=%+5.2fm dur=%4.2fs%s\n", e.t,
+        e.kicker_id, e.intended_receiver_id, crane::bag::to_string(e.outcome).c_str(),
+        e.pass_distance, e.kick_speed, e.forward_progress, e.duration, notes.c_str());
+    }
+  }
+}
+
+static void cmd_kick_stats(const Args & args)
+{
+  std::fprintf(stderr, "Reading %s ...\n", args.bag_path.c_str());
+  ReadOptions opts;
+  opts.topics = {"/kick_prediction_traces"};
+  opts.time_range = args.time_range;
+  auto data = BagReader::read(args.bag_path, opts);
+
+  if (data.kick_prediction_traces.empty()) {
+    std::printf("/kick_prediction_traces トピックが見つかりません（古いbagでは未記録の可能性）\n");
+    return;
+  }
+
+  auto stats = crane::bag::compute_kick_stats(data.kick_prediction_traces);
+  if (print_json(args, stats)) return;
+  std::printf("%s", crane::bag::format_kick_stats(stats).c_str());
+}
+
 // ─── main ──────────────────────────────────────────────────────────────────
 
 int main(int argc, char ** argv)
@@ -323,7 +422,9 @@ int main(int argc, char ** argv)
       "  survey   <path>                                             概要サーベイを実行\n"
       "  track    <path> --robot <id>|--ball [--enemy]              ロボット/ボール追跡\n"
       "                  [--time start:end] [--interval 0.5] [--format json|text]\n"
-      "  events   <path> [--type goal kick play role ball_speed foul] [--format json|text]\n"
+      "  events   <path> [--type goal kick play role ball_speed foul pass] [--format json|text]\n"
+      "  pass     <path> [--time start:end] [--format json|text]    パス試行の検出とKPI集計\n"
+      "  kick_stats <path> [--time start:end] [--format json|text]  キック予実誤差の統計\n"
       "  control  <path> --robot <id> [--time start:end] [--changes-only] [--format json|text]\n"
       "  referee  <path> [--time start:end] [--changes-only] [--format json|text]\n"
       "           デフォルト: 全メッセージをサンプリング (--interval で間隔指定)\n"
@@ -346,6 +447,10 @@ int main(int argc, char ** argv)
       cmd_control(args);
     } else if (args.command == "referee") {
       cmd_referee(args);
+    } else if (args.command == "pass") {
+      cmd_pass(args);
+    } else if (args.command == "kick_stats") {
+      cmd_kick_stats(args);
     } else {
       std::fprintf(stderr, "不明なコマンド: %s\n", args.command.c_str());
       return 1;

@@ -106,13 +106,15 @@ jobs:
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
           colcon build --symlink-install --event-handlers console_cohesion+ \
             --parallel-workers $(nproc) \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+            --packages-skip proto2ros_tests speak_ros_voicevox_plugin \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
         shell: bash
 
-      # Temporarily disabled due to closest_point_vendor include path issue
-      # - name: Test
-      #   run: |
-      #     . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-      #     colcon test --event-handlers console_cohesion+ \
-      #       --parallel-workers $(nproc)
-      #   shell: bash
+      - name: Test
+        run: |
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon test --event-handlers console_cohesion+ \
+            --parallel-workers $(nproc) \
+            --packages-skip proto2ros proto2ros_tests speak_ros speak_ros_interfaces speak_ros_voicevox_plugin
+          colcon test-result --verbose
+        shell: bash

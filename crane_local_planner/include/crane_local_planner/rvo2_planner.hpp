@@ -61,8 +61,6 @@ public:
   auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
     -> crane_msgs::msg::RobotCommands override;
 
-  auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
-
 private:
   struct PreprocessContext
   {
@@ -111,6 +109,11 @@ private:
   auto applyRVOInputStage(
     const PreprocessContext & ctx, const crane_msgs::msg::RobotCommand & command) -> void;
 
+  auto retireAgent(size_t agent_id) -> void;
+
+  auto updateActiveAllyAgent(crane_msgs::msg::RobotCommand & command, uint8_t referee_command)
+    -> void;
+
   auto getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const -> Point;
 
   auto adjustForPenaltyAreaAvoidance(
@@ -129,8 +132,6 @@ private:
     const crane_msgs::msg::RobotCommand & command) const -> void;
 
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
-
-  crane_msgs::msg::RobotCommands pre_commands;
 
   auto toRVO(const Point & point) -> RVO::Vector2 { return RVO::Vector2(point.x(), point.y()); }
 
@@ -171,7 +172,6 @@ private:
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
 
-  // 速度計画トレース有効化フラグ
   bool enable_velocity_plan_trace = false;
 };
 }  // namespace crane

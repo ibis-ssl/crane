@@ -80,8 +80,8 @@ def load_proto_modules():
     if str(_SSL_PROTO_DIR) not in sys.path:
         sys.path.insert(0, str(_SSL_PROTO_DIR))
 
-    from ssl_vision_wrapper_pb2 import SSL_WrapperPacket  # noqa: PLC0415
-    from ssl_vision_wrapper_tracked_pb2 import TrackerWrapperPacket  # noqa: PLC0415
-    from ssl_gc_referee_message_pb2 import Referee  # noqa: PLC0415
+    from ssl_gc_referee_message_pb2 import Referee
+    from ssl_vision_wrapper_pb2 import SSL_WrapperPacket
+    from ssl_vision_wrapper_tracked_pb2 import TrackerWrapperPacket
 
     return SSL_WrapperPacket, TrackerWrapperPacket, Referee

@@ -1,148 +1,36 @@
-# 環境構築
+# 環境構築・起動
 
-Ubuntu 24.04での環境構築手順を記載します。最新のROS 2 Jazzyディストリビューションを使用します。
+Ubuntu 24.04 と ROS 2 Jazzy を使用します。ROS本体の導入は [公式手順](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)を参照してください。GitHubのSSH認証、`vcs`、`rosdep`、`colcon` を利用できる状態にします。rosdep は初回に初期化・更新が必要です。
 
-## 事前準備
-
-- GitHubへSSH鍵を登録
-  - [GitHub SSH設定ガイド](https://hansrobo.github.io/mycheatsheet_mkdocs/cheatsheets/git/#githubssh)
-- 依存パッケージの事前インストール
-
-  ```bash
-  sudo apt install -y git curl python3-pip python3-venv gnupg lsb-release
-  ```
-
-## ROS 2 Jazzyのインストール
-
-公式手順に従ってROS 2 Jazzyをインストールします。
+## 取得・ビルド
 
 ```bash
-# ROS 2のGPGキーをシステムに追加
-sudo apt update && sudo apt install -y curl gnupg lsb-release
-sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-
-# ROS 2のリポジトリをsourcesリストに追加
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
-# パッケージリストを更新してROS 2をインストール
-sudo apt update && sudo apt install -y ros-jazzy-desktop-full
-```
-
-## craneのセットアップ
-
-crane プロジェクトの取得とビルド手順です。
-
-```bash
-# ワークスペースの作成
 mkdir -p ~/ibis_ws/src
 cd ~/ibis_ws/src
-
-# craneリポジトリのクローン
 git clone git@github.com:ibis-ssl/crane.git
-
-# 依存パッケージの取得とビルド
 cd ~/ibis_ws
 source /opt/ros/jazzy/setup.bash
 vcs import src < src/crane/dependency_jazzy.repos
 rosdep install -riy --from-paths src
 colcon build --symlink-install
-
-# 環境設定の読み込み
-source ~/ibis_ws/install/local_setup.bash
+source install/local_setup.bash
 ```
 
-## 開発環境のセットアップ (オプション)
+colcon はリポジトリ内ではなく、`src/` のあるワークスペースルートで実行します。依存の正本は [dependency_jazzy.repos](https://github.com/ibis-ssl/crane/blob/develop/dependency_jazzy.repos) と各パッケージの `package.xml` です。
 
-### VS Codeのインストールと設定
+## 起動
 
-```bash
-# VS Codeのインストール
-sudo snap install --classic code
-
-# 便利な拡張機能
-code --install-extension ms-vscode.cpptools
-code --install-extension ms-python.python
-code --install-extension twxs.cmake
-code --install-extension ms-iot.vscode-ros
-```
-
-## シミュレーション環境
-
-### 1. Dockerを使ったシミュレーション環境
-
-Docker Composeを使用して、試合進行のための各種サービスを起動できます。
-
-#### DockerとDocker Compose (V2) のインストール
+先に [Dockerガイド](docker.md)からシミュレータとGame Controllerを起動します。別のターミナルで以下を実行します。
 
 ```bash
-# Docker Engine のインストール (公式ガイド推奨: https://docs.docker.com/engine/install/ubuntu/)
-sudo apt update
-sudo apt install -y docker.io
-sudo systemctl start docker
-sudo systemctl enable docker # マシン起動時にDockerを自動起動
-sudo usermod -aG docker $USER # dockerコマンドをsudoなしで実行可能に
-
-# Docker Compose V2 (docker-compose-plugin) のインストール
-# Docker Engineに通常同梱されていますが、もしなければ以下でインストールできます。
-# (ディストリビューションやDockerのバージョンによって最適な方法が異なる場合があります)
-sudo apt install -y docker-compose-plugin
-```
-
-**注意**: `docker` グループにユーザーを追加した後は、設定を反映させるために一度ログアウトして再ログインするか、以下のコマンドを実行してください：
-
-```bash
-newgrp docker
-```
-
-#### シミュレーション環境の起動
-
-詳細な起動手順は `docker/README.md` を参照してください。起動後のサービスへのアクセス先:
-
-- SSL Game Controller: [http://localhost:8081](http://localhost:8081)
-- SSL Vision Client: [http://localhost:8082](http://localhost:8082)
-
-### 2. GrSim
-
-ibis-ssl版のGrSimはSSL-Visionとの互換性のために修正されています。
-
-```bash
-git clone https://github.com/ibis-ssl/grSim
-cd grSim
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
-```
-
-## craneの実行
-
-シミュレーションを起動した状態で、以下のコマンドを実行してcraneを起動します。
-
-```bash
-# 環境の読み込み
-source ~/ibis_ws/install/setup.bash
-
-# シミュレーションモードでの起動（独自ポート: Vision=10020, Referee=11003, Tracker=11010）
+cd ~/ibis_ws
+source /opt/ros/jazzy/setup.bash
+source install/local_setup.bash
 ros2 launch crane_bringup crane.launch.xml sim:=true
-
-# 実機モードでの起動（公式ポート: Vision=10006, Referee=10003, Tracker=10010）
-ros2 launch crane_bringup crane.launch.xml sim:=false
-
-# カスタムポート設定での起動
-ros2 launch crane_bringup crane.launch.xml sim:=true vision_port:=12345
 ```
 
-**ポート設定について:**
+実機では[ネットワーク切替](network.md#実機へ切り替える)と[試合チェック](match.md)を済ませ、`sim:=false` を指定します。送信形式は相手側に合わせて `packet_type` で選択します。
 
-- `sim`引数により、ネットワークポート（Vision/Referee/Tracker）が自動的に切り替わります
-- `sim=true`: 独自ポート（grSimなどのシミュレータ用）
-- `sim=false`: 公式ポート（公式試合環境用）
-- 起動時にログに使用ポート番号が表示されます: `[crane.launch.xml] sim=true | Ports: Vision=10020, Referee=11003, Tracker=11010`
-- 個別ポート指定も可能: `vision_port:=`, `referee_port:=`, `tracker_port:=`
+起動引数・既定値は [crane.launch.xml](https://github.com/ibis-ssl/crane/blob/develop/crane_bringup/launch/crane.launch.xml) が正本です。`sim` によるポート切替と、起動ログの使用ポートを確認してください。
 
-## トラブルシューティング
-
-## 参考リンク
-
-- [ibis-ssl ドキュメント](https://ibis-ssl.github.io/ibis_documentation/)
-- [ROS 2 公式ドキュメント](https://docs.ros.org/en/jazzy/index.html)
-- [Docker 公式ドキュメント](https://docs.docker.com/)
+変更後のビルド・テストは[開発手順](tools.md)、起動後の異常は[診断ガイド](diagnostics.md)を参照してください。

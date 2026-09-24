@@ -15,15 +15,18 @@
 namespace crane
 {
 ConfigurationManager::ConfigurationManager(
-  const std::string & package_share_directory, const std::string & config_file_name,
-  rclcpp::Logger logger)
+  const std::filesystem::path & config_path, rclcpp::Logger logger)
 : logger_(logger)
 {
-  using std::filesystem::path;
-
-  // 統合設定ファイルの読み込み
-  auto config_path = path(package_share_directory) / "config" / config_file_name;
   loadUnifiedConfig(config_path);
+}
+
+ConfigurationManager::ConfigurationManager(
+  const std::string & package_share_directory, const std::string & config_file_name,
+  rclcpp::Logger logger)
+: ConfigurationManager(
+    std::filesystem::path(package_share_directory) / "config" / config_file_name, logger)
+{
 }
 
 auto ConfigurationManager::getSessionNameForEvent(const std::string & event_name) const
@@ -73,7 +76,6 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
 {
   auto config = YAML::LoadFile(config_file.c_str());
 
-  // Situationsの読み込み
   if (config["situations"]) {
     for (const auto & situation_entry : config["situations"]) {
       const std::string situation_name = situation_entry.first.as<std::string>();
@@ -89,14 +91,12 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
         SessionSlot session_capacity;
         session_capacity.session_name = session_node["name"].as<std::string>();
 
-        // max_robotsの読み込みとデフォルト値設定
         if (session_node["max_robots"]) {
           session_capacity.max_robots = session_node["max_robots"].as<int>();
         } else {
-          session_capacity.max_robots = 1;  // デフォルト: 1
+          session_capacity.max_robots = 1;
         }
 
-        // バリデーション
         if (session_capacity.max_robots <= 0) {
           RCLCPP_WARN(
             logger_, "Invalid max_robots (%d) for session '%s': must be > 0. Using 1.",
@@ -125,20 +125,17 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
           ss << "\tCANDIDATE_ROBOTS : " << session_capacity.candidate_robots.size() << " entries\n";
         }
 
-        // params の読み込み（存在する場合のみ）
         if (session_node["params"]) {
           for (const auto & param : session_node["params"]) {
             std::string key = param.first.as<std::string>();
             const auto & value = param.second;
             if (value.IsScalar()) {
               std::string str_val = value.as<std::string>();
-              // bool判定
               if (str_val == "true") {
                 session_capacity.params[key] = true;
               } else if (str_val == "false") {
                 session_capacity.params[key] = false;
               } else {
-                // 数値判定
                 try {
                   size_t pos;
                   int int_val = std::stoi(str_val, &pos);
@@ -160,7 +157,6 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
       }
       robot_selection_priority_map_[situation_name] = session_capacity_list;
 
-      // practice_mode の読み込み（存在する場合のみ）
       if (situation_data["practice_mode"]) {
         crane_msgs::msg::PracticeMode pm;
         const auto & pm_node = situation_data["practice_mode"];
@@ -199,7 +195,6 @@ auto ConfigurationManager::loadUnifiedConfig(const std::filesystem::path & confi
     }
   }
 
-  // Eventsの読み込み
   if (config["events"]) {
     for (const auto & event_node : config["events"]) {
       event_map_[event_node["name"].as<std::string>()] = event_node["situation"].as<std::string>();

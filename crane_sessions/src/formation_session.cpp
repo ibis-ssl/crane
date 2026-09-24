@@ -97,7 +97,9 @@ FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
       // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
       command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
-      command->disableAnyAreaAvoidance();
+      // フォーメーション座標がペナルティエリアの回避マージンと重なりうるためゴールエリア回避のみ無効化する。
+      // ボール回避・プレースメント回避・フィールド境界回避は有効のまま維持する。
+      command->disableGoalAreaAvoidance();
     },
     0.03);
   return {SessionBase::Status::RUNNING, robot_commands};

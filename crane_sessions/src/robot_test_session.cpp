@@ -18,6 +18,7 @@ RobotTestSession::RobotTestSession(WorldModelWrapper::SharedPtr & world_model, r
       std::lock_guard<std::mutex> lock(target_mutex_);
       latest_target_ = std::make_shared<crane_msgs::msg::RobotCommand>(*msg);
       target_robot_id_ = msg->robot_id;
+      has_target_robot_id_ = true;
 
       // max_velocity / max_acceleration をキャッシュ
       for (const auto & factor : msg->local_planner_config.max_velocity_factors) {
@@ -41,13 +42,8 @@ RobotTestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
     return {SessionBase::Status::RUNNING, robot_commands};
   }
 
-  auto robot_id = robots[0];
-
-  if (!command_ || command_->getMsg().robot_id != robot_id.id) {
-    command_ = std::make_shared<crane::PositionCommandWrapper>(
-      "robot_test_session", robot_id.id, world_model);
-  }
-
+  uint8_t target_id = 0;
+  bool has_target = false;
   crane_msgs::msg::RobotCommand::SharedPtr target;
   double max_vel, max_acc;
   {
@@ -55,6 +51,23 @@ RobotTestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
     target = latest_target_;
     max_vel = max_velocity_;
     max_acc = max_acceleration_;
+    target_id = target_robot_id_;
+    has_target = has_target_robot_id_;
+  }
+
+  uint8_t actual_id = robots[0].id;
+  if (has_target) {
+    for (const auto & r : robots) {
+      if (r.id == target_id) {
+        actual_id = r.id;
+        break;
+      }
+    }
+  }
+
+  if (!command_ || command_->getMsg().robot_id != actual_id) {
+    command_ =
+      std::make_shared<crane::PositionCommandWrapper>("robot_test_session", actual_id, world_model);
   }
 
   if (!target || target->position_target_mode.empty()) {

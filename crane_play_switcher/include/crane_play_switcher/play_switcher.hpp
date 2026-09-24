@@ -35,8 +35,6 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
 
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
-
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
   auto referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void;
@@ -49,6 +47,8 @@ private:
 
   std::string team_name = "ibis";
 
+  bool is_test_mode_injected_ = false;
+
   struct LastCommandChangedState
   {
     rclcpp::Time stamp;
@@ -58,8 +58,6 @@ private:
 
   struct InplayCommandInfo
   {
-    int raw_command = 0;
-    int command = 0;
     std::string reason;
   } inplay_command_info;
 

@@ -9,7 +9,6 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_physics/robot_info.hpp>
-#include <memory>
 
 namespace crane
 {
@@ -126,30 +125,6 @@ inline double calculateAllocationCost(
   // ボーナスは負の値として減算される
   return distance_cost + velocity_cost + time_cost - hysteresis_bonus + velocity_hysteresis +
          priority_cost;
-}
-
-/**
- * @brief 簡易版コスト関数（距離のみ）
- *
- * 後方互換性のための関数。既存コードとの互換性を保つ。
- *
- * @param robot_pos ロボット位置
- * @param target ターゲット位置
- * @return 距離コスト
- */
-inline double calculateSimpleDistanceCost(const Point & robot_pos, const Point & target)
-{
-  return (target - robot_pos).norm();
-}
-
-/**
- * @brief SharedPtr版のコスト関数（WorldModelWrapper互換用）
- */
-inline double calculateAllocationCost(
-  const std::shared_ptr<RobotInfo> & robot, const Point & target, const AssignmentContext & context,
-  const AllocationCostConfig & config = AllocationCostConfig())
-{
-  return calculateAllocationCost(*robot, target, context, config);
 }
 
 }  // namespace crane

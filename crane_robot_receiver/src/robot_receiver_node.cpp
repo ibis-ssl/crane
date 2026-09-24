@@ -11,6 +11,7 @@
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
+#include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <format>
@@ -27,8 +28,12 @@ namespace protocol = crane::robot_receiver::protocol;
 class RobotFeedbackReceiver
 {
 public:
-  RobotFeedbackReceiver(asio::io_context & io_ctx, const std::string & host, const int port)
-  : robot_id(port - 50100),
+  // robot_id は呼び出し側から明示的に受け取る。
+  // 以前は port - 50100 と直書きしており、port_base パラメータを変更すると
+  // robot_id が丸ごとずれていた（port_base=50800 なら robot_id が 700 台になる）。
+  RobotFeedbackReceiver(
+    asio::io_context & io_ctx, const std::string & host, const int port, const int robot_id)
+  : robot_id(robot_id),
     async_receiver_(
       std::make_unique<crane::AsyncUdpReceiver>(io_ctx, host, port, protocol::BUFFER_SIZE)),
     clock(RCL_ROS_TIME)
@@ -42,14 +47,15 @@ public:
   {
     auto stamp = clock.now();
     std::lock_guard<std::mutex> lock(mutex_);
-    if (size != protocol::PACKET_SIZE || buf.size() < protocol::PACKET_SIZE) {
+    // 検証条件は protocol::validatePacket に一本化する。
+    // ここに独自の検証を足すと、ヘッダ側の定義と乖離したまま両方が生き残る。
+    const auto validation = protocol::validatePacket(buf, size);
+    if (!validation.size_valid) {
       ++size_mismatch_count_;
       ++invalid_packet_count_;
       return;
     }
-    if (
-      protocol::readRawByte(buf, protocol::offset::SYNC_0) != protocol::SYNC_0_VALUE ||
-      protocol::readRawByte(buf, protocol::offset::SYNC_1) != protocol::SYNC_1_VALUE) {
+    if (!validation.sync_valid) {
       ++sync_error_count_;
       ++invalid_packet_count_;
       return;
@@ -99,13 +105,24 @@ public:
 
     // 連続値: 算術平均
     const float n = static_cast<float>(packet_queue_.size());
-    float sum_yaw = 0.f, sum_diff = 0.f;
+    // 角度は算術平均してはならない。実機の yaw_deg は ICM20602_normAngle() で
+    // [-180, 180) に折り返されて送られてくるため、179.9 と -179.9 の算術平均は
+    // 0 になるが、正しい平均は 180 である（真値と 180 度ずれる）。
+    // 単位ベクトルの平均から atan2 で戻す円周平均を使う。
+    // diff_angle も実機側で yaw_deg - vision_theta の生の差として送られ、
+    // 折り返しの影響を受けるため同様に扱う。
+    double sum_yaw_sin = 0.0, sum_yaw_cos = 0.0;
+    double sum_diff_sin = 0.0, sum_diff_cos = 0.0;
     float sum_motor[4] = {};
     std::array<float, 2> sum_odom = {}, sum_odom_speed = {}, sum_mouse_odom = {},
                          sum_mouse_vel = {}, sum_voltage = {};
     for (const auto & p : packet_queue_) {
-      sum_yaw += p.yaw_angle;
-      sum_diff += p.diff_angle;
+      const double yaw_rad = p.yaw_angle * M_PI / 180.0;
+      sum_yaw_sin += std::sin(yaw_rad);
+      sum_yaw_cos += std::cos(yaw_rad);
+      const double diff_rad = p.diff_angle * M_PI / 180.0;
+      sum_diff_sin += std::sin(diff_rad);
+      sum_diff_cos += std::cos(diff_rad);
       for (int i = 0; i < 4; ++i) sum_motor[i] += p.motor_current[i];
       for (int i = 0; i < 2; ++i) {
         sum_odom[i] += p.odom[i];
@@ -115,8 +132,10 @@ public:
         sum_voltage[i] += p.voltage[i];
       }
     }
-    result.yaw_angle = sum_yaw / n;
-    result.diff_angle = sum_diff / n;
+    // 全ベクトルが打ち消し合う縮退時は atan2(0, 0) = 0 になるが、
+    // 単一ロボットの短い窓ではばらつきが小さいため実運用では起きない。
+    result.yaw_angle = static_cast<float>(std::atan2(sum_yaw_sin, sum_yaw_cos) * 180.0 / M_PI);
+    result.diff_angle = static_cast<float>(std::atan2(sum_diff_sin, sum_diff_cos) * 180.0 / M_PI);
     for (int i = 0; i < 4; ++i) result.motor_current[i] = sum_motor[i] / n;
     for (int i = 0; i < 2; ++i) {
       result.odom[i] = sum_odom[i] / n;
@@ -147,7 +166,6 @@ public:
     uint32_t valid_packet_count = 0;
     uint32_t invalid_packet_count = 0;
     uint32_t sync_error_count = 0;
-    uint32_t checksum_error_count = 0;
     uint32_t size_mismatch_count = 0;
     uint32_t counter_jump_count = 0;
   };
@@ -165,7 +183,6 @@ public:
     result.valid_packet_count = valid_packet_count_;
     result.invalid_packet_count = invalid_packet_count_;
     result.sync_error_count = sync_error_count_;
-    result.checksum_error_count = checksum_error_count_;
     result.size_mismatch_count = size_mismatch_count_;
     result.counter_jump_count = counter_jump_count_;
     return result;
@@ -267,7 +284,6 @@ private:
     feedback.valid_packet_count = valid_packet_count_;
     feedback.invalid_packet_count = invalid_packet_count_;
     feedback.sync_error_count = sync_error_count_;
-    feedback.checksum_error_count = checksum_error_count_;
     feedback.size_mismatch_count = size_mismatch_count_;
     feedback.counter_jump_count = counter_jump_count_;
   }
@@ -315,7 +331,6 @@ private:
   uint32_t valid_packet_count_ = 0;
   uint32_t invalid_packet_count_ = 0;
   uint32_t sync_error_count_ = 0;
-  uint32_t checksum_error_count_ = 0;
   uint32_t size_mismatch_count_ = 0;
   uint32_t counter_jump_count_ = 0;
   bool has_last_counter_ = false;
@@ -335,25 +350,23 @@ public:
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     // パラメータの宣言と取得
-    int max_robot_id = declare_parameter("max_robot_id", 15);
-    bool sim_mode = declare_parameter("sim_mode", false);
-    std::string ip_base = declare_parameter("multicast_ip_base", "224.5.20");
-    int port_base = declare_parameter("port_base", 50100);
-    int ip_offset = declare_parameter("ip_octet_offset", 100);
+    int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 15);
+    std::string ip_base = crane::get_or_declare_parameter(this, "multicast_ip_base", "224.5.20");
+    int port_base = crane::get_or_declare_parameter(this, "port_base", 50100);
+    int ip_offset = crane::get_or_declare_parameter(this, "ip_octet_offset", 100);
 
-    RCLCPP_INFO(
-      get_logger(), "Listening for robot feedbacks (max_robot_id: %d, sim_mode: %s)", max_robot_id,
-      sim_mode ? "true" : "false");
+    RCLCPP_INFO(get_logger(), "Listening for robot feedbacks (max_robot_id: %d)", max_robot_id);
 
     for (int i = 0; i <= max_robot_id; i++) {
-      std::string ip;
-      if (sim_mode) {
-        ip = "127.0.0.1";
-      } else {
-        ip = std::format("{}.{}", ip_base, i + ip_offset);
-      }
+      std::string ip = std::format("{}.{}", ip_base, i + ip_offset);
       int port = port_base + i;
-      receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port));
+      try {
+        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, i));
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          get_logger(), "Failed to listen on %s:%d for robot %d: %s", ip.c_str(), port, i,
+          e.what());
+      }
     }
 
     // asioイベントループを専用スレッドで開始
@@ -387,7 +400,6 @@ public:
           robot_feedback_msg.valid_packet_count = s.valid_packet_count;
           robot_feedback_msg.invalid_packet_count = s.invalid_packet_count;
           robot_feedback_msg.sync_error_count = s.sync_error_count;
-          robot_feedback_msg.checksum_error_count = s.checksum_error_count;
           robot_feedback_msg.size_mismatch_count = s.size_mismatch_count;
           robot_feedback_msg.counter_jump_count = s.counter_jump_count;
         }

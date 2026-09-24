@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.12)
 project(crane_robot_receiver)
 
+# 既定を Release にする。CMAKE_BUILD_TYPE 未指定だと GCC は最適化なし（-O0）になり、
+# 経路計画のような毎周期の計算が桁違いに遅くなる。CI と docker は明示的に Release を
+# 指定しているので、これはローカルビルドを同じ条件に揃えるためのもの。
+# デバッグ時は -DCMAKE_BUILD_TYPE=Debug または RelWithDebInfo を明示する。
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
@@ -19,9 +27,14 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-include(/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake)
+if(EXISTS "/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake")
+  include(/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake)
+else()
+  macro(add_backward target)
+  endmacro()
+endif()
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR} ${robocup_ssl_msgs_INCLUDE_DIRS})
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
@@ -38,15 +51,6 @@ ament_auto_add_executable(diagnostic_publisher_node
 )
 target_link_libraries(diagnostic_publisher_node fmt)
 add_backward(diagnostic_publisher_node)
-
-ament_auto_add_executable(grsim_robot_status_node
-        src/grsim_robot_status_node.cpp
-)
-# これがないと参照未解決エラーが出る
-target_link_libraries(grsim_robot_status_node
-        ${robocup_ssl_msgs_LIBRARIES}
-        robocup_ssl_msgs::robocup_ssl_msgs_proto)
-add_backward(grsim_robot_status_node)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>  // For std::fabs and std::sqrt
 #include <crane_geometry/boost_geometry.hpp>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -32,7 +33,47 @@ inline auto createBox(const Point & p1, const Point & p2) -> Box
   return box;
 }
 
+/**
+ * @brief 度からラジアンへの変換 (constexpr)
+ *
+ * @tparam T 数値型（デフォルト: double）
+ * @param deg 角度（度）
+ * @return T 角度（ラジアン）
+ */
+template <typename T = double>
+constexpr auto deg2rad(T deg) noexcept -> T
+{
+  return deg * static_cast<T>(M_PI / 180.0);
+}
+
+/**
+ * @brief ラジアンから度への変換 (constexpr)
+ *
+ * @tparam T 数値型（デフォルト: double）
+ * @param rad 角度（ラジアン）
+ * @return T 角度（度）
+ */
+template <typename T = double>
+constexpr auto rad2deg(T rad) noexcept -> T
+{
+  return rad * static_cast<T>(180.0 / M_PI);
+}
+
 inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
+
+/**
+ * @brief 2Dベクトルを指定角度（ラジアン、反時計回り）だけ回転
+ *
+ * @param vec 回転対象の2Dベクトル
+ * @param angle_rad 回転角度（ラジアン）
+ * @return Vector2 回転後のベクトル
+ */
+inline auto rotate(const Vector2 & vec, double angle_rad) -> Vector2
+{
+  const double c = std::cos(angle_rad);
+  const double s = std::sin(angle_rad);
+  return Vector2(vec.x() * c - vec.y() * s, vec.x() * s + vec.y() * c);
+}
 
 inline auto normalizeAngle(double angle_rad) -> double
 {
@@ -122,42 +163,51 @@ inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   return intersections;
 }
 
+/**
+ * @brief 円と線分の交点を求める
+ *
+ * 線分を P(t) = segment.first + t * (segment.second - segment.first), t in [0, 1] と
+ * 媒介変数表示し、|P(t) - center|^2 = radius^2 の二次方程式を直接解く。
+ *
+ * 垂線足を経由する構成は「円中心から線分への垂直距離」を必要とするが、
+ * bg::distance(circle, segment) は円表面からの距離（0クランプ）を、
+ * closest_point(segment, center) は線分にクランプされた距離を返すため、
+ * どちらも垂直距離ではなく交点座標が破綻する。二次方程式解にはこの落とし穴がない。
+ *
+ * @return 交点。接する場合は1点、交差しない場合や線分の長さが0の場合は空。
+ */
 inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
 {
   std::vector<Point> intersections;
-  double distance = bg::distance(circle, segment);
-  if (distance > circle.radius) {
-    // 交差しない
-    return intersections;
-  } else {
-    // 交差する
-    // 交点を求める
-    Vector2 norm_vec = getVerticalVec(segment.second - segment.first).normalized();
-    if (
-      ((circle.center + norm_vec) - segment.first).norm() >
-      ((circle.center - norm_vec) - segment.first).norm()) {
-      norm_vec = -norm_vec;
-    }
-    double d = std::sqrt(circle.radius * circle.radius - distance * distance);
-    Vector2 seg_norm = (segment.second - segment.first).normalized();
-    Point p1 = circle.center + norm_vec * distance + seg_norm * d;
-    Point p2 = circle.center + norm_vec * distance - seg_norm * d;
-
-    // 交点が線分上にあるか確認
-    if (
-      (p1 - segment.first).dot(segment.second - segment.first) > 0 &&
-      (p1 - segment.second).dot(segment.first - segment.second) > 0) {
-      intersections.push_back(p1);
-    }
-
-    if (
-      (p2 - segment.first).dot(segment.second - segment.first) > 0 &&
-      (p2 - segment.second).dot(segment.first - segment.second) > 0) {
-      intersections.push_back(p2);
-    }
-
+  const Vector2 dir = segment.second - segment.first;
+  const double a = dir.squaredNorm();
+  // 長さ0の線分は方向が定義できないため交点なしとして扱う
+  if (a < 1e-18) {
     return intersections;
   }
+  const Vector2 to_start = Point(segment.first) - circle.center;
+  const double b = 2.0 * to_start.dot(dir);
+  const double c = to_start.squaredNorm() - circle.radius * circle.radius;
+  const double discriminant = b * b - 4.0 * a * c;
+  if (discriminant < 0.0) {
+    // 交差しない
+    return intersections;
+  }
+  const double sqrt_d = std::sqrt(discriminant);
+  // a > 0 なので (-b - sqrt_d) が常に小さい方の解。始点側から終点側の順で並ぶ
+  for (const double t : {(-b - sqrt_d) / (2.0 * a), (-b + sqrt_d) / (2.0 * a)}) {
+    // 線分の外（無限直線上の交点）は除外する
+    if (t < 0.0 || t > 1.0) {
+      continue;
+    }
+    Point point = Point(segment.first) + dir * t;
+    // 接する場合は重解となり同じ点が2つ得られるので1点に畳む
+    if (not intersections.empty() && (intersections.back() - point).norm() < 1e-9) {
+      continue;
+    }
+    intersections.push_back(point);
+  }
+  return intersections;
 }
 
 template <typename Geometry1, typename Geometry2>
@@ -283,6 +333,121 @@ inline auto computeAroundBallApproachTargetDynamic(
     std::clamp(offset_eff, std::min(base_offset, max_offset), std::max(base_offset, max_offset));
 
   return computeAroundBallApproachTarget(ball, desired_opposite, from, offset_eff, epsilon);
+}
+
+/**
+ * @brief ベクトルのノルムを指定した上限値以下に制限する（ノルム飽和）
+ *
+ * @param vec 対象2Dベクトル
+ * @param max_norm 上限ノルム（0以下の場合は零ベクトルを返す）
+ * @return Vector2 クランプされたベクトル
+ */
+inline auto clampNorm(const Vector2 & vec, double max_norm) -> Vector2
+{
+  if (max_norm <= 0.0) {
+    return Vector2::Zero();
+  }
+  const double current_norm = vec.norm();
+  if (current_norm > max_norm && current_norm > 1e-9) {
+    return vec * (max_norm / current_norm);
+  }
+  return vec;
+}
+
+/**
+ * @brief 2D点を min_p と max_p の範囲内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param min_p 最小境界点
+ * @param max_p 最大境界点
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, const Point & min_p, const Point & max_p) -> Point
+{
+  return Point(std::clamp(p.x(), min_p.x(), max_p.x()), std::clamp(p.y(), min_p.y(), max_p.y()));
+}
+
+/**
+ * @brief 2D点を Box 矩形領域内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param box クランプ対象の矩形領域
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, const Box & box) -> Point
+{
+  return clampPoint(p, box.min_corner(), box.max_corner());
+}
+
+/**
+ * @brief 2D点を [min_x, max_x] x [min_y, max_y] の範囲内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param min_x X座標最小値
+ * @param max_x X座標最大値
+ * @param min_y Y座標最小値
+ * @param max_y Y座標最大値
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, double min_x, double max_x, double min_y, double max_y)
+  -> Point
+{
+  return Point(std::clamp(p.x(), min_x, max_x), std::clamp(p.y(), min_y, max_y));
+}
+
+/**
+ * @brief 2D点を原点対称な境界 [-max_x, max_x] x [-max_y, max_y] 内にクランプする
+ *
+ * @param p 対象の2D点
+ * @param max_x X座標の絶対値上限
+ * @param max_y Y座標の絶対値上限
+ * @return Point クランプされた2D点
+ */
+inline auto clampPoint(const Point & p, double max_x, double max_y) -> Point
+{
+  return clampPoint(p, -max_x, max_x, -max_y, max_y);
+}
+
+/**
+ * @brief 中心からの距離を保ったまま、点を箱の内側へ滑らせる
+ *
+ * 点が箱の中ならそのまま返す。外なら、中心を通る同じ半径の円上で箱に入る点のうち、
+ * 元の角度に最も近いものを返す（72 分割のサンプリング）。箱へ単純にクランプすると
+ * 点が中心へ寄ってしまう場合（ボール周りの周回目標をフィールド内に収めるときなど）に使う。
+ * 円が箱と交わらないときは箱へクランプした点を返す。
+ *
+ * @param center 円の中心
+ * @param point 滑らせる点
+ * @param box 収めたい箱
+ * @return Point 箱の中に収めた点
+ */
+inline auto slideOntoCircleInsideBox(const Point & center, const Point & point, const Box & box)
+  -> Point
+{
+  if (isInBox(box, point)) {
+    return point;
+  }
+  const double radius = (point - center).norm();
+  const double base_angle = getAngle(point - center);
+  std::optional<Point> best;
+  double best_angle_diff = std::numeric_limits<double>::infinity();
+  constexpr int SAMPLES = 72;
+  for (int i = 0; i < SAMPLES; ++i) {
+    const double angle = base_angle + 2.0 * M_PI * i / SAMPLES;
+    const Point candidate = center + radius * Vector2(std::cos(angle), std::sin(angle));
+    if (!isInBox(box, candidate)) {
+      continue;
+    }
+    const double angle_diff = std::abs(getAngleDiff(angle, base_angle));
+    if (angle_diff < best_angle_diff) {
+      best_angle_diff = angle_diff;
+      best = candidate;
+    }
+  }
+  if (best.has_value()) {
+    return *best;
+  }
+  return clampPoint(point, box);
 }
 }  // namespace crane
 
