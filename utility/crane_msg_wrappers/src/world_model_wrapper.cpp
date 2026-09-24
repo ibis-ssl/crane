@@ -396,63 +396,6 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 }
 
 auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
-  const Point & ball_origin, const Vector2 & ball_velocity, const RobotList & robots,
-  const SlackTimeConfig & config) -> std::vector<SlackTimeResult>
-{
-  const double ball_speed = ball_velocity.norm();
-
-  std::vector<std::pair<Point, double>> ball_sequence;
-  if (ball_speed > config.velocity_epsilon) {
-    for (double t = 0.0; t <= config.time_horizon; t += config.time_step) {
-      Point p = ball_origin + ball_velocity * t;
-      ball_sequence.emplace_back(p, t);
-    }
-  } else {
-    ball_sequence.emplace_back(ball_origin, 0.0);
-  }
-
-  auto their_robots = theirs_.robotsWhere().available().get();
-
-  // ボールの位置とスラックタイムをペアにして計算
-  return ball_sequence
-         // distance_horizon以内のボールのみを抽出
-         | ranges::views::filter([&](const auto & ball_state) {
-             return (ball_state.first - ball_origin).norm() < config.distance_horizon;
-           })
-         // フィールド外/ペナルティエリア内のボールを除外
-         | ranges::views::filter([&](const auto & ball_state) {
-             return point_checker.isFieldInside(ball_state.first) &&
-                    not point_checker.isPenaltyArea(ball_state.first);
-           })
-         // 敵のブロックが入るまでのボールのみを抽出
-         | ranges::views::take_while([&](const auto & ball_state) {
-             auto nearest = getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots);
-             if (nearest.has_value()) {
-               return nearest->distance > 0.2;
-             } else {
-               // 敵がいない場合は有効
-               return true;
-             }
-           })
-         // ボール位置 -> スラックタイムを計算（p_ballを直接渡して再計算を回避）
-         | ranges::views::transform([&](const auto & ball_state) -> std::optional<SlackTimeResult> {
-             auto [p_ball, t_ball] = ball_state;
-             auto slack = getBallSlackTime(p_ball, t_ball, robots, config);
-             if (slack) {
-               slack->slack_time += config.slack_time_offset;
-             }
-             return slack;
-           })
-         // 有効なスラックタイムのみを抽出
-         |
-         ranges::views::filter([&](const auto & opt_slack) {
-           return opt_slack.has_value() && point_checker.isFieldInside(opt_slack->intercept_point);
-         }) |
-         ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); }) |
-         ranges::to<std::vector>();
-}
-
-auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   const RobotList & robots, const SlackTimeConfig & config) -> std::vector<SlackTimeResult>
 {
   // 減速モデル（BallPhysicsModel）を使ってボールシーケンスを生成する。
