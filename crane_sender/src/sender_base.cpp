@@ -23,7 +23,6 @@ SenderBase::SenderBase(const std::string & name, const rclcpp::NodeOptions & opt
   clock(RCL_ROS_TIME)
 {
   crane::get_or_declare_parameter(this, "no_movement", no_movement);
-  crane::get_or_declare_parameter(this, "delay_s", delay_s);
   crane::get_or_declare_parameter(this, "kick_power_limit_straight", kick_power_limit_straight);
   crane::get_or_declare_parameter(this, "kick_power_limit_chip", kick_power_limit_chip);
   crane::get_or_declare_parameter(this, "latency_ms", current_latency_ms);

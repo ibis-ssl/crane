@@ -41,11 +41,6 @@ constexpr uint8_t POSITION_CONTROL_CONFIG_VERSION = 2;
 class IbisSenderNode : public SenderBase
 {
 private:
-  int debug_id;
-
-  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
-
   boost::asio::io_service broadcast_io_service_;
   boost::asio::ip::udp::endpoint broadcast_endpoint_;
   boost::asio::ip::udp::socket broadcast_socket_;
@@ -73,18 +68,6 @@ public:
     broadcast_socket_(
       broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
-    crane::get_or_declare_parameter(this, "debug_id", debug_id);
-
-    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
-    parameter_callback_handle =
-      parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
-        if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
-          debug_id = p.as_int();
-        } else {
-          RCLCPP_WARN(get_logger(), "Warning: debug_id must be an integer");
-        }
-      });
-
     const std::string target_address =
       crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
     const int target_port =

@@ -33,8 +33,6 @@ protected:
 
   double calculateAccelerationLimit(double current_speed, double target_speed) const;
 
-  double delay_s{};
-
   std::shared_ptr<WorldModelWrapper> world_model;
 
   rclcpp::Clock clock;
