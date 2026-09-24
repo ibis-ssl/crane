@@ -24,10 +24,7 @@ public:
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
 
-    // 経路計画用の減速度パラメータを読み込み
     planning_deceleration = crane::get_or_declare_parameter(node, "planning_deceleration", 2.5);
-
-    // 経路計画用の加速度パラメータを読み込み（減速度とは別に設定）
     planning_acceleration = crane::get_or_declare_parameter(node, "planning_acceleration", 5.0);
   }
   virtual auto calculateRobotCommand(
@@ -85,9 +82,7 @@ protected:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  // 経路計画用の減速度パラメータ
   double planning_deceleration;
-  // 経路計画用の加速度パラメータ（加速フェーズに使用）
   double planning_acceleration;
 };
 }  // namespace crane
