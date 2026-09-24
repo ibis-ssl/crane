@@ -75,96 +75,88 @@ class SvgExtractor:
         )
         end_time_ns = int(end_time_sec * 1e9) if end_time_sec is not None else None
 
-        try:
-            reader = open_sequential_reader(mcap_path)
+        reader = open_sequential_reader(mcap_path)
 
-            topic_types = reader.get_all_topics_and_types()
-            topics_map = {t.name: t.type for t in topic_types}
+        topic_types = reader.get_all_topics_and_types()
+        topics_map = {t.name: t.type for t in topic_types}
 
-            has_snapshot = self.snapshot_topic in topics_map
-            has_update = self.update_topic in topics_map
+        has_snapshot = self.snapshot_topic in topics_map
+        has_update = self.update_topic in topics_map
 
-            if not has_snapshot and not has_update:
-                raise ValueError(
-                    f"Neither {self.snapshot_topic} nor {self.update_topic} found in bag"
-                )
+        if not has_snapshot and not has_update:
+            raise ValueError(
+                f"Neither {self.snapshot_topic} nor {self.update_topic} found in bag"
+            )
 
-            if has_snapshot:
-                logger.info(f"Found snapshot topic: {self.snapshot_topic}")
-            if has_update:
-                logger.info(f"Found update topic: {self.update_topic}")
+        if has_snapshot:
+            logger.info(f"Found snapshot topic: {self.snapshot_topic}")
+        if has_update:
+            logger.info(f"Found update topic: {self.update_topic}")
 
-            # メッセージを収集してタイムスタンプ順にソート
-            logger.info("Collecting all SVG messages...")
-            messages: list[tuple[int, str, Any]] = []  # (timestamp, topic, msg)
+        # メッセージを収集してタイムスタンプ順にソート
+        logger.info("Collecting all SVG messages...")
+        messages: list[tuple[int, str, Any]] = []  # (timestamp, topic, msg)
 
-            while reader.has_next():
-                topic, data, timestamp = reader.read_next()
+        while reader.has_next():
+            topic, data, timestamp = reader.read_next()
 
-                if start_time_ns is not None and timestamp < start_time_ns:
-                    continue
-                if end_time_ns is not None and timestamp > end_time_ns:
-                    break
+            if start_time_ns is not None and timestamp < start_time_ns:
+                continue
+            if end_time_ns is not None and timestamp > end_time_ns:
+                break
 
-                if topic in [self.snapshot_topic, self.update_topic]:
-                    msg_type = get_message_type(topics_map[topic], self._msg_types)
-                    msg = deserialize_message(data, msg_type)
-                    messages.append((timestamp, topic, msg))
+            if topic in [self.snapshot_topic, self.update_topic]:
+                msg_type = get_message_type(topics_map[topic], self._msg_types)
+                msg = deserialize_message(data, msg_type)
+                messages.append((timestamp, topic, msg))
 
-            logger.info(f"Collected {len(messages)} messages")
+        logger.info(f"Collected {len(messages)} messages")
 
-            messages.sort(key=lambda x: x[0])
+        messages.sort(key=lambda x: x[0])
 
-            current_layers: dict[str, list[str]] = {}
-            last_epoch = 0
+        current_layers: dict[str, list[str]] = {}
+        last_epoch = 0
 
-            for timestamp, topic, msg in messages:
-                epoch = msg.epoch
-                seq = msg.seq
+        for timestamp, topic, msg in messages:
+            epoch = msg.epoch
+            seq = msg.seq
 
-                if epoch != last_epoch:
-                    logger.info(
-                        f"Epoch changed: {last_epoch} -> {epoch}, resetting state"
-                    )
-                    current_layers = {}
+            if epoch != last_epoch:
+                logger.info(f"Epoch changed: {last_epoch} -> {epoch}, resetting state")
+                current_layers = {}
 
-                last_epoch = epoch
+            last_epoch = epoch
 
-                if topic == self.snapshot_topic:
-                    # スナップショット: 全レイヤーを置換
-                    current_layers = {}
-                    for layer_snapshot in msg.layers:
-                        layer_name = layer_snapshot.layer
-                        primitives = list(layer_snapshot.svg_primitives)
+            if topic == self.snapshot_topic:
+                # スナップショット: 全レイヤーを置換
+                current_layers = {}
+                for layer_snapshot in msg.layers:
+                    layer_name = layer_snapshot.layer
+                    primitives = list(layer_snapshot.svg_primitives)
+                    current_layers[layer_name] = primitives
+
+            elif topic == self.update_topic:
+                # 増分更新: 各レイヤーに操作を適用
+                for update in msg.updates:
+                    layer_name = update.layer
+                    operation = update.operation.lower()
+                    primitives = list(update.svg_primitives)
+
+                    if operation == "replace":
                         current_layers[layer_name] = primitives
+                    elif operation == "append":
+                        if layer_name in current_layers:
+                            current_layers[layer_name].extend(primitives)
+                        # ベースがない場合のappendは無視（svg_viewer.jsの仕様に準拠）
+                    elif operation == "clear":
+                        current_layers[layer_name] = []
+                    else:
+                        logger.warning(f"Unknown operation: {operation}")
 
-                elif topic == self.update_topic:
-                    # 増分更新: 各レイヤーに操作を適用
-                    for update in msg.updates:
-                        layer_name = update.layer
-                        operation = update.operation.lower()
-                        primitives = list(update.svg_primitives)
-
-                        if operation == "replace":
-                            current_layers[layer_name] = primitives
-                        elif operation == "append":
-                            if layer_name in current_layers:
-                                current_layers[layer_name].extend(primitives)
-                            # ベースがない場合のappendは無視（svg_viewer.jsの仕様に準拠）
-                        elif operation == "clear":
-                            current_layers[layer_name] = []
-                        else:
-                            logger.warning(f"Unknown operation: {operation}")
-
-                # フレームをyield（現在の累積状態のコピー）
-                yield SvgFrame(
-                    timestamp_ns=timestamp,
-                    epoch=epoch,
-                    seq=seq,
-                    layers={k: list(v) for k, v in current_layers.items()},
-                )
-
-        except ImportError as e:
-            raise ImportError(
-                "rosbag2_py is required. Install ROS 2 rosbag2 packages."
-            ) from e
+            # フレームをyield（現在の累積状態のコピー）
+            yield SvgFrame(
+                timestamp_ns=timestamp,
+                epoch=epoch,
+                seq=seq,
+                layers={k: list(v) for k, v in current_layers.items()},
+            )
