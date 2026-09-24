@@ -140,27 +140,7 @@ auto BallPhysicsModel::predictPosition(
       Point3D initial_pos(position.x(), position.y(), pos_z);
       Point3D initial_vel(velocity.x(), velocity.y(), vel_z);
 
-      // 着地時間計算
-      double a = 0.5 * config_.gravity;
-      double b = vel_z;
-      double c = pos_z;
-
-      double discriminant = b * b - 4 * a * c;
-      double landing_time = 0.0;
-
-      if (discriminant >= 0) {
-        double sqrt_discriminant = std::sqrt(discriminant);
-        double t1 = (-b + sqrt_discriminant) / (2 * a);
-        double t2 = (-b - sqrt_discriminant) / (2 * a);
-
-        if (t1 > 1e-6 && t2 > 1e-6) {
-          landing_time = std::min(t1, t2);
-        } else if (t1 > 1e-6) {
-          landing_time = t1;
-        } else if (t2 > 1e-6) {
-          landing_time = t2;
-        }
-      }
+      const double landing_time = getFlyingLandingTime(pos_z, vel_z);
 
       if (time_ahead <= landing_time) {
         // まだ空中
@@ -198,27 +178,7 @@ auto BallPhysicsModel::predictVelocity(
       return getRollingPredictedVelocity(velocity, time_ahead);
 
     case Ball::State::FLYING: {
-      // 独立した放物運動計算
-      double a = 0.5 * config_.gravity;
-      double b = vel_z;
-      double c = pos_z;
-
-      double discriminant = b * b - 4 * a * c;
-      double landing_time = 0.0;
-
-      if (discriminant >= 0) {
-        double sqrt_discriminant = std::sqrt(discriminant);
-        double t1 = (-b + sqrt_discriminant) / (2 * a);
-        double t2 = (-b - sqrt_discriminant) / (2 * a);
-
-        if (t1 > 1e-6 && t2 > 1e-6) {
-          landing_time = std::min(t1, t2);
-        } else if (t1 > 1e-6) {
-          landing_time = t1;
-        } else if (t2 > 1e-6) {
-          landing_time = t2;
-        }
-      }
+      const double landing_time = getFlyingLandingTime(pos_z, vel_z);
 
       if (time_ahead <= landing_time) {
         // まだ空中（XY速度は一定）
@@ -284,30 +244,19 @@ auto BallPhysicsModel::getMaxDistance(
 
 auto BallPhysicsModel::getFlyingLandingTime(double pos_z, double vel_z) const -> double
 {
-  // z(t) = pos_z + vel_z * t + 0.5 * gravity * t^2 = 0 を解く（gravity は負値）。
-  // predictPosition / predictVelocity と同一のロジックで現在高度 pos_z を考慮する。
-  double a = 0.5 * config_.gravity;
-  double b = vel_z;
-  double c = pos_z;
-
-  double landing_time = 0.0;
-  double discriminant = b * b - 4 * a * c;
-
-  if (discriminant >= 0) {
-    double sqrt_discriminant = std::sqrt(discriminant);
-    double t1 = (-b + sqrt_discriminant) / (2 * a);
-    double t2 = (-b - sqrt_discriminant) / (2 * a);
-
-    if (t1 > 1e-6 && t2 > 1e-6) {
-      landing_time = std::min(t1, t2);
-    } else if (t1 > 1e-6) {
-      landing_time = t1;
-    } else if (t2 > 1e-6) {
-      landing_time = t2;
-    }
+  // z(t) = pos_z + vel_z * t + 0.5 * gravity * t^2 = 0 を解く。
+  // gravity < 0 で z(t) は上に凸なので、大きい方の根が下降して地面に達する時刻になる。
+  // 小さい方の根は pos_z < 0 から上昇して地面を通過する時刻なので着地には使わない。
+  const double a = 0.5 * config_.gravity;
+  const double discriminant = vel_z * vel_z - 4 * a * pos_z;
+  if (discriminant < 0) {
+    // pos_z < 0 のまま地面まで上がらない
+    return 0.0;
   }
-
-  return landing_time;
+  const double sqrt_discriminant = std::sqrt(discriminant);
+  const double landing_time =
+    std::max((-vel_z + sqrt_discriminant) / (2 * a), (-vel_z - sqrt_discriminant) / (2 * a));
+  return landing_time > 1e-6 ? landing_time : 0.0;
 }
 
 auto BallPhysicsModel::getRollingStopTime(const Point & velocity) const -> double
