@@ -289,7 +289,7 @@ def create_app(
             return JSONResponse({"error": str(exc)}, status_code=400)
         state.spec = spec
         if state.session is not None:
-            state.session.update_spec(spec)  # 送信を止めずに差し替える
+            state.session.update_spec(spec)
         return JSONResponse(state.snapshot())
 
     @app.post("/api/preview")

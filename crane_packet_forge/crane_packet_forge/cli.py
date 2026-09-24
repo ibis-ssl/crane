@@ -209,7 +209,7 @@ def spec_from_args(args: argparse.Namespace) -> PacketSpec:
 
 
 def parse_schedule(text: str) -> list[Step]:
-    """'key=value[,key=value]:seconds, ...' を Step の列にする。
+    """'key=value[,key=value]:seconds; ...' を Step の列にする。
 
     区間の区切りは ';'、区間内の複数フィールドは ','。
     例: 'polar.target_global_velocity_r=0:8; polar.target_global_velocity_r=0.2:2'
