@@ -35,7 +35,6 @@
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <deque>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <filesystem>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -135,7 +134,6 @@ public:
       while (std::getline(request_stream, line) && line != "\r") {
         if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
-          // Remove leading/trailing whitespace
           websocket_key.erase(0, websocket_key.find_first_not_of(" \t\r\n"));
           websocket_key.erase(websocket_key.find_last_not_of(" \t\r\n") + 1);
         }
@@ -317,11 +315,9 @@ private:
     const std::string websocket_magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     std::string concat = key + websocket_magic;
 
-    // Calculate SHA-1 hash
     unsigned char hash[SHA_DIGEST_LENGTH];
     SHA1(reinterpret_cast<const unsigned char *>(concat.c_str()), concat.length(), hash);
 
-    // Base64 encode
     BIO *bmem, *b64;
     BUF_MEM * bptr;
 
@@ -351,7 +347,6 @@ public:
   {
     websocket_port_ = crane::get_or_declare_parameter(this, "websocket_port", 8091);
 
-    // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
         bool first_msg = false;
@@ -374,7 +369,6 @@ public:
 
     play_situation_sub_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        // 最新のメッセージをキャッシュ
         {
           std::lock_guard<std::mutex> lock(game_info_mutex_);
           latest_play_situation_ = msg;
@@ -400,11 +394,9 @@ public:
           pending_svg_updates_.push_back(msg);
         });
 
-    // Human annotation publisher
     annotation_pub_ =
       this->create_publisher<crane_msgs::msg::HumanAnnotation>("/human_annotations", 10);
 
-    // Robot move command publishers
     move_command_pub_ =
       this->create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
     session_injection_pub_ =
@@ -467,7 +459,6 @@ public:
       broadcastLatencyEstimation(msg);
     });
 
-    // 100ms timer for robot_feedback broadcast (10Hz throttle)
     robot_feedback_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
       crane_msgs::msg::RobotFeedbackArray::SharedPtr msg;
       {
@@ -487,7 +478,6 @@ public:
         control_targets_updated_ = true;
       });
 
-    // 100ms timer for control_targets broadcast (10Hz throttle)
     control_targets_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
       crane_msgs::msg::RobotCommands::SharedPtr msg;
       {
@@ -499,7 +489,6 @@ public:
       broadcastControlTargets(msg);
     });
 
-    // 100ms timer for world_model broadcast (10Hz throttle)
     world_model_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
       crane_msgs::msg::WorldModel::SharedPtr msg;
       {
@@ -511,7 +500,6 @@ public:
       broadcastWorldModel(msg);
     });
 
-    // 200ms timer for aggregated_svgs broadcast (5Hz throttle)
     svg_snapshot_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() {
       crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg;
       {
@@ -523,7 +511,6 @@ public:
       broadcastSvgData(msg);
     });
 
-    // 50ms timer for visualizer_svgs broadcast (20Hz coalescing)
     svg_updates_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), [this]() {
       std::vector<crane_visualization_interfaces::msg::SvgUpdates::SharedPtr> batch;
       {
@@ -627,7 +614,6 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "WebSocket connection established");
 
-    // 接続確立時に最新のゲーム情報を送信
     {
       crane_msgs::msg::PlaySituation::SharedPtr play_situation;
       {
@@ -639,7 +625,6 @@ private:
       }
     }
 
-    // 接続確立時に最新の世界モデルを送信
     {
       crane_msgs::msg::WorldModel::SharedPtr wm_msg;
       {
@@ -651,7 +636,6 @@ private:
       }
     }
 
-    // 接続確立時に最新のロボットフィードバックを送信
     {
       crane_msgs::msg::RobotFeedbackArray::SharedPtr fb_msg;
       {
@@ -663,7 +647,6 @@ private:
       }
     }
 
-    // 接続確立時にsituation一覧と現在のinjection状態を送信
     handleListSituations(connection);
     connection->sendMessage(createSessionInjectionCurrentMessage());
 
@@ -830,12 +813,10 @@ private:
       world_model["robots_theirs"].push_back(robot_json);
     }
 
-    // WorldModelの遅延監視情報を追加
     world_model["delay_checkpoints"] =
       to_delay_checkpoints_json(msg->delay_checkpoints.checkpoints);
     world_model["delay_reference_timestamp_ns"] = msg->delay_checkpoints.reference_timestamp_ns;
 
-    // WorldModel遅延分析情報
     if (!msg->delay_checkpoints.checkpoints.empty()) {
       world_model["delay_analysis"] =
         compute_delay_analysis_json(msg->delay_checkpoints.checkpoints);
@@ -1064,28 +1045,23 @@ private:
   {
     auto msg = crane_msgs::msg::HumanAnnotation();
 
-    // ヘッダー設定
     msg.header.stamp = this->get_clock()->now();
     msg.header.frame_id = "human_annotation";
 
-    // 基本フィールド
     msg.category = request.value("category", 0);
     msg.priority = request.value("priority", 1);
     msg.label = request.value("label", "");
     msg.description = request.value("description", "");
 
-    // 時刻関連
     msg.event_timestamp_ns = request.value("event_timestamp_ns", 0L);
     msg.client_timestamp_ms = request.value("client_timestamp_ms", 0L);
     msg.time_offset_ms = request.value("time_offset_ms", 0);
 
-    // デフォルトのタイムスタンプ
     int64_t default_timestamp = this->get_clock()->now().nanoseconds();
     if (msg.event_timestamp_ns == 0) {
       msg.event_timestamp_ns = default_timestamp;
     }
 
-    // 位置情報
     if (request.contains("position")) {
       msg.has_position = true;
       msg.position.x = request["position"].value("x", 0.0);
@@ -1095,7 +1071,6 @@ private:
       msg.has_position = false;
     }
 
-    // ロボットコンテキスト
     if (request.contains("related_robot_ids")) {
       msg.has_robot_context = true;
       for (const auto & id : request["related_robot_ids"]) {
@@ -1110,7 +1085,6 @@ private:
       msg.has_robot_context = false;
     }
 
-    // メタデータ
     if (request.contains("metadata")) {
       msg.metadata_json = request["metadata"].dump();
     }
