@@ -18,10 +18,6 @@ private:
   std::vector<double> lowers;
 
 public:
-  Interval() {}
-
-  ~Interval() {}
-
   auto append(double a, double b) -> void
   {
     double upper = std::max(a, b);

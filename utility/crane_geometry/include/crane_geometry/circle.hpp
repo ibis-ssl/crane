@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <set>
 
 namespace crane::geometry::model
 {
