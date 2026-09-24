@@ -4,22 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <yaml-cpp/yaml.h>
-
 #include <boost/stacktrace.hpp>
 #include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
-#include <crane_sessions/session_factory.hpp>
 #include <crane_utils/package.hpp>
 #include <crane_utils/parameter.hpp>
-#include <crane_utils/stream.hpp>
 #include <crane_utils/time.hpp>
-#include <filesystem>
 #include <fstream>
-#include <range/v3/action/sort.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/join.hpp>
-#include <range/v3/view/transform.hpp>
 #include <std_msgs/msg/string.hpp>
 
 #include "crane_session_coordinator/configuration_manager.hpp"
