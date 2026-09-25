@@ -18,7 +18,6 @@
 
 namespace crane
 {
-// 座標変換ユーティリティ（constexpr で高速化）
 namespace SvgCoord
 {
 constexpr double SCALE = 1000.0;
@@ -26,7 +25,6 @@ constexpr double toSvgX(double x) { return x * SCALE; }
 constexpr double toSvgY(double y) { return -y * SCALE; }
 }  // namespace SvgCoord
 
-// 前方宣言
 struct SvgCircleBuilder;
 struct SvgPolyLineBuilder;
 struct SvgLineBuilder;
@@ -40,8 +38,8 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
-  std::string operation = "replace";  // default operation
-  double duration = 0.0;              // 有効期限（秒）。0 = 無限（デフォルト）
+  std::string operation = "replace";
+  double duration = 0.0;  // 有効期限（秒）。0 = 無限（デフォルト）
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
@@ -55,7 +53,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
 
-  // Duration modifier
   [[nodiscard]] auto withDuration(double seconds) -> VisualizerMessageBuilder &
   {
     duration = seconds;
@@ -267,7 +264,6 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     return std::format(
@@ -293,7 +289,6 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
     return *this;
   }
 
-  // 便利メソッド: Segmentから直接生成
   [[nodiscard]] auto fromSegment(const Segment & seg) -> SvgLineBuilder &
   {
     p1 = seg.first;
@@ -368,13 +363,11 @@ struct SvgTextBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgTextBui
   explicit SvgTextBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
   {
-    // Textのデフォルト色はwhite
     fill_color = "white";
   }
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     if (view_box_position) {
@@ -446,7 +439,6 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     std::ostringstream points_str;
@@ -471,7 +463,6 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
     return *this;
   }
 
-  // 便利メソッド: 複数の点を一度に設定
   [[nodiscard]] auto setPoints(const std::vector<Point> & pts) -> SvgPolyLineBuilder &
   {
     points = pts;
@@ -500,7 +491,6 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using SvgCoord::SCALE;
       using SvgCoord::toSvgX;
       using SvgCoord::toSvgY;
       path += std::format(" M{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
@@ -511,7 +501,6 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto lineTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using SvgCoord::SCALE;
       using SvgCoord::toSvgX;
       using SvgCoord::toSvgY;
       path += std::format(" L{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
@@ -531,7 +520,6 @@ struct CraneVisualizerBuffer
 
   SvgUpdates message_buffer;
 
-  static inline uint32_t s_epoch = 0;
   static inline uint32_t s_seq = 0;
 
   template <typename Node>
@@ -548,21 +536,12 @@ struct CraneVisualizerBuffer
     }
   }
 
-  static auto deactivate() -> void
-  {
-    if (active()) {
-      buffer.reset();
-    }
-  }
-
   static auto active() -> bool { return buffer != nullptr; }
 
   static auto publish() -> void
   {
     if (active()) {
-      // Stamp and sequence
       buffer->message_buffer.header.stamp = rclcpp::Clock().now();
-      buffer->message_buffer.epoch = s_epoch;
       buffer->message_buffer.seq = s_seq++;
       buffer->publisher->publish(buffer->message_buffer);
       buffer->message_buffer.updates.clear();
@@ -586,16 +565,9 @@ struct CraneVisualizerBuffer
         crane_visualization_interfaces::msg::SvgLayerUpdate empty_layer;
         empty_layer.layer = layer;
         empty_layer.operation = "replace";  // 空レイヤーで置換 = 実質クリア
-        // svg_primitives は空のまま
         updates.push_back(std::move(empty_layer));
       }
     }
-  }
-
-  static auto setEpoch(uint32_t epoch) -> void
-  {
-    s_epoch = epoch;
-    s_seq = 0;
   }
 };
 

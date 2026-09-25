@@ -43,7 +43,6 @@ SvgRectBuilder VisualizerMessageBuilder::rect() { return SvgRectBuilder(shared_f
 
 SvgPathBuilder VisualizerMessageBuilder::path() { return SvgPathBuilder(shared_from_this()); }
 
-// 高レベル描画メソッドの実装
 auto VisualizerMessageBuilder::arrow(
   Point start, Vector2 direction, double length, const std::string & color, double stroke_width,
   double arrowhead_length, double arrowhead_width) -> void
@@ -51,7 +50,6 @@ auto VisualizerMessageBuilder::arrow(
   Vector2 dir = direction.normalized();
   Point end = start + dir * length;
 
-  // メインシャフト
   line().start(start).end(end).stroke(color).strokeWidth(stroke_width).build();
 
   // 矢じり（左右の羽根）
@@ -66,7 +64,6 @@ auto VisualizerMessageBuilder::labeledCircle(
   Point center, double radius, const std::string & label, const std::string & circle_color,
   const std::string & text_color, double circle_stroke_width, double text_font_size) -> void
 {
-  // 円を描画
   circle()
     .center(center)
     .radius(radius)
@@ -74,7 +71,6 @@ auto VisualizerMessageBuilder::labeledCircle(
     .strokeWidth(circle_stroke_width)
     .build();
 
-  // ラベルを描画（円の下に配置）
   text()
     .position(center + Vector2(0.0, -radius - 0.1))
     .text(label)
@@ -93,7 +89,7 @@ auto VisualizerMessageBuilder::arc(
     double t = static_cast<double>(i) / steps;
     double angle = start_angle + (end_angle - start_angle) * t;
     Point p = center + Vector2(std::cos(angle), std::sin(angle)) * radius;
-    (void)arc_builder.addPoint(p);  // nodiscard警告を抑制
+    (void)arc_builder.addPoint(p);
   }
   arc_builder.build();
 }
@@ -110,14 +106,12 @@ auto VisualizerMessageBuilder::doubleCircle(
     .strokeWidth(outer_stroke_width)
     .build();
 
-  // 内側の円（塗りつぶし）
   circle().center(center).radius(inner_radius).fill(inner_color, 0.25).stroke("none").build();
 }
 
 auto VisualizerMessageBuilder::rectangle(
   Point top_left, Point bottom_right, const std::string & color, double stroke_width) -> void
 {
-  // 4本の線で矩形を描画
   Point top_right(bottom_right.x(), top_left.y());
   Point bottom_left(top_left.x(), bottom_right.y());
 
@@ -127,7 +121,6 @@ auto VisualizerMessageBuilder::rectangle(
   line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
 }
 
-// Quick描画メソッドの実装
 auto VisualizerMessageBuilder::drawLine(
   Point start, Point end, const std::string & color, double stroke_width, double opacity) -> void
 {
@@ -180,7 +173,6 @@ auto VisualizerMessageBuilder::drawText(
     .build();
 }
 
-// フィールド描画専用の便利関数の実装
 auto VisualizerMessageBuilder::drawFieldLine(
   Point p1, Point p2, const std::string & color, double stroke_width) -> void
 {
@@ -206,13 +198,11 @@ auto VisualizerMessageBuilder::drawGoal(
   Point bottom_left = back_center + Vector2(0.0, -half_width);
   Point bottom_right = back_center + Vector2(0.0, half_width);
 
-  // 3本の線で描画（奥、左、右）
   line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
   line().start(top_left).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
   line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
 }
 
-// テキスト表示のプリセット関数の実装
 auto VisualizerMessageBuilder::drawDebugLabel(
   Point robot_pos, const std::string & label, const std::string & color, double offset_x,
   double offset_y) -> void
@@ -231,27 +221,20 @@ auto VisualizerMessageBuilder::drawCenteredLabel(
   text().position(pos).text(label).fill(color).fontSize(font_size).textAnchor("middle").build();
 }
 
-// ロボット描画の便利関数の実装
 auto VisualizerMessageBuilder::drawRobot(
   Point pos, double theta, const std::string & fill_color, double fill_opacity,
   const std::string & stroke_color, double stroke_opacity, double stroke_width, double radius,
   double center_to_dribbler) -> void
 {
   double corner_angle = std::acos(center_to_dribbler / radius);
-  auto botRightX = [&](double orientation) {
-    return radius * std::cos(orientation + corner_angle);
-  };
-  auto botRightY = [&](double orientation) {
-    return radius * std::sin(orientation + corner_angle);
-  };
-  auto botLeftX = [&](double orientation) { return radius * std::cos(orientation - corner_angle); };
-  auto botLeftY = [&](double orientation) { return radius * std::sin(orientation - corner_angle); };
 
   using SvgCoord::SCALE;
-  double right_x = (pos.x() + botRightX(theta)) * SCALE;
-  double right_y = (pos.y() + botRightY(theta)) * -SCALE;
-  double left_x = (pos.x() + botLeftX(theta)) * SCALE;
-  double left_y = (pos.y() + botLeftY(theta)) * -SCALE;
+  using SvgCoord::toSvgX;
+  using SvgCoord::toSvgY;
+  double right_x = toSvgX(pos.x() + radius * std::cos(theta + corner_angle));
+  double right_y = toSvgY(pos.y() + radius * std::sin(theta + corner_angle));
+  double left_x = toSvgX(pos.x() + radius * std::cos(theta - corner_angle));
+  double left_y = toSvgY(pos.y() + radius * std::sin(theta - corner_angle));
 
   std::string svg_path = std::format(
     "<path d=\"M {:.3f} {:.3f} A {:.3f} {:.3f} 0 1 0 {:.3f} {:.3f} Z\" "
@@ -268,10 +251,8 @@ auto VisualizerMessageBuilder::drawRobotWithID(
   const std::string & stroke_color, double stroke_opacity, double stroke_width, double id_font_size,
   const std::string & id_color, double id_offset_x, double id_offset_y) -> void
 {
-  // ロボット本体を描画
   drawRobot(pos, theta, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
 
-  // IDを描画
   text()
     .text(std::to_string(id))
     .position(pos.x() + id_offset_x, pos.y() + id_offset_y)
