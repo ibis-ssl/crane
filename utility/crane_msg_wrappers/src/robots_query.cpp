@@ -67,16 +67,6 @@ auto RobotsQuery::where(Predicate pred) -> RobotsQuery &
   return *this;
 }
 
-auto RobotsQuery::get() const -> RobotList
-{
-  return robots_ | ranges::views::filter([this](const RobotInfo::SharedPtr & robot) {
-           return std::all_of(
-             predicates_.begin(), predicates_.end(),
-             [&robot](const Predicate & pred) { return pred(robot); });
-         }) |
-         ranges::to<std::vector>();
-}
-
 auto RobotsQuery::getView() const -> decltype(auto)
 {
   return robots_ | ranges::views::filter([this](const RobotInfo::SharedPtr & robot) {
@@ -85,6 +75,8 @@ auto RobotsQuery::getView() const -> decltype(auto)
              [&robot](const Predicate & pred) { return pred(robot); });
          });
 }
+
+auto RobotsQuery::get() const -> RobotList { return getView() | ranges::to<std::vector>(); }
 
 auto RobotsQuery::getIds() const -> std::vector<uint8_t>
 {
