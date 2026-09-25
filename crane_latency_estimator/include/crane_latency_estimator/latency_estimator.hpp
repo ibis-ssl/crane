@@ -25,6 +25,13 @@ class LatencyEstimator : public rclcpp::Node
 public:
   explicit LatencyEstimator(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
+  // ノードの状態に依存しない純関数。テストから直接呼ぶために public にしている
+  static double interpolate(const std::deque<std::pair<double, double>> & data, double t);
+  static std::pair<double, double> estimateLagMs(
+    const std::deque<std::pair<double, double>> & cmd,
+    const std::deque<std::pair<double, double>> & obs, double max_lag_ms, double resample_dt_ms,
+    double min_correlation, double min_cmd_stddev);
+
 private:
   struct RobotBuffer
   {
@@ -34,12 +41,6 @@ private:
     double ema_world_ms{std::numeric_limits<double>::quiet_NaN()};
     double ema_fb_ms{std::numeric_limits<double>::quiet_NaN()};
   };
-
-  static double interpolate(const std::deque<std::pair<double, double>> & data, double t);
-  static std::pair<double, double> estimateLagMs(
-    const std::deque<std::pair<double, double>> & cmd,
-    const std::deque<std::pair<double, double>> & obs, double max_lag_ms, double resample_dt_ms,
-    double min_correlation, double min_cmd_stddev);
 
   void onRobotCommands(const crane_msgs::msg::RobotCommands::SharedPtr msg);
   void onWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg);
