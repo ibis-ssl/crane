@@ -151,13 +151,6 @@ situations:
     sessions:
       - name: their_penalty_kick
         max_robots: 20
-  BALL_CALIBRATION_DATA_COLLECTION:
-    description: Ball calibration data collection using single kicker robot
-    sessions:
-      - name: ball_calibration_data_collector
-        max_robots: 1
-      - name: emplace_robot
-        max_robots: 19
   CENTER_STOP_KICK:
     description: Center stop kick testing using CenterStopKickTactic for stop distance
       kick verification
