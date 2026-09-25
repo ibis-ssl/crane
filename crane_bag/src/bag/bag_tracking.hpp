@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <optional>
-#include <utility>
 #include <vector>
 
 #include "bag_reader.hpp"
@@ -33,11 +31,8 @@ struct BallState
 };
 
 std::vector<RobotState> track_robot(
-  const BagData & data, int robot_id, bool is_ours = true, double interval = 0.1,
-  std::optional<std::pair<double, double>> time_range = std::nullopt);
+  const BagData & data, int robot_id, bool is_ours = true, double interval = 0.1);
 
-std::vector<BallState> track_ball(
-  const BagData & data, double interval = 0.1,
-  std::optional<std::pair<double, double>> time_range = std::nullopt);
+std::vector<BallState> track_ball(const BagData & data, double interval = 0.1);
 
 }  // namespace crane::bag
