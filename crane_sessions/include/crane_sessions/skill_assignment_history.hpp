@@ -46,6 +46,8 @@ public:
   bool recordFailure(std::uint8_t robot_id);
 
 private:
+  /// counter を 1 増やして seq を割り当てる。保存に失敗したら記録前の状態に戻す。
+  bool record(std::uint8_t robot_id, int Entry::* counter);
   void load();
   bool save() const;
 

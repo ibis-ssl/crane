@@ -30,25 +30,20 @@ SkillAssignmentHistory::Entry SkillAssignmentHistory::get(std::uint8_t robot_id)
 
 bool SkillAssignmentHistory::recordSuccess(std::uint8_t robot_id)
 {
-  const auto previous_next_seq = next_seq_;
-  auto & e = entries_[robot_id];
-  const auto previous_entry = e;
-  e.success += 1;
-  e.last_seq = next_seq_++;
-  if (save()) {
-    return true;
-  }
-  e = previous_entry;
-  next_seq_ = previous_next_seq;
-  return false;
+  return record(robot_id, &Entry::success);
 }
 
 bool SkillAssignmentHistory::recordFailure(std::uint8_t robot_id)
 {
+  return record(robot_id, &Entry::failure);
+}
+
+bool SkillAssignmentHistory::record(std::uint8_t robot_id, int Entry::* counter)
+{
   const auto previous_next_seq = next_seq_;
   auto & e = entries_[robot_id];
   const auto previous_entry = e;
-  e.failure += 1;
+  e.*counter += 1;
   e.last_seq = next_seq_++;
   if (save()) {
     return true;
