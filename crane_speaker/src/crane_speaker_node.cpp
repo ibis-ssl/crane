@@ -11,8 +11,7 @@
 #include <speak_ros_interfaces/action/speak.hpp>
 #include <unordered_map>
 
-using map = std::unordered_map<uint8_t, std::string>;
-map play_situation_map = {
+const std::unordered_map<uint8_t, std::string> play_situation_map = {
   {crane_msgs::msg::PlaySituation::HALT, "ホールト"},
   {crane_msgs::msg::PlaySituation::STOP, "ストップ"},
   {crane_msgs::msg::PlaySituation::OUR_KICKOFF_PREPARATION, "味方キックオフ準備"},
@@ -38,14 +37,14 @@ public:
   explicit SpeakClient(const rclcpp::NodeOptions & node_options = rclcpp::NodeOptions())
   : Node("speak_client", node_options)
   {
-    client = rclcpp_action::create_client<Speak>(
-      get_node_base_interface(), get_node_graph_interface(), get_node_logging_interface(),
-      get_node_waitables_interface(), "/speak");
+    client = rclcpp_action::create_client<Speak>(this, "/speak");
 
     play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        if (play_situation_map.find(msg->command.value) != play_situation_map.end()) {
-          sendGoal(play_situation_map[msg->command.value]);
+        if (
+          const auto it = play_situation_map.find(msg->command.value);
+          it != play_situation_map.end()) {
+          sendGoal(it->second);
         }
       });
   }
