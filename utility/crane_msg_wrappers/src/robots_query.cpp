@@ -45,14 +45,6 @@ auto RobotsQuery::excludeId(uint8_t id) -> RobotsQuery &
   return *this;
 }
 
-auto RobotsQuery::excludeIds(const std::vector<uint8_t> & ids) -> RobotsQuery &
-{
-  predicates_.emplace_back([ids](const RobotInfo::SharedPtr & robot) {
-    return std::find(ids.begin(), ids.end(), robot->id) == ids.end();
-  });
-  return *this;
-}
-
 auto RobotsQuery::excludeGoalie() -> RobotsQuery &
 {
   predicates_.emplace_back([goalie_id = goalie_id_](const RobotInfo::SharedPtr & robot) {

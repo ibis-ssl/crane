@@ -81,12 +81,6 @@ public:
   auto excludeId(uint8_t id) -> RobotsQuery &;
 
   /**
-   * @brief 複数のIDを除外
-   * @param ids 除外するロボットIDのリスト
-   */
-  auto excludeIds(const std::vector<uint8_t> & ids) -> RobotsQuery &;
-
-  /**
    * @brief ゴーリーを除外
    */
   auto excludeGoalie() -> RobotsQuery &;

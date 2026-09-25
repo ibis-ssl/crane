@@ -11,7 +11,6 @@
 #include <crane_msgs/msg/named_int.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <string>
-#include <vector>
 
 namespace crane
 {
@@ -19,19 +18,13 @@ auto getStageText(uint32_t id) -> std::string;
 
 auto getStageNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
-auto getStageTextList() -> std::vector<std::string>;
-
 auto getRefereeCommandText(uint32_t id) -> std::string;
 
 auto getRefereeCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
-auto getRefereeCommandTextList() -> std::vector<std::string>;
-
 auto getSituationCommandText(uint32_t id) -> std::string;
 
 auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
-
-auto getSituationCommandTextList() -> std::vector<std::string>;
 
 // STOP/セットプレイ中（INPLAY/HALT/HALF_TIME/POST_GAME以外）に相手PAへの拡大マージンが必要か
 // SSL Rule 5.2.4: STOP・フリーキック中は攻撃側ロボットが相手PAから0.2m以上離れていなければならない
