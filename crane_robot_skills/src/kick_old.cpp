@@ -115,13 +115,6 @@ void KickOld::initialize()
 
       Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball().pos).normalized();
       double ball_away_gain = 0.0;
-      if (
-        robot()->getDistance(world_model()->ball().pos) < 0.2 &&
-        getAngleDiff(
-          getAngle(target - ball_pos), getAngle(world_model()->ball().pos - robot()->pose.pos)) >
-          10. * degree<double>()) {
-        ball_away_gain = 0.0;
-      }
 
       command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
