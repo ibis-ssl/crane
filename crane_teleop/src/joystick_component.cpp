@@ -150,7 +150,7 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   command.dribble_power = is_dribble_enable ? dribble_power : 0.0;
 
-  command.chip_enable = is_kick_mode_straight;
+  command.chip_enable = not is_kick_mode_straight;
   if (is_kick_enable) {
     command.kick_power = kick_power;
   }
