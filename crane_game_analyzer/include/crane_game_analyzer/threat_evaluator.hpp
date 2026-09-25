@@ -39,7 +39,6 @@ struct ThreatEvaluatorConfig
   double max_bad_redirect_angle_deg = 75.0;
 
   // ボール予測
-  double ball_lookahead_sec = 0.1;
   double check_ball_direction_vel_threshold = 1.5;
 };
 
@@ -84,12 +83,8 @@ struct RobotThreat
   /// 脅威ライン（ロボット位置からゴールへの線分）
   Segment threat_line;
   std::optional<Segment> protection_line;
-  std::optional<Point> protection_position;
   double threat_rating = 0.0;
   ThreatRatingDetail rating_detail;
-
-  enum class DefenseStrategy { CENTER_BACK, MAN_TO_MAN };
-  DefenseStrategy recommended_strategy = DefenseStrategy::CENTER_BACK;
 };
 
 /**
@@ -102,9 +97,6 @@ class ThreatEvaluator
 public:
   explicit ThreatEvaluator(const ThreatEvaluatorConfig & config = {});
 
-  /**
-   * @brief ボール脅威の計算
-   */
   auto calculateBallThreat(const WorldModelWrapper & world_model) -> BallThreat;
 
   /**
@@ -113,28 +105,16 @@ public:
   auto calculateRobotThreats(const WorldModelWrapper & world_model, const BallThreat & ball_threat)
     -> std::vector<RobotThreat>;
 
-  /**
-   * @brief 単一ロボットの脅威評価
-   */
   auto rateRobotThreat(
     const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
     const WorldModelWrapper & world_model) -> ThreatRatingDetail;
 
-  /**
-   * @brief 推奨守備者数の計算
-   */
   auto calculateRecommendedDefenders(
     const BallThreat & ball_threat, const std::vector<RobotThreat> & robot_threats,
     int available_robots) -> int;
 
-  /**
-   * @brief BallThreat -> ThreatInfo メッセージ変換
-   */
   auto toThreatInfoMsg(const BallThreat & threat) const -> crane_msgs::msg::ThreatInfo;
 
-  /**
-   * @brief RobotThreat -> ThreatInfo メッセージ変換
-   */
   auto toThreatInfoMsg(const RobotThreat & threat) const -> crane_msgs::msg::ThreatInfo;
 
 private:
@@ -175,22 +155,13 @@ private:
   auto calcBallAccessScore(const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot) const
     -> double;
 
-  /**
-   * @brief ゴールまでの距離に基づく係数計算
-   */
   auto calcDistanceToGoalFactor(
     const Point & threat_pos, double dropoff_percentage, const WorldModelWrapper & wm) const
     -> double;
 
-  /**
-   * @brief ボール脅威ソースの判定
-   */
   auto determineBallThreatSource(const WorldModelWrapper & wm)
     -> std::pair<BallThreat::SourceType, Point>;
 
-  /**
-   * @brief 防御ライン計算
-   */
   auto calculateProtectionLine(
     const Segment & threat_line, double min_distance, const WorldModelWrapper & wm)
     -> std::optional<Segment>;

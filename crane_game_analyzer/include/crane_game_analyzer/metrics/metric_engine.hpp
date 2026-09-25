@@ -29,10 +29,6 @@ namespace crane::metrics
 class MetricEngine
 {
 public:
-  /**
-   * @brief コンストラクタ
-   * @param logger ROS2ロガー（エラー・情報出力用）
-   */
   explicit MetricEngine(rclcpp::Logger logger) : logger_(logger) {}
 
   /**
@@ -81,7 +77,7 @@ private:
    */
   auto buildExecutionOrder() -> bool;
 
-  rclcpp::Logger logger_;  ///< ROS2ロガー
+  rclcpp::Logger logger_;
 
   /// メトリクスID -> メトリクスのマップ
   std::unordered_map<MetricId, MetricBase::Ptr> metrics_;

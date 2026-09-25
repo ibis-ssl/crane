@@ -76,7 +76,6 @@ private:
   // 実際にプランを再計算する（デシメーションで間引かれる）。cached_plan_ を更新
   auto recomputePlan(MetricContext & ctx) -> void;
 
-  // 有効プランが得られないときの非アクティブプランを cached_plan_ に書き込む
   /// 計画を非アクティブにして配信する。
   ///
   /// keep_selection を立てると、受け手・受領点の保持だけは残す。候補の可否は

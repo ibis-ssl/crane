@@ -15,7 +15,6 @@
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <rclcpp/rclcpp.hpp>
-#include <unordered_map>
 #include <vector>
 
 #include "crane_game_analyzer/kick_event_detector.hpp"
@@ -24,44 +23,15 @@
 
 namespace crane
 {
-struct BallIdleConfig
-{
-  rclcpp::Duration threshold_duration = rclcpp::Duration(5, 0);
-  double move_distance_threshold_meter = 0.05;
-};
-
 struct RobotCollisionConfig
 {
   double velocity_threshold = 1.0;  // m/s
   double distance_threshold = 0.2;  // m
-  double time_window = 0.5;         // seconds
 };
 
 struct GameAnalyzerConfig
 {
-  BallIdleConfig ball_idle;
   RobotCollisionConfig robot_collision;
-};
-
-struct BallTouchInfo
-{
-  RobotIdentifier robot_id;
-  double distance;
-};
-
-struct BallPositionStamped
-{
-  Point position;
-  rclcpp::Time stamp;
-};
-
-struct RobotPositionStamped
-{
-  uint8_t id;
-  bool is_ours;
-  Point position;
-  Point velocity;  // Point型に変更（Velocity2D型のlinearメンバーと同等）
-  rclcpp::Time stamp;
 };
 
 struct RobotCollisionInfo
@@ -78,38 +48,10 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  auto getBallIdle() -> bool
-  {
-    BallPositionStamped record;
-    record.position = world_model->ball().pos;
-    record.stamp = now();
-    ball_records_.push_front(record);
-
-    auto latest_time = ball_records_.front().stamp;
-    auto latest_position = ball_records_.front().position;
-    // 一定時間以上前の履歴を削除
-    std::erase_if(ball_records_, [&](auto & ball_record) {
-      return (latest_time - ball_record.stamp) > config.ball_idle.threshold_duration * 2;
-    });
-
-    // ボール履歴（新しいほど，indexが若い）のチェックして，ボールがストップしているかを確認
-    return not std::ranges::any_of(ball_records_, [&](const auto & ball_record) {
-      bool distance_cond = (latest_position - ball_record.position).norm() <
-                           config.ball_idle.move_distance_threshold_meter;
-      bool time_cond = (latest_time - ball_record.stamp) < config.ball_idle.threshold_duration;
-      return distance_cond && time_cond;
-    });
-  }
-
   auto getRobotCollisionInfo() -> std::optional<RobotCollisionInfo>
   {
-    // 現在のロボット状態を記録
-    recordCurrentRobotStates();
-
-    // 衝突検知アルゴリズム
     auto collision = detectCollision();
 
-    // 衝突を検出した場合、可視化
     if (collision) {
       visualizeCollision(*collision);
     }
@@ -117,58 +59,20 @@ private:
     return collision;
   }
 
-  auto recordCurrentRobotStates() -> void
-  {
-    auto current_time = now();
-
-    // 自チームのロボット位置を記録
-    for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
-      RobotPositionStamped record;
-      record.id = robot->id;
-      record.is_ours = true;
-      record.position = robot->pose.pos;
-      record.velocity = robot->vel.linear;
-      record.stamp = current_time;
-      robot_records_.push_front(record);
-    }
-
-    // 相手チームのロボット位置を記録
-    for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
-      RobotPositionStamped record;
-      record.id = robot->id;
-      record.is_ours = false;
-      record.position = robot->pose.pos;
-      record.velocity = robot->vel.linear;
-      record.stamp = current_time;
-      robot_records_.push_front(record);
-    }
-
-    // 古い記録を削除
-    auto time_threshold =
-      current_time - rclcpp::Duration::from_seconds(config.robot_collision.time_window * 2);
-    std::erase_if(
-      robot_records_, [&](const auto & record) { return record.stamp < time_threshold; });
-  }
-
   auto detectCollision() -> std::optional<RobotCollisionInfo>
   {
-    // 全てのロボットペアをチェック
     for (size_t i = 0; i < world_model->ours().robots.size(); ++i) {
       auto & our_robot = world_model->ours().robots[i];
 
       for (size_t j = 0; j < world_model->theirs().robots.size(); ++j) {
         auto & their_robot = world_model->theirs().robots[j];
 
-        // ロボット間の距離
         double distance = (our_robot->pose.pos - their_robot->pose.pos).norm();
 
-        // 距離が閾値以下ならば衝突の可能性
         if (distance < config.robot_collision.distance_threshold) {
-          // 相対速度を計算
           Vector2 relative_velocity = our_robot->vel.linear - their_robot->vel.linear;
           double rel_vel_norm = relative_velocity.norm();
 
-          // 相対速度が閾値以上ならば衝突と判定
           if (rel_vel_norm > config.robot_collision.velocity_threshold) {
             // 速度ベクトルが互いに向かい合っているかチェック
             Vector2 direction = (their_robot->pose.pos - our_robot->pose.pos).normalized();
@@ -200,7 +104,6 @@ private:
 
   auto visualizeCollision(const RobotCollisionInfo & collision) const -> void
   {
-    // 衝突ロボットの位置を取得
     Point attack_pos, attacked_pos;
 
     if (collision.attack_robot.is_ours) {
@@ -215,16 +118,12 @@ private:
       attacked_pos = world_model->getTheirRobot(collision.attacked_robot.id)->pose.pos;
     }
 
-    // 衝突点を可視化（中間点）
     Point collision_point = (attack_pos + attacked_pos) * 0.5;
 
-    // 衝突箇所に赤い円を描画
     visualizer->drawStyledCircle(collision_point, 0.15, "red", 0.3, "red", 1.0, 3);
 
-    // 衝突ロボット間に線を描画
     visualizer->line().start(attack_pos).end(attacked_pos).stroke("red").strokeWidth(2).build();
 
-    // 速度表示
     std::string velocity_text = std::to_string(collision.relative_velocity).substr(0, 4) + " m/s";
     visualizer->drawCenteredLabel(collision_point + Vector2(0, 0.2), velocity_text, "red", 40);
   }
@@ -235,21 +134,13 @@ private:
 
   VisualizerMessageBuilder::SharedPtr visualizer;
 
-  // ボール位置の履歴
-  std::deque<BallPositionStamped> ball_records_;
-
-  // ロボット位置の履歴
-  std::deque<RobotPositionStamped> robot_records_;
-
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
 
   rclcpp::Publisher<crane_msgs::msg::KickPredictionTrace>::SharedPtr kick_prediction_trace_pub_;
 
-  // メトリクス計算エンジン
   std::unique_ptr<metrics::MetricEngine> metric_engine_;
   std::deque<crane_msgs::msg::BallInfo> ball_history_;
 
-  // キックイベント検出システム
   std::unique_ptr<KickEventDetector> kick_event_detector_;
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands_;
 };

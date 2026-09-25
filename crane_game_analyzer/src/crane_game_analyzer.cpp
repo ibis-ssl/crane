@@ -32,21 +32,14 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  config.ball_idle.threshold_duration = rclcpp::Duration::from_seconds(
-    crane::get_or_declare_parameter(this, "ball_idle.threshold_duration", 5.0));
-  config.ball_idle.move_distance_threshold_meter =
-    crane::get_or_declare_parameter(this, "ball_idle.move_distance_threshold_meter", 0.05);
   config.robot_collision.velocity_threshold =
     crane::get_or_declare_parameter(this, "robot_collision.velocity_threshold", 1.0);
   config.robot_collision.distance_threshold =
     crane::get_or_declare_parameter(this, "robot_collision.distance_threshold", 0.2);
-  config.robot_collision.time_window =
-    crane::get_or_declare_parameter(this, "robot_collision.time_window", 0.5);
   RCLCPP_DEBUG(
     get_logger(), "  - Velocity threshold: %.2f m/s", config.robot_collision.velocity_threshold);
   RCLCPP_DEBUG(
     get_logger(), "  - Distance threshold: %.2f m", config.robot_collision.distance_threshold);
-  RCLCPP_DEBUG(get_logger(), "  - Time window: %.2f s", config.robot_collision.time_window);
 
   CraneVisualizerBuffer::activate(*this);
 

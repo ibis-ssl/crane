@@ -57,11 +57,6 @@ auto ThreatEvaluator::calculateRobotThreats(
 
     threat.protection_line = calculateProtectionLine(threat.threat_line, 0.3, world_model);
 
-    // 守備戦略推奨（ボールアクセススコアで判定）
-    threat.recommended_strategy = (threat.rating_detail.score_ball_access > 0.5)
-                                    ? RobotThreat::DefenseStrategy::MAN_TO_MAN
-                                    : RobotThreat::DefenseStrategy::CENTER_BACK;
-
     threats.push_back(threat);
   }
 
