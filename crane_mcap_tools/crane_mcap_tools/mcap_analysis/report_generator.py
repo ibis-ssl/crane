@@ -43,7 +43,6 @@ class ReportGenerator:
         """
         is_dry_run = analysis_results is None
 
-        # ヘッダー
         lines = [
             "# MCAPアノテーション解析レポート",
             "",
@@ -61,14 +60,11 @@ class ReportGenerator:
 
         lines.append("")
 
-        # 統計情報
         lines.extend(self._generate_statistics(annotations))
 
         if not is_dry_run and analysis_results:
-            # サマリー（重要な発見）
             lines.extend(self._generate_summary(annotations, analysis_results))
 
-        # カテゴリ別分析
         lines.extend(self._generate_category_sections(annotations, analysis_results))
 
         return "\n".join(lines)
@@ -77,7 +73,6 @@ class ReportGenerator:
         """統計情報セクションを生成."""
         lines = ["## 統計情報", ""]
 
-        # カテゴリ別集計
         category_counts = defaultdict(int)
         for ann in annotations:
             category_counts[ann.get_category_name()] += 1
@@ -90,7 +85,6 @@ class ReportGenerator:
 
         lines.append("")
 
-        # 重要度別集計
         priority_counts = defaultdict(int)
         for ann in annotations:
             priority_counts[ann.get_priority_name()] += 1
@@ -118,7 +112,6 @@ class ReportGenerator:
         """サマリーセクションを生成（重要な発見と推奨アクション）."""
         lines = ["## サマリー", ""]
 
-        # CRITICAL/HIGH優先度のアノテーションを抽出
         high_priority_items = []
         for ann, result in zip(annotations, analysis_results):
             if ann.priority >= 2:  # HIGH or CRITICAL
@@ -126,13 +119,12 @@ class ReportGenerator:
 
         if high_priority_items:
             lines.append("### 重要な発見")
-            for ann, result in high_priority_items[:5]:  # 最大5件
+            for ann, result in high_priority_items[:5]:
                 lines.append(
                     f"- **{ann.label}** ({ann.get_priority_name()}): {result.root_cause}"
                 )
             lines.append("")
 
-        # 改善提案を優先度順にソート
         all_improvements = []
         for ann, result in zip(annotations, analysis_results):
             if result.error:
@@ -140,7 +132,6 @@ class ReportGenerator:
             for improvement in result.improvements:
                 all_improvements.append((ann, improvement))
 
-        # 優先度でソート
         priority_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
         all_improvements.sort(
             key=lambda x: priority_order.get(x[1].get("priority", "LOW"), 3)
@@ -148,7 +139,7 @@ class ReportGenerator:
 
         if all_improvements:
             lines.append("### 推奨アクション（優先度順）")
-            for ann, improvement in all_improvements[:10]:  # 最大10件
+            for ann, improvement in all_improvements[:10]:
                 priority = improvement.get("priority", "UNKNOWN")
                 desc = improvement.get("description", "")
                 lines.append(f"- **[{priority}]** {desc} (関連: {ann.label})")
@@ -164,13 +155,11 @@ class ReportGenerator:
         """カテゴリ別詳細セクションを生成."""
         lines = ["## カテゴリ別分析", ""]
 
-        # カテゴリごとにグループ化
         by_category = defaultdict(list)
         for i, ann in enumerate(annotations):
             result = analysis_results[i] if analysis_results else None
             by_category[ann.get_category_name()].append((ann, result))
 
-        # カテゴリ順でソート
         category_order = [
             "ISSUE",
             "QUESTION",
@@ -204,7 +193,6 @@ class ReportGenerator:
         """個別アノテーションの詳細を生成."""
         lines = [f"#### {index}. {annotation.label}", ""]
 
-        # 基本情報
         time_sec = annotation.event_timestamp_ns / 1e9
         lines.append(f"- **時刻**: {time_sec:.3f}秒")
         lines.append(f"- **重要度**: {annotation.get_priority_name()}")
@@ -227,13 +215,11 @@ class ReportGenerator:
 
         lines.append("")
 
-        # WorldModelコンテキストサマリー
         if annotation.world_model_context:
             num_snapshots = len(annotation.world_model_context)
             lines.append(f"**WorldModelコンテキスト**: {num_snapshots}サンプル")
             lines.append("")
 
-        # Gemini解析結果
         if analysis_result:
             if analysis_result.error:
                 lines.append("**⚠️ 解析エラー**")

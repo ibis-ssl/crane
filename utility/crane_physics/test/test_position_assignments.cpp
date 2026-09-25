@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 
 #include <crane_physics/position_assignments.hpp>
+#include <limits>
+#include <vector>
 
 namespace crane
 {
@@ -42,8 +44,78 @@ TEST_F(PositionAssignmentsTest, SingleRobot)
   auto result = getOptimalAssignments(robot_positions, targets);
 
   ASSERT_EQ(result.size(), 1);
-  // 1台のロボットの場合、常にインデックス0が返される
+  // 最近傍が target0 なので 0
   EXPECT_EQ(result[0], 0);
+}
+
+TEST_F(PositionAssignmentsTest, SingleRobotPicksNearestTarget)
+{
+  std::vector<Point> robot_positions = {Point(0.0, 0.0)};
+  std::vector<Point> targets = {Point(3.0, 0.0), Point(2.0, 0.0), Point(1.0, 0.0)};
+
+  auto result = getOptimalAssignments(robot_positions, targets);
+
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 2);
+}
+
+TEST_F(PositionAssignmentsTest, SingleRobotTiePicksLowestIndex)
+{
+  std::vector<Point> robot_positions = {Point(0.0, 0.0)};
+  std::vector<Point> targets = {Point(2.0, 0.0), Point(0.0, 1.0), Point(-1.0, 0.0)};
+
+  auto result = getOptimalAssignments(robot_positions, targets);
+
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 1);
+}
+
+TEST_F(PositionAssignmentsTest, SingleRobotNoTargets)
+{
+  std::vector<Point> robot_positions = {Point(0.0, 0.0)};
+  std::vector<Point> targets;
+
+  EXPECT_TRUE(getOptimalAssignments(robot_positions, targets).empty());
+}
+
+TEST(PositionAssignmentsWithCostTest, SingleRobotPicksMinCost)
+{
+  const std::vector<double> costs = {3.0, 2.0, 1.0};
+
+  auto result =
+    getOptimalAssignmentsWithCost(1, costs.size(), [&](size_t, size_t j) { return costs[j]; });
+
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 2);
+}
+
+TEST(PositionAssignmentsWithCostTest, SingleRobotTiePicksLowestIndex)
+{
+  const std::vector<double> costs = {2.0, 1.0, 1.0};
+
+  auto result =
+    getOptimalAssignmentsWithCost(1, costs.size(), [&](size_t, size_t j) { return costs[j]; });
+
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 1);
+}
+
+TEST(PositionAssignmentsWithCostTest, SingleRobotSkipsNaN)
+{
+  const std::vector<double> costs = {std::numeric_limits<double>::quiet_NaN(), 2.0, 1.0};
+
+  auto result =
+    getOptimalAssignmentsWithCost(1, costs.size(), [&](size_t, size_t j) { return costs[j]; });
+
+  ASSERT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 2);
+}
+
+TEST(PositionAssignmentsWithCostTest, SingleRobotNoTargets)
+{
+  auto result = getOptimalAssignmentsWithCost(1, 0, [](size_t, size_t) { return 0.0; });
+
+  EXPECT_TRUE(result.empty());
 }
 
 TEST_F(PositionAssignmentsTest, SimpleOptimalAssignment)

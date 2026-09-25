@@ -57,17 +57,10 @@ public:
 
   RobotState state = RobotState::INACTIVE;
 
-  rclcpp::Time last_update_time;
-
   std::unique_ptr<diagnostic_updater::Updater> updater;
-
-  rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr direct_publisher;
 
   // エラー情報を保存するマップ (エラータイプ => エラー情報)
   std::map<std::string, ErrorInfo> error_map;
-
-  // 前回のエラー状態と比較して変化があるかをチェックするフラグ
-  bool has_error_changed = false;
 
 private:
   // 診断情報更新コールバック関数

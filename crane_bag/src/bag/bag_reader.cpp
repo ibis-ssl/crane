@@ -40,13 +40,11 @@ std::string resolve_mcap_path(const std::string & bag_path)
   return bag_path;
 }
 
-/// mcap::Schema の data（ByteArray）を文字列に変換
 std::string schema_data_to_string(const mcap::Schema & schema)
 {
   return std::string(reinterpret_cast<const char *>(schema.data.data()), schema.data.size());
 }
 
-/// 対象トピックのセット
 const std::unordered_set<std::string> & target_topics()
 {
   static const std::unordered_set<std::string> s = {
@@ -173,8 +171,8 @@ BagData BagReader::read(const std::string & bag_path, const ReadOptions & opts)
 
     // 読み込み時ダウンサンプル（BagData::sample と同一の貪欲規則: last 初期値0）。
     // last_kept は「デシリアライズに成功して格納したフレーム」でのみ進める（下のpush後）。
-    // 旧実装はサンプリングを格納済みフレームに対して行うため、デシリアライズに失敗する
-    // フレームがあっても採用フレームが一致するようにする（生ストリーム基準で進めない）。
+    // 生ストリーム基準で進めると、デシリアライズに失敗するフレームがあったときに、
+    // 格納済みフレームへ BagData::sample を掛けた場合と採用フレームがずれる。
     bool ds_candidate = false;
     {
       auto di = opts.downsample_interval_sec.find(topic);

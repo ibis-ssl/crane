@@ -29,11 +29,9 @@ auto ThreatEvaluator::calculateBallThreat(const WorldModelWrapper & world_model)
   threat.source_position = source_pos;
   threat.velocity = world_model.ball().vel;
 
-  // 脅威ライン: 脅威元からゴール中央へ
   Point goal_center = world_model.getOurGoalCenter();
   threat.threat_line = Segment{source_pos, goal_center};
 
-  // 防御ライン計算
   threat.protection_line = calculateProtectionLine(threat.threat_line, 0.3, world_model);
 
   return threat;
@@ -50,16 +48,13 @@ auto ThreatEvaluator::calculateRobotThreats(
 
   for (const auto & robot : enemy_robots) {
     RobotThreat threat;
-    threat.robot = robot;  // RobotInfoポインタを保持
+    threat.robot = robot;
 
-    // 脅威ライン
     threat.threat_line = Segment{robot->pose.pos, goal_center};
 
-    // 脅威評価（RobotInfoを直接使用）
     threat.rating_detail = rateRobotThreat(ball_pos, robot, world_model);
     threat.threat_rating = threat.rating_detail.total_score;
 
-    // 防御ライン計算
     threat.protection_line = calculateProtectionLine(threat.threat_line, 0.3, world_model);
 
     // 守備戦略推奨（ボールアクセススコアで判定）
@@ -70,7 +65,6 @@ auto ThreatEvaluator::calculateRobotThreats(
     threats.push_back(threat);
   }
 
-  // 脅威度でソート（降順）
   ranges::sort(
     threats, [](const auto & a, const auto & b) { return a.threat_rating > b.threat_rating; });
 
@@ -84,17 +78,14 @@ auto ThreatEvaluator::rateRobotThreat(
   ThreatRatingDetail detail;
   Point threat_pos = robot->pose.pos;
 
-  // 4因子のスコア計算
   detail.score_redirect_angle = calcRedirectAngleScore(ball_pos, robot, world_model);
   detail.score_pen_area_border = calcPenAreaBorderScore(threat_pos, world_model);
   detail.score_facing_goal = calcFacingGoalScore(robot, world_model);
   detail.score_ball_access = calcBallAccessScore(ball_pos, robot);
 
-  // 距離係数
   detail.distance_factor =
     calcDistanceToGoalFactor(threat_pos, config_.danger_dropoff_x, world_model);
 
-  // 重み付け合計（4因子）
   double weighted_sum = config_.weight_redirect_angle * detail.score_redirect_angle +
                         config_.weight_pen_area_border * detail.score_pen_area_border +
                         config_.weight_facing_goal * detail.score_facing_goal +
@@ -116,7 +107,6 @@ auto ThreatEvaluator::calculateRecommendedDefenders(
   // 基本: 脅威数に応じて守備者を割り当て
   // 最低1人、最大で利用可能ロボット数の半分
 
-  // 高脅威ロボットの数をカウント
   int high_threat_count = 0;
   for (const auto & threat : robot_threats) {
     if (threat.threat_rating > 0.5) {
@@ -127,7 +117,6 @@ auto ThreatEvaluator::calculateRecommendedDefenders(
   // 推奨守備者数: 高脅威数 + 1（ボール対応）
   int recommended = high_threat_count + 1;
 
-  // 範囲制限
   int max_defenders = std::max(1, available_robots / 2);
   return std::clamp(recommended, 1, max_defenders);
 }
@@ -160,7 +149,6 @@ auto ThreatEvaluator::toThreatInfoMsg(const BallThreat & threat) const
   msg.velocity.x = threat.velocity.x();
   msg.velocity.y = threat.velocity.y();
 
-  // ソースタイプ
   switch (threat.source_type) {
     case BallThreat::SourceType::BALL:
       msg.source_type = crane_msgs::msg::ThreatInfo::SOURCE_TYPE_BALL;
@@ -185,7 +173,7 @@ auto ThreatEvaluator::toThreatInfoMsg(const RobotThreat & threat) const
   crane_msgs::msg::ThreatInfo msg;
 
   msg.threat_type = crane_msgs::msg::ThreatInfo::THREAT_TYPE_ROBOT;
-  msg.source_robot_id = threat.robot->id;  // ポインタ経由でアクセス
+  msg.source_robot_id = threat.robot->id;
   msg.source_position.x = threat.robot->pose.pos.x();
   msg.source_position.y = threat.robot->pose.pos.y();
   msg.source_position.z = 0.0;
@@ -223,11 +211,9 @@ auto ThreatEvaluator::calcRedirectAngleScore(
   const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
   const WorldModelWrapper & wm) const -> double
 {
-  // キッカー位置を使用
   Point kicker_pos = robot->kicker_center();
   Vector2 ball_to_kicker = (kicker_pos - ball_pos).normalized();
 
-  // ゴール方向
   Point goal_center = wm.getOurGoalCenter();
   Vector2 kicker_to_goal = (goal_center - kicker_pos).normalized();
 
@@ -253,14 +239,12 @@ auto ThreatEvaluator::calcFacingGoalScore(
 
   // 内積: 1.0 = 完全にゴール方向, -1.0 = 逆方向
   double dot = robot_to_goal.dot(robot_facing);
-  // -1〜1を0〜1にマップ
   return std::clamp((dot + 1.0) / 2.0, 0.0, 1.0);
 }
 
 auto ThreatEvaluator::calcBallAccessScore(
   const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot) const -> double
 {
-  // 台形速度プロファイルで到達時間を計算
   double travel_time =
     getTravelTimeTrapezoidal(robot->pose.pos, robot->vel.linear, ball_pos, 3.0, 2.0);
 
@@ -276,7 +260,6 @@ auto ThreatEvaluator::calcPenAreaBorderScore(
     return 1.0;  // ペナルティエリア内は最高脅威
   }
 
-  // ペナルティエリアまでの距離で評価
   Point goal_center = wm.getOurGoalCenter();
   double defense_height = wm.getDefenseHeight();
   double defense_width = wm.getDefenseWidth();
@@ -325,7 +308,6 @@ auto ThreatEvaluator::determineBallThreatSource(const WorldModelWrapper & wm)
     return {BallThreat::SourceType::GOAL_SHOT, ball.pos};
   }
 
-  // ボールに最も近い敵ロボット
   auto enemies = wm.theirs().robotsWhere().available().get();
   if (!enemies.empty()) {
     auto closest =
@@ -338,7 +320,6 @@ auto ThreatEvaluator::determineBallThreatSource(const WorldModelWrapper & wm)
     }
   }
 
-  // デフォルト: ボール位置
   return {BallThreat::SourceType::BALL, ball.pos};
 }
 
@@ -346,7 +327,6 @@ auto ThreatEvaluator::calculateProtectionLine(
   const Segment & threat_line, double min_distance, const WorldModelWrapper & wm)
   -> std::optional<Segment>
 {
-  // 脅威ラインとペナルティエリアの交点を計算
   auto intersection = wm.getIntersectionOurPenaltyArea(threat_line, 0.0, 0.0);
 
   if (!intersection) {
@@ -357,7 +337,6 @@ auto ThreatEvaluator::calculateProtectionLine(
   Vector2 direction = (threat_line.second - threat_line.first).normalized();
   Point start = *intersection - direction * min_distance;
 
-  // 防御ラインの幅（ゴール幅に基づく）
   Vector2 perpendicular{-direction.y(), direction.x()};
   double line_width = 0.5;  // 守備者1人分の幅
 

@@ -72,7 +72,6 @@ class GeminiAnalysisClient:
             from google import genai
             from google.genai import types
 
-            self._genai = genai
             self._types = types
             self._client = genai.Client(api_key=self.api_key)
         except ImportError as e:
@@ -81,56 +80,6 @@ class GeminiAnalysisClient:
             ) from e
 
         logger.info(f"Initialized Gemini client with model: {model}")
-
-    def analyze_annotation(
-        self, prompt: str, system_instruction: str
-    ) -> AnalysisResult:
-        """
-        単一のアノテーションを解析.
-
-        Args:
-            prompt: 解析プロンプト
-            system_instruction: システムインストラクション
-
-        Returns:
-            解析結果
-        """
-        try:
-            # Gemini APIを呼び出し
-            response = self._client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=self._types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.2,  # 一貫性を重視
-                    response_mime_type="application/json",  # JSON形式を要求
-                ),
-            )
-
-            raw_response = response.text
-            logger.debug(f"Gemini response: {raw_response}")
-
-            # JSONをパース
-            result_data = json.loads(raw_response)
-
-            return AnalysisResult(
-                root_cause=result_data.get("root_cause", ""),
-                tactical_analysis=result_data.get("tactical_analysis", ""),
-                improvements=result_data.get("improvements", []),
-                confidence=result_data.get("confidence", "UNKNOWN"),
-                raw_response=raw_response,
-            )
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            return AnalysisResult.error_result(
-                f"JSON parse error: {e}",
-                raw_response if "raw_response" in locals() else "",
-            )
-
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Gemini API error: {e}")
-            return AnalysisResult.error_result(str(e))
 
     def analyze_annotation_with_tools(
         self,
@@ -152,10 +101,8 @@ class GeminiAnalysisClient:
             解析結果
         """
         try:
-            # ツールハンドラーを初期化
             tools_handler = MCAPToolsHandler(annotation)
 
-            # ツール定義を作成
             tools = [
                 self._types.Tool(
                     function_declarations=[
@@ -177,23 +124,19 @@ class GeminiAnalysisClient:
                 )
             )
 
-            # 会話履歴
             messages = [prompt]
             tool_call_count = 0
 
             logger.info("Starting analysis with tool calling enabled...")
 
             while tool_call_count < max_tool_calls:
-                # Gemini APIを呼び出し
                 # Function Calling使用時はresponse_mime_typeを指定しない
-                # 最初の呼び出しではANYモードでツール使用を強制
                 config_params = {
                     "system_instruction": system_instruction,
                     "temperature": 0.2,
                     "tools": tools,
                 }
 
-                # 最初の呼び出しでツール使用を強制
                 if tool_call_count == 0:
                     config_params["tool_config"] = tool_config
 
@@ -203,17 +146,14 @@ class GeminiAnalysisClient:
                     config=self._types.GenerateContentConfig(**config_params),
                 )
 
-                # Function callがあるかチェック
                 has_function_call = any(
                     hasattr(part, "function_call") and part.function_call
                     for part in response.candidates[0].content.parts
                 )
 
                 if has_function_call:
-                    # まずGeminiのレスポンスを追加
                     messages.append(response.candidates[0].content)
 
-                    # 全てのfunction callsを処理
                     function_response_parts = []
                     for part in response.candidates[0].content.parts:
                         if hasattr(part, "function_call") and part.function_call:
@@ -227,14 +167,12 @@ class GeminiAnalysisClient:
                                 f"Tool call #{tool_call_count}: {function_name}({function_args})"
                             )
 
-                            # ツールを実行
                             tool_result = tools_handler.handle(
                                 function_name, function_args
                             )
 
                             logger.debug(f"Tool result: {tool_result}")
 
-                            # function responseを作成
                             function_response_parts.append(
                                 self._types.Part(
                                     function_response=self._types.FunctionResponse(
@@ -244,28 +182,24 @@ class GeminiAnalysisClient:
                                 )
                             )
 
-                    # 全てのfunction responsesを追加
                     function_response_content = self._types.Content(
                         role="user",
                         parts=function_response_parts,
                     )
                     messages.append(function_response_content)
 
-                    # 次のイテレーションへ
                     continue
 
-                # テキストレスポンスを取得
                 raw_response = response.text
                 logger.debug(f"Gemini final response: {raw_response}")
 
                 # マークダウンのコードブロックを削除（```json ... ```）
                 json_text = raw_response.strip()
-                json_text = json_text.removeprefix("```json")  # ```json を削除
-                json_text = json_text.removeprefix("```")  # ``` を削除
-                json_text = json_text.removesuffix("```")  # ``` を削除
+                json_text = json_text.removeprefix("```json")
+                json_text = json_text.removeprefix("```")
+                json_text = json_text.removesuffix("```")
                 json_text = json_text.strip()
 
-                # JSONをパース
                 result_data = json.loads(json_text)
 
                 logger.info(f"Analysis completed with {tool_call_count} tool calls")
@@ -278,7 +212,6 @@ class GeminiAnalysisClient:
                     raw_response=raw_response,
                 )
 
-            # 最大呼び出し回数に達した
             logger.warning(f"Reached max tool calls ({max_tool_calls})")
             return AnalysisResult.error_result(
                 f"Reached max tool calls ({max_tool_calls})"
@@ -299,29 +232,16 @@ class GeminiAnalysisClient:
         self,
         items: list,
         analyze_fn: Callable[..., AnalysisResult],
-        total: int,
     ) -> list[AnalysisResult]:
         """バッチ処理の共通ループ（レート制限付き）."""
         results: list[AnalysisResult] = []
         for i, item in enumerate(items):
-            logger.info(f"Analyzing annotation {i + 1}/{total}...")
+            logger.info(f"Analyzing annotation {i + 1}/{len(items)}...")
             result = analyze_fn(*item)
             results.append(result)
-            if i < total - 1:
+            if i < len(items) - 1:
                 time.sleep(self.rate_limit_delay)
         return results
-
-    def analyze_batch(self, prompts: list[tuple[str, str]]) -> list[AnalysisResult]:
-        """
-        複数のアノテーションをバッチ解析.
-
-        Args:
-            prompts: (prompt, system_instruction)のタプルのリスト
-
-        Returns:
-            解析結果のリスト
-        """
-        return self._run_batch(prompts, self.analyze_annotation, len(prompts))
 
     def analyze_batch_with_tools(
         self,
@@ -344,4 +264,4 @@ class GeminiAnalysisClient:
             (annotation, prompt, system_instruction, max_tool_calls)
             for annotation, (prompt, system_instruction) in zip(annotations, prompts)
         ]
-        return self._run_batch(items, self.analyze_annotation_with_tools, len(items))
+        return self._run_batch(items, self.analyze_annotation_with_tools)

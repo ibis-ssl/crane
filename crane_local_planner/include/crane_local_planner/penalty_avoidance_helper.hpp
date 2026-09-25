@@ -28,8 +28,6 @@ struct PenaltyBypassDecision
   bool target_overridden = false;
   PenaltyBypassSide selected_side = PenaltyBypassSide::TOP;
   Point waypoint = Point::Zero();
-  double top_cost = 0.0;
-  double bottom_cost = 0.0;
 };
 
 inline auto intersectsSegmentAABB(const Point & a, const Point & b, const Box & box) -> bool
@@ -92,8 +90,9 @@ inline auto computePenaltyBypassDecision(
   const Point top_corner(bypass_x, expanded.max_corner().y() + surrounding_offset);
   const Point bottom_corner(bypass_x, expanded.min_corner().y() - surrounding_offset);
 
-  decision.top_cost = (top_corner - current_pos).norm() + (target_pos - top_corner).norm();
-  decision.bottom_cost = (bottom_corner - current_pos).norm() + (target_pos - bottom_corner).norm();
+  const double top_cost = (top_corner - current_pos).norm() + (target_pos - top_corner).norm();
+  const double bottom_cost =
+    (bottom_corner - current_pos).norm() + (target_pos - bottom_corner).norm();
 
   const bool top_reachable = !intersectsSegmentAABB(current_pos, top_corner, expanded);
   const bool bottom_reachable = !intersectsSegmentAABB(current_pos, bottom_corner, expanded);
@@ -108,11 +107,10 @@ inline auto computePenaltyBypassDecision(
   auto side_score = [](bool fully_good, bool reachable, double cost) {
     return std::make_pair(fully_good ? 2 : (reachable ? 1 : 0), -cost);
   };
-  const PenaltyBypassSide selected =
-    (side_score(top_fully_good, top_reachable, decision.top_cost) >=
-     side_score(bottom_fully_good, bottom_reachable, decision.bottom_cost))
-      ? PenaltyBypassSide::TOP
-      : PenaltyBypassSide::BOTTOM;
+  const PenaltyBypassSide selected = (side_score(top_fully_good, top_reachable, top_cost) >=
+                                      side_score(bottom_fully_good, bottom_reachable, bottom_cost))
+                                       ? PenaltyBypassSide::TOP
+                                       : PenaltyBypassSide::BOTTOM;
 
   decision.selected_side = selected;
   decision.waypoint = selected == PenaltyBypassSide::TOP ? top_corner : bottom_corner;

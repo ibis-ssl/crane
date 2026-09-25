@@ -14,18 +14,57 @@
 
 #include "robocup_ssl_comm/vision_component.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <crane_utils/parameter.hpp>
+#include <iterator>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <utility>
 #include <vector>
 
-using namespace std::chrono_literals;
-
 namespace robocup_ssl_comm
 {
+namespace
+{
+constexpr double kMinConfidence = 0.5;
+
+template <typename Detections>
+void append_confident(const Detections & detections, Detections & merged)
+{
+  std::copy_if(
+    detections.begin(), detections.end(), std::back_inserter(merged),
+    [](const auto & detection) { return detection.confidence > kMinConfidence; });
+}
+
+robocup_ssl_msgs::msg::SSLDetectionRobot toRobotMsg(const robocup_ssl::SSL_DetectionRobot & robot)
+{
+  robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
+  robot_msg.confidence = robot.confidence();
+  if (robot.has_robot_id()) {
+    robot_msg.robot_id = robot.robot_id();
+  } else {
+    robot_msg.robot_id = 100;  // invalid value
+  }
+  robot_msg.x = robot.x() / 1000.0;
+  robot_msg.y = robot.y() / 1000.0;
+  if (robot.has_orientation()) {
+    robot_msg.orientation = robot.orientation();
+  } else {
+    robot_msg.orientation = 0.0;  // invalid value
+  }
+  robot_msg.pixel_x = robot.pixel_x();
+  robot_msg.pixel_y = robot.pixel_y();
+  if (robot.has_height()) {
+    robot_msg.height = robot.height() / 1000.0;
+  } else {
+    robot_msg.height = 0.0;  // invalid value
+  }
+  return robot_msg;
+}
+}  // namespace
+
 Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   const std::string multicast_address =
@@ -71,7 +110,6 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 
 void Vision::on_timer()
 {
-  // 全カメラのデータをマージして統合フレームをパブリッシュ
   robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
   {
     std::lock_guard<std::mutex> lock(frames_mutex_);
@@ -119,55 +157,10 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
   }
 
   for (const auto & robot : detection_frame.robots_yellow()) {
-    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_yellow.push_back(robot_msg);
+    detection_frame_msg.robots_yellow.push_back(toRobotMsg(robot));
   }
-
   for (const auto & robot : detection_frame.robots_blue()) {
-    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_blue.push_back(robot_msg);
+    detection_frame_msg.robots_blue.push_back(toRobotMsg(robot));
   }
 
   return detection_frame_msg;
@@ -177,20 +170,17 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
 {
   robocup_ssl_msgs::msg::SSLDetectionFrame merged_frame;
 
-  // 統合フレームのメタデータを設定（最新のカメラデータから取得）
   uint32_t latest_camera_id = 0;
   double latest_t_capture = 0.0;
   double latest_t_sent = 0.0;
   uint32_t latest_frame_number = 0;
 
-  // 有効な全カメラのデータを統合
   for (const auto & [camera_id, frame] : camera_frames_) {
     if (!is_camera_frame_valid(camera_id)) {
       RCLCPP_DEBUG(get_logger(), "Camera %u frame is too old, skipping", camera_id);
       continue;
     }
 
-    // 最新のフレーム情報を記録
     if (frame.t_capture > latest_t_capture) {
       latest_camera_id = camera_id;
       latest_t_capture = frame.t_capture;
@@ -198,31 +188,12 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
       latest_frame_number = frame.frame_number;
     }
 
-    // ボールデータをマージ（confidenceでフィルタリング）
-    for (const auto & ball : frame.balls) {
-      if (ball.confidence > 0.5) {  // confidenceの閾値
-        merged_frame.balls.push_back(ball);
-      }
-    }
-
-    // 黄色ロボットデータをマージ
-    for (const auto & robot : frame.robots_yellow) {
-      if (robot.confidence > 0.5) {  // confidenceの閾値
-        merged_frame.robots_yellow.push_back(robot);
-      }
-    }
-
-    // 青色ロボットデータをマージ
-    for (const auto & robot : frame.robots_blue) {
-      if (robot.confidence > 0.5) {  // confidenceの閾値
-        merged_frame.robots_blue.push_back(robot);
-      }
-    }
+    append_confident(frame.balls, merged_frame.balls);
+    append_confident(frame.robots_yellow, merged_frame.robots_yellow);
+    append_confident(frame.robots_blue, merged_frame.robots_blue);
   }
 
-  // 統合フレームのメタデータを設定
-  merged_frame.camera_id =
-    latest_camera_id;  // 最新のカメラID（統合フレームであることを示すため0にすることも可能）
+  merged_frame.camera_id = latest_camera_id;
   merged_frame.t_capture = latest_t_capture;
   merged_frame.t_sent = latest_t_sent;
   merged_frame.frame_number = latest_frame_number;

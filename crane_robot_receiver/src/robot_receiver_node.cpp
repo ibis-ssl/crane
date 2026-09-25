@@ -349,7 +349,6 @@ public:
     crane::CraneVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
-    // パラメータの宣言と取得
     int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 15);
     std::string ip_base = crane::get_or_declare_parameter(this, "multicast_ip_base", "224.5.20");
     int port_base = crane::get_or_declare_parameter(this, "port_base", 50100);
@@ -369,11 +368,9 @@ public:
       }
     }
 
-    // asioイベントループを専用スレッドで開始
     io_thread_ = std::thread([this]() { io_context_.run(); });
 
     using std::chrono::operator""ms;
-    using std::chrono::operator""s;
 
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
@@ -384,7 +381,6 @@ public:
         if (!robot_feedback) continue;
 
         // 古いデータは入れない(100msより古いデータはVisionより価値が薄い可能性が高い)
-        using std::chrono::operator""ms;
         if ((now - robot_feedback->received_stamp) >= 100ms) continue;
 
         crane_msgs::msg::RobotFeedback robot_feedback_msg;

@@ -157,7 +157,7 @@ public:
       boost::asio::write(*socket_, boost::asio::buffer(response));
       connected_ = true;
       return true;
-    } catch (const std::exception & e) {
+    } catch (const std::exception &) {
       return false;
     }
   }
@@ -257,8 +257,6 @@ public:
     return std::nullopt;
   }
 
-  bool isConnected() const { return connected_; }
-
 private:
   static constexpr uint8_t kOpContinuation = 0x0;
   static constexpr uint8_t kOpText = 0x1;
@@ -297,7 +295,7 @@ private:
       frame.insert(frame.end(), payload.begin(), payload.end());
 
       boost::asio::write(*socket_, boost::asio::buffer(frame));
-    } catch (const std::exception & e) {
+    } catch (const std::exception &) {
       connected_ = false;
     }
   }

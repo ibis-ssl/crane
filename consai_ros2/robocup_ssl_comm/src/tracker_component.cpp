@@ -191,7 +191,6 @@ robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
     tracked_frame_msg.capabilities.push_back(capability_msg);
   }
 
-  // Set frame metadata
   tracked_frame_msg.has_field |=
     tracked_frame_msg.FRAME_NUMBER_FIELD_SET | tracked_frame_msg.TIMESTAMP_FIELD_SET;
 

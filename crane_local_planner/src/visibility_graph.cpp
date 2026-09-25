@@ -255,7 +255,6 @@ auto VisibilityGraph::isEdgeVisible(
   const Point & from, const Point & to, const std::vector<Obstacle> & obstacles,
   const std::vector<ObstacleBounds> & bounds) const -> bool
 {
-  // 十分に近いなら干渉していないとみなす
   if ((to - from).norm() < EPSILON) {
     return true;
   }
@@ -267,14 +266,12 @@ auto VisibilityGraph::isEdgeVisible(
   for (size_t index = 0; index < obstacles.size(); ++index) {
     const auto & box = bounds[index];
 
-    // 作成した矩形境界と線分が重なっていなければスキップ。
     if (
       box.max_x < edge_min_x || box.min_x > edge_max_x || box.max_y < edge_min_y ||
       box.min_y > edge_max_y) {
       continue;
     }
 
-    // 厳密チェック
     const auto & obstacle = obstacles[index];
     switch (obstacle.type) {
       case Obstacle::Type::CIRCLE: {

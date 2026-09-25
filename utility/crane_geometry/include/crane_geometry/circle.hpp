@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <set>
 
 namespace crane::geometry::model
 {
@@ -24,34 +23,29 @@ struct Circle
 namespace boost::geometry::traits
 {
 using crane::geometry::model::Circle;
-// タグ定義
 template <typename PointType>
 struct tag<Circle<PointType>>
 {
   using type = point_tag;
 };
 
-// 座標タイプ定義
 template <typename PointType>
 struct coordinate_type<Circle<PointType>>
 {
   using type = typename coordinate_type<PointType>::type;
 };
 
-// 座標システム定義
 template <typename PointType>
 struct coordinate_system<Circle<PointType>>
 {
   using type = typename coordinate_system<PointType>::type;
 };
 
-// 次元定義
 template <typename PointType>
 struct dimension<Circle<PointType>> : boost::mpl::int_<2>
 {
 };
 
-// アクセサ定義
 template <typename PointType, std::size_t Dimension>
 struct access<Circle<PointType>, Dimension>
 {

@@ -32,7 +32,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  // パラメータの設定と読み込み
   config.ball_idle.threshold_duration = rclcpp::Duration::from_seconds(
     crane::get_or_declare_parameter(this, "ball_idle.threshold_duration", 5.0));
   config.ball_idle.move_distance_threshold_meter =
@@ -101,14 +100,12 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       kick_event_detector_->updateRobotCommands(*msg);
     });
 
-  // 脅威評価結果のパブリッシャー
   game_analysis_pub_ = create_publisher<crane_msgs::msg::GameAnalysis>("game_analysis", 10);
 
   // キック予実トレース（実績記録済みの完了トレースのみ）のパブリッシャー
   kick_prediction_trace_pub_ =
     create_publisher<crane_msgs::msg::KickPredictionTrace>("kick_prediction_traces", 10);
 
-  // メトリクス計算エンジンの初期化
   metric_engine_ = std::make_unique<metrics::MetricEngine>(get_logger());
 
   // 基礎メトリクス
@@ -131,7 +128,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     std::make_shared<metrics::RecommendedDefendersMetric>(
       ball_threat_metric, robot_threats_metric, shared_threat_evaluator));
 
-  // 役割決定メトリクス（新規）
+  // 役割決定メトリクス
   auto attacker_metric = std::make_shared<metrics::AttackerCandidateMetric>();
   metric_engine_->registerMetric(attacker_metric);
 
@@ -140,7 +137,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
   // パスターゲット選定メトリクス
   auto pass_target_metric = std::make_shared<metrics::PassTargetMetric>();
-  // パラメータ設定
   double min_hold = crane::get_or_declare_parameter(this, "pass_target.min_hold_duration_sec", 0.5);
   double min_improve =
     crane::get_or_declare_parameter(this, "pass_target.min_improvement_margin", 0.2);
@@ -233,14 +229,12 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     auto robot_collision_info = getRobotCollisionInfo();
 
     if (robot_collision_info) {
-      //          robot_collision_info->attack_robot.robot_id
       RCLCPP_DEBUG(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
         robot_collision_info->attack_robot.id, robot_collision_info->attacked_robot.id,
         robot_collision_info->relative_velocity);
     }
 
-    // ボール履歴を更新
     crane_msgs::msg::BallInfo ball_info_msg;
     world_model->ball().toMsg(ball_info_msg);
     ball_history_.push_front(ball_info_msg);
@@ -248,7 +242,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       ball_history_.pop_back();
     }
 
-    // メトリクス計算エンジンで脅威評価を実行
     crane_msgs::msg::GameAnalysis analysis;
     metrics::MetricContext ctx{
       .world_model = world_model.get(),

@@ -50,7 +50,6 @@ class AnnotationContext:
     # WorldModelコンテキスト（前後3秒+2秒のスナップショット）
     world_model_context: list[WorldModelSnapshot] = field(default_factory=list)
 
-    # カテゴリ名マッピング
     CATEGORY_NAMES: ClassVar[dict[int, str]] = {
         0: "ISSUE",
         1: "OBSERVATION",
@@ -61,7 +60,6 @@ class AnnotationContext:
         10: "CUSTOM",
     }
 
-    # 重要度名マッピング
     PRIORITY_NAMES: ClassVar[dict[int, str]] = {
         0: "LOW",
         1: "MEDIUM",
@@ -99,12 +97,7 @@ class MCAPAnnotationExtractor:
         self.context_after_ns = int(context_after_sec * 1e9)
         self.sampling_interval_ns = int(world_model_sampling_ms * 1e6)
 
-        # メッセージ型キャッシュ
         self._msg_types: dict[str, Any] = {}
-
-    def _get_message_type(self, type_name: str) -> Any:
-        """メッセージ型を取得（キャッシュあり）."""
-        return get_message_type(type_name, self._msg_types)
 
     def extract_from_mcap(self, mcap_path: str | Path) -> list[AnnotationContext]:
         """
@@ -122,7 +115,6 @@ class MCAPAnnotationExtractor:
 
         reader = open_sequential_reader(mcap_path)
 
-        # トピックフィルタリング
         topic_types = reader.get_all_topics_and_types()
         topics_map = {t.name: t.type for t in topic_types}
 
@@ -134,7 +126,6 @@ class MCAPAnnotationExtractor:
         if world_model_topic not in topics_map:
             raise ValueError(f"Topic {world_model_topic} not found in bag")
 
-        # 1パスでアノテーションとWorldModelを収集
         logger.info("Collecting annotations and WorldModel messages...")
         annotations_raw: list[tuple[int, Any]] = []
         world_model_messages: list[tuple[int, Any]] = []
@@ -142,11 +133,11 @@ class MCAPAnnotationExtractor:
         while reader.has_next():
             topic, data, timestamp = reader.read_next()
             if topic == annotations_topic:
-                msg_type = self._get_message_type(topics_map[topic])
+                msg_type = get_message_type(topics_map[topic], self._msg_types)
                 msg = deserialize_message(data, msg_type)
                 annotations_raw.append((timestamp, msg))
             elif topic == world_model_topic:
-                msg_type = self._get_message_type(topics_map[topic])
+                msg_type = get_message_type(topics_map[topic], self._msg_types)
                 msg = deserialize_message(data, msg_type)
                 world_model_messages.append((timestamp, msg))
 
@@ -155,7 +146,6 @@ class MCAPAnnotationExtractor:
             f"{len(world_model_messages)} WorldModel messages"
         )
 
-        # 各アノテーションに対してメモリ上でWorldModelコンテキストをフィルタリング
         logger.info("Building annotation contexts...")
         annotations_with_context = [
             self._build_annotation_context(
@@ -178,13 +168,11 @@ class MCAPAnnotationExtractor:
         """メモリ上のWorldModelリストからアノテーションコンテキストを構築."""
         event_time_ns = annotation_msg.event_timestamp_ns
 
-        # 位置情報
         position = None
         if annotation_msg.has_position:
             pos = annotation_msg.position
             position = (pos.x, pos.y, pos.z)
 
-        # ロボットコンテキスト
         related_robot_ids = (
             list(annotation_msg.related_robot_ids)
             if annotation_msg.has_robot_context
@@ -196,7 +184,6 @@ class MCAPAnnotationExtractor:
             else []
         )
 
-        # WorldModelコンテキストをフィルタリング（時間範囲 + サンプリング）
         context_start = event_time_ns - self.context_before_ns
         context_end = event_time_ns + self.context_after_ns
 
@@ -239,12 +226,10 @@ class MCAPAnnotationExtractor:
         self, timestamp: int, world_msg: Any
     ) -> WorldModelSnapshot:
         """WorldModelメッセージからスナップショットを作成."""
-        # ボール情報
         ball_info = world_msg.ball_info
         ball_pos = ball_info.position
         ball_vel = ball_info.velocity
 
-        # ロボット情報
         our_robots = [
             {
                 "id": robot.id,

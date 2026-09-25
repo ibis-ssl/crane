@@ -216,12 +216,22 @@ inline auto getOptimalAssignments(
   const std::vector<Point> & robot_positions, const std::vector<Geometry> & targets)
   -> std::vector<int>
 {
-  assert(robot_positions.size() <= targets.size());
-  if (robot_positions.empty()) {
+  if (robot_positions.empty() || targets.empty()) {
     return {};
   }
+  assert(robot_positions.size() <= targets.size());
   if (robot_positions.size() == 1) {
-    return {0};
+    // 1 台なら Hungarian を使わず最近傍を選ぶ。同距離は小さい添字、NaN は最小とみなさない
+    int best_index = 0;
+    double best_distance = std::numeric_limits<double>::infinity();
+    for (size_t j = 0; j < targets.size(); ++j) {
+      const double d = bg::distance(robot_positions[0], targets[j]);
+      if (d < best_distance) {
+        best_distance = d;
+        best_index = static_cast<int>(j);
+      }
+    }
+    return {best_index};
   }
 
   // Hungarianアルゴリズムは行数 >= 列数を要求するため、
@@ -243,7 +253,7 @@ inline auto getOptimalAssignments(
     }
   }
 
-  // ダミーロボットのコストは0に設定（実際には使用されない）
+  // ダミーロボットのコストは大きな値に設定（実際には使用されない）
   for (size_t i = num_robots; i < matrix_size; ++i) {
     for (size_t j = 0; j < matrix_size; ++j) {
       cost[i][j] = 1e9;
@@ -272,12 +282,22 @@ template <typename CostFunc>
 inline auto getOptimalAssignmentsWithCost(
   size_t num_robots, size_t num_targets, CostFunc && cost_func) -> std::vector<int>
 {
-  assert(num_robots <= num_targets);
-  if (num_robots == 0) {
+  if (num_robots == 0 || num_targets == 0) {
     return {};
   }
+  assert(num_robots <= num_targets);
   if (num_robots == 1) {
-    return {0};
+    // 1 台なら Hungarian を使わず最小コストを選ぶ。同コストは小さい添字、NaN は最小とみなさない
+    int best_index = 0;
+    double best_cost = std::numeric_limits<double>::infinity();
+    for (size_t j = 0; j < num_targets; ++j) {
+      const double c = cost_func(0, j);
+      if (c < best_cost) {
+        best_cost = c;
+        best_index = static_cast<int>(j);
+      }
+    }
+    return {best_index};
   }
 
   // Hungarianアルゴリズムは行数 >= 列数を要求するため、

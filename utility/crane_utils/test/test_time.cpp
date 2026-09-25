@@ -10,13 +10,11 @@
 
 namespace crane
 {
-// time.hppの関数テスト
 TEST(TimeTest, GetDiffSec)
 {
   auto now = std::chrono::high_resolution_clock::now();
   auto later = now + std::chrono::milliseconds(100);
 
-  // 差分は約0.1秒
   double diff = getDiffSec(now, later);
   EXPECT_NEAR(diff, 0.1, 0.01);
 
@@ -28,7 +26,6 @@ TEST(TimeTest, GetDiffSec)
 // getElapsedSecのテストはtickに依存するため省略
 // ScopedTimerのテストも外部依存が多いため省略
 
-// テンプレート関数のインスタンス化テスト
 TEST(TimeTest, TemplateInstantiation)
 {
   using TestClock = std::chrono::steady_clock;
@@ -40,7 +37,6 @@ TEST(TimeTest, TemplateInstantiation)
   EXPECT_DOUBLE_EQ(diff, 1.0);
 }
 
-// rclcpp::Time / builtin_interfaces::msg::Time のテスト
 TEST(TimeTest, RclcppTimeDiffAndElapsed)
 {
   rclcpp::Time t1(10, 0, RCL_ROS_TIME);

@@ -37,7 +37,6 @@ auto KickEventDetector::update(
   detected_bots = filterByVelocity(0.5, detected_bots, world_model);
   detected_bots = filterByBotAngle(0.5, detected_bots, world_model);
   detected_bots = filterByDistanceIncrease(detected_bots, world_model);
-  // print detected bots
 
   std::optional<KickOrigin> kick_event_origin = std::nullopt;
   for (const auto & id : detected_bots.friends) {
@@ -68,13 +67,10 @@ auto KickEventDetector::update(
       ros_clock.now(), world_model.ball().pos, RobotIdentifier{.is_ours = false, .id = id});
   }
 
-  // 進行中キックの更新
   if (kick_event_origin.has_value()) {
-    // 新しいキックが検出された場合
     if (
       !ongoing_kick_origin.has_value() || ongoing_kick_origin->robot != kick_event_origin->robot ||
       (kick_event_origin->position - ongoing_kick_origin->position).norm() > 0.5) {
-      // 新規キックイベント: トレースを作成
       ongoing_kick_trace_ = KickPredictionTracker::createTrace();
       kick_origin_pos_ = world_model.ball().pos;
     }
@@ -83,7 +79,6 @@ auto KickEventDetector::update(
     if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
       // キック中断判定 - ボール停止時に実績を記録
       if (ongoing_kick_trace_.has_value() && !ongoing_kick_trace_->prediction_point.empty()) {
-        // 実際の停止距離を計算
         double actual_stop_distance = (world_model.ball().pos - kick_origin_pos_).norm();
         // 実際のボール初速度（キック直後の速度記録から推定、ここでは最大速度を使用）
         double actual_ball_speed = 0.0;
@@ -94,11 +89,10 @@ auto KickEventDetector::update(
           }
         }
 
-        // 実績を記録
         KickPredictionTracker::recordActual(
           *ongoing_kick_trace_, actual_ball_speed, actual_stop_distance);
 
-        // 完了トレースとして保持（従来はここで破棄され予実データがbagに残らなかった）
+        // 完了トレースとして保持し、takeCompletedTraces() で払い出して bag に残す
         if (!ongoing_kick_trace_->actual.empty()) {
           completed_traces_.push_back(*ongoing_kick_trace_);
           if (completed_traces_.size() > COMPLETED_TRACE_QUEUE_SIZE) {
@@ -113,7 +107,6 @@ auto KickEventDetector::update(
     }
   }
 
-  // 進行中のキックを可視化
   if (ongoing_kick_origin.has_value()) {
     if (visualizer) {
       visualizer->drawLine(
@@ -134,7 +127,6 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
       records.back().position.y() - ongoing_kick_origin->position.y(),
       records.back().position.x() - ongoing_kick_origin->position.x());
 
-    // 味方ロボットの場合、コマンドからキック力を取得
     if (kick.is_kicker_friend) {
       auto latest_command = getLatestCommandForRobot(kick.kicker_id);
       if (latest_command.has_value()) {
@@ -143,7 +135,6 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
       }
     }
 
-    // キック予測トレースを追加
     if (
       kicker_model_ && ongoing_kick_trace_.has_value() &&
       ongoing_kick_trace_->prediction_point.empty()) {
@@ -157,7 +148,6 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
           kick_power = kick.commanded_kick_power;
           is_chip_kick = kick.commanded_chip_kick;
         } else {
-          // 検出された速度から逆算
           double observed_speed = records.back().velocity.norm();
           try {
             kick_power = kicker_model_->calculateStraightKickPower(observed_speed);
@@ -166,14 +156,12 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
           }
         }
 
-        // 予測値を計算
         double predicted_speed =
           is_chip_kick ? 0.0 : kicker_model_->predictStraightKickSpeed(kick_power);
         double predicted_distance = is_chip_kick
                                       ? kicker_model_->predictChipKickTotalDistance(kick_power)
                                       : kicker_model_->predictStopDistance(kick_power);
 
-        // トレースに予測を記録
         Eigen::Vector2d kick_pos(kick.origin_x, kick.origin_y);
         KickPredictionTracker::recordPrediction(
           *ongoing_kick_trace_, "kick_event_detector", kick_power, is_chip_kick, predicted_speed,
@@ -183,7 +171,6 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
       }
     }
 
-    // トレースを添付
     if (ongoing_kick_trace_.has_value()) {
       kick.kick_prediction_trace.push_back(*ongoing_kick_trace_);
     }
@@ -369,7 +356,6 @@ auto KickEventDetector::updateRobotCommands(const crane_msgs::msg::RobotCommands
 auto KickEventDetector::getLatestCommandForRobot(uint8_t robot_id) const
   -> std::optional<crane_msgs::msg::RobotCommand>
 {
-  // 新しい順に検索
   for (auto it = robot_command_records_.rbegin(); it != robot_command_records_.rend(); ++it) {
     for (const auto & cmd : it->commands.robot_commands) {
       if (cmd.robot_id == robot_id) {
