@@ -45,8 +45,9 @@ constexpr double kFlyingHeight = 0.15;
 constexpr double kMaxTrackTime = 5.0;
 /// シュート除外: ゴールマウス角度範囲に加えるマージン [rad]
 constexpr double kShotConeMargin = 0.1;
-/// ゴールマウス半幅 [m]（bag_events.cpp の detect_goals と同一値）
-constexpr double kGoalHalfWidth = 0.5;
+/// goal_size が未記録の古い bag で使うゴールマウス半幅 [m]
+/// （bag_events.cpp の detect_goals と同一値）
+constexpr double kGoalHalfWidthFallback = 0.5;
 /// 場外判定マージン [m]
 constexpr double kOutOfFieldMargin = 0.05;
 
@@ -59,24 +60,33 @@ double ball_speed(const WorldModel & wm)
 
 double dist2d(const Point2D & a, double bx, double by) { return norm2(a.x - bx, a.y - by); }
 
-/// 攻撃方向は +x（world_model は自ゴールが -x に正規化されている。detect_goals と同前提）
+/// 攻撃方向の x の符号。world_model は座標を正規化しておらず、on_positive_half なら
+/// 自ゴールが +x 側で攻撃方向は -x になる
+/// （crane_world_model_publisher の our_goal_x、detect_goals と同じ規約）
+double attack_sign(const WorldModel & wm) { return wm.on_positive_half ? -1.0 : 1.0; }
+
 bool is_shot_direction(const WorldModel & wm, const Point2D & kick_pos)
 {
   const double half_length = wm.field_info.x / 2.0;
   if (half_length <= 0.0) {
     return false;  // フィールド情報なし（合成データ等）は除外しない
   }
-  if (kick_pos.x >= half_length) {
+  // 攻撃方向が +x になるよう x を反転した座標で判定する
+  const double sign = attack_sign(wm);
+  const double kick_x = sign * kick_pos.x;
+  if (kick_x >= half_length) {
     return false;  // ゴールラインより先からのキックは角度が定義できない
   }
-  const double vx = wm.ball_info.velocity.x;
+  const double vx = sign * wm.ball_info.velocity.x;
   const double vy = wm.ball_info.velocity.y;
   if (norm2(vx, vy) < 1e-6) {
     return false;
   }
+  const double goal_half_width =
+    wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : kGoalHalfWidthFallback;
   const double dir = std::atan2(vy, vx);
-  const double angle_high = std::atan2(kGoalHalfWidth - kick_pos.y, half_length - kick_pos.x);
-  const double angle_low = std::atan2(-kGoalHalfWidth - kick_pos.y, half_length - kick_pos.x);
+  const double angle_high = std::atan2(goal_half_width - kick_pos.y, half_length - kick_x);
+  const double angle_low = std::atan2(-goal_half_width - kick_pos.y, half_length - kick_x);
   return dir >= angle_low - kShotConeMargin && dir <= angle_high + kShotConeMargin;
 }
 
@@ -323,7 +333,7 @@ std::vector<PassEvent> detect_pass_events(const BagData & data)
     }
 
     ev.pass_distance = norm2(ev.end_pos.x - ev.kick_pos.x, ev.end_pos.y - ev.kick_pos.y);
-    ev.forward_progress = ev.end_pos.x - ev.kick_pos.x;
+    ev.forward_progress = attack_sign(wm) * (ev.end_pos.x - ev.kick_pos.x);
     events.push_back(ev);
 
     // 解決フレームから走査を再開（同一キックの二重検出を防ぐ）

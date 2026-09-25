@@ -31,6 +31,8 @@ struct Sim
   int32_t pass_target_id = -1;
   int32_t reserved_id = -1;
   cb::OngoingKickInfo ongoing;
+  bool on_positive_half = false;
+  double goal_width = 0.0;  // 0 は goal_size 未記録の古い bag
 
   Sim() { data.info.start_time_ns = 0; }
 
@@ -95,6 +97,8 @@ struct Sim
       wm.ball_info.position = {ball_x, ball_y, ball_z};
       wm.ball_info.velocity = {vel_x, vel_y};
       wm.field_info = {12.0, 9.0};
+      wm.goal_size = {0.18, goal_width};
+      wm.on_positive_half = on_positive_half;
       wm.robot_info_ours = ours;
       wm.robot_info_theirs = theirs;
       wm.pass_target_id = pass_target_id;
@@ -245,6 +249,87 @@ TEST(BagPass, GoalwardKickWithReceiverOnRayIsPass)
   auto events = cb::detect_pass_events(sim.data);
   ASSERT_EQ(events.size(), 1u);
   EXPECT_EQ(events[0].outcome, cb::PassOutcome::SUCCESS);
+}
+
+TEST(BagPass, ShotTowardNegativeXGoalIsExcludedOnPositiveHalf)
+{
+  // 自陣が +x 側なので攻撃方向は -x
+  Sim sim;
+  sim.on_positive_half = true;
+  sim.ball_x = -2.0;
+  sim.place_our(1, -1.9, 0.0);
+  sim.place_our(3, -2.0, 2.0);  // 受け手は射線外
+  sim.pass_target_id = 3;
+  sim.step(10);
+  sim.kick(-4.0, 0.0, 1);  // 敵ゴールマウス直撃方向
+  sim.step(100);
+
+  auto events = cb::detect_pass_events(sim.data);
+  EXPECT_TRUE(events.empty());
+}
+
+TEST(BagPass, KickTowardOwnGoalOnPositiveHalfIsNotShot)
+{
+  Sim sim;
+  sim.on_positive_half = true;
+  sim.ball_x = 2.0;
+  sim.place_our(1, 1.9, 0.0);
+  sim.place_our(3, 2.0, 2.0);  // 受け手は射線外
+  sim.pass_target_id = 3;
+  sim.step(10);
+  sim.kick(4.0, 0.0, 1);  // 自ゴール（+x）方向
+  sim.step(100);
+
+  auto events = cb::detect_pass_events(sim.data);
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_LT(events[0].forward_progress, -1.5);  // 攻撃方向（-x）とは逆に進んだ
+}
+
+TEST(BagPass, ForwardProgressFollowsAttackDirectionOnPositiveHalf)
+{
+  Sim sim;
+  sim.on_positive_half = true;
+  sim.place_our(1, 0.0, -0.1);
+  sim.place_our(3, -2.0, 2.0);  // 攻撃方向（-x）へ 45° の受け手
+  sim.pass_target_id = 3;
+  sim.step(10);
+  sim.kick(-2.121, 2.121, 1);
+  sim.step(100);
+
+  auto events = cb::detect_pass_events(sim.data);
+  ASSERT_EQ(events.size(), 1u);
+  EXPECT_EQ(events[0].outcome, cb::PassOutcome::SUCCESS);
+  EXPECT_GT(events[0].forward_progress, 1.5);
+}
+
+namespace
+{
+/// x=4 から、ゴールライン（x=6）上の y=0.85 を狙うキック。
+/// 半幅 0.5 m（Division B・未記録時）のコーン（+マージン）の外、半幅 0.9 m（Division A）の内側
+std::vector<cb::PassEvent> kick_at_goal_post_region(double goal_width)
+{
+  Sim sim;
+  sim.goal_width = goal_width;
+  sim.ball_x = 4.0;
+  sim.place_our(1, 3.9, 0.0);
+  sim.place_our(3, 4.0, -2.0);  // 受け手は射線外
+  sim.pass_target_id = 3;
+  sim.step(10);
+  const double norm = std::hypot(2.0, 0.85);
+  sim.kick(4.0 * 2.0 / norm, 4.0 * 0.85 / norm, 1);
+  sim.step(100);
+  return cb::detect_pass_events(sim.data);
+}
+}  // namespace
+
+TEST(BagPass, ShotConeUsesRecordedGoalWidth)
+{
+  EXPECT_TRUE(kick_at_goal_post_region(1.8).empty());  // Division A のゴール幅ではシュート
+}
+
+TEST(BagPass, ShotConeFallsBackWithoutGoalSize)
+{
+  EXPECT_EQ(kick_at_goal_post_region(0.0).size(), 1u);  // 未記録なら半幅 0.5 m でゴール外
 }
 
 TEST(BagPass, NoPassTargetMeansNoAttempt)
