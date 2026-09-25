@@ -520,7 +520,6 @@ struct CraneVisualizerBuffer
 
   SvgUpdates message_buffer;
 
-  static inline uint32_t s_epoch = 0;
   static inline uint32_t s_seq = 0;
 
   template <typename Node>
@@ -537,20 +536,12 @@ struct CraneVisualizerBuffer
     }
   }
 
-  static auto deactivate() -> void
-  {
-    if (active()) {
-      buffer.reset();
-    }
-  }
-
   static auto active() -> bool { return buffer != nullptr; }
 
   static auto publish() -> void
   {
     if (active()) {
       buffer->message_buffer.header.stamp = rclcpp::Clock().now();
-      buffer->message_buffer.epoch = s_epoch;
       buffer->message_buffer.seq = s_seq++;
       buffer->publisher->publish(buffer->message_buffer);
       buffer->message_buffer.updates.clear();
@@ -577,12 +568,6 @@ struct CraneVisualizerBuffer
         updates.push_back(std::move(empty_layer));
       }
     }
-  }
-
-  static auto setEpoch(uint32_t epoch) -> void
-  {
-    s_epoch = epoch;
-    s_seq = 0;
   }
 };
 
