@@ -78,7 +78,6 @@ public:
    */
   void setAllocatedRobots(const std::vector<uint8_t> & robot_ids)
   {
-    // ロボットIDが変更されたかチェック
     bool robots_changed =
       robots.size() != robot_ids.size() ||
       !std::ranges::equal(robots, robot_ids, [](const auto & r, uint8_t id) { return r.id == id; });
@@ -89,7 +88,6 @@ public:
       robots.emplace_back(robot_id);
     }
 
-    // 変更があれば通知
     if (robots_changed) {
       onRobotsChanged();
     }
@@ -99,9 +97,7 @@ public:
   {
     auto [latest_status, position_commands] = calculatePositionCommand(robots);
     auto wrong_ids =
-      position_commands |
-      // remove position_command.robot_id is included in robots
-      ranges::views::filter([&](const auto & command) {
+      position_commands | ranges::views::filter([&](const auto & command) {
         return std::ranges::find_if(robots, [&](const auto & robot) {
                  return robot.id == command.robot_id;
                }) == robots.end();
@@ -118,7 +114,6 @@ public:
     msg.is_yellow = world_model->isYellow();
     msg.on_positive_half = world_model->onPositiveHalf();
     for (auto command : position_commands) {
-      // WorldModelから現在の速度情報を取得して設定
       auto robot = world_model->getOurRobot(command.robot_id);
       if (robot) {
         command.current_velocity.x = robot->vel.linear.x();
@@ -137,7 +132,6 @@ public:
 
   const std::string name;
 
-  // セッションパラメータ管理
   void setSessionParameters(const std::unordered_map<std::string, SessionParameterType> & params)
   {
     session_params_ = params;
@@ -227,16 +221,13 @@ protected:
       return {};
     }
 
-    // ロボットの現在位置を収集
     std::vector<Point> robot_points;
     for (const auto & robot_id : robots) {
       robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
     }
 
-    // 最適割り当てを計算
     auto solution = getOptimalAssignments(robot_points, target_points);
 
-    // 各ロボットに位置コマンドを生成
     std::vector<crane_msgs::msg::RobotCommand> position_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
@@ -252,7 +243,6 @@ protected:
       }
       command->setTargetTheta(getAngle(look_at_point - target_point));
 
-      // カスタム設定を適用
       customize_command(command);
 
       position_commands.emplace_back(command->getMsg());
