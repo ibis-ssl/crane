@@ -89,8 +89,8 @@ def _add_spec_opts(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--rate-hz", type=float, help="既定 62.5（crane と同じ）")
     parser.add_argument(
         "--schedule",
-        metavar="KEY=VALUE[,KEY=VALUE]:SECONDS,...",
-        help="区間指定。例 'polar.target_global_velocity_r=0:8,"
+        metavar="KEY=VALUE[,KEY=VALUE]:SECONDS;...",
+        help="区間指定。例 'polar.target_global_velocity_r=0:8;"
         "polar.target_global_velocity_r=0.2:2'",
     )
 
