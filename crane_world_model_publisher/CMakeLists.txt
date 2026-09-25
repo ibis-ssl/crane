@@ -30,20 +30,11 @@ ament_auto_find_build_dependencies()
 
 include_directories(${robocup_ssl_msgs_INCLUDE_DIRS})
 
-option(CRANE_WMP_BUILD_CALIBRATION "Build optional calibration utilities" OFF)
-
 set(WORLD_MODEL_PUBLISHER_SRCS
   src/world_model_publisher.cpp
   src/world_model_data_provider.cpp
   src/visualization_manager.cpp
 )
-
-if(CRANE_WMP_BUILD_CALIBRATION)
-  list(APPEND WORLD_MODEL_PUBLISHER_SRCS
-    src/calibration/ball_calibration_data_extractor.cpp
-    src/calibration/simple_ball_physics_optimizer.cpp
-  )
-endif()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED ${WORLD_MODEL_PUBLISHER_SRCS})
 
@@ -66,22 +57,9 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPub
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 
-if(CRANE_WMP_BUILD_CALIBRATION)
-  ament_auto_add_executable(ball_calibration_node src/calibration/ball_calibration_node.cpp)
-  target_link_libraries(ball_calibration_node ${PROJECT_NAME}_component glog)
-endif()
-
-# Pythonスクリプトのインストール
-install(PROGRAMS
-  scripts/plot_kick_events.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-
-  ament_auto_add_gtest(test_vision_ball_velocity test/test_vision_ball_velocity.cpp)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE launch config)
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE config)
