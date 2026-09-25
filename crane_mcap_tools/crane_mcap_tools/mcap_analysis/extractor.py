@@ -99,10 +99,6 @@ class MCAPAnnotationExtractor:
 
         self._msg_types: dict[str, Any] = {}
 
-    def _get_message_type(self, type_name: str) -> Any:
-        """メッセージ型を取得（キャッシュあり）."""
-        return get_message_type(type_name, self._msg_types)
-
     def extract_from_mcap(self, mcap_path: str | Path) -> list[AnnotationContext]:
         """
         MCAPファイルからアノテーションとコンテキストを抽出.
@@ -137,11 +133,11 @@ class MCAPAnnotationExtractor:
         while reader.has_next():
             topic, data, timestamp = reader.read_next()
             if topic == annotations_topic:
-                msg_type = self._get_message_type(topics_map[topic])
+                msg_type = get_message_type(topics_map[topic], self._msg_types)
                 msg = deserialize_message(data, msg_type)
                 annotations_raw.append((timestamp, msg))
             elif topic == world_model_topic:
-                msg_type = self._get_message_type(topics_map[topic])
+                msg_type = get_message_type(topics_map[topic], self._msg_types)
                 msg = deserialize_message(data, msg_type)
                 world_model_messages.append((timestamp, msg))
 
