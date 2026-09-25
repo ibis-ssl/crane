@@ -18,9 +18,7 @@ TEST(RobotPacket, EncodeDecode)
   std::uniform_real_distribution<float> dist_32(-32, 32);
   std::uniform_real_distribution<float> dist_pi(-M_PI, M_PI);
   std::uniform_real_distribution<float> dist_0_1(0.0, 1.0);
-  // 0 or 1
   std::uniform_int_distribution<int> dist_0_1_int(0, 1);
-  // uint16
   std::uniform_int_distribution<uint16_t> dist_uint16(0, 65535);
 
   const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
