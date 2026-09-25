@@ -14,7 +14,6 @@
 
 namespace crane
 {
-// Circleのテスト
 TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle{.center = Point(0.0, 0.0), .radius = 5.0};
@@ -25,7 +24,6 @@ TEST(CircleTest, CreateAndMeasure)
   EXPECT_DOUBLE_EQ(distance, 5.0);
 }
 
-// Capsuleのテスト
 TEST(CapsuleTest, CreateAndMeasure)
 {
   Capsule capsule{.segment = Segment(Point(0.0, 0.0), Point(10.0, 0.0)), .radius = 2.0};
@@ -36,7 +34,6 @@ TEST(CapsuleTest, CreateAndMeasure)
   EXPECT_DOUBLE_EQ(distance, 3.0);
 }
 
-// geometry_operationsのテスト追加
 TEST(GeometryOperationsTest, NormalizeAngle)
 {
   // 正の角度の正規化

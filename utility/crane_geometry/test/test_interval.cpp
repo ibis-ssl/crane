@@ -10,7 +10,6 @@
 
 namespace crane
 {
-// Intervalクラスのテスト
 TEST(IntervalTest, AppendIntervals)
 {
   Interval interval;

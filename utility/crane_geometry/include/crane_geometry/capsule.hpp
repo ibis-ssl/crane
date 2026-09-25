@@ -23,28 +23,24 @@ struct Capsule
 namespace boost::geometry::traits
 {
 using crane::geometry::model::Capsule;
-// タグ定義
 template <typename PointType>
 struct tag<Capsule<PointType>>
 {
   using type = segment_tag;
 };
 
-// 座標タイプ定義
 template <typename PointType>
 struct coordinate_type<Capsule<PointType>>
 {
   using type = typename coordinate_type<PointType>::type;
 };
 
-// 座標システム定義
 template <typename PointType>
 struct coordinate_system<Capsule<PointType>>
 {
   using type = typename coordinate_system<PointType>::type;
 };
 
-// 次元定義
 template <typename PointType>
 struct dimension<Capsule<PointType>> : boost::mpl::int_<2>
 {
@@ -74,7 +70,6 @@ struct indexed_access<crane::geometry::model::Capsule<PointType>, 1, 0>
   }
 };
 
-// 他のインデックスや次元についても同様に実装
 template <typename PointType>
 struct indexed_access<crane::geometry::model::Capsule<PointType>, 0, 1>
 {
