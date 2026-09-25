@@ -32,10 +32,6 @@ private:
     std::deque<std::pair<double, double>> cmd;        // (t_sec, target_theta)
     std::deque<std::pair<double, double>> obs_world;  // (t_sec, pose.theta from world_model)
     std::deque<std::pair<double, double>> obs_fb;     // (t_sec, yaw_angle from robot_feedback)
-    double last_world_ms{std::numeric_limits<double>::quiet_NaN()};
-    double last_world_corr{0.0};
-    double last_fb_ms{std::numeric_limits<double>::quiet_NaN()};
-    double last_fb_corr{0.0};
     double ema_world_ms{std::numeric_limits<double>::quiet_NaN()};
     double ema_fb_ms{std::numeric_limits<double>::quiet_NaN()};
   };
