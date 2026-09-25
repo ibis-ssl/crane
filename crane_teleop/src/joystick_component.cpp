@@ -29,12 +29,9 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
       }
     });
 
-  auto callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) -> void {
-    publish_robot_commands(msg);
-  };
-
   pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-  sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
+  sub_joy = create_subscription<sensor_msgs::msg::Joy>(
+    "joy", 10, [this](const sensor_msgs::msg::Joy::SharedPtr msg) { publish_robot_commands(msg); });
 }
 
 auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg) -> void
@@ -147,15 +144,11 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   command.omega_limit = MAX_VEL_ANGULAR;
   command.local_planner_config.final_planned_max_velocity.name = "teleop";
   command.local_planner_config.final_planned_max_velocity.value =
-    std::max(std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY), MAX_VEL_SURGE);
+    std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY);
   command.local_planner_config.final_planned_max_acceleration.name = "teleop";
   command.local_planner_config.final_planned_max_acceleration.value = 2.5;
 
-  if (is_dribble_enable) {
-    command.dribble_power = dribble_power;
-  } else {
-    command.dribble_power = 0.0;
-  }
+  command.dribble_power = is_dribble_enable ? dribble_power : 0.0;
 
   command.chip_enable = is_kick_mode_straight;
   if (is_kick_enable) {
@@ -168,8 +161,7 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
-    crane_msgs::msg::RobotCommand empty_command;
-    command = empty_command;
+    command = crane_msgs::msg::RobotCommand{};
   }
 
   crane_msgs::msg::RobotCommands robot_commands;
