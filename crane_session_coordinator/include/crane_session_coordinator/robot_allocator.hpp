@@ -68,12 +68,6 @@ public:
 
   auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
 
-  void setAllocationCostConfig(const AllocationCostConfig & config)
-  {
-    allocation_cost_config_ = config;
-  }
-  const AllocationCostConfig & getAllocationCostConfig() const { return allocation_cost_config_; }
-
 private:
   auto allocateRobotsGreedy(
     const std::vector<SessionRequirement> & requirements,

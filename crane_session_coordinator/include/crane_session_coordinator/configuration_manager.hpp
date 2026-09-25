@@ -59,8 +59,6 @@ public:
   auto getSessionCapacitiesForSituation(const std::string & situation_name) const
     -> std::optional<std::vector<SessionSlot>>;
 
-  auto getEventMap() const -> const std::unordered_map<std::string, std::string> &;
-
   /// セッション注入用。
   auto updateEventMapping(const std::string & event_name, const std::string & situation_name)
     -> void;

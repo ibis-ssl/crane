@@ -49,11 +49,6 @@ public:
 
   auto clear() -> void { active_sessions_.clear(); }
 
-  auto setPlanners(const std::vector<SessionBase::SharedPtr> & tactics) -> void
-  {
-    active_sessions_ = tactics;
-  }
-
 private:
   std::vector<SessionBase::SharedPtr> active_sessions_;
 };
