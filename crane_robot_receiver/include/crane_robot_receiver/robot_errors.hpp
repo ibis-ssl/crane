@@ -12,10 +12,8 @@
 
 namespace crane
 {
-// エラーコード定義
 namespace error_codes
 {
-// POWERエラー定義
 enum PowerErrorCode {
   POWER_NONE = 0,
   POWER_UNDER_VOLTAGE = 0x0001,
@@ -34,7 +32,6 @@ enum PowerErrorCode {
   POWER_FET_OVER_HEAT = 0x2000
 };
 
-// BLDCエラー定義
 enum BldcErrorCode {
   BLDC_NONE = 0,
   BLDC_UNDER_VOLTAGE = 0x0001,
@@ -54,7 +51,6 @@ constexpr int STALE = 3;
 
 }  // namespace error_codes
 
-// ロボットの状態
 enum class RobotState {
   ACTIVE,    // アクティブで診断情報を発行すべき
   INACTIVE,  // 一時的に非アクティブ（フィールド外など）
@@ -62,7 +58,6 @@ enum class RobotState {
 
 namespace utils
 {
-// BLDCモーターの名前を取得する関数
 inline auto getBldcName(uint16_t id) -> std::string
 {
   switch (id) {
@@ -79,7 +74,6 @@ inline auto getBldcName(uint16_t id) -> std::string
   }
 }
 
-// エラー情報をテキストに変換する関数
 inline auto convertErrorDataToStr(uint16_t id, uint16_t info) -> std::string
 {
   std::string result;
@@ -198,7 +192,6 @@ inline auto getTemperatureLabel(int index) -> std::string
   }
 }
 
-// エラーレベルに対応する色を取得
 inline auto getColorForErrorLevel(int level) -> std::string
 {
   switch (level) {
@@ -214,7 +207,6 @@ inline auto getColorForErrorLevel(int level) -> std::string
 }
 }  // namespace utils
 
-// エラー情報の構造体
 struct ErrorInfo
 {
   std::string type;        // エラータイプ (robot_error, communication, battery など)
