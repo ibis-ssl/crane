@@ -14,8 +14,10 @@
 
 #include "robocup_ssl_comm/vision_component.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <crane_utils/parameter.hpp>
+#include <iterator>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -26,6 +28,16 @@ namespace robocup_ssl_comm
 {
 namespace
 {
+constexpr double kMinConfidence = 0.5;
+
+template <typename Detections>
+void append_confident(const Detections & detections, Detections & merged)
+{
+  std::copy_if(
+    detections.begin(), detections.end(), std::back_inserter(merged),
+    [](const auto & detection) { return detection.confidence > kMinConfidence; });
+}
+
 robocup_ssl_msgs::msg::SSLDetectionRobot toRobotMsg(const robocup_ssl::SSL_DetectionRobot & robot)
 {
   robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
@@ -176,23 +188,9 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::merge_camera_frames()
       latest_frame_number = frame.frame_number;
     }
 
-    for (const auto & ball : frame.balls) {
-      if (ball.confidence > 0.5) {
-        merged_frame.balls.push_back(ball);
-      }
-    }
-
-    for (const auto & robot : frame.robots_yellow) {
-      if (robot.confidence > 0.5) {
-        merged_frame.robots_yellow.push_back(robot);
-      }
-    }
-
-    for (const auto & robot : frame.robots_blue) {
-      if (robot.confidence > 0.5) {
-        merged_frame.robots_blue.push_back(robot);
-      }
-    }
+    append_confident(frame.balls, merged_frame.balls);
+    append_confident(frame.robots_yellow, merged_frame.robots_yellow);
+    append_confident(frame.robots_blue, merged_frame.robots_blue);
   }
 
   merged_frame.camera_id = latest_camera_id;
