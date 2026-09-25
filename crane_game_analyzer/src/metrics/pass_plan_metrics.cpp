@@ -23,17 +23,6 @@ namespace crane::metrics
 {
 namespace
 {
-/// 計画の出し手がボールの保持を続けているか。
-/// 他の味方が明確に（kKickerHoldMargin 以上）近づいたら手放したとみなす。
-/// 計画の受け手以外の味方が、経路上のどこかでボールに先着できるか。
-///
-/// 計画は「この受け手が受け取る」という契約なので、他の味方が先に触れる点は
-/// 採用しない。実測では、キック較正を直したあとの失敗の最大要因がこれだった
-/// （15試行中4件）。ボールは計画どおりの地点に届く（受領点誤差 0.03〜0.75m）のに、
-/// そこへ来たのが計画の受け手ではない、という形で契約が破れる。
-/// 受領点そのものの競合だけでなく、経路を横切って途中で触ってしまう場合も含むので、
-/// 敵の迎撃評価と同じ「経路全体で先着できるか」を味方にも適用する。
-///
 /// 経路のどこまでを「途中で横切る」と見なすかの、受領点手前の余裕 [m]。
 ///
 /// 終端そのものは別の基準で見る（下の receiver_travel_time 比較）。ここで
@@ -48,6 +37,13 @@ constexpr double kReceivePointClearance = 0.6;
 constexpr double kReceiverAbsenceGrace = 0.5;
 
 /// 計画の受け手より先に、別の味方がボールへ届いてしまう受領点かどうか。
+///
+/// 計画は「この受け手が受け取る」という契約なので、他の味方が先に触れる点は
+/// 採用しない。実測では、キック較正を直したあとの失敗の最大要因がこれだった
+/// （15試行中4件）。ボールは計画どおりの地点に届く（受領点誤差 0.03〜0.75m）のに、
+/// そこへ来たのが計画の受け手ではない、という形で契約が破れる。
+/// 受領点そのものの競合だけでなく、経路を横切って途中で触ってしまう場合も含むので、
+/// 敵の迎撃評価と同じ「経路全体で先着できるか」を味方にも適用する。
 ///
 /// 見る観点は2つある。
 ///
@@ -102,6 +98,8 @@ auto friendlyWouldSteal(
   return false;
 }
 
+/// 計画の出し手がボールの保持を続けているか。
+/// 他の味方が明確に（kKickerHoldMargin 以上）近づいたら手放したとみなす。
 auto kickerKeepsBall(const WorldModelWrapper & wm, int kicker_id) -> bool
 {
   constexpr double kKickerHoldMargin = 0.5;
@@ -422,20 +420,17 @@ auto PassPlanMetric::recomputePlan(MetricContext & ctx) -> void
       "候補評価数が上限 %d に達したため打ち切りました（受領点の一部が未評価）", max_candidates_);
   }
 
-  // 有効候補なし → 非アクティブ
   if (receiver_bests.empty()) {
     writeInactivePlan(kicker_id, /*keep_selection=*/true);
     return;
   }
 
-  // 全体最良の受け手
   const ReceiverBest * overall_best = &receiver_bests.front();
   for (const auto & rb : receiver_bests) {
     if (rb.score > overall_best->score) {
       overall_best = &rb;
     }
   }
-  // スコアゲート
   if (overall_best->score < accept_score) {
     writeInactivePlan(kicker_id, /*keep_selection=*/true);
     return;

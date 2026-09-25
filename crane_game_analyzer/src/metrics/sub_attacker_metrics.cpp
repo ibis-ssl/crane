@@ -50,8 +50,7 @@ auto SubAttackerPositionMetric::compute(MetricContext & ctx) -> void
     return;
   }
 
-  // DPPS候補点を生成（旧SubAttackerSkillPlannerと同じパラメータ）
-  // 半径0.25m刻み、最大10m、64方向
+  // DPPS候補点: 半径0.25m刻み、最大10m、64方向
   auto candidates = getDPPSPoints(wm->ball().pos, 0.25, 10.0, 64);
 
   std::vector<Point> valid_candidates;
