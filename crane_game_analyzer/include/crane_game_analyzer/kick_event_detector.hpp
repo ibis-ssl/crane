@@ -103,19 +103,16 @@ private:
 
   VisualizerMessageBuilder::SharedPtr visualizer;
 
-  // キック予測トレース管理
   std::optional<crane_msgs::msg::KickPredictionTrace> ongoing_kick_trace_ = std::nullopt;
   // 実績記録済みの完了トレース（takeCompletedTraces で払い出し）
   std::vector<crane_msgs::msg::KickPredictionTrace> completed_traces_;
   static constexpr size_t COMPLETED_TRACE_QUEUE_SIZE = 100;
-  Point kick_origin_pos_;                      // キック開始位置を記録
-  std::shared_ptr<KickerModel> kicker_model_;  // キック予測用モデル
+  Point kick_origin_pos_;
+  std::shared_ptr<KickerModel> kicker_model_;
 
-  // RobotCommandsリングバッファ
   std::deque<RobotCommandRecord> robot_command_records_;
   static constexpr int COMMAND_QUEUE_SIZE = 30;  // 約1秒分（30Hz想定）
 
-  // 指定ロボットIDの最新コマンドを取得
   auto getLatestCommandForRobot(uint8_t robot_id) const
     -> std::optional<crane_msgs::msg::RobotCommand>;
 };
