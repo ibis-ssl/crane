@@ -123,14 +123,12 @@ def main() -> int:
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
 
-    # MCAPパスの検証
     mcap_path = Path(args.mcap_path)
     if not mcap_path.exists():
         logger.error(f"Path not found: {mcap_path}")
         return 1
 
     try:
-        # Step 1: MCAP抽出
         logger.info("=" * 60)
         logger.info("Step 1: MCAPファイルからアノテーションを抽出")
         logger.info("=" * 60)
@@ -149,7 +147,6 @@ def main() -> int:
 
         logger.info(f"✓ {len(annotations)}件のアノテーションを抽出しました")
 
-        # Step 2: Gemini解析（dry-runでない場合）
         analysis_results = None
 
         if not args.dry_run:
@@ -167,7 +164,6 @@ def main() -> int:
                 )
                 return 1
 
-            # プロンプト生成
             prompts = []
             for ann in annotations:
                 position_info = (
@@ -192,13 +188,11 @@ def main() -> int:
                 )
                 prompts.append((prompt, SYSTEM_INSTRUCTION))
 
-            # バッチ解析（Function Calling有効）
             logger.info("Function Calling有効でGemini解析を実行します...")
             analysis_results = gemini_client.analyze_batch_with_tools(
                 annotations, prompts, max_tool_calls=10
             )
 
-            # エラーチェック
             error_count = sum(1 for r in analysis_results if r.error)
             if error_count > 0:
                 logger.warning(f"⚠️ {error_count}件の解析でエラーが発生しました")
@@ -207,7 +201,6 @@ def main() -> int:
                 f"✓ {len(analysis_results) - error_count}件の解析が完了しました"
             )
 
-        # Step 3: レポート生成
         logger.info("")
         logger.info("=" * 60)
         logger.info("Step 3: レポート生成")
@@ -216,7 +209,6 @@ def main() -> int:
         report_gen = ReportGenerator(mcap_path)
         report = report_gen.generate_report(annotations, analysis_results)
 
-        # レポート保存
         output_path = Path(args.output)
         report_gen.save_report(report, output_path)
 

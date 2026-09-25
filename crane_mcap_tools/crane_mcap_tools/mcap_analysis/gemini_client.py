@@ -96,21 +96,19 @@ class GeminiAnalysisClient:
             解析結果
         """
         try:
-            # Gemini APIを呼び出し
             response = self._client.models.generate_content(
                 model=self.model,
                 contents=prompt,
                 config=self._types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     temperature=0.2,  # 一貫性を重視
-                    response_mime_type="application/json",  # JSON形式を要求
+                    response_mime_type="application/json",
                 ),
             )
 
             raw_response = response.text
             logger.debug(f"Gemini response: {raw_response}")
 
-            # JSONをパース
             result_data = json.loads(raw_response)
 
             return AnalysisResult(
@@ -152,10 +150,8 @@ class GeminiAnalysisClient:
             解析結果
         """
         try:
-            # ツールハンドラーを初期化
             tools_handler = MCAPToolsHandler(annotation)
 
-            # ツール定義を作成
             tools = [
                 self._types.Tool(
                     function_declarations=[
@@ -177,23 +173,19 @@ class GeminiAnalysisClient:
                 )
             )
 
-            # 会話履歴
             messages = [prompt]
             tool_call_count = 0
 
             logger.info("Starting analysis with tool calling enabled...")
 
             while tool_call_count < max_tool_calls:
-                # Gemini APIを呼び出し
                 # Function Calling使用時はresponse_mime_typeを指定しない
-                # 最初の呼び出しではANYモードでツール使用を強制
                 config_params = {
                     "system_instruction": system_instruction,
                     "temperature": 0.2,
                     "tools": tools,
                 }
 
-                # 最初の呼び出しでツール使用を強制
                 if tool_call_count == 0:
                     config_params["tool_config"] = tool_config
 
@@ -203,17 +195,14 @@ class GeminiAnalysisClient:
                     config=self._types.GenerateContentConfig(**config_params),
                 )
 
-                # Function callがあるかチェック
                 has_function_call = any(
                     hasattr(part, "function_call") and part.function_call
                     for part in response.candidates[0].content.parts
                 )
 
                 if has_function_call:
-                    # まずGeminiのレスポンスを追加
                     messages.append(response.candidates[0].content)
 
-                    # 全てのfunction callsを処理
                     function_response_parts = []
                     for part in response.candidates[0].content.parts:
                         if hasattr(part, "function_call") and part.function_call:
@@ -227,14 +216,12 @@ class GeminiAnalysisClient:
                                 f"Tool call #{tool_call_count}: {function_name}({function_args})"
                             )
 
-                            # ツールを実行
                             tool_result = tools_handler.handle(
                                 function_name, function_args
                             )
 
                             logger.debug(f"Tool result: {tool_result}")
 
-                            # function responseを作成
                             function_response_parts.append(
                                 self._types.Part(
                                     function_response=self._types.FunctionResponse(
@@ -244,28 +231,24 @@ class GeminiAnalysisClient:
                                 )
                             )
 
-                    # 全てのfunction responsesを追加
                     function_response_content = self._types.Content(
                         role="user",
                         parts=function_response_parts,
                     )
                     messages.append(function_response_content)
 
-                    # 次のイテレーションへ
                     continue
 
-                # テキストレスポンスを取得
                 raw_response = response.text
                 logger.debug(f"Gemini final response: {raw_response}")
 
                 # マークダウンのコードブロックを削除（```json ... ```）
                 json_text = raw_response.strip()
-                json_text = json_text.removeprefix("```json")  # ```json を削除
-                json_text = json_text.removeprefix("```")  # ``` を削除
-                json_text = json_text.removesuffix("```")  # ``` を削除
+                json_text = json_text.removeprefix("```json")
+                json_text = json_text.removeprefix("```")
+                json_text = json_text.removesuffix("```")
                 json_text = json_text.strip()
 
-                # JSONをパース
                 result_data = json.loads(json_text)
 
                 logger.info(f"Analysis completed with {tool_call_count} tool calls")
@@ -278,7 +261,6 @@ class GeminiAnalysisClient:
                     raw_response=raw_response,
                 )
 
-            # 最大呼び出し回数に達した
             logger.warning(f"Reached max tool calls ({max_tool_calls})")
             return AnalysisResult.error_result(
                 f"Reached max tool calls ({max_tool_calls})"

@@ -103,7 +103,6 @@ def create_annotation_analysis_prompt(
     if robot_context:
         prompt += f"\n{robot_context}\n"
 
-    # WorldModelサマリーは提供するが、詳細はツールで取得するよう促す
     prompt += """
 # 基本情報
 

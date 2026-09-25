@@ -70,7 +70,6 @@ class MCAPToolsHandler:
         time_offset_sec = args.get("time_offset_sec", 0.0)
         target_time_ns = self.annotation.event_timestamp_ns + int(time_offset_sec * 1e9)
 
-        # 最も近いスナップショットを検索
         closest_snapshot = min(
             self.world_model_snapshots,
             key=lambda s: abs(s.timestamp_ns - target_time_ns),
@@ -209,7 +208,6 @@ class MCAPToolsHandler:
 
         ball_pos = snapshot.ball_position
 
-        # 対象ロボット群を決定
         if team == "ours":
             robots = [(r, True) for r in snapshot.our_robots]
         elif team == "theirs":
@@ -222,7 +220,6 @@ class MCAPToolsHandler:
         if not robots:
             return {"error": "No robots found"}
 
-        # 最近接ロボットを検索
         closest_robot = None
         min_distance = float("inf")
 
@@ -276,7 +273,7 @@ class MCAPToolsHandler:
         Args:
             threshold_distance: 衝突判定距離（メートル）
         """
-        threshold = args.get("threshold_distance", 0.3)  # 30cm
+        threshold = args.get("threshold_distance", 0.3)
 
         collisions = []
         for snapshot in self.world_model_snapshots:
@@ -321,8 +318,6 @@ class MCAPToolsHandler:
                         )
 
         return {"collisions": collisions, "collision_count": len(collisions)}
-
-    # ヘルパー関数
 
     def _get_snapshot_at_offset(
         self, time_offset_sec: float
