@@ -28,8 +28,6 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-message("closest_point_vendor_DIR")
-message(${closest_point_vendor_DIR})
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_game_analyzer.cpp
   src/evaluations.cpp
