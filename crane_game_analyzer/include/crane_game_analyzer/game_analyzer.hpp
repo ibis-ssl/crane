@@ -42,18 +42,6 @@ struct GameAnalyzerConfig
   RobotCollisionConfig robot_collision;
 };
 
-struct BallTouchInfo
-{
-  RobotIdentifier robot_id;
-  double distance;
-};
-
-struct BallPositionStamped
-{
-  Point position;
-  rclcpp::Time stamp;
-};
-
 struct RobotCollisionInfo
 {
   RobotIdentifier attack_robot;

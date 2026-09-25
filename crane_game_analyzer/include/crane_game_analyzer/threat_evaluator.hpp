@@ -39,7 +39,6 @@ struct ThreatEvaluatorConfig
   double max_bad_redirect_angle_deg = 75.0;
 
   // ボール予測
-  double ball_lookahead_sec = 0.1;
   double check_ball_direction_vel_threshold = 1.5;
 };
 
@@ -84,12 +83,8 @@ struct RobotThreat
   /// 脅威ライン（ロボット位置からゴールへの線分）
   Segment threat_line;
   std::optional<Segment> protection_line;
-  std::optional<Point> protection_position;
   double threat_rating = 0.0;
   ThreatRatingDetail rating_detail;
-
-  enum class DefenseStrategy { CENTER_BACK, MAN_TO_MAN };
-  DefenseStrategy recommended_strategy = DefenseStrategy::CENTER_BACK;
 };
 
 /**
