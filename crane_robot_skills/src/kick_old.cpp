@@ -7,8 +7,6 @@
 #include <crane_robot_skills/kick_old.hpp>
 #include <magic_enum/magic_enum.hpp>
 
-#include "../include/crane_robot_skills/single_ball_placement.hpp"
-
 namespace crane::skills
 {
 std::string KickOld::getStateName(int s)
