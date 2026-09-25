@@ -116,7 +116,6 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     auto target =
       skills::SecondThreatDefender::getDefaultPoint(world_model, SECOND_THREAT_DEFENDER_OFFSET);
 
-    // targetに最も近いロボットを選出
     auto remaining_robots =
       marker_robot_ids |
       ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
@@ -126,12 +125,10 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
       return (robot->pose.pos - target).norm();
     });
 
-    // SecondThreatDefenderスキル作成
     second_threat_defender =
       std::make_shared<skills::SecondThreatDefender>(best_robot->id, world_model);
     second_threat_defender->setParameter("offset", SECOND_THREAT_DEFENDER_OFFSET);
 
-    // marker_robot_idsから除外
     marker_robot_ids.erase(
       std::remove(marker_robot_ids.begin(), marker_robot_ids.end(), best_robot->id),
       marker_robot_ids.end());
@@ -139,7 +136,6 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     second_threat_defender.reset();
   }
 
-  // SecondThreatDefenderの実行
   if (second_threat_defender) {
     second_threat_defender->run();
     robot_commands.emplace_back(second_threat_defender->getRobotCommand());
@@ -153,7 +149,6 @@ TotalDefenseSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     markers.clear();
   }
 
-  // Markerの実行
   {
     auto lock = std::lock_guard(markers_mutex);
     for (const auto & marker : markers) {

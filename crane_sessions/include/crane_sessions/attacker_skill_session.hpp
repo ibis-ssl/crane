@@ -16,7 +16,6 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <functional>
-#include <magic_enum/magic_enum.hpp>
 #include <memory>
 #include <optional>
 #include <range/v3/algorithm/contains.hpp>
@@ -66,7 +65,6 @@ public:
       skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
       visualizer->layer = "skill/" + skill->name;
     }
-    std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
     {
       visualizer->circle()
         .center(skill->commander()->getRobot()->pose.pos)
@@ -91,11 +89,10 @@ public:
   auto getRobotSuitabilityFunc() const
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
-    auto wm = world_model;                   // shared_ptrをコピー
-    auto game_analysis = getGameAnalysis();  // GameAnalysisをコピー
+    auto wm = world_model;
+    auto game_analysis = getGameAnalysis();
     game_analysis.pass_plan = wm->getMsg().game_analysis.pass_plan;
 
-    // デバッグ用：推奨ロボットIDをログ出力
     static int last_logged_id = -999;
     if (game_analysis.recommended_attacker_id != last_logged_id) {
       RCLCPP_INFO(
@@ -125,7 +122,6 @@ public:
         return 0.0;  // 最高の適性（コスト最小）
       }
 
-      // それ以外はボール距離ベース
       double distance = robot->getDistance(wm->ball().pos);
       // game_analyzerのSelectionHysteresisが安定性を担保済みのため、
       // アロケータのhysteresis_bonus(1.5m)を確実に上回るマージンを付与して推奨切替を阻害しない

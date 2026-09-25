@@ -22,7 +22,6 @@ EmplaceRobotSession::EmplaceRobotSession(
   use_voice_announcement_ =
     crane::get_or_declare_parameter(node, "emplace_robot.use_voice_announcement", true);
 
-  // speakアクションクライアントを作成
   speak_client_ = rclcpp_action::create_client<Speak>(
     node.get_node_base_interface(), node.get_node_graph_interface(),
     node.get_node_logging_interface(), node.get_node_waitables_interface(), "/speak");
@@ -75,7 +74,6 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     auto now = std::chrono::steady_clock::now();
     if (now - last_announce_time_ >= ANNOUNCE_INTERVAL) {
       if (use_voice_announcement_) {
-        // 音声アナウンス
         sendSpeakGoal("退出ロボットを確認してください");
       } else {
         // ビープ音
@@ -164,7 +162,6 @@ auto EmplaceRobotSession::getRobotSuitabilityFunc() const
       return GOALIE_EXCLUSION_COST;
     }
 
-    // モーター温度の最大値を計算
     float max_temp = 0.0f;
     if (robot->motor_temperatures.size() >= 4) {
       for (size_t i = 0; i < 4; ++i) {

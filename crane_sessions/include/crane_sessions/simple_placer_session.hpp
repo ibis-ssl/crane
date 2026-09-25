@@ -35,17 +35,6 @@ struct AreaWithInfo
   Box box;
 };
 
-template <typename K, typename V>
-V getOr(const std::unordered_map<K, V> & map, const K & key, const V & value)
-{
-  auto it = map.find(key);
-  if (it != map.end()) {
-    return it->second;
-  } else {
-    return value;
-  }
-}
-
 class SimplePlacerSession : public SessionBase
 {
 private:
@@ -133,29 +122,25 @@ public:
       }) |
       ranges::to<std::vector>();
 
-    // sort by the number of robots in the area
     ranges::sort(areas_with_info, [](const auto & a, const auto & b) {
       return a.their_robot_count < b.their_robot_count;
     });
 
     auto robot_commands =
       robots | ranges::views::transform([&, index = 0](const auto & robot_id) mutable {
-        // クールダウンカウンターの更新
         if (
           reassignment_cooldown.find(robot_id.id) != reassignment_cooldown.end() &&
           reassignment_cooldown[robot_id.id] > 0) {
           reassignment_cooldown[robot_id.id]--;
         }
 
-        // 現在の目標位置と実際のロボット位置間の距離を計算
-        double distance_to_target = 100.0;  // 初期値として大きな値を設定
+        double distance_to_target = 100.0;
         if (target_positions.find(robot_id.id) != target_positions.end()) {
           distance_to_target =
             (world_model->getOurRobot(robot_id.id)->pose.pos - target_positions[robot_id.id])
               .norm();
         }
 
-        // 目標位置に到達していて、かつクールダウンが0の場合のみ再割り当てを検討
         bool should_reassign =
           distance_to_target < position_threshold &&
           (reassignment_cooldown.find(robot_id.id) == reassignment_cooldown.end() ||
@@ -188,12 +173,10 @@ public:
             });
 
           if (area_with_info != areas_with_info.end()) {
-            // 新しいエリアへの割り当て
             assignment_map[robot_id.id] = area_with_info->name;
             area_with_info->our_robot_count++;
             bg::centroid(area_with_info->box, target_pos);
 
-            // 目標位置更新と再割り当てのクールダウンを設定
             target_positions[robot_id.id] = target_pos;
             reassignment_cooldown[robot_id.id] = cooldown_frames;
           } else {
@@ -211,7 +194,6 @@ public:
             }
           }
         } else if (target_positions.find(robot_id.id) != target_positions.end()) {
-          // 既に目標位置がある場合はそれを使用
           target_pos = target_positions[robot_id.id];
         } else {
           // 初期割り当て時など、現在位置を目標とする
@@ -222,14 +204,12 @@ public:
         auto command = std::make_shared<crane::PositionCommandWrapper>(
           "simple_placer_planner", robot_id.id, world_model);
 
-        // 目標位置と角度の設定
         command->setTargetPosition(target_pos, 0.1).lookAtBallFrom(target_pos, 0.1);
 
         return command->getMsg();
       }) |
       ranges::to<std::vector>();
 
-    // エリアの可視化
     for (const auto & area : areas_with_info) {
       visualizer->rect().box(area.box).stroke("yellow").strokeWidth(10).build();
       visualizer->text()
@@ -240,7 +220,6 @@ public:
         .build();
     }
 
-    // ロボットの移動ラインを可視化
     for (const auto & cmd : robot_commands) {
       if (cmd.position_target_mode.empty()) {
         continue;
@@ -254,7 +233,6 @@ public:
         .strokeWidth(10)
         .build();
 
-      // 目標到達状態を可視化
       double distance =
         (Point(cmd.current_pose.x, cmd.current_pose.y) - Point(target.target_x, target.target_y))
           .norm();
@@ -267,21 +245,6 @@ public:
         .build();
     }
     return {SessionBase::Status::RUNNING, robot_commands};
-  }
-
-  auto getAreaPoints(const std::vector<AreaWithInfo> & areas, const std::size_t size)
-    -> std::vector<Point>
-  {
-    std::vector<Point> area_points;
-    for (const auto & area : areas) {
-      Point p;
-      bg::centroid(area.box, p);
-      area_points.push_back(p);
-      if (area_points.size() >= size) {
-        break;
-      }
-    }
-    return area_points;
   }
 
   auto getRobotSuitabilityFunc() const
