@@ -41,13 +41,6 @@ struct BBTrajectoryPart
 class BangBangTrajectory1D
 {
 public:
-  BangBangTrajectory1D() noexcept
-  {
-    for (int i = 0; i < MAX_PARTS; i++) {
-      parts[i] = BBTrajectoryPart();
-    }
-  }
-
   [[nodiscard]] double getPosition(const double t) const noexcept
   {
     const auto ctx = getActivePartContext(t);
@@ -330,8 +323,6 @@ public:
   static constexpr double BINARY_SEARCH_EPSILON = 1e-7;
   /// デフォルトの同期精度 [秒]
   static constexpr double DEFAULT_SYNC_ACCURACY = 0.001;
-
-  BangBangTrajectory2D() = default;
 
   [[nodiscard]] Eigen::Vector2d getPosition(const double t) const noexcept
   {

@@ -75,17 +75,6 @@ public:
    */
   KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel> ball_physics);
 
-  /**
-   * @brief デストラクタ
-   */
-  ~KickerModel() = default;
-
-  // コピー・ムーブ演算子
-  KickerModel(const KickerModel &) = default;
-  KickerModel(KickerModel &&) = default;
-  KickerModel & operator=(const KickerModel &) = default;
-  KickerModel & operator=(KickerModel &&) = default;
-
   // ===== YAML設定ファイル読み込み =====
 
   /**
