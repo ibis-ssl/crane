@@ -18,7 +18,6 @@
 
 namespace crane
 {
-// 座標変換ユーティリティ（constexpr で高速化）
 namespace SvgCoord
 {
 constexpr double SCALE = 1000.0;
@@ -26,7 +25,6 @@ constexpr double toSvgX(double x) { return x * SCALE; }
 constexpr double toSvgY(double y) { return -y * SCALE; }
 }  // namespace SvgCoord
 
-// 前方宣言
 struct SvgCircleBuilder;
 struct SvgPolyLineBuilder;
 struct SvgLineBuilder;
@@ -40,8 +38,8 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
-  std::string operation = "replace";  // default operation
-  double duration = 0.0;              // 有効期限（秒）。0 = 無限（デフォルト）
+  std::string operation = "replace";
+  double duration = 0.0;  // 有効期限（秒）。0 = 無限（デフォルト）
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
@@ -55,7 +53,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
 
-  // Duration modifier
   [[nodiscard]] auto withDuration(double seconds) -> VisualizerMessageBuilder &
   {
     duration = seconds;
@@ -293,7 +290,6 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
     return *this;
   }
 
-  // 便利メソッド: Segmentから直接生成
   [[nodiscard]] auto fromSegment(const Segment & seg) -> SvgLineBuilder &
   {
     p1 = seg.first;
@@ -368,7 +364,6 @@ struct SvgTextBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgTextBui
   explicit SvgTextBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
   : SvgBuilderBase(builder)
   {
-    // Textのデフォルト色はwhite
     fill_color = "white";
   }
 
@@ -471,7 +466,6 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
     return *this;
   }
 
-  // 便利メソッド: 複数の点を一度に設定
   [[nodiscard]] auto setPoints(const std::vector<Point> & pts) -> SvgPolyLineBuilder &
   {
     points = pts;
@@ -560,7 +554,6 @@ struct CraneVisualizerBuffer
   static auto publish() -> void
   {
     if (active()) {
-      // Stamp and sequence
       buffer->message_buffer.header.stamp = rclcpp::Clock().now();
       buffer->message_buffer.epoch = s_epoch;
       buffer->message_buffer.seq = s_seq++;
@@ -586,7 +579,6 @@ struct CraneVisualizerBuffer
         crane_visualization_interfaces::msg::SvgLayerUpdate empty_layer;
         empty_layer.layer = layer;
         empty_layer.operation = "replace";  // 空レイヤーで置換 = 実質クリア
-        // svg_primitives は空のまま
         updates.push_back(std::move(empty_layer));
       }
     }

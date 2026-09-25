@@ -34,14 +34,12 @@ public:
         for (const auto & update : msg->updates) {
           auto & current = layers[update.layer];
 
-          // durationから期限を計算
           if (update.duration > 0) {
             current.expiration = this->now() + rclcpp::Duration::from_seconds(update.duration);
           } else {
-            current.expiration = std::nullopt;  // 無限
+            current.expiration = std::nullopt;
           }
 
-          // 既存の処理
           if (update.operation == "replace") {
             current.svg_primitives = update.svg_primitives;
           } else if (update.operation == "append") {
@@ -57,7 +55,6 @@ public:
       create_publisher<crane_visualization_interfaces::msg::SvgSnapshot>("/aggregated_svgs", 10);
     timer = create_wall_timer(std::chrono::milliseconds(5000), [this]() { publishSnapshot(); });
 
-    // 期限切れレイヤーをクリーンアップするタイマー（100ms周期）
     cleanup_timer =
       create_wall_timer(std::chrono::milliseconds(100), [this]() { cleanupExpiredLayers(); });
 
@@ -85,7 +82,7 @@ private:
     auto now = this->now();
     for (auto it = layers.begin(); it != layers.end();) {
       if (it->second.expiration && now > *it->second.expiration) {
-        it = layers.erase(it);  // 期限切れ: 削除
+        it = layers.erase(it);
       } else {
         ++it;
       }
