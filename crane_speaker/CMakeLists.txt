@@ -25,7 +25,6 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
