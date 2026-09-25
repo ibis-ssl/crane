@@ -68,8 +68,7 @@ class SvgAssembler:
             if layer_name in visible_layers and primitives:
                 svg_parts.append(f'  <g class="layer-{self._escape_xml(layer_name)}">')
                 for primitive in primitives:
-                    indented_primitive = self._indent_primitive(primitive)
-                    svg_parts.append(indented_primitive)
+                    svg_parts.append(self._indent_primitive(primitive))
                 svg_parts.append("  </g>")
 
         svg_parts.append("</svg>")
@@ -113,10 +112,9 @@ class SvgAssembler:
             raise ValueError(f"Invalid viewBox: {self.viewbox}")
         return tuple(float(p) for p in parts)
 
-    def _indent_primitive(self, primitive: str, indent: str = "    ") -> str:
+    def _indent_primitive(self, primitive: str) -> str:
         """プリミティブSVG文字列をインデント."""
-        lines = primitive.strip().split("\n")
-        return "\n".join(indent + line for line in lines)
+        return "\n".join("    " + line for line in primitive.strip().split("\n"))
 
     def _escape_xml(self, text: str) -> str:
         """XML属性値をエスケープ."""
