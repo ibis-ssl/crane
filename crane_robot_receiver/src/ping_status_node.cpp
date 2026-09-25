@@ -41,7 +41,8 @@ private:
   auto pingHosts() const -> void
   {
     auto message = crane_msgs::msg::PingStatusArray();
-    for (int id = 0; auto & ping : ping_statuses) {
+    for (size_t id = 0; id < ping_statuses.size(); ++id) {
+      const auto & ping = ping_statuses[id];
       if (!rclcpp::ok()) {
         return;
       }
@@ -71,7 +72,6 @@ private:
           result.substr(result.find("time=") + 5, result.find("ms") - result.find("time=") - 5));
         message.ping.push_back(ping_status);
       }
-      id++;
     }
     publisher->publish(message);
   }
