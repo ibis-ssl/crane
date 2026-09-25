@@ -227,20 +227,14 @@ auto VisualizerMessageBuilder::drawRobot(
   double center_to_dribbler) -> void
 {
   double corner_angle = std::acos(center_to_dribbler / radius);
-  auto botRightX = [&](double orientation) {
-    return radius * std::cos(orientation + corner_angle);
-  };
-  auto botRightY = [&](double orientation) {
-    return radius * std::sin(orientation + corner_angle);
-  };
-  auto botLeftX = [&](double orientation) { return radius * std::cos(orientation - corner_angle); };
-  auto botLeftY = [&](double orientation) { return radius * std::sin(orientation - corner_angle); };
 
   using SvgCoord::SCALE;
-  double right_x = (pos.x() + botRightX(theta)) * SCALE;
-  double right_y = (pos.y() + botRightY(theta)) * -SCALE;
-  double left_x = (pos.x() + botLeftX(theta)) * SCALE;
-  double left_y = (pos.y() + botLeftY(theta)) * -SCALE;
+  using SvgCoord::toSvgX;
+  using SvgCoord::toSvgY;
+  double right_x = toSvgX(pos.x() + radius * std::cos(theta + corner_angle));
+  double right_y = toSvgY(pos.y() + radius * std::sin(theta + corner_angle));
+  double left_x = toSvgX(pos.x() + radius * std::cos(theta - corner_angle));
+  double left_y = toSvgY(pos.y() + radius * std::sin(theta - corner_angle));
 
   std::string svg_path = std::format(
     "<path d=\"M {:.3f} {:.3f} A {:.3f} {:.3f} 0 1 0 {:.3f} {:.3f} Z\" "
