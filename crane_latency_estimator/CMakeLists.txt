@@ -31,6 +31,7 @@ ament_auto_add_executable(crane_latency_estimator_node
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_auto_add_gtest(test_estimate_lag test/test_estimate_lag.cpp src/latency_estimator.cpp)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
