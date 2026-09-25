@@ -81,7 +81,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
     if (available) {
       publishWorldModel();
-      publishVisualization(wrapper_);
+      publishVisualization();
     } else {
       bool has_vision = data_provider_->hasVisionUpdated();
       bool has_tracker = data_provider_->hasTrackedFrameUpdated();
@@ -131,7 +131,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   updateBallContact();
   wrapper_->addDelayCheckpoint("ball_contact_updated", "");
 
-  postProcessWorldModel(wrapper_);
+  postProcessWorldModel();
   wrapper_->addDelayCheckpoint("post_processed", "");
 
   // publish()より後に打刻すると、そのタイムスタンプは配信されるメッセージには
@@ -140,25 +140,25 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   pub_world_model.publish(wrapper_->getMsg());
 }
 
-auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
+auto WorldModelPublisherComponent::publishVisualization() -> void
 {
-  visualization_manager_->updateTeamInfo(world_model->isYellow(), world_model->onPositiveHalf());
+  visualization_manager_->updateTeamInfo(wrapper_->isYellow(), wrapper_->onPositiveHalf());
 
-  visualization_manager_->drawTrackedObjects(world_model);
+  visualization_manager_->drawTrackedObjects(wrapper_);
 
-  visualization_manager_->drawBallPlacement(world_model);
+  visualization_manager_->drawBallPlacement(wrapper_);
 
   crane::CraneVisualizerBuffer::publish();
 }
 
-auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model) -> void
+auto WorldModelPublisherComponent::postProcessWorldModel() -> void
 {
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   {
     std::scoped_lock lock(latest_game_analysis_msg_mutex_);
     game_analysis_msg = latest_game_analysis_msg_;
   }
-  world_model->update(game_analysis_msg);
+  wrapper_->update(game_analysis_msg);
 }
 
 auto WorldModelPublisherComponent::updateBallContact() -> void

@@ -73,9 +73,9 @@ private:
 
   auto publishWorldModel() -> void;
 
-  auto publishVisualization(WorldModelWrapperPtr world_model) -> void;
+  auto publishVisualization() -> void;
 
-  auto postProcessWorldModel(WorldModelWrapperPtr) -> void;
+  auto postProcessWorldModel() -> void;
 
   auto updateBallContact() -> void;
 
