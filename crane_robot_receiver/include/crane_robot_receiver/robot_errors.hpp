@@ -169,29 +169,6 @@ inline auto convertErrorDataToStr(uint16_t id, uint16_t info) -> std::string
   return result;
 }
 
-// temperature配列のインデックスから名前への変換
-inline auto getTemperatureLabel(int index) -> std::string
-{
-  switch (index) {
-    case 0:
-      return "Motor 1";
-    case 1:
-      return "Motor 2";
-    case 2:
-      return "Motor 3";
-    case 3:
-      return "Motor 4";
-    case 4:
-      return "FET";
-    case 5:
-      return "Coil 1";
-    case 6:
-      return "Coil 2";
-    default:
-      return "Unknown (" + std::to_string(index) + ")";
-  }
-}
-
 inline auto getColorForErrorLevel(int level) -> std::string
 {
   switch (level) {

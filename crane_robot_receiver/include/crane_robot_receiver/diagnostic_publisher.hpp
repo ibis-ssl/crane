@@ -23,7 +23,6 @@ struct RobotPosition
 {
   double x;
   double y;
-  double theta;
   bool valid;
 };
 

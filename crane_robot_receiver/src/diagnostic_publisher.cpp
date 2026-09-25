@@ -314,7 +314,7 @@ auto DiagnosticPublisherNode::initializeRobots(int max_robot_id) -> void
     robots_data.back()->initializeDiagnostics(
       this, world_model.get(), sim_mode_, &latest_ping_msg, &latest_feedback_msg);
 
-    robot_positions[i] = {0.0, 0.0, 0.0, false};
+    robot_positions[i] = {0.0, 0.0, false};
   }
 }
 
@@ -335,8 +335,7 @@ auto DiagnosticPublisherNode::worldModelCallback() -> void
   auto available_robot_ids = world_model->ours().robotsWhere().available().getIds();
 
   for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
-    robot_positions[robot->id] = {
-      robot->pose.pos.x(), robot->pose.pos.y(), robot->pose.theta, true};
+    robot_positions[robot->id] = {robot->pose.pos.x(), robot->pose.pos.y(), true};
   }
 
   for (size_t id = 0; id < robots_data.size(); ++id) {
