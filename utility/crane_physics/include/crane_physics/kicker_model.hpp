@@ -75,17 +75,6 @@ public:
    */
   KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel> ball_physics);
 
-  /**
-   * @brief デストラクタ
-   */
-  ~KickerModel() = default;
-
-  // コピー・ムーブ演算子
-  KickerModel(const KickerModel &) = default;
-  KickerModel(KickerModel &&) = default;
-  KickerModel & operator=(const KickerModel &) = default;
-  KickerModel & operator=(KickerModel &&) = default;
-
   // ===== YAML設定ファイル読み込み =====
 
   /**
@@ -257,12 +246,10 @@ private:
    * @brief 設定配列の妥当性を検証
    * @param x_array X軸配列
    * @param y_array Y軸配列
-   * @param array_name 配列名（エラーメッセージ用）
    * @return 有効な場合はtrue
    */
   [[nodiscard]] auto validateArrays(
-    const std::vector<double> & x_array, const std::vector<double> & y_array,
-    const std::string & array_name) const -> bool;
+    const std::vector<double> & x_array, const std::vector<double> & y_array) const -> bool;
 };
 
 // ===== ファクトリー関数 =====

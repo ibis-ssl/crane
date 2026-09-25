@@ -16,7 +16,6 @@ namespace crane
 
 inline auto getTravelTime(std::shared_ptr<RobotInfo> robot, Point target) -> double
 {
-  // 現在速度で割るだけ
   return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
 }
 
@@ -40,11 +39,9 @@ inline auto getTravelTimeTrapezoidal(
   }
 
   Vector2 dir = (target - current_pos).normalized();
-  // 目標方向への初速度成分
   double v0 = current_vel.dot(dir);
 
   BangBangTrajectory1D traj;
-  // 初期位置0, 目標位置distとして1次元軌道を生成
   traj.generate(0.0, dist, v0, max_velocity, max_acceleration);
 
   return traj.getTotalTime();
@@ -88,7 +85,6 @@ inline auto getPredictedPositionTrapezoidal(
   BangBangTrajectory1D traj;
   traj.generate(0.0, dist, v0, max_velocity, max_acceleration);
 
-  // 指定時間が移動時間以上なら目標位置に到達
   if (time >= traj.getTotalTime()) {
     return target_pos;
   }

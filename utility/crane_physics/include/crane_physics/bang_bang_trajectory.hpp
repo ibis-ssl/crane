@@ -41,13 +41,6 @@ struct BBTrajectoryPart
 class BangBangTrajectory1D
 {
 public:
-  BangBangTrajectory1D() noexcept
-  {
-    for (int i = 0; i < MAX_PARTS; i++) {
-      parts[i] = BBTrajectoryPart();
-    }
-  }
-
   [[nodiscard]] double getPosition(const double t) const noexcept
   {
     const auto ctx = getActivePartContext(t);
@@ -102,7 +95,6 @@ public:
       return *this;
     }
 
-    // max_brk <= 0 のときはmax_accと同じ値（後方互換性）
     const double brk = (max_brk > 0.0) ? max_brk : max_acc;
 
     // フルブレーキ時に停止する位置を計算（プロファイル選択の基準）
@@ -170,11 +162,6 @@ private:
     return {parts[idx], traj_time - start_time};
   }
 
-  [[nodiscard]] const BBTrajectoryPart & findPart(const double t) const noexcept
-  {
-    return parts[findPartIndex(t)];
-  }
-
   /**
    * @brief フルブレーキ時の停止位置を計算
    * @param initial_pos 初期位置
@@ -209,12 +196,8 @@ private:
     const double max_brk) const noexcept
   {
     const double acc1 = (peak_vel >= initial_vel) ? max_acc : -max_acc;
-
-    // 加速区間
     const double accel_time = (peak_vel - initial_vel) / acc1;
     const double accel_end_pos = initial_pos + (0.5 * (initial_vel + peak_vel) * accel_time);
-
-    // 減速区間（max_brkを使用）
     const double decel_time = std::abs(peak_vel) / max_brk;
     return accel_end_pos + (0.5 * peak_vel * decel_time);
   }
@@ -277,30 +260,23 @@ private:
     const double acc1 = (initial_vel > cruise_vel) ? -max_acc : max_acc;
     // 減速方向: 巡航速度から停止に向かう方向（max_brkを使用）
     const double acc3 = (cruise_vel > 0) ? -max_brk : max_brk;
-
-    // 各区間の時間を計算
     const double accel_time = (cruise_vel - initial_vel) / acc1;
     const double decel_time = -cruise_vel / acc3;  // = |cruise_vel| / max_brk
-
-    // 各区間の終端位置を計算
     const double accel_end_pos = initial_pos + (0.5 * (initial_vel + cruise_vel) * accel_time);
     // 減速開始位置: 目標から減速距離分手前（max_brkで計算）
     const double cruise_end_pos = final_pos - (0.5 * cruise_vel * decel_time);
     const double cruise_time = (cruise_end_pos - accel_end_pos) / cruise_vel;
 
-    // Part 0: 加速区間
     parts[0].end_time = accel_time;
     parts[0].acceleration = acc1;
     parts[0].start_vel = initial_vel;
     parts[0].start_pos = initial_pos;
 
-    // Part 1: 定速区間
     parts[1].end_time = accel_time + cruise_time;
     parts[1].acceleration = 0;
     parts[1].start_vel = cruise_vel;
     parts[1].start_pos = accel_end_pos;
 
-    // Part 2: 減速区間（max_brkを使用）
     parts[2].end_time = accel_time + cruise_time + decel_time;
     parts[2].acceleration = acc3;
     parts[2].start_vel = cruise_vel;
@@ -335,8 +311,6 @@ public:
   static constexpr double BINARY_SEARCH_EPSILON = 1e-7;
   /// デフォルトの同期精度 [秒]
   static constexpr double DEFAULT_SYNC_ACCURACY = 0.001;
-
-  BangBangTrajectory2D() = default;
 
   [[nodiscard]] Eigen::Vector2d getPosition(const double t) const noexcept
   {
