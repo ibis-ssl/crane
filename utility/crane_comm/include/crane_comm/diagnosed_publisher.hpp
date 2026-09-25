@@ -7,13 +7,8 @@
 #ifndef CRANE_COMM__DIAGNOSED_PUBLISHER_HPP_
 #define CRANE_COMM__DIAGNOSED_PUBLISHER_HPP_
 
-#include <boost/asio.hpp>
 #include <diagnostic_updater/publisher.hpp>
-#include <exception>
-#include <iostream>
-#include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace crane
 {
