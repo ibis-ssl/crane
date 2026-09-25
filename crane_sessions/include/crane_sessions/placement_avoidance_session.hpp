@@ -66,6 +66,10 @@ public:
       if (!is_their_placement) return false;
       return world_model->point_checker.isEnemyPenaltyArea(p, pa_offset);
     };
+    auto isValidTarget = [&](const Point & p) -> bool {
+      return world_model->point_checker.isFieldInside(p, 0.2) && not isInPlacementArea(p, 0.1) &&
+             not isInEnemyPA(p);
+    };
 
     for (const auto & robot_id : robots) {
       auto robot = world_model->getOurRobot(robot_id.id);
@@ -101,14 +105,7 @@ public:
               closest_point + vertical_vec, closest_point - vertical_vec};
 
             if (
-              auto target = std::ranges::find_if(
-                target_candidates,
-                [&](const auto & target_candidate) {
-                  return (
-                    world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                    not isInPlacementArea(target_candidate, 0.1) &&
-                    not isInEnemyPA(target_candidate));
-                });
+              auto target = std::ranges::find_if(target_candidates, isValidTarget);
               target != target_candidates.end()) {
               target_position = *target;
             } else {
@@ -119,10 +116,7 @@ public:
                 radial_candidates[i] =
                   closest_point + Point(std::cos(angle), std::sin(angle)) * 0.8;
               }
-              auto valid = std::ranges::find_if(radial_candidates, [&](const auto & c) {
-                return world_model->point_checker.isFieldInside(c, 0.2) &&
-                       not isInPlacementArea(c, 0.1) && not isInEnemyPA(c);
-              });
+              auto valid = std::ranges::find_if(radial_candidates, isValidTarget);
               if (valid != radial_candidates.end()) {
                 target_position = *valid;
               } else {
