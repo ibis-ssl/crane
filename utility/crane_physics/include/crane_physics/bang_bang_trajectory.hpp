@@ -170,11 +170,6 @@ private:
     return {parts[idx], traj_time - start_time};
   }
 
-  [[nodiscard]] const BBTrajectoryPart & findPart(const double t) const noexcept
-  {
-    return parts[findPartIndex(t)];
-  }
-
   /**
    * @brief フルブレーキ時の停止位置を計算
    * @param initial_pos 初期位置

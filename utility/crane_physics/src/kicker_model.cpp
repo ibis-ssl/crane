@@ -237,9 +237,8 @@ auto KickerModel::setConfig(const Config & config) -> void
 
 auto KickerModel::validateConfig() const -> bool
 {
-  return validateArrays(
-           config_.straight_kick_powers, config_.straight_kick_speeds, "straight_kick") &&
-         validateArrays(config_.chip_kick_powers, config_.chip_kick_distances, "chip_kick");
+  return validateArrays(config_.straight_kick_powers, config_.straight_kick_speeds) &&
+         validateArrays(config_.chip_kick_powers, config_.chip_kick_distances);
 }
 
 auto KickerModel::isValidKickPower(double kick_power) -> bool
@@ -347,8 +346,7 @@ auto KickerModel::getInverseLinearInterpolation(
 }
 
 auto KickerModel::validateArrays(
-  const std::vector<double> & x_array, const std::vector<double> & y_array,
-  [[maybe_unused]] const std::string & array_name) const -> bool
+  const std::vector<double> & x_array, const std::vector<double> & y_array) const -> bool
 {
   return !x_array.empty() && hasValidArrayStructure(x_array, y_array);
 }
