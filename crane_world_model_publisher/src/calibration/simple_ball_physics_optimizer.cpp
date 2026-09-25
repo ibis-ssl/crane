@@ -14,6 +14,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <regex>
 
+#include "crane_world_model_publisher/calibration/initial_velocity_fit.hpp"
+
 namespace crane
 {
 
@@ -392,7 +394,7 @@ auto SimpleBallPhysicsOptimizer::optimizeGlobalDeceleration(
 }
 
 auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
-  const TrajectoryData & trajectory, double /* deceleration */) -> KickPowerVelocityPair
+  const TrajectoryData & trajectory, double deceleration) -> KickPowerVelocityPair
 {
   KickPowerVelocityPair result;
   result.event_id = trajectory.event_id;
@@ -407,25 +409,15 @@ auto SimpleBallPhysicsOptimizer::estimateInitialVelocity(
     return result;
   }
 
-  // 速度vs時間の線形回帰: v(t) = v0 - deceleration * t
-  // ここで固定された減速度を使用して初速度を推定
-  auto [slope, intercept, r_squared] =
-    performLinearRegression(trajectory.time_points, trajectory.velocities);
+  // 減速度を固定して v0 だけを推定する（t の原点は最初の ROLLING 点）
+  const auto fit = fitInitialVelocityWithFixedDeceleration(
+    trajectory.time_points, trajectory.velocities, deceleration);
+  result.estimated_initial_velocity = fit.initial_velocity;
+  result.fitting_r_squared = fit.r_squared;
 
-  result.estimated_initial_velocity = intercept;  // 切片 = 初速度
-  result.fitting_r_squared = r_squared;
-
-  // 信頼区間の計算
-  double velocity_std = 0.0;
-  for (size_t i = 0; i < trajectory.time_points.size(); ++i) {
-    double predicted_velocity = intercept + slope * trajectory.time_points[i];
-    double error = trajectory.velocities[i] - predicted_velocity;
-    velocity_std += error * error;
-  }
-  velocity_std = std::sqrt(velocity_std / trajectory.time_points.size());
-
-  double confidence_margin = 1.96 * velocity_std;  // 95%信頼区間
-  result.confidence_interval = {intercept - confidence_margin, intercept + confidence_margin};
+  // 残差 RMS の ±1.96 倍。点数を反映しないので v0 の 95% 信頼区間ではなく、個々の点のばらつきの幅
+  const double margin = 1.96 * fit.residual_rms;
+  result.confidence_interval = {fit.initial_velocity - margin, fit.initial_velocity + margin};
 
   return result;
 }
