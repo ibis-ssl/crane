@@ -118,14 +118,9 @@ auto RobotThreatsMetric::visualize(
       double angle1 = std::atan2(-from_ball.y(), -from_ball.x());
       double angle2 = std::atan2(to_goal.y(), to_goal.x());
 
-      // 角度が大きすぎる場合はスキップ
-      double angle_diff = std::abs(angle2 - angle1);
-      if (angle_diff > M_PI) angle_diff = 2 * M_PI - angle_diff;
-      if (angle_diff < M_PI) {
-        std::string arc_color = threatToColor(threat.threat_rating);
-        visualizer->arc(
-          threat_pos, 0.15, std::min(angle1, angle2), std::max(angle1, angle2), arc_color, 1.5, 8);
-      }
+      std::string arc_color = threatToColor(threat.threat_rating);
+      visualizer->arc(
+        threat_pos, 0.15, std::min(angle1, angle2), std::max(angle1, angle2), arc_color, 1.5, 8);
     }
   }
 }
