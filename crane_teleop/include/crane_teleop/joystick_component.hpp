@@ -35,6 +35,20 @@ private:
 
   int robot_id = 0;
 
+  float theta = 0.0f;
+
+  bool is_kick_mode_straight = true;
+
+  bool is_kick_enable = false;
+
+  bool is_dribble_enable = false;
+
+  bool is_pushed_kick = false;
+
+  bool is_pushed_dribble = false;
+
+  bool is_pushed_adjust = false;
+
   std::shared_ptr<rclcpp::ParameterEventHandler> robot_id_subscriber;
 
   std::shared_ptr<rclcpp::ParameterCallbackHandle> robot_id_callback_handle;

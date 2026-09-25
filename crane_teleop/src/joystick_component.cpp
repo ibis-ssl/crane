@@ -7,13 +7,9 @@
 #include "crane_teleop/joystick_component.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <crane_utils/parameter.hpp>
 #include <memory>
-#include <string>
-
-float theta;
 
 namespace joystick
 {
@@ -31,12 +27,9 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
       }
     });
 
-  auto callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) -> void {
-    publish_robot_commands(msg);
-  };
-
   pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-  sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
+  sub_joy = create_subscription<sensor_msgs::msg::Joy>(
+    "joy", 10, [this](const sensor_msgs::msg::Joy::SharedPtr msg) { publish_robot_commands(msg); });
 }
 
 auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg) -> void
@@ -63,9 +56,15 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   const double MAX_VEL_SWAY = 1.0;
   const double MAX_VEL_ANGULAR = M_PI;
 
-  static bool is_kick_mode_straight = true;
-  static bool is_kick_enable = false;
-  static bool is_dribble_enable = false;
+  constexpr std::size_t REQUIRED_BUTTONS = BUTTON_KICK_CHIP + 1;
+  constexpr std::size_t REQUIRED_AXES = AXIS_VEL_ANGULAR + 1;
+  if (msg->buttons.size() < REQUIRED_BUTTONS || msg->axes.size() < REQUIRED_AXES) {
+    RCLCPP_WARN_THROTTLE(
+      get_logger(), *get_clock(), 1000,
+      "joy message too small: buttons=%zu (need %zu), axes=%zu (need %zu)", msg->buttons.size(),
+      REQUIRED_BUTTONS, msg->axes.size(), REQUIRED_AXES);
+    return;
+  }
 
   if (msg->buttons[BUTTON_KICK_CHIP]) {
     is_kick_mode_straight = false;
@@ -75,7 +74,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   }
 
   auto update_mode = [this, msg](bool & mode_variable, const int button, bool & is_pushed) {
-    // trigger button up
     if (msg->buttons[button]) {
       if (!is_pushed) {
         RCLCPP_INFO(get_logger(), "toggle mode!");
@@ -87,9 +85,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     }
   };
 
-  static bool is_pushed_kick = false;
-  static bool is_pushed_dribble = false;
-
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
   update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
@@ -99,10 +94,8 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   };
 
   if (msg->buttons[BUTTON_ADJUST]) {
-    static bool is_pushed = false;
     if (msg->buttons[BUTTON_ADJUST_UP]) {
-      // trigger button up
-      if (!is_pushed) {
+      if (!is_pushed_adjust) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, 0.1);
           RCLCPP_INFO(get_logger(), "kick up: %f", kick_power);
@@ -113,10 +106,9 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
           RCLCPP_INFO(get_logger(), "dribble up: %f", dribble_power);
         }
       }
-      is_pushed = true;
+      is_pushed_adjust = true;
     } else if (msg->buttons[BUTTON_ADJUST_DOWN]) {
-      // trigger button up
-      if (!is_pushed) {
+      if (!is_pushed_adjust) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, -0.1);
           RCLCPP_INFO(get_logger(), "kick down: %f", kick_power);
@@ -126,9 +118,9 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
           RCLCPP_INFO(get_logger(), "dribble down: %f", dribble_power);
         }
       }
-      is_pushed = true;
+      is_pushed_adjust = true;
     } else {
-      is_pushed = false;
+      is_pushed_adjust = false;
     }
   }
 
@@ -152,32 +144,24 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   command.omega_limit = MAX_VEL_ANGULAR;
   command.local_planner_config.final_planned_max_velocity.name = "teleop";
   command.local_planner_config.final_planned_max_velocity.value =
-    std::max(std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY), MAX_VEL_SURGE);
+    std::hypot(MAX_VEL_SURGE, MAX_VEL_SWAY);
   command.local_planner_config.final_planned_max_acceleration.name = "teleop";
   command.local_planner_config.final_planned_max_acceleration.value = 2.5;
 
-  // dribble
-  if (is_dribble_enable) {
-    command.dribble_power = dribble_power;
-  } else {
-    command.dribble_power = 0.0;
-  }
+  command.dribble_power = is_dribble_enable ? dribble_power : 0.0;
 
-  // kick
-  command.chip_enable = is_kick_mode_straight;
+  command.chip_enable = not is_kick_mode_straight;
   if (is_kick_enable) {
     command.kick_power = kick_power;
-    // kick mode
   }
 
   RCLCPP_INFO(
-    get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
+    get_logger(), "ID=%d Vx=%.3f Vy=%.3f omega=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
     command.robot_id, target_vx, target_vy, target_omega, is_kick_enable ? "ON" : "OFF", kick_power,
     is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
-    crane_msgs::msg::RobotCommand empty_command;
-    command = empty_command;
+    command = crane_msgs::msg::RobotCommand{};
   }
 
   crane_msgs::msg::RobotCommands robot_commands;
