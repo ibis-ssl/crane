@@ -30,7 +30,6 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_game_analyzer.cpp
-  src/evaluations.cpp
   src/kick_event_detector.cpp
   src/threat_evaluator.cpp
   src/metrics/metric_engine.cpp

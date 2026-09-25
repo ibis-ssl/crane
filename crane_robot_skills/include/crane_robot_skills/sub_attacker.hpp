@@ -7,7 +7,6 @@
 #ifndef CRANE_ROBOT_SKILLS__SUB_ATTACKER_HPP_
 #define CRANE_ROBOT_SKILLS__SUB_ATTACKER_HPP_
 
-#include <crane_game_analyzer/evaluations/evaluations.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/skill_base.hpp>
