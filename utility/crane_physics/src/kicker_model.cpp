@@ -23,57 +23,24 @@ namespace crane
 
 KickerModel::KickerModel() : config_(), ball_physics_model_(nullptr) {}
 
-KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_model_(nullptr)
-{
-  auto has_mismatched_sizes = [](const auto & x, const auto & y) {
-    return x.size() != y.size() && (!x.empty() || !y.empty());
-  };
-
-  if (has_mismatched_sizes(config_.straight_kick_powers, config_.straight_kick_speeds)) {
-    throw std::runtime_error("KickerModel: straight kick arrays must share the same length");
-  }
-
-  if (has_mismatched_sizes(config_.chip_kick_powers, config_.chip_kick_distances)) {
-    throw std::runtime_error("KickerModel: chip kick arrays must share the same length");
-  }
-
-  bool straight_valid =
-    hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
-  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
-
-  if (!straight_valid) {
-    throw std::runtime_error("KickerModel: invalid straight kick configuration");
-  }
-
-  if (!chip_valid) {
-    throw std::runtime_error("KickerModel: invalid chip kick configuration");
-  }
-}
+KickerModel::KickerModel(const Config & config) : KickerModel(config, nullptr) {}
 
 KickerModel::KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel> ball_physics)
 : config_(config), ball_physics_model_(ball_physics)
 {
-  auto has_mismatched_sizes = [](const auto & x, const auto & y) {
-    return x.size() != y.size() && (!x.empty() || !y.empty());
-  };
-
-  if (has_mismatched_sizes(config_.straight_kick_powers, config_.straight_kick_speeds)) {
+  if (config_.straight_kick_powers.size() != config_.straight_kick_speeds.size()) {
     throw std::runtime_error("KickerModel: straight kick arrays must share the same length");
   }
 
-  if (has_mismatched_sizes(config_.chip_kick_powers, config_.chip_kick_distances)) {
+  if (config_.chip_kick_powers.size() != config_.chip_kick_distances.size()) {
     throw std::runtime_error("KickerModel: chip kick arrays must share the same length");
   }
 
-  bool straight_valid =
-    hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds);
-  bool chip_valid = hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances);
-
-  if (!straight_valid) {
+  if (!hasValidArrayStructure(config_.straight_kick_powers, config_.straight_kick_speeds)) {
     throw std::runtime_error("KickerModel: invalid straight kick configuration");
   }
 
-  if (!chip_valid) {
+  if (!hasValidArrayStructure(config_.chip_kick_powers, config_.chip_kick_distances)) {
     throw std::runtime_error("KickerModel: invalid chip kick configuration");
   }
 }
@@ -385,27 +352,7 @@ auto KickerModel::validateArrays(
   const std::vector<double> & x_array, const std::vector<double> & y_array,
   [[maybe_unused]] const std::string & array_name) const -> bool
 {
-  if (x_array.size() != y_array.size()) {
-    return false;
-  }
-
-  if (x_array.empty()) {
-    return false;
-  }
-
-  for (size_t i = 1; i < x_array.size(); ++i) {
-    if (x_array[i] <= x_array[i - 1]) {
-      return false;
-    }
-  }
-
-  for (double y : y_array) {
-    if (y < 0.0) {
-      return false;
-    }
-  }
-
-  return true;
+  return !x_array.empty() && hasValidArrayStructure(x_array, y_array);
 }
 
 auto KickerModel::clampKickPower(double kick_power) const -> double
