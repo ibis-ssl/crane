@@ -6,7 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <crane_physics/ball_info.hpp>
+#include <crane_physics/ball_physics_model.hpp>
+#include <utility>
 
 namespace crane
 {
@@ -167,6 +170,22 @@ TEST_F(BallParabolicPhysicsTest, GetGroundPointNoGroundImpact)
   EXPECT_NEAR(ground_point.position.z(), expected_z, 0.1);
 }
 
+TEST_F(BallParabolicPhysicsTest, GroundPointRisingFromBelowGroundUsesDescendingRoot)
+{
+  // 根は約 0.005 秒（上昇中の地面通過）と約 0.403 秒（下降して着地）。着地は後者
+  auto ball = createBall(Point3D(0.0, 0.0, -0.01), Point3D(1.0, 0.0, 2.0));
+  auto physics = ball.getParabolicPhysics();
+  const double expected_time = (2.0 + std::sqrt(4.0 - 2.0 * 9.81 * 0.01)) / 9.81;
+
+  auto [landing_pos, landing_time] = physics.getGroundIntersection();
+  EXPECT_NEAR(landing_time, expected_time, 1e-9);
+  EXPECT_NEAR(landing_pos.x(), expected_time, 1e-9);
+
+  auto ground_point = physics.getGroundPoint();
+  EXPECT_NEAR(ground_point.time, expected_time, 1e-9);
+  EXPECT_NEAR(ground_point.position.x(), expected_time, 1e-9);
+}
+
 TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityInsufficientData)
 {
   // データが不十分な場合のテスト
@@ -199,5 +218,68 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityNumericalStability)
   EXPECT_DOUBLE_EQ(pos_at_0.x(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.y(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.z(), 1.0);
+}
+
+// BallPhysicsModel の FLYING 着地時刻。
+// xy 速度 0 なら転がりが無く、getStopTime が着地時刻そのものになる
+class BallPhysicsModelFlyingLandingTest : public ::testing::Test
+{
+protected:
+  BallPhysicsModel model_ = BallPhysicsModel::createDefault();  // gravity = -9.81
+
+  [[nodiscard]] auto landingTime(double pos_z, double vel_z) const -> double
+  {
+    return model_.getStopTime(Point(0.0, 0.0), Ball::State::FLYING, pos_z, vel_z);
+  }
+};
+
+TEST_F(BallPhysicsModelFlyingLandingTest, DescendingFromHeight)
+{
+  // z(t) = 1 - t - 4.905 t^2 = 0 の正の根。pos_z を無視する旧式では 0 になっていた
+  EXPECT_NEAR(landingTime(1.0, -1.0), (-1.0 + std::sqrt(1.0 + 2.0 * 9.81 * 1.0)) / 9.81, 1e-9);
+}
+
+TEST_F(BallPhysicsModelFlyingLandingTest, RisingFromGround)
+{
+  EXPECT_NEAR(landingTime(0.0, 2.0), 2.0 * 2.0 / 9.81, 1e-9);
+}
+
+TEST_F(BallPhysicsModelFlyingLandingTest, RisingFromBelowGroundUsesDescendingRoot)
+{
+  // 根は約 0.005 秒（上昇中の地面通過）と約 0.403 秒（下降して着地）。着地は後者
+  EXPECT_NEAR(landingTime(-0.01, 2.0), (2.0 + std::sqrt(4.0 - 2.0 * 9.81 * 0.01)) / 9.81, 1e-9);
+}
+
+TEST_F(BallPhysicsModelFlyingLandingTest, NeverReachesGround)
+{
+  // 判別式が負: pos_z < 0 のまま地面まで上がらない
+  EXPECT_EQ(landingTime(-1.0, 1.0), 0.0);
+}
+
+TEST_F(BallPhysicsModelFlyingLandingTest, PredictionsSwitchToRollingAtLandingTime)
+{
+  const Point position(0.0, 0.0);
+  const Point velocity(1.0, 0.0);
+  for (const auto [pos_z, vel_z] : {std::pair{1.0, -1.0}, std::pair{-0.01, 2.0}}) {
+    const double landing_time = landingTime(pos_z, vel_z);
+    const auto state = Ball::State::FLYING;
+
+    // 着地までは xy 等速
+    EXPECT_NEAR(
+      model_.predictPosition(position, velocity, state, pos_z, vel_z, landing_time).x(),
+      landing_time, 1e-9);
+    EXPECT_EQ(
+      model_.predictVelocity(position, velocity, state, pos_z, vel_z, landing_time - 1e-3),
+      velocity);
+    // 着地後は転がりで減速する（deceleration = 0.36）
+    EXPECT_NEAR(
+      model_.predictVelocity(position, velocity, state, pos_z, vel_z, landing_time + 0.1).x(),
+      1.0 - 0.36 * 0.1, 1e-9);
+    // 停止時刻の予測位置が最大到達距離と一致する
+    const double stop_time = model_.getStopTime(velocity, state, pos_z, vel_z);
+    EXPECT_NEAR(
+      model_.predictPosition(position, velocity, state, pos_z, vel_z, stop_time).x(),
+      model_.getMaxDistance(position, velocity, state, pos_z, vel_z), 1e-9);
+  }
 }
 }  // namespace crane
