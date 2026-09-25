@@ -23,22 +23,14 @@
 
 namespace crane
 {
-struct BallIdleConfig
-{
-  rclcpp::Duration threshold_duration = rclcpp::Duration(5, 0);
-  double move_distance_threshold_meter = 0.05;
-};
-
 struct RobotCollisionConfig
 {
   double velocity_threshold = 1.0;  // m/s
   double distance_threshold = 0.2;  // m
-  double time_window = 0.5;         // seconds
 };
 
 struct GameAnalyzerConfig
 {
-  BallIdleConfig ball_idle;
   RobotCollisionConfig robot_collision;
 };
 
