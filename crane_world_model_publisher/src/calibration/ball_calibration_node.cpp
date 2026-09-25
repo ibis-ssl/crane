@@ -22,42 +22,6 @@
 namespace crane
 {
 
-namespace
-{
-struct PowerVelocityStat
-{
-  double power;
-  double mean_velocity;  // sample_count == 0 のときは 0.0
-  size_t sample_count;
-};
-
-// ストレートキックの初速を、キッカーパワー 0.0〜1.0 の 0.1 刻み（許容幅 ±0.05）ごとに集計する。
-// YAML と launch 用の出力で刻み・許容幅が食い違わないよう、集計はここだけで行う。
-std::vector<PowerVelocityStat> aggregateStraightKickVelocities(
-  const std::vector<SimpleBallPhysicsOptimizer::KickPowerVelocityPair> & kick_data)
-{
-  std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-  std::vector<PowerVelocityStat> stats;
-  for (double target_power : target_powers) {
-    std::vector<double> velocities_for_power;
-    for (const auto & kick : kick_data) {
-      if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
-        velocities_for_power.push_back(kick.estimated_initial_velocity);
-      }
-    }
-
-    double mean_velocity = 0.0;
-    if (!velocities_for_power.empty()) {
-      mean_velocity =
-        std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
-        velocities_for_power.size();
-    }
-    stats.push_back({target_power, mean_velocity, velocities_for_power.size()});
-  }
-  return stats;
-}
-}  // namespace
-
 /**
  * @brief ボールモデルキャリブレーションノード
  */
@@ -66,18 +30,22 @@ class BallCalibrationNode : public rclcpp::Node
 public:
   BallCalibrationNode() : Node("ball_calibration_node")
   {
+    // パラメータの宣言
     crane::get_or_declare_parameter(this, "rosbag_path", "");
     crane::get_or_declare_parameter(this, "output_config_path", "");
     crane::get_or_declare_parameter(this, "kick_power_analysis_output", "");
     bool auto_calibrate = crane::get_or_declare_parameter(this, "auto_calibrate", false);
 
+    // サービスサーバーの作成
     calibrate_service_ = this->create_service<std_srvs::srv::Trigger>(
       "calibrate_ball_physics", std::bind(
                                   &BallCalibrationNode::calibrateCallback, this,
                                   std::placeholders::_1, std::placeholders::_2));
 
+    // パブリッシャーの作成
     status_publisher_ = this->create_publisher<std_msgs::msg::String>("calibration_status", 10);
 
+    // 自動キャリブレーションの確認
     if (auto_calibrate) {
       RCLCPP_INFO(this->get_logger(), "自動キャリブレーションを開始します");
       bool success = performCalibration();
@@ -108,9 +76,11 @@ private:
    * @brief キャリブレーションサービスのコールバック
    */
   void calibrateCallback(
-    const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
+    (void)request;  // 未使用パラメータの警告回避
+
     RCLCPP_INFO(this->get_logger(), "キャリブレーションサービスが呼び出されました");
 
     try {
@@ -136,6 +106,7 @@ private:
   {
     publishStatus("JSONベースキャリブレーション開始");
 
+    // ROSBAGパスの取得
     std::string rosbag_path = crane::get_or_declare_parameter(this, "rosbag_path", "");
     if (rosbag_path.empty()) {
       RCLCPP_ERROR(this->get_logger(), "ROSBAGパスが指定されていません");
@@ -149,8 +120,10 @@ private:
       return false;
     }
 
+    // ROSBAGパスからJSONディレクトリパスを自動生成
     std::string json_dir_path = rosbag_path + "/ball_calibration_analysis";
 
+    // JSONディレクトリが存在しない場合、ROSBAGを処理してJSONデータを生成
     if (!std::filesystem::exists(json_dir_path)) {
       RCLCPP_INFO(
         this->get_logger(),
@@ -159,6 +132,7 @@ private:
         json_dir_path.c_str());
       publishStatus("ROSBAGからJSONデータ生成中...");
 
+      // JSONディレクトリを作成
       try {
         std::filesystem::create_directories(json_dir_path);
       } catch (const std::exception & e) {
@@ -167,6 +141,7 @@ private:
         return false;
       }
 
+      // ROSBAGからキックデータを抽出してJSONに変換
       bool extraction_success = processROSBAGToJSON(rosbag_path, json_dir_path);
       if (!extraction_success) {
         RCLCPP_ERROR(this->get_logger(), "ROSBAGからのJSON生成に失敗しました");
@@ -178,6 +153,7 @@ private:
       publishStatus("JSONデータ生成完了");
     }
 
+    // JSONファイルの存在確認
     std::filesystem::path json_dir(json_dir_path);
     auto json_files = std::filesystem::directory_iterator(json_dir);
     bool has_json_files = false;
@@ -203,6 +179,7 @@ private:
       json_dir_path.c_str());
     publishStatus("JSONデータ読み込み中...");
 
+    // 最適化設定
     SimpleBallPhysicsOptimizer::OptimizationConfig optimizer_config;
     optimizer_config.json_directory_path = json_dir_path;
     optimizer_config.min_trajectory_duration = 0.5;
@@ -214,6 +191,7 @@ private:
 
     publishStatus("グローバル減速度パラメータ最適化中...");
 
+    // JSONベース最適化実行
     auto optimization_result = physics_optimizer_.optimizeFromJSONDirectory(optimizer_config);
 
     if (!optimization_result.success) {
@@ -229,6 +207,7 @@ private:
 
     publishStatus("設定ファイル出力中...");
 
+    // 設定ファイルの出力
     bool save_success = saveCalibrationResults(optimization_result);
     if (!save_success) {
       RCLCPP_ERROR(this->get_logger(), "設定ファイルの保存に失敗");
@@ -236,9 +215,11 @@ private:
       return false;
     }
 
+    // キックパワー分析結果の出力
     std::string kick_power_output =
       crane::get_or_declare_parameter(this, "kick_power_analysis_output", "");
     if (kick_power_output.empty()) {
+      // デフォルト出力パスを自動生成
       kick_power_output = json_dir_path + "/kick_power_velocity_analysis.json";
     }
 
@@ -253,6 +234,7 @@ private:
 
     publishStatus("キャリブレーション完了");
 
+    // crane.launch.xmlで使用できる形式で標準出力に出力
     outputLaunchFileArrays(optimization_result);
 
     RCLCPP_INFO(this->get_logger(), "JSONベースキャリブレーションが正常に完了しました");
@@ -266,12 +248,14 @@ private:
   bool saveCalibrationResults(
     const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
   {
+    // 出力パスの取得
     std::string output_path = crane::get_or_declare_parameter(this, "output_config_path", "");
     if (output_path.empty()) {
       output_path = "calibrated_ball_physics.yaml";
     }
 
     try {
+      // 出力ディレクトリの存在確認と作成
       std::filesystem::path output_file_path(output_path);
       std::filesystem::path output_dir = output_file_path.parent_path();
 
@@ -282,6 +266,7 @@ private:
 
       YAML::Node config;
 
+      // 物理パラメータ
       config["ball_physics_model"]["deceleration"] = optimization_result.global_deceleration;
       config["ball_physics_model"]["gravity"] = -9.81;          // 固定値
       config["ball_physics_model"]["air_resistance"] = 0.0;     // 固定値
@@ -289,17 +274,29 @@ private:
       config["ball_physics_model"]["speed_threshold"] = 0.1;    // 固定値
       config["ball_physics_model"]["stop_threshold"] = 0.05;    // 固定値
 
-      // キッカーパワー別速度マッピング（データのないパワーはキーを書かない）
-      for (const auto & stat : aggregateStraightKickVelocities(optimization_result.kick_data)) {
-        if (stat.sample_count > 0) {
-          std::string power_key = "power_" + std::to_string(static_cast<int>(stat.power * 100));
+      // キッカーパワー別速度マッピング（0.0-1.0を0.1刻み）
+      std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+      for (double target_power : target_powers) {
+        std::vector<double> velocities_for_power;
+        for (const auto & kick : optimization_result.kick_data) {
+          if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
+            velocities_for_power.push_back(kick.estimated_initial_velocity);
+          }
+        }
+
+        if (!velocities_for_power.empty()) {
+          double mean_velocity =
+            std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
+            velocities_for_power.size();
+          std::string power_key = "power_" + std::to_string(static_cast<int>(target_power * 100));
           config["kicker_power_mapping"]["straight_kick"][power_key]["mean_velocity"] =
-            stat.mean_velocity;
+            mean_velocity;
           config["kicker_power_mapping"]["straight_kick"][power_key]["sample_count"] =
-            static_cast<int>(stat.sample_count);
+            static_cast<int>(velocities_for_power.size());
         }
       }
 
+      // キャリブレーション情報
       config["calibration_info"]["timestamp"] =
         std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::system_clock::now().time_since_epoch())
@@ -311,6 +308,7 @@ private:
       config["calibration_info"]["trajectories_used"] =
         static_cast<int>(optimization_result.trajectories_used);
 
+      // ファイル出力
       std::ofstream file_stream(output_path);
       if (!file_stream.is_open()) {
         RCLCPP_ERROR(this->get_logger(), "出力ファイルを開けません: %s", output_path.c_str());
@@ -347,6 +345,7 @@ private:
   bool processROSBAGToJSON(const std::string & rosbag_path, const std::string & json_output_dir)
   {
     try {
+      // データ抽出設定
       BallCalibrationDataExtractor::ExtractorConfig extractor_config;
       extractor_config.min_kick_speed = 0.5;
       extractor_config.max_kick_speed = 30.0;
@@ -357,6 +356,7 @@ private:
 
       RCLCPP_INFO(this->get_logger(), "ROSBAGからキックデータを抽出中: %s", rosbag_path.c_str());
 
+      // ROSBAGからキックデータを抽出
       auto kick_data_points = data_extractor_.extractKickDataFromBag(rosbag_path);
 
       if (kick_data_points.empty()) {
@@ -367,6 +367,7 @@ private:
       RCLCPP_INFO(
         this->get_logger(), "%zu個のキックデータポイントを抽出しました", kick_data_points.size());
 
+      // 統計情報の取得
       auto stats = data_extractor_.getLastExtractionStats();
       RCLCPP_INFO(
         this->get_logger(),
@@ -380,6 +381,7 @@ private:
       // ボールデータを準備（extractKickDataFromBag内部で処理されるため、ここでは簡略化）
       std::vector<std::pair<rclcpp::Time, Ball>> ball_data;
 
+      // 可視化データの生成（キック力情報付き）
       data_extractor_.visualizeKickEventsWithPower(
         ball_data, kick_data_points, "kick_event_visualization", rosbag_path);
 
@@ -400,32 +402,64 @@ private:
   void outputLaunchFileArrays(
     const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
   {
-    const auto stats = aggregateStraightKickVelocities(optimization_result.kick_data);
+    // 0.0-1.0を0.1刻みで設定
+    std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    std::vector<double> measured_velocities;
 
+    // 各パワー値での平均速度を計算
+    for (double target_power : target_powers) {
+      std::vector<double> velocities_for_power;
+      for (const auto & kick : optimization_result.kick_data) {
+        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
+          velocities_for_power.push_back(kick.estimated_initial_velocity);
+        }
+      }
+
+      if (!velocities_for_power.empty()) {
+        double mean_velocity =
+          std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
+          velocities_for_power.size();
+        measured_velocities.push_back(mean_velocity);
+      } else {
+        // データがない場合は0.0で埋める
+        measured_velocities.push_back(0.0);
+      }
+    }
+
+    // crane.launch.xmlで使用できる形式で出力
     std::cout << "\n==================================================\n";
     std::cout << "crane.launch.xml用キャリブレーション結果\n";
     std::cout << "==================================================\n";
     std::cout << "以下の値をcrane.launch.xmlに設定してください:\n\n";
 
+    // パワー配列（変更なし）
     std::cout << "                            {\"straight_kick_power_array\": [";
-    for (size_t i = 0; i < stats.size(); ++i) {
-      std::cout << stats[i].power;
-      if (i < stats.size() - 1) std::cout << ", ";
+    for (size_t i = 0; i < target_powers.size(); ++i) {
+      std::cout << target_powers[i];
+      if (i < target_powers.size() - 1) std::cout << ", ";
     }
     std::cout << "]},\n";
 
+    // 測定された速度配列
     std::cout << "                            {\"straight_kick_speed_array\": [";
-    for (size_t i = 0; i < stats.size(); ++i) {
-      std::cout << std::fixed << std::setprecision(1) << stats[i].mean_velocity;
-      if (i < stats.size() - 1) std::cout << ", ";
+    for (size_t i = 0; i < measured_velocities.size(); ++i) {
+      std::cout << std::fixed << std::setprecision(1) << measured_velocities[i];
+      if (i < measured_velocities.size() - 1) std::cout << ", ";
     }
     std::cout << "]},\n\n";
 
+    // 追加情報
     std::cout << "測定結果詳細:\n";
-    for (const auto & stat : stats) {
-      std::cout << "  パワー " << std::fixed << std::setprecision(2) << stat.power << " -> 速度 "
-                << std::setprecision(1) << stat.mean_velocity
-                << " m/s (サンプル数: " << stat.sample_count << ")\n";
+    for (size_t i = 0; i < target_powers.size(); ++i) {
+      size_t sample_count = 0;
+      for (const auto & kick : optimization_result.kick_data) {
+        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_powers[i]) < 0.05) {
+          sample_count++;
+        }
+      }
+      std::cout << "  パワー " << std::fixed << std::setprecision(2) << target_powers[i]
+                << " -> 速度 " << std::setprecision(1) << measured_velocities[i]
+                << " m/s (サンプル数: " << sample_count << ")\n";
     }
     std::cout << "\n減速度パラメータ: " << std::setprecision(3)
               << optimization_result.global_deceleration << " m/s²\n";
