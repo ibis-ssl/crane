@@ -16,7 +16,6 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <functional>
-#include <magic_enum/magic_enum.hpp>
 #include <memory>
 #include <optional>
 #include <range/v3/algorithm/contains.hpp>
@@ -66,7 +65,6 @@ public:
       skill = std::make_shared<skills::Attacker>(robots.front().id, world_model);
       visualizer->layer = "skill/" + skill->name;
     }
-    std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
     {
       visualizer->circle()
         .center(skill->commander()->getRobot()->pose.pos)
