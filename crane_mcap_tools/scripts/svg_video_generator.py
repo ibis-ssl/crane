@@ -39,7 +39,6 @@ def parse_layer_list(layer_str: str | None) -> set[str] | None:
     return {layer.strip() for layer in layer_str.split(",") if layer.strip()}
 
 
-# グローバル変数でレンダラー設定を保持
 _renderer_backend = None
 _renderer_output_format = None
 
@@ -63,7 +62,6 @@ def render_frame_worker(args: tuple[str, int, int, int]) -> bytes:
     """
     svg_string, width, height, dpi = args
 
-    # ワーカープロセス内でレンダラーを作成
     renderer = create_renderer(
         backend=_renderer_backend,
         width=width,
@@ -77,11 +75,10 @@ def render_frame_worker(args: tuple[str, int, int, int]) -> bytes:
 
 def main() -> int:
     """メイン処理."""
-    # 解像度プリセット
     QUALITY_PRESETS = {
-        "low": {"width": 1280, "height": 720},  # 720p
-        "medium": {"width": 1920, "height": 1080},  # 1080p
-        "high": {"width": 1920, "height": 1080},  # 1080p
+        "low": {"width": 1280, "height": 720},
+        "medium": {"width": 1920, "height": 1080},
+        "high": {"width": 1920, "height": 1080},
     }
 
     parser = argparse.ArgumentParser(
@@ -109,10 +106,8 @@ Examples:
         """,
     )
 
-    # 必須引数
     parser.add_argument("mcap_path", help="Path to MCAP file or rosbag2 directory")
 
-    # 出力設定
     parser.add_argument(
         "-o",
         "--output",
@@ -120,7 +115,6 @@ Examples:
         help="Output video file path (default: output.mp4)",
     )
 
-    # 動画設定
     parser.add_argument(
         "--fps", type=int, default=30, help="Output frame rate (default: 30)"
     )
@@ -151,7 +145,6 @@ Examples:
         help="Encoding preset (default: medium)",
     )
 
-    # 時刻範囲設定
     parser.add_argument(
         "--speed",
         type=float,
@@ -165,7 +158,6 @@ Examples:
         "--end-time", type=float, help="End time in seconds (from bag start)"
     )
 
-    # レイヤー設定
     parser.add_argument(
         "--layers", help="Comma-separated list of layers to display (default: all)"
     )
@@ -174,7 +166,6 @@ Examples:
         help="Comma-separated list of layers to exclude (default: none)",
     )
 
-    # トピック設定
     parser.add_argument(
         "--snapshot-topic",
         default="/aggregated_svgs",
@@ -186,7 +177,6 @@ Examples:
         help="Update topic name (default: /visualizer_svgs)",
     )
 
-    # 性能設定
     parser.add_argument(
         "--workers",
         type=int,
@@ -210,7 +200,6 @@ Examples:
         help="Use RAW RGBA frames instead of PNG (faster but uses more memory)",
     )
 
-    # デバッグ設定
     parser.add_argument(
         "--save-frames", help="Save PNG frames to directory (for debugging)"
     )
@@ -233,18 +222,15 @@ Examples:
         print()
         return 0
 
-    # ロギング設定
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
 
     try:
-        # 入力ファイルの確認
         mcap_path = Path(args.mcap_path)
         if not mcap_path.exists():
             logger.error(f"MCAP path does not exist: {mcap_path}")
             return 1
 
-        # 解像度の決定（--width/--heightが指定された場合は優先）
         if args.width is not None and args.height is not None:
             width = args.width
             height = args.height
@@ -258,7 +244,6 @@ Examples:
 
         logger.info(f"Output resolution: {width}x{height}")
 
-        # ワーカー数の決定
         if args.workers == 0:
             num_workers = multiprocessing.cpu_count()
         else:
@@ -268,11 +253,9 @@ Examples:
             f"Parallel workers: {num_workers} ({'disabled' if num_workers == 1 else 'enabled'})"
         )
 
-        # レイヤーフィルタリング設定
         visible_layers = parse_layer_list(args.layers)
         exclude_layers = parse_layer_list(args.exclude_layers)
 
-        # 出力フォーマットの決定
         if args.raw_frames:
             output_format = OutputFormat.RAW_RGBA
             input_format = InputFormat.RAW_RGBA
@@ -282,14 +265,12 @@ Examples:
             input_format = InputFormat.PNG
             logger.info("Using PNG frames (lower memory usage)")
 
-        # コンポーネント初期化
         logger.info("Initializing components...")
         extractor = SvgExtractor(
             snapshot_topic=args.snapshot_topic, update_topic=args.update_topic
         )
         assembler = SvgAssembler()
 
-        # レンダラー作成（バックエンド指定）
         backend = args.backend if args.backend != "auto" else None
         renderer = create_renderer(
             backend=backend, width=width, height=height, output_format=output_format
@@ -304,12 +285,35 @@ Examples:
             height=height,
         )
 
-        # フレーム生成
         logger.info("Extracting SVG frames from MCAP...")
+
+        def assemble_svg(svg_frame):
+            if visible_layers is not None:
+                effective_visible = visible_layers
+            elif exclude_layers is not None:
+                effective_visible = set(svg_frame.layers.keys()) - exclude_layers
+            else:
+                effective_visible = None
+            return assembler.assemble(
+                svg_frame.layers, visible_layers=effective_visible
+            )
+
+        def save_frame(index, image_bytes):
+            if args.save_frames:
+                frames_dir = Path(args.save_frames)
+                frames_dir.mkdir(parents=True, exist_ok=True)
+                frame_path = frames_dir / f"frame_{index:06d}.png"
+                frame_path.write_bytes(image_bytes)
+
+        def log_progress(generated_count, target_frame_count):
+            if generated_count % 100 == 0:
+                progress = generated_count / target_frame_count * 100
+                logger.info(
+                    f"Generated {generated_count}/{target_frame_count} frames ({progress:.1f}%)"
+                )
 
         def generate_png_frames():
             """PNGフレームを生成（固定フレームレート、並列処理対応）."""
-            # 全フレーム状態を収集
             logger.info("Loading all SVG states from MCAP...")
             all_frames = list(
                 extractor.extract_from_mcap(
@@ -323,12 +327,10 @@ Examples:
                 logger.warning("No frames found in MCAP")
                 return
 
-            # 時刻範囲を取得
             start_time_ns = all_frames[0].timestamp_ns
             end_time_ns = all_frames[-1].timestamp_ns
             duration_sec = (end_time_ns - start_time_ns) / 1e9
 
-            # 目標フレーム数を計算（固定フレームレート）
             target_frame_count = int(duration_sec * args.fps / args.speed)
 
             if target_frame_count == 0:
@@ -342,49 +344,19 @@ Examples:
                 f"(from {len(all_frames)} SVG states)"
             )
 
-            # 並列処理が無効の場合は従来のシーケンシャル処理
             if num_workers == 1:
                 yield from _generate_frames_sequential(
-                    all_frames,
-                    target_frame_count,
-                    start_time_ns,
-                    frame_interval_ns,
-                    assembler,
-                    renderer,
-                    visible_layers,
-                    exclude_layers,
-                    args.save_frames,
-                    logger,
+                    all_frames, target_frame_count, start_time_ns, frame_interval_ns
                 )
             else:
                 yield from _generate_frames_parallel(
-                    all_frames,
-                    target_frame_count,
-                    start_time_ns,
-                    frame_interval_ns,
-                    assembler,
-                    width,
-                    height,
-                    num_workers,
-                    visible_layers,
-                    exclude_layers,
-                    args.save_frames,
-                    logger,
+                    all_frames, target_frame_count, start_time_ns, frame_interval_ns
                 )
 
         def _generate_frames_sequential(
-            all_frames,
-            target_frame_count,
-            start_time_ns,
-            frame_interval_ns,
-            assembler,
-            renderer,
-            visible_layers,
-            exclude_layers,
-            save_frames_dir,
-            logger,
+            all_frames, target_frame_count, start_time_ns, frame_interval_ns
         ):
-            """シーケンシャルなフレーム生成（従来のロジック）."""
+            """シーケンシャルなフレーム生成."""
             frame_idx = 0
             last_frame_idx = -1
             cached_png = None
@@ -399,83 +371,27 @@ Examples:
                 ):
                     frame_idx += 1
 
-                # 同じフレームならキャッシュを再利用
-                if frame_idx == last_frame_idx and cached_png is not None:
-                    if save_frames_dir:
-                        frames_dir = Path(save_frames_dir)
-                        frames_dir.mkdir(parents=True, exist_ok=True)
-                        frame_path = frames_dir / f"frame_{i:06d}.png"
-                        frame_path.write_bytes(cached_png)
+                # 別のフレームに進んだときだけ描画し、同じフレームの間はキャッシュを再利用する
+                if frame_idx != last_frame_idx or cached_png is None:
+                    cached_png = renderer.render(assemble_svg(all_frames[frame_idx]))
+                    last_frame_idx = frame_idx
 
-                    yield cached_png
-
-                    if (i + 1) % 100 == 0:
-                        progress = (i + 1) / target_frame_count * 100
-                        logger.info(
-                            f"Generated {i + 1}/{target_frame_count} frames ({progress:.1f}%)"
-                        )
-                    continue
-
-                # 新しいフレームの処理
-                svg_frame = all_frames[frame_idx]
-
-                # レイヤーフィルタリング
-                layers_to_render = svg_frame.layers
-                if visible_layers is not None:
-                    effective_visible = visible_layers
-                elif exclude_layers is not None:
-                    effective_visible = set(layers_to_render.keys()) - exclude_layers
-                else:
-                    effective_visible = None
-
-                # SVG組み立て
-                svg_string = assembler.assemble(
-                    layers_to_render, visible_layers=effective_visible
-                )
-
-                # PNG変換
-                cached_png = renderer.render(svg_string)
-                last_frame_idx = frame_idx
-
-                if save_frames_dir:
-                    frames_dir = Path(save_frames_dir)
-                    frames_dir.mkdir(parents=True, exist_ok=True)
-                    frame_path = frames_dir / f"frame_{i:06d}.png"
-                    frame_path.write_bytes(cached_png)
-
+                save_frame(i, cached_png)
                 yield cached_png
-
-                if (i + 1) % 100 == 0:
-                    progress = (i + 1) / target_frame_count * 100
-                    logger.info(
-                        f"Generated {i + 1}/{target_frame_count} frames ({progress:.1f}%)"
-                    )
+                log_progress(i + 1, target_frame_count)
 
             logger.info(f"Total frames generated: {target_frame_count}")
 
         def _generate_frames_parallel(
-            all_frames,
-            target_frame_count,
-            start_time_ns,
-            frame_interval_ns,
-            assembler,
-            width,
-            height,
-            num_workers,
-            visible_layers,
-            exclude_layers,
-            save_frames_dir,
-            logger,
+            all_frames, target_frame_count, start_time_ns, frame_interval_ns
         ):
             """並列処理でのフレーム生成."""
-            # バッチサイズを決定（ワーカー数の2倍）
             batch_size = num_workers * 2
 
             # SVG文字列の事前準備（メインプロセスで実行）
             svg_strings = []
             frame_idx = 0
             last_frame_idx = -1
-            last_svg_idx = -1
 
             logger.info("Preparing SVG strings for parallel rendering...")
 
@@ -489,96 +405,39 @@ Examples:
                 ):
                     frame_idx += 1
 
-                # 同じフレームなら再利用（インデックス参照）
+                # 同じフレームなら同じ文字列オブジェクトを再利用する（メモリは増えない）
                 if frame_idx == last_frame_idx:
-                    svg_strings.append(last_svg_idx)
+                    svg_strings.append(svg_strings[-1])
                 else:
-                    # 新しいフレームの処理
-                    svg_frame = all_frames[frame_idx]
-
-                    # レイヤーフィルタリング
-                    layers_to_render = svg_frame.layers
-                    if visible_layers is not None:
-                        effective_visible = visible_layers
-                    elif exclude_layers is not None:
-                        effective_visible = (
-                            set(layers_to_render.keys()) - exclude_layers
-                        )
-                    else:
-                        effective_visible = None
-
-                    # SVG組み立て
-                    svg_string = assembler.assemble(
-                        layers_to_render, visible_layers=effective_visible
-                    )
-                    svg_strings.append(svg_string)
+                    svg_strings.append(assemble_svg(all_frames[frame_idx]))
                     last_frame_idx = frame_idx
-                    last_svg_idx = len(svg_strings) - 1
 
             logger.info("SVG strings prepared. Starting parallel rendering...")
 
-            # 並列レンダリング（初期化関数でバックエンドを指定）
             with ProcessPoolExecutor(
                 max_workers=num_workers,
                 initializer=init_worker,
                 initargs=(backend, output_format),
             ) as executor:
-                batch_args = []
-                batch_indices = []
-                result_index = 0
+                for batch_start in range(0, len(svg_strings), batch_size):
+                    batch = svg_strings[batch_start : batch_start + batch_size]
+                    results = list(
+                        executor.map(
+                            render_frame_worker,
+                            [(svg_string, width, height, 96) for svg_string in batch],
+                        )
+                    )
 
-                for i, svg_ref in enumerate(svg_strings):
-                    # インデックス参照の場合は実際のSVG文字列を取得
-                    if isinstance(svg_ref, int):
-                        svg_string = svg_strings[svg_ref]
-                    else:
-                        svg_string = svg_ref
-
-                    batch_args.append((svg_string, width, height, 96))
-                    batch_indices.append(i)
-
-                    # バッチが満杯になったら実行
-                    if len(batch_args) >= batch_size:
-                        results = list(executor.map(render_frame_worker, batch_args))
-
-                        for png_bytes, idx in zip(results, batch_indices):
-                            if save_frames_dir:
-                                frames_dir = Path(save_frames_dir)
-                                frames_dir.mkdir(parents=True, exist_ok=True)
-                                frame_path = frames_dir / f"frame_{idx:06d}.png"
-                                frame_path.write_bytes(png_bytes)
-
-                            yield png_bytes
-                            result_index += 1
-
-                            if result_index % 100 == 0:
-                                progress = result_index / target_frame_count * 100
-                                logger.info(
-                                    f"Generated {result_index}/{target_frame_count} frames ({progress:.1f}%)"
-                                )
-
-                        batch_args = []
-                        batch_indices = []
-
-                # 残りのフレームを処理
-                if batch_args:
-                    results = list(executor.map(render_frame_worker, batch_args))
-
-                    for png_bytes, idx in zip(results, batch_indices):
-                        if save_frames_dir:
-                            frames_dir = Path(save_frames_dir)
-                            frames_dir.mkdir(parents=True, exist_ok=True)
-                            frame_path = frames_dir / f"frame_{idx:06d}.png"
-                            frame_path.write_bytes(png_bytes)
-
+                    for offset, png_bytes in enumerate(results):
+                        save_frame(batch_start + offset, png_bytes)
                         yield png_bytes
-                        result_index += 1
+                        # 端数の最終バッチでは進捗を出さない
+                        if len(batch) == batch_size:
+                            log_progress(batch_start + offset + 1, target_frame_count)
 
             logger.info(f"Total frames generated: {target_frame_count}")
 
-        # 動画生成
         if args.save_frames:
-            # RAWフレームモードではフレーム保存は非対応
             if args.raw_frames:
                 logger.error(
                     "--save-frames is not compatible with --raw-frames. "
@@ -586,11 +445,9 @@ Examples:
                 )
                 return 1
 
-            # フレーム保存モード: ジェネレータを実行してフレームを保存
             logger.info(f"Saving frames to: {args.save_frames}")
             list(generate_png_frames())  # ジェネレータを実行
 
-            # 保存したフレームから動画生成
             logger.info(f"Generating video from saved frames: {args.output}")
             video_gen.generate_from_directory(
                 frames_dir=args.save_frames,
