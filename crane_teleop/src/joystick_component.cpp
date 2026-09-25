@@ -75,7 +75,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   }
 
   auto update_mode = [this, msg](bool & mode_variable, const int button, bool & is_pushed) {
-    // trigger button up
     if (msg->buttons[button]) {
       if (!is_pushed) {
         RCLCPP_INFO(get_logger(), "toggle mode!");
@@ -101,7 +100,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   if (msg->buttons[BUTTON_ADJUST]) {
     static bool is_pushed = false;
     if (msg->buttons[BUTTON_ADJUST_UP]) {
-      // trigger button up
       if (!is_pushed) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, 0.1);
@@ -115,7 +113,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
       }
       is_pushed = true;
     } else if (msg->buttons[BUTTON_ADJUST_DOWN]) {
-      // trigger button up
       if (!is_pushed) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, -0.1);
@@ -156,18 +153,15 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   command.local_planner_config.final_planned_max_acceleration.name = "teleop";
   command.local_planner_config.final_planned_max_acceleration.value = 2.5;
 
-  // dribble
   if (is_dribble_enable) {
     command.dribble_power = dribble_power;
   } else {
     command.dribble_power = 0.0;
   }
 
-  // kick
   command.chip_enable = is_kick_mode_straight;
   if (is_kick_enable) {
     command.kick_power = kick_power;
-    // kick mode
   }
 
   RCLCPP_INFO(
