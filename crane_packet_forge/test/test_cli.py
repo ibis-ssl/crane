@@ -10,10 +10,11 @@
 mypy が見つけた。型検査だけに頼らず、警告の出る経路を実行して押さえておく。
 """
 
+import argparse
 import json
 
 import pytest
-from crane_packet_forge.cli import main, parse_schedule
+from crane_packet_forge.cli import build_parser, main, parse_schedule
 from crane_packet_forge.events import EventLog
 from crane_packet_forge.spec import PacketSpec, SpecError
 
@@ -108,6 +109,16 @@ def test_schedule_parsing() -> None:
     )
     assert [s.duration_s for s in steps] == [8.0, 2.0]
     assert steps[1].fields["flags.is_vision_available"] is True
+
+
+def test_schedule_help_example_parses() -> None:
+    sub = next(
+        a for a in build_parser()._actions if isinstance(a, argparse._SubParsersAction)
+    )
+    send = sub.choices["send"]
+    help_text = next(a.help for a in send._actions if a.dest == "schedule")
+    example = help_text.split("'")[1]
+    assert [s.duration_s for s in parse_schedule(example)] == [8.0, 2.0]
 
 
 def test_schedule_rejects_missing_duration() -> None:
