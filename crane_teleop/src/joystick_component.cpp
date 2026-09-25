@@ -156,7 +156,7 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   }
 
   RCLCPP_INFO(
-    get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
+    get_logger(), "ID=%d Vx=%.3f Vy=%.3f omega=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
     command.robot_id, target_vx, target_vy, target_omega, is_kick_enable ? "ON" : "OFF", kick_power,
     is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
