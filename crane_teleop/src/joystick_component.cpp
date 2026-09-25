@@ -58,6 +58,16 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   const double MAX_VEL_SWAY = 1.0;
   const double MAX_VEL_ANGULAR = M_PI;
 
+  constexpr std::size_t REQUIRED_BUTTONS = BUTTON_KICK_CHIP + 1;
+  constexpr std::size_t REQUIRED_AXES = AXIS_VEL_ANGULAR + 1;
+  if (msg->buttons.size() < REQUIRED_BUTTONS || msg->axes.size() < REQUIRED_AXES) {
+    RCLCPP_WARN_THROTTLE(
+      get_logger(), *get_clock(), 1000,
+      "joy message too small: buttons=%zu (need %zu), axes=%zu (need %zu)", msg->buttons.size(),
+      REQUIRED_BUTTONS, msg->axes.size(), REQUIRED_AXES);
+    return;
+  }
+
   static bool is_kick_mode_straight = true;
   static bool is_kick_enable = false;
   static bool is_dribble_enable = false;
