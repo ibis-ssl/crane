@@ -25,9 +25,16 @@ class LatencyEstimator : public rclcpp::Node
 public:
   explicit LatencyEstimator(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
+  struct LagEstimate
+  {
+    double lag_ms;  // NaN = 推定できなかった
+    double correlation;
+    double cmd_stddev;  // 再サンプル後の cmd の標準偏差。点数不足で計算前に打ち切ったときは NaN
+  };
+
   // ノードの状態に依存しない純関数。テストから直接呼ぶために public にしている
   static double interpolate(const std::deque<std::pair<double, double>> & data, double t);
-  static std::pair<double, double> estimateLagMs(
+  static LagEstimate estimateLagMs(
     const std::deque<std::pair<double, double>> & cmd,
     const std::deque<std::pair<double, double>> & obs, double max_lag_ms, double resample_dt_ms,
     double min_correlation, double min_cmd_stddev);

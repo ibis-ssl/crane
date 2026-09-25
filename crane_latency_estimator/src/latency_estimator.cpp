@@ -60,20 +60,20 @@ double LatencyEstimator::interpolate(const std::deque<std::pair<double, double>>
   return it_prev->second + alpha * (it->second - it_prev->second);
 }
 
-std::pair<double, double> LatencyEstimator::estimateLagMs(
+LatencyEstimator::LagEstimate LatencyEstimator::estimateLagMs(
   const std::deque<std::pair<double, double>> & cmd,
   const std::deque<std::pair<double, double>> & obs, double max_lag_ms, double resample_dt_ms,
   double min_correlation, double min_cmd_stddev)
 {
   constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 
-  if (cmd.size() < 10 || obs.size() < 10) return {NaN, 0.0};
+  if (cmd.size() < 10 || obs.size() < 10) return {NaN, 0.0, NaN};
 
   double t_start = std::max(cmd.front().first, obs.front().first);
   double t_end = std::min(cmd.back().first, obs.back().first);
   const double dt_sec = resample_dt_ms / 1000.0;
   int N = static_cast<int>((t_end - t_start) / dt_sec);
-  if (N < 20) return {NaN, 0.0};
+  if (N < 20) return {NaN, 0.0, NaN};
 
   std::vector<double> c(N), o(N);
   for (int i = 0; i < N; ++i) {
@@ -91,7 +91,7 @@ std::pair<double, double> LatencyEstimator::estimateLagMs(
 
   double c_std = std::sqrt(std::inner_product(c.begin(), c.end(), c.begin(), 0.0) / N);
   double o_std = std::sqrt(std::inner_product(o.begin(), o.end(), o.begin(), 0.0) / N);
-  if (c_std < min_cmd_stddev || o_std < 1e-6) return {NaN, 0.0};
+  if (c_std < min_cmd_stddev || o_std < 1e-6) return {NaN, 0.0, c_std};
 
   int L = static_cast<int>(max_lag_ms / resample_dt_ms);
   double best_corr = -2.0;
@@ -115,8 +115,8 @@ std::pair<double, double> LatencyEstimator::estimateLagMs(
     }
   }
 
-  if (best_corr < min_correlation) return {NaN, best_corr};
-  return {best_lag * resample_dt_ms, best_corr};
+  if (best_corr < min_correlation) return {NaN, best_corr, c_std};
+  return {best_lag * resample_dt_ms, best_corr, c_std};
 }
 
 void LatencyEstimator::trimBuffer(std::deque<std::pair<double, double>> & buf, double oldest_t)
@@ -174,34 +174,34 @@ void LatencyEstimator::onEstimationTimer()
   for (auto & [robot_id, buf] : buffers_) {
     if (buf.cmd.empty()) continue;
 
-    auto [world_ms, world_corr] = estimateLagMs(
+    const auto world = estimateLagMs(
       buf.cmd, buf.obs_world, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-    buf.ema_world_ms = applyEma(buf.ema_world_ms, world_ms);
+    buf.ema_world_ms = applyEma(buf.ema_world_ms, world.lag_ms);
 
-    if (!std::isnan(world_ms)) {
+    if (!std::isnan(world.lag_ms)) {
       crane_msgs::msg::LatencyEstimation est;
       est.robot_id = robot_id;
       est.source = "world_model";
       est.latency_ms = static_cast<float>(buf.ema_world_ms);
-      est.correlation = static_cast<float>(world_corr);
+      est.correlation = static_cast<float>(world.correlation);
       est.samples_used = static_cast<uint32_t>(buf.cmd.size());
-      est.cmd_stddev = 0.0f;  // filled after std calculation inside estimateLagMs
+      est.cmd_stddev = static_cast<float>(world.cmd_stddev);
       out.estimations.push_back(est);
     }
 
     if (!buf.obs_fb.empty()) {
-      auto [fb_ms, fb_corr] = estimateLagMs(
+      const auto fb = estimateLagMs(
         buf.cmd, buf.obs_fb, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-      buf.ema_fb_ms = applyEma(buf.ema_fb_ms, fb_ms);
+      buf.ema_fb_ms = applyEma(buf.ema_fb_ms, fb.lag_ms);
 
-      if (!std::isnan(fb_ms)) {
+      if (!std::isnan(fb.lag_ms)) {
         crane_msgs::msg::LatencyEstimation est;
         est.robot_id = robot_id;
         est.source = "robot_feedback";
         est.latency_ms = static_cast<float>(buf.ema_fb_ms);
-        est.correlation = static_cast<float>(fb_corr);
+        est.correlation = static_cast<float>(fb.correlation);
         est.samples_used = static_cast<uint32_t>(buf.cmd.size());
-        est.cmd_stddev = 0.0f;
+        est.cmd_stddev = static_cast<float>(fb.cmd_stddev);
         out.estimations.push_back(est);
       }
     }
