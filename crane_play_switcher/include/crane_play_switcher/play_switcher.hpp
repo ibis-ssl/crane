@@ -12,6 +12,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -65,7 +66,8 @@ private:
 
   rclcpp::TimerBase::SharedPtr referee_watchdog_timer_;
   rclcpp::Time last_referee_recv_time_;
-  bool referee_timeout_active_ = false;
+  // タイムアウトで STOP に強制遷移している間だけ、遷移前の状態を持つ
+  std::optional<int> play_situation_before_timeout_;
 };
 }  // namespace crane
 
