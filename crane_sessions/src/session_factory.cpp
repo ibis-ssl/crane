@@ -12,7 +12,6 @@
 // 全プランナーのインクルード（.cppファイルでのみ必要）
 #include <crane_sessions/attacker_heat_rotation_session.hpp>
 #include <crane_sessions/attacker_skill_session.hpp>
-#include <crane_sessions/ball_calibration_data_collector_session.hpp>
 #include <crane_sessions/ball_near_by_positioner_skill_session.hpp>
 #include <crane_sessions/ball_placement_skill_session.hpp>
 #include <crane_sessions/center_stop_kick_session.hpp>
@@ -83,7 +82,6 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
     PLANNER_ENTRY("forward", ForwardSession),
     PLANNER_ENTRY("free_kicker_skill", FreeKickerSkillSession),
     PLANNER_ENTRY("second_threat_defender", SecondThreatDefenderSession),
-    PLANNER_ENTRY("ball_calibration_data_collector", BallCalibrationDataCollectorSession),
     PLANNER_ENTRY("center_stop_kick", CenterStopKickSession),
     PLANNER_ENTRY("latency_measurement", LatencyMeasurementSession),
   };
