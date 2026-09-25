@@ -44,6 +44,7 @@ endif()
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_auto_add_gtest(test_center_stop_kick test/test_center_stop_kick.cpp)
 endif()
 
 ament_export_dependencies(magic_enum)
