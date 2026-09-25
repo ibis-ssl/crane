@@ -13,7 +13,7 @@ SYSTEM_INSTRUCTION = """あなたはRoboCup SSLの専門家です。試合中に
 3. **改善提案**: 具体的で実装可能な改善策を優先度付きで提案
 
 **コンテキスト情報**:
-- アノテーション時刻の前3秒、後2秒のWorldModelデータが提供されます
+- アノテーション時刻の前後のWorldModelデータが提供されます（時間幅はプロンプトに記載）
 - WorldModelには、ボールの位置・速度、全ロボットの位置・速度が含まれます
 - RoboCup SSLは6vs6の小型ロボットサッカーです
 
@@ -39,7 +39,7 @@ SYSTEM_INSTRUCTION = """あなたはRoboCup SSLの専門家です。試合中に
 3. 複数の角度から原因を調査する（例: ロボットの速度履歴、ボールとの距離、他のロボットとの関係）
 4. 収集した情報を基に総合的な分析を行う
 
-**重要**: 提供されたサマリーだけでなく、必ずツールを使って実際のデータを確認してください。
+**重要**: 必ずツールを使って実際のデータを確認してください。
 
 **回答フォーマット**:
 必ず以下のJSON形式で回答してください:
@@ -68,6 +68,8 @@ def create_annotation_analysis_prompt(
     category: str,
     priority: str,
     event_timestamp_ns: int,
+    context_before_sec: float,
+    context_after_sec: float,
     position_info: str = "",
     robot_context: str = "",
 ) -> str:
@@ -80,6 +82,8 @@ def create_annotation_analysis_prompt(
         category: カテゴリ名（ISSUE, OBSERVATION, etc.）
         priority: 重要度（HIGH, MEDIUM, LOW, CRITICAL）
         event_timestamp_ns: イベント発生時刻（ナノ秒）
+        context_before_sec: イベント前のWorldModelコンテキスト時間（秒）
+        context_after_sec: イベント後のWorldModelコンテキスト時間（秒）
         position_info: 位置情報（オプション）
         robot_context: ロボットコンテキスト（オプション）
 
@@ -103,10 +107,10 @@ def create_annotation_analysis_prompt(
     if robot_context:
         prompt += f"\n{robot_context}\n"
 
-    prompt += """
+    prompt += f"""
 # 基本情報
 
-WorldModelコンテキストが利用可能です（前3秒、後2秒）。
+WorldModelコンテキストが利用可能です（前{context_before_sec:g}秒、後{context_after_sec:g}秒）。
 
 # 分析手順
 
@@ -126,7 +130,7 @@ WorldModelコンテキストが利用可能です（前3秒、後2秒）。
 4. 特定時刻の詳細が必要な場合:
    - `get_world_model_at_time`で正確なスナップショットを取得
 
-**重要**: サマリーだけで判断せず、必ずツールを使って実データを確認してください。
+**重要**: 必ずツールを使って実データを確認してください。
 
 ---
 

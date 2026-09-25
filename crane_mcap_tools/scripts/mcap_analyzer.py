@@ -183,6 +183,8 @@ def main() -> int:
                     category=ann.get_category_name(),
                     priority=ann.get_priority_name(),
                     event_timestamp_ns=ann.event_timestamp_ns,
+                    context_before_sec=args.context_before,
+                    context_after_sec=args.context_after,
                     position_info=position_info,
                     robot_context=robot_context,
                 )
