@@ -22,6 +22,42 @@
 namespace crane
 {
 
+namespace
+{
+struct PowerVelocityStat
+{
+  double power;
+  double mean_velocity;  // sample_count == 0 のときは 0.0
+  size_t sample_count;
+};
+
+// ストレートキックの初速を、キッカーパワー 0.0〜1.0 の 0.1 刻み（許容幅 ±0.05）ごとに集計する。
+// YAML と launch 用の出力で刻み・許容幅が食い違わないよう、集計はここだけで行う。
+std::vector<PowerVelocityStat> aggregateStraightKickVelocities(
+  const std::vector<SimpleBallPhysicsOptimizer::KickPowerVelocityPair> & kick_data)
+{
+  std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+  std::vector<PowerVelocityStat> stats;
+  for (double target_power : target_powers) {
+    std::vector<double> velocities_for_power;
+    for (const auto & kick : kick_data) {
+      if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
+        velocities_for_power.push_back(kick.estimated_initial_velocity);
+      }
+    }
+
+    double mean_velocity = 0.0;
+    if (!velocities_for_power.empty()) {
+      mean_velocity =
+        std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
+        velocities_for_power.size();
+    }
+    stats.push_back({target_power, mean_velocity, velocities_for_power.size()});
+  }
+  return stats;
+}
+}  // namespace
+
 /**
  * @brief ボールモデルキャリブレーションノード
  */
@@ -253,25 +289,14 @@ private:
       config["ball_physics_model"]["speed_threshold"] = 0.1;    // 固定値
       config["ball_physics_model"]["stop_threshold"] = 0.05;    // 固定値
 
-      // キッカーパワー別速度マッピング（0.0-1.0を0.1刻み）
-      std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-      for (double target_power : target_powers) {
-        std::vector<double> velocities_for_power;
-        for (const auto & kick : optimization_result.kick_data) {
-          if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
-            velocities_for_power.push_back(kick.estimated_initial_velocity);
-          }
-        }
-
-        if (!velocities_for_power.empty()) {
-          double mean_velocity =
-            std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
-            velocities_for_power.size();
-          std::string power_key = "power_" + std::to_string(static_cast<int>(target_power * 100));
+      // キッカーパワー別速度マッピング（データのないパワーはキーを書かない）
+      for (const auto & stat : aggregateStraightKickVelocities(optimization_result.kick_data)) {
+        if (stat.sample_count > 0) {
+          std::string power_key = "power_" + std::to_string(static_cast<int>(stat.power * 100));
           config["kicker_power_mapping"]["straight_kick"][power_key]["mean_velocity"] =
-            mean_velocity;
+            stat.mean_velocity;
           config["kicker_power_mapping"]["straight_kick"][power_key]["sample_count"] =
-            static_cast<int>(velocities_for_power.size());
+            static_cast<int>(stat.sample_count);
         }
       }
 
@@ -375,26 +400,7 @@ private:
   void outputLaunchFileArrays(
     const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
   {
-    std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-    std::vector<double> measured_velocities;
-
-    for (double target_power : target_powers) {
-      std::vector<double> velocities_for_power;
-      for (const auto & kick : optimization_result.kick_data) {
-        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
-          velocities_for_power.push_back(kick.estimated_initial_velocity);
-        }
-      }
-
-      if (!velocities_for_power.empty()) {
-        double mean_velocity =
-          std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
-          velocities_for_power.size();
-        measured_velocities.push_back(mean_velocity);
-      } else {
-        measured_velocities.push_back(0.0);
-      }
-    }
+    const auto stats = aggregateStraightKickVelocities(optimization_result.kick_data);
 
     std::cout << "\n==================================================\n";
     std::cout << "crane.launch.xml用キャリブレーション結果\n";
@@ -402,30 +408,24 @@ private:
     std::cout << "以下の値をcrane.launch.xmlに設定してください:\n\n";
 
     std::cout << "                            {\"straight_kick_power_array\": [";
-    for (size_t i = 0; i < target_powers.size(); ++i) {
-      std::cout << target_powers[i];
-      if (i < target_powers.size() - 1) std::cout << ", ";
+    for (size_t i = 0; i < stats.size(); ++i) {
+      std::cout << stats[i].power;
+      if (i < stats.size() - 1) std::cout << ", ";
     }
     std::cout << "]},\n";
 
     std::cout << "                            {\"straight_kick_speed_array\": [";
-    for (size_t i = 0; i < measured_velocities.size(); ++i) {
-      std::cout << std::fixed << std::setprecision(1) << measured_velocities[i];
-      if (i < measured_velocities.size() - 1) std::cout << ", ";
+    for (size_t i = 0; i < stats.size(); ++i) {
+      std::cout << std::fixed << std::setprecision(1) << stats[i].mean_velocity;
+      if (i < stats.size() - 1) std::cout << ", ";
     }
     std::cout << "]},\n\n";
 
     std::cout << "測定結果詳細:\n";
-    for (size_t i = 0; i < target_powers.size(); ++i) {
-      size_t sample_count = 0;
-      for (const auto & kick : optimization_result.kick_data) {
-        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_powers[i]) < 0.05) {
-          sample_count++;
-        }
-      }
-      std::cout << "  パワー " << std::fixed << std::setprecision(2) << target_powers[i]
-                << " -> 速度 " << std::setprecision(1) << measured_velocities[i]
-                << " m/s (サンプル数: " << sample_count << ")\n";
+    for (const auto & stat : stats) {
+      std::cout << "  パワー " << std::fixed << std::setprecision(2) << stat.power << " -> 速度 "
+                << std::setprecision(1) << stat.mean_velocity
+                << " m/s (サンプル数: " << stat.sample_count << ")\n";
     }
     std::cout << "\n減速度パラメータ: " << std::setprecision(3)
               << optimization_result.global_deceleration << " m/s²\n";
