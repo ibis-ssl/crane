@@ -75,15 +75,6 @@ struct SlackTimeConfig
    * @return SlackTimeConfig 読み込んだ設定
    *
    * @details パラメータが存在しない場合はデフォルト値を使用します。
-   *
-   * 想定されるパラメータ名:
-   * - {prefix}robot_max_acceleration
-   * - {prefix}robot_max_velocity
-   * - {prefix}time_horizon
-   * - {prefix}time_step
-   * - {prefix}slack_time_offset
-   * - {prefix}distance_horizon
-   * - {prefix}velocity_epsilon
    */
   static SlackTimeConfig fromNode(rclcpp::Node & node, const std::string & prefix = "slack.")
   {
