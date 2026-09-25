@@ -121,20 +121,19 @@ void CenterStopKick::initialize()
         distance_to_center, center_tolerance_, retry_count_ + 1);
 
       return Status::SUCCESS;
-    } else if (retry_count_ < max_retry_count_) {
-      retry_count_++;
-
-      resetForRetry();
-      return Status::RUNNING;
-    } else {
-      visualizer->drawDebugLabel(robot()->pose.pos, "リトライ上限到達");
-
-      RCLCPP_WARN(
-        rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm",
-        distance_to_center);
-
-      return Status::SUCCESS;
     }
+
+    // リトライできる間は KICK_COMPLETE -> WAIT_BALL_STOP の遷移が状態関数より先に成立する
+    if (retry_count_ < max_retry_count_) {
+      return Status::RUNNING;
+    }
+
+    visualizer->drawDebugLabel(robot()->pose.pos, "リトライ上限到達");
+
+    RCLCPP_WARN(
+      rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm", distance_to_center);
+
+    return Status::SUCCESS;
   });
 
   // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
@@ -181,6 +180,7 @@ void CenterStopKick::initialize()
     [this]() -> bool { return isKickCompleted(); });
 
   // KICK_COMPLETE -> WAIT_BALL_STOP（リトライ遷移）
+  // 遷移は状態関数より先に評価されるので、リトライの状態更新はここで行う
   addTransition(
     static_cast<int>(CenterStopKickState::KICK_COMPLETE),
     static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> bool {
@@ -196,11 +196,13 @@ void CenterStopKick::initialize()
 
       double distance_to_center = world_model()->ball().pos.norm();
 
-      if (distance_to_center <= center_tolerance_) {
+      if (distance_to_center <= center_tolerance_ || retry_count_ >= max_retry_count_) {
         return false;
       }
 
-      return retry_count_ < max_retry_count_;
+      retry_count_++;
+      resetForRetry();
+      return true;
     });
 }
 
