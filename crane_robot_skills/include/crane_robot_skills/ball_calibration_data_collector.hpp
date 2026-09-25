@@ -77,6 +77,7 @@ private:
   double position_tolerance_ = 0.05;             ///< 位置許容誤差 (m)
   double stop_time_threshold_ = 1.0;             ///< 停止時間閾値 (s)
   double ball_motion_velocity_threshold_ = 0.5;  ///< ボール移動検出閾値 (m/s)
+  double ball_avoidance_margin_ = 0.3;           ///< ボール回避時のマージン距離 (m)
   std::vector<double> kick_power_sequence_{0.2, 0.3, 0.4, 0.5, 0.6,
                                            0.7, 0.8, 0.9, 1.0};  ///< キックパワーシーケンス
 
