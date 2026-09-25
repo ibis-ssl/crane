@@ -32,10 +32,6 @@ class PassReceiverSession : public SessionBase
 public:
   std::shared_ptr<skills::Receive> receive_skill = nullptr;
 
-  int pass_receiver_id = 0;
-
-  Point pass_target;
-
   COMPOSITION_PUBLIC explicit PassReceiverSession(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : SessionBase("pass_receive", world_model)
