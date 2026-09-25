@@ -14,11 +14,6 @@
 namespace crane
 {
 
-inline auto getTravelTime(std::shared_ptr<RobotInfo> robot, Point target) -> double
-{
-  return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
-}
-
 /**
  * @brief 台形速度プロファイル（Bang-Bang制御）で移動時間を計算
  *
