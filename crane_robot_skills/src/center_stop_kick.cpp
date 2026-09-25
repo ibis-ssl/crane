@@ -21,35 +21,24 @@ void CenterStopKick::initialize()
 {
   last_ball_motion_time_ = rclcpp::Clock().now();
 
-  // ボール回避用状態の初期化
   has_started_positioning_ = false;
   last_ball_position_ = Point::Zero();
   kick_executed_ = false;
   kick_start_time_ = rclcpp::Clock().now();
 
-  // リトライ制御の初期化
   retry_count_ = 0;
   result_check_start_ = rclcpp::Time(0);
 
-  // 物理モデルの初期化
   initializePhysicsModels();
 
   addStateFunction(static_cast<int>(CenterStopKickState::ENTRY_POINT), [this]() -> Status {
     command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
-
-    // フィールド中心への停止距離を計算
-    target_stop_distance_ = calculateTargetStopDistance();
-
     return Status::RUNNING;
   });
 
   addStateFunction(static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> Status {
     command->stopHere();
-
-    // 目標停止距離を再計算（ボール位置が変わった場合）
-    target_stop_distance_ = calculateTargetStopDistance();
-
     return Status::RUNNING;
   });
 
@@ -59,23 +48,20 @@ void CenterStopKick::initialize()
     // ボール位置変化検出（テレポート対応）
     if (has_started_positioning_) {
       double ball_position_change = (current_ball_pos - last_ball_position_).norm();
-      const double teleport_threshold = 0.2;  // 0.2m以上の変化でテレポートと判定
+      const double teleport_threshold = 0.2;
 
       if (ball_position_change > teleport_threshold) {
         RCLCPP_WARN(
           rclcpp::get_logger("CenterStopKick"),
           "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
 
-        // 位置取り状態をリセットして再計算を強制
         has_started_positioning_ = false;
-        target_stop_distance_ = calculateTargetStopDistance();
       }
     }
 
-    // 初回実行時または位置変化検出時：内部状態を初期化
     if (not has_started_positioning_) {
       has_started_positioning_ = true;
-      last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
+      last_ball_position_ = current_ball_pos;
     }
     // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
     Point approach_target = computeAroundBallApproachTargetDynamic(
@@ -93,11 +79,7 @@ void CenterStopKick::initialize()
   });
 
   addStateFunction(static_cast<int>(CenterStopKickState::KICK_EXECUTE), [this]() -> Status {
-    // 目標停止距離を再計算
-    double current_target_distance = calculateTargetStopDistance();
-
-    // 必要なキック力を計算
-    calculated_kick_power_ = calculateRequiredKickPower(current_target_distance);
+    const double kick_power = calculateRequiredKickPower(calculateTargetStopDistance());
 
     if (!kick_executed_) {
       kick_start_time_ = rclcpp::Clock().now();
@@ -107,7 +89,7 @@ void CenterStopKick::initialize()
     command->setTargetPosition(world_model()->ball().pos)
       .lookAtBall()
       .setOmegaLimit(10.0)
-      .kickStraight(calculated_kick_power_)
+      .kickStraight(kick_power)
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
       .setMaxVelocity("CenterStopKickState::KICK_EXECUTE", 5.0);
@@ -120,22 +102,18 @@ void CenterStopKick::initialize()
 
     auto now = rclcpp::Clock().now();
 
-    // 初回入室時の処理
     if (!crane::isValidTime(result_check_start_)) {
       result_check_start_ = now;
     }
 
-    // ボール停止確認（1秒待機）
     if (crane::getElapsedSec(result_check_start_, now) < 1.0) {
       visualizer->drawDebugLabel(robot()->pose.pos, "結果確認中...");
       return Status::RUNNING;
     }
 
-    // 中心からの距離チェック
     double distance_to_center = world_model()->ball().pos.norm();
 
     if (distance_to_center <= center_tolerance_) {
-      // 成功
       visualizer->drawDebugLabel(robot()->pose.pos, "中心停止キック成功");
 
       RCLCPP_INFO(
@@ -143,23 +121,19 @@ void CenterStopKick::initialize()
         distance_to_center, center_tolerance_, retry_count_ + 1);
 
       return Status::SUCCESS;
-    } else if (retry_count_ < max_retry_count_) {
-      // リトライ
-      retry_count_++;
-
-      // 状態リセット
-      resetForRetry();
-      return Status::RUNNING;
-    } else {
-      // リトライ上限到達
-      visualizer->drawDebugLabel(robot()->pose.pos, "リトライ上限到達");
-
-      RCLCPP_WARN(
-        rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm",
-        distance_to_center);
-
-      return Status::SUCCESS;
     }
+
+    // リトライできる間は KICK_COMPLETE -> WAIT_BALL_STOP の遷移が状態関数より先に成立する
+    if (retry_count_ < max_retry_count_) {
+      return Status::RUNNING;
+    }
+
+    visualizer->drawDebugLabel(robot()->pose.pos, "リトライ上限到達");
+
+    RCLCPP_WARN(
+      rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm", distance_to_center);
+
+    return Status::SUCCESS;
   });
 
   // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
@@ -179,10 +153,9 @@ void CenterStopKick::initialize()
       }
 
       bool should_transition = crane::isTimeout(last_ball_motion_time_, stop_time_threshold_, now);
-      // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
-        last_ball_position_ = Point::Zero();  // ボール位置記録もリセット
+        last_ball_position_ = Point::Zero();
       }
 
       return should_transition;
@@ -207,31 +180,29 @@ void CenterStopKick::initialize()
     [this]() -> bool { return isKickCompleted(); });
 
   // KICK_COMPLETE -> WAIT_BALL_STOP（リトライ遷移）
+  // 遷移は状態関数より先に評価されるので、リトライの状態更新はここで行う
   addTransition(
     static_cast<int>(CenterStopKickState::KICK_COMPLETE),
     static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> bool {
-      // result_check_start_が設定されている場合のみリトライ判定
       if (!crane::isValidTime(result_check_start_)) {
         return false;
       }
 
       auto now = rclcpp::Clock().now();
 
-      // 1秒未満は待機
       if (crane::getElapsedSec(result_check_start_, now) < 1.0) {
         return false;
       }
 
-      // 距離チェック
       double distance_to_center = world_model()->ball().pos.norm();
 
-      // 成功の場合はリトライしない
-      if (distance_to_center <= center_tolerance_) {
+      if (distance_to_center <= center_tolerance_ || retry_count_ >= max_retry_count_) {
         return false;
       }
 
-      // リトライ可能な場合のみ遷移
-      return retry_count_ < max_retry_count_;
+      retry_count_++;
+      resetForRetry();
+      return true;
     });
 }
 
@@ -259,7 +230,6 @@ double CenterStopKick::calculateRequiredKickPower(double target_distance)
   try {
     double required_power = kicker_model_->calculateKickPowerForStopDistance(target_distance);
 
-    // キック力を0.0-1.0の範囲にクランプ
     required_power = std::clamp(required_power, 0.0, 1.0);
 
     RCLCPP_DEBUG(
@@ -278,10 +248,8 @@ double CenterStopKick::calculateRequiredKickPower(double target_distance)
 void CenterStopKick::initializePhysicsModels()
 {
   try {
-    // BallPhysicsModelのデフォルトインスタンスを作成
     ball_physics_model_ = std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault());
 
-    // KickerModelを作成してBallPhysicsModelと統合
     kicker_model_ = std::make_shared<KickerModel>();
     kicker_model_->setBallPhysicsModel(ball_physics_model_);
 
@@ -303,7 +271,6 @@ bool CenterStopKick::isKickCompleted() const
     return false;
   }
 
-  // ボールが動き始めたかチェック
   if (world_model()->ball().vel.norm() > ball_motion_velocity_threshold_) {
     // ボールが目標方向（フィールド中心）に向かっているかチェック
     Point ball_pos = world_model()->ball().pos;
@@ -321,7 +288,6 @@ bool CenterStopKick::isKickCompleted() const
     }
   }
 
-  // タイムアウト（キック実行から3秒経過）
   if (crane::isTimeout(kick_start_time_, 3.0, now)) {
     RCLCPP_WARN(
       rclcpp::get_logger("CenterStopKick"), "キック完了タイムアウト。キック完了と判定します");
@@ -333,17 +299,13 @@ bool CenterStopKick::isKickCompleted() const
 
 void CenterStopKick::resetForRetry()
 {
-  // 結果確認タイマーをリセット
   result_check_start_ = rclcpp::Time(0);
 
-  // キック実行状態をリセット
   kick_executed_ = false;
 
-  // ボール回避状態をリセット
   has_started_positioning_ = false;
   last_ball_position_ = Point::Zero();
 
-  // タイムスタンプをリセット
   last_ball_motion_time_ = rclcpp::Clock().now();
   kick_start_time_ = rclcpp::Clock().now();
 

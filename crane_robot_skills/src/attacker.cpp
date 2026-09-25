@@ -67,7 +67,6 @@ void Attacker::initialize()
     static_cast<int>(AttackerState::ENTRY_POINT), static_cast<int>(AttackerState::RECEIVE),
     [this]() -> bool {
       // ボールが遠くにいて動いている場合にRECEIVEへ遷移する。
-      // 以前の「ボール軌道の2.0m以内」チェックは削除した。
       // Attackerはボール取得が役割なので、転がるボールを積極的に追いかけるべきである。
       if (
         robot()->getDistance(world_model()->ball().pos) > BALL_CONTROL_DISTANCE &&

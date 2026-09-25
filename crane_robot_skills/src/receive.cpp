@@ -190,7 +190,6 @@ Point Receive::getInterceptionPoint() const
     visualizer->drawLine(ball_line.first, ball_line.second, "#00aaff", 6, 0.5);
   }
 
-  // closest_pointのNaN値チェック
   if (!isValidPoint(closest_point)) {
     RCLCPP_WARN(
       rclcpp::get_logger("Receive"), "closest_point is NaN, falling back to robot position");
@@ -215,9 +214,7 @@ Point Receive::getInterceptionPoint() const
     // Slack color mapper: [-0.5, 0, +0.5] -> red, yellow, green
     auto slackColor = [](double s) -> std::string {
       double v = std::clamp(s, -0.5, 0.5);
-      // map to [0,1]
       double t = (v + 0.5) / 1.0;
-      // simple red->yellow->green gradient
       int r = 0;
       int g = 0;
       if (t < 0.5) {

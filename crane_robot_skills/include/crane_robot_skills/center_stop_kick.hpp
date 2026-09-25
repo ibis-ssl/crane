@@ -86,16 +86,11 @@ private:
 
   // パラメータ
   Point target_position_{Point(0.0, 0.0)};       ///< 目標停止位置（フィールド中心）
-  double kick_power_tolerance_ = 0.01;           ///< キック力計算の許容誤差
-  double stop_distance_tolerance_ = 0.05;        ///< 停止距離の許容誤差 (m)
   double ball_stop_threshold_ = 0.1;             ///< ボール停止判定閾値 (m/s)
   double approach_distance_ = 0.2;               ///< キック位置までの距離 (m)
   double position_tolerance_ = 0.05;             ///< 位置許容誤差 (m)
   double stop_time_threshold_ = 1.0;             ///< 停止時間閾値 (s)
   double ball_motion_velocity_threshold_ = 0.5;  ///< ボール移動検出閾値 (m/s)
-  double ball_avoidance_margin_ = 0.3;           ///< ボール回避時のマージン距離 (m)
-  double calculated_kick_power_ = 0.5;           ///< 計算されたキック力
-  double target_stop_distance_ = 0.0;            ///< 目標停止距離
   int max_retry_count_ = 3;                      ///< 最大リトライ回数
   double center_tolerance_ = 0.15;               ///< 中心判定許容距離 (m)
 
