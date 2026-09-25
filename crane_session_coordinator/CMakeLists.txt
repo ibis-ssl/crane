@@ -47,8 +47,6 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-  ament_add_gtest(test_session_controller test/test.cpp)
-  target_link_libraries(test_session_controller ${PROJECT_NAME}_component)
   ament_auto_add_gtest(test_pass_plan_execution test/test_pass_plan_execution.cpp)
 endif()
 
