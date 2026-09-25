@@ -17,11 +17,9 @@
 namespace crane
 {
 auto ratePassCandidate(
-  WorldModelWrapper * world_model, const Point & pass_origin, const Point & target,
+  WorldModelWrapper * wm, const Point & pass_origin, const Point & target,
   const PassRatingConfig & config) -> PassRating
 {
-  auto * wm = world_model;
-
   const double pass_distance = (target - pass_origin).norm();
 
   // 敵ゴール見通し / 自ゴール危険度の角度幅

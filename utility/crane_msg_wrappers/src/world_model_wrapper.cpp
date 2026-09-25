@@ -216,20 +216,6 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   }
 }
 
-auto WorldModelWrapper::generateFieldPoints(float grid_size) const
-{
-  std::vector<Point> points;
-  const auto nx = static_cast<size_t>(fieldSize().x() / 2.f / grid_size) + 2;
-  const auto ny = static_cast<size_t>(fieldSize().y() / 2.f / grid_size) + 2;
-  points.reserve(nx * ny);
-  for (float x = 0.f; x <= fieldSize().x() / 2.f; x += grid_size) {
-    for (float y = 0.f; y <= fieldSize().y() / 2.f; y += grid_size) {
-      points.emplace_back(x, y);
-    }
-  }
-  return points;
-}
-
 auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>
 {
@@ -545,15 +531,6 @@ auto WorldModelWrapper::setBallOwnerCalculatorEnabled(bool enabled) -> void
   ball_owner_calculator_enabled_ = enabled;
 }
 
-auto WorldModelWrapper::getOurFrontier() const -> std::optional<BallOwnerScore>
-{
-  return ball_owner_calculator_->getOurFrontier();
-}
-
-auto WorldModelWrapper::getTheirFrontier() const -> std::optional<BallOwnerScore>
-{
-  return ball_owner_calculator_->getTheirFrontier();
-}
 auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) const
   -> std::tuple<Point, Point, Point, Point>
 {
@@ -567,18 +544,6 @@ auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) 
     p2.x() += (penalty_area_size_.x() + offset_x + 0.5);
   }
 
-  Point p3(p2.x(), -p2.y());
-  Point p4(p1.x(), p3.y());
-  return {p1, p2, p3, p4};
-}
-
-auto WorldModelWrapper::getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>
-{
-  const double field_size_y = fieldSize().y();
-  Point p1;
-  p1 << goal_.x(), field_size_y * 0.5;
-  Point p2 = p1;
-  p2.x() = 0.0;
   Point p3(p2.x(), -p2.y());
   Point p4(p1.x(), p3.y());
   return {p1, p2, p3, p4};
@@ -688,19 +653,5 @@ auto WorldModelWrapper::updateRobotTimestamps(
   } else {
     info.available_tracker = false;
   }
-}
-
-auto WorldModelWrapper::isShootingTowardsOurGoal() const -> bool
-{
-  auto ball_line = ball_.getTrajectorySegmentByDistance(10.0);
-  auto goal_line = getOurGoalLine();
-  return !getIntersections(ball_line, goal_line).empty();
-}
-
-auto WorldModelWrapper::isShootingTowardsTheirGoal() const -> bool
-{
-  auto ball_line = ball_.getTrajectorySegmentByDistance(10.0);
-  auto goal_line = getTheirGoalLine();
-  return !getIntersections(ball_line, goal_line).empty();
 }
 }  // namespace crane

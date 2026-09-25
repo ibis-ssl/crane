@@ -7,11 +7,8 @@
 #include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 #include <map>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
 #include <string>
 
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "robocup_ssl_msgs/msg/referee.hpp"
 
 namespace crane
@@ -97,12 +94,6 @@ auto getStageNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
   return named_int;
 }
 
-auto getStageTextList() -> std::vector<std::string>
-{
-  return stage_map | ranges::views::transform([](const auto & elem) { return elem.second; }) |
-         ranges::to<std::vector>();
-}
-
 auto getRefereeCommandText(uint32_t id) -> std::string
 {
   auto it = referee_command_map.find(id);
@@ -117,13 +108,6 @@ auto getRefereeCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
   return named_int;
 }
 
-auto getRefereeCommandTextList() -> std::vector<std::string>
-{
-  return referee_command_map |
-         ranges::views::transform([](const auto & elem) { return elem.second; }) |
-         ranges::to<std::vector>();
-}
-
 auto getSituationCommandText(uint32_t id) -> std::string
 {
   auto it = situation_command_map.find(id);
@@ -136,13 +120,6 @@ auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
   named_int.name = getSituationCommandText(id);
   named_int.value = id;
   return named_int;
-}
-
-auto getSituationCommandTextList() -> std::vector<std::string>
-{
-  return situation_command_map |
-         ranges::views::transform([](const auto & elem) { return elem.second; }) |
-         ranges::to<std::vector>();
 }
 
 }  // namespace crane

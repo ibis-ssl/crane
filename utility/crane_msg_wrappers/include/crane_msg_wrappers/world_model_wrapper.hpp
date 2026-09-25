@@ -189,8 +189,6 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
 
   [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs_.max_allowed_bots; }
 
-  [[nodiscard]] auto generateFieldPoints(float grid_size) const;
-
   struct RobotWithDistance
   {
     RobotInfo::SharedPtr robot;
@@ -257,14 +255,6 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
     auto [post1, post2] = getTheirGoalPosts();
     return {post1, post2};
   }
-
-  /// @brief ボールが自ゴールに向かっているかを判定
-  /// @return ボール軌道が自ゴールラインと交差する場合true
-  [[nodiscard]] auto isShootingTowardsOurGoal() const -> bool;
-
-  /// @brief ボールが敵ゴールに向かっているかを判定
-  /// @return ボール軌道が敵ゴールラインと交差する場合true
-  [[nodiscard]] auto isShootingTowardsTheirGoal() const -> bool;
 
   [[nodiscard]] auto getBallPlacementTarget() const -> std::optional<Point>;
 
@@ -385,13 +375,8 @@ private:
 public:
   auto setBallOwnerCalculatorEnabled(bool enabled = true) -> void;
 
-  [[nodiscard]] auto getOurFrontier() const -> std::optional<BallOwnerScore>;
-
-  [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerScore>;
-
   auto getPenaltyAreaCorners(double offset_x, double offset_y) const
     -> std::tuple<Point, Point, Point, Point>;
-  auto getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>;
 
   auto getIntersectionOurPenaltyArea(
     const Segment & target_segment, double offset_x, double offset_y) const -> std::optional<Point>;

@@ -45,14 +45,6 @@ auto RobotsQuery::excludeId(uint8_t id) -> RobotsQuery &
   return *this;
 }
 
-auto RobotsQuery::excludeIds(const std::vector<uint8_t> & ids) -> RobotsQuery &
-{
-  predicates_.emplace_back([ids](const RobotInfo::SharedPtr & robot) {
-    return std::find(ids.begin(), ids.end(), robot->id) == ids.end();
-  });
-  return *this;
-}
-
 auto RobotsQuery::excludeGoalie() -> RobotsQuery &
 {
   predicates_.emplace_back([goalie_id = goalie_id_](const RobotInfo::SharedPtr & robot) {
@@ -67,16 +59,6 @@ auto RobotsQuery::where(Predicate pred) -> RobotsQuery &
   return *this;
 }
 
-auto RobotsQuery::get() const -> RobotList
-{
-  return robots_ | ranges::views::filter([this](const RobotInfo::SharedPtr & robot) {
-           return std::all_of(
-             predicates_.begin(), predicates_.end(),
-             [&robot](const Predicate & pred) { return pred(robot); });
-         }) |
-         ranges::to<std::vector>();
-}
-
 auto RobotsQuery::getView() const -> decltype(auto)
 {
   return robots_ | ranges::views::filter([this](const RobotInfo::SharedPtr & robot) {
@@ -85,6 +67,8 @@ auto RobotsQuery::getView() const -> decltype(auto)
              [&robot](const Predicate & pred) { return pred(robot); });
          });
 }
+
+auto RobotsQuery::get() const -> RobotList { return getView() | ranges::to<std::vector>(); }
 
 auto RobotsQuery::getIds() const -> std::vector<uint8_t>
 {
