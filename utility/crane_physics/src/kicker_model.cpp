@@ -97,7 +97,6 @@ auto KickerModel::loadConfigFromYAML(const std::string & yaml_file_path) -> Conf
 
     const YAML::Node & kicker_model = root["kicker_model"];
 
-    // ストレートキック設定の読み込み
     if (kicker_model["straight_kick_powers"]) {
       config.straight_kick_powers = kicker_model["straight_kick_powers"].as<std::vector<double>>();
     }
@@ -105,7 +104,6 @@ auto KickerModel::loadConfigFromYAML(const std::string & yaml_file_path) -> Conf
       config.straight_kick_speeds = kicker_model["straight_kick_speeds"].as<std::vector<double>>();
     }
 
-    // チップキック設定の読み込み
     if (kicker_model["chip_kick_powers"]) {
       config.chip_kick_powers = kicker_model["chip_kick_powers"].as<std::vector<double>>();
     }
@@ -210,10 +208,8 @@ auto KickerModel::predictStopDistance(double kick_power) const -> double
 
   double clamped_power = clampKickPower(kick_power);
 
-  // キック力から初速度を予測
   double initial_speed = predictStraightKickSpeed(clamped_power);
 
-  // BallPhysicsModelを使って停止距離を計算
   Point initial_velocity(initial_speed, 0.0);  // X方向にキック
   return ball_physics_model_->getMaxDistance(
     Point(0.0, 0.0), initial_velocity, Ball::State::ROLLING, 0.0, 0.0);
@@ -229,7 +225,6 @@ auto KickerModel::predictChipKickTotalDistance(double kick_power) const -> doubl
     throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
   }
 
-  // チップキックの飛行距離を予測
   double flight_distance = predictChipKickDistance(kick_power);
 
   // 着地後の転がり距離を計算するために、着地時の速度を推定
@@ -317,7 +312,6 @@ auto KickerModel::getLinearInterpolation(
     return y_array.back();
   }
 
-  // 線形補間の実行
   for (size_t i = 1; i < x_array.size(); ++i) {
     if (x <= x_array[i]) {
       double x_diff = x_array[i] - x_array[i - 1];
@@ -346,7 +340,6 @@ auto KickerModel::getInverseLinearInterpolation(
     return x_array[0];
   }
 
-  // Y配列の最小値と最大値を確認
   auto [min_y, max_y] = std::minmax_element(y_array.begin(), y_array.end());
 
   // 範囲外の値は境界値でクランプ
@@ -357,7 +350,6 @@ auto KickerModel::getInverseLinearInterpolation(
     return x_array[std::distance(y_array.begin(), max_y)];
   }
 
-  // 逆線形補間の実行
   for (size_t i = 1; i < y_array.size(); ++i) {
     double y_prev = y_array[i - 1];
     double y_curr = y_array[i];
@@ -401,14 +393,12 @@ auto KickerModel::validateArrays(
     return false;
   }
 
-  // X配列が単調増加であることを確認
   for (size_t i = 1; i < x_array.size(); ++i) {
     if (x_array[i] <= x_array[i - 1]) {
       return false;
     }
   }
 
-  // Y配列が非負であることを確認
   for (double y : y_array) {
     if (y < 0.0) {
       return false;
