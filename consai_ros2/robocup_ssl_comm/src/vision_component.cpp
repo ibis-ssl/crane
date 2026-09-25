@@ -24,6 +24,35 @@
 
 namespace robocup_ssl_comm
 {
+namespace
+{
+robocup_ssl_msgs::msg::SSLDetectionRobot toRobotMsg(const robocup_ssl::SSL_DetectionRobot & robot)
+{
+  robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
+  robot_msg.confidence = robot.confidence();
+  if (robot.has_robot_id()) {
+    robot_msg.robot_id = robot.robot_id();
+  } else {
+    robot_msg.robot_id = 100;  // invalid value
+  }
+  robot_msg.x = robot.x() / 1000.0;
+  robot_msg.y = robot.y() / 1000.0;
+  if (robot.has_orientation()) {
+    robot_msg.orientation = robot.orientation();
+  } else {
+    robot_msg.orientation = 0.0;  // invalid value
+  }
+  robot_msg.pixel_x = robot.pixel_x();
+  robot_msg.pixel_y = robot.pixel_y();
+  if (robot.has_height()) {
+    robot_msg.height = robot.height() / 1000.0;
+  } else {
+    robot_msg.height = 0.0;  // invalid value
+  }
+  return robot_msg;
+}
+}  // namespace
+
 Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   const std::string multicast_address =
@@ -116,55 +145,10 @@ robocup_ssl_msgs::msg::SSLDetectionFrame Vision::parse_detection_frame(
   }
 
   for (const auto & robot : detection_frame.robots_yellow()) {
-    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_yellow.push_back(robot_msg);
+    detection_frame_msg.robots_yellow.push_back(toRobotMsg(robot));
   }
-
   for (const auto & robot : detection_frame.robots_blue()) {
-    robocup_ssl_msgs::msg::SSLDetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_blue.push_back(robot_msg);
+    detection_frame_msg.robots_blue.push_back(toRobotMsg(robot));
   }
 
   return detection_frame_msg;
