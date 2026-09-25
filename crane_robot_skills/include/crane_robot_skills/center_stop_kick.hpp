@@ -91,8 +91,6 @@ private:
   double position_tolerance_ = 0.05;             ///< 位置許容誤差 (m)
   double stop_time_threshold_ = 1.0;             ///< 停止時間閾値 (s)
   double ball_motion_velocity_threshold_ = 0.5;  ///< ボール移動検出閾値 (m/s)
-  double calculated_kick_power_ = 0.5;           ///< 計算されたキック力
-  double target_stop_distance_ = 0.0;            ///< 目標停止距離
   int max_retry_count_ = 3;                      ///< 最大リトライ回数
   double center_tolerance_ = 0.15;               ///< 中心判定許容距離 (m)
 

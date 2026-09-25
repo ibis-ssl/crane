@@ -34,17 +34,11 @@ void CenterStopKick::initialize()
   addStateFunction(static_cast<int>(CenterStopKickState::ENTRY_POINT), [this]() -> Status {
     command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
-
-    target_stop_distance_ = calculateTargetStopDistance();
-
     return Status::RUNNING;
   });
 
   addStateFunction(static_cast<int>(CenterStopKickState::WAIT_BALL_STOP), [this]() -> Status {
     command->stopHere();
-
-    target_stop_distance_ = calculateTargetStopDistance();
-
     return Status::RUNNING;
   });
 
@@ -62,7 +56,6 @@ void CenterStopKick::initialize()
           "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
 
         has_started_positioning_ = false;
-        target_stop_distance_ = calculateTargetStopDistance();
       }
     }
 
@@ -86,9 +79,7 @@ void CenterStopKick::initialize()
   });
 
   addStateFunction(static_cast<int>(CenterStopKickState::KICK_EXECUTE), [this]() -> Status {
-    double current_target_distance = calculateTargetStopDistance();
-
-    calculated_kick_power_ = calculateRequiredKickPower(current_target_distance);
+    const double kick_power = calculateRequiredKickPower(calculateTargetStopDistance());
 
     if (!kick_executed_) {
       kick_start_time_ = rclcpp::Clock().now();
@@ -98,7 +89,7 @@ void CenterStopKick::initialize()
     command->setTargetPosition(world_model()->ball().pos)
       .lookAtBall()
       .setOmegaLimit(10.0)
-      .kickStraight(calculated_kick_power_)
+      .kickStraight(kick_power)
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
       .setMaxVelocity("CenterStopKickState::KICK_EXECUTE", 5.0);
