@@ -1,8 +1,4 @@
-"""SVG assembler for combining layers into complete SVG documents.
-
-このモジュールは、svg_viewer.jsのupdateSvgDisplay()ロジックをPythonに移植し、
-複数のレイヤーを単一の完全なSVGドキュメントに合成します。
-"""
+"""SVG assembler for combining layers into complete SVG documents."""
 
 import logging
 

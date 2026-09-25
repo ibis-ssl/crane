@@ -21,15 +21,6 @@ class CairoSvgRenderer(SvgRendererBase):
         dpi: int = 96,
         output_format: OutputFormat = OutputFormat.PNG,
     ):
-        """
-        初期化.
-
-        Args:
-            width: 出力PNG幅（ピクセル）
-            height: 出力PNG高さ（ピクセル）
-            dpi: 解像度（dots per inch）
-            output_format: 出力フォーマット（PNG only）
-        """
         super().__init__(width, height, dpi, output_format)
 
         if output_format == OutputFormat.RAW_RGBA:
@@ -50,15 +41,6 @@ class CairoSvgRenderer(SvgRendererBase):
             ) from e
 
     def render(self, svg_string: str) -> bytes:
-        """
-        SVG文字列をPNGバイト列に変換.
-
-        Args:
-            svg_string: SVGドキュメント文字列
-
-        Returns:
-            PNGバイト列
-        """
         try:
             png_bytes = self._cairosvg.svg2png(
                 bytestring=svg_string.encode("utf-8"),
@@ -73,12 +55,6 @@ class CairoSvgRenderer(SvgRendererBase):
 
     @classmethod
     def is_available(cls) -> bool:
-        """
-        cairosvgが使用可能かチェック.
-
-        Returns:
-            使用可能な場合True
-        """
         try:
             import cairosvg  # noqa: F401
 
@@ -88,10 +64,8 @@ class CairoSvgRenderer(SvgRendererBase):
 
     @classmethod
     def get_name(cls) -> str:
-        """レンダラー名を取得."""
         return "cairosvg"
 
     @classmethod
     def get_description(cls) -> str:
-        """レンダラーの説明を取得."""
         return "Pure Python SVG renderer (slow but widely compatible)"
