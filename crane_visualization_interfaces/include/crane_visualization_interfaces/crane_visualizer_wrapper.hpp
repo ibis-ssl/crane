@@ -264,7 +264,6 @@ struct SvgLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgLineBui
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     return std::format(
@@ -369,7 +368,6 @@ struct SvgTextBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgTextBui
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     if (view_box_position) {
@@ -441,7 +439,6 @@ struct SvgPolyLineBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPol
 
   auto getSvgString() const -> std::string override
   {
-    using SvgCoord::SCALE;
     using SvgCoord::toSvgX;
     using SvgCoord::toSvgY;
     std::ostringstream points_str;
@@ -494,7 +491,6 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using SvgCoord::SCALE;
       using SvgCoord::toSvgX;
       using SvgCoord::toSvgY;
       path += std::format(" M{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
@@ -505,7 +501,6 @@ struct SvgPathBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgPathBui
 
     auto lineTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
-      using SvgCoord::SCALE;
       using SvgCoord::toSvgX;
       using SvgCoord::toSvgY;
       path += std::format(" L{:.3f},{:.3f}", toSvgX(x), toSvgY(y));
