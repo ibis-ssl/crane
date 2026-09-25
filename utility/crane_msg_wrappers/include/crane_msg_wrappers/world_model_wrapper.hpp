@@ -32,7 +32,6 @@ namespace crane
 {
 using RobotList = std::vector<std::shared_ptr<RobotInfo>>;
 
-// Forward declaration for PImpl
 class BallOwnerCalculator;
 
 // ボール所有者計算の結果を表す構造体
@@ -359,7 +358,6 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
   [[nodiscard]] auto getSlackConfig() const -> const SlackTimeConfig & { return slack_config_; }
   auto setSlackConfig(const SlackTimeConfig & config) -> void { slack_config_ = config; }
 
-  // Getter methods for accessing member variables
   [[nodiscard]] auto ours() const -> const TeamInfo & { return ours_; }
   [[nodiscard]] auto theirs() const -> const TeamInfo & { return theirs_; }
   [[nodiscard]] auto ball() const -> const Ball & { return ball_; }

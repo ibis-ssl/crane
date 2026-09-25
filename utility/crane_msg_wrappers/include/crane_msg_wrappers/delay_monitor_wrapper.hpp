@@ -21,16 +21,13 @@ namespace crane
 {
 
 /**
- * @brief 遅延監視システム用ユーティリティクラス
- * RobotCommandのstate_factorsパターンを参考に、遅延チェックポイント情報を管理する
+ * @brief 遅延チェックポイント情報を管理するユーティリティクラス
  */
 class DelayMonitorWrapper
 {
 public:
   using DelayCheckpointMsg = crane_msgs::msg::DelayCheckpoint;
   using DelayCheckpointsMsg = crane_msgs::msg::DelayCheckpoints;
-
-  // ===== Unix時刻変換用ユーティリティ =====
 
   /**
    * @brief Vision遅延情報を文字列として記録するヘルパー関数
@@ -46,8 +43,6 @@ public:
     return std::format(
       "t_capture:{}s, t_sent:{}s, vision_proc:{}ms", t_capture, t_sent, vision_processing_ms);
   }
-
-  // ===== 新しいDelayCheckpointsメッセージ用API =====
 
   /**
    * @brief DelayCheckpointsメッセージにチェックポイントを追加する
@@ -77,7 +72,6 @@ public:
     DelayCheckpointsMsg & checkpoints, const std::string & name, int64_t timestamp_ns,
     const std::string & value = "")
   {
-    // 最初のチェックポイントの場合、基準タイムスタンプを設定
     if (checkpoints.checkpoints.empty()) {
       checkpoints.reference_timestamp_ns = timestamp_ns;
     }
@@ -87,7 +81,6 @@ public:
       checkpoints.checkpoints.begin(), checkpoints.checkpoints.end(),
       [&name](const auto & checkpoint) { return checkpoint.name == name; });
 
-    // 基準からの相対時間をマイクロ秒で計算
     auto relative_time_us =
       static_cast<int32_t>((timestamp_ns - checkpoints.reference_timestamp_ns) / 1000);
 

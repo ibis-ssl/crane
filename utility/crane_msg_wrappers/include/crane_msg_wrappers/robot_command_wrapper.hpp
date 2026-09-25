@@ -60,7 +60,6 @@ private:
   // キッカーモデル（停止距離指定キック用）
   std::shared_ptr<KickerModel> kicker_model;
 
-  // 現在のモード
   uint8_t current_mode;
 
   auto getID() const -> uint8_t { return latest_msg.robot_id; }
@@ -77,11 +76,9 @@ public:
     name(skill_name)
   {
     changeID(id);
-    // デフォルトでは位置モードを使用
     usePositionMode();
   }
 
-  // モード切替関数
   auto usePositionMode() -> RobotCommandWrapper &
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
@@ -106,14 +103,11 @@ public:
     return *this;
   }
 
-  // 現在のモードを返す
   auto getCurrentMode() const -> uint8_t { return current_mode; }
 
   auto getRobot() const -> std::shared_ptr<RobotInfo> { return robot; }
 
   auto getWorldModel() const -> WorldModelWrapper::SharedPtr { return world_model; }
-
-  // ===== 位置操作関数 =====
 
   // ===== 共通操作関数 =====
   auto changeID(uint8_t id) -> RobotCommandWrapper &
@@ -245,7 +239,6 @@ public:
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
         return setVelocityNorm(0.);
       default:
-        // 不明なモードの場合は位置モードで停止
         usePositionMode();
         return setTargetPosition(robot->pose.pos, 0.001).setOmegaLimit(0.);
     }
@@ -407,12 +400,6 @@ public:
     return *this;
   }
 
-  // auto setLatencyMs(double latency_ms) -> RobotCommandWrapper &
-  // {
-  //   latest_msg.latency_ms = latency_ms;
-  //   return *this;
-  // }
-
   auto lookAt(Point pos, double tolerance = 0.0) -> RobotCommandWrapper &
   {
     return setTargetTheta(getAngle(pos - robot->pose.pos), tolerance);
@@ -447,7 +434,6 @@ public:
 
   auto setTargetPosition(double x, double y, double tolerance = 0.01) -> RobotCommandWrapper &
   {
-    // 必要に応じてモードを切り替え
     if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       usePositionMode();
     }
@@ -501,7 +487,6 @@ public:
 
   auto setVelocityNorm(double r) -> RobotCommandWrapper &
   {
-    // 必要に応じてモードを切り替え
     if (current_mode != crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
       usePolarVelocityMode();
     }
@@ -512,7 +497,6 @@ public:
 
   auto setVelocityAngle(double theta) -> RobotCommandWrapper &
   {
-    // 必要に応じてモードを切り替え
     if (current_mode != crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
       usePolarVelocityMode();
     }
