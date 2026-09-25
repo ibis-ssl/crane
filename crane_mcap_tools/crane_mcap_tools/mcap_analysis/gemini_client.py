@@ -72,7 +72,6 @@ class GeminiAnalysisClient:
             from google import genai
             from google.genai import types
 
-            self._genai = genai
             self._types = types
             self._client = genai.Client(api_key=self.api_key)
         except ImportError as e:
