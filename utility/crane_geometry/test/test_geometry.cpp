@@ -366,4 +366,33 @@ TEST(GeometryOperationsTest, GetIntersectionsCircleSegmentInvariants)
   }
 }
 
+// 線分全長を separated_num + 1 等分した内分点が、始点側から順に並ぶ
+TEST(GeometryOperationsTest, GetSeparatedPointsDividesWholeSegment)
+{
+  Segment segment{Point(1.0, -2.0), Point(7.0, 1.0)};
+  auto points = getSeparatedPoints(segment, 2);
+  ASSERT_EQ(points.size(), 2u);
+  EXPECT_NEAR(points[0].x(), 3.0, 1e-9);
+  EXPECT_NEAR(points[0].y(), -1.0, 1e-9);
+  EXPECT_NEAR(points[1].x(), 5.0, 1e-9);
+  EXPECT_NEAR(points[1].y(), 0.0, 1e-9);
+
+  // goalie と同じ 20 点: 先頭と末尾が端点から 1/21 の位置にある
+  Segment long_segment{Point(0.0, 0.0), Point(4.2, 0.0)};
+  auto many = getSeparatedPoints(long_segment, 20);
+  ASSERT_EQ(many.size(), 20u);
+  EXPECT_NEAR(many.front().x(), 0.2, 1e-9);
+  EXPECT_NEAR(many.back().x(), 4.0, 1e-9);
+  for (size_t i = 1; i < many.size(); ++i) {
+    EXPECT_GT(many[i].x(), many[i - 1].x());
+  }
+}
+
+TEST(GeometryOperationsTest, GetSeparatedPointsEmptyForDegenerateInput)
+{
+  EXPECT_TRUE(getSeparatedPoints(Segment{Point(1.0, 1.0), Point(1.0, 1.0)}, 3).empty());
+  EXPECT_TRUE(getSeparatedPoints(Segment{Point(0.0, 0.0), Point(3.0, 0.0)}, 0).empty());
+  EXPECT_TRUE(getSeparatedPoints(Segment{Point(0.0, 0.0), Point(3.0, 0.0)}, -1).empty());
+}
+
 }  // namespace crane
