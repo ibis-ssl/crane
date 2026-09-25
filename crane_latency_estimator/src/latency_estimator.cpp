@@ -176,8 +176,6 @@ void LatencyEstimator::onEstimationTimer()
 
     auto [world_ms, world_corr] = estimateLagMs(
       buf.cmd, buf.obs_world, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-    buf.last_world_ms = world_ms;
-    buf.last_world_corr = world_corr;
     buf.ema_world_ms = applyEma(buf.ema_world_ms, world_ms);
 
     if (!std::isnan(world_ms)) {
@@ -194,8 +192,6 @@ void LatencyEstimator::onEstimationTimer()
     if (!buf.obs_fb.empty()) {
       auto [fb_ms, fb_corr] = estimateLagMs(
         buf.cmd, buf.obs_fb, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-      buf.last_fb_ms = fb_ms;
-      buf.last_fb_corr = fb_corr;
       buf.ema_fb_ms = applyEma(buf.ema_fb_ms, fb_ms);
 
       if (!std::isnan(fb_ms)) {
