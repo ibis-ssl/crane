@@ -53,17 +53,13 @@ auto VisualizationManager::drawFieldGeometry(
   double field_width = field.field_width() / 1000.0;    // mm to m
   double field_height = field.field_length() / 1000.0;  // mm to m
 
-  // フィールドラインの描画（外周）
   geometry_builder->drawFieldRect(
     Point(-field_height / 2, -field_width / 2), Point(field_height / 2, field_width / 2));
 
-  // センターライン
   geometry_builder->drawFieldLine(Point(0, -field_width / 2), Point(0, field_width / 2));
 
-  // センターサークル
   geometry_builder->drawCircle(Point(0, 0), 0.5, "white", 10);
 
-  // ゴールエリアとペナルティエリアの描画
   if (field.has_goal_width() && field.has_goal_depth()) {
     double goal_width = field.goal_width() / 1000.0;
     double goal_depth = field.goal_depth() / 1000.0;
@@ -78,7 +74,6 @@ auto VisualizationManager::drawFieldGeometry(
       Point(field_height / 2, 0), goal_width, goal_depth, right_goal_color);  // 右ゴール
   }
 
-  // ペナルティエリアの描画
   for (const auto & line : field.field_lines()) {
     if (
       line.name() == "LeftPenaltyStretch" || line.name() == "RightPenaltyStretch" ||
@@ -106,7 +101,6 @@ auto VisualizationManager::drawFieldGeometry(
 auto VisualizationManager::drawVisionDetections(
   const robocup_ssl::SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
 {
-  // ロボット検出の描画（青チーム）
   for (const auto & robot : detection.robots_blue()) {
     Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
@@ -119,7 +113,6 @@ auto VisualizationManager::drawVisionDetections(
     }
   }
 
-  // ロボット検出の描画（黄チーム）
   for (const auto & robot : detection.robots_yellow()) {
     Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
     double theta = robot.orientation();
@@ -144,7 +137,6 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   tracked_builder->drawStyledCircle(ball.pos, ball_radius, "orange", 1.0, "orange", 1.0, 5);
   // ベースの円（オレンジ枠 + 薄い塗り）
   tracked_builder->drawStyledCircle(ball.pos, 0.5, "orange", 0.15, "orange", 1.0, 5);
-  // 回転するスコープ飾り（クロスヘア）
 
   if (ball.detected) {
     const double t = node_.now().seconds();
@@ -171,8 +163,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       add_tick(ang, 0.45, 0.55, "orange", 10, 0.9);
     }
   }
-  // 速度ベクトル
-  if (ball.vel.norm() > 0.1) {                  // 0.1 m/s 以上で表示
+  if (ball.vel.norm() > 0.1) {
     Point vel_end = ball.pos + ball.vel * 0.5;  // 0.5秒後の位置
     tracked_builder->line()
       .start(ball.pos.x(), ball.pos.y())
@@ -250,11 +241,9 @@ auto VisualizationManager::drawRefereeInfo(
   const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
   const std::string & command_text) -> void
 {
-  // レフェリー状態の表示: 文字列は PlaySituation の string 化を使用（フォールバックは行わない）
   std::string command_name =
     command_text.empty() ? ("COMMAND_" + std::to_string(msg.command.value)) : command_text;
 
-  // レフェリー情報をフィールド上部に表示
   referee_builder->text()
     .text("Referee: " + command_name)
     .position(-field_width / 2, field_height / 2 + 0.5)

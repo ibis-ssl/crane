@@ -65,7 +65,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   // 自動/world_modelサブスクライブはOFF
   wrapper_ = std::make_shared<WorldModelWrapper>(*this, false);
 
-  // slack時間計算設定をWorldModelWrapperに設定（wrapper_初期化後）
   auto slack_config = SlackTimeConfig::fromNode(*this);
   wrapper_->setSlackConfig(slack_config);
 
