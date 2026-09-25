@@ -33,7 +33,6 @@ namespace crane
 {
 namespace asio = boost::asio;
 
-// SO_REUSEPORTソケットオプションの定義
 typedef asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 
 // io_context / work_guard / io_thread の管理をまとめたヘルパー構造体

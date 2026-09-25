@@ -17,9 +17,6 @@ namespace crane
 /**
  * @brief diagnostic_updater::Updater のライフサイクルを管理するヘルパークラス
  *
- * 各ノードに散在していた Updater 初期化パターン（setHardwareID + add）を
- * コンストラクタ1行に集約する。DiagnosedPublisher と同じコンポジション哲学。
- *
  * 使用例:
  * @code
  * // ヘッダ
@@ -35,7 +32,7 @@ namespace crane
 class DiagnosticHelper
 {
 public:
-  /// メンバ関数ポインタ版（既存パターン互換）
+  /// メンバ関数ポインタ版
   template <typename NodePtrT, typename T>
   DiagnosticHelper(
     NodePtrT node, const std::string & hardware_id, const std::string & task_name, T * obj,
