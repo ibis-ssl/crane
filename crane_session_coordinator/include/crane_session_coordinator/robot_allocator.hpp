@@ -26,9 +26,6 @@
 namespace crane
 {
 
-/**
- * @brief Sessionのロボット要求情報
- */
 struct SessionRequirement
 {
   std::string name;
@@ -50,9 +47,6 @@ struct SessionRequirement
   }
 };
 
-/**
- * @brief ロボットをプランナーに割り当てる管理クラス
- */
 class RobotAllocator
 {
 public:
@@ -60,50 +54,19 @@ public:
     std::shared_ptr<ConfigurationManager> config_manager,
     std::shared_ptr<SessionRegistry> session_registry, rclcpp::Logger logger);
 
-  /**
-   * @brief セッション名と利用可能ロボットから割当を実行
-   * @param session_name セッション名
-   * @param selectable_robot_ids 選択可能なロボットID
-   * @param world_model WorldModelの参照
-   * @param node ROSノードの参照
-   * @return ロボット選択結果
-   */
   auto allocate(
     const std::string & session_name, std::vector<uint8_t> selectable_robot_ids,
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
     const crane_msgs::msg::PlaySituation & current_play_situation)
     -> crane_msgs::msg::RobotSelectResults;
 
-  /**
-   * @brief ロボット変動を検出
-   * @param observed_robot_ids 観測されたロボットID
-   * @return ロボット変動があればtrue
-   */
   auto detectRobotChange(const std::vector<uint8_t> & observed_robot_ids) const -> bool;
 
-  /**
-   * @brief 現在割り当て済みのロボットIDを取得
-   */
   auto getAssignedRobotIds() const -> std::vector<uint8_t>;
 
-  /**
-   * @brief 割当状況のログ文字列を生成
-   */
   auto buildAssignmentLog() const -> std::string;
 
-  /**
-   * @brief 前回と変わっていればログ出力
-   */
   auto logAssignmentIfChanged(const std::string & current_assignment) -> void;
-
-  /**
-   * @brief コスト設定を取得/設定
-   */
-  void setAllocationCostConfig(const AllocationCostConfig & config)
-  {
-    allocation_cost_config_ = config;
-  }
-  const AllocationCostConfig & getAllocationCostConfig() const { return allocation_cost_config_; }
 
 private:
   auto allocateRobotsGreedy(
@@ -116,7 +79,6 @@ private:
   std::shared_ptr<SessionRegistry> session_registry_;
   rclcpp::Logger logger_;
 
-  std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
   std::string prev_assignment_log_;
 
   /// セッション名 -> 前フレームの割当順序。

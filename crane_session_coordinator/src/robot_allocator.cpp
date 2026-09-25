@@ -138,11 +138,8 @@ auto RobotAllocator::allocate(
         session_registry_->addPlanner(session);
       }
 
-      // AllocationStateを更新（ターゲット位置は現時点では不明なのでロボット位置を使用）
       for (auto id : robot_ids) {
-        auto robot = world_model->getOurRobot(id);
-        allocation_state_.updateAssignment(id, allocated_name, robot->pose.pos);
-        prev_robot_roles_.insert_or_assign(id, RobotRole{allocated_name, ""});
+        allocation_state_.updateAssignment(id, allocated_name);
       }
 
       // 次フレームの順序安定化のために割当順序を保存する

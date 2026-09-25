@@ -49,12 +49,6 @@ auto ConfigurationManager::getSessionCapacitiesForSituation(
   return std::nullopt;
 }
 
-auto ConfigurationManager::getEventMap() const
-  -> const std::unordered_map<std::string, std::string> &
-{
-  return event_map_;
-}
-
 auto ConfigurationManager::updateEventMapping(
   const std::string & event_name, const std::string & situation_name) -> void
 {
