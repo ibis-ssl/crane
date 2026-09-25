@@ -35,17 +35,6 @@ struct AreaWithInfo
   Box box;
 };
 
-template <typename K, typename V>
-V getOr(const std::unordered_map<K, V> & map, const K & key, const V & value)
-{
-  auto it = map.find(key);
-  if (it != map.end()) {
-    return it->second;
-  } else {
-    return value;
-  }
-}
-
 class SimplePlacerSession : public SessionBase
 {
 private:
@@ -256,21 +245,6 @@ public:
         .build();
     }
     return {SessionBase::Status::RUNNING, robot_commands};
-  }
-
-  auto getAreaPoints(const std::vector<AreaWithInfo> & areas, const std::size_t size)
-    -> std::vector<Point>
-  {
-    std::vector<Point> area_points;
-    for (const auto & area : areas) {
-      Point p;
-      bg::centroid(area.box, p);
-      area_points.push_back(p);
-      if (area_points.size() >= size) {
-        break;
-      }
-    }
-    return area_points;
   }
 
   auto getRobotSuitabilityFunc() const
