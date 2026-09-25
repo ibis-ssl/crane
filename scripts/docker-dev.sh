@@ -175,12 +175,6 @@ if [[ $MINIMAL == "true" ]] && [[ $COMPOSE_COMMAND == "up" ]]; then
     fi
 fi
 
-case "$COMPOSE_COMMAND" in
-build | up | create)
-    "$REPO_ROOT/docker/dev/ball-calibration/scripts/sync_proto.sh"
-    ;;
-esac
-
 if [[ $MODE == "sim" ]]; then
     # シミュレーション環境(status-board有効)
     docker compose -f "$COMPOSE_FILE" --profile sim-erforce "${DOCKER_ARGS[@]}"

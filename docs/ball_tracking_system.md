@@ -16,11 +16,9 @@ SSL-VisionおよびSSL-Vision-Tracker（または互換外部トラッカー）�
 ## 物理モデル規約
 
 - **状態規約**: `STOPPED`、`ROLLING`、`FLYING` の判定条件と物理パラメータは [`BallPhysicsModel`](https://github.com/ibis-ssl/crane/blob/develop/utility/crane_physics/include/crane_physics/ball_physics_model.hpp) および設定ファイルを正本とする。
-- パラメータ調整は [ボール・キッカーの校正](./ball_model_calibration_guide.md) の手順に従うこと。
 
 ## 実装リファレンス
 
 - 世界モデル配信ノード: [world_model_publisher.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_world_model_publisher/src/world_model_publisher.cpp)
 - ボール物理モデル: [ball_info.hpp](https://github.com/ibis-ssl/crane/blob/develop/utility/crane_physics/include/crane_physics/ball_info.hpp)
 - クライアントAPI: [WorldModelWrapper](./world_model_wrapper.md)
-- キャリブレーション手順: [ボール・キッカーの校正](./ball_model_calibration_guide.md)

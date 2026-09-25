@@ -1,9 +1,0 @@
-fastapi
-uvicorn[standard]
-numpy
-pyyaml
-python-multipart
-protobuf>=4.21,<6
-scipy
-scikit-learn
-pytest

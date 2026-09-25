@@ -7,12 +7,10 @@ SSL-VisionおよびSSL-Vision-TrackerからのUDPパケットを受信・正規�
 ## 固有の制約
 
 - ボールは外部トラッカー（`TrackedFrame`）を最優先ソースとし、未検出時にVision生データで補完する。ロボット検出の経路は実装を参照すること。
-- ボール物理モデルのキャリブレーション手順はトピックガイドを参照すること。
 
 ## トピックガイド
 
 - [ボールトラッキングシステム設計書](../docs/ball_tracking_system.md)
-- [ボール・キッカーの校正](../docs/ball_model_calibration_guide.md)
 
 ## リンク
 
