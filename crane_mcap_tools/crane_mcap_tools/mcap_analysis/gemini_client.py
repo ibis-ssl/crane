@@ -233,15 +233,14 @@ class GeminiAnalysisClient:
         self,
         items: list,
         analyze_fn: Callable[..., AnalysisResult],
-        total: int,
     ) -> list[AnalysisResult]:
         """バッチ処理の共通ループ（レート制限付き）."""
         results: list[AnalysisResult] = []
         for i, item in enumerate(items):
-            logger.info(f"Analyzing annotation {i + 1}/{total}...")
+            logger.info(f"Analyzing annotation {i + 1}/{len(items)}...")
             result = analyze_fn(*item)
             results.append(result)
-            if i < total - 1:
+            if i < len(items) - 1:
                 time.sleep(self.rate_limit_delay)
         return results
 
@@ -266,4 +265,4 @@ class GeminiAnalysisClient:
             (annotation, prompt, system_instruction, max_tool_calls)
             for annotation, (prompt, system_instruction) in zip(annotations, prompts)
         ]
-        return self._run_batch(items, self.analyze_annotation_with_tools, len(items))
+        return self._run_batch(items, self.analyze_annotation_with_tools)
