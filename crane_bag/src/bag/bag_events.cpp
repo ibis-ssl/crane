@@ -47,8 +47,6 @@ enum class GameEventType : int32_t {
 
 enum class Team : int32_t { UNKNOWN = 0, YELLOW = 1, BLUE = 2 };
 
-// ─── 既存の実装（変更少）────────────────────────────────────────────────────────
-
 std::vector<Event> detect_play_transitions(const BagData & data)
 {
   std::vector<Event> events;

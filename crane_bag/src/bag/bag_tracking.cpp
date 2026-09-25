@@ -12,17 +12,14 @@ namespace crane::bag
 {
 
 std::vector<RobotState> track_robot(
-  const BagData & data, int robot_id, bool is_ours, double interval,
-  std::optional<std::pair<double, double>> time_range)
+  const BagData & data, int robot_id, bool is_ours, double interval)
 {
   std::vector<RobotState> result;
   int64_t bag_start = data.info.start_time_ns;
-  auto [filter_start, filter_end] = make_ns_range(bag_start, time_range);
   int64_t interval_ns = static_cast<int64_t>(interval * 1e9);
   int64_t last_ns = 0;
 
   for (const auto & tm : data.world_models) {
-    if (tm.timestamp_ns < filter_start || tm.timestamp_ns > filter_end) continue;
     if (tm.timestamp_ns - last_ns < interval_ns) continue;
     last_ns = tm.timestamp_ns;  // ロボット有無に関わらずインターバルを進める
 
@@ -54,17 +51,14 @@ std::vector<RobotState> track_robot(
   return result;
 }
 
-std::vector<BallState> track_ball(
-  const BagData & data, double interval, std::optional<std::pair<double, double>> time_range)
+std::vector<BallState> track_ball(const BagData & data, double interval)
 {
   std::vector<BallState> result;
   int64_t bag_start = data.info.start_time_ns;
-  auto [filter_start, filter_end] = make_ns_range(bag_start, time_range);
   int64_t interval_ns = static_cast<int64_t>(interval * 1e9);
   int64_t last_ns = 0;
 
   for (const auto & tm : data.world_models) {
-    if (tm.timestamp_ns < filter_start || tm.timestamp_ns > filter_end) continue;
     if (tm.timestamp_ns - last_ns < interval_ns) continue;
 
     const auto & ball = tm.msg.ball_info;
