@@ -28,18 +28,11 @@ auto RobotData::updateErrorMap(
   const std::string & error_type, const std::string & message, int level,
   const rclcpp::Time & timestamp) -> bool
 {
-  // エラーが既存または変更された場合のみ更新
   bool is_new = !error_map.contains(error_type) || (error_map[error_type].level != level) ||
                 (error_map[error_type].message != message);
 
   if (is_new) {
-    error_map[error_type] = {
-      error_type,  // タイプ
-      message,     // メッセージ
-      level,       // レベル
-      timestamp    // タイムスタンプ
-    };
-    has_error_changed = true;
+    error_map[error_type] = {error_type, message, level, timestamp};
     return true;
   }
   return false;
@@ -49,7 +42,6 @@ auto RobotData::removeError(const std::string & error_type) -> bool
 {
   if (error_map.contains(error_type)) {
     error_map.erase(error_type);
-    has_error_changed = true;
     return true;
   }
   return false;
@@ -79,7 +71,6 @@ auto RobotData::initializeDiagnostics(
   // 診断名のプレフィックス（aggregatorでのグループ化用）
   std::string diagnostic_prefix = fmt::format("robot_{:02d}/", robot_id);
 
-  // 通信状態の診断
   updater->add(
     diagnostic_prefix + "communication",
     [this, node, world_model, sim_mode, latest_ping_msg,
@@ -93,7 +84,6 @@ auto RobotData::initializeDiagnostics(
         stat, *latest_ping_msg, *latest_feedback_msg, node->now(), sim_mode);
     });
 
-  // バッテリー状態の診断
   // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
   updater->add(
     diagnostic_prefix + "battery", [this, node, world_model, sim_mode, latest_feedback_msg](
@@ -106,7 +96,6 @@ auto RobotData::initializeDiagnostics(
       batteryDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
 
-  // ロボットエラーの診断
   // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
   updater->add(
     diagnostic_prefix + "robot_error", [this, node, world_model, sim_mode, latest_feedback_msg](
@@ -118,10 +107,6 @@ auto RobotData::initializeDiagnostics(
       }
       robotErrorDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
-
-  // 診断情報の直接パブリッシャーを作成（後方互換性のため維持）
-  direct_publisher = node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
-    fmt::format("/diagnostics/robot_{:02d}", robot_id), 10);
 }
 
 auto RobotData::communicationDiagnosticCallback(
@@ -184,22 +169,14 @@ auto RobotData::communicationDiagnosticCallback(
 
     stat.summary(level, message);
     stat.add("ping_ms", ping->ping_ms);
-
-    // エラーマップに登録または更新
-    if (level > 0) {
-      updateErrorMap("communication", message, level, now_time);
-    } else {
-      removeError("communication");
-    }
+    updateErrorMap("communication", message, level, now_time);
   } else {
-    // シミュレータ環境ではpingデータなしは正常
     if (sim_mode) {
       std::string message = "Simulation mode (no ping data)";
       int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
       stat.summary(level, message);
       removeError("communication");
     } else {
-      // 実機環境ではERROR
       std::string message = "No robot telemetry received";
       int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
       stat.summary(level, message);
@@ -235,14 +212,12 @@ auto RobotData::batteryDiagnosticCallback(
     stat.summary(level, message);
     stat.add("voltage", feedback->voltage[0]);
 
-    // エラーマップに登録または更新
     if (level > 0) {
       updateErrorMap("battery", message, level, now_time);
     } else {
       removeError("battery");
     }
   } else {
-    // シミュレータ環境ではfeedbackデータなしは正常
     if (sim_mode) {
       std::string message = "Simulation mode (no battery data)";
       int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
@@ -269,7 +244,6 @@ auto RobotData::robotErrorDiagnosticCallback(
 
   if (feedback != feedback_msg.feedback.end()) {
     if (feedback->error_id != 0 || feedback->error_info != 0) {
-      // エラー情報を人間が読める形式に変換して表示
       std::string error_str =
         utils::convertErrorDataToStr(feedback->error_id, feedback->error_info);
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, error_str);
@@ -279,7 +253,6 @@ auto RobotData::robotErrorDiagnosticCallback(
       stat.add("error_value", feedback->error_value);
       stat.add("error_description", error_str);
 
-      // エラーマップに登録
       updateErrorMap(
         "robot_error", error_str, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
     } else {
@@ -287,7 +260,6 @@ auto RobotData::robotErrorDiagnosticCallback(
       removeError("robot_error");
     }
   } else {
-    // シミュレータ環境ではfeedbackデータなしは正常
     if (sim_mode) {
       std::string message = "Simulation mode (no robot error data)";
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, message);
@@ -304,10 +276,8 @@ auto RobotData::robotErrorDiagnosticCallback(
 DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_node")
 {
   sim_mode_ = crane::get_or_declare_parameter(this, "sim_mode", true);
-  int max_robot_id =
-    crane::get_or_declare_parameter(this, "max_robot_id", 12);  // サポートする最大ロボットID
+  int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 12);
 
-  // 可視化用のCraneVisualizerBufferを初期化
   CraneVisualizerBuffer::activate(*this);
   visualizer_error = std::make_shared<VisualizerMessageBuilder>("receiver/diagnostic");
 
@@ -315,10 +285,8 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
   world_model = std::make_unique<WorldModelWrapper>(*this);
   world_model->addCallback([this]() { worldModelCallback(); });
 
-  // ロボットデータの初期化
   initializeRobots(max_robot_id);
 
-  // サブスクリプションの設定
   ping_subscription = create_subscription<crane_msgs::msg::PingStatusArray>(
     "/ping", 10,
     [this](const crane_msgs::msg::PingStatusArray & msg) { pingMessageCallback(msg); });
@@ -327,32 +295,25 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
     "/robot_feedback", 10,
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { feedbackMessageCallback(msg); });
 
-  // 診断情報更新タイマー
   timer = this->create_wall_timer(std::chrono::seconds(1), [this]() {
     for (auto & robot_data : robots_data) {
       if (robot_data->updater) {
         robot_data->updater->force_update();
-        robot_data->last_update_time = now();
       }
     }
   });
 
-  // 可視化用タイマー - より高頻度で更新
   visualization_timer =
     this->create_wall_timer(std::chrono::milliseconds(100), [this]() { visualizeRobotErrors(); });
 }
 
-// ロボットデータの初期化
 auto DiagnosticPublisherNode::initializeRobots(int max_robot_id) -> void
 {
-  // 最大ロボット数分の構造体を事前に準備
   for (int i = 0; i <= max_robot_id; ++i) {
-    // 初期状態では空のRobotDataを作成
     robots_data.emplace_back(std::make_shared<RobotData>(i));
     robots_data.back()->initializeDiagnostics(
       this, world_model.get(), sim_mode_, &latest_ping_msg, &latest_feedback_msg);
 
-    // ロボット位置の初期化
     robot_positions[i] = {0.0, 0.0, 0.0, false};
   }
 }
@@ -373,41 +334,34 @@ auto DiagnosticPublisherNode::worldModelCallback() -> void
 {
   auto available_robot_ids = world_model->ours().robotsWhere().available().getIds();
 
-  // ロボットの位置情報を更新
   for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
     robot_positions[robot->id] = {
       robot->pose.pos.x(), robot->pose.pos.y(), robot->pose.theta, true};
   }
 
-  // ロボットの状態を更新
   for (size_t id = 0; id < robots_data.size(); ++id) {
     auto & data = robots_data.at(id);
-    // 状態を更新
     data->state = ranges::contains(available_robot_ids, static_cast<int>(id))
                     ? RobotState::ACTIVE
                     : RobotState::INACTIVE;
   }
 }
 
-// ロボットエラーの可視化を行う関数
 auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
 {
   visualizer_error->clear();
 
-  // 現在のタイムスタンプ
   rclcpp::Time now = this->now();
   constexpr double ERROR_DISPLAY_TIMEOUT = 10.0;  // 10秒以上経過したエラーは表示しない
   constexpr double ERROR_MARKER_RADIUS = 0.15;    // ロボット周囲の円の半径
   constexpr double ERROR_TEXT_OFFSET = 0.15;      // エラーテキストの初期オフセット
   constexpr double ERROR_TEXT_INCREMENT = 0.08;   // 複数エラー時の増分
 
-  // 各ロボットのエラー情報を可視化
   for (const auto & robot_data : robots_data) {
     if (robot_data->state != RobotState::ACTIVE) {
-      continue;  // 非アクティブなロボットはスキップ
+      continue;
     }
 
-    // ロボットのエラー情報を処理
     double text_offset = 0.0;
 
     for (const auto & [error_type, error_info] : robot_data->error_map) {
@@ -416,23 +370,17 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
         continue;
       }
 
-      // 古いエラーは表示しない
       if (crane::isTimeout(error_info.timestamp, ERROR_DISPLAY_TIMEOUT, now)) {
         continue;
       }
 
-      // ロボットIDを取得
       uint8_t robot_id = robot_data->robot_id;
 
-      // ロボット位置が有効な場合のみ表示
       if (robot_positions.contains(robot_id) && robot_positions[robot_id].valid) {
-        // 最初のエラーでマーカー円を表示
         if (text_offset == 0.0) {
-          // エラーレベルに応じた色を設定
           std::string color = utils::getColorForErrorLevel(error_info.level);
           constexpr double opacity = 0.8;
 
-          // ロボット周囲に円形マーカーを表示
           visualizer_error->circle()
             .center(robot_positions[robot_id].x, robot_positions[robot_id].y)
             .radius(ERROR_MARKER_RADIUS)
@@ -442,7 +390,6 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
             .build();
         }
 
-        // エラーメッセージを表示
         std::string color = utils::getColorForErrorLevel(error_info.level);
 
         visualizer_error->drawCenteredLabel(
@@ -456,7 +403,6 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
     }
   }
 
-  // 可視化情報を送信
   visualizer_error->flush();
   CraneVisualizerBuffer::publish();
 }
