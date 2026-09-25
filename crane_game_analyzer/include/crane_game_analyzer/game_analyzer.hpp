@@ -54,15 +54,6 @@ struct BallPositionStamped
   rclcpp::Time stamp;
 };
 
-struct RobotPositionStamped
-{
-  uint8_t id;
-  bool is_ours;
-  Point position;
-  Point velocity;
-  rclcpp::Time stamp;
-};
-
 struct RobotCollisionInfo
 {
   RobotIdentifier attack_robot;
@@ -79,8 +70,6 @@ public:
 private:
   auto getRobotCollisionInfo() -> std::optional<RobotCollisionInfo>
   {
-    recordCurrentRobotStates();
-
     auto collision = detectCollision();
 
     if (collision) {
@@ -88,36 +77,6 @@ private:
     }
 
     return collision;
-  }
-
-  auto recordCurrentRobotStates() -> void
-  {
-    auto current_time = now();
-
-    for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
-      RobotPositionStamped record;
-      record.id = robot->id;
-      record.is_ours = true;
-      record.position = robot->pose.pos;
-      record.velocity = robot->vel.linear;
-      record.stamp = current_time;
-      robot_records_.push_front(record);
-    }
-
-    for (const auto & robot : world_model->theirs().robotsWhere().available().get()) {
-      RobotPositionStamped record;
-      record.id = robot->id;
-      record.is_ours = false;
-      record.position = robot->pose.pos;
-      record.velocity = robot->vel.linear;
-      record.stamp = current_time;
-      robot_records_.push_front(record);
-    }
-
-    auto time_threshold =
-      current_time - rclcpp::Duration::from_seconds(config.robot_collision.time_window * 2);
-    std::erase_if(
-      robot_records_, [&](const auto & record) { return record.stamp < time_threshold; });
   }
 
   auto detectCollision() -> std::optional<RobotCollisionInfo>
@@ -194,8 +153,6 @@ private:
   GameAnalyzerConfig config;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
-
-  std::deque<RobotPositionStamped> robot_records_;
 
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
 

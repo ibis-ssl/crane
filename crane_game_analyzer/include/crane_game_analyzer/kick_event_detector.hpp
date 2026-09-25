@@ -93,8 +93,6 @@ private:
 
   std::optional<KickOrigin> ongoing_kick_origin = std::nullopt;
 
-  std::deque<std::pair<KickOrigin, Point>> kick_history;
-
   static constexpr int QUEUE_SIZE = 5;
 
   double distance_threshold = 0.15;

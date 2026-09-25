@@ -101,7 +101,6 @@ auto KickEventDetector::update(
         }
       }
 
-      kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball().pos);
       ongoing_kick_origin = std::nullopt;
       ongoing_kick_trace_ = std::nullopt;
     }
