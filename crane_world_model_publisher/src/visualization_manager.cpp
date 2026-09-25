@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <range/v3/view/enumerate.hpp>
 
 namespace
 {
@@ -28,10 +27,8 @@ namespace crane
 VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 {
   geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/geometry");
-  vision_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/vision");
   tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/tracked");
   referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/referee");
-  trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/trajectory");
   placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/placement");
 
   crane::CraneVisualizerBuffer::activate(node_);
@@ -94,36 +91,6 @@ auto VisualizationManager::drawFieldGeometry(
   }
 
   geometry_builder->flush();
-}
-
-auto VisualizationManager::drawVisionDetections(
-  const robocup_ssl::SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
-{
-  for (const auto & robot : detection.robots_blue()) {
-    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
-    double theta = robot.orientation();
-
-    if (robot.has_robot_id()) {
-      vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "blue", 0.0, "blue", 1.0, 20, 50, "white", 0.0, 0.15);
-    } else {
-      vision_builder->drawRobot(pos, theta, "blue", 0.0, "blue", 1.0, 20);
-    }
-  }
-
-  for (const auto & robot : detection.robots_yellow()) {
-    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
-    double theta = robot.orientation();
-
-    if (robot.has_robot_id()) {
-      vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "yellow", 0.0, "yellow", 1.0, 20, 50, "black", 0.0, 0.15);
-    } else {
-      vision_builder->drawRobot(pos, theta, "yellow", 0.0, "yellow", 1.0, 20);
-    }
-  }
-
-  vision_builder->flush();
 }
 
 auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model)
@@ -276,64 +243,6 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
     placement_builder->clearBuffer();
     placement_builder->flush();
   }
-}
-
-auto VisualizationManager::drawTrajectoryHistory(
-  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
-  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
-  const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void
-{
-  static constexpr int SAMPLING_NUM = 4;
-
-  auto draw_team_history = [&](const auto & histories, const std::string & color) {
-    for (const auto & [robot_id, history] : histories | ranges::views::enumerate) {
-      if (
-        history.size() > SAMPLING_NUM + 1 &&
-        (history.front().available_vision || history.front().available_feedback ||
-         history.front().available_tracker)) {
-        for (int i = 0; i < 10; i++) {
-          int start = static_cast<int>((history.size() / 10.) * i);
-          int end = static_cast<int>((history.size() / 10.) * (i + 1));
-
-          std::vector<Point> points;
-          for (int index = start; index < end; index += SAMPLING_NUM) {
-            points.emplace_back(history.at(index).pose.x, history.at(index).pose.y);
-          }
-          if (i != 9) {
-            points.emplace_back(history.at(end).pose.x, history.at(end).pose.y);
-          }
-          trajectory_builder->drawPolyline(
-            points, color, 0.5 * start / static_cast<double>(history.size()), 15);
-        }
-      }
-    }
-  };
-
-  // 味方・敵の履歴描画（共通処理）
-  draw_team_history(friend_history, is_yellow ? "yellow" : "blue");
-  draw_team_history(enemy_history, is_yellow ? "blue" : "yellow");
-
-  // ボール軌跡描画
-  if (ball_info_history.size() > SAMPLING_NUM + 1) {
-    for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
-
-      std::vector<Point> points;
-      for (int index = start; index < end; index += SAMPLING_NUM) {
-        points.emplace_back(
-          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
-      }
-      if (i != 9) {
-        points.emplace_back(
-          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
-      }
-      trajectory_builder->drawPolyline(
-        points, "orange", start / static_cast<double>(ball_info_history.size()), 30);
-    }
-  }
-
-  trajectory_builder->flush();
 }
 
 }  // namespace crane
