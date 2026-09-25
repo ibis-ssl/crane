@@ -94,7 +94,6 @@ FormationSession::calculatePositionCommand(const std::vector<RobotIdentifier> & 
   auto robot_commands = assignRobotsToPoints(
     robots, formation_points, "formation_planner", world_model->getOurGoalCenter(),
     [this, target_theta](std::shared_ptr<PositionCommandWrapper> & command) {
-      // フォーメーション特有の固定角度を設定
       command->setTargetTheta(target_theta);
       command->setMaxVelocity("フォーメーションはゆっくり", 1.0);
       // フォーメーション座標がペナルティエリアの回避マージンと重なりうるためゴールエリア回避のみ無効化する。

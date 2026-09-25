@@ -78,11 +78,9 @@ TestSession::calculatePositionCommand(const std::vector<RobotIdentifier> & robot
   }
 
   auto & wp = waypoints.at(current_index);
-  // 毎フレームfactorsをクリア
   command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
   applyLegLimits(*command, wp);
   command->setTargetPosition(wp.pos);
-  // 角度が設定されている場合は角度も設定
   if (wp.theta.has_value()) {
     command->setTargetTheta(wp.theta.value());
   }
