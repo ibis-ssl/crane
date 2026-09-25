@@ -142,7 +142,6 @@ auto RobotAllocator::allocate(
       for (auto id : robot_ids) {
         auto robot = world_model->getOurRobot(id);
         allocation_state_.updateAssignment(id, allocated_name, robot->pose.pos);
-        prev_robot_roles_.insert_or_assign(id, RobotRole{allocated_name, ""});
       }
 
       // 次フレームの順序安定化のために割当順序を保存する

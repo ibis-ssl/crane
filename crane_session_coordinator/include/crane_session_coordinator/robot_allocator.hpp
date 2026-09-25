@@ -116,7 +116,6 @@ private:
   std::shared_ptr<SessionRegistry> session_registry_;
   rclcpp::Logger logger_;
 
-  std::unordered_map<uint8_t, RobotRole> prev_robot_roles_;
   std::string prev_assignment_log_;
 
   /// セッション名 -> 前フレームの割当順序。
