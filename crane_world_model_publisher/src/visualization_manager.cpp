@@ -9,8 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <range/v3/view/enumerate.hpp>
-#include <ranges>
-#include <sstream>
 
 namespace
 {

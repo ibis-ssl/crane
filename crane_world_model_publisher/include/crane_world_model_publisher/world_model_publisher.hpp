@@ -46,14 +46,10 @@ extern "C" {
 }
 #endif
 
-#include <array>
 #include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_comm/diagnostic_helper.hpp>
-#include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <deque>
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>

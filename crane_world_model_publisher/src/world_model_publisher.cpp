@@ -10,8 +10,6 @@
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
-#include <deque>
-#include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <sstream>
 
 namespace crane
@@ -37,8 +35,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     &WorldModelPublisherComponent::updateDiagnostics),
   pub_world_model(this, "/world_model", 1, 50., 70.)
 {
-  using std::chrono_literals::operator""ms;
-
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
   data_provider_->setVisualizationCallbacks(

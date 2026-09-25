@@ -72,11 +72,9 @@ private:
    * @brief キャリブレーションサービスのコールバック
    */
   void calibrateCallback(
-    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
-    (void)request;  // 未使用パラメータの警告回避
-
     RCLCPP_INFO(this->get_logger(), "キャリブレーションサービスが呼び出されました");
 
     try {
