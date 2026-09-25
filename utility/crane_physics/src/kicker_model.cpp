@@ -173,9 +173,7 @@ auto KickerModel::predictStopDistance(double kick_power) const -> double
     throw std::runtime_error("BallPhysicsModelが設定されていません");
   }
 
-  double clamped_power = clampKickPower(kick_power);
-
-  double initial_speed = predictStraightKickSpeed(clamped_power);
+  double initial_speed = predictStraightKickSpeed(kick_power);
 
   Point initial_velocity(initial_speed, 0.0);  // X方向にキック
   return ball_physics_model_->getMaxDistance(
