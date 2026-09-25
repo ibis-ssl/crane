@@ -21,7 +21,6 @@ void BallCalibrationDataCollector::initialize()
 {
   last_ball_motion_time_ = rclcpp::Clock().now();
 
-  // ボール回避用状態の初期化
   has_started_positioning_ = false;
   last_ball_position_ = Point::Zero();
 
@@ -43,22 +42,20 @@ void BallCalibrationDataCollector::initialize()
       // ボール位置変化検出（テレポート対応）
       if (has_started_positioning_) {
         double ball_position_change = (current_ball_pos - last_ball_position_).norm();
-        const double teleport_threshold = 0.2;  // 0.2m以上の変化でテレポートと判定
+        const double teleport_threshold = 0.2;
 
         if (ball_position_change > teleport_threshold) {
           RCLCPP_WARN(
             rclcpp::get_logger("BallCalibrationDataCollector"),
             "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
 
-          // 位置取り状態をリセットして再計算を強制
           has_started_positioning_ = false;
         }
       }
 
-      // 初回実行時または位置変化検出時：内部状態を初期化
       if (not has_started_positioning_) {
         has_started_positioning_ = true;
-        last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
+        last_ball_position_ = current_ball_pos;
       }
 
       // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
@@ -104,10 +101,9 @@ void BallCalibrationDataCollector::initialize()
       }
 
       bool should_transition = crane::isTimeout(last_ball_motion_time_, stop_time_threshold_, now);
-      // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
-        last_ball_position_ = Point::Zero();  // ボール位置記録もリセット
+        last_ball_position_ = Point::Zero();
       }
 
       return should_transition;
@@ -130,7 +126,6 @@ void BallCalibrationDataCollector::initialize()
     static_cast<int>(BallCalibrationState::KICK_EXECUTE),
     static_cast<int>(BallCalibrationState::WAIT_BALL_STOP), [this]() -> bool {
       if (world_model()->ball().vel.norm() > ball_motion_velocity_threshold_) {
-        // キック完了、次のパワーインデックスに進む
         advanceKickPowerIndex();
         last_ball_motion_time_ = rclcpp::Clock().now();
 
