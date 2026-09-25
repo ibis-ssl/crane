@@ -49,8 +49,7 @@ struct FactorTransition
 };
 
 std::vector<ControlSnapshot> analyze_control(
-  const BagData & data, int robot_id, double interval = 0.1,
-  std::optional<std::pair<double, double>> time_range = std::nullopt);
+  const BagData & data, int robot_id, double interval = 0.1);
 
 std::vector<FactorTransition> detect_factor_transitions(
   const BagData & data, std::optional<int> robot_id = std::nullopt);
