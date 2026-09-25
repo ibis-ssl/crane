@@ -97,21 +97,35 @@ LatencyEstimator::LagEstimate LatencyEstimator::estimateLagMs(
   double best_corr = -2.0;
   int best_lag = 0;
   for (int lag = -L; lag <= L; ++lag) {
-    double corr = 0.0;
-    int count = 0;
-    for (int i = 0; i < N; ++i) {
-      int j = i + lag;
-      if (j >= 0 && j < N) {
-        corr += c[i] * o[j];
-        count++;
-      }
+    // 重なり区間だけの平均・標準偏差で正規化する（ピアソン相関）。全区間の c_std・o_std で割ると、
+    // 端の点が抜けるずれで相関が 1 を超え、ピークがずれる
+    const int i_begin = std::max(0, -lag);
+    const int i_end = std::min(N, N - lag);
+    const int count = i_end - i_begin;
+    if (count < 2) continue;
+
+    double c_sum = 0.0, o_sum = 0.0;
+    for (int i = i_begin; i < i_end; ++i) {
+      c_sum += c[i];
+      o_sum += o[i + lag];
     }
-    if (count > 0) {
-      corr /= static_cast<double>(count) * c_std * o_std;
-      if (corr > best_corr) {
-        best_corr = corr;
-        best_lag = lag;
-      }
+    const double c_overlap_mean = c_sum / count;
+    const double o_overlap_mean = o_sum / count;
+
+    double cov = 0.0, c_var = 0.0, o_var = 0.0;
+    for (int i = i_begin; i < i_end; ++i) {
+      const double dc = c[i] - c_overlap_mean;
+      const double d_o = o[i + lag] - o_overlap_mean;
+      cov += dc * d_o;
+      c_var += dc * dc;
+      o_var += d_o * d_o;
+    }
+    if (c_var <= 0.0 || o_var <= 0.0) continue;
+
+    const double corr = cov / std::sqrt(c_var * o_var);
+    if (corr > best_corr) {
+      best_corr = corr;
+      best_lag = lag;
     }
   }
 

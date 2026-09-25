@@ -46,15 +46,14 @@ LatencyEstimator::LagEstimate estimate(
 }
 }  // namespace
 
-// 相関を重なりの点数で割るので、端の点が抜けるずれでは相関が 1 を超えることがあり、
-// ピークが 1 刻み（10 ms）ずれうる。許容差はその分とる
 TEST(EstimateLagMs, ObservationDelayedBy100msGivesPositive100ms)
 {
   const auto cmd = sample(chirp, 500);
   const auto obs = sample([](double t) { return chirp(t - 0.1); }, 500);
   const auto r = estimate(cmd, obs);
-  EXPECT_NEAR(r.lag_ms, 100.0, 10.0);
+  EXPECT_DOUBLE_EQ(r.lag_ms, 100.0);
   EXPECT_GT(r.correlation, 0.99);
+  EXPECT_LE(r.correlation, 1.0 + 1e-12);
 }
 
 TEST(EstimateLagMs, ReturnsStddevOfResampledCommand)
@@ -78,8 +77,9 @@ TEST(EstimateLagMs, IdenticalSignalsGiveZeroLag)
 {
   const auto cmd = sample(chirp, 500);
   const auto r = estimate(cmd, cmd);
-  EXPECT_NEAR(r.lag_ms, 0.0, 10.0);
+  EXPECT_DOUBLE_EQ(r.lag_ms, 0.0);
   EXPECT_GT(r.correlation, 0.99);
+  EXPECT_LE(r.correlation, 1.0 + 1e-12);
 }
 
 TEST(EstimateLagMs, FewerThan10SamplesIsNotEstimated)
@@ -117,7 +117,7 @@ TEST(EstimateLagMs, CorrelationBelowThresholdReturnsNaNLagButKeepsCorrelation)
 {
   const auto cmd = sample(chirp, 500);
   const auto obs = sample([](double t) { return chirp(t - 0.1); }, 500);
-  // 相関は 1 をわずかに超えることはあっても 1.5 には届かないので、閾値 1.5 は必ず下回る
+  // 相関は 1 を超えないので、閾値 1.5 は必ず下回る
   const auto r = estimate(cmd, obs, 1.5);
   EXPECT_TRUE(std::isnan(r.lag_ms));
   EXPECT_GT(r.correlation, 0.99);
