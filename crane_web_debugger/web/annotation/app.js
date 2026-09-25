@@ -16,10 +16,8 @@ class CraneAnnotationApp {
     this.tempRobotSelection = { team: 'ours', ids: [] };
     this.tempPosition = null;
 
-    // モーダルのプリセット情報
     this.modalPreset = { category: null, label: null };
 
-    // PWAインストール
     this.deferredPrompt = null;
 
     this.init();
@@ -28,14 +26,12 @@ class CraneAnnotationApp {
   async init() {
     console.log('Crane Annotation Tool initializing...');
 
-    // PWA登録
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
         .then(() => console.log('Service Worker registered'))
         .catch(err => console.error('Service Worker registration failed:', err));
     }
 
-    // PWAインストールプロンプト
     this.setupPWAInstall();
 
     this.setupSpeechRecognition();
@@ -49,16 +45,13 @@ class CraneAnnotationApp {
   }
 
   setupPWAInstall() {
-    // beforeinstallpromptイベントをキャプチャ
     window.addEventListener('beforeinstallprompt', (e) => {
       console.log('PWA install prompt available');
       e.preventDefault();
       this.deferredPrompt = e;
-      // インストールボタンを表示
       document.getElementById('install-btn').classList.remove('hidden');
     });
 
-    // アプリがインストールされたらボタンを非表示
     window.addEventListener('appinstalled', () => {
       console.log('PWA installed');
       this.deferredPrompt = null;
@@ -66,7 +59,6 @@ class CraneAnnotationApp {
     });
   }
 
-  // WebSocket接続
   async connect() {
     const host = window.location.hostname || 'localhost';
     const port = 8091;
@@ -98,7 +90,6 @@ class CraneAnnotationApp {
         console.log('WebSocket disconnected');
         this.isConnected = false;
         this.updateConnectionStatus(false);
-        // 3秒後に再接続
         // 失敗は onerror で記録済み。次の onclose がまた再接続を仕掛ける
         setTimeout(() => this.connect().catch(() => {}), 3000);
       };
@@ -110,7 +101,6 @@ class CraneAnnotationApp {
     });
   }
 
-  // メッセージハンドラ
   handleMessage(data) {
     switch (data.type) {
       case 'time_sync_response':
@@ -132,22 +122,18 @@ class CraneAnnotationApp {
   }
 
   updateGameInfo(data) {
-    // プレイ状況
     const playSituation = data.play_situation || '---';
     document.getElementById('play-situation').textContent = playSituation;
 
-    // スコア
     const ourScore = data.our_score || 0;
     const theirScore = data.their_score || 0;
     document.getElementById('score').textContent = `${ourScore} - ${theirScore}`;
 
-    // 試合時間
     const gameTime = data.game_time || 0;
     const minutes = Math.floor(gameTime / 60);
     const seconds = Math.floor(gameTime % 60);
     document.getElementById('game-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-    // ゲームステージ
     const gameStage = data.game_stage || '---';
     document.getElementById('game-stage').textContent = gameStage;
 
@@ -164,7 +150,6 @@ class CraneAnnotationApp {
     }
   }
 
-  // 時刻同期
   requestTimeSync() {
     if (!this.isConnected) return;
 
@@ -181,16 +166,13 @@ class CraneAnnotationApp {
     const T2 = data.server_receive_time_ms;
     const T3 = data.server_send_time_ms;
 
-    // RTT計算
     const rtt = (T4 - T1) - (T3 - T2);
-    // オフセット計算
     this.timeOffset = Math.round(((T2 - T1) + (T3 - T4)) / 2);
 
     this.updateTimeSyncStatus(this.timeOffset, rtt);
   }
 
   startTimeSyncLoop() {
-    // 10秒ごとに時刻同期
     setInterval(() => this.requestTimeSync(), 10000);
   }
 
@@ -212,7 +194,6 @@ class CraneAnnotationApp {
     status.textContent = `同期: ${offset >= 0 ? '+' : ''}${offset}ms (RTT:${Math.round(rtt)}ms)`;
   }
 
-  // アノテーション送信
   sendAnnotation(category, label, description = '', options = {}) {
     if (!this.isConnected) {
       alert('サーバーに接続されていません');
@@ -223,10 +204,8 @@ class CraneAnnotationApp {
     let eventTime;
 
     if (this.rewindLocked && this.rewindSeconds < 0) {
-      // リワインドがロックされている場合は過去の時刻
       eventTime = now + (this.rewindSeconds * 1000) + this.timeOffset;
     } else {
-      // リアルタイム
       eventTime = now + this.timeOffset;
     }
 
@@ -248,14 +227,12 @@ class CraneAnnotationApp {
     this.vibrate();
   }
 
-  // 履歴追加
   addToHistory(annotation) {
     this.history.unshift({
       ...annotation,
       timestamp: new Date()
     });
 
-    // 最大50件まで保持
     if (this.history.length > 50) {
       this.history.pop();
     }
@@ -282,14 +259,12 @@ class CraneAnnotationApp {
     });
   }
 
-  // 触覚フィードバック
   vibrate() {
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
     }
   }
 
-  // 音声認識セットアップ
   setupSpeechRecognition() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -353,9 +328,7 @@ class CraneAnnotationApp {
     }
   }
 
-  // イベントリスナーセットアップ
   setupEventListeners() {
-    // クイックボタン（モーダルを開く）
     document.querySelectorAll('.annotation-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const category = btn.dataset.category;
@@ -364,20 +337,17 @@ class CraneAnnotationApp {
       });
     });
 
-    // リワインドスライダー
     const slider = document.getElementById('rewind-slider');
     slider.addEventListener('input', (e) => {
       this.rewindSeconds = parseInt(e.target.value);
       this.updateRewindDisplay();
     });
 
-    // リワインドロックボタン
     document.getElementById('rewind-lock').addEventListener('click', () => {
       this.rewindLocked = !this.rewindLocked;
       this.updateRewindLockDisplay();
     });
 
-    // モーダル
     document.getElementById('modal-overlay').addEventListener('click', () => {
       this.hideDetailModal();
     });
@@ -390,12 +360,10 @@ class CraneAnnotationApp {
       this.submitDetailAnnotation();
     });
 
-    // 音声入力
     document.getElementById('voice-input-btn').addEventListener('click', () => {
       this.startVoiceInput();
     });
 
-    // 履歴トグル
     document.getElementById('history-toggle').addEventListener('click', () => {
       this.toggleHistory();
     });
@@ -404,7 +372,6 @@ class CraneAnnotationApp {
       this.hideHistory();
     });
 
-    // モーダル内のコンテキスト選択
     document.getElementById('modal-robot-select-btn').addEventListener('click', () => {
       this.showRobotModal();
     });
@@ -413,7 +380,6 @@ class CraneAnnotationApp {
       this.showFieldModal();
     });
 
-    // ロボット選択モーダル
     document.getElementById('robot-modal-overlay').addEventListener('click', () => {
       this.hideRobotModal();
     });
@@ -434,7 +400,6 @@ class CraneAnnotationApp {
       this.selectTeam('theirs');
     });
 
-    // フィールドマップモーダル
     document.getElementById('field-modal-overlay').addEventListener('click', () => {
       this.hideFieldModal();
     });
@@ -456,12 +421,10 @@ class CraneAnnotationApp {
       this.handleFieldClick(e.touches[0]);
     });
 
-    // PWAインストールボタン
     document.getElementById('install-btn').addEventListener('click', () => {
       this.installPWA();
     });
 
-    // ロボットIDグリッドの初期化
     this.initRobotIdGrid();
   }
 
@@ -470,10 +433,8 @@ class CraneAnnotationApp {
       return;
     }
 
-    // インストールプロンプトを表示
     this.deferredPrompt.prompt();
 
-    // ユーザーの選択を待つ
     const { outcome } = await this.deferredPrompt.userChoice;
     console.log(`User response to install prompt: ${outcome}`);
 
@@ -483,7 +444,6 @@ class CraneAnnotationApp {
       console.log('User dismissed the install prompt');
     }
 
-    // プロンプトを使用したのでクリア
     this.deferredPrompt = null;
     document.getElementById('install-btn').classList.add('hidden');
   }
@@ -510,16 +470,12 @@ class CraneAnnotationApp {
   }
 
   showDetailModal(preset = {}) {
-    // プリセット情報を保存
     this.modalPreset = preset;
 
-    // タイトルを更新
     document.getElementById('modal-title').textContent = preset.label;
 
-    // フォームを初期化
     document.getElementById('modal-description').value = '';
 
-    // コンテキスト選択をリセット
     this.modalRobots = [];
     this.modalPosition = null;
     this.updateModalContextDisplay();
@@ -529,22 +485,18 @@ class CraneAnnotationApp {
 
   hideDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
-    // フォームリセット
     document.getElementById('modal-description').value = '';
 
-    // コンテキストリセット
     this.modalRobots = [];
     this.modalPosition = null;
     this.modalPreset = { category: null, label: null };
   }
 
   submitDetailAnnotation() {
-    // プリセットからカテゴリとラベルを取得
     const category = this.modalPreset.category || '0';
     const label = this.modalPreset.label || 'アノテーション';
     const description = document.getElementById('modal-description').value.trim();
 
-    // コンテキスト情報をoptionsとして渡す
     const options = {};
 
     if (this.modalRobots.length > 0) {
@@ -573,7 +525,6 @@ class CraneAnnotationApp {
     document.getElementById('history-panel').classList.add('hidden');
   }
 
-  // ロボットIDグリッドの初期化
   initRobotIdGrid() {
     const grid = document.getElementById('robot-id-grid');
     grid.innerHTML = '';
@@ -588,15 +539,12 @@ class CraneAnnotationApp {
     }
   }
 
-  // ロボット選択モーダル表示
   showRobotModal() {
-    // 現在のモーダル選択状態をtempにコピー
     this.tempRobotSelection = {
       team: this.modalRobots.length > 0 ? (this.modalRobots[0].isOurs ? 'ours' : 'theirs') : 'ours',
       ids: this.modalRobots.map(r => r.id)
     };
 
-    // UIを更新
     this.updateRobotModalUI();
 
     document.getElementById('robot-modal').classList.remove('hidden');
@@ -622,11 +570,9 @@ class CraneAnnotationApp {
   }
 
   updateRobotModalUI() {
-    // チームボタン
     document.getElementById('team-ours').classList.toggle('active', this.tempRobotSelection.team === 'ours');
     document.getElementById('team-theirs').classList.toggle('active', this.tempRobotSelection.team === 'theirs');
 
-    // IDボタン
     document.querySelectorAll('.robot-id-btn').forEach(btn => {
       const id = parseInt(btn.dataset.id);
       btn.classList.toggle('selected', this.tempRobotSelection.ids.includes(id));
@@ -644,7 +590,6 @@ class CraneAnnotationApp {
     this.vibrate();
   }
 
-  // フィールドマップモーダル表示
   showFieldModal() {
     this.tempPosition = this.modalPosition ? { ...this.modalPosition } : null;
     this.updateFieldMarker();
@@ -693,14 +638,12 @@ class CraneAnnotationApp {
     this.vibrate();
   }
 
-  // モーダル内のコンテキスト表示更新
   updateModalContextDisplay() {
     const robotBtn = document.getElementById('modal-robot-select-btn');
     const robotLabel = document.getElementById('modal-robot-label');
     const positionBtn = document.getElementById('modal-position-select-btn');
     const positionLabel = document.getElementById('modal-position-label');
 
-    // ロボット選択表示
     if (this.modalRobots.length > 0) {
       const teamName = this.modalRobots[0].isOurs ? '自チーム' : '相手チーム';
       const ids = this.modalRobots.map(r => r.id).sort((a, b) => a - b).join(', ');
@@ -711,7 +654,6 @@ class CraneAnnotationApp {
       robotBtn.classList.remove('has-selection');
     }
 
-    // 位置選択表示
     if (this.modalPosition) {
       positionLabel.textContent = `(${this.modalPosition.x.toFixed(1)}, ${this.modalPosition.y.toFixed(1)})`;
       positionBtn.classList.add('has-selection');
@@ -722,7 +664,6 @@ class CraneAnnotationApp {
   }
 }
 
-// アプリ起動
 const app = new CraneAnnotationApp();
 
 console.log('Crane Annotation Tool loaded');
