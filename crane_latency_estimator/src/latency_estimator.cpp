@@ -174,37 +174,25 @@ void LatencyEstimator::onEstimationTimer()
   for (auto & [robot_id, buf] : buffers_) {
     if (buf.cmd.empty()) continue;
 
-    const auto world = estimateLagMs(
-      buf.cmd, buf.obs_world, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-    buf.ema_world_ms = applyEma(buf.ema_world_ms, world.lag_ms);
+    // world_model と robot_feedback は観測バッファ・EMA・source 名だけが違う
+    const auto estimate =
+      [&](const std::deque<std::pair<double, double>> & obs, double & ema_ms, const char * source) {
+        const auto result = estimateLagMs(
+          buf.cmd, obs, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
+        ema_ms = applyEma(ema_ms, result.lag_ms);
+        if (std::isnan(result.lag_ms)) return;
 
-    if (!std::isnan(world.lag_ms)) {
-      crane_msgs::msg::LatencyEstimation est;
-      est.robot_id = robot_id;
-      est.source = "world_model";
-      est.latency_ms = static_cast<float>(buf.ema_world_ms);
-      est.correlation = static_cast<float>(world.correlation);
-      est.samples_used = static_cast<uint32_t>(buf.cmd.size());
-      est.cmd_stddev = static_cast<float>(world.cmd_stddev);
-      out.estimations.push_back(est);
-    }
-
-    if (!buf.obs_fb.empty()) {
-      const auto fb = estimateLagMs(
-        buf.cmd, buf.obs_fb, max_lag_ms_, resample_dt_ms_, min_correlation_, min_cmd_stddev_rad_);
-      buf.ema_fb_ms = applyEma(buf.ema_fb_ms, fb.lag_ms);
-
-      if (!std::isnan(fb.lag_ms)) {
         crane_msgs::msg::LatencyEstimation est;
         est.robot_id = robot_id;
-        est.source = "robot_feedback";
-        est.latency_ms = static_cast<float>(buf.ema_fb_ms);
-        est.correlation = static_cast<float>(fb.correlation);
+        est.source = source;
+        est.latency_ms = static_cast<float>(ema_ms);
+        est.correlation = static_cast<float>(result.correlation);
         est.samples_used = static_cast<uint32_t>(buf.cmd.size());
-        est.cmd_stddev = static_cast<float>(fb.cmd_stddev);
+        est.cmd_stddev = static_cast<float>(result.cmd_stddev);
         out.estimations.push_back(est);
-      }
-    }
+      };
+    estimate(buf.obs_world, buf.ema_world_ms, "world_model");
+    estimate(buf.obs_fb, buf.ema_fb_ms, "robot_feedback");
   }
 
   if (!out.estimations.empty()) {
