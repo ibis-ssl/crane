@@ -8,7 +8,6 @@
 
 #include <crane_geometry/geometry_operations.hpp>
 #include <range/v3/algorithm/min.hpp>
-#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
