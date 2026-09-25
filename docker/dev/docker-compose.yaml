@@ -56,24 +56,8 @@ services:
       # ページと送信コアは読み取り専用で当てる。編集すればリロードで反映される
       - ../../crane_packet_forge/web:/app/web:ro
       - ../../crane_packet_forge/crane_packet_forge:/app/crane_packet_forge:ro
-      # 共有テーマは crane_web_debugger が正本（ball-calibration と同じ方式）
+      # 共有テーマは crane_web_debugger が正本
       - ../../crane_web_debugger/web/shared:/app/shared:ro
-    restart: unless-stopped
-
-  ball-calibration:
-    build:
-      context: ../..
-      dockerfile: docker/dev/ball-calibration/Dockerfile
-    container_name: crane-ball-calibration
-    network_mode: host
-    environment:
-      - HTTP_PORT=8093
-      - DISPLAY=${DISPLAY}
-      - BACK_URL=http://localhost:8090
-    volumes:
-      - /home:/home:ro
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - ../../crane_web_debugger/web/shared:/app/web/shared:ro
     restart: unless-stopped
 
   erforce-sim:
