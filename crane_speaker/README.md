@@ -2,11 +2,7 @@
 
 ## 役割
 
-試合イベントやシステム状態、診断結果を音声で通知し、オペレーターの状況認識を支援する補助パッケージです。
-
-## 関連ガイド
-
-- [診断システム（Diagnostics）](../docs/diagnostics.md)
+試合状況（`/play_situation` の PlaySituation）の変化を speak_ros の `/speak` action で読み上げ、オペレーターの状況認識を支援する補助パッケージです。
 
 ## リンク
 

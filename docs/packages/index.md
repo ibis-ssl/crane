@@ -13,7 +13,7 @@
 | [crane_sender](https://github.com/ibis-ssl/crane/tree/develop/crane_sender) | 実機ロボット（Ibis）および各種シミュレータへのコマンドパケット送信 |
 | [crane_session_coordinator](https://github.com/ibis-ssl/crane/tree/develop/crane_session_coordinator) | ゲーム状態管理・設定駆動型ロボット役割（セッション）割り当て |
 | [crane_sessions](https://github.com/ibis-ssl/crane/tree/develop/crane_sessions) | 攻守・セットプレー等のマルチロボット協調戦略（セッション）実装 |
-| [crane_speaker](https://github.com/ibis-ssl/crane/tree/develop/crane_speaker) | システム状態・試合イベントの音声アナウンス |
+| [crane_speaker](https://github.com/ibis-ssl/crane/tree/develop/crane_speaker) | 試合状況の音声アナウンス |
 | [crane_teleop](https://github.com/ibis-ssl/crane/tree/develop/crane_teleop) | ジョイスティック・キーボードによるロボット手動遠隔操作 |
 | [crane_visualization_interfaces](https://github.com/ibis-ssl/crane/tree/develop/crane_visualization_interfaces) | SVG可視化メッセージ定義・描画ラッパー・データ集約とスナップショット配信 |
 | [crane_world_model_publisher](https://github.com/ibis-ssl/crane/tree/develop/crane_world_model_publisher) | Vision/Trackerデータ統合・3Dボール物理・世界モデル配信 |
