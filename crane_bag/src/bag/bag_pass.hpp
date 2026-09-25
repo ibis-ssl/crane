@@ -42,7 +42,7 @@ struct PassEvent
   bool first_toucher_ours = false;
   double kick_speed = 0.0;        ///< キック直後の最大ボール速度 [m/s]
   double pass_distance = 0.0;     ///< キック点→解決点の距離 [m]
-  double forward_progress = 0.0;  ///< 攻撃方向(+x)への前進距離 [m]
+  double forward_progress = 0.0;  ///< 攻撃方向（on_positive_half なら -x）への前進距離 [m]
   double duration = 0.0;          ///< キック→解決までの時間 [s]
   Point2D kick_pos;
   Point2D end_pos;

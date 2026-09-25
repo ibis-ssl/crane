@@ -32,7 +32,6 @@ inline nlohmann::json factors_to_json(
 }
 }  // namespace detail
 
-// BagInfo
 inline void to_json(nlohmann::json & j, const BagInfo & v)
 {
   nlohmann::json topics = nlohmann::json::array();
@@ -50,7 +49,6 @@ inline void to_json(nlohmann::json & j, const BagInfo & v)
   };
 }
 
-// Event
 inline void to_json(nlohmann::json & j, const Event & v)
 {
   j = {
@@ -61,14 +59,12 @@ inline void to_json(nlohmann::json & j, const Event & v)
   };
 }
 
-// RobotState / BallState
 // clang-format off
 // NOLINTNEXTLINE(whitespace/line_length)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RobotState, t, robot_id, x, y, theta, vx, vy, speed, dist_to_ball, detected)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BallState, t, x, y, vx, vy, speed)
 // clang-format on
 
-// ControlSnapshot
 inline void to_json(nlohmann::json & j, const ControlSnapshot & v)
 {
   j = {
@@ -96,7 +92,6 @@ inline void to_json(nlohmann::json & j, const ControlSnapshot & v)
   }
 }
 
-// FactorTransition
 inline void to_json(nlohmann::json & j, const FactorTransition & v)
 {
   j = {
@@ -113,7 +108,6 @@ inline void to_json(nlohmann::json & j, const FactorTransition & v)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TeamInfo, name, score, yellow_cards, red_cards, foul_counter, goalkeeper)
 // clang-format on
 
-// RefereeSnapshot
 inline void to_json(nlohmann::json & j, const RefereeSnapshot & v)
 {
   j = {
@@ -142,7 +136,6 @@ inline void to_json(nlohmann::json & j, const RefereeSnapshot & v)
   }
 }
 
-// KickPowerBin / KickStatsGroup / KickStats
 inline void to_json(nlohmann::json & j, const KickPowerBin & v)
 {
   j = {
@@ -182,7 +175,6 @@ inline void to_json(nlohmann::json & j, const KickStats & v)
   };
 }
 
-// PassEvent
 inline void to_json(nlohmann::json & j, const PassEvent & v)
 {
   j = {
@@ -203,7 +195,6 @@ inline void to_json(nlohmann::json & j, const PassEvent & v)
   };
 }
 
-// PassSummary
 inline void to_json(nlohmann::json & j, const PassSummary & v)
 {
   nlohmann::json bands = nlohmann::json::array();

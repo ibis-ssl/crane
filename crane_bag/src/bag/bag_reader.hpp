@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <limits>
 #include <map>
 #include <optional>
 #include <string>
@@ -72,18 +71,6 @@ struct BagData
     return result;
   }
 };
-
-/// time_range（相対秒）を絶対ナノ秒フィルタ範囲に変換するヘルパー
-inline std::pair<int64_t, int64_t> make_ns_range(
-  int64_t bag_start_ns, const std::optional<std::pair<double, double>> & time_range)
-{
-  if (!time_range) {
-    return {std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()};
-  }
-  return {
-    bag_start_ns + static_cast<int64_t>(time_range->first * 1e9),
-    bag_start_ns + static_cast<int64_t>(time_range->second * 1e9)};
-}
 
 /// read() の読み込み挙動を制御するオプション。
 /// 各コマンドが必要とするトピック/サンプリングだけをデシリアライズすることで、

@@ -38,20 +38,15 @@ ControlSnapshot extract_snapshot(double t, const RobotCommand & rc)
 
 }  // namespace
 
-std::vector<ControlSnapshot> analyze_control(
-  const BagData & data, int robot_id, double interval,
-  std::optional<std::pair<double, double>> time_range)
+std::vector<ControlSnapshot> analyze_control(const BagData & data, int robot_id, double interval)
 {
   std::vector<ControlSnapshot> result;
   int64_t bag_start = data.info.start_time_ns;
-
-  auto [filter_start, filter_end] = make_ns_range(bag_start, time_range);
 
   int64_t interval_ns = static_cast<int64_t>(interval * 1e9);
   int64_t last_ns = 0;
 
   for (const auto & tm : data.control_targets) {
-    if (tm.timestamp_ns < filter_start || tm.timestamp_ns > filter_end) continue;
     if (tm.timestamp_ns - last_ns < interval_ns) continue;
 
     for (const auto & rc : tm.msg.robot_commands) {

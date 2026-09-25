@@ -24,7 +24,6 @@ struct Event
   std::string description;
 };
 
-/// イベントタイプ定数
 constexpr const char * EVENT_GOAL = "goal";
 constexpr const char * EVENT_PLAY = "play";
 constexpr const char * EVENT_ROLE = "role";
