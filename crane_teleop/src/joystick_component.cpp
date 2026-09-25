@@ -11,8 +11,6 @@
 #include <crane_utils/parameter.hpp>
 #include <memory>
 
-float theta;
-
 namespace joystick
 {
 JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
@@ -68,10 +66,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     return;
   }
 
-  static bool is_kick_mode_straight = true;
-  static bool is_kick_enable = false;
-  static bool is_dribble_enable = false;
-
   if (msg->buttons[BUTTON_KICK_CHIP]) {
     is_kick_mode_straight = false;
   }
@@ -91,9 +85,6 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     }
   };
 
-  static bool is_pushed_kick = false;
-  static bool is_pushed_dribble = false;
-
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
   update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
@@ -103,9 +94,8 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   };
 
   if (msg->buttons[BUTTON_ADJUST]) {
-    static bool is_pushed = false;
     if (msg->buttons[BUTTON_ADJUST_UP]) {
-      if (!is_pushed) {
+      if (!is_pushed_adjust) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, 0.1);
           RCLCPP_INFO(get_logger(), "kick up: %f", kick_power);
@@ -116,9 +106,9 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
           RCLCPP_INFO(get_logger(), "dribble up: %f", dribble_power);
         }
       }
-      is_pushed = true;
+      is_pushed_adjust = true;
     } else if (msg->buttons[BUTTON_ADJUST_DOWN]) {
-      if (!is_pushed) {
+      if (!is_pushed_adjust) {
         if (msg->buttons[BUTTON_ADJUST_KICK]) {
           adjust_value(kick_power, -0.1);
           RCLCPP_INFO(get_logger(), "kick down: %f", kick_power);
@@ -128,9 +118,9 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
           RCLCPP_INFO(get_logger(), "dribble down: %f", dribble_power);
         }
       }
-      is_pushed = true;
+      is_pushed_adjust = true;
     } else {
-      is_pushed = false;
+      is_pushed_adjust = false;
     }
   }
 
