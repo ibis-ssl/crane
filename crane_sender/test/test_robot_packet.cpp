@@ -15,7 +15,6 @@
 TEST(RobotPacket, EncodeDecode)
 {
   std::mt19937 gen;
-  std::uniform_real_distribution<float> dist_7(-7.0, 7.0);
   std::uniform_real_distribution<float> dist_32(-32, 32);
   std::uniform_real_distribution<float> dist_pi(-M_PI, M_PI);
   std::uniform_real_distribution<float> dist_0_1(0.0, 1.0);
