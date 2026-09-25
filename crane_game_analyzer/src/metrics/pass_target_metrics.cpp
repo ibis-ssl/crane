@@ -26,7 +26,7 @@ PassTargetMetric::PassTargetMetric() : MetricBase(MetricId::PASS_TARGET, "PassTa
 auto PassTargetMetric::calcScore(
   MetricContext & ctx, const Point & pass_origin, const Point & p) const -> double
 {
-  // 評価は crane_msg_wrappers の ratePassCandidate に一元化（挙動保存）。
+  // 評価は crane_msg_wrappers の ratePassCandidate に一元化。
   // 選定ゲート（min_pass_score_）とヒステリシスは compute() 側に残す。
   return ratePassCandidate(
            ctx.world_model, pass_origin, p,
@@ -36,10 +36,8 @@ auto PassTargetMetric::calcScore(
 
 auto PassTargetMetric::compute(MetricContext & ctx) -> void
 {
-  // パス起点の決定
   const Point pass_origin = computePassOrigin(ctx);
 
-  // 候補のスコア算出
   auto our_robots = ctx.world_model->ours().robotsWhere().available().excludeGoalie().get();
   auto score_with_bots =
     our_robots | ranges::views::filter([&](const auto & robot) {
@@ -69,7 +67,6 @@ auto PassTargetMetric::compute(MetricContext & ctx) -> void
     const int best_id = static_cast<int>(best.id);
     const double best_score = static_cast<double>(best.value);
 
-    // 最低スコア閾値チェック: パス品質が低すぎる場合はパス不可
     if (best_score < min_pass_score_) {
       pass_hysteresis_.reset();
       return;
@@ -108,7 +105,7 @@ auto PassTargetMetric::visualize(
     Point(receiver->pose.pos.x(), receiver->pose.pos.y() + 0.35),
     std::string("PASS TARGET #") + std::to_string(receiver->id), "lime", 110.0, "middle");
 
-  // スコア内訳（M1-5）: 選定された受け手のパス評価を分解表示
+  // スコア内訳: 選定された受け手のパス評価を分解表示
   const auto rating = ratePassCandidate(
     ctx.world_model, pass_origin, receiver->pose.pos,
     PassRatingConfig{.slack_scale = slack_scale_, .enemy_slack = enemy_slack_config_});

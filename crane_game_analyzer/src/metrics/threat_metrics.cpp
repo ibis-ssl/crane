@@ -11,8 +11,6 @@
 namespace crane::metrics
 {
 
-// BallThreatMetric実装
-
 BallThreatMetric::BallThreatMetric(std::shared_ptr<ThreatEvaluator> evaluator)
 : MetricBase(MetricId::BALL_THREAT, "BallThreat"), evaluator_(std::move(evaluator))
 {
@@ -29,14 +27,12 @@ auto BallThreatMetric::visualize(
 {
   (void)ctx;
 
-  // ボール脅威ライン（オレンジ）
   visualizer->line()
     .fromSegment(last_ball_threat_.threat_line)
     .stroke("orange", 0.9)
     .strokeWidth(3)
     .build();
 
-  // ボール脅威の防御ライン（シアン）
   if (last_ball_threat_.protection_line) {
     visualizer->line()
       .fromSegment(*last_ball_threat_.protection_line)
@@ -51,8 +47,6 @@ auto BallThreatMetric::visualize(
       last_ball_threat_.protection_line->second, 0.03, "cyan", 0.5, "cyan", 1.0, 2);
   }
 }
-
-// RobotThreatsMetric実装
 
 RobotThreatsMetric::RobotThreatsMetric(
   std::shared_ptr<BallThreatMetric> ball_threat_metric, std::shared_ptr<ThreatEvaluator> evaluator)
@@ -76,37 +70,29 @@ auto RobotThreatsMetric::compute(MetricContext & ctx) -> void
 auto RobotThreatsMetric::visualize(
   MetricContext & ctx, const VisualizerMessageBuilder::SharedPtr & visualizer) -> void
 {
-  // ロボット脅威（上位5つを可視化）
   int vis_count = 0;
   for (const auto & threat : last_robot_threats_) {
     if (vis_count >= 5) break;
 
-    // 脅威度に応じたグラデーション色
     std::string color = threatToColor(threat.threat_rating);
 
-    // 線の太さも脅威度に応じて変化 (1.0 - 4.0)
     double line_width = 1.0 + threat.threat_rating * 3.0;
 
-    // 不透明度も脅威度に応じて変化 (0.4 - 1.0)
     double opacity = 0.4 + threat.threat_rating * 0.6;
 
-    // 脅威ライン
     visualizer->line()
       .fromSegment(threat.threat_line)
       .stroke(color, opacity)
       .strokeWidth(line_width)
       .build();
 
-    // 脅威スコア表示
     std::string score_text = std::to_string(threat.threat_rating).substr(0, 4);
     visualizer->drawCenteredLabel(threat.robot->pose.pos + Vector2(0, 0.15), score_text, color, 30);
 
-    // 順位表示
     std::string rank_text = "#" + std::to_string(vis_count + 1);
     visualizer->drawCenteredLabel(
       threat.robot->pose.pos + Vector2(-0.12, 0.15), rank_text, color, 20);
 
-    // 防御ライン（存在する場合）
     if (threat.protection_line) {
       visualizer->line()
         .fromSegment(*threat.protection_line)
@@ -118,7 +104,6 @@ auto RobotThreatsMetric::visualize(
     vis_count++;
   }
 
-  // 上位脅威のリダイレクト角度を可視化（上位2つのみ）
   if (!last_robot_threats_.empty()) {
     for (size_t i = 0; i < std::min(size_t(2), last_robot_threats_.size()); ++i) {
       const auto & threat = last_robot_threats_[i];
@@ -133,21 +118,15 @@ auto RobotThreatsMetric::visualize(
       double angle1 = std::atan2(-from_ball.y(), -from_ball.x());
       double angle2 = std::atan2(to_goal.y(), to_goal.x());
 
-      // 角度が大きすぎる場合はスキップ
-      double angle_diff = std::abs(angle2 - angle1);
-      if (angle_diff > M_PI) angle_diff = 2 * M_PI - angle_diff;
-      if (angle_diff < M_PI) {
-        std::string arc_color = threatToColor(threat.threat_rating);
-        visualizer->arc(
-          threat_pos, 0.15, std::min(angle1, angle2), std::max(angle1, angle2), arc_color, 1.5, 8);
-      }
+      std::string arc_color = threatToColor(threat.threat_rating);
+      visualizer->arc(
+        threat_pos, 0.15, std::min(angle1, angle2), std::max(angle1, angle2), arc_color, 1.5, 8);
     }
   }
 }
 
 auto RobotThreatsMetric::threatToColor(double threat_rating) -> std::string
 {
-  // 脅威度に応じた色（緑→黄→赤）
   if (threat_rating < 0.3) {
     return "green";
   } else if (threat_rating < 0.6) {
@@ -156,8 +135,6 @@ auto RobotThreatsMetric::threatToColor(double threat_rating) -> std::string
     return "red";
   }
 }
-
-// RecommendedDefendersMetric実装
 
 RecommendedDefendersMetric::RecommendedDefendersMetric(
   std::shared_ptr<BallThreatMetric> ball_threat_metric,

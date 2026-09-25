@@ -43,27 +43,22 @@ auto MetricEngine::visualizeAll(
 
 auto MetricEngine::buildExecutionOrder() -> bool
 {
-  // 入次数と隣接リストを構築
   std::unordered_map<MetricId, int> in_degree;
   std::unordered_map<MetricId, std::vector<MetricId>> adj;
 
-  // 全メトリクスの入次数を0で初期化
   for (const auto & [id, metric] : metrics_) {
     in_degree[id] = 0;
   }
 
-  // グラフ構築: 依存関係を辺として表現
   // A depends on B => edge B -> A
   for (const auto & [id, metric] : metrics_) {
     for (const auto & dep : metric->getDependencies()) {
-      // 依存先が登録されているか確認
       if (metrics_.find(dep) == metrics_.end()) {
         RCLCPP_ERROR(
           logger_, "Metric '%s' depends on unregistered metric (ID: %d)", metric->getName().c_str(),
           static_cast<int>(dep));
         return false;
       }
-      // 依存関係を追加: dep -> id
       adj[dep].push_back(id);
       in_degree[id]++;
     }
@@ -72,7 +67,6 @@ auto MetricEngine::buildExecutionOrder() -> bool
   // Kahnのアルゴリズム: トポロジカルソート
   std::queue<MetricId> queue;
 
-  // 入次数0のノードをキューに追加
   for (const auto & [id, degree] : in_degree) {
     if (degree == 0) {
       queue.push(id);
@@ -86,7 +80,6 @@ auto MetricEngine::buildExecutionOrder() -> bool
     queue.pop();
     execution_order_.push_back(current);
 
-    // currentから出ている辺を削除
     for (const auto & next : adj[current]) {
       if (--in_degree[next] == 0) {
         queue.push(next);
@@ -98,7 +91,6 @@ auto MetricEngine::buildExecutionOrder() -> bool
   if (execution_order_.size() != metrics_.size()) {
     RCLCPP_ERROR(logger_, "Circular dependency detected in metrics!");
 
-    // 処理できなかったメトリクスをログ出力
     std::stringstream ss;
     ss << "Unresolved metrics: ";
     for (const auto & [id, metric] : metrics_) {
@@ -112,7 +104,6 @@ auto MetricEngine::buildExecutionOrder() -> bool
     return false;
   }
 
-  // 実行順序をログ出力
   std::stringstream ss;
   ss << "Metric execution order: ";
   for (size_t i = 0; i < execution_order_.size(); ++i) {
