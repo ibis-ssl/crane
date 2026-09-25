@@ -44,60 +44,28 @@ struct SessionSlot
 class ConfigurationManager
 {
 public:
-  /**
-   * @brief コンストラクタ（設定ファイルパス直接指定）
-   * @param config_path 設定ファイルのフルパス
-   * @param logger ロガー
-   */
   explicit ConfigurationManager(
     const std::filesystem::path & config_path,
     rclcpp::Logger logger = rclcpp::get_logger("ConfigurationManager"));
 
-  /**
-   * @brief コンストラクタ
-   * @param package_share_directory パッケージのshareディレクトリパス
-   * @param config_file_name 統合設定ファイル名（デフォルト: unified_session_config.yaml）
-   * @param logger ロガー
-   */
+  /// <package_share_directory>/config/<config_file_name> を読み込む。
   ConfigurationManager(
     const std::string & package_share_directory,
     const std::string & config_file_name = "unified_session_config.yaml",
     rclcpp::Logger logger = rclcpp::get_logger("ConfigurationManager"));
 
-  /**
-   * @brief イベント名に対応するセッション名を取得
-   * @param event_name イベント名
-   * @return セッション名（存在しない場合はstd::nullopt）
-   */
   auto getSessionNameForEvent(const std::string & event_name) const -> std::optional<std::string>;
 
-  /**
-   * @brief セッション名に対応するSessionSlotリストを取得
-   * @param situation_name セッション名
-   * @return SessionSlotリスト（存在しない場合はstd::nullopt）
-   */
   auto getSessionCapacitiesForSituation(const std::string & situation_name) const
     -> std::optional<std::vector<SessionSlot>>;
 
-  /**
-   * @brief イベントマップを取得（読み取り専用）
-   * @return イベント名→セッション名のマップ
-   */
   auto getEventMap() const -> const std::unordered_map<std::string, std::string> &;
 
-  /**
-   * @brief イベントマップのエントリを更新（セッション注入用）
-   * @param event_name イベント名
-   * @param situation_name セッション名
-   */
+  /// セッション注入用。
   auto updateEventMapping(const std::string & event_name, const std::string & situation_name)
     -> void;
 
-  /**
-   * @brief 指定situationの練習モード設定を取得
-   * @param situation_name セッション名
-   * @return PracticeModeメッセージ（練習モード未設定の場合はデフォルト=disabled）
-   */
+  /// 練習モードが設定されていない situation ではデフォルト（disabled）を返す。
   auto getPracticeModeForSituation(const std::string & situation_name) const
     -> crane_msgs::msg::PracticeMode;
 
@@ -113,10 +81,6 @@ private:
 
   rclcpp::Logger logger_;
 
-  /**
-   * @brief 統合設定ファイルを読み込む
-   * @param config_file 設定ファイルパス
-   */
   auto loadUnifiedConfig(const std::filesystem::path & config_file) -> void;
 };
 
