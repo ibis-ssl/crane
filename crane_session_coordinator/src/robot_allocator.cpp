@@ -58,20 +58,16 @@ auto RobotAllocator::allocate(
       session_capacity.session_name, world_model, node, prev_available_planners,
       session_capacity.params);
 
-    // fixed_robots が指定されていれば session 側の宣言有無に関わらず反映する。
     // allocator は fixed_robots の存在をもって固定候補ありとみなし、
     // 固定IDを優先確保しつつ不足分は動的割当にフォールバックする。
-    {
-      const bool yaml_has_fixed = !session_capacity.fixed_robots.empty();
-      if (yaml_has_fixed) {
-        session->setFixedRobots(session_capacity.fixed_robots);
-      } else if (session_capacity.session_name == "attacker_heat_rotation") {
-        RCLCPP_WARN(
-          rclcpp::get_logger("RobotAllocator"),
-          "Session '%s' has no fixed_robots: falling back to dynamic suitability allocation "
-          "within candidate_robots.",
-          session_capacity.session_name.c_str());
-      }
+    if (
+      session_capacity.fixed_robots.empty() &&
+      session_capacity.session_name == "attacker_heat_rotation") {
+      RCLCPP_WARN(
+        rclcpp::get_logger("RobotAllocator"),
+        "Session '%s' has no fixed_robots: falling back to dynamic suitability allocation "
+        "within candidate_robots.",
+        session_capacity.session_name.c_str());
     }
 
     // 候補ロボットプール（派生クラスで setUseCandidateRobots(true)）と
