@@ -3,8 +3,6 @@
 このモジュールは、Gemini APIで使用するプロンプトテンプレートを定義します。
 """
 
-import itertools
-
 SYSTEM_INSTRUCTION = """あなたはRoboCup SSLの専門家です。試合中に記録された人間のアノテーションと、
 その前後のロボット・ボールの状態データ（WorldModel）を分析し、以下の観点で評価してください:
 
@@ -137,110 +135,6 @@ WorldModelコンテキストが利用可能です（前{context_before_sec:g}秒
 それでは、ツールを使用して詳細を調査し、分析結果をJSON形式で回答してください。"""
 
     return prompt
-
-
-def summarize_world_model_context(world_model_snapshots: list) -> str:
-    """
-    WorldModelスナップショットをテキストサマリーに変換.
-
-    Args:
-        world_model_snapshots: WorldModelSnapshotのリスト
-
-    Returns:
-        人間が読めるテキストサマリー
-    """
-    if not world_model_snapshots:
-        return "（WorldModelデータなし）"
-
-    summary_lines = []
-
-    # 時系列データの要約
-    summary_lines.append(f"**サンプル数**: {len(world_model_snapshots)}")
-
-    # 時間範囲
-    first_time = world_model_snapshots[0].timestamp_ns / 1e9
-    last_time = world_model_snapshots[-1].timestamp_ns / 1e9
-    duration = last_time - first_time
-    summary_lines.append(
-        f"**時間範囲**: {first_time:.3f}秒 〜 {last_time:.3f}秒 ({duration:.2f}秒)"
-    )
-
-    # ボールの動き
-    ball_positions = [snap.ball_position for snap in world_model_snapshots]
-    ball_velocities = [snap.ball_velocity for snap in world_model_snapshots]
-
-    # ボール移動距離
-    total_ball_distance = sum(
-        ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
-        for p1, p2 in itertools.pairwise(ball_positions)
-    )
-    summary_lines.append(f"**ボール移動距離**: {total_ball_distance:.2f}m")
-
-    # ボール速度範囲
-    ball_speeds = [(vx**2 + vy**2 + vz**2) ** 0.5 for vx, vy, vz in ball_velocities]
-    if ball_speeds:
-        max_speed = max(ball_speeds)
-        avg_speed = sum(ball_speeds) / len(ball_speeds)
-        summary_lines.append(
-            f"**ボール速度**: 最大 {max_speed:.2f}m/s, 平均 {avg_speed:.2f}m/s"
-        )
-
-    # ロボット台数
-    if world_model_snapshots:
-        first_snap = world_model_snapshots[0]
-        summary_lines.append(
-            f"**ロボット数**: 自チーム {len(first_snap.our_robots)}台, 相手チーム {len(first_snap.their_robots)}台"
-        )
-
-    # エラーを持つロボット
-    error_robots = set()
-    for snap in world_model_snapshots:
-        for robot in snap.our_robots:
-            if robot.get("has_error", False):
-                error_robots.add(robot["id"])
-
-    if error_robots:
-        summary_lines.append(f"**エラー発生ロボット**: {sorted(error_robots)}")
-
-    # 詳細な時系列データ（最初、中間、最後の3サンプルのみ）
-    sample_indices = [
-        0,
-        len(world_model_snapshots) // 2,
-        len(world_model_snapshots) - 1,
-    ]
-    summary_lines.append("\n## 時系列サンプル（抜粋）")
-
-    for idx in sample_indices:
-        if idx >= len(world_model_snapshots):
-            continue
-
-        snap = world_model_snapshots[idx]
-        time_sec = snap.timestamp_ns / 1e9
-        bx, by, bz = snap.ball_position
-        bvx, bvy, bvz = snap.ball_velocity
-
-        summary_lines.append(f"\n### t={time_sec:.3f}秒")
-        summary_lines.append(f"- ボール位置: ({bx:.2f}, {by:.2f}, {bz:.2f})m")
-        summary_lines.append(f"- ボール速度: ({bvx:.2f}, {bvy:.2f}, {bvz:.2f})m/s")
-
-        # 自チームロボット（最大3台まで表示）
-        summary_lines.append(f"- 自チームロボット ({len(snap.our_robots)}台):")
-        for robot in snap.our_robots[:3]:
-            rx, ry = robot["position"]
-            rvx, rvy = robot["velocity"]
-            error_marker = " ⚠️" if robot.get("has_error") else ""
-            summary_lines.append(
-                f"  - ID {robot['id']}: ({rx:.2f}, {ry:.2f})m, "
-                f"速度 ({rvx:.2f}, {rvy:.2f})m/s{error_marker}"
-            )
-
-        # 相手チームロボット（最大3台まで表示）
-        summary_lines.append(f"- 相手チームロボット ({len(snap.their_robots)}台):")
-        for robot in snap.their_robots[:3]:
-            rx, ry = robot["position"]
-            summary_lines.append(f"  - ID {robot['id']}: ({rx:.2f}, {ry:.2f})m")
-
-    return "\n".join(summary_lines)
 
 
 def format_position_info(position: tuple[float, float, float]) -> str:

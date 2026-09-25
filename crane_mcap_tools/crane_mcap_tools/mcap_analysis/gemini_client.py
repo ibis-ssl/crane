@@ -82,54 +82,6 @@ class GeminiAnalysisClient:
 
         logger.info(f"Initialized Gemini client with model: {model}")
 
-    def analyze_annotation(
-        self, prompt: str, system_instruction: str
-    ) -> AnalysisResult:
-        """
-        単一のアノテーションを解析.
-
-        Args:
-            prompt: 解析プロンプト
-            system_instruction: システムインストラクション
-
-        Returns:
-            解析結果
-        """
-        try:
-            response = self._client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=self._types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.2,  # 一貫性を重視
-                    response_mime_type="application/json",
-                ),
-            )
-
-            raw_response = response.text
-            logger.debug(f"Gemini response: {raw_response}")
-
-            result_data = json.loads(raw_response)
-
-            return AnalysisResult(
-                root_cause=result_data.get("root_cause", ""),
-                tactical_analysis=result_data.get("tactical_analysis", ""),
-                improvements=result_data.get("improvements", []),
-                confidence=result_data.get("confidence", "UNKNOWN"),
-                raw_response=raw_response,
-            )
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            return AnalysisResult.error_result(
-                f"JSON parse error: {e}",
-                raw_response if "raw_response" in locals() else "",
-            )
-
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Gemini API error: {e}")
-            return AnalysisResult.error_result(str(e))
-
     def analyze_annotation_with_tools(
         self,
         annotation: AnnotationContext,
@@ -292,18 +244,6 @@ class GeminiAnalysisClient:
             if i < total - 1:
                 time.sleep(self.rate_limit_delay)
         return results
-
-    def analyze_batch(self, prompts: list[tuple[str, str]]) -> list[AnalysisResult]:
-        """
-        複数のアノテーションをバッチ解析.
-
-        Args:
-            prompts: (prompt, system_instruction)のタプルのリスト
-
-        Returns:
-            解析結果のリスト
-        """
-        return self._run_batch(prompts, self.analyze_annotation, len(prompts))
 
     def analyze_batch_with_tools(
         self,
