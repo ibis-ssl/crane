@@ -11,7 +11,6 @@
 #include <range/v3/view/transform.hpp>
 #include <string>
 
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "robocup_ssl_msgs/msg/referee.hpp"
 
 namespace crane
