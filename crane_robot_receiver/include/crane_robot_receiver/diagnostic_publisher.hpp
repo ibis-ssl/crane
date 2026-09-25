@@ -14,7 +14,6 @@
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
-#include <diagnostic_updater/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 

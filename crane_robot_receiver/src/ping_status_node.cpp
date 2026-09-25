@@ -4,20 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-
 #include <array>
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
-#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstdio>
-#include <cstdlib>
 #include <format>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <sstream>
 #include <string>
 
 auto getRobotIP(uint8_t id) -> std::string { return std::format("192.168.20.{}", 100 + id); }
