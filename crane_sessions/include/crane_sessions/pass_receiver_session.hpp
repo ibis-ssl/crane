@@ -45,7 +45,6 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculatePositionCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    // GlobalRobotAllocator対応: robotsが変更されたらスキルを再生成
     if (robots.empty()) {
       return {SessionBase::Status::RUNNING, {}};
     }
@@ -55,16 +54,13 @@ public:
       visualizer->layer = "skill/" + receive_skill->name;
     }
 
-    // If a kick is ongoing by our team or ball is moving sufficiently, actively receive
     const bool our_kick_ongoing = [&]() {
       const auto & ks = world_model->getMsg().game_analysis.ongoing_kick;
       return !ks.empty() && ks.front().is_kicker_friend;
     }();
 
     if (world_model->ball().isMoving(1.0) || our_kick_ongoing) {
-      // Configure receive behavior
       receive_skill->setParameter("policy", std::string("closest"));
-      // Mark reserved receiver clearly
       auto pos = receive_skill->commander()->getRobot()->pose.pos;
       visualizer->drawCircle(pos, 0.25, "cyan", 18);
       visualizer->drawCenteredLabel(pos + Vector2(0.0, 0.32), "RECEIVER RESERVED", "cyan", 90);
@@ -96,13 +92,12 @@ public:
       if (has_plan) {
         return robot->id == game_analysis.pass_plan.receiver_id ? -100.0 : 100.0;
       }
-      // recommended_pass_receiver_id が設定されている場合そのロボットを最優先
       if (
         game_analysis.recommended_pass_receiver_id >= 0 &&
         robot->id == static_cast<uint8_t>(game_analysis.recommended_pass_receiver_id)) {
         return 0.0;
       }
-      return 10.0;  // その他は低優先
+      return 10.0;
     };
   }
 

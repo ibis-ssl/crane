@@ -38,7 +38,6 @@ public:
   {
     auto wm = world_model;
     return [wm](const std::shared_ptr<RobotInfo> & robot) {
-      // ボール配置エリアへの距離（近いほど優先）
       if (auto placement_area = wm->getBallPlacementArea(); placement_area) {
         return bg::distance(robot->pose.pos, placement_area.value());
       }
@@ -83,7 +82,6 @@ public:
       if (isInPlacementArea(current_position, 0.2)) {
         auto [distance, closest_point] =
           getClosestPointAndDistance(placement_area_opt.value().segment, current_position);
-        // 0.8m離れる
         target_position = closest_point + (current_position - closest_point).normalized() * 0.8;
 
         if (

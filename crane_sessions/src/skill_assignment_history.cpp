@@ -110,7 +110,6 @@ bool SkillAssignmentHistory::save() const
     }
     root["robots"] = robots;
 
-    // 親ディレクトリを作成
     std::filesystem::create_directories(file_path_.parent_path());
 
     // 一時ファイルに書いてから rename することで原子的に更新する

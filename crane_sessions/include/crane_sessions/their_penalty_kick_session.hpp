@@ -56,7 +56,6 @@ public:
 protected:
   void onRobotsChanged() override
   {
-    // ロボット割り当てが変更されたら、goalieとother_robotsを再初期化
     goalie.reset();
     other_robots.clear();
 
@@ -66,7 +65,6 @@ protected:
       // ペナルティ専用ロジックを使うためrun_inplayを無効化
       goalie->setParameter("run_inplay", false);
 
-      // 残りのロボットをother_robotsに割り当て
       for (size_t i = 1; i < robots.size(); ++i) {
         auto command =
           std::make_shared<PositionCommandWrapper>("their_penalty_kick", robots[i].id, world_model);
