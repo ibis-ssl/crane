@@ -81,18 +81,6 @@ struct WorldModelWrapper : public DelayMonitorMixin<WorldModelWrapper>
 
   auto update(const crane_msgs::msg::GameAnalysis & msg) -> void { latest_msg.game_analysis = msg; }
 
-  // @deprecated メイン値を書き換えてはならない。
-  // ボールセンサ等の補完情報は BallInfo.fallback_* フィールドを使用すること。
-  // この関数は下位互換のために残されているが、新規コードからは呼び出さないこと。
-  [[deprecated("Use BallInfo fallback fields instead of overwriting main ball position")]] auto
-  overwriteBallPos(Point pos, double z = 0.0) -> void
-  {
-    ball_.pos = pos;
-    ball_.pos_z = z;
-    // Ball構造体からBallInfoメッセージに同期
-    ball_.toMsg(latest_msg.ball_info);
-  }
-
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
   auto & getEditableMsg() { return latest_msg; }
