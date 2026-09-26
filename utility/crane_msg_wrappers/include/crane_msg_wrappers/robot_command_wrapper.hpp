@@ -98,8 +98,6 @@ public:
     return *this;
   }
 
-  auto getCurrentMode() const -> uint8_t { return current_mode; }
-
   auto getRobot() const -> std::shared_ptr<RobotInfo> { return robot; }
 
   auto getWorldModel() const -> WorldModelWrapper::SharedPtr { return world_model; }
@@ -170,12 +168,6 @@ public:
     return *this;
   }
 
-  auto setThetaTolerance(double tolerance) -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.theta_tolerance = tolerance;
-    return *this;
-  }
-
   // 停止関数（現在のモードに応じた適切な停止を実行）
   auto stopHere() -> RobotCommandWrapper &
   {
@@ -210,12 +202,6 @@ public:
     return *this;
   }
 
-  auto enableCollisionAvoidance() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.disable_collision_avoidance = false;
-    return *this;
-  }
-
   auto disableGoalAreaAvoidance() -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.disable_goal_area_avoidance = true;
@@ -246,24 +232,6 @@ public:
     return *this;
   }
 
-  auto enableFieldBoundary() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.disable_field_boundary = false;
-    return *this;
-  }
-
-  auto enableRotationStopOnAccel() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.enable_rotation_stop_on_accel = true;
-    return *this;
-  }
-
-  auto disableRotationStopOnAccel() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.enable_rotation_stop_on_accel = false;
-    return *this;
-  }
-
   auto disableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
     return disableGoalAreaAvoidance()
@@ -272,41 +240,9 @@ public:
       .disableFieldBoundary();
   }
 
-  auto enableAnyAreaAvoidance() -> RobotCommandWrapper &
-  {
-    return enableGoalAreaAvoidance()
-      .enableBallAvoidance()
-      .enablePlacementAvoidance()
-      .enableFieldBoundary();
-  }
-
   auto disableBasicAvoidances() -> RobotCommandWrapper &
   {
     return disableCollisionAvoidance().disableBallAvoidance();
-  }
-
-  auto enableBasicAvoidances() -> RobotCommandWrapper &
-  {
-    return enableCollisionAvoidance().enableBallAvoidance();
-  }
-
-  auto setGoalieDefault() -> RobotCommandWrapper &
-  {
-    disableCollisionAvoidance();
-    disableGoalAreaAvoidance();
-    return *this;
-  }
-
-  auto enableBallCenteringControl() -> RobotCommandWrapper &
-  {
-    latest_msg.enable_ball_centering_control = true;
-    return *this;
-  }
-
-  auto enableLocalGoalie() -> RobotCommandWrapper &
-  {
-    latest_msg.local_goalie_enable = true;
-    return *this;
   }
 
   auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
