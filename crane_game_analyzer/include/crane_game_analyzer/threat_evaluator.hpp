@@ -9,8 +9,6 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/threat_assignment.hpp>
 #include <crane_msgs/msg/threat_info.hpp>
 #include <optional>
 #include <vector>
