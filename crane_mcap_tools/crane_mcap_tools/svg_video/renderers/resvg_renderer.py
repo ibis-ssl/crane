@@ -78,5 +78,9 @@ class ResvgPyRenderer(SvgRendererBase):
         return "resvg"
 
     @classmethod
+    def get_install_command(cls) -> str:
+        return "pip install resvg-py"
+
+    @classmethod
     def get_description(cls) -> str:
         return "Rust-based high-performance SVG renderer (3-10x faster than cairosvg)"
