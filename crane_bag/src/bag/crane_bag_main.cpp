@@ -173,7 +173,7 @@ static void cmd_track(const Args & args)
   opts.time_range = args.time_range;
   // 読み込み時に interval 間隔へ間引く。track 側は再サンプルせず全件を通す（interval=0）。
   // read のダウンサンプルは track_ball/track_robot と同一の貪欲規則のため、
-  // 「windowed ストリームへの単一の貪欲パス」となり、従来の track 単独サンプルと一致する。
+  // track 側で間引いた場合と同じ結果になる。
   opts.downsample_interval_sec = {{"/world_model", args.interval}};
   auto data = BagReader::read(args.bag_path, opts);
 
