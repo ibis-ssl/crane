@@ -73,16 +73,8 @@ public:
       crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
     const int target_port =
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
-    // position_control.* は CM4 側の位置制御ゲインである。
-    //
-    // 位置制御ループは CM4 側で閉じているので、crane は 1 秒ごとに設定パケット
-    // （Orion_CM4 cm4/bridge/config_packet.h）でこの値を CM4 へ送るだけである。
-    // CM4 側は PID で、ki / kd の既定 0 は P 制御（従来の挙動）を意味する。
-    //
-    // 実装の正本は CM4 側の position_controller で、crane は遠隔から設定する側である。
-    // 値は 1 秒ごとに get_parameter() で読み直すので、ros2 param set で変えれば
-    // ロボットを再起動せずに反映される。
-    // 詳細: framework/docs/robot-side-position-control.md
+    // position_control.* は CM4 側の位置制御 PID のゲイン（ki / kd の既定 0 は P 制御）。
+    // 送り方は sendPositionControlConfig。詳細: framework/docs/robot-side-position-control.md
     crane::get_or_declare_parameter(this, "position_control.kp", position_control_kp_);
     crane::get_or_declare_parameter(
       this, "position_control.deceleration", position_control_deceleration_);

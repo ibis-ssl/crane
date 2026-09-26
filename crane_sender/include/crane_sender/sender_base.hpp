@@ -7,7 +7,6 @@
 #ifndef CRANE_SENDER__SENDER_BASE_HPP_
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
-#include <array>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -21,7 +20,6 @@ class SenderBase : public rclcpp::Node
 {
 public:
   explicit SenderBase(const std::string & name, const rclcpp::NodeOptions & options);
-  ~SenderBase() override = default;
 
 protected:
   using VelocityCommandsMsg = crane_msgs::msg::RobotCommands;
