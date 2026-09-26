@@ -6,20 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_utils/package.hpp>
+#include <filesystem>
 #include <rclcpp/rclcpp.hpp>
-
-TEST(TestPackage, GetPackageSharePath)
-{
-  // 存在するパッケージ
-  auto share_path = crane::get_package_share_path("crane_utils");
-  ASSERT_TRUE(share_path.has_value());
-  EXPECT_TRUE(std::filesystem::exists(*share_path));
-
-  // 存在しないパッケージ
-  auto invalid_path = crane::get_package_share_path("non_existent_package_xyz_999");
-  EXPECT_FALSE(invalid_path.has_value());
-}
 
 TEST(TestPackage, ResolvePackagePath)
 {
@@ -31,15 +21,15 @@ TEST(TestPackage, ResolvePackagePath)
   EXPECT_EQ(crane::resolve_package_path("crane_utils", abs_path), abs_path);
 
   // 存在するパッケージの相対パス (デフォルト sub_dir: "config")
-  auto share_path = crane::get_package_share_path("crane_utils");
-  ASSERT_TRUE(share_path.has_value());
+  const std::filesystem::path share_path =
+    ament_index_cpp::get_package_share_directory("crane_utils");
 
   auto resolved = crane::resolve_package_path("crane_utils", "test.yaml");
-  EXPECT_EQ(resolved, *share_path / "config" / "test.yaml");
+  EXPECT_EQ(resolved, share_path / "config" / "test.yaml");
 
   // カスタム sub_dir
   auto resolved_custom = crane::resolve_package_path("crane_utils", "test.yaml", "custom_dir");
-  EXPECT_EQ(resolved_custom, *share_path / "custom_dir" / "test.yaml");
+  EXPECT_EQ(resolved_custom, share_path / "custom_dir" / "test.yaml");
 
   // 存在しないパッケージ名の場合はそのままのパスを返却
   EXPECT_EQ(
@@ -58,10 +48,10 @@ TEST(TestPackage, ResolvePackagePathWithLogger)
   EXPECT_EQ(crane::resolve_package_path(logger, "crane_utils", abs_path), abs_path);
 
   // 存在するパッケージ
-  auto share_path = crane::get_package_share_path("crane_utils");
-  ASSERT_TRUE(share_path.has_value());
+  const std::filesystem::path share_path =
+    ament_index_cpp::get_package_share_directory("crane_utils");
   auto resolved = crane::resolve_package_path(logger, "crane_utils", "config.yaml");
-  EXPECT_EQ(resolved, *share_path / "config" / "config.yaml");
+  EXPECT_EQ(resolved, share_path / "config" / "config.yaml");
 
   // 存在しないパッケージ名（WARN ログを出力してフォールバック）
   EXPECT_EQ(
