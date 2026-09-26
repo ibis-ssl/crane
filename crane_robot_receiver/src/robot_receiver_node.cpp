@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <cmath>
 #include <crane_comm/unicast.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
@@ -256,7 +255,6 @@ private:
     feedback.mouse_vel[1] = protocol::readFloat(buf, protocol::offset::MOUSE_VEL_Y);
 
     // デバッグ値
-    feedback.values.clear();
     feedback.values.reserve(protocol::TX_VALUE_COUNT);
     for (size_t i = 0; i < protocol::TX_VALUE_COUNT; ++i) {
       const int offset =
