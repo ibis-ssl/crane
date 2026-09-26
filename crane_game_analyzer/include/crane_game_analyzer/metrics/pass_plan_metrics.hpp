@@ -65,12 +65,6 @@ public:
   auto setReceivePointFieldMargin(double m) -> void { receive_point_field_margin_ = m; }
   /// 計画保持中に適用する下限の緩和率（1.0 で緩和なし）
   auto setMinPassScoreReleaseRatio(double r) -> void { min_pass_score_release_ratio_ = r; }
-  auto setReceivePointImprovement(double ratio) -> void { receive_point_improvement_ = ratio; }
-  auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 1.0) -> void
-  {
-    enemy_slack_config_ = config;
-    slack_scale_ = slack_scale;
-  }
 
 private:
   // 実際にプランを再計算する（デシメーションで間引かれる）。cached_plan_ を更新

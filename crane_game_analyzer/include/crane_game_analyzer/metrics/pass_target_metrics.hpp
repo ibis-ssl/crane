@@ -48,12 +48,6 @@ public:
     });
   }
 
-  auto setEnemySlackConfig(const SlackTimeConfig & config, double slack_scale = 1.0) -> void
-  {
-    enemy_slack_config_ = config;
-    slack_scale_ = slack_scale;
-  }
-
   auto setMinPassScore(double min_score) -> void { min_pass_score_ = min_score; }
 
 private:
