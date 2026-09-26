@@ -89,8 +89,7 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
   auto adjust_value = [](double & value, const double step) {
-    value += step;
-    value = std::clamp(value, 0.0, 1.0);
+    value = std::clamp(value + step, 0.0, 1.0);
   };
 
   if (msg->buttons[BUTTON_ADJUST]) {
