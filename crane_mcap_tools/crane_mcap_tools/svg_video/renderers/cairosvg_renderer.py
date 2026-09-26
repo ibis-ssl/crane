@@ -67,5 +67,9 @@ class CairoSvgRenderer(SvgRendererBase):
         return "cairosvg"
 
     @classmethod
+    def get_install_command(cls) -> str:
+        return "pip install cairosvg"
+
+    @classmethod
     def get_description(cls) -> str:
         return "Pure Python SVG renderer (slow but widely compatible)"

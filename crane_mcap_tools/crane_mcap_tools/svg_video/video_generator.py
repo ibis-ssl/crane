@@ -131,15 +131,13 @@ class VideoGenerator:
         try:
             frame_count = 0
             for frame_bytes in frames:
-                if process.stdin:
-                    process.stdin.write(frame_bytes)
-                    frame_count += 1
+                process.stdin.write(frame_bytes)
+                frame_count += 1
 
-                    if frame_count % 100 == 0:
-                        logger.info(f"Processed {frame_count} frames...")
+                if frame_count % 100 == 0:
+                    logger.info(f"Processed {frame_count} frames...")
 
-            if process.stdin:
-                process.stdin.close()
+            process.stdin.close()
 
             process.wait()
 
