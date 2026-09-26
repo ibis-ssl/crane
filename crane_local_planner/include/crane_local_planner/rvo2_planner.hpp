@@ -15,7 +15,6 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
-#include <crane_physics/pid_controller.hpp>
 #include <memory>
 #include <optional>
 

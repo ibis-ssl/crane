@@ -41,9 +41,7 @@ struct PassRating
 /**
  * @brief パス候補スコアを入力スカラから合成する純関数
  *
- * PassTargetMetric::calcScore の演算列を逐語的に再現する。加算(+=)・減算(-=)と
- * 乗算(*=)が混在するため float 完全一致には順序保存が必須であり、ここで一元化する。
- * 挙動を変えないこと。改良は上位の別マイルストーンで行う。
+ * 加算(+=)・減算(-=)と乗算(*=)が混在するので、演算の順序を入れ替えるとスコアが変わる。
  */
 inline auto combinePassScore(const PassScoreTerms & t) -> PassRating
 {

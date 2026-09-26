@@ -9,10 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <crane_physics/pass.hpp>
-#include <crane_physics/robot_info.hpp>
 #include <limits>
-#include <vector>
 
 namespace crane
 {
@@ -29,15 +26,6 @@ struct StraightPlan
   double arrival_speed = 0.0;  ///< 受領点での到達速度 [m/s]
   double travel_time = 0.0;    ///< 受領点までの転がり所要時間 [s]
   bool reachable = false;      ///< クランプ後の初速で受領点に到達できるか
-};
-
-/// パスキック（直進 or チップ）の計画結果
-struct KickPlan
-{
-  bool is_chip = false;        ///< チップキックを使うか
-  double chip_distance = 0.0;  ///< is_chip 時のチップ着地距離 [m]
-  StraightPlan straight;       ///< is_chip=false 時の直進計画
-  bool feasible = false;       ///< 有効な計画が得られたか
 };
 }  // namespace pass_kick
 
@@ -117,44 +105,6 @@ inline auto planStraightPass(
   plan.arrival_speed = arrivalSpeed(distance, v0, a);
   plan.travel_time = rollingTravelTime(distance, v0, a);
   plan.reachable = plan.arrival_speed > 0.0 && std::isfinite(plan.travel_time);
-  return plan;
-}
-
-/**
- * @brief パスキック（直進/チップ）の統合計画
- *
- * getPassAnalysis でパスライン上の敵遮蔽を判定し、遮蔽があればチップ、
- * なければ planStraightPass による直進を計画する。
- *
- * @param ball                  パス起点（ボール位置）
- * @param target                受領点
- * @param their_robots          敵ロボット
- * @param desired_arrival_speed 望ましい受領点到達速度 [m/s]
- * @param deceleration          ボール減速度 [m/s^2]
- * @param min_initial_speed     直進初速下限 [m/s]
- * @param max_initial_speed     直進初速上限 [m/s]
- * @param block_distance        パスライン遮蔽と見なす敵距離 [m]
- * @param chip_margin           チップ着地距離に足す余裕 [m]
- */
-inline auto planPassKick(
-  const Point & ball, const Point & target, std::vector<RobotInfo::SharedPtr> their_robots,
-  double desired_arrival_speed, double deceleration, double min_initial_speed,
-  double max_initial_speed, double block_distance = 0.2, double chip_margin = 0.2)
-  -> pass_kick::KickPlan
-{
-  pass_kick::KickPlan plan;
-  const auto analysis = getPassAnalysis(ball, target, std::move(their_robots), block_distance);
-  if (analysis.need_chip) {
-    plan.is_chip = true;
-    plan.chip_distance = analysis.required_chip_distance + chip_margin;
-    plan.feasible = plan.chip_distance > 0.0;
-    return plan;
-  }
-  const double distance = (target - ball).norm();
-  plan.is_chip = false;
-  plan.straight = planStraightPass(
-    distance, desired_arrival_speed, deceleration, min_initial_speed, max_initial_speed);
-  plan.feasible = plan.straight.reachable;
   return plan;
 }
 }  // namespace crane
