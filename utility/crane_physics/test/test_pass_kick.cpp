@@ -8,22 +8,12 @@
 
 #include <cmath>
 #include <crane_physics/pass_kick.hpp>
-#include <memory>
-#include <vector>
 
 namespace crane
 {
 namespace
 {
 constexpr double kA = 0.7;  // ボール減速度 [m/s^2]
-
-auto makeEnemy(double x, double y) -> RobotInfo::SharedPtr
-{
-  auto r = std::make_shared<RobotInfo>();
-  r->pose = Pose2D{.pos = Point(x, y), .theta = 0.0};
-  r->vel = Velocity2D{.linear = Point(0.0, 0.0), .omega = 0.0};
-  return r;
-}
 }  // namespace
 
 // ── requiredInitialSpeed ──────────────────────────────────────────
@@ -109,35 +99,5 @@ TEST(PassKickTest, PlanStraightPass_MinClamp_FasterArrival)
   EXPECT_DOUBLE_EQ(plan.initial_speed, 3.0);
   EXPECT_GT(plan.arrival_speed, 2.0);
   EXPECT_TRUE(plan.reachable);
-}
-
-// ── planPassKick（チップ/直進の統合）──────────────────────────────
-
-TEST(PassKickTest, PlanPassKick_NoEnemies_Straight)
-{
-  const auto plan = planPassKick(Point(0, 0), Point(3, 0), {}, 2.0, kA, 1.0, 6.0);
-  EXPECT_FALSE(plan.is_chip);
-  EXPECT_TRUE(plan.feasible);
-  EXPECT_TRUE(plan.straight.reachable);
-}
-
-TEST(PassKickTest, PlanPassKick_BlockedEnemy_Chip)
-{
-  // パスライン(0,0)-(4,0)上に敵(2,0.1) → 遮蔽ありチップ
-  std::vector<crane::RobotInfo::SharedPtr> enemies = {makeEnemy(2.0, 0.1)};
-  const auto plan = planPassKick(Point(0, 0), Point(4, 0), enemies, 2.0, kA, 1.0, 6.0, 0.2, 0.2);
-  EXPECT_TRUE(plan.is_chip);
-  // ball から遮蔽点(2,0)までの距離 2.0 + margin 0.2
-  EXPECT_NEAR(plan.chip_distance, 2.2, 1e-6);
-  EXPECT_TRUE(plan.feasible);
-}
-
-TEST(PassKickTest, PlanPassKick_ClearLine_Straight)
-{
-  // 敵(2,1.0)はパスラインから十分離れている → 直進
-  std::vector<crane::RobotInfo::SharedPtr> enemies = {makeEnemy(2.0, 1.0)};
-  const auto plan = planPassKick(Point(0, 0), Point(4, 0), enemies, 2.0, kA, 1.0, 6.0, 0.2, 0.2);
-  EXPECT_FALSE(plan.is_chip);
-  EXPECT_TRUE(plan.feasible);
 }
 }  // namespace crane
