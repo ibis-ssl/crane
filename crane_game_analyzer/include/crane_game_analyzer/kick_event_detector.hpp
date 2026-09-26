@@ -14,8 +14,8 @@
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
+#include <deque>
 #include <memory>
-#include <queue>
 
 namespace crane
 {

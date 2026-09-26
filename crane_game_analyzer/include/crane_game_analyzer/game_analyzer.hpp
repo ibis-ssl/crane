@@ -7,7 +7,6 @@
 #ifndef CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
-#include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -15,7 +14,6 @@
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <rclcpp/rclcpp.hpp>
-#include <vector>
 
 #include "crane_game_analyzer/kick_event_detector.hpp"
 #include "crane_game_analyzer/metrics/metric_engine.hpp"
