@@ -118,9 +118,8 @@ void Vision::on_timer()
   if (
     merged_frame.camera_id != 0 || !merged_frame.balls.empty() ||
     !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {
-    auto merged_frame_msg = std::make_unique<robocup_ssl_msgs::msg::SSLDetectionFrame>();
-    *merged_frame_msg = std::move(merged_frame);
-    pub_detection_frame->publish(std::move(merged_frame_msg));
+    pub_detection_frame->publish(
+      std::make_unique<robocup_ssl_msgs::msg::SSLDetectionFrame>(std::move(merged_frame)));
   }
 }
 
