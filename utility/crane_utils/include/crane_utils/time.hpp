@@ -37,30 +37,6 @@ inline auto getDiffSec(const rclcpp::Time & start, const rclcpp::Time & end) -> 
 }
 
 /**
- * @brief 2つの builtin_interfaces::msg::Time の差分（絶対値、秒単位）を取得
- */
-inline auto getDiffSec(
-  const builtin_interfaces::msg::Time & start, const builtin_interfaces::msg::Time & end) -> double
-{
-  return getDiffSec(rclcpp::Time(start), rclcpp::Time(end));
-}
-
-/**
- * @brief rclcpp::Time と builtin_interfaces::msg::Time の差分（絶対値、秒単位）を取得
- */
-inline auto getDiffSec(const rclcpp::Time & start, const builtin_interfaces::msg::Time & end)
-  -> double
-{
-  return getDiffSec(start, rclcpp::Time(end));
-}
-
-inline auto getDiffSec(const builtin_interfaces::msg::Time & start, const rclcpp::Time & end)
-  -> double
-{
-  return getDiffSec(rclcpp::Time(start), end);
-}
-
-/**
  * @brief 開始時刻からの経過時間（秒単位: now - start）を取得
  */
 inline auto getElapsedSec(const rclcpp::Time & start, const rclcpp::Time & now) -> double
@@ -110,7 +86,6 @@ public:
     msg.data = getElapsedSec(start);
     publisher->publish(msg);
   }
-  auto elapsedSec() const -> double { return getElapsedSec(start); }
 
 private:
   std::chrono::time_point<std::chrono::high_resolution_clock> start =
