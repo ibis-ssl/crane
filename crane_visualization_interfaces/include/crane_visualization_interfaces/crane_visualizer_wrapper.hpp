@@ -346,7 +346,8 @@ struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBui
 
   [[nodiscard]] auto box(const Box & box) -> SvgRectBuilder &
   {
-    rect_top_left = box.min_corner();
+    // SVG の rect は y から下（フィールド y が減る向き）へ伸びるので、左上は (min.x, max.y)
+    rect_top_left = Point(box.min_corner().x(), box.max_corner().y());
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }

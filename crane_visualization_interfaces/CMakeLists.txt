@@ -116,8 +116,12 @@ ament_export_dependencies(
 )
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_add_gtest(test_crane_visualizer_wrapper test/test_crane_visualizer_wrapper.cpp)
+  target_link_libraries(test_crane_visualizer_wrapper ${PROJECT_NAME}_builder)
 endif()
 
 ament_package()
