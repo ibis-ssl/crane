@@ -4,20 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-
 #include <array>
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
-#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <cstdio>
-#include <cstdlib>
 #include <format>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <sstream>
 #include <string>
 
 auto getRobotIP(uint8_t id) -> std::string { return std::format("192.168.20.{}", 100 + id); }
@@ -29,8 +21,8 @@ public:
   {
     publisher = this->create_publisher<crane_msgs::msg::PingStatusArray>("/ping", 10);
 
-    for (size_t i = 0; i < ping_statuses.size(); ++i) {
-      ping_statuses[i].first = getRobotIP(static_cast<int>(i));
+    for (size_t i = 0; i < robot_ips.size(); ++i) {
+      robot_ips[i] = getRobotIP(static_cast<int>(i));
     }
 
     timer = this->create_wall_timer(
@@ -41,12 +33,12 @@ private:
   auto pingHosts() const -> void
   {
     auto message = crane_msgs::msg::PingStatusArray();
-    for (size_t id = 0; id < ping_statuses.size(); ++id) {
-      const auto & ping = ping_statuses[id];
+    for (size_t id = 0; id < robot_ips.size(); ++id) {
+      const auto & ip = robot_ips[id];
       if (!rclcpp::ok()) {
         return;
       }
-      std::string command = "ping -c 1 -W 0.4 " + ping.first + " | grep 'time='";
+      std::string command = "ping -c 1 -W 0.4 " + ip + " | grep 'time='";
       std::array<char, 128> buffer;
       std::string result;
 
@@ -80,7 +72,7 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::array<std::pair<std::string, double>, 11> ping_statuses;
+  std::array<std::string, 11> robot_ips;
 };
 
 auto main(int argc, char * argv[]) -> int

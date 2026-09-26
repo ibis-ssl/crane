@@ -132,26 +132,6 @@ inline auto validatePacket(const BufferT & buffer, size_t received_size) -> Pack
 }
 
 // バッファ読み取りヘルパー関数 (std::memcpyを使用)
-inline auto readFloat(const std::vector<uint8_t> & buffer, int offset) -> float
-{
-  float value;
-  std::memcpy(&value, &buffer[offset], sizeof(float));
-  return value;
-}
-
-inline auto readUint16(const std::vector<uint8_t> & buffer, int offset) -> uint16_t
-{
-  uint16_t value;
-  std::memcpy(&value, &buffer[offset], sizeof(uint16_t));
-  return value;
-}
-
-inline auto readByte(const std::vector<uint8_t> & buffer, int offset) -> uint8_t
-{
-  return buffer[offset];
-}
-
-// std::vector<char> 版のオーバーロード
 inline auto readFloat(const std::vector<char> & buffer, int offset) -> float
 {
   float value;

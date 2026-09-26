@@ -14,39 +14,32 @@
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
-#include <diagnostic_updater/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
 namespace crane
 {
-// ロボット位置情報の構造体
 struct RobotPosition
 {
   double x;
   double y;
-  double theta;
   bool valid;
 };
 
-// ロボットごとのデータ管理クラス
 class RobotData
 {
 public:
   explicit RobotData(const uint8_t & id) : robot_id(id) {}
 
-  // ロボットの診断情報の初期化
   auto initializeDiagnostics(
     rclcpp::Node * node, WorldModelWrapper * world_model, bool sim_mode,
     crane_msgs::msg::PingStatusArray * latest_ping_msg,
     crane_msgs::msg::RobotFeedbackArray * latest_feedback_msg) -> void;
 
-  // エラーマップの更新関数
   auto updateErrorMap(
     const std::string & error_type, const std::string & message, int level,
     const rclcpp::Time & timestamp) -> bool;
 
-  // エラーマップからエラーを削除
   auto removeError(const std::string & error_type) -> bool;
 
   // ロボットがVision/Trackerで検出されているか確認
@@ -63,7 +56,6 @@ public:
   std::map<std::string, ErrorInfo> error_map;
 
 private:
-  // 診断情報更新コールバック関数
   auto communicationDiagnosticCallback(
     diagnostic_updater::DiagnosticStatusWrapper & stat,
     const crane_msgs::msg::PingStatusArray & ping_msg,
@@ -87,13 +79,10 @@ public:
   DiagnosticPublisherNode();
 
 private:
-  // ロボットの診断情報の初期化
   auto initializeRobots(int max_robot_id) -> void;
 
-  // ロボットエラーの可視化を行う関数
   auto visualizeRobotErrors() -> void;
 
-  // メッセージコールバック
   auto pingMessageCallback(const crane_msgs::msg::PingStatusArray & msg) -> void;
   auto feedbackMessageCallback(const crane_msgs::msg::RobotFeedbackArray & msg) -> void;
   auto worldModelCallback() -> void;
@@ -102,7 +91,7 @@ private:
   std::vector<std::shared_ptr<RobotData>> robots_data;
 
   rclcpp::TimerBase::SharedPtr timer;
-  rclcpp::TimerBase::SharedPtr visualization_timer;  // 可視化用のタイマー
+  rclcpp::TimerBase::SharedPtr visualization_timer;
 
   rclcpp::Subscription<crane_msgs::msg::PingStatusArray>::SharedPtr ping_subscription;
   crane_msgs::msg::PingStatusArray latest_ping_msg;
@@ -110,13 +99,10 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr feedback_subscription;
   crane_msgs::msg::RobotFeedbackArray latest_feedback_msg;
 
-  // 可視化ラッパー
   std::shared_ptr<VisualizerMessageBuilder> visualizer_error;
 
-  // エラーが発生したロボットの位置情報を保持
   std::map<uint8_t, RobotPosition> robot_positions;
 
-  // シミュレータモードフラグ
   bool sim_mode_;
 };
 }  // namespace crane
