@@ -9,7 +9,6 @@
 #include <crane_msg_wrappers/pass_rating.hpp>
 #include <cstdio>
 #include <range/v3/algorithm/find_if.hpp>
-#include <range/v3/algorithm/min.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/functional/comparisons.hpp>
 #include <range/v3/range/conversion.hpp>
