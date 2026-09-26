@@ -8,7 +8,6 @@
 #define CRANE_COMM__DIAGNOSTIC_HELPER_HPP_
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
-#include <functional>
 #include <string>
 
 namespace crane
@@ -32,7 +31,6 @@ namespace crane
 class DiagnosticHelper
 {
 public:
-  /// メンバ関数ポインタ版
   template <typename NodePtrT, typename T>
   DiagnosticHelper(
     NodePtrT node, const std::string & hardware_id, const std::string & task_name, T * obj,
@@ -43,21 +41,7 @@ public:
     updater_.add(task_name, obj, callback);
   }
 
-  /// std::function版（ラムダ対応）
-  template <typename NodePtrT>
-  DiagnosticHelper(
-    NodePtrT node, const std::string & hardware_id, const std::string & task_name,
-    std::function<void(diagnostic_updater::DiagnosticStatusWrapper &)> callback)
-  : updater_(node)
-  {
-    updater_.setHardwareID(hardware_id);
-    updater_.add(task_name, std::move(callback));
-  }
-
   auto forceUpdate() -> void { updater_.force_update(); }
-
-  /// 追加タスク登録が必要な場合のアクセサ
-  auto updater() -> diagnostic_updater::Updater & { return updater_; }
 
 private:
   diagnostic_updater::Updater updater_;

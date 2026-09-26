@@ -40,29 +40,26 @@ struct ParameterWithEvent
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
         if (p.get_type() != PARAMETER_TYPE) return;
-        if constexpr (std::is_same_v<T, bool>) {
-          value = p.as_bool();
-        } else if constexpr (std::is_same_v<T, int>) {
-          value = p.as_int();
-        } else if constexpr (std::is_same_v<T, double>) {
-          value = p.as_double();
-        } else if constexpr (std::is_same_v<T, std::string>) {
-          value = p.as_string();
-        }
+        value = fromParameter(p);
         if (callback) callback(value);
       });
   }
 
   auto fetchParameter(rclcpp::Node & node) -> void
   {
+    value = fromParameter(node.get_parameter(name));
+  }
+
+  static auto fromParameter(const rclcpp::Parameter & p) -> T
+  {
     if constexpr (std::is_same_v<T, bool>) {
-      value = node.get_parameter(name).as_bool();
+      return p.as_bool();
     } else if constexpr (std::is_same_v<T, int>) {
-      value = node.get_parameter(name).as_int();
+      return p.as_int();
     } else if constexpr (std::is_same_v<T, double>) {
-      value = node.get_parameter(name).as_double();
+      return p.as_double();
     } else if constexpr (std::is_same_v<T, std::string>) {
-      value = node.get_parameter(name).as_string();
+      return p.as_string();
     }
   }
 

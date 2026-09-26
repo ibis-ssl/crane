@@ -77,14 +77,16 @@ public:
     socket_.set_option(asio::socket_base::reuse_address(true), ec);
     socket_.set_option(reuse_port(true), ec);
 
-    if (addr.is_multicast()) {
-      socket_.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port), ec);
-      if (ec) {
-        RCLCPP_ERROR(
-          rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
-        throw std::runtime_error("bind failed: " + ec.message());
-      }
+    socket_.bind(
+      addr.is_multicast() ? asio::ip::udp::endpoint(asio::ip::udp::v4(), port)
+                          : asio::ip::udp::endpoint(addr, port),
+      ec);
+    if (ec) {
+      RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
+      throw std::runtime_error("bind failed: " + ec.message());
+    }
 
+    if (addr.is_multicast()) {
       try {
         struct ifaddrs * interfaces = nullptr;
         if (getifaddrs(&interfaces) == -1) {
@@ -133,13 +135,6 @@ public:
         }
       } catch (std::exception & e) {
         RCLCPP_ERROR(rclcpp::get_logger("crane_comm"), "%s", e.what());
-      }
-    } else {
-      socket_.bind(asio::ip::udp::endpoint(addr, port), ec);
-      if (ec) {
-        RCLCPP_ERROR(
-          rclcpp::get_logger("crane_comm"), "[ERROR] bind失敗: %s", ec.message().c_str());
-        throw std::runtime_error("bind failed: " + ec.message());
       }
     }
   }
