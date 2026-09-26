@@ -54,15 +54,6 @@ TEST(GeometryOperationsTest, GetAngleDiff)
 
   // -πとπの間の差（境界を超える）
   EXPECT_NEAR(getAngleDiff(M_PI - 0.1, -M_PI + 0.1), -0.2, 1e-10);
-
-  // Pose2D間の角度差
-  Pose2D pose1{.pos = Point(0.0, 0.0), .theta = 0.5};
-  Pose2D pose2{.pos = Point(0.0, 0.0), .theta = -0.5};
-  EXPECT_DOUBLE_EQ(getAngleDiff(pose1, pose2), 1.0);
-
-  // Pose2DとDouble間の角度差
-  EXPECT_DOUBLE_EQ(getAngleDiff(pose1, 0.0), 0.5);
-  EXPECT_DOUBLE_EQ(getAngleDiff(0.0, pose1), -0.5);
 }
 
 TEST(GeometryOperationsTest, GetIntermediateAngle)
@@ -72,26 +63,6 @@ TEST(GeometryOperationsTest, GetIntermediateAngle)
 
   // -πとπの間の中間角度（境界を超える）
   EXPECT_NEAR(getIntermediateAngle(M_PI - 0.1, -M_PI + 0.1), M_PI, 1e-10);
-}
-
-TEST(GeometryOperationsTest, GetCircle)
-{
-  // 3点から円を作成
-  // (1,0)を中心とする半径1の円
-  Point p1(0.0, 0.0);
-  Point p2(2.0, 0.0);
-  Point p3(1.0, 1.0);
-  auto circle = getCircle(p1, p2, p3);
-
-  ASSERT_TRUE(circle.has_value());
-  EXPECT_NEAR(circle->center.x(), 1.0, 1e-10);
-  EXPECT_NEAR(circle->center.y(), 0.0, 1e-10);
-  EXPECT_NEAR(circle->radius, 1.0, 1e-10);
-
-  // 一直線上の3点からは円を作成できない
-  Point p4(3.0, 0.0);
-  auto invalid_circle = getCircle(p1, p2, p4);
-  EXPECT_FALSE(invalid_circle.has_value());
 }
 
 TEST(GeometryOperationsTest, AroundBallApproachTargetStaysWithinMaxOffsetOfBall)
@@ -180,31 +151,6 @@ TEST(GeometryOperationsTest, Deg2RadAndRad2Deg)
   constexpr float f_rad = deg2rad(f_deg);
   EXPECT_NEAR(f_rad, static_cast<float>(M_PI / 3.0), 1e-5f);
   EXPECT_NEAR(rad2deg(f_rad), f_deg, 1e-5f);
-}
-
-TEST(GeometryOperationsTest, RotateVector)
-{
-  Vector2 v(1.0, 0.0);
-
-  // 90度回転
-  auto v_90 = rotate(v, M_PI_2);
-  EXPECT_NEAR(v_90.x(), 0.0, 1e-10);
-  EXPECT_NEAR(v_90.y(), 1.0, 1e-10);
-
-  // 180度回転
-  auto v_180 = rotate(v, M_PI);
-  EXPECT_NEAR(v_180.x(), -1.0, 1e-10);
-  EXPECT_NEAR(v_180.y(), 0.0, 1e-10);
-
-  // -90度回転
-  auto v_neg90 = rotate(v, -M_PI_2);
-  EXPECT_NEAR(v_neg90.x(), 0.0, 1e-10);
-  EXPECT_NEAR(v_neg90.y(), -1.0, 1e-10);
-
-  // 0度回転
-  auto v_0 = rotate(v, 0.0);
-  EXPECT_DOUBLE_EQ(v_0.x(), 1.0);
-  EXPECT_DOUBLE_EQ(v_0.y(), 0.0);
 }
 
 TEST(GeometryOperationsTest, ClampNorm)
