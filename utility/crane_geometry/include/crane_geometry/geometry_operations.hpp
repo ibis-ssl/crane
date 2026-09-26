@@ -109,14 +109,6 @@ inline auto getVerticalVec(const Point & v) -> Point
   return vertical_v;
 }
 
-inline auto getIntersections(const Segment & segment1, const Segment & segment2)
-  -> std::vector<Point>
-{
-  std::vector<Point> intersections;
-  bg::intersection(segment1, segment2, intersections);
-  return intersections;
-}
-
 /**
  * @brief 円と線分の交点を求める
  *
