@@ -11,7 +11,6 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_receiver/robot_feedback_protocol.hpp>
 #include <crane_utils/parameter.hpp>
-#include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <deque>
 #include <format>
 #include <limits>
@@ -344,7 +343,6 @@ public:
     work_guard_(asio::make_work_guard(io_context_)),
     clock(RCL_ROS_TIME)
   {
-    crane::CraneVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     int max_robot_id = crane::get_or_declare_parameter(this, "max_robot_id", 15);
@@ -433,8 +431,6 @@ public:
         msg.feedback.push_back(robot_feedback_msg);
       }
       publisher->publish(msg);
-      visualizer->flush();
-      crane::CraneVisualizerBuffer::publish();
     });
   }
 
@@ -448,9 +444,6 @@ public:
   std::vector<std::shared_ptr<RobotFeedbackReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
-
-  crane::VisualizerMessageBuilder::SharedPtr visualizer =
-    std::make_shared<crane::VisualizerMessageBuilder>("receiver/feedback");
 
 private:
   asio::io_context io_context_;
