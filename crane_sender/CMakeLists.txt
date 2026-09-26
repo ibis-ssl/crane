@@ -42,7 +42,6 @@ ament_target_dependencies(crane_sender_base
   rclcpp
   crane_msgs
   crane_msg_wrappers
-  crane_comm
   crane_utils
 )
 target_include_directories(crane_sender_base PUBLIC include)
