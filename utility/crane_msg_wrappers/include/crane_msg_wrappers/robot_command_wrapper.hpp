@@ -43,10 +43,6 @@ private:
   {
     return latest_msg.delay_checkpoints;
   }
-  auto getDelayCheckpoints() const -> const crane_msgs::msg::DelayCheckpoints &
-  {
-    return latest_msg.delay_checkpoints;
-  }
   auto getVelocityPlanTrace() -> decltype(latest_msg.velocity_plan_trace) &
   {
     return latest_msg.velocity_plan_trace;
