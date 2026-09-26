@@ -22,15 +22,6 @@ class ResvgPyRenderer(SvgRendererBase):
         dpi: int = 96,
         output_format: OutputFormat = OutputFormat.PNG,
     ):
-        """
-        初期化.
-
-        Args:
-            width: 出力画像幅（ピクセル）
-            height: 出力画像高さ（ピクセル）
-            dpi: 解像度（dots per inch）
-            output_format: 出力フォーマット（PNG or RAW_RGBA）
-        """
         super().__init__(width, height, dpi, output_format)
 
         try:
@@ -53,15 +44,6 @@ class ResvgPyRenderer(SvgRendererBase):
                 ) from e
 
     def render(self, svg_string: str) -> bytes:
-        """
-        SVG文字列を画像バイト列に変換.
-
-        Args:
-            svg_string: SVGドキュメント文字列
-
-        Returns:
-            画像バイト列（PNG or RAW RGBA、output_formatに依存）
-        """
         try:
             png_bytes = self._svg_to_bytes(
                 svg_string=svg_string,
@@ -84,12 +66,6 @@ class ResvgPyRenderer(SvgRendererBase):
 
     @classmethod
     def is_available(cls) -> bool:
-        """
-        resvg-pyが使用可能かチェック.
-
-        Returns:
-            使用可能な場合True
-        """
         try:
             import resvg_py  # noqa: F401
 
@@ -99,10 +75,8 @@ class ResvgPyRenderer(SvgRendererBase):
 
     @classmethod
     def get_name(cls) -> str:
-        """レンダラー名を取得."""
         return "resvg"
 
     @classmethod
     def get_description(cls) -> str:
-        """レンダラーの説明を取得."""
         return "Rust-based high-performance SVG renderer (3-10x faster than cairosvg)"

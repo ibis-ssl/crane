@@ -64,6 +64,19 @@ class VideoGenerator:
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             raise RuntimeError("ffmpeg is not installed or not in PATH") from e
 
+    def _output_args(self, output_path: Path) -> list[str]:
+        return [
+            "-c:v",
+            self.codec,
+            "-crf",
+            str(self.crf),
+            "-pix_fmt",
+            self.pixel_format,
+            "-preset",
+            self.preset,
+            str(output_path),
+        ]
+
     def generate(
         self,
         frames: Iterator[bytes],
@@ -101,15 +114,7 @@ class VideoGenerator:
             str(self.fps),
             "-i",
             "-",  # 標準入力から読み込み
-            "-c:v",
-            self.codec,
-            "-crf",
-            str(self.crf),
-            "-pix_fmt",
-            self.pixel_format,
-            "-preset",
-            self.preset,
-            str(output_path),
+            *self._output_args(output_path),
         ]
 
         if verbose:
@@ -179,15 +184,7 @@ class VideoGenerator:
             str(self.fps),
             "-i",
             str(frames_dir / frame_pattern),
-            "-c:v",
-            self.codec,
-            "-crf",
-            str(self.crf),
-            "-pix_fmt",
-            self.pixel_format,
-            "-preset",
-            self.preset,
-            str(output_path),
+            *self._output_args(output_path),
         ]
 
         if verbose:
