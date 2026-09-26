@@ -8,7 +8,6 @@
 #define CRANE_PHYSICS__SLACK_TIME_CONFIG_HPP_
 
 #include <crane_utils/parameter.hpp>
-#include <iostream>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -91,47 +90,6 @@ struct SlackTimeConfig
     crane::get_or_declare_parameter(node, prefix + "circling_radius", config.circling_radius);
 
     return config;
-  }
-
-  /**
-   * @brief ROS2ノードにパラメータを宣言
-   *
-   * @param node ROS2ノード
-   * @param prefix パラメータ名のプレフィックス（例: "slack."）
-   *
-   * @details declare_parameter を使用してパラメータをノードに登録します。
-   * これにより、launch ファイルからパラメータを設定可能になります。
-   */
-  void declareParameters(rclcpp::Node & node, const std::string & prefix = "slack.") const
-  {
-    crane::declare_parameter_if_not_declared(
-      node, prefix + "robot_max_acceleration", robot_max_acceleration);
-    crane::declare_parameter_if_not_declared(
-      node, prefix + "robot_max_velocity", robot_max_velocity);
-    crane::declare_parameter_if_not_declared(node, prefix + "time_horizon", time_horizon);
-    crane::declare_parameter_if_not_declared(node, prefix + "time_step", time_step);
-    crane::declare_parameter_if_not_declared(node, prefix + "slack_time_offset", slack_time_offset);
-    crane::declare_parameter_if_not_declared(node, prefix + "distance_horizon", distance_horizon);
-    crane::declare_parameter_if_not_declared(node, prefix + "velocity_epsilon", velocity_epsilon);
-    crane::declare_parameter_if_not_declared(node, prefix + "circling_radius", circling_radius);
-  }
-
-  /**
-   * @brief 設定内容をデバッグ出力
-   *
-   * @param os 出力ストリーム
-   */
-  void print(std::ostream & os = std::cout) const
-  {
-    os << "[SlackTimeConfig]\n";
-    os << "  robot_max_acceleration: " << robot_max_acceleration << " m/s^2\n";
-    os << "  robot_max_velocity: " << robot_max_velocity << " m/s\n";
-    os << "  time_horizon: " << time_horizon << " s\n";
-    os << "  time_step: " << time_step << " s\n";
-    os << "  slack_time_offset: " << slack_time_offset << " s\n";
-    os << "  distance_horizon: " << distance_horizon << " m\n";
-    os << "  velocity_epsilon: " << velocity_epsilon << " m/s\n";
-    os << "  circling_radius: " << circling_radius << " m\n";
   }
 };
 
