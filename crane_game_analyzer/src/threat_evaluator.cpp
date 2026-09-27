@@ -15,6 +15,29 @@
 namespace crane
 {
 
+namespace
+{
+auto setThreatLines(
+  crane_msgs::msg::ThreatInfo & msg, const Segment & threat_line,
+  const std::optional<Segment> & protection_line) -> void
+{
+  msg.threat_line_start.x = threat_line.first.x();
+  msg.threat_line_start.y = threat_line.first.y();
+  msg.threat_line_end.x = threat_line.second.x();
+  msg.threat_line_end.y = threat_line.second.y();
+
+  if (protection_line) {
+    msg.has_protection_line = true;
+    msg.protection_line_start.x = protection_line->first.x();
+    msg.protection_line_start.y = protection_line->first.y();
+    msg.protection_line_end.x = protection_line->second.x();
+    msg.protection_line_end.y = protection_line->second.y();
+  } else {
+    msg.has_protection_line = false;
+  }
+}
+}  // namespace
+
 ThreatEvaluator::ThreatEvaluator(const ThreatEvaluatorConfig & config) : config_(config) {}
 
 auto ThreatEvaluator::calculateBallThreat(const WorldModelWrapper & world_model) -> BallThreat
@@ -123,20 +146,7 @@ auto ThreatEvaluator::toThreatInfoMsg(const BallThreat & threat) const
   msg.source_position.y = threat.source_position.y();
   msg.source_position.z = 0.0;
 
-  msg.threat_line_start.x = threat.threat_line.first.x();
-  msg.threat_line_start.y = threat.threat_line.first.y();
-  msg.threat_line_end.x = threat.threat_line.second.x();
-  msg.threat_line_end.y = threat.threat_line.second.y();
-
-  if (threat.protection_line) {
-    msg.has_protection_line = true;
-    msg.protection_line_start.x = threat.protection_line->first.x();
-    msg.protection_line_start.y = threat.protection_line->first.y();
-    msg.protection_line_end.x = threat.protection_line->second.x();
-    msg.protection_line_end.y = threat.protection_line->second.y();
-  } else {
-    msg.has_protection_line = false;
-  }
+  setThreatLines(msg, threat.threat_line, threat.protection_line);
 
   msg.velocity.x = threat.velocity.x();
   msg.velocity.y = threat.velocity.y();
@@ -170,20 +180,7 @@ auto ThreatEvaluator::toThreatInfoMsg(const RobotThreat & threat) const
   msg.source_position.y = threat.robot->pose.pos.y();
   msg.source_position.z = 0.0;
 
-  msg.threat_line_start.x = threat.threat_line.first.x();
-  msg.threat_line_start.y = threat.threat_line.first.y();
-  msg.threat_line_end.x = threat.threat_line.second.x();
-  msg.threat_line_end.y = threat.threat_line.second.y();
-
-  if (threat.protection_line) {
-    msg.has_protection_line = true;
-    msg.protection_line_start.x = threat.protection_line->first.x();
-    msg.protection_line_start.y = threat.protection_line->first.y();
-    msg.protection_line_end.x = threat.protection_line->second.x();
-    msg.protection_line_end.y = threat.protection_line->second.y();
-  } else {
-    msg.has_protection_line = false;
-  }
+  setThreatLines(msg, threat.threat_line, threat.protection_line);
 
   msg.velocity.x = threat.robot->vel.linear.x();
   msg.velocity.y = threat.robot->vel.linear.y();
