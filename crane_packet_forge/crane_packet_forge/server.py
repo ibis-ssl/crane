@@ -42,7 +42,8 @@ def resolve_shared_root(explicit: Path | None = None) -> Path | None:
     """crane_web_debugger の web/shared を探す。
 
     docker では compose が bind mount する。直接起動のときは ament の share か、
-    ソースツリーの隣から拾う。見つからなければテーマ無しで動かす（致命的ではない）。
+    ソースツリーの隣から拾う。forge.js は /shared/robot-health.js を import するので、
+    見つからないとテーマだけでなくページ全体が動かない。
     """
     candidates: list[Path] = []
     if explicit:
@@ -57,7 +58,7 @@ def resolve_shared_root(explicit: Path | None = None) -> Path | None:
             Path(get_package_share_directory("crane_web_debugger")) / "web" / "shared"
         )
     except Exception:  # noqa: BLE001, S110 - docker や素の python では ament が無い。
-        # 共有テーマが見つからなくても GUI 自体は動くので、ここは握りつぶしてよい。
+        # 残りの候補（ソースツリーの隣）で見つかりうるので、ここは握りつぶしてよい。
         pass
     candidates.append(
         PACKAGE_DIR.parent.parent / "crane_web_debugger" / "web" / "shared"

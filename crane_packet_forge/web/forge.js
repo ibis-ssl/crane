@@ -8,6 +8,8 @@
  * 送ったりはしない（WebSocket が一瞬詰まると check_counter が止まり AI 断になる）。
  */
 
+import { voltageSeverity, temperatureSeverity } from '/shared/robot-health.js';
+
 const PUSH_DEBOUNCE_MS = 80;
 
 const state = {
@@ -692,19 +694,6 @@ function setupSteps() {
 
 // ===== フィードバック帯 =====
 
-function severityForVoltage(v) {
-  if (!v) return 'muted';
-  if (v < 21.0) return 'crit';
-  if (v < 22.5) return 'warn';
-  return 'ok';
-}
-
-function severityForTemperature(t) {
-  if (t >= 75) return 'crit';
-  if (t >= 60) return 'warn';
-  return 'ok';
-}
-
 function renderFeedback(feedback) {
   const stats = $('feedback-stats');
   const endpoint = $('feedback-endpoint');
@@ -729,9 +718,9 @@ function renderFeedback(feedback) {
     const echo = sent === undefined ? String(last.counter) : `${last.counter} / 送信 ${sent}`;
     cells.push(statCell('counter', echo, 'ok'));
     cells.push(statCell('電圧', last.voltage.map((v) => v.toFixed(1)).join(' / '),
-      severityForVoltage(last.voltage[0])));
+      voltageSeverity(last.voltage[0])));
     const maxTemp = Math.max(...last.temperature);
-    cells.push(statCell('温度max', `${maxTemp}°C`, severityForTemperature(maxTemp)));
+    cells.push(statCell('温度max', `${maxTemp}°C`, temperatureSeverity(maxTemp)));
     cells.push(statCell('ball', last.ball_detection.join(','), 'ok'));
     cells.push(statCell('kick', String(last.kick_state), 'ok'));
     cells.push(statCell('odom', last.odom.map((v) => v.toFixed(2)).join(', '), 'ok'));

@@ -14,7 +14,7 @@ raw_bytes / steps を落としていたため、GUI 側が undefined を掴ん�
 from pathlib import Path
 
 import pytest
-from crane_packet_forge.server import ForgeState, resolve_web_root
+from crane_packet_forge.server import ForgeState, resolve_shared_root, resolve_web_root
 from crane_packet_forge.spec import PacketSpec
 
 from crane_packet_forge import fields as F
@@ -73,6 +73,16 @@ def test_web_root_contains_the_page() -> None:
     root = resolve_web_root()
     assert (root / "index.html").is_file()
     assert (root / "forge.js").is_file()
+
+
+def test_shared_root_has_what_forge_js_imports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """forge.js は電圧・温度の警告線を crane_web_debugger の /shared から import する。"""
+    monkeypatch.delenv("SHARED_ROOT", raising=False)
+    shared = resolve_shared_root()
+    assert shared is not None
+    assert (shared / "robot-health.js").is_file()
 
 
 def test_web_root_falls_back_to_the_ament_share(
