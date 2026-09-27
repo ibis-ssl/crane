@@ -36,18 +36,6 @@ include_directories(
 
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
 
-add_library(crane_sender_base STATIC src/sender_base.cpp)
-set_target_properties(crane_sender_base PROPERTIES POSITION_INDEPENDENT_CODE ON)
-ament_target_dependencies(crane_sender_base
-  rclcpp
-  crane_msgs
-  crane_msg_wrappers
-  crane_utils
-)
-target_include_directories(crane_sender_base PUBLIC include)
-
-target_link_libraries(ibis_sender_node crane_sender_base)
-
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
@@ -55,7 +43,6 @@ if (BUILD_TESTING)
   # /world_model・/robot_commands を実際に流すので、動いている crane と混ざらないようドメインを分ける
   ament_auto_add_gtest(test_sender_callback test/test_sender_callback.cpp
     ENV ROS_DOMAIN_ID=87 ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST)
-  target_link_libraries(test_sender_callback crane_sender_base)
 endif ()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
