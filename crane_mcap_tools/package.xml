@@ -7,6 +7,8 @@
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
 
+  <exec_depend>crane_msgs</exec_depend>
+  <exec_depend>crane_visualization_interfaces</exec_depend>
   <exec_depend>python3-cairosvg</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>rosbag2_py</exec_depend>
