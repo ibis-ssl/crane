@@ -65,7 +65,6 @@ struct BallThreat
   Vector2 velocity{0, 0};
   Segment threat_line;
   std::optional<Segment> protection_line;
-  std::optional<uint8_t> pass_receiver_id;
 };
 
 /**
