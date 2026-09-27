@@ -93,33 +93,25 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   };
 
   if (msg->buttons[BUTTON_ADJUST]) {
-    if (msg->buttons[BUTTON_ADJUST_UP]) {
-      if (!is_pushed_adjust) {
-        if (msg->buttons[BUTTON_ADJUST_KICK]) {
-          adjust_value(kick_power, 0.1);
-          RCLCPP_INFO(get_logger(), "kick up: %f", kick_power);
-        }
-
-        if (msg->buttons[BUTTON_ADJUST_DRIBBLE]) {
-          adjust_value(dribble_power, 0.1);
-          RCLCPP_INFO(get_logger(), "dribble up: %f", dribble_power);
-        }
-      }
-      is_pushed_adjust = true;
-    } else if (msg->buttons[BUTTON_ADJUST_DOWN]) {
-      if (!is_pushed_adjust) {
-        if (msg->buttons[BUTTON_ADJUST_KICK]) {
-          adjust_value(kick_power, -0.1);
-          RCLCPP_INFO(get_logger(), "kick down: %f", kick_power);
-        }
-        if (msg->buttons[BUTTON_ADJUST_DRIBBLE]) {
-          adjust_value(dribble_power, -0.1);
-          RCLCPP_INFO(get_logger(), "dribble down: %f", dribble_power);
-        }
-      }
-      is_pushed_adjust = true;
-    } else {
+    const bool up = msg->buttons[BUTTON_ADJUST_UP];
+    const bool down = msg->buttons[BUTTON_ADJUST_DOWN];
+    if (!up && !down) {
       is_pushed_adjust = false;
+    } else {
+      if (!is_pushed_adjust) {
+        // UP と DOWN の同時押しは UP を優先する
+        const double step = up ? 0.1 : -0.1;
+        const char * direction = up ? "up" : "down";
+        if (msg->buttons[BUTTON_ADJUST_KICK]) {
+          adjust_value(kick_power, step);
+          RCLCPP_INFO(get_logger(), "kick %s: %f", direction, kick_power);
+        }
+        if (msg->buttons[BUTTON_ADJUST_DRIBBLE]) {
+          adjust_value(dribble_power, step);
+          RCLCPP_INFO(get_logger(), "dribble %s: %f", direction, dribble_power);
+        }
+      }
+      is_pushed_adjust = true;
     }
   }
 
