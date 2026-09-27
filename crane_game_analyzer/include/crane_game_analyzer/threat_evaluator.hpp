@@ -103,10 +103,6 @@ public:
   auto calculateRobotThreats(const WorldModelWrapper & world_model, const BallThreat & ball_threat)
     -> std::vector<RobotThreat>;
 
-  auto rateRobotThreat(
-    const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
-    const WorldModelWrapper & world_model) -> ThreatRatingDetail;
-
   auto calculateRecommendedDefenders(
     const std::vector<RobotThreat> & robot_threats, int available_robots) -> int;
 
@@ -116,6 +112,10 @@ public:
 
 private:
   ThreatEvaluatorConfig config_;
+
+  auto rateRobotThreat(
+    const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
+    const WorldModelWrapper & world_model) -> ThreatRatingDetail;
 
   // ===== 個別スコア計算（4因子） =====
 
