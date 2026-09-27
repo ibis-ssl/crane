@@ -3,7 +3,7 @@
  * Imports shared design tokens, overrides for mobile-first PWA.
  * Does NOT use Material Symbols CDN (offline PWA - uses emoji icons).
  */
-@import url('../m3e-theme.css');
+@import url('/shared/theme/m3e-theme.css');
 
 /* === Semantic aliases for annotation-specific usage === */
 :root {

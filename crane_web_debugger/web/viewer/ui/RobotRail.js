@@ -5,7 +5,8 @@
 //
 // 異常表示は robot_feedback が実際に届いていることが前提。
 
-import { FEEDBACK_STALE_MS, VOLTAGE_CRIT_V, VOLTAGE_WARN_V, TEMP_CRIT_C } from '../renderer/constants.js';
+import { FEEDBACK_STALE_MS } from '../renderer/constants.js';
+import { formatVoltage, formatTemperature, formatErrorBadge } from '../renderer/formatters.js';
 
 const RAIL_ROBOT_COUNT = 13;
 const RAIL_REFRESH_MS = 500;
@@ -57,20 +58,21 @@ export class RobotRail {
         if (!fb) return 'none';
         // stale なフィードバックで警告を出し続けない（切断直後の残像になる）
         if (now - (this._v.state.feedbackTimestamp[id] ?? 0) > FEEDBACK_STALE_MS) return 'none';
-        if ((fb.error_id ?? 0) !== 0) return 'danger';
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_CRIT_V) return 'danger';
-        if (Math.max(...(fb.temperatures ?? [0])) >= TEMP_CRIT_C) return 'danger';
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN_V) return 'warn';
+        if (formatErrorBadge(fb) !== null) return 'danger';
+        const voltage = formatVoltage(fb.voltage).severity;
+        if (voltage === 'crit') return 'danger';
+        if (formatTemperature(fb.temperatures).severity === 'crit') return 'danger';
+        if (voltage === 'warn') return 'warn';
         return 'none';
     }
 
     _alertText(id) {
         const fb = this._v.state.robotFeedback[id] ?? {};
         const parts = [];
-        if ((fb.error_id ?? 0) !== 0) parts.push(`エラー id=${fb.error_id}`);
-        if (fb.voltage != null && fb.voltage <= VOLTAGE_WARN_V) parts.push(`電圧 ${fb.voltage.toFixed(1)}V`);
-        const maxT = Math.max(...(fb.temperatures ?? [0]));
-        if (maxT >= TEMP_CRIT_C) parts.push(`温度 ${maxT.toFixed(0)}℃`);
+        if (formatErrorBadge(fb) !== null) parts.push(`エラー id=${fb.error_id}`);
+        if (formatVoltage(fb.voltage).severity !== 'ok') parts.push(`電圧 ${fb.voltage.toFixed(1)}V`);
+        const temperature = formatTemperature(fb.temperatures);
+        if (temperature.severity === 'crit') parts.push(`温度 ${temperature.max.toFixed(0)}℃`);
         return parts.join(' / ') || '正常';
     }
 }
