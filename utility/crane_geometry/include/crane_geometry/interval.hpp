@@ -92,15 +92,6 @@ public:
     uppers = std::move(new_uppers);
   }
 
-  auto getWidth() const -> double
-  {
-    double width = 0.f;
-    for (size_t i = 0; i < lowers.size(); i++) {
-      width += uppers[i] - lowers[i];
-    }
-    return width;
-  }
-
   auto getLargestInterval() const -> std::pair<double, double>
   {
     double max_width = 0.f;

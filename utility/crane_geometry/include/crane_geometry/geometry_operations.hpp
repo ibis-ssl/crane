@@ -61,20 +61,6 @@ constexpr auto rad2deg(T rad) noexcept -> T
 
 inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
-/**
- * @brief 2Dベクトルを指定角度（ラジアン、反時計回り）だけ回転
- *
- * @param vec 回転対象の2Dベクトル
- * @param angle_rad 回転角度（ラジアン）
- * @return Vector2 回転後のベクトル
- */
-inline auto rotate(const Vector2 & vec, double angle_rad) -> Vector2
-{
-  const double c = std::cos(angle_rad);
-  const double s = std::sin(angle_rad);
-  return Vector2(vec.x() * c - vec.y() * s, vec.x() * s + vec.y() * c);
-}
-
 inline auto normalizeAngle(double angle_rad) -> double
 {
   while (angle_rad > M_PI) {
@@ -101,21 +87,6 @@ inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
   }
 }
 
-inline auto getAngleDiff(const Pose2D & pose1, const Pose2D & pose2) -> double
-{
-  return getAngleDiff(pose1.theta, pose2.theta);
-}
-
-inline auto getAngleDiff(const Pose2D & pose1, const double angle_rad) -> double
-{
-  return getAngleDiff(pose1.theta, angle_rad);
-}
-
-inline auto getAngleDiff(const double angle_rad, const Pose2D & pose1) -> double
-{
-  return getAngleDiff(angle_rad, pose1.theta);
-}
-
 inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
 {
   angle_rad1 = normalizeAngle(angle_rad1);
@@ -136,14 +107,6 @@ inline auto getVerticalVec(const Point & v) -> Point
   vertical_v.x() = v.y();
   vertical_v.y() = -v.x();
   return vertical_v;
-}
-
-inline auto getIntersections(const Segment & segment1, const Segment & segment2)
-  -> std::vector<Point>
-{
-  std::vector<Point> intersections;
-  bg::intersection(segment1, segment2, intersections);
-  return intersections;
 }
 
 /**
@@ -208,32 +171,6 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
   ClosestPoint result;
   bg::closest_point(geometry1, geometry2, result);
   return result;
-}
-
-inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
-{
-  // Using the formula from https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_2
-  double D =
-    2 * (p1.x() * (p2.y() - p3.y()) + p2.x() * (p3.y() - p1.y()) + p3.x() * (p1.y() - p2.y()));
-
-  if (std::fabs(D) < 1e-9) {  // Points are collinear
-    return std::nullopt;
-  }
-
-  Circle circle;
-  double p1_sq = p1.x() * p1.x() + p1.y() * p1.y();
-  double p2_sq = p2.x() * p2.x() + p2.y() * p2.y();
-  double p3_sq = p3.x() * p3.x() + p3.y() * p3.y();
-
-  circle.center.x() =
-    (p1_sq * (p2.y() - p3.y()) + p2_sq * (p3.y() - p1.y()) + p3_sq * (p1.y() - p2.y())) / D;
-  circle.center.y() =
-    (p1_sq * (p3.x() - p2.x()) + p2_sq * (p1.x() - p3.x()) + p3_sq * (p2.x() - p1.x())) / D;
-
-  circle.radius = std::sqrt(
-    (circle.center.x() - p1.x()) * (circle.center.x() - p1.x()) +
-    (circle.center.y() - p1.y()) * (circle.center.y() - p1.y()));
-  return circle;
 }
 
 /**
