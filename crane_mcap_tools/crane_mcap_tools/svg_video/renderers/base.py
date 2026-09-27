@@ -75,6 +75,16 @@ class SvgRendererBase(ABC):
         """
 
     @classmethod
+    @abstractmethod
+    def get_install_command(cls) -> str:
+        """
+        このレンダラーを使えるようにするインストール手順を取得.
+
+        Returns:
+            インストールコマンド（例: "pip install resvg-py"）
+        """
+
+    @classmethod
     def get_description(cls) -> str:
         """
         レンダラーの説明を取得.

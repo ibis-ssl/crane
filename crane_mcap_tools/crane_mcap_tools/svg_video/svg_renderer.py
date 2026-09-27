@@ -68,7 +68,7 @@ def create_renderer(
     if not renderer_cls.is_available():
         raise ValueError(
             f"Backend '{backend}' is not available. "
-            f"Please install it: pip install {backend}"
+            f"Please install it: {renderer_cls.get_install_command()}"
         )
 
     logger.info(f"Using {renderer_cls.get_name()} renderer")
