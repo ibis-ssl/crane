@@ -218,6 +218,15 @@ struct WaypointChoice
   -> std::vector<Point>;
 
 /**
+ * @brief 経路（折れ線）までの最短距離を求める
+ *
+ * @param point 位置
+ * @param path 経路
+ * @return double 最も近い区間までの距離（経路が 2 点未満なら無限大）
+ */
+[[nodiscard]] auto distanceToPath(const Point & point, const std::vector<Point> & path) -> double;
+
+/**
  * @brief 経路にそって移動量分移動した先の位置を求める
  *
  * @param path 複数ポイントからなる経路
