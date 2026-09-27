@@ -6,7 +6,6 @@
 
 #include <fmt/format.h>
 
-#include <cmath>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -14,7 +13,6 @@
 #include <crane_utils/parameter.hpp>
 #include <crane_utils/time.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
-#include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <map>
 #include <range/v3/algorithm/contains.hpp>
