@@ -215,7 +215,7 @@ class PacketSpec:
 
 def robot_ip(robot_id: int) -> str:
     """実機の CM4 アドレス。crane_robot_receiver の ping と同じ規則。"""
-    return f"192.168.20.{100 + robot_id}"
+    return f"{L.ROBOT_IP_BASE}.{L.ROBOT_IP_OCTET_OFFSET + robot_id}"
 
 
 def coerce_field_value(key: str, value: Any) -> Any:
