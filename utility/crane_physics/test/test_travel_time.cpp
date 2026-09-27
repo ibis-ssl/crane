@@ -24,7 +24,8 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
   // 2秒加速(0~2m/s, 2m)
   // 2秒減速(2~0m/s, 2m)
   // 期待出力時間: 4.0(4m進む)
-  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 4.);
+  double time = crane::getTravelTimeTrapezoidal(
+    stopped_robot->pose.pos, stopped_robot->vel.linear, target, 1., 4.);
 
   EXPECT_DOUBLE_EQ(time, 4.0);
 }
@@ -41,7 +42,8 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
   // 2秒等速(2m/s, 4m)
   // 2秒減速(2~0m/s, 2m)
   // 期待出力時間: 6.0(8m進む)
-  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 2.);
+  double time = crane::getTravelTimeTrapezoidal(
+    stopped_robot->pose.pos, stopped_robot->vel.linear, target, 1., 2.);
 
   EXPECT_DOUBLE_EQ(time, 6.0);
 }
@@ -58,7 +60,8 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
   // 1秒加速(1~2m/s, 1.5m): 2^2 - 1^2 = 2 * 1 * x, 3 = 2x, x = 1.5
   // 2秒減速(2~0m/s, 2m): 2^2 - 0^2 = 2 * 1 * x, 4 = 2x, x = 2
   // 期待出力時間: 3.0(3.5m進む)
-  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 4.);
+  double time = crane::getTravelTimeTrapezoidal(
+    stopped_robot->pose.pos, stopped_robot->vel.linear, target, 1., 4.);
   EXPECT_DOUBLE_EQ(time, 3.0);
 }
 
@@ -75,7 +78,8 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
   // 2秒等速(2m/s, 4m)
   // 2秒減速(2~0m/s, 2m)
   // 期待出力時間: 5.0(7.5m進む)
-  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 2.);
+  double time = crane::getTravelTimeTrapezoidal(
+    stopped_robot->pose.pos, stopped_robot->vel.linear, target, 1., 2.);
   EXPECT_DOUBLE_EQ(time, 5.0);
 }
 
