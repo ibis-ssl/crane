@@ -83,9 +83,14 @@ def test_handle_unknown_function_returns_error(handler):
     }
 
 
-def test_handle_turns_handler_exception_into_error():
-    result = MCAPToolsHandler(annotation([])).handle("get_world_model_at_time", {})
+def test_handle_turns_handler_exception_into_error(handler):
+    result = handler.handle("find_closest_robot_to_ball", {"time_offset_sec": "soon"})
     assert set(result) == {"error"}
+
+
+def test_world_model_at_time_without_snapshots_returns_error():
+    result = MCAPToolsHandler(annotation([])).handle("get_world_model_at_time", {})
+    assert result == {"error": "No snapshot found"}
 
 
 def test_world_model_at_time_picks_snapshot_closest_to_offset(handler):
