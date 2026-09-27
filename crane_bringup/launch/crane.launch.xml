@@ -155,8 +155,6 @@ limitations under the License.
   <!-- sender -->
   <node pkg="crane_sender" exec="ibis_sender_node">
     <param name="no_movement" value="false"/>
-    <!-- sim_mode は ibis_sender_node からは参照されていない（dead param）。feedback 受信とは無関係。 -->
-    <param name="sim_mode" value="$(var sim)"/>
     <param name="target_address" value="$(var ibis_target_address)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
     <param name="latency_ms" value="$(var sender_latency_ms)"/>
