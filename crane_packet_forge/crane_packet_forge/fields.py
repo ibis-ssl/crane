@@ -381,8 +381,6 @@ FLAG_FIELDS: tuple[FieldDef, ...] = _flag_fields()
 ALL_FIELDS: tuple[FieldDef, ...] = FIELDS + FLAG_FIELDS
 BY_KEY: dict[str, FieldDef] = {f.key: f for f in ALL_FIELDS}
 
-MODE_ARGS_SIZE = L.MODE_ARGS_SIZE
-
 GROUP_LABELS = {
     "identity": "識別・カウンタ",
     "vision": "vision 位置",
@@ -419,7 +417,7 @@ def describe_byte(index: int) -> str:
     owner = owner_of_byte(index)
     if owner is not None:
         return f"byte {index} — {owner.key}"
-    args_end = L.CONTROL_MODE_ARGS + MODE_ARGS_SIZE
+    args_end = L.CONTROL_MODE_ARGS + L.MODE_ARGS_SIZE
     if L.CONTROL_MODE_ARGS <= index < args_end:
         return (
             f"byte {index} — mode_args 領域だが、既知のモードはどちらも"
