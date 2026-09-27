@@ -37,6 +37,18 @@ enum class RefereeStage : int32_t {
 namespace
 {
 
+std::string command_to_string(int32_t cmd)
+{
+  auto e = magic_enum::enum_cast<RefereeCommand>(cmd);
+  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
+}
+
+std::string stage_to_string(int32_t stage)
+{
+  auto e = magic_enum::enum_cast<RefereeStage>(stage);
+  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
+}
+
 RefereeSnapshot make_snapshot(const TimestampedMsg<Referee> & tm, int64_t bag_start_ns)
 {
   const auto & msg = tm.msg;
@@ -95,18 +107,6 @@ std::vector<RefereeSnapshot> sample_referee(const BagData & data, double interva
     result.push_back(make_snapshot(*tm, bag_start));
   }
   return result;
-}
-
-std::string command_to_string(int32_t cmd)
-{
-  auto e = magic_enum::enum_cast<RefereeCommand>(cmd);
-  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
-}
-
-std::string stage_to_string(int32_t stage)
-{
-  auto e = magic_enum::enum_cast<RefereeStage>(stage);
-  return e ? std::string(magic_enum::enum_name(*e)) : "UNKNOWN";
 }
 
 }  // namespace crane::bag

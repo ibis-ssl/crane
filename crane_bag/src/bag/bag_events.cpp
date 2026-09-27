@@ -47,6 +47,9 @@ enum class GameEventType : int32_t {
 
 enum class Team : int32_t { UNKNOWN = 0, YELLOW = 1, BLUE = 2 };
 
+namespace
+{
+
 std::vector<Event> detect_play_transitions(const BagData & data)
 {
   std::vector<Event> events;
@@ -140,7 +143,7 @@ std::vector<Event> detect_kick_events(const BagData & data)
   return events;
 }
 
-std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold)
+std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold = 3.0)
 {
   std::vector<Event> events;
   bool prev_above = false;
@@ -176,7 +179,6 @@ std::vector<Event> detect_goals(const BagData & data)
   // （Division B 相当）が入っていることがある。フレームごとの値を使わないと、
   // 本来のフィールドより狭い閾値でゴールを誤検出する。
   // 自陣/敵陣も on_positive_half を見ないと符号が逆になる。
-  constexpr double GOAL_HALF_WIDTH_FALLBACK = 0.5;
 
   bool prev_in_goal = false;
 
@@ -187,13 +189,9 @@ std::vector<Event> detect_goals(const BagData & data)
       prev_in_goal = false;
       continue;
     }
-    // goal_size.y がゴール幅。未記録の古い bag では従来の固定値へフォールバックする。
-    const double goal_half_width =
-      wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : GOAL_HALF_WIDTH_FALLBACK;
-
     const auto & ball = wm.ball_info;
     double bx = ball.position.x, by = ball.position.y;
-    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= goal_half_width);
+    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= goal_half_width(wm));
 
     if (in_goal && !prev_in_goal) {
       // on_positive_half == true なら自陣ゴールは +x 側
@@ -219,9 +217,6 @@ std::string game_event_type_to_string(int32_t v)
   auto e = magic_enum::enum_cast<GameEventType>(v);
   return e ? std::string(magic_enum::enum_name(*e)) : "GAME_EVENT(" + std::to_string(v) + ")";
 }
-
-namespace
-{
 
 const std::unordered_set<GameEventType> & foul_event_types()
 {
@@ -313,8 +308,6 @@ std::string foul_description(const GameEventInfo & ge)
   }
 }
 
-}  // namespace
-
 std::vector<Event> detect_fouls(const BagData & data)
 {
   std::vector<Event> events;
@@ -370,6 +363,8 @@ std::vector<Event> detect_pass_attempt_events(const BagData & data)
   }
   return events;
 }
+
+}  // namespace
 
 bool event_types_require_full_world_model(const std::vector<std::string> & types)
 {

@@ -46,7 +46,4 @@ std::vector<RefereeSnapshot> extract_referee_transitions(const BagData & data);
 /// Referee メッセージを指定間隔でサンプリングして返す
 std::vector<RefereeSnapshot> sample_referee(const BagData & data, double interval_sec = 1.0);
 
-std::string command_to_string(int32_t cmd);
-std::string stage_to_string(int32_t stage);
-
 }  // namespace crane::bag

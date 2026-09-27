@@ -44,14 +44,4 @@ std::vector<Event> detect_events(const BagData & data, const std::vector<std::st
 /// read() に渡して不要トピックのデシリアライズを省くために使う。
 std::unordered_set<std::string> topics_for_event_types(const std::vector<std::string> & types);
 
-std::vector<Event> detect_play_transitions(const BagData & data);
-std::vector<Event> detect_role_changes(const BagData & data);
-std::vector<Event> detect_kick_events(const BagData & data);
-std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold = 3.0);
-std::vector<Event> detect_goals(const BagData & data);
-std::vector<Event> detect_fouls(const BagData & data);
-std::vector<Event> detect_pass_attempt_events(const BagData & data);
-
-std::string game_event_type_to_string(int32_t type_value);
-
 }  // namespace crane::bag
