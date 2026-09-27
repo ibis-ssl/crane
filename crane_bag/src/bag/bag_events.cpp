@@ -47,6 +47,9 @@ enum class GameEventType : int32_t {
 
 enum class Team : int32_t { UNKNOWN = 0, YELLOW = 1, BLUE = 2 };
 
+namespace
+{
+
 std::vector<Event> detect_play_transitions(const BagData & data)
 {
   std::vector<Event> events;
@@ -140,7 +143,7 @@ std::vector<Event> detect_kick_events(const BagData & data)
   return events;
 }
 
-std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold)
+std::vector<Event> detect_ball_speed_spikes(const BagData & data, double threshold = 3.0)
 {
   std::vector<Event> events;
   bool prev_above = false;
@@ -219,9 +222,6 @@ std::string game_event_type_to_string(int32_t v)
   auto e = magic_enum::enum_cast<GameEventType>(v);
   return e ? std::string(magic_enum::enum_name(*e)) : "GAME_EVENT(" + std::to_string(v) + ")";
 }
-
-namespace
-{
 
 const std::unordered_set<GameEventType> & foul_event_types()
 {
@@ -313,8 +313,6 @@ std::string foul_description(const GameEventInfo & ge)
   }
 }
 
-}  // namespace
-
 std::vector<Event> detect_fouls(const BagData & data)
 {
   std::vector<Event> events;
@@ -370,6 +368,8 @@ std::vector<Event> detect_pass_attempt_events(const BagData & data)
   }
   return events;
 }
+
+}  // namespace
 
 bool event_types_require_full_world_model(const std::vector<std::string> & types)
 {
