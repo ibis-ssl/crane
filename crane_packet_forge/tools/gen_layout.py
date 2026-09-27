@@ -43,6 +43,7 @@ FEEDBACK = (
     / "robot_feedback_protocol.hpp"
 )
 RECEIVER = CRANE_ROOT / "crane_robot_receiver" / "src" / "robot_receiver_node.cpp"
+PING = CRANE_ROOT / "crane_robot_receiver" / "src" / "ping_status_node.cpp"
 
 LICENSE_HEADER = """\
 # Copyright (c) 2026 ibis-ssl
@@ -62,6 +63,7 @@ BANNER = '''"""robot_packet.h から自動生成したパケットレイアウ�
     crane_sender/src/ibis_sender_node.cpp   (CommConfig の framing 定数)
     crane_robot_receiver/include/crane_robot_receiver/robot_feedback_protocol.hpp
     crane_robot_receiver/src/robot_receiver_node.cpp   (multicast の既定値)
+    crane_robot_receiver/src/ping_status_node.cpp   (実機の IP アドレス規則)
 
 test/test_layout_sync.py が生成をやり直してこのファイルと突き合わせるので、
 ヘッダが動いたらテストが落ちる。
@@ -243,8 +245,20 @@ def parse_receiver_defaults(receiver_text: str) -> dict[str, object]:
     return out
 
 
+def parse_robot_ip_rule(ping_text: str) -> tuple[str, int]:
+    """実機 CM4 のアドレス規則 (`std::format("192.168.20.{}", 100 + id)`)。"""
+    match = re.search(r'std::format\("([0-9.]+)\.\{\}",\s*(\d+)\s*\+\s*id\)', ping_text)
+    if match is None:
+        raise SystemExit(f"実機の IP アドレス規則が {PING} に見つからない")
+    return match.group(1), int(match.group(2))
+
+
 def render(
-    header_text: str, sender_text: str, feedback_text: str, receiver_text: str
+    header_text: str,
+    sender_text: str,
+    feedback_text: str,
+    receiver_text: str,
+    ping_text: str,
 ) -> str:
     defines = parse_defines(header_text)
     address = parse_enum(header_text, "enum", "Address", defines)
@@ -331,6 +345,11 @@ def render(
     lines.append(f"FEEDBACK_PORT_BASE = {rx['FEEDBACK_PORT_BASE']}")
     lines.append(f"IP_OCTET_OFFSET = {rx['IP_OCTET_OFFSET']}")
     lines.append("")
+    robot_ip_base, robot_ip_octet_offset = parse_robot_ip_rule(ping_text)
+    lines.append("# --- 実機の IP アドレス規則 (ping_status_node.cpp) ---")
+    lines.append(f"ROBOT_IP_BASE = {robot_ip_base!r}")
+    lines.append(f"ROBOT_IP_OCTET_OFFSET = {robot_ip_octet_offset}")
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -347,6 +366,7 @@ def main() -> int:
     parser.add_argument("--sender", type=Path, default=SENDER)
     parser.add_argument("--feedback", type=Path, default=FEEDBACK)
     parser.add_argument("--receiver", type=Path, default=RECEIVER)
+    parser.add_argument("--ping", type=Path, default=PING)
     args = parser.parse_args()
 
     text = render(
@@ -354,6 +374,7 @@ def main() -> int:
         args.sender.read_text(),
         args.feedback.read_text(),
         args.receiver.read_text(),
+        args.ping.read_text(),
     )
     if args.stdout:
         sys.stdout.write(text)

@@ -14,6 +14,7 @@
     crane_sender/src/ibis_sender_node.cpp   (CommConfig の framing 定数)
     crane_robot_receiver/include/crane_robot_receiver/robot_feedback_protocol.hpp
     crane_robot_receiver/src/robot_receiver_node.cpp   (multicast の既定値)
+    crane_robot_receiver/src/ping_status_node.cpp   (実機の IP アドレス規則)
 
 test/test_layout_sync.py が生成をやり直してこのファイルと突き合わせるので、
 ヘッダが動いたらテストが落ちる。
@@ -162,3 +163,7 @@ FEEDBACK_OFFSETS = {
 MULTICAST_IP_BASE = "224.5.20"
 FEEDBACK_PORT_BASE = 50100
 IP_OCTET_OFFSET = 100
+
+# --- 実機の IP アドレス規則 (ping_status_node.cpp) ---
+ROBOT_IP_BASE = "192.168.20"
+ROBOT_IP_OCTET_OFFSET = 100
