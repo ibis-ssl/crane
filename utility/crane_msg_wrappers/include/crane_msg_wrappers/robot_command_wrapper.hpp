@@ -9,7 +9,6 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
-#include <crane_physics/kicker_model.hpp>
 #include <memory>
 #include <vector>
 
@@ -44,10 +43,6 @@ private:
   {
     return latest_msg.delay_checkpoints;
   }
-  auto getDelayCheckpoints() const -> const crane_msgs::msg::DelayCheckpoints &
-  {
-    return latest_msg.delay_checkpoints;
-  }
   auto getVelocityPlanTrace() -> decltype(latest_msg.velocity_plan_trace) &
   {
     return latest_msg.velocity_plan_trace;
@@ -56,9 +51,6 @@ private:
   {
     return latest_msg.velocity_plan_trace;
   }
-
-  // キッカーモデル（停止距離指定キック用）
-  std::shared_ptr<KickerModel> kicker_model;
 
   uint8_t current_mode;
 
@@ -71,7 +63,6 @@ public:
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)),
     world_model(world_model_wrapper),
-    kicker_model(nullptr),
     current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE),
     name(skill_name)
   {
@@ -102,8 +93,6 @@ public:
     current_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
     return *this;
   }
-
-  auto getCurrentMode() const -> uint8_t { return current_mode; }
 
   auto getRobot() const -> std::shared_ptr<RobotInfo> { return robot; }
 
@@ -168,62 +157,9 @@ public:
     return *this;
   }
 
-  auto kickStraightToStopAt(double stop_distance) -> RobotCommandWrapper &
-  {
-    if (world_model->isPracticeKickProhibitedFor(name)) {
-      latest_msg.kick_power = 0.0;
-      return *this;
-    }
-    if (!kicker_model) {
-      throw std::runtime_error(
-        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
-    }
-
-    double kick_power = kicker_model->calculateKickPowerForStopDistance(stop_distance);
-    latest_msg.local_planner_config.kick_power_override = false;
-    latest_msg.chip_enable = false;
-    latest_msg.kick_power = kick_power;
-    return *this;
-  }
-
-  auto kickStraightWithInitialSpeed(double initial_speed) -> RobotCommandWrapper &
-  {
-    if (world_model->isPracticeKickProhibitedFor(name)) {
-      latest_msg.kick_power = 0.0;
-      return *this;
-    }
-    if (!kicker_model) {
-      throw std::runtime_error(
-        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
-    }
-
-    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
-    latest_msg.local_planner_config.kick_power_override = false;
-    latest_msg.chip_enable = false;
-    latest_msg.kick_power = kick_power;
-    return *this;
-  }
-
-  auto predictStraightKickStopDistance(double initial_speed) const -> double
-  {
-    if (!kicker_model) {
-      throw std::runtime_error(
-        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
-    }
-
-    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
-    return kicker_model->predictStopDistance(kick_power);
-  }
-
   auto setTargetTheta(double theta, double tolerance = 0.0) -> RobotCommandWrapper &
   {
     latest_msg.target_theta = theta;
-    latest_msg.local_planner_config.theta_tolerance = tolerance;
-    return *this;
-  }
-
-  auto setThetaTolerance(double tolerance) -> RobotCommandWrapper &
-  {
     latest_msg.local_planner_config.theta_tolerance = tolerance;
     return *this;
   }
@@ -262,12 +198,6 @@ public:
     return *this;
   }
 
-  auto enableCollisionAvoidance() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.disable_collision_avoidance = false;
-    return *this;
-  }
-
   auto disableGoalAreaAvoidance() -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.disable_goal_area_avoidance = true;
@@ -298,24 +228,6 @@ public:
     return *this;
   }
 
-  auto enableFieldBoundary() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.disable_field_boundary = false;
-    return *this;
-  }
-
-  auto enableRotationStopOnAccel() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.enable_rotation_stop_on_accel = true;
-    return *this;
-  }
-
-  auto disableRotationStopOnAccel() -> RobotCommandWrapper &
-  {
-    latest_msg.local_planner_config.enable_rotation_stop_on_accel = false;
-    return *this;
-  }
-
   auto disableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
     return disableGoalAreaAvoidance()
@@ -324,41 +236,9 @@ public:
       .disableFieldBoundary();
   }
 
-  auto enableAnyAreaAvoidance() -> RobotCommandWrapper &
-  {
-    return enableGoalAreaAvoidance()
-      .enableBallAvoidance()
-      .enablePlacementAvoidance()
-      .enableFieldBoundary();
-  }
-
   auto disableBasicAvoidances() -> RobotCommandWrapper &
   {
     return disableCollisionAvoidance().disableBallAvoidance();
-  }
-
-  auto enableBasicAvoidances() -> RobotCommandWrapper &
-  {
-    return enableCollisionAvoidance().enableBallAvoidance();
-  }
-
-  auto setGoalieDefault() -> RobotCommandWrapper &
-  {
-    disableCollisionAvoidance();
-    disableGoalAreaAvoidance();
-    return *this;
-  }
-
-  auto enableBallCenteringControl() -> RobotCommandWrapper &
-  {
-    latest_msg.enable_ball_centering_control = true;
-    return *this;
-  }
-
-  auto enableLocalGoalie() -> RobotCommandWrapper &
-  {
-    latest_msg.local_goalie_enable = true;
-    return *this;
   }
 
   auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
@@ -419,16 +299,6 @@ public:
   {
     return setTargetTheta(getAngle(at - from), tolerance);
   }
-
-  // ===== KickerModel管理メソッド =====
-
-  auto setKickerModel(std::shared_ptr<KickerModel> kicker) -> RobotCommandWrapper &
-  {
-    kicker_model = kicker;
-    return *this;
-  }
-
-  auto getKickerModel() const -> std::shared_ptr<KickerModel> { return kicker_model; }
 
   // ===== PositionTargetMode固有の関数 =====
 
