@@ -91,10 +91,6 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
     const std::string & inner_color = "white", const std::string & outer_color = "#222",
     double outer_stroke_width = 8.0) -> void;
 
-  auto rectangle(
-    Point top_left, Point bottom_right, const std::string & color = "white",
-    double stroke_width = 10.0) -> void;
-
   // Quick描画メソッド（1行で完結）
   auto drawLine(
     Point start, Point end, const std::string & color = "white", double stroke_width = 10.0,
@@ -320,33 +316,10 @@ struct SvgRectBuilder : public SvgBuilderBase, public SvgStyleBuilder<SvgRectBui
       rect_size.y() * SCALE, fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
   }
 
-  [[nodiscard]] auto top_left(double x, double y) -> SvgRectBuilder &
-  {
-    rect_top_left = Point(x, y);
-    return *this;
-  }
-
-  [[nodiscard]] auto top_left(Point p) -> SvgRectBuilder &
-  {
-    rect_top_left = p;
-    return *this;
-  }
-
-  [[nodiscard]] auto size(double x, double y) -> SvgRectBuilder &
-  {
-    rect_size = Point(x, y);
-    return *this;
-  }
-
-  [[nodiscard]] auto size(Point p) -> SvgRectBuilder &
-  {
-    rect_size = p;
-    return *this;
-  }
-
   [[nodiscard]] auto box(const Box & box) -> SvgRectBuilder &
   {
-    rect_top_left = box.min_corner();
+    // SVG の rect は y から下（フィールド y が減る向き）へ伸びるので、左上は (min.x, max.y)
+    rect_top_left = Point(box.min_corner().x(), box.max_corner().y());
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }

@@ -109,18 +109,6 @@ auto VisualizerMessageBuilder::doubleCircle(
   circle().center(center).radius(inner_radius).fill(inner_color, 0.25).stroke("none").build();
 }
 
-auto VisualizerMessageBuilder::rectangle(
-  Point top_left, Point bottom_right, const std::string & color, double stroke_width) -> void
-{
-  Point top_right(bottom_right.x(), top_left.y());
-  Point bottom_left(top_left.x(), bottom_right.y());
-
-  line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
-  line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
-  line().start(bottom_right).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
-  line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
-}
-
 auto VisualizerMessageBuilder::drawLine(
   Point start, Point end, const std::string & color, double stroke_width, double opacity) -> void
 {
@@ -184,7 +172,13 @@ auto VisualizerMessageBuilder::drawFieldRect(
 {
   Point top_left(std::min(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
   Point bottom_right(std::max(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
-  rectangle(top_left, bottom_right, color, stroke_width);
+  Point top_right(bottom_right.x(), top_left.y());
+  Point bottom_left(top_left.x(), bottom_right.y());
+
+  line().start(top_left).end(top_right).stroke(color).strokeWidth(stroke_width).build();
+  line().start(top_right).end(bottom_right).stroke(color).strokeWidth(stroke_width).build();
+  line().start(bottom_right).end(bottom_left).stroke(color).strokeWidth(stroke_width).build();
+  line().start(bottom_left).end(top_left).stroke(color).strokeWidth(stroke_width).build();
 }
 
 auto VisualizerMessageBuilder::drawGoal(
