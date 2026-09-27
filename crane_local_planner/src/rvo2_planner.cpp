@@ -144,13 +144,6 @@ auto RVO2Planner::setPlanningStage(
   addOrUpdatePlanningFactor(command, "RVO2Stage", stage);
 }
 
-auto RVO2Planner::addMaxVelocityFactor(
-  crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void
-{
-  command.local_planner_config.max_velocity_factors.emplace_back(
-    crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
-}
-
 auto RVO2Planner::createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
   -> PreprocessContext
 {

@@ -87,6 +87,14 @@ protected:
            !world_model->isPracticeNormalSpeed();
   }
 
+  /// 最大速度の制限値を 1 つ登録する（resolveMaxVelocityFactors で最小値が選ばれる）
+  static auto addMaxVelocityFactor(
+    crane_msgs::msg::RobotCommand & command, const std::string & name, double value) -> void
+  {
+    command.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
+  }
+
   VisualizerMessageBuilder::SharedPtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;

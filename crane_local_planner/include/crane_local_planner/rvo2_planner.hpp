@@ -79,9 +79,6 @@ private:
   auto setPlanningStage(crane_msgs::msg::RobotCommand & command, const std::string & stage) const
     -> void;
 
-  auto addMaxVelocityFactor(
-    crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void;
-
   auto createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
     -> PreprocessContext;
 
