@@ -61,6 +61,9 @@ if(BUILD_TESTING)
   target_include_directories(test_bag_events PRIVATE src/bag)
   target_link_libraries(test_bag_events magic_enum::magic_enum)
 
+  ament_auto_add_gtest(test_bag_tracking test/test_bag_tracking.cpp src/bag/bag_tracking.cpp)
+  target_include_directories(test_bag_tracking PRIVATE src/bag)
+
   ament_auto_add_gtest(test_kick_stats test/test_kick_stats.cpp src/bag/bag_kick_stats.cpp)
   target_include_directories(test_kick_stats PRIVATE src/bag)
 endif()
