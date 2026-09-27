@@ -116,8 +116,7 @@ auto ThreatEvaluator::rateRobotThreat(
 }
 
 auto ThreatEvaluator::calculateRecommendedDefenders(
-  [[maybe_unused]] const BallThreat & ball_threat, const std::vector<RobotThreat> & robot_threats,
-  int available_robots) -> int
+  const std::vector<RobotThreat> & robot_threats, int available_robots) -> int
 {
   // 基本: 脅威数に応じて守備者を割り当て
   // 最低1人、最大で利用可能ロボット数の半分

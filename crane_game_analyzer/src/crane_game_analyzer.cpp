@@ -117,7 +117,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
   metric_engine_->registerMetric(
     std::make_shared<metrics::RecommendedDefendersMetric>(
-      ball_threat_metric, robot_threats_metric, shared_threat_evaluator));
+      robot_threats_metric, shared_threat_evaluator));
 
   // 役割決定メトリクス
   auto attacker_metric = std::make_shared<metrics::AttackerCandidateMetric>();

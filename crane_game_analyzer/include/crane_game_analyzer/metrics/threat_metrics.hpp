@@ -79,20 +79,19 @@ private:
 /**
  * @brief 推奨守備者数メトリクス
  *
- * ボールとロボット脅威から推奨守備者数を計算
- * BALL_THREAT, ROBOT_THREATSに依存
+ * ロボット脅威から推奨守備者数を計算
+ * ROBOT_THREATSに依存
  */
 class RecommendedDefendersMetric : public MetricBase
 {
 public:
   RecommendedDefendersMetric(
-    std::shared_ptr<BallThreatMetric> ball_threat_metric,
     std::shared_ptr<RobotThreatsMetric> robot_threats_metric,
     std::shared_ptr<ThreatEvaluator> evaluator);
 
   [[nodiscard]] auto getDependencies() const -> std::vector<MetricId> override
   {
-    return {MetricId::BALL_THREAT, MetricId::ROBOT_THREATS};
+    return {MetricId::ROBOT_THREATS};
   }
 
   auto compute(MetricContext & ctx) -> void override;
@@ -101,7 +100,6 @@ public:
     -> void override;
 
 private:
-  std::shared_ptr<BallThreatMetric> ball_threat_metric_;
   std::shared_ptr<RobotThreatsMetric> robot_threats_metric_;
   std::shared_ptr<ThreatEvaluator> evaluator_;
 };

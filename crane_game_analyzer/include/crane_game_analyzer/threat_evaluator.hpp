@@ -108,8 +108,7 @@ public:
     const WorldModelWrapper & world_model) -> ThreatRatingDetail;
 
   auto calculateRecommendedDefenders(
-    const BallThreat & ball_threat, const std::vector<RobotThreat> & robot_threats,
-    int available_robots) -> int;
+    const std::vector<RobotThreat> & robot_threats, int available_robots) -> int;
 
   auto toThreatInfoMsg(const BallThreat & threat) const -> crane_msgs::msg::ThreatInfo;
 

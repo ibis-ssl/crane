@@ -137,11 +137,9 @@ auto RobotThreatsMetric::threatToColor(double threat_rating) -> std::string
 }
 
 RecommendedDefendersMetric::RecommendedDefendersMetric(
-  std::shared_ptr<BallThreatMetric> ball_threat_metric,
   std::shared_ptr<RobotThreatsMetric> robot_threats_metric,
   std::shared_ptr<ThreatEvaluator> evaluator)
 : MetricBase(MetricId::RECOMMENDED_DEFENDERS, "RecommendedDefenders"),
-  ball_threat_metric_(ball_threat_metric),
   robot_threats_metric_(robot_threats_metric),
   evaluator_(std::move(evaluator))
 {
@@ -149,13 +147,12 @@ RecommendedDefendersMetric::RecommendedDefendersMetric(
 
 auto RecommendedDefendersMetric::compute(MetricContext & ctx) -> void
 {
-  const auto & ball_threat = ball_threat_metric_->getLastBallThreat();
   const auto & robot_threats = robot_threats_metric_->getLastRobotThreats();
 
   int available_robots =
     static_cast<int>(ctx.world_model->ours().robotsWhere().available().get().size());
   ctx.analysis.recommended_num_defenders = static_cast<uint8_t>(
-    evaluator_->calculateRecommendedDefenders(ball_threat, robot_threats, available_robots));
+    evaluator_->calculateRecommendedDefenders(robot_threats, available_robots));
 }
 
 auto RecommendedDefendersMetric::visualize(

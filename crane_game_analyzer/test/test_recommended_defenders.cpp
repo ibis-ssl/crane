@@ -27,7 +27,7 @@ auto makeThreats(std::initializer_list<double> ratings) -> std::vector<RobotThre
 
 auto recommend(const std::vector<RobotThreat> & threats, int available_robots) -> int
 {
-  return ThreatEvaluator{}.calculateRecommendedDefenders(BallThreat{}, threats, available_robots);
+  return ThreatEvaluator{}.calculateRecommendedDefenders(threats, available_robots);
 }
 }  // namespace
 
