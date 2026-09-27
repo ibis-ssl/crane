@@ -1,7 +1,8 @@
-import { formatPlannerName, getFsmState, formatLatencyMs, formatLatencyRich } from './formatters.js';
 import {
-    VOLTAGE_CRIT_V, VOLTAGE_WARN_V, TEMP_CRIT_C, FEEDBACK_STALE_MS, LATENCY_WARN_MS,
-} from './constants.js';
+    formatPlannerName, getFsmState, formatLatencyMs, formatLatencyRich,
+    formatVoltage, formatTemperature, formatErrorBadge,
+} from './formatters.js';
+import { FEEDBACK_STALE_MS, LATENCY_WARN_MS } from './constants.js';
 
 const HALO_RADIUS = 120;         // mm  C-2 の二重リング内側（実線）
 const HALO_RADIUS_OUTER = 165;   // mm  同 外側（細線）
@@ -206,21 +207,17 @@ export class RobotHud {
         const stale = fb && (Date.now() - fbTs > FEEDBACK_STALE_MS);
 
         if (fb && !stale) {
-            if (fb.error_id != null && fb.error_id !== 0) {
+            if (formatErrorBadge(fb) !== null) {
                 badges.push({ label: '!', color: tokens.danger ?? '#B3261E', ink: tokens.onDanger ?? '#FFFFFF' });
             }
-            const v = fb.voltage;
-            if (v != null && v <= VOLTAGE_CRIT_V) {
+            const voltage = formatVoltage(fb.voltage).severity;
+            if (voltage === 'crit') {
                 badges.push({ label: 'V', color: tokens.crit ?? '#6650A4', ink: tokens.onCrit ?? '#FFFFFF' });
-            } else if (v != null && v <= VOLTAGE_WARN_V) {
+            } else if (voltage === 'warn') {
                 badges.push({ label: 'V', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
             }
-            const temps = fb.temperatures;
-            if (temps && temps.length > 0) {
-                const maxT = Math.max(...temps);
-                if (maxT >= TEMP_CRIT_C) {
-                    badges.push({ label: 'T', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
-                }
+            if (formatTemperature(fb.temperatures).severity === 'crit') {
+                badges.push({ label: 'T', color: tokens.warn ?? '#F9A825', ink: tokens.onWarn ?? '#2A2000' });
             }
         }
 
