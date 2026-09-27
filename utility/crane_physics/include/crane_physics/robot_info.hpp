@@ -150,13 +150,11 @@ struct RobotInfo
     constexpr double MAX_OPPONENT_REACTION_VEL = 1.5;          // 反応速度閾値 [m/s]
     constexpr double TIME_BEFORE_REACTION_USAGE_FACTOR = 0.1;  // 反応時間調整係数
 
-    // 反応時間を計算（速度に応じて調整）
     double current_vel_norm = vel.linear.norm();
     double velocity_factor = std::min(current_vel_norm / MAX_OPPONENT_REACTION_VEL, 1.0);
     double reaction_time =
       TIME_FOR_BOT_TO_REACT * (1.0 - TIME_BEFORE_REACTION_USAGE_FACTOR * velocity_factor);
 
-    // 台形速度プロファイルで目標位置までの移動時間を計算
     double travel_time =
       getTravelTimeTrapezoidal(pose.pos, vel.linear, target_pos, max_accel, max_vel);
 
@@ -166,7 +164,6 @@ struct RobotInfo
     // 実際の移動時間（反応時間後に移動開始）
     double actual_move_time = total_time - reaction_time;
 
-    // 台形速度プロファイルで予測位置を計算（travel_time.hppの関数を使用）
     return getPredictedPositionTrapezoidal(
       pose.pos, vel.linear, target_pos, actual_move_time, max_accel, max_vel);
   }
