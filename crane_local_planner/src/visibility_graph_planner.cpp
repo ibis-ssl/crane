@@ -291,10 +291,7 @@ auto VisibilityGraphPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand
     crane_msgs::msg::NamedFloat()
       .set__name("VisibilityGraphPlanner::max_vel")
       .set__value(max_velocity_));
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  if (
-    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-    !world_model->isPracticeNormalSpeed()) {
+  if (isStopSpeedLimited()) {
     result.local_planner_config.max_velocity_factors.emplace_back(
       crane_msgs::msg::NamedFloat()
         .set__name("VisibilityGraphPlanner STOP制限")

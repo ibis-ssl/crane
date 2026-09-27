@@ -92,8 +92,7 @@ private:
     PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) -> void;
 
   auto computePreferredVelocityStage(
-    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command, uint8_t referee_command) const
-    -> void;
+    PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void;
 
   auto applyCrashAvoidanceConstraint(
     PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void;
@@ -110,8 +109,7 @@ private:
 
   auto retireAgent(size_t agent_id) -> void;
 
-  auto updateActiveAllyAgent(crane_msgs::msg::RobotCommand & command, uint8_t referee_command)
-    -> void;
+  auto updateActiveAllyAgent(crane_msgs::msg::RobotCommand & command) -> void;
 
   auto getCurrentEstimatedPosition(uint8_t robot_id, const Point & fallback) const -> Point;
 
