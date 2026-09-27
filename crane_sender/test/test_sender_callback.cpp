@@ -78,8 +78,8 @@ protected:
     return pred();
   }
 
-  // id 1 を vision_age 前に検出したワールドモデルを送る
-  void publishWorldModel(std::chrono::milliseconds vision_age)
+  // id 1 を vision_age 前に検出したワールドモデルを送り、その検出時刻を返す
+  rclcpp::Time publishWorldModel(std::chrono::milliseconds vision_age)
   {
     WorldModel wm;
     const auto now = rclcpp::Clock(RCL_ROS_TIME).now();
@@ -89,11 +89,13 @@ protected:
     robot.available_vision = true;
     robot.available_feedback = true;
     robot.has_error = false;
-    robot.vision.stamp = now - rclcpp::Duration(vision_age);
+    const auto vision_stamp = now - rclcpp::Duration(vision_age);
+    robot.vision.stamp = vision_stamp;
     wm.robot_info_ours.push_back(robot);
     world_model_pub_->publish(wm);
     // 受信を待つ手段が無いので、配送に十分な時間だけ回す
     spinUntil([] { return false; }, 300ms);
+    return vision_stamp;
   }
 
   std::optional<RobotCommands> send(const RobotCommands & msg)
@@ -172,14 +174,18 @@ TEST_F(SenderCallbackTest, ElapsedVisionTimeIsMeasuredAndSaturated)
 {
   startSender(false);
 
-  publishWorldModel(2000ms);
+  const auto vision_stamp = publishWorldModel(2000ms);
   RobotCommands msg;
   msg.robot_commands.push_back(command(1));
   // ワールドモデルに無い id（範囲外）は例外経路で最大値にする
   msg.robot_commands.push_back(command(25));
   auto sent = send(msg);
   ASSERT_TRUE(sent.has_value());
-  EXPECT_NEAR(sent->robot_commands[0].elapsed_time_ms_since_last_vision, 2000, 500);
+  // header.stamp は送信側が経過時間の計算に使った現在時刻なので、配送遅延に依らず比べられる
+  const double expected_ms =
+    (rclcpp::Time(sent->header.stamp, RCL_ROS_TIME) - vision_stamp).nanoseconds() / 1e6;
+  EXPECT_GT(expected_ms, 2000.0);
+  EXPECT_NEAR(sent->robot_commands[0].elapsed_time_ms_since_last_vision, expected_ms, 1.0);
   EXPECT_EQ(sent->robot_commands[1].elapsed_time_ms_since_last_vision, 65535);
 
   // 65535ms を超えたら巻き戻らずに最大値で止まる
