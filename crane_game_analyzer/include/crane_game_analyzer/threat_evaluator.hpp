@@ -9,8 +9,6 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/game_analysis.hpp>
-#include <crane_msgs/msg/threat_assignment.hpp>
 #include <crane_msgs/msg/threat_info.hpp>
 #include <optional>
 #include <vector>
@@ -32,7 +30,7 @@ struct ThreatEvaluatorConfig
   double weight_ball_access = 1.2;  ///< ボールアクセス（高優先度）
 
   // 距離減衰
-  double danger_dropoff_x = 1.0;  // 脅威減衰開始X座標（相対）
+  double danger_dropoff_x = 1.0;  // 自ゴールからの距離がフィールド長×この値を超えると減衰
 
   // リダイレクト角度閾値
   double max_good_redirect_angle_deg = 45.0;
