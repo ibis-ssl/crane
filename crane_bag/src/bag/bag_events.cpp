@@ -179,7 +179,6 @@ std::vector<Event> detect_goals(const BagData & data)
   // （Division B 相当）が入っていることがある。フレームごとの値を使わないと、
   // 本来のフィールドより狭い閾値でゴールを誤検出する。
   // 自陣/敵陣も on_positive_half を見ないと符号が逆になる。
-  constexpr double GOAL_HALF_WIDTH_FALLBACK = 0.5;
 
   bool prev_in_goal = false;
 
@@ -190,13 +189,9 @@ std::vector<Event> detect_goals(const BagData & data)
       prev_in_goal = false;
       continue;
     }
-    // goal_size.y がゴール幅。未記録の古い bag では従来の固定値へフォールバックする。
-    const double goal_half_width =
-      wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : GOAL_HALF_WIDTH_FALLBACK;
-
     const auto & ball = wm.ball_info;
     double bx = ball.position.x, by = ball.position.y;
-    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= goal_half_width);
+    bool in_goal = (std::abs(bx) >= half_length && std::abs(by) <= goal_half_width(wm));
 
     if (in_goal && !prev_in_goal) {
       // on_positive_half == true なら自陣ゴールは +x 側

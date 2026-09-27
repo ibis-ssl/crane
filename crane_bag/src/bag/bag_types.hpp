@@ -85,6 +85,12 @@ struct WorldModel
   OngoingKickInfo ongoing_kick;
 };
 
+/// ゴールマウスの半幅 [m]。goal_size が未記録の古い bag では 0.5 m にフォールバックする
+inline double goal_half_width(const WorldModel & wm)
+{
+  return wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : 0.5;
+}
+
 // ─── PlaySituation ────────────────────────────────────────────────────────────
 
 struct PlaySituation

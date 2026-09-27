@@ -45,9 +45,6 @@ constexpr double kFlyingHeight = 0.15;
 constexpr double kMaxTrackTime = 5.0;
 /// シュート除外: ゴールマウス角度範囲に加えるマージン [rad]
 constexpr double kShotConeMargin = 0.1;
-/// goal_size が未記録の古い bag で使うゴールマウス半幅 [m]
-/// （bag_events.cpp の detect_goals と同一値）
-constexpr double kGoalHalfWidthFallback = 0.5;
 /// 場外判定マージン [m]
 constexpr double kOutOfFieldMargin = 0.05;
 
@@ -82,11 +79,10 @@ bool is_shot_direction(const WorldModel & wm, const Point2D & kick_pos)
   if (norm2(vx, vy) < 1e-6) {
     return false;
   }
-  const double goal_half_width =
-    wm.goal_size.y > 0.0 ? wm.goal_size.y / 2.0 : kGoalHalfWidthFallback;
+  const double half_width = goal_half_width(wm);
   const double dir = std::atan2(vy, vx);
-  const double angle_high = std::atan2(goal_half_width - kick_pos.y, half_length - kick_x);
-  const double angle_low = std::atan2(-goal_half_width - kick_pos.y, half_length - kick_x);
+  const double angle_high = std::atan2(half_width - kick_pos.y, half_length - kick_x);
+  const double angle_low = std::atan2(-half_width - kick_pos.y, half_length - kick_x);
   return dir >= angle_low - kShotConeMargin && dir <= angle_high + kShotConeMargin;
 }
 
