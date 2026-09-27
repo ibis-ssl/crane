@@ -609,6 +609,15 @@ auto trimPathFromCurrent(const Point & current, const std::vector<Point> & path)
   return result;
 }
 
+auto distanceToPath(const Point & point, const std::vector<Point> & path) -> double
+{
+  double distance = std::numeric_limits<double>::infinity();
+  for (size_t i = 1; i < path.size(); ++i) {
+    distance = std::min(distance, distanceToSegment(Segment(path[i - 1], path[i]), point));
+  }
+  return distance;
+}
+
 auto pointAtDistance(const std::vector<Point> & path, double distance) -> Point
 {
   if (path.empty()) {

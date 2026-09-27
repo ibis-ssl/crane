@@ -12,7 +12,6 @@
 #include <crane_msg_wrappers/command_wrapper_base.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_utils/parameter.hpp>
-#include <limits>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <string>
 
@@ -38,16 +37,6 @@ auto expandedPenaltyAreaForAvoidance(const Box & source, const Point & goal_cent
     result.max_corner().x() = FAR;
   }
   return result;
-}
-
-auto closestPointOnSegment(const Point & point, const Point & from, const Point & to) -> Point
-{
-  const Vector2 segment = to - from;
-  if (segment.squaredNorm() < 1e-9) {
-    return from;
-  }
-  const double ratio = std::clamp((point - from).dot(segment) / segment.squaredNorm(), 0.0, 1.0);
-  return from + ratio * segment;
 }
 }  // namespace
 
@@ -197,12 +186,7 @@ auto VisibilityGraphPlanner::selectPath(
 
   std::vector<Point> retained;
   if (state.valid && (goal - state.goal).norm() <= goal_change_threshold_) {
-    double cross_track_distance = std::numeric_limits<double>::infinity();
-    for (size_t i = 1; i < state.path.size(); ++i) {
-      cross_track_distance = std::min(
-        cross_track_distance,
-        (current - closestPointOnSegment(current, state.path[i - 1], state.path[i])).norm());
-    }
+    const double cross_track_distance = visibility_graph::distanceToPath(current, state.path);
     retained = visibility_graph::trimPathFromCurrent(current, state.path);
     if (!retained.empty()) {
       retained.back() = goal;

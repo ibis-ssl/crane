@@ -201,6 +201,17 @@ TEST(VisibilityGraphTest, TrimPathFromCurrentInsertsProjectionAndDropsPassedWayp
   EXPECT_TRUE(trimPathFromCurrent(Point(0.0, 0.0), {Point(0.0, 0.0)}).empty());
 }
 
+TEST(VisibilityGraphTest, DistanceToPathUsesNearestClampedSegment)
+{
+  const std::vector<Point> path{Point(0.0, 0.0), Point(1.0, 0.0), Point(1.0, 1.0)};
+  // 2 区間目のほうが近い
+  EXPECT_NEAR(distanceToPath(Point(1.2, 0.5), path), 0.2, 1e-9);
+  // 区間の延長上ではなく端点までの距離
+  EXPECT_NEAR(distanceToPath(Point(-0.3, 0.4), path), 0.5, 1e-9);
+  // 2 点未満の経路は無限大
+  EXPECT_TRUE(std::isinf(distanceToPath(Point(0.0, 0.0), {Point(0.0, 0.0)})));
+}
+
 TEST(VisibilityGraphTest, PointAtDistanceClampsToGoal)
 {
   const std::vector<Point> path{Point(0.0, 0.0), Point(1.0, 0.0), Point(1.0, 1.0)};
