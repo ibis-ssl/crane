@@ -52,6 +52,10 @@ if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_robot_packet test/test_robot_packet.cpp)
+  # /world_model・/robot_commands を実際に流すので、動いている crane と混ざらないようドメインを分ける
+  ament_auto_add_gtest(test_sender_callback test/test_sender_callback.cpp
+    ENV ROS_DOMAIN_ID=87 ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST)
+  target_link_libraries(test_sender_callback crane_sender_base)
 endif ()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
