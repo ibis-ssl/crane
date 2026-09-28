@@ -19,11 +19,9 @@
 
 namespace crane
 {
-class RobotCommandWrapper : public CommandWrapperBase<RobotCommandWrapper>,
-                            public DelayMonitorMixin<RobotCommandWrapper>,
+class RobotCommandWrapper : public DelayMonitorMixin<RobotCommandWrapper>,
                             public VelocityPlanTraceMixin<RobotCommandWrapper>
 {
-  friend class CommandWrapperBase<RobotCommandWrapper>;
   friend class DelayMonitorMixin<RobotCommandWrapper>;
   friend class VelocityPlanTraceMixin<RobotCommandWrapper>;
 
@@ -37,8 +35,6 @@ private:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  auto getLatestMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
-  auto getLatestMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
   auto getDelayCheckpoints() -> crane_msgs::msg::DelayCheckpoints &
   {
     return latest_msg.delay_checkpoints;
@@ -69,6 +65,36 @@ public:
     changeID(id);
     usePositionMode();
   }
+
+  auto getMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
+
+  auto getEditableMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
+
+  auto dribble(double power) -> RobotCommandWrapper &
+  {
+    latest_msg.dribble_power = power;
+    latest_msg.kick_power = 0.0;
+    return *this;
+  }
+
+  auto withDribble(double power) -> RobotCommandWrapper &
+  {
+    latest_msg.dribble_power = power;
+    return *this;
+  }
+
+  auto stopEmergency(bool flag = true) -> RobotCommandWrapper &
+  {
+    latest_msg.stop_flag = flag;
+    return *this;
+  }
+
+  auto addPlanningFactor(const std::string & factor_name, const std::string & state) -> void
+  {
+    addOrUpdatePlanningFactor(latest_msg, factor_name, state);
+  }
+
+  auto clearPlanningFactors() -> void { latest_msg.planning_factors.clear(); }
 
   auto usePositionMode() -> RobotCommandWrapper &
   {

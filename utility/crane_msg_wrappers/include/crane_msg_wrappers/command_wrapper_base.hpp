@@ -45,52 +45,6 @@ inline auto addOrUpdatePlanningFactor(
   }
 }
 
-/**
- * @brief RobotCommandWrapper の共通メソッドを提供する CRTP 基底クラス
- * @tparam Derived 派生クラス
- *
- * 派生クラスは以下のメソッドを提供する必要がある（friend宣言推奨）:
- *   crane_msgs::msg::RobotCommand & getLatestMsg()
- *   const crane_msgs::msg::RobotCommand & getLatestMsg() const
- */
-template <typename Derived>
-class CommandWrapperBase
-{
-  auto & msg() { return static_cast<Derived &>(*this).getLatestMsg(); }
-  const auto & msg() const { return static_cast<const Derived &>(*this).getLatestMsg(); }
-
-public:
-  auto getMsg() const -> const crane_msgs::msg::RobotCommand & { return msg(); }
-
-  auto getEditableMsg() -> crane_msgs::msg::RobotCommand & { return msg(); }
-
-  auto dribble(double power) -> Derived &
-  {
-    msg().dribble_power = power;
-    msg().kick_power = 0.0;
-    return static_cast<Derived &>(*this);
-  }
-
-  auto withDribble(double power) -> Derived &
-  {
-    msg().dribble_power = power;
-    return static_cast<Derived &>(*this);
-  }
-
-  auto stopEmergency(bool flag = true) -> Derived &
-  {
-    msg().stop_flag = flag;
-    return static_cast<Derived &>(*this);
-  }
-
-  auto addPlanningFactor(const std::string & name, const std::string & state) -> void
-  {
-    addOrUpdatePlanningFactor(msg(), name, state);
-  }
-
-  auto clearPlanningFactors() -> void { msg().planning_factors.clear(); }
-};
-
 }  // namespace crane
 
 #endif  // CRANE_MSG_WRAPPERS__COMMAND_WRAPPER_BASE_HPP_
