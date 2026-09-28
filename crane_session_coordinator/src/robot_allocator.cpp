@@ -103,8 +103,7 @@ auto RobotAllocator::allocate(
       suitability_func, session_capacity.fixed_robots);
   }
 
-  auto allocation = allocateRobotsGreedy(
-    requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
+  auto allocation = allocateRobotsGreedy(requirements, selectable_robot_ids, world_model);
 
   crane_msgs::msg::RobotSelectResults results;
   for (const auto & [allocated_name, robot_ids] : allocation) {
@@ -245,8 +244,7 @@ auto RobotAllocator::logAssignmentIfChanged(const std::string & current_assignme
 
 auto RobotAllocator::allocateRobotsGreedy(
   const std::vector<SessionRequirement> & requirements,
-  const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
-  const AllocationState & prev_state, const AllocationCostConfig & config)
+  const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model)
   -> std::unordered_map<std::string, std::vector<uint8_t>>
 {
   std::unordered_map<std::string, std::vector<uint8_t>> result;
@@ -338,8 +336,8 @@ auto RobotAllocator::allocateRobotsGreedy(
         }
         auto robot = world_model->getOurRobot(robot_id);
         double score = req.suitability_func(robot);
-        if (prev_state.wasAssignedTo(robot_id, req.name)) {
-          score -= config.hysteresis_bonus;
+        if (allocation_state_.wasAssignedTo(robot_id, req.name)) {
+          score -= allocation_cost_config_.hysteresis_bonus;
         }
         robot_scores.emplace_back(robot_id, score);
       }

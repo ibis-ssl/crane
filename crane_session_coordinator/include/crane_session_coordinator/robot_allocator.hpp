@@ -71,8 +71,7 @@ public:
 private:
   auto allocateRobotsGreedy(
     const std::vector<SessionRequirement> & requirements,
-    const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
-    const AllocationState & prev_state, const AllocationCostConfig & config)
+    const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model)
     -> std::unordered_map<std::string, std::vector<uint8_t>>;
 
   std::shared_ptr<ConfigurationManager> config_manager_;
