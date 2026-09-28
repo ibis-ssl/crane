@@ -11,7 +11,6 @@
 
   <depend>crane_comm</depend>
   <depend>crane_msgs</depend>
-  <depend>crane_utils</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>
