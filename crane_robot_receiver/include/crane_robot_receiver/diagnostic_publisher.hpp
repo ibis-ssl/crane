@@ -19,13 +19,6 @@
 
 namespace crane
 {
-struct RobotPosition
-{
-  double x;
-  double y;
-  bool valid;
-};
-
 class RobotData
 {
 public:
@@ -47,8 +40,6 @@ public:
     -> bool;
 
   uint8_t robot_id;
-
-  RobotState state = RobotState::INACTIVE;
 
   std::unique_ptr<diagnostic_updater::Updater> updater;
 
@@ -85,7 +76,6 @@ private:
 
   auto pingMessageCallback(const crane_msgs::msg::PingStatusArray & msg) -> void;
   auto feedbackMessageCallback(const crane_msgs::msg::RobotFeedbackArray & msg) -> void;
-  auto worldModelCallback() -> void;
 
   WorldModelWrapper::UniquePtr world_model;
   std::vector<std::shared_ptr<RobotData>> robots_data;
@@ -100,8 +90,6 @@ private:
   crane_msgs::msg::RobotFeedbackArray latest_feedback_msg;
 
   std::shared_ptr<VisualizerMessageBuilder> visualizer_error;
-
-  std::map<uint8_t, RobotPosition> robot_positions;
 
   bool sim_mode_;
 };

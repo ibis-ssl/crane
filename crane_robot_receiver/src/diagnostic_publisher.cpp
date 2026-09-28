@@ -16,7 +16,6 @@
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <functional>
 #include <map>
-#include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -285,7 +284,6 @@ DiagnosticPublisherNode::DiagnosticPublisherNode() : Node("diagnostic_publisher_
 
   // WorldModelの設定（ロボットデータ初期化より先に必要）
   world_model = std::make_unique<WorldModelWrapper>(*this);
-  world_model->addCallback([this]() { worldModelCallback(); });
 
   initializeRobots(max_robot_id);
 
@@ -315,8 +313,6 @@ auto DiagnosticPublisherNode::initializeRobots(int max_robot_id) -> void
     robots_data.emplace_back(std::make_shared<RobotData>(i));
     robots_data.back()->initializeDiagnostics(
       this, world_model.get(), sim_mode_, &latest_ping_msg, &latest_feedback_msg);
-
-    robot_positions[i] = {0.0, 0.0, false};
   }
 }
 
@@ -332,22 +328,6 @@ auto DiagnosticPublisherNode::feedbackMessageCallback(
   latest_feedback_msg = msg;
 }
 
-auto DiagnosticPublisherNode::worldModelCallback() -> void
-{
-  auto available_robot_ids = world_model->ours().robotsWhere().available().getIds();
-
-  for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
-    robot_positions[robot->id] = {robot->pose.pos.x(), robot->pose.pos.y(), true};
-  }
-
-  for (size_t id = 0; id < robots_data.size(); ++id) {
-    auto & data = robots_data.at(id);
-    data->state = ranges::contains(available_robot_ids, static_cast<int>(id))
-                    ? RobotState::ACTIVE
-                    : RobotState::INACTIVE;
-  }
-}
-
 auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
 {
   visualizer_error->clear();
@@ -358,10 +338,13 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
   constexpr double ERROR_TEXT_OFFSET = 0.15;      // エラーテキストの初期オフセット
   constexpr double ERROR_TEXT_INCREMENT = 0.08;   // 複数エラー時の増分
 
-  for (const auto & robot_data : robots_data) {
-    if (robot_data->state != RobotState::ACTIVE) {
+  // 描くのは world_model で available なロボットだけ（id の昇順）
+  for (const auto & robot : world_model->ours().robotsWhere().available().get()) {
+    if (robot->id >= robots_data.size()) {
       continue;
     }
+    const auto & robot_data = robots_data[robot->id];
+    const Point position = robot->pose.pos;
 
     double text_offset = 0.0;
 
@@ -375,32 +358,26 @@ auto DiagnosticPublisherNode::visualizeRobotErrors() -> void
         continue;
       }
 
-      uint8_t robot_id = robot_data->robot_id;
-
-      if (robot_positions.contains(robot_id) && robot_positions[robot_id].valid) {
-        if (text_offset == 0.0) {
-          std::string color = utils::getColorForErrorLevel(error_info.level);
-          constexpr double opacity = 0.8;
-
-          visualizer_error->circle()
-            .center(robot_positions[robot_id].x, robot_positions[robot_id].y)
-            .radius(ERROR_MARKER_RADIUS)
-            .stroke(color, opacity)
-            .strokeWidth(2.0)
-            .fill("none")
-            .build();
-        }
-
+      if (text_offset == 0.0) {
         std::string color = utils::getColorForErrorLevel(error_info.level);
+        constexpr double opacity = 0.8;
 
-        visualizer_error->drawCenteredLabel(
-          Point(
-            robot_positions[robot_id].x,
-            robot_positions[robot_id].y + text_offset + ERROR_TEXT_OFFSET),
-          error_info.message, color, 50.0);
-
-        text_offset += ERROR_TEXT_INCREMENT;
+        visualizer_error->circle()
+          .center(position.x(), position.y())
+          .radius(ERROR_MARKER_RADIUS)
+          .stroke(color, opacity)
+          .strokeWidth(2.0)
+          .fill("none")
+          .build();
       }
+
+      std::string color = utils::getColorForErrorLevel(error_info.level);
+
+      visualizer_error->drawCenteredLabel(
+        Point(position.x(), position.y() + text_offset + ERROR_TEXT_OFFSET), error_info.message,
+        color, 50.0);
+
+      text_offset += ERROR_TEXT_INCREMENT;
     }
   }
 

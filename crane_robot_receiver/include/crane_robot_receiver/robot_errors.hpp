@@ -51,11 +51,6 @@ constexpr int STALE = 3;
 
 }  // namespace error_codes
 
-enum class RobotState {
-  ACTIVE,    // アクティブで診断情報を発行すべき
-  INACTIVE,  // 一時的に非アクティブ（フィールド外など）
-};
-
 namespace utils
 {
 inline auto getBldcName(uint16_t id) -> std::string
