@@ -228,3 +228,7 @@ bool Vision::is_camera_frame_valid(uint32_t camera_id) const
 }
 
 }  // namespace robocup_ssl_comm
+
+#include <rclcpp_components/register_node_macro.hpp>
+
+RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::Vision)

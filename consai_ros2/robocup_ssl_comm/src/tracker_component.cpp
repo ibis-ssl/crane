@@ -198,3 +198,7 @@ robocup_ssl_msgs::msg::TrackedFrame Tracker::parse_tracked_frame(
 }
 
 }  // namespace robocup_ssl_comm
+
+#include <rclcpp_components/register_node_macro.hpp>
+
+RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::Tracker)
