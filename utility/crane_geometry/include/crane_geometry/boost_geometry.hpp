@@ -12,8 +12,6 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/extensions/algorithms/closest_point.hpp>
 #include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 #include <crane_geometry/capsule.hpp>
 #include <crane_geometry/circle.hpp>
