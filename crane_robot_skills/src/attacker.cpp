@@ -221,7 +221,8 @@ void Attacker::initialize()
       command->setMaxVelocity("near_their_penalty_area", 1.5);
     }
 
-    double goal_angle_width = evaluateGoalAngle(world_model()->ball().pos);
+    double goal_angle_width =
+      world_model()->getLargestAttackGoalAngleRangeFromPoint(world_model()->ball().pos).angle_width;
 
     const auto & pass_plan = world_model()->getMsg().game_analysis.pass_plan;
     if (
@@ -323,12 +324,5 @@ void Attacker::onPostUpdate()
   } else {
     command->setOmegaLimit(10.0);
   }
-}
-
-double Attacker::evaluateGoalAngle(const Point & position)
-{
-  auto [best_angle, goal_angle_width] =
-    world_model()->getLargestAttackGoalAngleRangeFromPoint(position);
-  return goal_angle_width;
 }
 }  // namespace crane::skills
