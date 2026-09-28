@@ -25,10 +25,6 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_export_include_directories(
-  include
-)
-
 ament_export_dependencies(diagnostic_updater)
 
 if(BUILD_TESTING)
