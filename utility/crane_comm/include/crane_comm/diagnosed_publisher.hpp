@@ -19,9 +19,7 @@ public:
   template <typename NodePointerT>
   DiagnosedPublisher(
     const NodePointerT node, const std::string & topic_name, const size_t qos_history_depth,
-    double min_update_frequency, double max_update_frequency,
-    const diagnostic_updater::TimeStampStatusParam & stamp =
-      diagnostic_updater::TimeStampStatusParam())
+    double min_update_frequency, double max_update_frequency)
   : frequency_status_param{min_update_frequency, max_update_frequency},
     publisher(node->template create_publisher<MessageT>(topic_name, qos_history_depth)),
     diagnostics_updater(node),
@@ -30,21 +28,9 @@ public:
       publisher->get_topic_name(), diagnostics_updater,
       diagnostic_updater::FrequencyStatusParam(
         &frequency_status_param.min_update_frequency, &frequency_status_param.max_update_frequency),
-      stamp, clock)
+      diagnostic_updater::TimeStampStatusParam(), clock)
   {
     diagnostics_updater.setHardwareID(topic_name);
-  }
-
-  struct FrequencyStatusParam
-  {
-    double min_update_frequency;
-    double max_update_frequency;
-  } frequency_status_param;
-
-  auto publish(typename MessageT::UniquePtr message) -> void
-  {
-    topic_diagnostic.tick(clock->now());
-    publisher->publish(std::move(message));
   }
 
   auto publish(const MessageT & message) -> void
@@ -54,6 +40,13 @@ public:
   }
 
 private:
+  // TopicDiagnostic はこの 2 値へのポインタを持つので、topic_diagnostic より先に宣言する
+  struct FrequencyStatusParam
+  {
+    double min_update_frequency;
+    double max_update_frequency;
+  } frequency_status_param;
+
   typename rclcpp::Publisher<MessageT>::SharedPtr publisher;
 
   diagnostic_updater::Updater diagnostics_updater;
