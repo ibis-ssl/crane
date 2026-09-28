@@ -54,14 +54,13 @@ std::vector<BallState> track_ball(const BagData & data, double interval)
 
   for (const auto * tm : BagData::sample(data.world_models, interval)) {
     const auto & ball = tm->msg.ball_info;
-    double vx = ball.velocity.x, vy = ball.velocity.y;
     BallState s;
     s.t = tm->t(bag_start);
     s.x = ball.position.x;
     s.y = ball.position.y;
-    s.vx = vx;
-    s.vy = vy;
-    s.speed = std::sqrt(vx * vx + vy * vy);
+    s.vx = ball.velocity.x;
+    s.vy = ball.velocity.y;
+    s.speed = ball_speed(ball);
     result.push_back(s);
   }
   return result;

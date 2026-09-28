@@ -90,11 +90,10 @@ std::string section_world_model(const BagData & data, double interval)
     double t = tm->t(data.info.start_time_ns);
     const auto & ball = tm->msg.ball_info;
     double bx = ball.position.x, by = ball.position.y;
-    double bvx = ball.velocity.x, bvy = ball.velocity.y;
-    double bspeed = std::sqrt(bvx * bvx + bvy * bvy);
 
     std::snprintf(
-      buf, sizeof(buf), "  t=%.2f: ball=%s speed=%.2fm/s\n", t, fmt_pos(bx, by).c_str(), bspeed);
+      buf, sizeof(buf), "  t=%.2f: ball=%s speed=%.2fm/s\n", t, fmt_pos(bx, by).c_str(),
+      ball_speed(ball));
     oss << buf;
 
     for (const auto & r : tm->msg.robot_info_ours) {
