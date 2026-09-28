@@ -8,25 +8,13 @@
 
 #include <algorithm>
 #include <cmath>
-#include <crane_utils/parameter.hpp>
 #include <memory>
 
 namespace joystick
 {
 JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
-: Node("crane_teleop", options)
+: Node("crane_teleop", options), robot_id("robot_id", *this, 0)
 {
-  crane::get_or_declare_parameter(this, "robot_id", robot_id);
-  robot_id_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
-  robot_id_callback_handle =
-    robot_id_subscriber->add_parameter_callback("robot_id", [&](const rclcpp::Parameter & p) {
-      if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
-        robot_id = p.as_int();
-      } else {
-        RCLCPP_WARN(get_logger(), "robot_id is not integer");
-      }
-    });
-
   pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
   sub_joy = create_subscription<sensor_msgs::msg::Joy>(
     "joy", 10, [this](const sensor_msgs::msg::Joy::SharedPtr msg) { publish_robot_commands(msg); });
@@ -117,7 +105,7 @@ auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   crane_msgs::msg::RobotCommand command;
 
-  command.robot_id = robot_id;
+  command.robot_id = robot_id.getValue();
   constexpr double TELEOP_DT = 1.0 / 60.0;
   const double target_vx = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
   const double target_vy = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
