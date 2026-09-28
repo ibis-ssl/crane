@@ -74,8 +74,6 @@ private:
   // KICK状態の進捗タイムアウト用
   std::chrono::steady_clock::time_point kick_state_entry_time{};
   bool in_kick_state = false;
-
-  double evaluateGoalAngle(const Point & position);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
