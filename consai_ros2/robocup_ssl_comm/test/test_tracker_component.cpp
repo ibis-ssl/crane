@@ -140,54 +140,67 @@ robocup_ssl_msgs::msg::RobotId robot_id(uint32_t id, int32_t team, uint8_t has_f
 robocup_ssl_msgs::msg::TrackedFrame expected_frame()
 {
   using robocup_ssl_msgs::msg::KickedBall;
+  using robocup_ssl_msgs::msg::RobotId;
   using robocup_ssl_msgs::msg::Team;
   using robocup_ssl_msgs::msg::TrackedBall;
   using robocup_ssl_msgs::msg::TrackedFrame;
   using robocup_ssl_msgs::msg::TrackedRobot;
-  // msg の has_field は既定値が 255（全ビット立ち）で、変換は |= でビットを足すだけなので、
-  // フィールドの有無に関わらずすべての has_field が 255 のまま publish される
-  constexpr uint8_t kAllBits = 255;
+  // has_field は proto にあったフィールドのビットだけが立つ。
+  // ただし proto に無い入れ子メッセージ（ball_pos_only.vel・kicked_ball.stop_pos）は
+  // 変換で触られないので、msg の既定値 255（全ビット立ち）のまま残る
+  constexpr uint8_t kVector2Set =
+    robocup_ssl_msgs::msg::Vector2::X_FIELD_SET | robocup_ssl_msgs::msg::Vector2::Y_FIELD_SET;
+  constexpr uint8_t kVector3Set = robocup_ssl_msgs::msg::Vector3::X_FIELD_SET |
+                                  robocup_ssl_msgs::msg::Vector3::Y_FIELD_SET |
+                                  robocup_ssl_msgs::msg::Vector3::Z_FIELD_SET;
+  constexpr uint8_t kIdAndTeam = RobotId::ID_FIELD_SET | RobotId::TEAM_FIELD_SET;
 
   TrackedFrame frame;
   frame.frame_number = 42;
   frame.timestamp = 1234.5;
 
   TrackedBall ball_full;
-  ball_full.pos = vector3(1.5f, -2.25f, 0.125f, kAllBits);
-  ball_full.vel = vector3(0.5f, 0.25f, 0.0f, kAllBits);
+  ball_full.pos = vector3(1.5f, -2.25f, 0.125f, kVector3Set);
+  ball_full.vel = vector3(0.5f, 0.25f, 0.0f, kVector3Set);
   ball_full.visibility = 0.75f;
-  ball_full.has_field = kAllBits;
+  ball_full.has_field =
+    TrackedBall::POS_FIELD_SET | TrackedBall::VEL_FIELD_SET | TrackedBall::VISIBILITY_FIELD_SET;
   frame.balls.push_back(ball_full);
 
   TrackedBall ball_pos_only;
-  ball_pos_only.pos = vector3(-3.0f, 4.0f, 0.0f, kAllBits);
-  ball_pos_only.has_field = kAllBits;
+  ball_pos_only.pos = vector3(-3.0f, 4.0f, 0.0f, kVector3Set);
+  ball_pos_only.has_field = TrackedBall::POS_FIELD_SET;
   frame.balls.push_back(ball_pos_only);
 
   TrackedRobot robot_full;
-  robot_full.robot_id = robot_id(3, Team::YELLOW, kAllBits);
-  robot_full.pos = vector2(-1.0f, 2.0f, kAllBits);
+  robot_full.robot_id = robot_id(3, Team::YELLOW, kIdAndTeam);
+  robot_full.pos = vector2(-1.0f, 2.0f, kVector2Set);
   robot_full.orientation = 0.5f;
-  robot_full.vel = vector2(0.125f, -0.5f, kAllBits);
+  robot_full.vel = vector2(0.125f, -0.5f, kVector2Set);
   robot_full.vel_angular = 1.25f;
   robot_full.visibility = 1.0f;
-  robot_full.has_field = kAllBits;
+  robot_full.has_field = TrackedRobot::ROBOT_ID_FIELD_SET | TrackedRobot::POS_FIELD_SET |
+                         TrackedRobot::ORIENTATION_FIELD_SET | TrackedRobot::VEL_FIELD_SET |
+                         TrackedRobot::VEL_ANGULAR_FIELD_SET | TrackedRobot::VISIBILITY_FIELD_SET;
   frame.robots.push_back(robot_full);
 
   TrackedRobot robot_no_team;
-  robot_no_team.robot_id = robot_id(7, Team::UNKNOWN, kAllBits);
-  robot_no_team.pos = vector2(2.5f, -0.5f, kAllBits);
+  robot_no_team.robot_id = robot_id(7, Team::UNKNOWN, RobotId::ID_FIELD_SET);
+  robot_no_team.pos = vector2(2.5f, -0.5f, kVector2Set);
   robot_no_team.orientation = -1.5f;
-  robot_no_team.has_field = kAllBits;
+  robot_no_team.has_field = TrackedRobot::ROBOT_ID_FIELD_SET | TrackedRobot::POS_FIELD_SET |
+                            TrackedRobot::ORIENTATION_FIELD_SET;
   frame.robots.push_back(robot_no_team);
 
   KickedBall kicked;
-  kicked.pos = vector2(0.5f, 0.5f, kAllBits);
-  kicked.vel = vector3(1.0f, 2.0f, 0.0f, kAllBits);
+  kicked.pos = vector2(0.5f, 0.5f, kVector2Set);
+  kicked.vel = vector3(1.0f, 2.0f, 0.0f, kVector3Set);
   kicked.start_timestamp = 1230.25;
   kicked.stop_timestamp = 1235.0;
-  kicked.robot_id = robot_id(3, Team::BLUE, kAllBits);
-  kicked.has_field = kAllBits;
+  kicked.robot_id = robot_id(3, Team::BLUE, kIdAndTeam);
+  kicked.has_field = KickedBall::POS_FIELD_SET | KickedBall::VEL_FIELD_SET |
+                     KickedBall::START_TIMESTAMP_FIELD_SET | KickedBall::STOP_TIMESTAMP_FIELD_SET |
+                     KickedBall::ROBOT_ID_FIELD_SET;
   frame.kicked_ball = kicked;
 
   robocup_ssl_msgs::msg::Capability multiple_balls;
@@ -196,7 +209,8 @@ robocup_ssl_msgs::msg::TrackedFrame expected_frame()
   kicked_balls.value = robocup_ssl_msgs::msg::Capability::CAPABILITY_DETECT_KICKED_BALLS;
   frame.capabilities = {multiple_balls, kicked_balls};
 
-  frame.has_field = kAllBits;
+  frame.has_field = TrackedFrame::FRAME_NUMBER_FIELD_SET | TrackedFrame::TIMESTAMP_FIELD_SET |
+                    TrackedFrame::KICKED_BALL_FIELD_SET;
   return frame;
 }
 }  // namespace

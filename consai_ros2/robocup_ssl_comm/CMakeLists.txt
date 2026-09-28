@@ -58,7 +58,10 @@ rclcpp_components_register_node(game_controller_component
 ament_auto_add_library(tracker_component SHARED
   src/tracker_component.cpp
 )
-target_link_libraries(tracker_component ${robocup_ssl_msgs_LIBRARIES})
+target_link_libraries(tracker_component
+  ${robocup_ssl_msgs_LIBRARIES}
+  robocup_ssl_msgs::robocup_ssl_msgs_conversions
+)
 
 rclcpp_components_register_node(tracker_component
   PLUGIN "robocup_ssl_comm::Tracker"

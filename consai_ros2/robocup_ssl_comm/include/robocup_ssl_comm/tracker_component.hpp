@@ -40,9 +40,6 @@ protected:
   void on_timer();
 
 private:
-  robocup_ssl_msgs::msg::TrackedFrame parse_tracked_frame(
-    const robocup_ssl::TrackerWrapperPacket & wrapper_packet);
-
   crane::AsioContext asio_ctx_;
   std::unique_ptr<crane::AsyncUdpReceiver> receiver;
 
