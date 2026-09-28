@@ -26,8 +26,10 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(joystick_component SHARED src/joystick_component.cpp)
-
-ament_auto_add_executable(teleop_node src/teleop_node.cpp)
+rclcpp_components_register_node(joystick_component
+  PLUGIN "joystick::JoystickComponent"
+  EXECUTABLE teleop_node
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
