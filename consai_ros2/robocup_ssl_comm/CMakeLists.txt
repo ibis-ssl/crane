@@ -49,12 +49,10 @@ target_link_libraries(game_controller_component
   robocup_ssl_msgs::robocup_ssl_msgs_proto
 )
 
-ament_auto_add_executable(game_controller_node
-  src/game_controller_node.cpp
+rclcpp_components_register_node(game_controller_component
+  PLUGIN "robocup_ssl_comm::GameController"
+  EXECUTABLE game_controller_node
 )
-target_link_libraries(game_controller_node game_controller_component)
-
-rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
 
 # Tracker Component
 ament_auto_add_library(tracker_component SHARED
@@ -62,12 +60,10 @@ ament_auto_add_library(tracker_component SHARED
 )
 target_link_libraries(tracker_component ${robocup_ssl_msgs_LIBRARIES})
 
-ament_auto_add_executable(tracker_node
-  src/tracker_node.cpp
+rclcpp_components_register_node(tracker_component
+  PLUGIN "robocup_ssl_comm::Tracker"
+  EXECUTABLE tracker_node
 )
-target_link_libraries(tracker_node tracker_component)
-
-rclcpp_components_register_nodes(tracker_component "robocup_ssl_comm::Tracker")
 
 # Vision Component
 ament_auto_add_library(vision_component SHARED
@@ -75,12 +71,10 @@ ament_auto_add_library(vision_component SHARED
 )
 target_link_libraries(vision_component ${robocup_ssl_msgs_LIBRARIES})
 
-ament_auto_add_executable(vision_node
-  src/vision_node.cpp
+rclcpp_components_register_node(vision_component
+  PLUGIN "robocup_ssl_comm::Vision"
+  EXECUTABLE vision_node
 )
-target_link_libraries(vision_node vision_component)
-
-rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
 
 ament_export_libraries(vision_component)
 ament_export_libraries(game_controller_component)
