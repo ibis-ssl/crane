@@ -315,7 +315,7 @@ inline auto clampPoint(const Point & p, const Box & box) -> Point
 inline auto clampPoint(const Point & p, double min_x, double max_x, double min_y, double max_y)
   -> Point
 {
-  return Point(std::clamp(p.x(), min_x, max_x), std::clamp(p.y(), min_y, max_y));
+  return clampPoint(p, Point(min_x, min_y), Point(max_x, max_y));
 }
 
 /**
@@ -357,7 +357,7 @@ inline auto slideOntoCircleInsideBox(const Point & center, const Point & point, 
   constexpr int SAMPLES = 72;
   for (int i = 0; i < SAMPLES; ++i) {
     const double angle = base_angle + 2.0 * M_PI * i / SAMPLES;
-    const Point candidate = center + radius * Vector2(std::cos(angle), std::sin(angle));
+    const Point candidate = center + radius * getNormVec(angle);
     if (!isInBox(box, candidate)) {
       continue;
     }
