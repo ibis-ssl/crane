@@ -10,7 +10,6 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_select_results.hpp>
-#include <crane_physics/allocation_cost.hpp>
 #include <crane_physics/robot_info.hpp>
 #include <functional>
 #include <memory>
@@ -19,7 +18,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "allocation_state.hpp"
 #include "configuration_manager.hpp"
 #include "session_registry.hpp"
 
@@ -87,8 +85,9 @@ private:
   /// これを避けるため、集合が変わらない限り前フレームの順序を維持する。
   std::unordered_map<std::string, std::vector<uint8_t>> prev_allocation_order_;
 
-  AllocationState allocation_state_;
-  AllocationCostConfig allocation_cost_config_;
+  /// ロボット ID -> 最後に割り当てたセッション名。継続ボーナスの判定に使う。
+  /// 割り当てられなかったフレームや situation の切替をまたいでも消さない。
+  std::unordered_map<uint8_t, std::string> prev_session_of_robot_;
 };
 
 }  // namespace crane
