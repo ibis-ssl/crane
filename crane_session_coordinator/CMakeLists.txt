@@ -48,6 +48,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_pass_plan_execution test/test_pass_plan_execution.cpp)
   ament_auto_add_gtest(test_robot_allocator test/test_robot_allocator.cpp)
+  ament_auto_add_gtest(test_session_registry test/test_session_registry.cpp)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)

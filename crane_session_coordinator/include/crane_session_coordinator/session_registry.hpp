@@ -7,6 +7,7 @@
 #ifndef CRANE_SESSION_COORDINATOR__SESSION_REGISTRY_HPP_
 #define CRANE_SESSION_COORDINATOR__SESSION_REGISTRY_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_sessions/session_base.hpp>
 #include <memory>
@@ -48,6 +49,16 @@ public:
   }
 
   auto clear() -> void { active_sessions_.clear(); }
+
+  /// session_name という名前のセッションに robot_id が割り当たっているか
+  auto isAssigned(const std::string & session_name, int robot_id) const -> bool
+  {
+    return std::ranges::any_of(active_sessions_, [&](const auto & session) {
+      return session->name == session_name &&
+             std::ranges::any_of(
+               session->getRobots(), [&](const auto & robot) { return robot.id == robot_id; });
+    });
+  }
 
 private:
   std::vector<SessionBase::SharedPtr> active_sessions_;

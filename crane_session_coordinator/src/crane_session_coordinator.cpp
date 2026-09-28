@@ -161,15 +161,9 @@ auto SessionCoordinatorComponent::onWorldModelUpdate() -> void
     (pass_plan.state == crane_msgs::msg::PassPlan::STATE_PLANNING ||
      pass_plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT) &&
     !play_situation.command.name.empty()) {
-    bool kicker_assigned = false;
-    bool receiver_assigned = false;
-    for (const auto & session : session_registry_->getAllPlanners()) {
-      for (const auto & robot : session->getRobots()) {
-        kicker_assigned |= session->name == "attacker_skill" && robot.id == pass_plan.kicker_id;
-        receiver_assigned |= session->name == "pass_receive" && robot.id == pass_plan.receiver_id;
-      }
-    }
-    if (!kicker_assigned || !receiver_assigned) {
+    if (
+      !session_registry_->isAssigned("attacker_skill", pass_plan.kicker_id) ||
+      !session_registry_->isAssigned("pass_receive", pass_plan.receiver_id)) {
       assign(play_situation.command.name);
     }
   }
@@ -218,20 +212,11 @@ auto SessionCoordinatorComponent::collectCommands() -> crane_msgs::msg::RobotCom
 {
   // 割当(10Hz)と計画配信は非同期。毎周期、実際の割当が計画のペアと一致するか検証する。
   auto & plan = world_model->getEditableMsg().game_analysis.pass_plan;
-  const auto assigned_to = [&](const std::string & name, int id) {
-    for (const auto & session : session_registry_->getAllPlanners()) {
-      if (session->name == name) {
-        return std::ranges::any_of(
-          session->getRobots(), [&](const auto & robot) { return robot.id == id; });
-      }
-    }
-    return false;
-  };
   if (
     (plan.state == crane_msgs::msg::PassPlan::STATE_PLANNING ||
      plan.state == crane_msgs::msg::PassPlan::STATE_BALL_IN_FLIGHT) &&
-    (!assigned_to("attacker_skill", plan.kicker_id) ||
-     !assigned_to("pass_receive", plan.receiver_id))) {
+    (!session_registry_->isAssigned("attacker_skill", plan.kicker_id) ||
+     !session_registry_->isAssigned("pass_receive", plan.receiver_id))) {
     // この書き換えはローカルコピーにしか効かず /world_model には出ないので、
     // 外から見ると「計画はあるのに出し手がパスしない」という無言の失敗になる。
     // どちらの役が外れて拒否したのかをログに残す。
@@ -240,8 +225,9 @@ auto SessionCoordinatorComponent::collectCommands() -> crane_msgs::msg::RobotCom
       "PassPlan 実行拒否: 計画(出し手%d/受け手%d) と割当が不一致 "
       "(attacker_skill に %d: %s, pass_receive に %d: %s)",
       plan.kicker_id, plan.receiver_id, plan.kicker_id,
-      assigned_to("attacker_skill", plan.kicker_id) ? "あり" : "なし", plan.receiver_id,
-      assigned_to("pass_receive", plan.receiver_id) ? "あり" : "なし");
+      session_registry_->isAssigned("attacker_skill", plan.kicker_id) ? "あり" : "なし",
+      plan.receiver_id,
+      session_registry_->isAssigned("pass_receive", plan.receiver_id) ? "あり" : "なし");
     plan.state = crane_msgs::msg::PassPlan::STATE_ABORTED;
   }
   crane_msgs::msg::RobotCommands msg;
