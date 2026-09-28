@@ -91,8 +91,11 @@ protected:
     world_model = std::make_unique<WorldModelWrapper>(*node, false);
     subscription = node->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
       "/diagnostics", 10, [this](const diagnostic_msgs::msg::DiagnosticArray & msg) {
-        // 同じ DDS ドメインの他ノードの診断は拾わない
-        if (!msg.status.empty() && msg.status.front().hardware_id == "robot_03") {
+        // 同じ DDS ドメインの他ノード（実機の diagnostic_publisher_node も同じ hardware_id・
+        // 診断名を出す）の診断は拾わない。Updater は診断名の先頭にノード名を付ける
+        if (
+          !msg.status.empty() &&
+          msg.status.front().name.starts_with("test_diagnostic_publisher: ")) {
           received = msg;
         }
       });
