@@ -34,20 +34,14 @@ struct ParameterWithEvent
     }())
   {
     node.declare_parameter(name, default_value);
-    fetchParameter(node);
+    value = fromParameter(node.get_parameter(name));
 
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
         if (p.get_type() != PARAMETER_TYPE) return;
         value = fromParameter(p);
-        if (callback) callback(value);
       });
-  }
-
-  auto fetchParameter(rclcpp::Node & node) -> void
-  {
-    value = fromParameter(node.get_parameter(name));
   }
 
   static auto fromParameter(const rclcpp::Parameter & p) -> T
@@ -66,8 +60,6 @@ struct ParameterWithEvent
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
 
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
-
-  std::function<void(T)> callback;
 
   auto getValue() const -> T { return value; }
 
