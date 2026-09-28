@@ -14,6 +14,7 @@
 #include <crane_utils/time.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
+#include <functional>
 #include <map>
 #include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find_if.hpp>
@@ -22,6 +23,33 @@
 
 namespace crane
 {
+namespace
+{
+auto findOwnFeedback(const crane_msgs::msg::RobotFeedbackArray & feedback_msg, uint8_t robot_id)
+  -> const crane_msgs::msg::RobotFeedback *
+{
+  auto feedback = ranges::find_if(
+    feedback_msg.feedback,
+    [robot_id](const crane_msgs::msg::RobotFeedback & msg) { return msg.robot_id == robot_id; });
+  return feedback == feedback_msg.feedback.end() ? nullptr : &*feedback;
+}
+
+// フィードバックが無いときの summary。シミュレーションでは OK、実機では WARN
+// （フィードバックなしでもVision/Trackerで制御可能）。どちらもエラーとしては記録しない
+auto summarizeMissingFeedback(
+  diagnostic_updater::DiagnosticStatusWrapper & stat, bool sim_mode, const std::string & data_name)
+  -> void
+{
+  if (sim_mode) {
+    stat.summary(
+      diagnostic_msgs::msg::DiagnosticStatus::OK,
+      fmt::format("Simulation mode (no {} data)", data_name));
+  } else {
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "No robot feedback received");
+  }
+}
+}  // namespace
+
 auto RobotData::updateErrorMap(
   const std::string & error_type, const std::string & message, int level,
   const rclcpp::Time & timestamp) -> bool
@@ -69,40 +97,41 @@ auto RobotData::initializeDiagnostics(
   // 診断名のプレフィックス（aggregatorでのグループ化用）
   std::string diagnostic_prefix = fmt::format("robot_{:02d}/", robot_id);
 
-  updater->add(
-    diagnostic_prefix + "communication",
-    [this, node, world_model, sim_mode, latest_ping_msg,
+  // ロボットが検出されていなければ OK「Robot not detected」にしてエラーを消し、検出されていれば
+  // callback に任せる診断を登録する。
+  // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
+  auto add = [this, world_model, &diagnostic_prefix](
+               const std::string & name, bool require_feedback,
+               std::function<void(diagnostic_updater::DiagnosticStatusWrapper &)> callback) {
+    updater->add(
+      diagnostic_prefix + name, [this, world_model, name, require_feedback,
+                                 callback](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        if (!isRobotDetected(*world_model, require_feedback)) {
+          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
+          removeError(name);
+          return;
+        }
+        callback(stat);
+      });
+  };
+
+  add(
+    "communication", false,
+    [this, node, sim_mode, latest_ping_msg,
      latest_feedback_msg](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (!isRobotDetected(*world_model)) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
-        removeError("communication");
-        return;
-      }
       communicationDiagnosticCallback(
         stat, *latest_ping_msg, *latest_feedback_msg, node->now(), sim_mode);
     });
-
-  // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
-  updater->add(
-    diagnostic_prefix + "battery", [this, node, world_model, sim_mode, latest_feedback_msg](
-                                     diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (!isRobotDetected(*world_model, true)) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
-        removeError("battery");
-        return;
-      }
+  add(
+    "battery", true,
+    [this, node, sim_mode,
+     latest_feedback_msg](diagnostic_updater::DiagnosticStatusWrapper & stat) {
       batteryDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
-
-  // 【循環参照回避】available_vision/feedback/trackerは診断結果に依存しないため安全
-  updater->add(
-    diagnostic_prefix + "robot_error", [this, node, world_model, sim_mode, latest_feedback_msg](
-                                         diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      if (!isRobotDetected(*world_model, true)) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot not detected");
-        removeError("robot_error");
-        return;
-      }
+  add(
+    "robot_error", true,
+    [this, node, sim_mode,
+     latest_feedback_msg](diagnostic_updater::DiagnosticStatusWrapper & stat) {
       robotErrorDiagnosticCallback(stat, *latest_feedback_msg, node->now(), sim_mode);
     });
 }
@@ -116,16 +145,14 @@ auto RobotData::communicationDiagnosticCallback(
   auto ping = ranges::find_if(ping_msg.ping, [this](const crane_msgs::msg::PingStatus & msg) {
     return msg.robot_id == robot_id;
   });
-  auto feedback = ranges::find_if(
-    feedback_msg.feedback,
-    [this](const crane_msgs::msg::RobotFeedback & msg) { return msg.robot_id == robot_id; });
+  const auto * feedback = findOwnFeedback(feedback_msg, robot_id);
 
   constexpr double FEEDBACK_WARN_AGE_MS = 100.0;
   constexpr double FEEDBACK_ERROR_AGE_MS = 250.0;
   constexpr double FEEDBACK_WARN_RATE_HZ = 20.0;
   constexpr double FEEDBACK_ERROR_RATE_HZ = 5.0;
 
-  if (feedback != feedback_msg.feedback.end()) {
+  if (feedback) {
     std::string message = "Robot feedback healthy";
     int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
 
@@ -188,46 +215,34 @@ auto RobotData::batteryDiagnosticCallback(
   const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
   bool sim_mode) -> void
 {
-  auto feedback = ranges::find_if(
-    feedback_msg.feedback,
-    [this](const crane_msgs::msg::RobotFeedback & msg) { return msg.robot_id == robot_id; });
+  const auto * feedback = findOwnFeedback(feedback_msg, robot_id);
+  if (!feedback) {
+    summarizeMissingFeedback(stat, sim_mode, "battery");
+    removeError("battery");
+    return;
+  }
 
-  if (feedback != feedback_msg.feedback.end()) {
-    std::string message;
-    int level;
+  std::string message;
+  int level;
 
-    if (feedback->voltage[0] < 22.0) {
-      message = "Low battery voltage";
-      level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
-    } else if (feedback->voltage[0] < 23.0) {
-      message = "Battery voltage medium";
-      level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
-    } else {
-      message = "Battery voltage high";
-      level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-    }
-
-    stat.summary(level, message);
-    stat.add("voltage", feedback->voltage[0]);
-
-    if (level > 0) {
-      updateErrorMap("battery", message, level, now_time);
-    } else {
-      removeError("battery");
-    }
+  if (feedback->voltage[0] < 22.0) {
+    message = "Low battery voltage";
+    level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+  } else if (feedback->voltage[0] < 23.0) {
+    message = "Battery voltage medium";
+    level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
   } else {
-    if (sim_mode) {
-      std::string message = "Simulation mode (no battery data)";
-      int level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-      stat.summary(level, message);
-      removeError("battery");
-    } else {
-      // 実機環境ではWARN（フィードバックなしでもVision/Trackerで制御可能）
-      std::string message = "No robot feedback received";
-      int level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
-      stat.summary(level, message);
-      removeError("battery");
-    }
+    message = "Battery voltage high";
+    level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+  }
+
+  stat.summary(level, message);
+  stat.add("voltage", feedback->voltage[0]);
+
+  if (level > 0) {
+    updateErrorMap("battery", message, level, now_time);
+  } else {
+    removeError("battery");
   }
 }
 
@@ -236,38 +251,27 @@ auto RobotData::robotErrorDiagnosticCallback(
   const crane_msgs::msg::RobotFeedbackArray & feedback_msg, const rclcpp::Time & now_time,
   bool sim_mode) -> void
 {
-  auto feedback = ranges::find_if(
-    feedback_msg.feedback,
-    [this](const crane_msgs::msg::RobotFeedback & msg) { return msg.robot_id == robot_id; });
+  const auto * feedback = findOwnFeedback(feedback_msg, robot_id);
+  if (!feedback) {
+    summarizeMissingFeedback(stat, sim_mode, "robot error");
+    removeError("robot_error");
+    return;
+  }
 
-  if (feedback != feedback_msg.feedback.end()) {
-    if (feedback->error_id != 0 || feedback->error_info != 0) {
-      std::string error_str =
-        utils::convertErrorDataToStr(feedback->error_id, feedback->error_info);
-      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, error_str);
+  if (feedback->error_id != 0 || feedback->error_info != 0) {
+    std::string error_str = utils::convertErrorDataToStr(feedback->error_id, feedback->error_info);
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, error_str);
 
-      stat.add("error_id", feedback->error_id);
-      stat.add("error_info", feedback->error_info);
-      stat.add("error_value", feedback->error_value);
-      stat.add("error_description", error_str);
+    stat.add("error_id", feedback->error_id);
+    stat.add("error_info", feedback->error_info);
+    stat.add("error_value", feedback->error_value);
+    stat.add("error_description", error_str);
 
-      updateErrorMap(
-        "robot_error", error_str, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
-    } else {
-      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
-      removeError("robot_error");
-    }
+    updateErrorMap(
+      "robot_error", error_str, diagnostic_msgs::msg::DiagnosticStatus::ERROR, now_time);
   } else {
-    if (sim_mode) {
-      std::string message = "Simulation mode (no robot error data)";
-      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, message);
-      removeError("robot_error");
-    } else {
-      // 実機環境ではWARN（フィードバックなしでもVision/Trackerで制御可能）
-      std::string message = "No robot feedback received";
-      stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, message);
-      removeError("robot_error");
-    }
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
+    removeError("robot_error");
   }
 }
 
