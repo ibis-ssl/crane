@@ -24,8 +24,6 @@ public:
 
   Status update() override;
 
-  double getRestTime() const;
-
   void reset() { is_started = false; }
 
   bool is_started = false;

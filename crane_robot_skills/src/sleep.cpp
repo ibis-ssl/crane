@@ -22,10 +22,4 @@ Status Sleep::update()
     return Status::RUNNING;
   }
 }
-
-double Sleep::getRestTime() const
-{
-  auto elapsed_time = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
-  return getParameter<double>("duration") - elapsed_time.count();
-}
 }  // namespace crane::skills
