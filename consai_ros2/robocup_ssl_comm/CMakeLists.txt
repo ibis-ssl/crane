@@ -83,6 +83,9 @@ ament_export_libraries(tracker_component)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_auto_add_gtest(test_tracker_component test/test_tracker_component.cpp)
+  target_link_libraries(test_tracker_component tracker_component)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE launch USE_SCOPED_HEADER_INSTALL_DIR)
