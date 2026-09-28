@@ -337,6 +337,11 @@ private:
 
 class RobotReceiverNode : public rclcpp::Node
 {
+  // receivers のソケットより後に破棄されるよう、receivers より先に宣言する
+  asio::io_context io_context_;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+  std::thread io_thread_;
+
 public:
   explicit RobotReceiverNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("robot_receiver_node", options),
@@ -446,10 +451,6 @@ public:
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
 private:
-  asio::io_context io_context_;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
-
   rclcpp::TimerBase::SharedPtr timer;
 
   rclcpp::Clock clock;
