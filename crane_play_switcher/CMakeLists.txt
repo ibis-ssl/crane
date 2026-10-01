@@ -38,6 +38,7 @@ ament_auto_add_executable(play_switcher_node
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_auto_add_gtest(test_referee_command_transition test/test_referee_command_transition.cpp)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
