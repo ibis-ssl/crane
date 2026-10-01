@@ -39,9 +39,7 @@ def test_watch_start_and_rate_events_reach_event_log(
 
     records: list[dict[str, Any]] = []
     log = EventLog(quiet=True, sink=records.append)
-    watcher = FeedbackWatcher(
-        3, on_event=lambda kind, message, extra: log.emit(kind, message, **extra)
-    )
+    watcher = FeedbackWatcher(3, log=log)
     sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         watcher.start()
