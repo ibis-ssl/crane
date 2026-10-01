@@ -8,11 +8,6 @@ export const FIELD_BOUNDARY_DEFAULT_M = 0.3;
 export const ZOOM_MIN = 0.1;
 export const ZOOM_MAX = 5.0;
 
-// ロボットの警告閾値。レール・HUD・概要タブで同じ値を使う
-export const VOLTAGE_CRIT_V = 21.0;
-export const VOLTAGE_WARN_V = 22.5;
-export const TEMP_CRIT_C = 75;
-export const TEMP_WARN_C = 60;
 export const FEEDBACK_STALE_MS = 500;
 export const LATENCY_WARN_MS = 100;
 

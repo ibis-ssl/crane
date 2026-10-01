@@ -3,6 +3,8 @@
 // sim ではサーバが /robots 系を 503 で弾くうえ、ここでもポーリングを
 // 開始しない。「リンクはあるが動かない」に見えないよう、理由を画面に出す。
 
+import { voltageSeverity, temperatureSeverity } from '/shared/robot-health.js';
+
 const API_BASE = '/api/robot-manager';
 
 // ---- 定数 ------------------------------------------------------------------
@@ -11,12 +13,8 @@ let NUM_ROBOTS = 13;
 
 // 温度センサーのコンポーネント名（インデックス順）
 const TEMP_NAMES = ['RF', 'RB', 'LB', 'LF', 'FET', 'コイル1', 'コイル2'];
-const TEMP_WARN = 45;
-const TEMP_CRIT = 60;
 
-// 電圧しきい値
-const VOLTAGE_WARN = 23.0;
-const VOLTAGE_CRIT = 22.0;
+const SEVERITY_CLASS = { crit: 'm3-text-error', warn: 'm3-text-warning' };
 
 // ---- ステータス設定 ---------------------------------------------------------
 
@@ -116,7 +114,7 @@ function renderHwDetail(robot) {
   // 電圧（配列の最初の値を使用）
   if (Array.isArray(robot.voltage) && robot.voltage.length > 0) {
     const v = robot.voltage[0];
-    const cls = v < VOLTAGE_CRIT ? 'm3-text-error' : v < VOLTAGE_WARN ? 'm3-text-warning' : 'm3-text-success';
+    const cls = SEVERITY_CLASS[voltageSeverity(v)] ?? 'm3-text-success';
     parts.push(`<span class="${cls}">⚡${v.toFixed(1)}V</span>`);
   }
 
@@ -126,7 +124,7 @@ function renderHwDetail(robot) {
     const maxTemp = Math.max(...temps);
     const maxIdx = temps.indexOf(maxTemp);
     const label = TEMP_NAMES[maxIdx] ?? `T${maxIdx}`;
-    const cls = maxTemp >= TEMP_CRIT ? 'm3-text-error' : maxTemp >= TEMP_WARN ? 'm3-text-warning' : '';
+    const cls = SEVERITY_CLASS[temperatureSeverity(maxTemp)] ?? '';
     parts.push(`<span class="${cls}">🌡${maxTemp}°C (${label})</span>`);
   }
 
@@ -285,6 +283,8 @@ async function controlRobot(robotId, command) {
     await fetchRobots();
   }
 }
+// rowHtml の onclick 属性から呼ぶ。モジュールのトップレベルは global にならない
+window.controlRobot = controlRobot;
 
 
 async function startAll() {
