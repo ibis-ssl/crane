@@ -13,6 +13,7 @@
 #include <crane_utils/parameter.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
 #include <memory>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane
 {
@@ -78,6 +79,22 @@ public:
   }
 
 protected:
+  /// STOP 中に SSL ルールの速度制限をかけるか（練習モードで通常速度を指定しているときは外す）
+  auto isStopSpeedLimited() const -> bool
+  {
+    return world_model->getMsg().play_situation.referee_raw.command.value ==
+             robocup_ssl_msgs::msg::RefereeCommand::STOP &&
+           !world_model->isPracticeNormalSpeed();
+  }
+
+  /// 最大速度の制限値を 1 つ登録する（resolveMaxVelocityFactors で最小値が選ばれる）
+  static auto addMaxVelocityFactor(
+    crane_msgs::msg::RobotCommand & command, const std::string & name, double value) -> void
+  {
+    command.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
+  }
+
   VisualizerMessageBuilder::SharedPtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;

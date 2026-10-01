@@ -144,13 +144,6 @@ auto RVO2Planner::setPlanningStage(
   addOrUpdatePlanningFactor(command, "RVO2Stage", stage);
 }
 
-auto RVO2Planner::addMaxVelocityFactor(
-  crane_msgs::msg::RobotCommand & command, const std::string & name, double value) const -> void
-{
-  command.local_planner_config.max_velocity_factors.emplace_back(
-    crane_msgs::msg::NamedFloat().set__name(name).set__value(value));
-}
-
 auto RVO2Planner::createPreprocessContext(const crane_msgs::msg::RobotCommand & command) const
   -> PreprocessContext
 {
@@ -256,8 +249,7 @@ auto RVO2Planner::applyTargetAdjustmentPipeline(
 }
 
 auto RVO2Planner::computePreferredVelocityStage(
-  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command, uint8_t referee_command) const
-  -> void
+  PreprocessContext & ctx, crane_msgs::msg::RobotCommand & command) const -> void
 {
   setPlanningStage(command, "PREF_VELOCITY");
   Vector2 position_diff;
@@ -266,9 +258,7 @@ auto RVO2Planner::computePreferredVelocityStage(
 
   const double max_brk = planning_deceleration;
   addMaxVelocityFactor(command, "RVO2Planner::max_vel from parameter", MAX_VEL);
-  if (
-    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-    !world_model->isPracticeNormalSpeed()) {
+  if (isStopSpeedLimited()) {
     addMaxVelocityFactor(command, "RVO2Planner STOP制限", STOP_STATE_MAX_VELOCITY);
   }
   ctx.max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
@@ -448,8 +438,7 @@ auto RVO2Planner::retireAgent(size_t agent_id) -> void
   rvo_sim->setAgentRadius(agent_id, RVO_RADIUS);
 }
 
-auto RVO2Planner::updateActiveAllyAgent(
-  crane_msgs::msg::RobotCommand & command, uint8_t referee_command) -> void
+auto RVO2Planner::updateActiveAllyAgent(crane_msgs::msg::RobotCommand & command) -> void
 {
   auto ctx = createPreprocessContext(command);
   initializePlanningFactors(command);
@@ -475,7 +464,7 @@ auto RVO2Planner::updateActiveAllyAgent(
     pos_mode.target_y = ctx.target_pos.y();
     addOrUpdatePlanningFactor(command, "RVO2TargetAdjustedDistance", "0.000");
   }
-  computePreferredVelocityStage(ctx, command, referee_command);
+  computePreferredVelocityStage(ctx, command);
   applyPreConstraintStage(ctx, command);
   setPlanningStage(command, "RVO_INPUT");
   applyRVOInputStage(ctx, command);
@@ -483,11 +472,7 @@ auto RVO2Planner::updateActiveAllyAgent(
 
 auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  const float max_speed = (referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-                           !world_model->isPracticeNormalSpeed())
-                            ? STOP_STATE_MAX_VELOCITY
-                            : RVO_MAX_SPEED;
+  const float max_speed = isStopSpeedLimited() ? STOP_STATE_MAX_VELOCITY : RVO_MAX_SPEED;
   for (size_t i = 0; i < MAX_ROBOT_NUM * 2; i++) {
     rvo_sim->setAgentMaxSpeed(i, max_speed);
   }
@@ -519,7 +504,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     if (!ally_robot->available()) {
       retireAgent(id);
     } else if (auto * command = cmd_map[id]; command != nullptr) {
-      updateActiveAllyAgent(*command, referee_command);
+      updateActiveAllyAgent(*command);
     } else {
       rvo_sim->setAgentPosition(id, toRVO(ally_robot->pose.pos));
       rvo_sim->setAgentPrefVelocity(id, ZERO_VELOCITY);
@@ -585,9 +570,7 @@ auto RVO2Planner::extractVelocityCommandsFromRVOSim(
       original_pos_mode.target_x - robot->pose.pos.x(),
       original_pos_mode.target_y - robot->pose.pos.y());
 
-    const auto referee_cmd = world_model->getMsg().play_situation.referee_raw.command.value;
-    const bool is_stop_state = referee_cmd == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-                               !world_model->isPracticeNormalSpeed();
+    const bool is_stop_state = isStopSpeedLimited();
     constexpr double STOP_STATE_POSITION_TOLERANCE = 0.03;
     double effective_tolerance = original_pos_mode.position_tolerance;
     if (is_stop_state) {

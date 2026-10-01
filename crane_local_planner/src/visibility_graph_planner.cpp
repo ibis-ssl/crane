@@ -287,18 +287,9 @@ auto VisibilityGraphPlanner::planSingleRobot(const crane_msgs::msg::RobotCommand
 
   const bool final_target = (subgoal - path.back()).norm() < 1e-4;
 
-  result.local_planner_config.max_velocity_factors.emplace_back(
-    crane_msgs::msg::NamedFloat()
-      .set__name("VisibilityGraphPlanner::max_vel")
-      .set__value(max_velocity_));
-  const auto referee_command = world_model->getMsg().play_situation.referee_raw.command.value;
-  if (
-    referee_command == robocup_ssl_msgs::msg::RefereeCommand::STOP &&
-    !world_model->isPracticeNormalSpeed()) {
-    result.local_planner_config.max_velocity_factors.emplace_back(
-      crane_msgs::msg::NamedFloat()
-        .set__name("VisibilityGraphPlanner STOP制限")
-        .set__value(stop_state_max_velocity_));
+  addMaxVelocityFactor(result, "VisibilityGraphPlanner::max_vel", max_velocity_);
+  if (isStopSpeedLimited()) {
+    addMaxVelocityFactor(result, "VisibilityGraphPlanner STOP制限", stop_state_max_velocity_);
   }
   const double max_velocity = resolveMaxVelocityFactors(result, max_velocity_);
   const double max_acceleration = resolveMaxAccelerationFactors(result, planning_acceleration);
