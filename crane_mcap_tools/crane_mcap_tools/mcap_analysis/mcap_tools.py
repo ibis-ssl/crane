@@ -67,20 +67,16 @@ class MCAPToolsHandler:
         Args:
             time_offset_sec: イベント時刻からのオフセット（秒）
         """
-        time_offset_sec = args.get("time_offset_sec", 0.0)
-        target_time_ns = self.annotation.event_timestamp_ns + int(time_offset_sec * 1e9)
-
-        closest_snapshot = min(
-            self.world_model_snapshots,
-            key=lambda s: abs(s.timestamp_ns - target_time_ns),
-        )
+        snapshot = self._get_snapshot_at_offset(args.get("time_offset_sec", 0.0))
+        if not snapshot:
+            return {"error": "No snapshot found"}
 
         return {
-            "timestamp_sec": closest_snapshot.timestamp_ns / 1e9,
-            "ball_position": closest_snapshot.ball_position,
-            "ball_velocity": closest_snapshot.ball_velocity,
-            "our_robots": closest_snapshot.our_robots,
-            "their_robots": closest_snapshot.their_robots,
+            "timestamp_sec": snapshot.timestamp_ns / 1e9,
+            "ball_position": snapshot.ball_position,
+            "ball_velocity": snapshot.ball_velocity,
+            "our_robots": snapshot.our_robots,
+            "their_robots": snapshot.their_robots,
         }
 
     def _get_robot_trajectory(self, args: dict[str, Any]) -> dict[str, Any]:

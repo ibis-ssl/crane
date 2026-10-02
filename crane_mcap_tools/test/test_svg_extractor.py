@@ -115,10 +115,10 @@ def test_update_operations(bag):
 
     assert layers_of(extract()) == [
         {"a": ["<a1/>"], "b": ["<b/>"]},
-        {"a": ["<a1/>", "<a2/>"], "b": ["<b/>"]},
-        {"a": ["<a1/>", "<a2/>"], "b": ["<b2/>"]},
-        {"a": [], "b": ["<b2/>"]},
-        {"a": [], "b": ["<b2/>"]},
+        {"a": ["<a1/>", "<a2/>"], "b": ["<b/>"], "new": ["<n/>"]},
+        {"a": ["<a1/>", "<a2/>"], "b": ["<b2/>"], "new": ["<n/>"]},
+        {"a": [], "b": ["<b2/>"], "new": ["<n/>"]},
+        {"a": [], "b": ["<b2/>"], "new": ["<n/>"]},
     ]
 
 
@@ -171,7 +171,7 @@ def test_time_range_skips_before_start_and_stops_after_end(bag):
     frames = extract(start_time_sec=1.5, end_time_sec=3.0)
 
     assert [f.seq for f in frames] == [1, 2]
-    assert layers_of(frames) == [{}, {"b": ["<in2/>"]}]
+    assert layers_of(frames) == [{"a": ["<in/>"]}, {"a": ["<in/>"], "b": ["<in2/>"]}]
 
 
 def test_yielded_frames_are_independent_copies(bag):

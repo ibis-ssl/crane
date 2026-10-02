@@ -145,9 +145,7 @@ class SvgExtractor:
                     if operation == "replace":
                         current_layers[layer_name] = primitives
                     elif operation == "append":
-                        if layer_name in current_layers:
-                            current_layers[layer_name].extend(primitives)
-                        # ベースがない場合のappendは無視（svg_viewer.jsの仕様に準拠）
+                        current_layers.setdefault(layer_name, []).extend(primitives)
                     elif operation == "clear":
                         current_layers[layer_name] = []
                     else:
