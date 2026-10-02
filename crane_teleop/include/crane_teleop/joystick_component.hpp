@@ -7,6 +7,7 @@
 #ifndef CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 #define CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 
+#include <crane_comm/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -33,7 +34,7 @@ private:
 
   double dribble_power = 0.5;
 
-  int robot_id = 0;
+  crane::ParameterWithEvent<int> robot_id;
 
   float theta = 0.0f;
 
@@ -48,10 +49,6 @@ private:
   bool is_pushed_dribble = false;
 
   bool is_pushed_adjust = false;
-
-  std::shared_ptr<rclcpp::ParameterEventHandler> robot_id_subscriber;
-
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> robot_id_callback_handle;
 };
 
 }  // namespace joystick
