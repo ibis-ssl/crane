@@ -25,6 +25,7 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/vision_ball_velocity_estimator.hpp>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -95,6 +96,7 @@ struct VisionBallState
   rclcpp::Time last_detect_time{};
   bool detected{false};
   geometry_msgs::msg::Vector3 raw_position{};
+  VisionFrameKey frame_key{};
 };
 
 // Tracker用ボール状態
@@ -241,6 +243,14 @@ private:
   VisionBallState vision_ball_state_;
   TrackerBallState tracker_ball_state_;
 
+  // Vision/Tracker のボール検出がこの時間途切れたら未検出とする
+  static constexpr double BALL_DETECTION_TIMEOUT_SEC = 0.1;
+  // Vision 差分速度の上限（SSL のキック最高速）。これを超える値はノイズ・誤検出とみなして縮める
+  static constexpr double MAX_VISION_BALL_SPEED = 6.5;  // m/s
+  // Tracker 未検出時のボール速度（Vision の連続観測の差分）
+  VisionBallVelocityEstimator vision_ball_velocity_estimator_{
+    BALL_DETECTION_TIMEOUT_SEC, MAX_VISION_BALL_SPEED};
+
   // フォールバック推定用
   Eigen::Vector3d last_known_ball_position_{Eigen::Vector3d::Zero()};
   rclcpp::Time last_known_ball_stamp_{};
@@ -340,8 +350,9 @@ private:
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
 
   // ボール状態更新メソッド（Vision/Tracker分離）
-  auto updateVisionBallState(const robocup_ssl::SSL_DetectionBall & ssl_ball, uint32_t camera_id)
-    -> void;
+  auto updateVisionBallState(
+    const robocup_ssl::SSL_DetectionBall & ssl_ball,
+    const robocup_ssl::SSL_DetectionFrame & detection) -> void;
   auto updateTrackerBallState(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> void;
   auto integrateBallInfo() -> void;
   auto estimateFallbackBall(const rclcpp::Time & now) -> void;
