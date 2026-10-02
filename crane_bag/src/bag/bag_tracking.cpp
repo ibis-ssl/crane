@@ -16,14 +16,10 @@ std::vector<RobotState> track_robot(
 {
   std::vector<RobotState> result;
   int64_t bag_start = data.info.start_time_ns;
-  int64_t interval_ns = static_cast<int64_t>(interval * 1e9);
-  int64_t last_ns = 0;
 
-  for (const auto & tm : data.world_models) {
-    if (tm.timestamp_ns - last_ns < interval_ns) continue;
-    last_ns = tm.timestamp_ns;  // ロボット有無に関わらずインターバルを進める
-
-    const auto & msg = tm.msg;
+  // 間引きはロボットの有無に関わらず進める
+  for (const auto * tm : BagData::sample(data.world_models, interval)) {
+    const auto & msg = tm->msg;
     const auto & ball = msg.ball_info;
     double bx = ball.position.x, by = ball.position.y;
 
@@ -32,7 +28,7 @@ std::vector<RobotState> track_robot(
       if (static_cast<int>(r.id) == robot_id) {
         double vx = r.velocity.x, vy = r.velocity.y;
         RobotState s;
-        s.t = tm.t(bag_start);
+        s.t = tm->t(bag_start);
         s.robot_id = robot_id;
         s.x = r.pose.x;
         s.y = r.pose.y;
@@ -55,23 +51,17 @@ std::vector<BallState> track_ball(const BagData & data, double interval)
 {
   std::vector<BallState> result;
   int64_t bag_start = data.info.start_time_ns;
-  int64_t interval_ns = static_cast<int64_t>(interval * 1e9);
-  int64_t last_ns = 0;
 
-  for (const auto & tm : data.world_models) {
-    if (tm.timestamp_ns - last_ns < interval_ns) continue;
-
-    const auto & ball = tm.msg.ball_info;
-    double vx = ball.velocity.x, vy = ball.velocity.y;
+  for (const auto * tm : BagData::sample(data.world_models, interval)) {
+    const auto & ball = tm->msg.ball_info;
     BallState s;
-    s.t = tm.t(bag_start);
+    s.t = tm->t(bag_start);
     s.x = ball.position.x;
     s.y = ball.position.y;
-    s.vx = vx;
-    s.vy = vy;
-    s.speed = std::sqrt(vx * vx + vy * vy);
+    s.vx = ball.velocity.x;
+    s.vy = ball.velocity.y;
+    s.speed = ball_speed(ball);
     result.push_back(s);
-    last_ns = tm.timestamp_ns;
   }
   return result;
 }

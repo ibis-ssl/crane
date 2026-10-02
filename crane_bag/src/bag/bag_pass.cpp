@@ -50,11 +50,6 @@ constexpr double kOutOfFieldMargin = 0.05;
 
 double norm2(double x, double y) { return std::sqrt(x * x + y * y); }
 
-double ball_speed(const WorldModel & wm)
-{
-  return norm2(wm.ball_info.velocity.x, wm.ball_info.velocity.y);
-}
-
 double dist2d(const Point2D & a, double bx, double by) { return norm2(a.x - bx, a.y - by); }
 
 /// 攻撃方向の x の符号。world_model は座標を正規化しておらず、on_positive_half なら
@@ -155,11 +150,11 @@ std::vector<PassEvent> detect_pass_events(const BagData & data)
     return events;
   }
 
-  bool prev_above = ball_speed(wms.front().msg) >= kKickDetectSpeed;
+  bool prev_above = ball_speed(wms.front().msg.ball_info) >= kKickDetectSpeed;
 
   for (size_t i = 1; i < wms.size(); ++i) {
     const auto & wm = wms[i].msg;
-    const double speed = ball_speed(wm);
+    const double speed = ball_speed(wm.ball_info);
     const bool above = speed >= kKickDetectSpeed;
     if (!above || prev_above) {
       prev_above = above;
@@ -168,7 +163,7 @@ std::vector<PassEvent> detect_pass_events(const BagData & data)
     prev_above = above;
 
     // 単発ノイズ除去: 次フレームでも速度が維持されていること
-    if (i + 1 < wms.size() && ball_speed(wms[i + 1].msg) < kKickConfirmSpeed) {
+    if (i + 1 < wms.size() && ball_speed(wms[i + 1].msg.ball_info) < kKickConfirmSpeed) {
       continue;
     }
 
@@ -247,7 +242,7 @@ std::vector<PassEvent> detect_pass_events(const BagData & data)
     for (size_t j = i; j < wms.size(); ++j) {
       const auto & cur = wms[j].msg;
       const double dt = (wms[j].timestamp_ns - wms[i].timestamp_ns) / 1e9;
-      const double cur_speed = ball_speed(cur);
+      const double cur_speed = ball_speed(cur.ball_info);
       const double bx = cur.ball_info.position.x;
       const double by = cur.ball_info.position.y;
 
@@ -334,7 +329,7 @@ std::vector<PassEvent> detect_pass_events(const BagData & data)
 
     // 解決フレームから走査を再開（同一キックの二重検出を防ぐ）
     i = resolve_frame;
-    prev_above = ball_speed(wms[resolve_frame].msg) >= kKickDetectSpeed;
+    prev_above = ball_speed(wms[resolve_frame].msg.ball_info) >= kKickDetectSpeed;
   }
 
   return events;

@@ -6,7 +6,9 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "bag_events.hpp"
@@ -65,4 +67,38 @@ TEST(DetectGoals, OnPositiveHalfDecidesOurGoalSide)
   const auto theirs = goals(ball_moved_to(6.05, 0.0, 1.8, false));
   ASSERT_EQ(theirs.size(), 1u);
   EXPECT_EQ(theirs[0].description.rfind("GOAL: THEIR_GOAL", 0), 0u) << theirs[0].description;
+}
+
+namespace
+{
+
+/// ボール速度 (vx, vy) だけを変えたフレームを 20 ms ごとに並べる。位置は (1, 2)
+cb::BagData ball_velocities(const std::vector<std::pair<double, double>> & velocities)
+{
+  cb::BagData data;
+  data.info.start_time_ns = 0;
+  for (size_t i = 0; i < velocities.size(); ++i) {
+    cb::TimestampedMsg<cb::WorldModel> f;
+    f.timestamp_ns = static_cast<int64_t>(i) * 20'000'000;
+    f.msg.ball_info.position = {1.0, 2.0, 0.0};
+    f.msg.ball_info.velocity = {velocities[i].first, velocities[i].second};
+    data.world_models.push_back(f);
+  }
+  return data;
+}
+
+}  // namespace
+
+TEST(DetectBallSpeedSpikes, FiresOnceWhenPlanarSpeedCrossesThreshold)
+{
+  // 平面の速さ |(2,2)| = 2.83 は閾値 3.0 未満、|(2.2,-2.2)| = 3.11 は以上。
+  // 上回ったままの間は出さず、いったん下回ってから再び上回ると次のイベントになる
+  const auto events = cb::detect_events(
+    ball_velocities({{2.0, 2.0}, {2.2, -2.2}, {-4.0, 0.0}, {2.0, 2.0}, {0.0, 3.0}}),
+    {cb::EVENT_BALL_SPEED});
+  ASSERT_EQ(events.size(), 2u);
+  EXPECT_EQ(events[0].timestamp_ns, 20'000'000);
+  EXPECT_EQ(events[0].description, "BALL_SPEED: 3.11m/s >= 3.0m/s at (1.00,2.00)");
+  EXPECT_EQ(events[1].timestamp_ns, 80'000'000);
+  EXPECT_EQ(events[1].description, "BALL_SPEED: 3.00m/s >= 3.0m/s at (1.00,2.00)");
 }

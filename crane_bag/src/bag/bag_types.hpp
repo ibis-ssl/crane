@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -40,6 +41,12 @@ struct BallInfo
   Point3D position;
   Point2D velocity;
 };
+
+/// ボールの平面の速さ [m/s]
+inline double ball_speed(const BallInfo & ball)
+{
+  return std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+}
 
 struct RobotInfo
 {

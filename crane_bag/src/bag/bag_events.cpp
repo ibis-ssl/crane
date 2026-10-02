@@ -150,7 +150,7 @@ std::vector<Event> detect_ball_speed_spikes(const BagData & data, double thresho
 
   for (const auto & tm : data.world_models) {
     const auto & ball = tm.msg.ball_info;
-    double spd = std::sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+    double spd = ball_speed(ball);
     bool above = spd >= threshold;
 
     if (above && !prev_above) {
