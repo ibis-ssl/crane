@@ -65,7 +65,6 @@ struct BallThreat
   Vector2 velocity{0, 0};
   Segment threat_line;
   std::optional<Segment> protection_line;
-  std::optional<uint8_t> pass_receiver_id;
 };
 
 /**
@@ -103,13 +102,8 @@ public:
   auto calculateRobotThreats(const WorldModelWrapper & world_model, const BallThreat & ball_threat)
     -> std::vector<RobotThreat>;
 
-  auto rateRobotThreat(
-    const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
-    const WorldModelWrapper & world_model) -> ThreatRatingDetail;
-
   auto calculateRecommendedDefenders(
-    const BallThreat & ball_threat, const std::vector<RobotThreat> & robot_threats,
-    int available_robots) -> int;
+    const std::vector<RobotThreat> & robot_threats, int available_robots) -> int;
 
   auto toThreatInfoMsg(const BallThreat & threat) const -> crane_msgs::msg::ThreatInfo;
 
@@ -117,6 +111,10 @@ public:
 
 private:
   ThreatEvaluatorConfig config_;
+
+  auto rateRobotThreat(
+    const Point & ball_pos, const std::shared_ptr<RobotInfo> & robot,
+    const WorldModelWrapper & world_model) -> ThreatRatingDetail;
 
   // ===== 個別スコア計算（4因子） =====
 
