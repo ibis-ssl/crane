@@ -35,8 +35,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   include/crane_session_coordinator/session_coordinator.hpp
   include/crane_session_coordinator/configuration_manager.hpp
   include/crane_session_coordinator/session_registry.hpp
-  include/crane_session_coordinator/robot_allocator.hpp
-  include/crane_session_coordinator/allocation_state.hpp)
+  include/crane_session_coordinator/robot_allocator.hpp)
 target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::SessionCoordinatorComponent")
@@ -48,6 +47,8 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_pass_plan_execution test/test_pass_plan_execution.cpp)
+  ament_auto_add_gtest(test_robot_allocator test/test_robot_allocator.cpp)
+  ament_auto_add_gtest(test_session_registry test/test_session_registry.cpp)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)

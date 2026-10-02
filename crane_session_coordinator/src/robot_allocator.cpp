@@ -18,6 +18,11 @@
 
 namespace crane
 {
+namespace
+{
+// 前フレームと同じセッションに残るロボットのスコアから引く継続ボーナス [m]
+constexpr double kHysteresisBonus = 1.5;
+}  // namespace
 
 RobotAllocator::RobotAllocator(
   std::shared_ptr<ConfigurationManager> config_manager,
@@ -103,8 +108,7 @@ auto RobotAllocator::allocate(
       suitability_func, session_capacity.fixed_robots);
   }
 
-  auto allocation = allocateRobotsGreedy(
-    requirements, selectable_robot_ids, world_model, allocation_state_, allocation_cost_config_);
+  auto allocation = allocateRobotsGreedy(requirements, selectable_robot_ids, world_model);
 
   crane_msgs::msg::RobotSelectResults results;
   for (const auto & [allocated_name, robot_ids] : allocation) {
@@ -135,7 +139,7 @@ auto RobotAllocator::allocate(
       }
 
       for (auto id : robot_ids) {
-        allocation_state_.updateAssignment(id, allocated_name);
+        prev_session_of_robot_.insert_or_assign(id, allocated_name);
       }
 
       // 次フレームの順序安定化のために割当順序を保存する
@@ -245,8 +249,7 @@ auto RobotAllocator::logAssignmentIfChanged(const std::string & current_assignme
 
 auto RobotAllocator::allocateRobotsGreedy(
   const std::vector<SessionRequirement> & requirements,
-  const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model,
-  const AllocationState & prev_state, const AllocationCostConfig & config)
+  const std::vector<uint8_t> & available_robots, WorldModelWrapper::SharedPtr & world_model)
   -> std::unordered_map<std::string, std::vector<uint8_t>>
 {
   std::unordered_map<std::string, std::vector<uint8_t>> result;
@@ -338,8 +341,10 @@ auto RobotAllocator::allocateRobotsGreedy(
         }
         auto robot = world_model->getOurRobot(robot_id);
         double score = req.suitability_func(robot);
-        if (prev_state.wasAssignedTo(robot_id, req.name)) {
-          score -= config.hysteresis_bonus;
+        if (
+          const auto prev = prev_session_of_robot_.find(robot_id);
+          prev != prev_session_of_robot_.end() && prev->second == req.name) {
+          score -= kHysteresisBonus;
         }
         robot_scores.emplace_back(robot_id, score);
       }
