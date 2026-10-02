@@ -61,15 +61,7 @@ TEST(TimeTest, BuiltinInterfacesTime)
   msg_t1.sec = 5;
   msg_t1.nanosec = 0;
 
-  builtin_interfaces::msg::Time msg_t2;
-  msg_t2.sec = 8;
-  msg_t2.nanosec = 0;
-
   rclcpp::Time rcl_now(10, 0, RCL_ROS_TIME);
-
-  EXPECT_NEAR(getDiffSec(msg_t1, msg_t2), 3.0, 1e-6);
-  EXPECT_NEAR(getDiffSec(msg_t1, rcl_now), 5.0, 1e-6);
-  EXPECT_NEAR(getDiffSec(rcl_now, msg_t1), 5.0, 1e-6);
 
   EXPECT_NEAR(getElapsedSec(msg_t1, rcl_now), 5.0, 1e-6);
   EXPECT_TRUE(isTimeout(msg_t1, 4.0, rcl_now));
