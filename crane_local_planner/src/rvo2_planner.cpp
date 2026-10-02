@@ -62,7 +62,6 @@ constexpr size_t MAX_ROBOT_NUM = 20;
 
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
 : LocalPlannerBase("rvo2_local_planner", node),
-  acceleration_factor("acceleration_factor", node, 1.5),
   velocity_damping_gain("velocity_damping_gain", node, 0.5)
 {
   crane::get_or_declare_parameter(node, "rvo_time_step", RVO_TIME_STEP);
