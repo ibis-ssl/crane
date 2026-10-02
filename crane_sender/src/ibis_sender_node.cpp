@@ -8,6 +8,7 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 
+#include <algorithm>
 #include <array>
 #include <boost/asio.hpp>
 #include <chrono>
@@ -18,13 +19,13 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_utils/parameter.hpp>
 #include <memory>
+#include <ranges>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
 #include "crane_sender/latency_time.hpp"
 #include "crane_sender/robot_packet.h"
-#include "crane_sender/sender_base.hpp"
 
 namespace crane
 {
@@ -39,9 +40,39 @@ constexpr int AI_CMD_V2_ROBOT_NUM = 11;
 constexpr uint8_t POSITION_CONTROL_CONFIG_VERSION = 2;
 }  // namespace CommConfig
 
-class IbisSenderNode : public SenderBase
+class IbisSenderNode : public rclcpp::Node
 {
 private:
+  using VelocityCommandsMsg = crane_msgs::msg::RobotCommands;
+
+  std::shared_ptr<WorldModelWrapper> world_model;
+
+  // ノードの TimeSource には繋がっていない（use_sim_time を見ない）。crane は sender で
+  // use_sim_time を使わないので get_clock() と同値だが、切り替えるなら挙動変更として扱う
+  rclcpp::Clock clock;
+
+  bool no_movement{false};
+
+  double current_latency_ms{0.0};
+
+  double kick_power_limit_straight{1.0};
+
+  double kick_power_limit_chip{1.0};
+
+  double robot_acceleration_acceleration_{2.5};
+  double robot_acceleration_deceleration_high_{3.0};
+  double robot_acceleration_deceleration_low_{2.0};
+  double robot_acceleration_velocity_threshold_{1.5};
+
+  VelocityCommandsMsg previous_commands;
+
+  // 実際に送った指令（前処理済み + 送信側の planning_factors）。/robot_commands には
+  // elapsed_time_ms_since_last_vision や is_vision_available が載らず、bag だけでは
+  // 機体停止が crane 側の指令か機体側の安全停止か切り分けられないため残す
+  rclcpp::Publisher<VelocityCommandsMsg>::SharedPtr sent_commands_pub_;
+
+  rclcpp::Subscription<VelocityCommandsMsg>::SharedPtr sub_commands;
+
   boost::asio::io_service broadcast_io_service_;
   boost::asio::ip::udp::endpoint broadcast_endpoint_;
   boost::asio::ip::udp::socket broadcast_socket_;
@@ -65,10 +96,30 @@ private:
 
 public:
   explicit IbisSenderNode(const rclcpp::NodeOptions & options)
-  : SenderBase("ibis_sender", options),
+  : Node("ibis_sender", options),
+    clock(RCL_ROS_TIME),
     broadcast_socket_(
       broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
+    crane::get_or_declare_parameter(this, "no_movement", no_movement);
+    crane::get_or_declare_parameter(this, "kick_power_limit_straight", kick_power_limit_straight);
+    crane::get_or_declare_parameter(this, "kick_power_limit_chip", kick_power_limit_chip);
+    crane::get_or_declare_parameter(this, "latency_ms", current_latency_ms);
+    crane::get_or_declare_parameter(
+      this, "robot_acceleration.acceleration", robot_acceleration_acceleration_);
+    crane::get_or_declare_parameter(
+      this, "robot_acceleration.deceleration_high", robot_acceleration_deceleration_high_);
+    crane::get_or_declare_parameter(
+      this, "robot_acceleration.deceleration_low", robot_acceleration_deceleration_low_);
+    crane::get_or_declare_parameter(
+      this, "robot_acceleration.velocity_threshold", robot_acceleration_velocity_threshold_);
+
+    world_model = std::make_shared<WorldModelWrapper>(*this);
+
+    sent_commands_pub_ = create_publisher<VelocityCommandsMsg>("/sent_robot_commands", 10);
+    sub_commands = create_subscription<VelocityCommandsMsg>(
+      "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); });
+
     const std::string target_address =
       crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
     const int target_port =
@@ -124,6 +175,103 @@ public:
   }
 
 private:
+  void callback(const VelocityCommandsMsg & msg)
+  {
+    if (!world_model->hasUpdated()) {
+      return;
+    }
+
+    const auto now = clock.now();
+
+    VelocityCommandsMsg preprocessed_msg = msg;
+
+    for (auto & command : preprocessed_msg.robot_commands) {
+      if (command.control_mode == crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
+        if (command.polar_velocity_target_mode.empty()) {
+          command.polar_velocity_target_mode.emplace_back();
+        }
+      }
+
+      command.latency_ms = current_latency_ms;
+      command.kick_power = std::clamp(
+        command.kick_power, 0.f,
+        static_cast<float>(
+          command.chip_enable ? kick_power_limit_chip : kick_power_limit_straight));
+      command.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
+
+      try {
+        const auto elapsed =
+          now - world_model->getOurRobot(command.robot_id)->vision_detection_stamp;
+        // 浮動小数から符号なし整数への範囲外変換は未定義動作なので、代入前に飽和させる。
+        // 飽和させないと 65536ms(65.5秒) が 0 になり、vision を 1 分以上見失っている状態で
+        // 「たった今検出した」と主張してしまう。受信側(G474 / cm4_sim)の
+        // elapsed_time_ms_since_last_vision > 500 による停止判定を素通りさせる最悪の値になる。
+        const double elapsed_ms = elapsed.nanoseconds() / 1e6;
+        command.elapsed_time_ms_since_last_vision =
+          static_cast<uint16_t>(std::clamp(elapsed_ms, 0.0, 65535.0));
+      } catch (...) {
+        RCLCPP_ERROR(get_logger(), "Failed to get elapsed time of vision from world_model");
+        // world_model からロボットを引けない状況で 0（＝たった今検出した）を送るのは
+        // 最も危険な向きの fail-open なので、最大陳腐化を送って受信側を停止させる。
+        // 実機 G474 / CM4 / simulator-cli はいずれも
+        // elapsed_time_ms_since_last_vision > 500 で停止する。
+        // なお is_vision_available は createRobotPacket で available_ids から
+        // 独立に計算されるが、この catch は robots.at(id) が範囲外 id で投げた場合にしか
+        // 入らず、その id は available_ids にも含まれないため false になる。
+        // 両フィールドが矛盾する組み合わせにはならない。
+        command.elapsed_time_ms_since_last_vision = 65535;
+      }
+
+      if (
+        auto previous_command = std::ranges::find_if(
+          previous_commands.robot_commands,
+          [command](const auto & prev_cmd) { return command.robot_id == prev_cmd.robot_id; });
+        previous_command != previous_commands.robot_commands.end()) {
+        if (
+          std::abs(command.target_theta - previous_command->target_theta) <
+          command.local_planner_config.theta_tolerance) {
+          command.target_theta = previous_command->target_theta;
+        }
+      }
+    }
+
+    if (no_movement) {
+      for (auto & command : preprocessed_msg.robot_commands) {
+        command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+        if (command.polar_velocity_target_mode.empty()) {
+          command.polar_velocity_target_mode.emplace_back();
+        }
+        command.polar_velocity_target_mode.front().target_velocity_r = 0.0f;
+        command.polar_velocity_target_mode.front().target_velocity_theta = 0.0f;
+        command.omega_limit = 0.0f;
+        command.chip_enable = false;
+        command.dribble_power = 0.0;
+        command.kick_power = 0.0;
+      }
+    }
+
+    previous_commands = preprocessed_msg;
+    sendCommands(preprocessed_msg);
+
+    // 実際に送った内容を残す。hasUpdated() は world model を一度でも受信したかの判定なので、
+    // 起動直後を除けば /robot_commands の 1 フレームに /sent_robot_commands が 1 メッセージ
+    // 対応する。
+    // 送信の成否は sendCommands が planning_factors の SenderSent に残す。
+    preprocessed_msg.header.stamp = now;
+    sent_commands_pub_->publish(preprocessed_msg);
+  }
+
+  double calculateAccelerationLimit(double current_speed, double target_speed) const
+  {
+    if (current_speed < target_speed) {
+      return robot_acceleration_acceleration_;
+    } else if (current_speed >= robot_acceleration_velocity_threshold_) {
+      return robot_acceleration_deceleration_high_;
+    } else {
+      return robot_acceleration_deceleration_low_;
+    }
+  }
+
   void checkNetworkInterfaces() const
   {
     struct ifaddrs * interfaces = nullptr;
@@ -253,7 +401,7 @@ private:
     return packet;
   }
 
-  void sendCommands(crane_msgs::msg::RobotCommands & msg) override
+  void sendCommands(crane_msgs::msg::RobotCommands & msg)
   {
     if (++counter_ > 200) {
       counter_ = 0;

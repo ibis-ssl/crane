@@ -4,8 +4,8 @@
 
 ## 何のためにあるか
 
-crane の既存経路はすべて [sender_base.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/sender_base.cpp)
-の `SenderBase::callback` を通り、そこで world_model 未更新なら送信そのものが止まり、
+crane の既存経路はすべて [ibis_sender_node.cpp](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp)
+の `IbisSenderNode::callback` を通り、そこで world_model 未更新なら送信そのものが止まり、
 `latency_ms`・`elapsed_time_ms_since_last_vision`・`is_vision_available` は上書きされ、
 `kick_power` はクランプされます。Web UI の Robot Test も Move モードも、
 セッション → スキル → ローカルプランナー → sender を経由します。
