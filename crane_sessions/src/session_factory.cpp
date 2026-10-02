@@ -26,7 +26,6 @@
 #include <crane_sessions/our_free_kick_session.hpp>
 #include <crane_sessions/our_penalty_kick_session.hpp>
 #include <crane_sessions/pass_receiver_session.hpp>
-#include <crane_sessions/passable_ball_placement_session.hpp>
 #include <crane_sessions/placement_avoidance_session.hpp>
 #include <crane_sessions/placement_target_near_by_positioner_skill_session.hpp>
 #include <crane_sessions/robot_test_session.hpp>
@@ -60,8 +59,6 @@ auto getSessionFactoryMap() -> const std::unordered_map<std::string, SessionFact
       "placement_target_nearby_positioner_skill", PlacementTargetNearByPositionerSkillSession),
     PLANNER_ENTRY("ball_placement_avoidance", BallPlacementAvoidanceSession),
     PLANNER_ENTRY("ball_placement_skill", BallPlacementSkillSession),
-    PLANNER_ENTRY("passable_ball_placement", PassableBallPlacementSession),
-    PLANNER_ENTRY("placement_target_placer", PlacementTargetPlacerSession),
     PLANNER_ENTRY("defender", DefenderSession),
     PLANNER_ENTRY("wing_formation", WingFormationSession),
     PLANNER_ENTRY("ibis_formation", IbisFormationSession),
