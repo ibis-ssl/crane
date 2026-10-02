@@ -282,4 +282,19 @@ TEST_F(BallPhysicsModelFlyingLandingTest, PredictionsSwitchToRollingAtLandingTim
       model_.getMaxDistance(position, velocity, state, pos_z, vel_z), 1e-9);
   }
 }
+
+// yaml を読まない経路（Ball の既定コンストラクタ・createDefault・既定コンストラクタ）が
+// 同じ既定値を使う
+TEST(BallPhysicsModelDefaultConfigTest, FactoryAndDefaultConstructorShareDefaults)
+{
+  for (const auto & config :
+       {BallPhysicsModel::createDefault().getConfig(), BallPhysicsModel().getConfig()}) {
+    EXPECT_DOUBLE_EQ(config.deceleration, 0.36);
+    EXPECT_DOUBLE_EQ(config.gravity, -9.81);
+    EXPECT_DOUBLE_EQ(config.air_resistance, 0.0);
+    EXPECT_DOUBLE_EQ(config.height_threshold, 0.05);
+    EXPECT_DOUBLE_EQ(config.speed_threshold, 0.1);
+    EXPECT_DOUBLE_EQ(config.stop_threshold, 0.05);
+  }
+}
 }  // namespace crane

@@ -203,16 +203,6 @@ struct Ball
 
 private:
   // 転がり物理計算用ヘルパー関数（2D減速モデル）
-  [[nodiscard]] auto getRollingStopTime() const -> double;
-
-  [[nodiscard]] auto getRollingMaxDistance() const -> double;
-
-  [[nodiscard]] auto getRollingMaxDistanceFromVelocity(const Point & velocity) const -> double;
-
-  [[nodiscard]] auto getRollingPredictedPosition(double time_ahead) const -> Point;
-
-  [[nodiscard]] auto getRollingPredictedVelocity(double time_ahead) const -> Point;
-
   [[nodiscard]] auto getRollingTimeToReachClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
   {

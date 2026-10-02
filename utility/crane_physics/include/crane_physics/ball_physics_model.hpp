@@ -18,7 +18,8 @@ class BallPhysicsModel
 public:
   struct Config
   {
-    /// ER-Force シミュレータ実測値。yaml（erforce_ball_physics.yaml）と揃える。
+    /// ER-Force シミュレータ実測値。yaml（erforce_ball_physics.yaml）と
+    /// pass_kick::kDefaultDeceleration に揃える。
     /// yaml を読まない経路（単体テスト等）でもここが使われるので、
     /// 片方だけ更新すると経路によって物理が変わる。
     double deceleration = 0.36;      // 転がり時の減速度 (m/s²)
