@@ -1,0 +1,301 @@
+{
+  "repo_notes": [
+    {
+      "content": "ドキュメントは日本語で記述"
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "Introduce the Crane RoboCup SSL system, summarizing its purpose as a complete robot soccer control stack including perception, planning, skills, and communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "System Architecture",
+      "purpose": "Describe the high-level architecture showing how the major subsystems (perception, world model, planning, skills, communication) interact",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "ROS 2 Package Structure",
+      "purpose": "Detail the ROS 2 package organization, dependencies, and how packages are structured within the crane ecosystem",
+      "parent": "System Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Data Flow Pipeline",
+      "purpose": "Explain the complete data flow from sensor inputs (vision, tracker, referee) through world model to robot commands",
+      "parent": "System Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "World Model System",
+      "purpose": "Describe the central world model that provides unified game state to all decision-making components",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "World Model Wrapper",
+      "purpose": "Document the WorldModelWrapper API, including ball tracking, robot queries, slack time calculations, and geometric utilities",
+      "parent": "World Model System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "World Model Publisher",
+      "purpose": "Explain WorldModelPublisher and WorldModelDataProvider components that fuse sensor data and publish the unified world state",
+      "parent": "World Model System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Ball Owner Calculator",
+      "purpose": "Detail the BallOwnerCalculator subsystem that determines which robot can reach the ball first",
+      "parent": "World Model System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Strategic Planning",
+      "purpose": "Describe high-level strategic decision making including play situation interpretation and role assignment",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Play Switcher",
+      "purpose": "Document the play switcher component that interprets referee commands and vision data to determine game state",
+      "parent": "Strategic Planning",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Planner Plugin Architecture",
+      "purpose": "Explain the planner plugin system for role assignment and formation control",
+      "parent": "Strategic Planning",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Robot Skills Framework",
+      "purpose": "Document the modular skill system that encapsulates robot behaviors as composable, reusable components",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Skill Base Classes",
+      "purpose": "Detail SkillInterface, SkillBase, and SkillBaseWithState abstract classes that provide the skill framework",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "State Machine Architecture",
+      "purpose": "Explain the StateMachine class used by stateful skills for managing transitions and complex behaviors",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Goalie Skill",
+      "purpose": "Document the goalkeeper skill including shot blocking, ball emission, and defensive positioning strategies",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Attacker Skills",
+      "purpose": "Detail offensive skills including Attacker, SubAttacker, and their state machines for shooting and passing",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Ball Handling Skills",
+      "purpose": "Document ball manipulation skills including SingleBallPlacement, Kick, Receive, and MoveWithBall",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Support Skills",
+      "purpose": "Cover utility skills like Idle, Sleep, Marker, Teleop, and BallNearbyPositioner",
+      "parent": "Robot Skills Framework",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Local Motion Planning",
+      "purpose": "Describe the local planner that converts high-level commands into collision-free robot trajectories",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Local Planner Framework",
+      "purpose": "Document LocalPlannerComponent, coordinate transformations, and the planner interface",
+      "parent": "Local Motion Planning",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "RVO2 Collision Avoidance",
+      "purpose": "Explain the RVO2Planner including target override, ORCA constraints, and multi-agent planning",
+      "parent": "Local Motion Planning",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Trajectory Generation",
+      "purpose": "Detail BangBangTrajectory classes for optimal time trajectories and velocity planning",
+      "parent": "Local Motion Planning",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Robot Communication",
+      "purpose": "Document the complete communication pipeline for robot command transmission and feedback reception",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Message Interfaces",
+      "purpose": "Detail crane_msgs message definitions including RobotCommand, WorldModel, and RobotFeedback",
+      "parent": "Robot Communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Robot Command System",
+      "purpose": "Explain RobotCommandWrapper API for constructing commands with position, velocity, kick, and dribble parameters",
+      "parent": "Robot Communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Sender System",
+      "purpose": "Document SenderBase, SimSender, and IbisSender for transmitting commands to simulated and real robots",
+      "parent": "Robot Communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Robot Feedback Reception",
+      "purpose": "Explain RobotReceiverNode, feedback protocol parsing, and sensor data integration",
+      "parent": "Robot Communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Communication Utilities",
+      "purpose": "Document crane_comm package utilities for UDP communication and network management",
+      "parent": "Robot Communication",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Visualization & Debugging",
+      "purpose": "Describe tools and systems for visualizing robot behavior and debugging the system",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Visualization System",
+      "purpose": "Document crane_visualization_interfaces and CraneVisualizerBuffer for debug rendering",
+      "parent": "Visualization & Debugging",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
