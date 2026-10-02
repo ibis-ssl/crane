@@ -10,8 +10,6 @@
 #include <crane_world_model_publisher/visualization_manager.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
-#include <deque>
-#include <robocup_ssl_msgs/msg/ssl_detection_frame.hpp>
 #include <sstream>
 
 namespace crane
@@ -37,8 +35,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     &WorldModelPublisherComponent::updateDiagnostics),
   pub_world_model(this, "/world_model", 1, 50., 70.)
 {
-  using std::chrono_literals::operator""ms;
-
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
   data_provider_->setVisualizationCallbacks(
@@ -65,7 +61,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   // 自動/world_modelサブスクライブはOFF
   wrapper_ = std::make_shared<WorldModelWrapper>(*this, false);
 
-  // slack時間計算設定をWorldModelWrapperに設定（wrapper_初期化後）
   auto slack_config = SlackTimeConfig::fromNode(*this);
   wrapper_->setSlackConfig(slack_config);
 
@@ -86,7 +81,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
     if (available) {
       publishWorldModel();
-      publishVisualization(wrapper_);
+      publishVisualization();
     } else {
       bool has_vision = data_provider_->hasVisionUpdated();
       bool has_tracker = data_provider_->hasTrackedFrameUpdated();
@@ -136,7 +131,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   updateBallContact();
   wrapper_->addDelayCheckpoint("ball_contact_updated", "");
 
-  postProcessWorldModel(wrapper_);
+  postProcessWorldModel();
   wrapper_->addDelayCheckpoint("post_processed", "");
 
   // publish()より後に打刻すると、そのタイムスタンプは配信されるメッセージには
@@ -145,25 +140,25 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   pub_world_model.publish(wrapper_->getMsg());
 }
 
-auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapperPtr world_model) -> void
+auto WorldModelPublisherComponent::publishVisualization() -> void
 {
-  visualization_manager_->updateTeamInfo(world_model->isYellow(), world_model->onPositiveHalf());
+  visualization_manager_->updateTeamInfo(wrapper_->isYellow(), wrapper_->onPositiveHalf());
 
-  visualization_manager_->drawTrackedObjects(world_model);
+  visualization_manager_->drawTrackedObjects(wrapper_);
 
-  visualization_manager_->drawBallPlacement(world_model);
+  visualization_manager_->drawBallPlacement(wrapper_);
 
   crane::CraneVisualizerBuffer::publish();
 }
 
-auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapperPtr world_model) -> void
+auto WorldModelPublisherComponent::postProcessWorldModel() -> void
 {
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   {
     std::scoped_lock lock(latest_game_analysis_msg_mutex_);
     game_analysis_msg = latest_game_analysis_msg_;
   }
-  world_model->update(game_analysis_msg);
+  wrapper_->update(game_analysis_msg);
 }
 
 auto WorldModelPublisherComponent::updateBallContact() -> void

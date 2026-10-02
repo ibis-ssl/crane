@@ -8,9 +8,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <range/v3/view/enumerate.hpp>
-#include <ranges>
-#include <sstream>
 
 namespace
 {
@@ -30,10 +27,8 @@ namespace crane
 VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 {
   geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/geometry");
-  vision_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/vision");
   tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/tracked");
   referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/referee");
-  trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/trajectory");
   placement_builder = std::make_shared<crane::VisualizerMessageBuilder>("world/placement");
 
   crane::CraneVisualizerBuffer::activate(node_);
@@ -53,17 +48,13 @@ auto VisualizationManager::drawFieldGeometry(
   double field_width = field.field_width() / 1000.0;    // mm to m
   double field_height = field.field_length() / 1000.0;  // mm to m
 
-  // フィールドラインの描画（外周）
   geometry_builder->drawFieldRect(
     Point(-field_height / 2, -field_width / 2), Point(field_height / 2, field_width / 2));
 
-  // センターライン
   geometry_builder->drawFieldLine(Point(0, -field_width / 2), Point(0, field_width / 2));
 
-  // センターサークル
   geometry_builder->drawCircle(Point(0, 0), 0.5, "white", 10);
 
-  // ゴールエリアとペナルティエリアの描画
   if (field.has_goal_width() && field.has_goal_depth()) {
     double goal_width = field.goal_width() / 1000.0;
     double goal_depth = field.goal_depth() / 1000.0;
@@ -78,7 +69,6 @@ auto VisualizationManager::drawFieldGeometry(
       Point(field_height / 2, 0), goal_width, goal_depth, right_goal_color);  // 右ゴール
   }
 
-  // ペナルティエリアの描画
   for (const auto & line : field.field_lines()) {
     if (
       line.name() == "LeftPenaltyStretch" || line.name() == "RightPenaltyStretch" ||
@@ -103,38 +93,6 @@ auto VisualizationManager::drawFieldGeometry(
   geometry_builder->flush();
 }
 
-auto VisualizationManager::drawVisionDetections(
-  const robocup_ssl::SSL_DetectionFrame & detection, [[maybe_unused]] bool half_court_mode) -> void
-{
-  // ロボット検出の描画（青チーム）
-  for (const auto & robot : detection.robots_blue()) {
-    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
-    double theta = robot.orientation();
-
-    if (robot.has_robot_id()) {
-      vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "blue", 0.0, "blue", 1.0, 20, 50, "white", 0.0, 0.15);
-    } else {
-      vision_builder->drawRobot(pos, theta, "blue", 0.0, "blue", 1.0, 20);
-    }
-  }
-
-  // ロボット検出の描画（黄チーム）
-  for (const auto & robot : detection.robots_yellow()) {
-    Point pos(robot.x() / 1000.0, robot.y() / 1000.0);
-    double theta = robot.orientation();
-
-    if (robot.has_robot_id()) {
-      vision_builder->drawRobotWithID(
-        pos, theta, robot.robot_id(), "yellow", 0.0, "yellow", 1.0, 20, 50, "black", 0.0, 0.15);
-    } else {
-      vision_builder->drawRobot(pos, theta, "yellow", 0.0, "yellow", 1.0, 20);
-    }
-  }
-
-  vision_builder->flush();
-}
-
 auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
@@ -144,7 +102,6 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   tracked_builder->drawStyledCircle(ball.pos, ball_radius, "orange", 1.0, "orange", 1.0, 5);
   // ベースの円（オレンジ枠 + 薄い塗り）
   tracked_builder->drawStyledCircle(ball.pos, 0.5, "orange", 0.15, "orange", 1.0, 5);
-  // 回転するスコープ飾り（クロスヘア）
 
   if (ball.detected) {
     const double t = node_.now().seconds();
@@ -171,8 +128,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       add_tick(ang, 0.45, 0.55, "orange", 10, 0.9);
     }
   }
-  // 速度ベクトル
-  if (ball.vel.norm() > 0.1) {                  // 0.1 m/s 以上で表示
+  if (ball.vel.norm() > 0.1) {
     Point vel_end = ball.pos + ball.vel * 0.5;  // 0.5秒後の位置
     tracked_builder->line()
       .start(ball.pos.x(), ball.pos.y())
@@ -250,11 +206,9 @@ auto VisualizationManager::drawRefereeInfo(
   const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
   const std::string & command_text) -> void
 {
-  // レフェリー状態の表示: 文字列は PlaySituation の string 化を使用（フォールバックは行わない）
   std::string command_name =
     command_text.empty() ? ("COMMAND_" + std::to_string(msg.command.value)) : command_text;
 
-  // レフェリー情報をフィールド上部に表示
   referee_builder->text()
     .text("Referee: " + command_name)
     .position(-field_width / 2, field_height / 2 + 0.5)
@@ -289,64 +243,6 @@ auto VisualizationManager::drawBallPlacement(const WorldModelWrapper::SharedPtr 
     placement_builder->clearBuffer();
     placement_builder->flush();
   }
-}
-
-auto VisualizationManager::drawTrajectoryHistory(
-  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
-  const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
-  const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void
-{
-  static constexpr int SAMPLING_NUM = 4;
-
-  auto draw_team_history = [&](const auto & histories, const std::string & color) {
-    for (const auto & [robot_id, history] : histories | ranges::views::enumerate) {
-      if (
-        history.size() > SAMPLING_NUM + 1 &&
-        (history.front().available_vision || history.front().available_feedback ||
-         history.front().available_tracker)) {
-        for (int i = 0; i < 10; i++) {
-          int start = static_cast<int>((history.size() / 10.) * i);
-          int end = static_cast<int>((history.size() / 10.) * (i + 1));
-
-          std::vector<Point> points;
-          for (int index = start; index < end; index += SAMPLING_NUM) {
-            points.emplace_back(history.at(index).pose.x, history.at(index).pose.y);
-          }
-          if (i != 9) {
-            points.emplace_back(history.at(end).pose.x, history.at(end).pose.y);
-          }
-          trajectory_builder->drawPolyline(
-            points, color, 0.5 * start / static_cast<double>(history.size()), 15);
-        }
-      }
-    }
-  };
-
-  // 味方・敵の履歴描画（共通処理）
-  draw_team_history(friend_history, is_yellow ? "yellow" : "blue");
-  draw_team_history(enemy_history, is_yellow ? "blue" : "yellow");
-
-  // ボール軌跡描画
-  if (ball_info_history.size() > SAMPLING_NUM + 1) {
-    for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
-
-      std::vector<Point> points;
-      for (int index = start; index < end; index += SAMPLING_NUM) {
-        points.emplace_back(
-          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
-      }
-      if (i != 9) {
-        points.emplace_back(
-          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
-      }
-      trajectory_builder->drawPolyline(
-        points, "orange", start / static_cast<double>(ball_info_history.size()), 30);
-    }
-  }
-
-  trajectory_builder->flush();
 }
 
 }  // namespace crane
