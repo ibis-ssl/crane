@@ -6,6 +6,8 @@
 
 #include "crane_visualization_interfaces/crane_visualizer_wrapper.hpp"
 
+#include <crane_geometry/geometry_operations.hpp>
+
 namespace crane
 {
 auto VisualizerMessageBuilder::flush() -> void
@@ -88,8 +90,7 @@ auto VisualizerMessageBuilder::arc(
   for (int i = 0; i <= steps; ++i) {
     double t = static_cast<double>(i) / steps;
     double angle = start_angle + (end_angle - start_angle) * t;
-    Point p = center + Vector2(std::cos(angle), std::sin(angle)) * radius;
-    (void)arc_builder.addPoint(p);
+    (void)arc_builder.addPoint(center + getNormVec(angle) * radius);
   }
   arc_builder.build();
 }
@@ -225,17 +226,15 @@ auto VisualizerMessageBuilder::drawRobot(
   using SvgCoord::SCALE;
   using SvgCoord::toSvgX;
   using SvgCoord::toSvgY;
-  double right_x = toSvgX(pos.x() + radius * std::cos(theta + corner_angle));
-  double right_y = toSvgY(pos.y() + radius * std::sin(theta + corner_angle));
-  double left_x = toSvgX(pos.x() + radius * std::cos(theta - corner_angle));
-  double left_y = toSvgY(pos.y() + radius * std::sin(theta - corner_angle));
+  Point right = pos + getNormVec(theta + corner_angle) * radius;
+  Point left = pos + getNormVec(theta - corner_angle) * radius;
 
   std::string svg_path = std::format(
     "<path d=\"M {:.3f} {:.3f} A {:.3f} {:.3f} 0 1 0 {:.3f} {:.3f} Z\" "
     "fill=\"{}\" fill-opacity=\"{:.2f}\" stroke=\"{}\" stroke-opacity=\"{:.2f}\" "
     "stroke-width=\"{:.2f}\"/>",
-    right_x, right_y, radius * SCALE, radius * SCALE, left_x, left_y, fill_color, fill_opacity,
-    stroke_color, stroke_opacity, stroke_width);
+    toSvgX(right.x()), toSvgY(right.y()), radius * SCALE, radius * SCALE, toSvgX(left.x()),
+    toSvgY(left.y()), fill_color, fill_opacity, stroke_color, stroke_opacity, stroke_width);
 
   add(svg_path);
 }

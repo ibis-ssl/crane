@@ -54,4 +54,30 @@ TEST(VisualizerMessageBuilder, DrawFieldRectDrawsFourEdgesFromTopLeftClockwise)
   };
   EXPECT_EQ(builder->message_buffer, expected);
 }
+
+// 軸に沿わない角度で、cos と sin の取り違えも出力に現れるようにする
+TEST(VisualizerMessageBuilder, ArcSamplesPointsOnCircleFromStartToEndAngle)
+{
+  auto builder = makeBuilder();
+  builder->arc(Point(1.0, 2.0), 0.5, 0.3, 0.9, "red", 5.0, 2);
+
+  ASSERT_EQ(builder->message_buffer.size(), 1u);
+  EXPECT_EQ(
+    builder->message_buffer[0],
+    "<polyline points=\"1477.668,-2147.760 1412.668,-2282.321 1310.805,-2391.663 \" "
+    "stroke=\"red\" stroke-width=\"5.00\" stroke-opacity=\"1.00\" fill=\"none\" />");
+}
+
+TEST(VisualizerMessageBuilder, DrawRobotArcsBetweenDribblerCornersAroundTheta)
+{
+  auto builder = makeBuilder();
+  builder->drawRobot(Point(1.0, 2.0), 0.5);
+
+  ASSERT_EQ(builder->message_buffer.size(), 1u);
+  EXPECT_EQ(
+    builder->message_buffer[0],
+    "<path d=\"M 1017.197 -2083.242 A 85.000 85.000 0 1 0 1079.337 -1969.495 Z\" "
+    "fill=\"white\" fill-opacity=\"1.00\" stroke=\"black\" stroke-opacity=\"1.00\" "
+    "stroke-width=\"10.00\"/>");
+}
 }  // namespace crane
