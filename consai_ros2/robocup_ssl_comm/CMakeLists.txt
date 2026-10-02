@@ -49,25 +49,24 @@ target_link_libraries(game_controller_component
   robocup_ssl_msgs::robocup_ssl_msgs_proto
 )
 
-ament_auto_add_executable(game_controller_node
-  src/game_controller_node.cpp
+rclcpp_components_register_node(game_controller_component
+  PLUGIN "robocup_ssl_comm::GameController"
+  EXECUTABLE game_controller_node
 )
-target_link_libraries(game_controller_node game_controller_component)
-
-rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
 
 # Tracker Component
 ament_auto_add_library(tracker_component SHARED
   src/tracker_component.cpp
 )
-target_link_libraries(tracker_component ${robocup_ssl_msgs_LIBRARIES})
-
-ament_auto_add_executable(tracker_node
-  src/tracker_node.cpp
+target_link_libraries(tracker_component
+  ${robocup_ssl_msgs_LIBRARIES}
+  robocup_ssl_msgs::robocup_ssl_msgs_conversions
 )
-target_link_libraries(tracker_node tracker_component)
 
-rclcpp_components_register_nodes(tracker_component "robocup_ssl_comm::Tracker")
+rclcpp_components_register_node(tracker_component
+  PLUGIN "robocup_ssl_comm::Tracker"
+  EXECUTABLE tracker_node
+)
 
 # Vision Component
 ament_auto_add_library(vision_component SHARED
@@ -75,12 +74,10 @@ ament_auto_add_library(vision_component SHARED
 )
 target_link_libraries(vision_component ${robocup_ssl_msgs_LIBRARIES})
 
-ament_auto_add_executable(vision_node
-  src/vision_node.cpp
+rclcpp_components_register_node(vision_component
+  PLUGIN "robocup_ssl_comm::Vision"
+  EXECUTABLE vision_node
 )
-target_link_libraries(vision_node vision_component)
-
-rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
 
 ament_export_libraries(vision_component)
 ament_export_libraries(game_controller_component)
@@ -89,6 +86,9 @@ ament_export_libraries(tracker_component)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_auto_add_gtest(test_tracker_component test/test_tracker_component.cpp)
+  target_link_libraries(test_tracker_component tracker_component)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE launch USE_SCOPED_HEADER_INSTALL_DIR)
