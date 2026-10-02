@@ -42,10 +42,6 @@ void PenaltyKick::initialize()
       }
     });
   addStateFunction(static_cast<int>(PenaltyKickState::KICK), [this]() -> Status {
-    if (not start_ball_point) {
-      start_ball_point = world_model()->ball().pos;
-    }
-
     double minimum_angle_accuracy = deg2rad(2.0);
     double best_angle = GoalKick::getBestAngleToShootFromPoint(
       minimum_angle_accuracy, world_model()->ball().pos, world_model(), visualizer);

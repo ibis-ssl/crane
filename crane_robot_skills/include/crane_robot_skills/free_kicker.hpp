@@ -79,7 +79,6 @@ private:
   bool approach_final_latched_ = false;
   Point latched_ball_pos_{Point::Zero()};
   Point latched_standoff_{Point::Zero()};
-  bool target_locked_ = false;
   bool use_chip_ = false;
   bool last_chose_shoot_ = false;
   std::optional<uint8_t> last_pass_receiver_id_;
