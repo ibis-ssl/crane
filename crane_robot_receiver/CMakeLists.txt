@@ -63,6 +63,12 @@ if(BUILD_TESTING)
   )
   target_include_directories(test_robot_feedback_protocol PRIVATE include)
   ament_target_dependencies(test_robot_feedback_protocol rclcpp)
+
+  ament_auto_add_gtest(test_diagnostic_publisher
+    test/test_diagnostic_publisher.cpp
+    src/diagnostic_publisher.cpp
+  )
+  target_link_libraries(test_diagnostic_publisher fmt)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

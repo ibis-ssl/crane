@@ -7,6 +7,7 @@
 #ifndef CRANE_ROBOT_RECEIVER__ROBOT_ERRORS_HPP_
 #define CRANE_ROBOT_RECEIVER__ROBOT_ERRORS_HPP_
 
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -42,19 +43,7 @@ enum BldcErrorCode {
   BLDC_OVER_VOLTAGE = 0x0020,
   BLDC_FET_OVER_HEAT = 0x0040
 };
-
-// エラーレベル
-constexpr int OK = 0;
-constexpr int WARN = 1;
-constexpr int ERROR = 2;
-constexpr int STALE = 3;
-
 }  // namespace error_codes
-
-enum class RobotState {
-  ACTIVE,    // アクティブで診断情報を発行すべき
-  INACTIVE,  // 一時的に非アクティブ（フィールド外など）
-};
 
 namespace utils
 {
@@ -172,11 +161,11 @@ inline auto convertErrorDataToStr(uint16_t id, uint16_t info) -> std::string
 inline auto getColorForErrorLevel(int level) -> std::string
 {
   switch (level) {
-    case error_codes::WARN:
+    case diagnostic_msgs::msg::DiagnosticStatus::WARN:
       return "yellow";
-    case error_codes::ERROR:
+    case diagnostic_msgs::msg::DiagnosticStatus::ERROR:
       return "red";
-    case error_codes::STALE:
+    case diagnostic_msgs::msg::DiagnosticStatus::STALE:
       return "grey";
     default:
       return "white";

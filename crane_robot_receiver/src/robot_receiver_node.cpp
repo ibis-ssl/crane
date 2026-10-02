@@ -337,11 +337,12 @@ private:
 
 class RobotReceiverNode : public rclcpp::Node
 {
+  // receivers のソケットより後に破棄されるよう、receivers より先に宣言する
+  crane::AsioContext asio_ctx_;
+
 public:
   explicit RobotReceiverNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("robot_receiver_node", options),
-    work_guard_(asio::make_work_guard(io_context_)),
-    clock(RCL_ROS_TIME)
+  : rclcpp::Node("robot_receiver_node", options), clock(RCL_ROS_TIME)
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
@@ -356,7 +357,8 @@ public:
       std::string ip = std::format("{}.{}", ip_base, i + ip_offset);
       int port = port_base + i;
       try {
-        receivers.push_back(std::make_shared<RobotFeedbackReceiver>(io_context_, ip, port, i));
+        receivers.push_back(
+          std::make_shared<RobotFeedbackReceiver>(asio_ctx_.io_context, ip, port, i));
       } catch (const std::exception & e) {
         RCLCPP_WARN(
           get_logger(), "Failed to listen on %s:%d for robot %d: %s", ip.c_str(), port, i,
@@ -364,7 +366,7 @@ public:
       }
     }
 
-    io_thread_ = std::thread([this]() { io_context_.run(); });
+    asio_ctx_.start();
 
     using std::chrono::operator""ms;
 
@@ -434,11 +436,13 @@ public:
     });
   }
 
+  // asio_ctx_ は receivers より後に破棄されるので、その前に io スレッドを止める。
+  // 止めないと、破棄中の receivers の受信ハンドラが io スレッドで走りうる
   ~RobotReceiverNode()
   {
-    work_guard_.reset();
-    io_context_.stop();
-    if (io_thread_.joinable()) io_thread_.join();
+    asio_ctx_.work_guard.reset();
+    asio_ctx_.io_context.stop();
+    if (asio_ctx_.thread.joinable()) asio_ctx_.thread.join();
   }
 
   std::vector<std::shared_ptr<RobotFeedbackReceiver>> receivers;
@@ -446,10 +450,6 @@ public:
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
 private:
-  asio::io_context io_context_;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  std::thread io_thread_;
-
   rclcpp::TimerBase::SharedPtr timer;
 
   rclcpp::Clock clock;
