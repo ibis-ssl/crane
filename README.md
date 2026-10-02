@@ -2,6 +2,8 @@
 
 [ibis-ssl](https://ibis-ssl.github.io/ibis_documentation/) の RoboCup Small Size League 向けロボットサッカーAI。Ubuntu 24.04 / ROS 2 Jazzy で動作します。
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ibis-ssl/crane)
+
 - [環境構築・起動](docs/setup.md)
 - [Docker開発環境](docker/README.md)
 - [開発・テスト手順](docs/tools.md) / [開発規約](CONTRIBUTING.md)
