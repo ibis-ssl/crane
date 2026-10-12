@@ -16,7 +16,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, TextIO
 
 # 終了コード。呼び出し側が失敗の種類で分岐できるようにする。
@@ -29,7 +29,7 @@ EXIT_INTERRUPTED = 130
 
 def stamp(t: float) -> str:
     """ロボット側のログと突き合わせるのでローカル時刻で出す。"""
-    local = datetime.fromtimestamp(t, tz=timezone.utc).astimezone()
+    local = datetime.fromtimestamp(t, tz=UTC).astimezone()
     return local.strftime("%H:%M:%S.%f")[:-3]
 
 

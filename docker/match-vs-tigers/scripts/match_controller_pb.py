@@ -292,7 +292,7 @@ class MatchController:
                         data = json.loads(response)
                         if data.get("matchState"):
                             print("  GC応答: matchState受信")
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     print("  応答タイムアウト（正常）")
                 return True
         except Exception as e:  # noqa: BLE001
