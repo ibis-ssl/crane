@@ -19,4 +19,4 @@ Crane は Vision から世界モデルを作り、セッションで役割を割
 
 ロボット全体の仕様（パケット・ポート・停止判定）は [ibis-ssl/specs](https://github.com/ibis-ssl/specs) が正本です。API・設定値・実装一覧はソースが正本です。このガイドには手順・設計理由・制約を残します。
 
-この `docs/` は [同期設定](https://github.com/ibis-ssl/crane/blob/develop/.github/sync.yml) で外部ドキュメントへコピーされます。削除したページが公開先からも消えるかは同期アクションの設定を確認してから反映し、この変更では公開操作を行いません。
+この `docs/` は [ibis_documentation](https://github.com/ibis-ssl/ibis_documentation) のビルド時に `develop` から取得され、[公開サイト](https://ibis-ssl.github.io/ibis_documentation/others/crane/)の `others/crane/` に載ります。公開サイトは毎日再ビルドされ、急ぐときは ibis_documentation の Documentation ワークフローを手動実行します。
