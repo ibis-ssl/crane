@@ -122,11 +122,9 @@ EmplaceRobotSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     }
   }
 
-  // GlobalRobotAllocator対応: robotsが変更されたらスキルマップを再生成
+  // 割り当てが変わると onRobotsChanged がスキルマップを空にするので、空なら作り直す
   // ロボットの優先順位はgetRobotSuitabilityFunc()で決定される（モーター温度が高いほど優先）
-  if (m_skill_map.size() != robots.size()) {
-    m_skill_map.clear();
-
+  if (m_skill_map.empty()) {
     int select_num = robots.size();
     int selected_robots_index = 0;
     for (const auto & robot_id : robots) {

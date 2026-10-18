@@ -38,8 +38,8 @@ public:
     -> std::function<double(const std::shared_ptr<RobotInfo> &)> override
   {
     auto wm = world_model;
-    return [wm, exclude_goalie = shouldExcludeGoalie()](const std::shared_ptr<RobotInfo> & robot) {
-      if (exclude_goalie && robot->id == wm->getOurGoalieId()) {
+    return [wm](const std::shared_ptr<RobotInfo> & robot) {
+      if (robot->id == wm->getOurGoalieId()) {
         return GOALIE_EXCLUSION_COST;  // ゴールキーパーは除外
       }
       return robot->getSquareDistance(wm->ball().pos);
@@ -48,9 +48,6 @@ public:
 
 protected:
   void onRobotsChanged() override { skills.clear(); }
-
-  /// ゴールキーパーを除外するか（サブクラスでオーバーライド可能）
-  virtual bool shouldExcludeGoalie() const { return true; }
 
   /// positioning_policyパラメータ値（サブクラスでオーバーライド可能）
   virtual std::string getPositioningPolicy() const { return "auto"; }
