@@ -116,12 +116,8 @@ def parse_hex(text: str) -> bytes:
     return bytes(int(token, 16) for token in tokens)
 
 
-def split_datagram(data: bytes) -> dict[int, bytes]:
-    """715 バイトのデータグラムをスロットごとに分解する。"""
+def split_datagram(data: bytes) -> tuple[int, bytes]:
+    """65 バイトのデータグラムを robot_id と 64B の指令に分ける。"""
     if len(data) != L.PACKET_SIZE:
         raise ValueError(f"データグラムは {L.PACKET_SIZE} バイト: {len(data)}")
-    out = {}
-    for slot in range(L.SLOTS):
-        base = slot * L.SLOT_SIZE
-        out[data[base]] = data[base + 1 : base + 1 + L.CMD_SIZE]
-    return out
+    return data[0], data[1:]

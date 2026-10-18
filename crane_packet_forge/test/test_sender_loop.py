@@ -67,7 +67,9 @@ class Capture:
             except OSError:
                 break
             if len(data) == L.PACKET_SIZE:
-                self.packets.append(split_datagram(data)[self.robot_id])
+                robot_id, command = split_datagram(data)
+                if robot_id == self.robot_id:
+                    self.packets.append(command)
 
 
 def run_session(

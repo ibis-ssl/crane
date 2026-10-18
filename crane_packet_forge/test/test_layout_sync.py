@@ -79,6 +79,5 @@ def test_framing_constants() -> None:
     from crane_packet_forge import layout as L
 
     assert L.CMD_SIZE == 64
-    assert L.SLOT_SIZE == 65
-    assert L.PACKET_SIZE == 715
-    assert L.MAX_ROBOT_ID == L.SLOTS - 1
+    assert L.PACKET_SIZE == 65
+    assert L.MAX_ROBOT_ID == L.ROBOT_NUM - 1

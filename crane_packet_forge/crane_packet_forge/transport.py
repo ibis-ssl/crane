@@ -17,7 +17,7 @@ from . import layout as L
 
 
 class Sender:
-    """715 バイトのデータグラムを投げるだけのソケット。
+    """65 バイトのデータグラムを投げるだけのソケット。
 
     --interface-ip を渡したらそこへ bind する。複数 NIC の PC で送信元が
     ロボット用 LAN 以外に寄ると届かないので、解決したアドレスを外から読めるようにする。
@@ -29,13 +29,10 @@ class Sender:
         *,
         port: int = L.DEFAULT_PORT,
         interface_ip: str | None = None,
-        broadcast: bool = False,
     ) -> None:
         self.address = address
         self.port = port
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        if broadcast:
-            self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         if interface_ip:
             self._sock.bind((interface_ip, 0))
 

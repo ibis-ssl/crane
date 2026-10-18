@@ -29,10 +29,9 @@ import sys
 import time
 
 # --- robot_packet.h のバイトレイアウト（正本） ---------------------------------
-SLOT_SIZE = 65  # robot_id 1 byte + command 64 bytes
 COMMAND_SIZE = 64
-ROBOT_NUM = 11
-PACKET_SIZE = SLOT_SIZE * ROBOT_NUM  # 715
+# 機体ごとに 1 データグラム: robot_id 1 byte + command 64 bytes
+PACKET_SIZE = COMMAND_SIZE + 1
 
 HEADER = 0
 CHECK_COUNTER = 1
@@ -77,7 +76,7 @@ def decode_uint16(data: bytes, offset: int) -> int:
 
 
 def slot_is_empty(command: bytes) -> bool:
-    """送信元が制御しないロボットのスロットはゼロ埋めされる。"""
+    """64 バイトすべてがゼロの指令。CM4 はこれを採用しない。"""
     return not any(command)
 
 
@@ -199,7 +198,7 @@ def main() -> int:
         "--count", type=int, default=0, help="受信するデータグラム数 (0: Ctrl-C まで)"
     )
     parser.add_argument(
-        "--robot-id", type=int, default=None, help="このロボットIDのスロットだけ表示"
+        "--robot-id", type=int, default=None, help="このロボットIDの指令だけ表示"
     )
     parser.add_argument(
         "--every",
@@ -279,22 +278,18 @@ def main() -> int:
                     f"({len(data)} bytes) ==="
                 )
 
-            for i in range(ROBOT_NUM):
-                offset = i * SLOT_SIZE
-                robot_id = data[offset]
-                command = data[offset + 1 : offset + 1 + COMMAND_SIZE]
+            robot_id = data[0]
+            command = data[1:]
+            if slot_is_empty(command):
+                continue
+            if args.robot_id is not None and robot_id != args.robot_id:
+                continue
 
-                if slot_is_empty(command):
-                    continue
-                if args.robot_id is not None and robot_id != args.robot_id:
-                    continue
-
-                decoded = decode_command(command)
-                mode_counts[robot_id][decoded["control_mode"]] += 1
-                last_decoded[robot_id] = decoded
-                if show:
-                    print(format_slot(robot_id, decoded))
+            decoded = decode_command(command)
+            mode_counts[robot_id][decoded["control_mode"]] += 1
+            last_decoded[robot_id] = decoded
             if show:
+                print(format_slot(robot_id, decoded))
                 print()
     except KeyboardInterrupt:
         print("\n(中断)")
@@ -308,7 +303,7 @@ def main() -> int:
     if size_mismatch:
         print(f"サイズ不一致: {size_mismatch}")
     if not mode_counts:
-        print("非空スロットが 1 つもありませんでした。")
+        print("空でない指令を 1 つも受信しませんでした。")
     for robot_id in sorted(mode_counts):
         counts = mode_counts[robot_id]
         breakdown = ", ".join(
@@ -323,7 +318,7 @@ def main() -> int:
     if all_modes:
         expected = args.expect_mode
         if set(all_modes) == {expected}:
-            print(f"\n=> 全スロットが byte23 == {expected} でした。")
+            print(f"\n=> 全指令が byte23 == {expected} でした。")
         elif expected not in all_modes:
             if expected == MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY:
                 hint = "planner:=visibility_graph で起動しているか確認してください。"

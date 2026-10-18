@@ -24,7 +24,7 @@ services:
   # 実機の CM4 に相当するプロセス。設定の意味は docker-compose.yaml の cm4-sim を参照。
   # イメージは同じ commit SHA に固定する（両ファイルで食い違わせないこと）。
   cm4-sim:
-    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-d7a2e07c47cf09c6d359e391f1cf2828f4fe7f5a}
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-e03b0f69a7ccd18073a01c6df7e3327bfe7dde2e}
     container_name: cm4-sim
     network_mode: host
     entrypoint: ["tini", "--"]

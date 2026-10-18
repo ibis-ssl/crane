@@ -4,7 +4,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""spec → 64 バイト指令 → 715 バイトデータグラム。
+"""spec → 64 バイト指令 → 65 バイトデータグラム。
 
 構造体を埋めて RobotCommandSerializedV2_serialize を呼ぶ方式は採らない。あちらは
 flags を 3 つの bool から組み立て（bit 0/1/3 しか到達しない）、mode_args は
@@ -94,9 +94,9 @@ def assemble_command(
 
 
 def build_datagram(command: bytes, robot_id: int) -> bytes:
-    """715 バイト。crane と同じく全 11 スロットを常に送り、未使用は 64B ゼロ埋め。
+    """65 バイト。先頭 1 バイトの robot_id に続けて 64B の指令を置く。
 
-    スロット先頭の 1 バイトはスロット番号で、それが robot_id を兼ねる。
+    crane と同じく機体ごとに 1 データグラムで、その機体の CM4 へユニキャストで送る。
     """
     if len(command) != L.CMD_SIZE:
         raise ValueError(
@@ -105,12 +105,7 @@ def build_datagram(command: bytes, robot_id: int) -> bytes:
     if not 0 <= robot_id <= L.MAX_ROBOT_ID:
         raise ValueError(f"robot_id は 0..{L.MAX_ROBOT_ID}: {robot_id}")
 
-    out = bytearray()
-    empty = bytes(L.CMD_SIZE)
-    for slot in range(L.SLOTS):
-        out.append(slot)
-        out += command if slot == robot_id else empty
-    return bytes(out)
+    return bytes([robot_id]) + command
 
 
 def stop_command(spec: PacketSpec, *, check_counter: int | None = None) -> bytes:

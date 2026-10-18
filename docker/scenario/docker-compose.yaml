@@ -46,13 +46,13 @@ services:
   # --feedback-port-base は simulator-cli の --ibis-feedback-port-base と揃える。
   # これは cm4-sim が simulator-cli からの unicast を受ける「入力側」で、
   # multicast 再配信先 224.5.20.(100+id):50100+id とは独立している。
-  # crane_robot_receiver は 50100 を直書きしているため再配信側は既定のままにすること。
+  # crane_robot_receiver の受信ポート（パラメータ、既定 50100+id）と揃えるため再配信側は既定のままにすること。
   #
   # イメージは commit SHA で固定する。latest に追従させると Orion_CM4 側の push だけで
   # crane の CI が壊れ、crane のリグレッションに見えてしまう。
   # 更新するときは CM4_SIM_TAG で試したうえでこの既定値を上げる。
   cm4-sim:
-    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-d7a2e07c47cf09c6d359e391f1cf2828f4fe7f5a}
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-e03b0f69a7ccd18073a01c6df7e3327bfe7dde2e}
     container_name: cm4-sim
     network_mode: host
     entrypoint: ["tini", "--"]
