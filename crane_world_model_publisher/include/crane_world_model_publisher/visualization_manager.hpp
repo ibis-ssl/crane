@@ -7,16 +7,11 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_MANAGER_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_MANAGER_HPP_
 
-#include <robocup_ssl_msgs/ssl_vision_detection.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <array>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/ball_info.hpp>
-#include <crane_msgs/msg/robot_info.hpp>
 #include <crane_visualization_interfaces/crane_visualizer_wrapper.hpp>
-#include <deque>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -37,25 +32,16 @@ public:
 
   auto drawFieldGeometry(
     const robocup_ssl::SSL_GeometryData & geometry_data, bool half_court_mode = false) -> void;
-  auto drawVisionDetections(
-    const robocup_ssl::SSL_DetectionFrame & detection, bool half_court_mode = false) -> void;
   auto drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto drawRefereeInfo(
     const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height,
     const std::string & command_text) -> void;
   auto drawBallPlacement(const WorldModelWrapper::SharedPtr & world_model) -> void;
 
-  auto drawTrajectoryHistory(
-    const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & friend_history,
-    const std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> & enemy_history,
-    const std::deque<crane_msgs::msg::BallInfo> & ball_info_history, bool is_yellow) -> void;
-
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
-  crane::VisualizerMessageBuilder::SharedPtr vision_builder;
   crane::VisualizerMessageBuilder::SharedPtr tracked_builder;
   crane::VisualizerMessageBuilder::SharedPtr referee_builder;
   crane::VisualizerMessageBuilder::SharedPtr placement_builder;
-  crane::VisualizerMessageBuilder::SharedPtr trajectory_builder;
 
   // drawFieldGeometry はコールバック経由で呼ばれるため world_model を受け取れない。
   // ゴール色描画のためにチーム情報をキャッシュする。
