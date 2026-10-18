@@ -8,5 +8,6 @@
 - [Docker開発環境](docker/README.md)
 - [開発・テスト手順](docs/tools.md) / [開発規約](CONTRIBUTING.md)
 - [設計・運用ガイド](docs/index.md) / [パッケージとソース](docs/packages/index.md)
+- [ロボット全体の仕様](https://github.com/ibis-ssl/specs)（`git submodule update --init specs` で `specs/` に取得）
 
 実装・API・設定値はソースコードを参照してください。文書には、使い方・設計理由・制約をまとめています。

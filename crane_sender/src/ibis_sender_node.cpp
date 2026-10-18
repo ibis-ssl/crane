@@ -470,12 +470,12 @@ private:
    * データグラムごと破棄され、拒否理由が CM4 のログに出る。
    *
    * 【フォーマット v2（28 バイト）について】
-   * CM4 側が PID になったので ki / kd を追加した v2 を送る。**後方互換は無い。**
+   * ki / kd を含む v2 を送る。**後方互換は無い。**
    * CM4 は旧 v1（20 バイト）を WrongSize として拒否するので、crane と CM4 は
    * 同時に配ること。片方だけ古い機体は停止せず既定ゲイン（kp = 2.0）のまま走る。
    * 中途半端に互換を残すと「kp だけ効いて ki/kd が効いていない機体」が黙って混ざり、
    * 現地では「なんとなく追従が悪い」以外の症状が出ない。
-   * リリース順序は docs/cm4_position_control.md に書いてある。
+   * リリース順序は docs/network.md に書いてある。
    */
   void sendPositionControlConfig()
   {
@@ -530,7 +530,7 @@ private:
       }
     }
 
-    // 送信のたびに残す。理由と読み方は docs/cm4_position_control.md に書いてある。
+    // 送信のたびに残す。理由と読み方は docs/network.md に書いてある。
     position_control_config_pub_->publish(config_msg);
   }
 };

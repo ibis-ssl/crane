@@ -16,7 +16,7 @@ make scenario-test RX_DELAY_MS=30 RX_LOSS_RATE=0.02 TEST=STOP_ROBOT_SPEED
 make scenario-test
 ```
 
-経路には実機CM4に相当する `cm4-sim` が入る（`crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli`）。位置制御ループは `cm4-sim` が閉じるため、既定のplannerは mode 4 を出す `visibility_graph`。`RX_DELAY_MS` などはCraneから `cm4-sim` への区間、すなわち無線に相当する部分に劣化を注入する。構成の詳細は[ネットワーク](../docs/network.md)を参照する。
+経路には実機CM4に相当する `cm4-sim` が入る（構成とポートは [specs のシミュレーション](https://github.com/ibis-ssl/specs/blob/main/pc/simulation.md)）。位置制御ループは `cm4-sim` が閉じるため、既定のplannerは mode 4 を出す `visibility_graph`。`RX_DELAY_MS` などはCraneから `cm4-sim` への区間、すなわち無線に相当する部分に劣化を注入する。Crane 側の設定は[ネットワーク](../docs/network.md#ロボット側の位置制御)を参照する。
 
 既定のローカルモードはホストでCraneを起動する。コード変更後はワークスペースルートで対象パッケージを再ビルドし、環境を再読み込みしてから再実行する。
 

@@ -2,7 +2,7 @@
 #
 # フィールドは Orion_CM4 cm4/bridge/config_packet.h の 28 バイトパケットと 1:1 対応する。
 # 設定パケットを送るたびに publish するので、bag にはゲイン変更の時刻が残る。
-# 記録する理由と読み方は docs/cm4_position_control.md を参照。
+# 記録する理由と読み方は docs/network.md を参照。
 
 std_msgs/Header header
 
