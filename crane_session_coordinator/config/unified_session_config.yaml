@@ -186,15 +186,6 @@ situations:
     sessions:
       - name: ibis_formation
         max_robots: 20
-  pass_placement:
-    description: pass_placement
-    sessions:
-      - name: passable_ball_placement
-        max_robots: 1
-      - name: placement_target_placer
-        max_robots: 1
-      - name: ball_placement_avoidance
-        max_robots: 20
   wing_formation:
     description: wing/キーパーなし
     sessions:
