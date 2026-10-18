@@ -347,7 +347,7 @@ def cmd_send(args: argparse.Namespace) -> int:
         watcher = FeedbackWatcher(
             spec.robot_id,
             interface_ip=args.interface_ip,
-            on_event=lambda kind, message, extra: log.emit(kind, message, **extra),
+            log=log,
         )
         try:
             watcher.start()
@@ -396,7 +396,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
     watcher = FeedbackWatcher(
         args.robot_id,
         interface_ip=args.interface_ip,
-        on_event=lambda kind, message, extra: log.emit(kind, message, **extra),
+        log=log,
     )
     try:
         watcher.start()
