@@ -49,7 +49,6 @@ class PacketSpec:
     robot_id: int = 0
     rate_hz: float = 62.5
     base: str = BASE_NEUTRAL
-    broadcast: bool = False
     fields: dict[str, Any] = dc_field(default_factory=dict)
     raw_bytes: dict[int, int] = dc_field(default_factory=dict)
     steps: list[Step] = dc_field(default_factory=list)
@@ -65,7 +64,6 @@ class PacketSpec:
             "robot_id",
             "rate_hz",
             "base",
-            "broadcast",
             "fields",
             "raw_bytes",
             "steps",
@@ -78,7 +76,6 @@ class PacketSpec:
             robot_id=int(data.get("robot_id", 0)),
             rate_hz=float(data.get("rate_hz", 62.5)),
             base=str(data.get("base", BASE_NEUTRAL)),
-            broadcast=bool(data.get("broadcast", False)),
         )
         for key, value in (data.get("fields") or {}).items():
             spec.set_field(key, value)
@@ -107,8 +104,6 @@ class PacketSpec:
             "rate_hz": self.rate_hz,
             "base": self.base,
         }
-        if self.broadcast:
-            out["broadcast"] = True
         # 空でもキーを落とさない。受け取る側（GUI）が undefined を掴んで落ちる。
         out["fields"] = dict(self.fields)
         out["raw_bytes"] = {str(k): v for k, v in sorted(self.raw_bytes.items())}
@@ -135,9 +130,7 @@ class PacketSpec:
         if self.base not in BASES:
             raise SpecError(f"base は {' / '.join(BASES)} のどれか: {self.base!r}")
         if not 0 <= self.robot_id <= L.MAX_ROBOT_ID:
-            raise SpecError(
-                f"robot_id は 0..{L.MAX_ROBOT_ID}（データグラムは {L.SLOTS} スロット固定）: {self.robot_id}"
-            )
+            raise SpecError(f"robot_id は 0..{L.MAX_ROBOT_ID}: {self.robot_id}")
         if self.rate_hz <= 0:
             raise SpecError(f"rate_hz は正の数: {self.rate_hz}")
         for step in self.steps:
@@ -204,8 +197,6 @@ class PacketSpec:
     # --- 宛先 ---
 
     def resolve_address(self) -> str:
-        if self.broadcast:
-            return L.BROADCAST_ADDRESS
         if self.target == TARGET_REAL:
             return robot_ip(self.robot_id)
         if self.target == TARGET_SIM:

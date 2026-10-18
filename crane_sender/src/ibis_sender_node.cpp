@@ -18,6 +18,8 @@
 #include <crane_msgs/msg/position_control_config.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_utils/parameter.hpp>
+#include <cstring>
+#include <format>
 #include <memory>
 #include <ranges>
 #include <rclcpp/rclcpp.hpp>
@@ -33,9 +35,10 @@ namespace crane
 namespace CommConfig
 {
 constexpr int DEFAULT_PORT = 12345;
-constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
+// 機体ごとのデータグラム: robot_id 1B + コマンド 64B（Orion_CM4 forward_ai_cmd_v2.cpp）
+constexpr int AI_CMD_V2_PACKET_SIZE = AI_CMD_V2_SIZE + 1;
 // 位置制御設定パケットのフォーマット版（Orion_CM4 cm4/bridge/config_packet.h の byte 4）
 constexpr uint8_t POSITION_CONTROL_CONFIG_VERSION = 2;
 }  // namespace CommConfig
@@ -73,12 +76,14 @@ private:
 
   rclcpp::Subscription<VelocityCommandsMsg>::SharedPtr sub_commands;
 
-  boost::asio::io_service broadcast_io_service_;
-  boost::asio::ip::udp::endpoint broadcast_endpoint_;
-  boost::asio::ip::udp::socket broadcast_socket_;
+  boost::asio::io_service udp_io_service_;
+  boost::asio::ip::udp::socket udp_socket_;
 
-  // 位置制御設定パケットの送信先（指令と同じアドレスでポートだけ分ける）
-  boost::asio::ip::udp::endpoint position_control_config_endpoint_;
+  // 位置制御設定パケットは指令と同じアドレスでポートだけ分ける。
+  std::array<boost::asio::ip::udp::endpoint, CommConfig::AI_CMD_V2_ROBOT_NUM> command_endpoints_;
+  std::array<boost::asio::ip::udp::endpoint, CommConfig::AI_CMD_V2_ROBOT_NUM> config_endpoints_;
+  // 直近の sendCommands で指令を送った機体。設定パケットはこの機体にだけ送る
+  std::vector<uint8_t> last_sent_robot_ids_;
   std::chrono::steady_clock::time_point last_position_control_config_send_;
   // CM4 の位置制御 PID のゲイン。ここにある値は既定値で、実際に送るのは
   // 1 秒ごとに get_parameter() で読み直した現在値である（sendPositionControlConfig）。
@@ -98,8 +103,7 @@ public:
   explicit IbisSenderNode(const rclcpp::NodeOptions & options)
   : Node("ibis_sender", options),
     clock(RCL_ROS_TIME),
-    broadcast_socket_(
-      broadcast_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+    udp_socket_(udp_io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     crane::get_or_declare_parameter(this, "no_movement", no_movement);
     crane::get_or_declare_parameter(this, "kick_power_limit_straight", kick_power_limit_straight);
@@ -120,8 +124,12 @@ public:
     sub_commands = create_subscription<VelocityCommandsMsg>(
       "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); });
 
+    // true: 機体 N の CM4（192.168.20.(100+N)）へ個別に送る（実機）。
+    // false: 全機体を target_address へ送る（シミュレーション。cm4_sim が byte 0 で振り分ける）
+    const bool unicast_to_robot_ip =
+      crane::get_or_declare_parameter(this, "unicast_to_robot_ip", true);
     const std::string target_address =
-      crane::get_or_declare_parameter(this, "target_address", CommConfig::BROADCAST_ADDRESS);
+      crane::get_or_declare_parameter(this, "target_address", std::string("127.0.0.1"));
     const int target_port =
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
     // position_control.* は CM4 側の位置制御 PID のゲイン（ki / kd の既定 0 は P 制御）。
@@ -134,36 +142,34 @@ public:
     crane::get_or_declare_parameter(this, "position_control.ki", position_control_ki_);
     crane::get_or_declare_parameter(this, "position_control.kd", position_control_kd_);
 
+    // CM4 側の既定は 12350（ai_cmd_v2.out / cm4_sim.out の --config-port）。
+    const int position_control_config_port =
+      crane::get_or_declare_parameter(this, "position_control.config_port", 12350);
+
     try {
-      broadcast_socket_.set_option(boost::asio::socket_base::broadcast(true));
-      RCLCPP_INFO(get_logger(), "✓ SO_BROADCAST flag set");
-
-      broadcast_endpoint_ = boost::asio::ip::udp::endpoint(
-        boost::asio::ip::address::from_string(target_address), target_port);
-
-      // 位置制御設定パケットは指令と同じ broadcast アドレスでポートだけ分ける。
-      // CM4 側の既定は 12350（ai_cmd_v2.out / cm4_sim.out の --config-port）。
-      const int position_control_config_port =
-        crane::get_or_declare_parameter(this, "position_control.config_port", 12350);
-      position_control_config_endpoint_ = boost::asio::ip::udp::endpoint(
-        boost::asio::ip::address::from_string(target_address), position_control_config_port);
+      for (int id = 0; id < CommConfig::AI_CMD_V2_ROBOT_NUM; ++id) {
+        const auto address = boost::asio::ip::address::from_string(
+          unicast_to_robot_ip ? robotAddress(id) : target_address);
+        command_endpoints_[id] = boost::asio::ip::udp::endpoint(address, target_port);
+        config_endpoints_[id] =
+          boost::asio::ip::udp::endpoint(address, position_control_config_port);
+      }
 
       checkNetworkInterfaces();
 
-      RCLCPP_INFO(get_logger(), "【Real Robot Broadcast Mode Initialized】");
-      RCLCPP_INFO(get_logger(), "  Target Address: %s:%d", target_address.c_str(), target_port);
       RCLCPP_INFO(
-        get_logger(), "  Position Control Config: %s:%d", target_address.c_str(),
+        get_logger(), "【Unicast Mode Initialized】 %s",
+        unicast_to_robot_ip ? "per-robot CM4 address" : "single target address");
+      RCLCPP_INFO(
+        get_logger(), "  Robot 0 Endpoint: %s:%d (config: %d)",
+        command_endpoints_[0].address().to_string().c_str(), target_port,
         position_control_config_port);
       RCLCPP_INFO(
-        get_logger(), "  Resolved Endpoint: %s:%d",
-        broadcast_endpoint_.address().to_string().c_str(), broadcast_endpoint_.port());
-      RCLCPP_INFO(
         get_logger(), "  Local Socket: %s:%d",
-        broadcast_socket_.local_endpoint().address().to_string().c_str(),
-        broadcast_socket_.local_endpoint().port());
+        udp_socket_.local_endpoint().address().to_string().c_str(),
+        udp_socket_.local_endpoint().port());
     } catch (std::exception & e) {
-      RCLCPP_ERROR(get_logger(), "❌ Broadcast Socket Init Error: %s", e.what());
+      RCLCPP_ERROR(get_logger(), "❌ Socket Init Error: %s", e.what());
     }
 
     // 1 Hz 以下の設定トピックなので、後から繋いだ購読者にも現在値が届くよう transient local。
@@ -171,10 +177,14 @@ public:
       "/position_control_config", rclcpp::QoS(1).transient_local());
 
     RCLCPP_INFO(
-      get_logger(), "ibis_sender_node started (%s:%d)", target_address.c_str(), target_port);
+      get_logger(), "ibis_sender_node started (%s:%d)",
+      command_endpoints_[0].address().to_string().c_str(), target_port);
   }
 
 private:
+  // 実機 CM4 のアドレス規則（crane_robot_receiver の ping_status_node と同じ）
+  static std::string robotAddress(int id) { return std::format("192.168.20.{}", 100 + id); }
+
   void callback(const VelocityCommandsMsg & msg)
   {
     if (!world_model->hasUpdated()) {
@@ -291,26 +301,13 @@ private:
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(addr_in->sin_addr), ip_str, INET_ADDRSTRLEN);
 
-        char broadcast_str[INET_ADDRSTRLEN] = "N/A";
-        if (ifa->ifa_flags & IFF_BROADCAST && ifa->ifa_broadaddr) {
-          struct sockaddr_in * broadcast_in =
-            reinterpret_cast<struct sockaddr_in *>(ifa->ifa_broadaddr);
-          inet_ntop(AF_INET, &(broadcast_in->sin_addr), broadcast_str, INET_ADDRSTRLEN);
-        }
-
-        std::string log_msg = "  Interface: " + std::string(ifa->ifa_name) +
-                              " IP: " + std::string(ip_str) +
-                              " Broadcast: " + std::string(broadcast_str);
+        std::string log_msg =
+          "  Interface: " + std::string(ifa->ifa_name) + " IP: " + std::string(ip_str);
 
         if (ifa->ifa_flags & IFF_UP) log_msg += " [UP]";
         if (ifa->ifa_flags & IFF_RUNNING) log_msg += " [RUNNING]";
-        if (ifa->ifa_flags & IFF_BROADCAST) log_msg += " [BROADCAST]";
 
         RCLCPP_INFO(get_logger(), "%s", log_msg.c_str());
-
-        if (std::string(broadcast_str) == CommConfig::BROADCAST_ADDRESS) {
-          RCLCPP_INFO(get_logger(), "    ✅ Matches configured broadcast address!");
-        }
       }
     }
 
@@ -409,56 +406,48 @@ private:
 
     const auto available_ids = world_model->ours().robotsWhere().available().getIds();
 
-    std::array<RobotCommandSerializedV2, CommConfig::AI_CMD_V2_ROBOT_NUM> robot_packets{};
-
+    last_sent_robot_ids_.clear();
     for (auto & command : msg.robot_commands) {
-      if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
-        RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
-        RobotCommandSerializedV2 serialized_packet{};
-        RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
-        robot_packets[command.robot_id] = serialized_packet;
-
-        // ワイヤに載せた安全停止関連の値を /sent_robot_commands 用に残す。
-        // CM4 / G474 は is_vision_available=0 や elapsed>500ms、linear_velocity_limit=0 で止まる
-        addOrUpdatePlanningFactor(
-          command, "SenderVisionAvailable", packet.is_vision_available ? "1" : "0");
-        addOrUpdatePlanningFactor(
-          command, "SenderWireMode", std::to_string(static_cast<int>(packet.control_mode)));
-        addOrUpdatePlanningFactor(
-          command, "SenderLinearVelocityLimit", formatPlanningDouble(packet.linear_velocity_limit));
-        addOrUpdatePlanningFactor(
-          command, "SenderAccelerationLimit", formatPlanningDouble(packet.acceleration_limit));
-        addOrUpdatePlanningFactor(
-          command, "SenderElapsedVisionMs",
-          std::to_string(packet.elapsed_time_ms_since_last_vision));
+      if (command.robot_id >= CommConfig::AI_CMD_V2_ROBOT_NUM) {
+        continue;
       }
-    }
+      RobotCommandV2 packet = createRobotPacket(command, counter_, available_ids);
+      RobotCommandSerializedV2 serialized_packet{};
+      RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
-    char broadcast_buf[(CommConfig::AI_CMD_V2_SIZE + 1) * CommConfig::AI_CMD_V2_ROBOT_NUM] = {};
-    for (size_t i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
-      int offset = static_cast<int>(i) * (CommConfig::AI_CMD_V2_SIZE + 1);
-      broadcast_buf[offset] = static_cast<char>(i);
-      memcpy(&broadcast_buf[offset + 1], robot_packets[i].data, CommConfig::AI_CMD_V2_SIZE);
-    }
+      // ワイヤに載せた安全停止関連の値を /sent_robot_commands 用に残す。
+      // CM4 / G474 は is_vision_available=0 や elapsed>500ms、linear_velocity_limit=0 で止まる
+      addOrUpdatePlanningFactor(
+        command, "SenderVisionAvailable", packet.is_vision_available ? "1" : "0");
+      addOrUpdatePlanningFactor(
+        command, "SenderWireMode", std::to_string(static_cast<int>(packet.control_mode)));
+      addOrUpdatePlanningFactor(
+        command, "SenderLinearVelocityLimit", formatPlanningDouble(packet.linear_velocity_limit));
+      addOrUpdatePlanningFactor(
+        command, "SenderAccelerationLimit", formatPlanningDouble(packet.acceleration_limit));
+      addOrUpdatePlanningFactor(
+        command, "SenderElapsedVisionMs", std::to_string(packet.elapsed_time_ms_since_last_vision));
 
-    bool sent = false;
-    try {
-      broadcast_socket_.send_to(boost::asio::buffer(broadcast_buf), broadcast_endpoint_);
-      sent = true;
-    } catch (boost::system::system_error & e) {
-      RCLCPP_ERROR(get_logger(), "❌ Packet Send Error (boost): %s", e.what());
-      RCLCPP_ERROR(get_logger(), "  Error Code: %d", e.code().value());
-      RCLCPP_ERROR(get_logger(), "  Error Message: %s", e.code().message().c_str());
-    } catch (std::exception & e) {
-      RCLCPP_ERROR(get_logger(), "❌ Packet Send Exception: %s", e.what());
-    }
-    // 送信に失敗したフレームも /sent_robot_commands には残るので、送れたかどうかを区別する。
-    // パケットに載せたロボットだけに付ける（他の Sender* factor と同じ条件）。
-    // CM4 は ACK を返さないため、1 でもロボットが受け取った証拠にはならない
-    for (auto & command : msg.robot_commands) {
-      if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
-        addOrUpdatePlanningFactor(command, "SenderSent", sent ? "1" : "0");
+      std::array<uint8_t, CommConfig::AI_CMD_V2_PACKET_SIZE> buf{};
+      buf[0] = command.robot_id;
+      memcpy(&buf[1], serialized_packet.data, CommConfig::AI_CMD_V2_SIZE);
+
+      // 機体ごとに送るので、1 台の CM4 に届かなくても他の機体への送信は続ける。
+      // 電源の入っていない機体宛ては毎フレーム失敗しうるのでログは間引く
+      bool sent = false;
+      try {
+        udp_socket_.send_to(boost::asio::buffer(buf), command_endpoints_[command.robot_id]);
+        sent = true;
+        last_sent_robot_ids_.push_back(command.robot_id);
+      } catch (std::exception & e) {
+        RCLCPP_ERROR_THROTTLE(
+          get_logger(), *get_clock(), 1000, "❌ Packet Send Error (robot_id=%d, %s): %s",
+          static_cast<int>(command.robot_id),
+          command_endpoints_[command.robot_id].address().to_string().c_str(), e.what());
       }
+      // 送信に失敗したフレームも /sent_robot_commands には残るので、送れたかどうかを区別する。
+      // CM4 は ACK を返さないため、1 でもロボットが受け取った証拠にはならない
+      addOrUpdatePlanningFactor(command, "SenderSent", sent ? "1" : "0");
     }
 
     sendPositionControlConfig();
@@ -470,6 +459,10 @@ private:
    * 位置制御ループは CM4 側で閉じているので、ゲインを変えるにはロボットへ届ける必要がある。
    * 指令パケットに相乗りさせないのは、64 バイトのレイアウトが crane / G474 / framework /
    * CM4 の 4 者一致を不変条件にしているためである。別ポートなら他の 3 者は変わらない。
+   *
+   * 直近の sendCommands で指令を送った機体それぞれへユニキャストで送る。byte 5 は 0xFF
+   * （全機に適用する値）のままにし、宛先は UDP で機体ごとに指定する。シミュレーションでは
+   * 全機体の宛先が同じ cm4_sim なので、同じ宛先へは 1 回だけ送る。
    *
    * 1 秒ごとに get_parameter() で読み直して送る。ros2 param set で変えた値がそのまま乗り、
    * ロボットの再起動は要らない。同じ値の再送は無害で（CM4 は値が変わったときだけログを
@@ -519,13 +512,22 @@ private:
     buf[5] = config_msg.target_robot_id;
     memcpy(&buf[8], values, sizeof(values));
 
-    config_msg.sent = true;
-    try {
-      broadcast_socket_.send_to(boost::asio::buffer(buf), position_control_config_endpoint_);
-    } catch (std::exception & e) {
-      config_msg.sent = false;
-      RCLCPP_WARN_THROTTLE(
-        get_logger(), *get_clock(), 5000, "位置制御設定パケットの送信に失敗: %s", e.what());
+    config_msg.sent = !last_sent_robot_ids_.empty();
+    std::vector<boost::asio::ip::udp::endpoint> sent_endpoints;
+    for (const auto id : last_sent_robot_ids_) {
+      const auto & endpoint = config_endpoints_[id];
+      if (std::ranges::find(sent_endpoints, endpoint) != sent_endpoints.end()) {
+        continue;
+      }
+      sent_endpoints.push_back(endpoint);
+      try {
+        udp_socket_.send_to(boost::asio::buffer(buf), endpoint);
+      } catch (std::exception & e) {
+        config_msg.sent = false;
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000, "位置制御設定パケットの送信に失敗 (robot_id=%d): %s",
+          static_cast<int>(id), e.what());
+      }
     }
 
     // 送信のたびに残す。理由と読み方は docs/cm4_position_control.md に書いてある。

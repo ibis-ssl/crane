@@ -19,7 +19,6 @@ const state = {
     robot_id: 0,
     rate_hz: 62.5,
     base: 'neutral',
-    broadcast: false,
     fields: {},
     raw_bytes: {},
   },
@@ -549,10 +548,6 @@ function setupSendBar() {
     state.spec.target = event.target.value;
     pushSpec();
   });
-  $('broadcast-check').addEventListener('change', (event) => {
-    state.spec.broadcast = event.target.checked;
-    pushSpec();
-  });
   $('rate-input').addEventListener('input', (event) => {
     const value = Number(event.target.value);
     if (value > 0) { state.spec.rate_hz = value; pushSpec(); }
@@ -762,7 +757,6 @@ function cliCommand() {
   const parts = ['crane-forge send'];
   parts.push(`--robot ${state.spec.robot_id}`);
   if (state.spec.target !== 'real') parts.push(`--target ${state.spec.target}`);
-  if (state.spec.broadcast) parts.push('--broadcast');
   if (state.spec.rate_hz !== 62.5) parts.push(`--rate-hz ${state.spec.rate_hz}`);
   if (state.spec.base !== 'neutral') parts.push(`--base ${state.spec.base}`);
   for (const [key, value] of Object.entries(state.spec.fields)) {
@@ -800,7 +794,6 @@ function syncBarFromSpec() {
   $('robot-select').value = String(state.spec.robot_id);
   $('rate-input').value = String(state.spec.rate_hz);
   $('base-select').value = state.spec.base;
-  $('broadcast-check').checked = Boolean(state.spec.broadcast);
   const known = ['real', 'sim'].includes(state.spec.target);
   $('target-select').value = known ? state.spec.target : 'custom';
   $('target-custom').style.display = known ? 'none' : '';
@@ -834,7 +827,6 @@ function normalizeSpec(spec) {
     robot_id: 0,
     rate_hz: 62.5,
     base: 'neutral',
-    broadcast: false,
     ...spec,
     fields: spec.fields || {},
     raw_bytes: spec.raw_bytes || {},

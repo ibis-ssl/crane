@@ -7,7 +7,7 @@
 """crane-forge — ロボット指令パケットを自由に組み立てて送る CLI。
 
 crane を経由しない。robot_packet.h の 64 バイトを全フィールド・全ビット単位で
-組み立て、192.168.20.(100+N):12345 へ 715 バイトのデータグラムとして直接投げる。
+組み立て、192.168.20.(100+N):12345 へ 65 バイトのデータグラムとして直接投げる。
 
 安全側の制限は緩和してある（上限で拒否しない）。危険な組み合わせは警告として出す。
 --yes-i-know で確認を全部飛ばせる。
@@ -75,17 +75,12 @@ def _add_spec_opts(parser: argparse.ArgumentParser) -> None:
         "--base",
         choices=("neutral", "zeros"),
         help="neutral(既定): 未指定の 2 バイト値に 0.0 を符号化する / "
-        "zeros: 生ゼロのまま（crane の空きスロットと同じ = -range を意味する）",
+        "zeros: 生ゼロのまま（0x0000 は -range を意味する）",
     )
     parser.add_argument(
         "--robot", type=int, dest="robot_id", help=f"機体番号 0..{L.MAX_ROBOT_ID}"
     )
     parser.add_argument("--target", help="real（既定） | sim | 任意の IP")
-    parser.add_argument(
-        "--broadcast",
-        action="store_true",
-        help=f"{L.BROADCAST_ADDRESS} へ送る。LAN 上の全ロボットに届く",
-    )
     parser.add_argument("--rate-hz", type=float, help="既定 62.5（crane と同じ）")
     parser.add_argument(
         "--schedule",
@@ -143,7 +138,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--save-spec", type=Path, help="組み立てた spec を JSON で書き出す"
     )
 
-    decode = sub.add_parser("decode", help="64B 指令 / 715B データグラムを読む")
+    decode = sub.add_parser("decode", help="64B 指令 / 65B データグラムを読む")
     decode.add_argument("--hex", help='"00 07 ff" か "0007ff"')
     decode.add_argument("--file", type=Path, help="バイナリファイルから読む")
     decode.add_argument(
@@ -190,8 +185,6 @@ def spec_from_args(args: argparse.Namespace) -> PacketSpec:
         spec.robot_id = args.robot_id
     if args.target is not None:
         spec.target = args.target
-    if args.broadcast:
-        spec.broadcast = True
     if args.rate_hz is not None:
         spec.rate_hz = args.rate_hz
 
@@ -271,26 +264,21 @@ def cmd_decode(args: argparse.Namespace) -> int:
         data = parse_hex(sys.stdin.read())
 
     if len(data) == L.PACKET_SIZE:
-        slots = split_datagram(data)
-        non_empty = {rid: cmd for rid, cmd in slots.items() if any(cmd)}
+        robot_id, command = split_datagram(data)
         if args.json_stdout:
             print(
                 json.dumps(
-                    {
-                        str(rid): [f.__dict__ for f in decode_command(cmd)]
-                        for rid, cmd in non_empty.items()
-                    },
+                    {str(robot_id): [f.__dict__ for f in decode_command(command)]},
                     ensure_ascii=False,
                     default=str,
                 )
             )
             return EXIT_OK
-        for robot_id, command in non_empty.items():
-            print(f"--- slot {robot_id} ---")
-            print(hex_dump(command))
-            print(field_table(decode_command(command)))
-        if not non_empty:
-            print("全スロットが空（64B ゼロ埋め）")
+        print(f"--- robot {robot_id} ---")
+        print(hex_dump(command))
+        print(field_table(decode_command(command)))
+        if not any(command):
+            print("指令が空（64B ゼロ。CM4 は採用しない）")
         return EXIT_OK
 
     if len(data) != L.CMD_SIZE:

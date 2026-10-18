@@ -268,20 +268,20 @@ def render(
     comm = parse_comm_config(sender_text)
 
     cmd_size = comm["AI_CMD_V2_SIZE"]
-    slots = comm["AI_CMD_V2_ROBOT_NUM"]
+    robot_num = comm["AI_CMD_V2_ROBOT_NUM"]
 
     lines: list[str] = [LICENSE_HEADER, BANNER, ""]
     lines.append("import math")
     lines.append("")
     lines.append("# --- framing (ibis_sender_node.cpp CommConfig) ---")
     lines.append(f"CMD_SIZE = {cmd_size}")
-    lines.append(f"SLOTS = {slots}")
-    lines.append("SLOT_SIZE = CMD_SIZE + 1")
-    lines.append("PACKET_SIZE = SLOT_SIZE * SLOTS")
-    lines.append(f"DEFAULT_PORT = {comm['DEFAULT_PORT']}")
-    lines.append(f"BROADCAST_ADDRESS = {comm['BROADCAST_ADDRESS']!r}")
+    lines.append(f"ROBOT_NUM = {robot_num}")
     lines.append(
-        f"MAX_ROBOT_ID = SLOTS - 1  # {slots} スロット固定。{slots} 番以上は符号化できない"
+        "PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [robot_id][64B] を 1 データグラム"
+    )
+    lines.append(f"DEFAULT_PORT = {comm['DEFAULT_PORT']}")
+    lines.append(
+        f"MAX_ROBOT_ID = ROBOT_NUM - 1  # {robot_num} 台固定。{robot_num} 番以上は CM4 が受け付けない"
     )
     lines.append(f"CHECK_COUNTER_MAX = {parse_counter_max(sender_text)}")
     lines.append(f"MODE_ARGS_SIZE = {defines['MODE_ARGS_SIZE']}")

@@ -31,17 +31,19 @@ limitations under the License.
   <!-- ネットワークポート/アドレス自動設定（sim引数に基づく） -->
   <!-- ============================================================ -->
   <!-- sim=true の場合（ローカルシミュレーション） -->
-  <let name="ibis_target_address" value="127.0.0.1" if="$(var sim)"/>
+  <!-- 全機体の指令を同じ cm4_sim へ送る（cm4_sim が先頭の robot_id で振り分ける） -->
+  <let name="ibis_unicast_to_robot_ip" value="false" if="$(var sim)"/>
   <let name="vision_port" value="10020" if="$(var sim)"/>
   <let name="referee_port" value="11003" if="$(var sim)"/>
 
   <!-- sim=false の場合（実機ネットワーク） -->
-  <let name="ibis_target_address" value="192.168.20.255" unless="$(var sim)"/>
+  <let name="ibis_unicast_to_robot_ip" value="true" unless="$(var sim)"/>
   <let name="vision_port" value="10006" unless="$(var sim)"/>
   <let name="referee_port" value="10003" unless="$(var sim)"/>
 
   <!-- 共通固定設定 -->
   <let name="tracker_port" value="11010"/>
+  <let name="ibis_target_address" value="127.0.0.1"/>
   <let name="ibis_target_port" value="12345"/>
 
   <!-- 使用ポート情報の表示 -->
@@ -155,6 +157,7 @@ limitations under the License.
   <!-- sender -->
   <node pkg="crane_sender" exec="ibis_sender_node">
     <param name="no_movement" value="false"/>
+    <param name="unicast_to_robot_ip" value="$(var ibis_unicast_to_robot_ip)"/>
     <param name="target_address" value="$(var ibis_target_address)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
     <param name="latency_ms" value="$(var sender_latency_ms)"/>

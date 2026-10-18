@@ -40,7 +40,7 @@ def test_dry_run_json_shape(capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["address"] == "192.168.20.107"
     assert len(payload["command_hex"]) == 128  # 64 バイト
-    assert payload["datagram_size"] == 715
+    assert payload["datagram_size"] == 65
     assert any(f["key"] == "polar.target_global_velocity_r" for f in payload["fields"])
 
 

@@ -24,12 +24,10 @@ import math
 
 # --- framing (ibis_sender_node.cpp CommConfig) ---
 CMD_SIZE = 64
-SLOTS = 11
-SLOT_SIZE = CMD_SIZE + 1
-PACKET_SIZE = SLOT_SIZE * SLOTS
+ROBOT_NUM = 11
+PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [robot_id][64B] を 1 データグラム
 DEFAULT_PORT = 12345
-BROADCAST_ADDRESS = "192.168.20.255"
-MAX_ROBOT_ID = SLOTS - 1  # 11 スロット固定。11 番以上は符号化できない
+MAX_ROBOT_ID = ROBOT_NUM - 1  # 11 台固定。11 番以上は CM4 が受け付けない
 CHECK_COUNTER_MAX = 200
 MODE_ARGS_SIZE = 8
 

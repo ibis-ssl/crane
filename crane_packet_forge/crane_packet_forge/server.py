@@ -240,11 +240,10 @@ def create_app(
             {
                 "cmd_size": L.CMD_SIZE,
                 "packet_size": L.PACKET_SIZE,
-                "slots": L.SLOTS,
+                "robot_num": L.ROBOT_NUM,
                 "max_robot_id": L.MAX_ROBOT_ID,
                 "check_counter_max": L.CHECK_COUNTER_MAX,
                 "default_port": L.DEFAULT_PORT,
-                "broadcast_address": L.BROADCAST_ADDRESS,
                 "control_modes": L.CONTROL_MODES,
                 "group_labels": F.GROUP_LABELS,
                 "fields": [

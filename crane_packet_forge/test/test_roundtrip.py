@@ -227,28 +227,21 @@ def test_zeros_base_means_negative_range() -> None:
     ] == pytest.approx(0.0, abs=1e-3)
 
 
-@pytest.mark.parametrize("robot_id", range(L.SLOTS))
+@pytest.mark.parametrize("robot_id", range(L.ROBOT_NUM))
 def test_datagram_framing(robot_id) -> None:
-    """715 バイト。全 11 スロットを常に送り、先頭バイトがスロット番号を兼ねる。"""
+    """65 バイト。先頭バイトが robot_id で、その後に 64B の指令が続く。"""
     spec = PacketSpec(robot_id=robot_id)
     spec.fields["check_counter"] = 42
     command = assemble_command(spec)
     datagram = build_datagram(command, robot_id)
 
     assert len(datagram) == L.PACKET_SIZE
-    slots = split_datagram(datagram)
-    assert sorted(slots) == list(range(L.SLOTS))
-    assert slots[robot_id] == command
-    for other, payload in slots.items():
-        if other != robot_id:
-            assert payload == bytes(L.CMD_SIZE), (
-                "未使用スロットはゼロ埋めでなければならない"
-            )
+    assert split_datagram(datagram) == (robot_id, command)
 
 
-def test_robot_id_beyond_slots_is_rejected() -> None:
+def test_robot_id_beyond_robot_num_is_rejected() -> None:
     with pytest.raises(ValueError):
-        build_datagram(bytes(L.CMD_SIZE), L.SLOTS)
+        build_datagram(bytes(L.CMD_SIZE), L.ROBOT_NUM)
 
 
 def test_kick_power_quantization_is_lossy_but_stable() -> None:

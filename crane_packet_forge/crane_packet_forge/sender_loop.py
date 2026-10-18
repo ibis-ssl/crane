@@ -118,7 +118,6 @@ class SenderSession:
             address,
             port=self._opt.port,
             interface_ip=self._opt.interface_ip,
-            broadcast=spec.broadcast,
         )
         self._stop.clear()
         self.stats = LoopStats(
