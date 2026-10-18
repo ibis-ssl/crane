@@ -87,8 +87,8 @@ CLI と GUI が共有する唯一の入力形式です。`--spec` で読み、GU
 ```
 
 `base` は未指定フィールドの埋め方です。`neutral`（既定）は 2 バイト値に **0.0 を符号化** します。
-`zeros` は生ゼロのままです。64 バイトすべてがゼロの指令は CM4 が採用しません。また、
-**0x0000 は 0 ではなく -range**（速度リミットなら -32.767）を意味します。
+`zeros` は生ゼロのままです。生ゼロは 0 を意味しないので注意してください
+（[ゼロ埋めはゼロ値にならない](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#ゼロ埋めはゼロ値にならない)）。
 
 `raw_bytes` はフィールドより後に適用されるので常に勝ちます。
 
@@ -129,13 +129,12 @@ python3 ../scenario_test/inject_feedback.py --robot-id 7 --duration 10 --multica
 - **`flags.is_vision_available` が 0 だと G474 は出力しません。** 無指令のキープアライブには
   これで正しく、動作試験には 1 が要ります
 - **`control_mode` 4（位置指令）は CM4 が HEAD の機体だけ**です。旧 CM4 + G474 へ素通しすると暴走します
-- `robot_id` は **0..10**。データグラムは機体ごとに 65 バイト（先頭が `robot_id`）で、その機体の CM4 `192.168.20.(100+N)` へユニキャストします。11 番以上は CM4 が受け付けません
+- `robot_id` は **0..10**。宛先と形式は [機体別の制御パケット](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#機体別の制御パケット65-バイト) のとおりです
 - 読み直して組み直すと 2 バイト値が最大 1 LSB 落ちることがあります。`convertFloatToTwoByte` が
   丸めずに切り捨てるためで、C++ 側もまったく同じ挙動です（65536 通り中 189 通り）。
   発散はせず 3 パス以内・累積 2 LSB 以内で止まります
-- フィードバックの byte 2 は **CRC ではありません**。G474 は定数 10 を書くだけなので検証に使いません
-  （[robot_feedback_protocol.hpp](https://github.com/ibis-ssl/crane/blob/develop/crane_robot_receiver/include/crane_robot_receiver/robot_feedback_protocol.hpp)）。
-  判定は同期バイトだけで行います
+- フィードバックの byte 2 は検証に使わず、判定は同期バイトだけで行います
+  （[フィードバックパケット](https://github.com/ibis-ssl/specs/blob/main/common/feedback_packet.md)）
 
 ## レイアウトの正本
 
@@ -152,7 +151,8 @@ ros2 run crane_packet_forge dump_golden > test/golden_vectors.json  # 基準ベ�
 **±M_PI ではなく ±32.767** です。
 
 パケット仕様を変えるときは Crane / Orion_CM4 / G474 の同期と統合通信テストが要ります。
-[ネットワークと実機通信](https://github.com/ibis-ssl/crane/blob/develop/docs/network.md#通信仕様を変更するとき)を参照してください。
+[ネットワークと実機通信](https://github.com/ibis-ssl/crane/blob/develop/docs/network.md#通信仕様を変更するとき)と
+[正本と一致検査](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#正本と一致検査)を参照してください。
 
 ## テスト
 

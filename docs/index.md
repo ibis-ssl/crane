@@ -13,10 +13,10 @@ Crane は Vision から世界モデルを作り、セッションで役割を割
 
 - [座標・単位](coordinates.md) / [競技ルールへの対応](rule.md)
 - [スキルの追加](skill.md) / [WorldModelの利用](world_model_wrapper.md) / [可視化](visualizer.md)
-- [局所経路計画](rvo2_local_planner.md) / [CM4・cm4-simでの位置制御](cm4_position_control.md)
+- [局所経路計画](rvo2_local_planner.md) / [CM4・cm4-simでの位置制御](network.md#ロボット側の位置制御)
 - [ボールトラッキング](ball_tracking_system.md)
 - [攻撃](offense.md) / [Attacker](attacker.md) / [パス](pass.md) / [守備](defense.md)
 
-API・設定値・実装一覧はソースが正本です。このガイドには手順・設計理由・制約を残します。
+ロボット全体の仕様（パケット・ポート・停止判定）は [ibis-ssl/specs](https://github.com/ibis-ssl/specs) が正本です。API・設定値・実装一覧はソースが正本です。このガイドには手順・設計理由・制約を残します。
 
 この `docs/` は [同期設定](https://github.com/ibis-ssl/crane/blob/develop/.github/sync.yml) で外部ドキュメントへコピーされます。削除したページが公開先からも消えるかは同期アクションの設定を確認してから反映し、この変更では公開操作を行いません。
