@@ -6,7 +6,7 @@ Crane は、無線通信の遅延やジッターの影響を抑えて高い追�
 
 従来の方式では、ホストPC上の Crane が位置フィードバックを受けて速度指令（mode 3）を計算し、Wi-Fi 経由でロボットへ送信していました。この構成では、無線ネットワークの遅延・ジッター・パケット欠損が位置制御ループ（閉ループ）の内側に含まれ、急加減速時の振動や追従遅れの原因となります。
 
-ロボット側位置制御（Robot-side Position Control）では、Crane は目標位置や終端速度を含む位置指令（ワイヤ mode 4）を送信し、ロボット側の CM4 が高周期（1000 Hz）で位置制御ループを閉じます。
+ロボット側位置制御（Robot-side Position Control）では、Crane は目標位置や終端速度を含む位置指令（ワイヤ mode 4）を送信し、ロボット側の CM4 が位置制御ループを閉じます（実機の `ai_cmd_v2.out` は 1 kHz でポーリングし、G474 への指令は `--tx-rate-hz`（既定 100 Hz）で送ります。1000 Hz は `cm4_sim` の `--rate-hz` の既定値です）。
 
 - **不変条件**: システム全体で位置制御ループは**ちょうど1つ**です。Crane 側に位置制御ループはありません（二重ループを作らないこと）。
 - **無線区間の分離**: 不安定な無線通信区間が制御ループの外側に出るため、通信に多少のジッターや遅延があっても安定した位置追従を維持できます。
@@ -24,7 +24,7 @@ crane --(UDP:12345 mode 4)--> cm4-sim --(UDP:12346 mode 3)--> simulator-cli
   +-- multicast: 224.5.20.(100+id):50100+id (cm4-sim が再配信)----+
 ```
 
-- **Crane 送信先**: ポート `12345`（`cm4-sim` の入力ポート）
+- **Crane 送信先**: `127.0.0.1:12345`（`cm4-sim` の入力ポート）。機体ごとに 65 バイト（`[robot_id][64B]`）を送り、`cm4-sim` が先頭の `robot_id` で振り分けます
 - **cm4-sim 出力先**: ポート `12346`（`simulator-cli` の ibis 入力ポート）
 - **フィードバック**: `simulator-cli` から `cm4-sim` へ unicast（`127.0.0.1:50100+id`）で届き、`cm4-sim` が multicast（`224.5.20.(100+id):50100+id`）へ再配信して Crane が受信します。
 
@@ -33,13 +33,13 @@ crane --(UDP:12345 mode 4)--> cm4-sim --(UDP:12346 mode 3)--> simulator-cli
 実機では、ロボットに搭載された Raspberry Pi CM4（[Orion_CM4](https://github.com/ibis-ssl/Orion_CM4)）が位置制御ループを実行します。
 
 ```text
-Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
-  |                                        ^
-  +--(Wi-Fi Broadcast:12350 ゲイン設定)----+
+Crane --(Wi-Fi Unicast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
+  |                                      ^
+  +--(Wi-Fi Unicast:12350 ゲイン設定)----+
 ```
 
-- **Crane 送信先**: ブロードキャスト `192.168.20.255:12345`
-- **設定送信先**: ブロードキャスト `192.168.20.255:12350`
+- **Crane 送信先**: 機体 N の CM4 `192.168.20.(100+N):12345` へ、機体ごとに 65 バイト（`[robot_id][64B]`）をユニキャスト
+- **設定送信先**: 指令を送った機体それぞれの `192.168.20.(100+N):12350` へユニキャスト
 - **制御の流れ**: CM4 が位置制御器で速度を計算し、下位マイコン（G474）へ UART で送信します。
 
 ## 起動手順
@@ -54,7 +54,7 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
    ```
 
 2. **Crane の起動**
-   `planner:=visibility_graph` を指定して起動します（送信先ポート `12345`、アドレス `127.0.0.1`、multicast フィードバック受信は `sim:=true` により自動設定されます）。
+   `planner:=visibility_graph` を指定して起動します（`unicast_to_robot_ip:=false` となり全機体を `127.0.0.1:12345` へ送ります。multicast フィードバック受信は `sim:=true` により自動設定されます）。
 
    ```bash
    ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph
@@ -70,7 +70,7 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
    ```
 
 2. **Crane の起動**
-   `sim:=false` で起動します（送信先ポート `12345`、ブロードキャストアドレス `192.168.20.255` に自動設定されます）。
+   `sim:=false` で起動します（`unicast_to_robot_ip:=true` となり、各機体の CM4 `192.168.20.(100+N):12345` へ送ります）。
 
    ```bash
    ros2 launch crane_bringup crane.launch.xml sim:=false planner:=visibility_graph
@@ -98,7 +98,7 @@ Crane --(Wi-Fi Broadcast:12345 mode 4)--> CM4 --(UART)--> G474 (モータ制御)
 
 ## パラメータ設定と動的更新
 
-Crane の [ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) は、1 秒ごとに位置制御設定パケット（28 バイト固定、v2）をポート `12350` へブロードキャストします。
+Crane の [ibis_sender_node](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/src/ibis_sender_node.cpp) は、1 秒ごとに位置制御設定パケット（28 バイト固定、v2）を、直近に指令を送った機体それぞれのポート `12350` へユニキャストで送ります（シミュレーションでは宛先が同じ `cm4-sim` なので 1 回だけ送ります）。
 
 CM4 側の制御則は **PID** です。ただし `ki` / `kd` の既定は `0` で、その場合は従来どおりの P 制御に恒等的に縮退します。PID を使うときは現地で `ki` / `kd` を上げてください。
 
@@ -133,7 +133,7 @@ CM4 は受信した値をクランプせず、**データグラムごと破棄**
 > **リリース順序**: この変更は Orion_CM4 側の更新とセットです。crane だけ、あるいは CM4 だけを配ってはいけません。
 >
 > 1. Orion_CM4 の PID 対応をマージし、`ghcr.io/ibis-ssl/orion-cm4-sim` のイメージを発行する
-> 2. `docker/dev/docker-compose.yaml` と `docker/scenario/docker-compose.yaml` の `CM4_SIM_TAG` 既定値（commit SHA）を新しいイメージへ更新する
+> 2. `docker/dev/docker-compose.yaml`、`docker/scenario/docker-compose.yaml`（`.local.yaml` を含む）、`docker/match-vs-tigers/docker-compose.yaml` の `CM4_SIM_TAG` 既定値（commit SHA）を新しいイメージへ更新する
 > 3. 実機の CM4 へ新しいバイナリを配る（`cm4-fleet deploy`）
 >
 > 2 を飛ばすと、`cm4-sim` を挟むシミュレーションでゲイン設定が全数拒否され、`kp` の変更すら一切効かなくなります（`docker compose -f docker/dev/docker-compose.yaml logs cm4-sim` に `位置制御の設定パケットを拒否しました: WrongSize` が出ます）。
