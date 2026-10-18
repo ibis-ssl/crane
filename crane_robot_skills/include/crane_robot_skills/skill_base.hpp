@@ -151,7 +151,9 @@ public:
 
   void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
 
-  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
+  virtual crane_msgs::msg::RobotCommand getRobotCommand() { return command->getMsg(); }
+
+  auto & commander() { return command; }
 
   template <class T>
   auto getParameter(const std::string & key) const
@@ -224,10 +226,6 @@ public:
   }
 
   virtual Status update() = 0;
-
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
-
-  auto & commander() { return command; }
 };
 
 class SkillBaseWithState : public SkillInterface
@@ -305,10 +303,6 @@ public:
 
     return status;
   }
-
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
-
-  auto & commander() { return command; }
 
   void addStateFunction(int state, StateFunctionType function)
   {
