@@ -9,28 +9,11 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
-#include <optional>
 #include <rclcpp/logging.hpp>
 #include <string>
 
 namespace crane
 {
-
-/**
- * @brief パッケージの share ディレクトリパスを取得する（取得失敗時は nullopt）
- *
- * @param package_name ROS 2 パッケージ名
- * @return std::optional<std::filesystem::path> パッケージの share ディレクトリパス
- */
-inline auto get_package_share_path(const std::string & package_name)
-  -> std::optional<std::filesystem::path>
-{
-  try {
-    return std::filesystem::path(ament_index_cpp::get_package_share_directory(package_name));
-  } catch (const std::exception &) {
-    return std::nullopt;
-  }
-}
 
 /**
  * @brief 設定ファイルやアセット等のパッケージ相対パスを安全に解決する
