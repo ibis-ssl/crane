@@ -7,9 +7,9 @@
 #ifndef CRANE_PHYSICS__TRAVEL_TIME_HPP_
 #define CRANE_PHYSICS__TRAVEL_TIME_HPP_
 
+#include <algorithm>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_physics/bang_bang_trajectory.hpp>
-#include <crane_physics/robot_info.hpp>
-#include <memory>
 
 namespace crane
 {
@@ -40,14 +40,6 @@ inline auto getTravelTimeTrapezoidal(
   traj.generate(0.0, dist, v0, max_velocity, max_acceleration);
 
   return traj.getTotalTime();
-}
-
-inline auto getTravelTimeTrapezoidal(
-  std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration,
-  const double max_velocity) -> double
-{
-  return getTravelTimeTrapezoidal(
-    robot->pose.pos, robot->vel.linear, target, max_acceleration, max_velocity);
 }
 
 /**

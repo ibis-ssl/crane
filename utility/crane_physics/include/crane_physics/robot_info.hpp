@@ -12,21 +12,10 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_physics/ball_contact.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <memory>
 #include <optional>
 #include <rclcpp/time.hpp>
-
-// 前方宣言でcircular dependencyを回避
-namespace crane
-{
-auto getTravelTimeTrapezoidal(
-  const Point & current_pos, const Vector2 & current_vel, const Point & target,
-  const double max_acceleration, const double max_velocity) -> double;
-
-auto getPredictedPositionTrapezoidal(
-  const Point & current_pos, const Vector2 & current_vel, const Point & target_pos,
-  const double time, const double max_acceleration, const double max_velocity) -> Point;
-}  // namespace crane
 
 namespace crane
 {
