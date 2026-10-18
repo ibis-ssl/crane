@@ -49,7 +49,6 @@ std::string FreeKicker::getStateName(int s)
 void FreeKicker::resetInternalState()
 {
   kick_started_ = false;
-  target_locked_ = false;
   use_chip_ = false;
   chip_distance_ = getParameter<double>("target_chip_distance");
   last_chose_shoot_ = false;
@@ -105,7 +104,6 @@ void FreeKicker::initialize()
       approach_entry_time_ = std::chrono::steady_clock::now();
       // standoff_ を安定させるため APPROACH 開始の 1 フレーム目でロック
       kick_target_ = selectKickTarget();
-      target_locked_ = true;
     }
 
     const Point ball_pos = world_model()->ball().pos;
@@ -174,7 +172,6 @@ void FreeKicker::initialize()
 
   addStateFunction(s(S::ALIGN), [this]() -> Status {
     if (!align_entry_time_.has_value()) {
-      target_locked_ = true;
       align_entry_time_ = std::chrono::steady_clock::now();
       // APPROACH 最終地点と整合させるため、進入時のボール位置を基準に1回だけ計算してロック
       const Point ball_pos = world_model()->ball().pos;
