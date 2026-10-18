@@ -1,0 +1,4 @@
+[submodule "specs"]
+	path = specs
+	url = https://github.com/ibis-ssl/specs.git
+	branch = main
