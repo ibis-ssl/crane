@@ -46,8 +46,6 @@ public:
   }
 
   KickOld kick_skill;
-
-  std::optional<Point> start_ball_point = std::nullopt;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__PENALTY_KICK_HPP_

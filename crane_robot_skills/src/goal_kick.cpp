@@ -9,6 +9,19 @@
 
 namespace crane::skills
 {
+namespace
+{
+// from から angle 方向へ 20 m の線分と、攻撃ゴールの x にあるフィールド幅いっぱいの縦線との交点
+auto attackGoalLineIntersections(
+  const WorldModelWrapper::SharedPtr & world_model, const Point & from, double angle)
+{
+  Segment segment{from, from + getNormVec(angle) * 20.0};
+  Segment goal_line(
+    Point(world_model->getAttackGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+    Point(world_model->getAttackGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
+  return getIntersections(segment, goal_line);
+}
+}  // namespace
 
 void GoalKick::initialize()
 {
@@ -27,17 +40,12 @@ Status GoalKick::update()
     world_model(), visualizer);
 
   Point target = world_model()->ball().pos + getNormVec(best_angle) * 0.5;
-  {
-    Segment segment{
-      world_model()->ball().pos, world_model()->ball().pos + getNormVec(best_angle) * 20.0};
-    Segment goal_line(
-      Point(world_model()->getAttackGoalCenter().x(), world_model()->fieldSize().y() * 0.5),
-      Point(world_model()->getAttackGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
-    if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
-      visualizer->arrow(
-        world_model()->ball().pos, (intersections.front() - world_model()->ball().pos).normalized(),
-        (intersections.front() - world_model()->ball().pos).norm(), "red", 20);
-    }
+  const auto intersections =
+    attackGoalLineIntersections(world_model(), world_model()->ball().pos, best_angle);
+  if (not intersections.empty()) {
+    visualizer->arrow(
+      world_model()->ball().pos, (intersections.front() - world_model()->ball().pos).normalized(),
+      (intersections.front() - world_model()->ball().pos).norm(), "red", 20);
   }
   if (auto dribble_power = getParameter<double>("dribble_power"); dribble_power > 0.0) {
     kick_skill.setParameter("with_dribble", true);
@@ -57,22 +65,10 @@ double GoalKick::getBestAngleToShootFromPoint(
 {
   auto [best_angle, goal_angle_width] =
     world_model->getLargestAttackGoalAngleRangeFromPoint(from_point);
-  auto intersection_positive = [&]() {
-    double angle = best_angle + goal_angle_width * 0.5;
-    Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
-    Segment goal_line(
-      Point(world_model->getAttackGoalCenter().x(), world_model->fieldSize().y() * 0.5),
-      Point(world_model->getAttackGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
-    return getIntersections(segment, goal_line);
-  }();
-  auto intersection_negative = [&]() {
-    double angle = best_angle - goal_angle_width * 0.5;
-    Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
-    Segment goal_line(
-      Point(world_model->getAttackGoalCenter().x(), world_model->fieldSize().y() * 0.5),
-      Point(world_model->getAttackGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
-    return getIntersections(segment, goal_line);
-  }();
+  auto intersection_positive =
+    attackGoalLineIntersections(world_model, from_point, best_angle + goal_angle_width * 0.5);
+  auto intersection_negative =
+    attackGoalLineIntersections(world_model, from_point, best_angle - goal_angle_width * 0.5);
 
   if (intersection_positive.empty() or intersection_negative.empty()) {
     return best_angle;
