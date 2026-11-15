@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <array>
 #include <boost/asio.hpp>
 #include <cmath>
 #include <crane_comm/unicast.hpp>
@@ -58,6 +59,11 @@ public:
       ++invalid_packet_count_;
       return;
     }
+    if (!validation.crc_valid) {
+      ++crc_error_count_;
+      ++invalid_packet_count_;
+      return;
+    }
 
     RobotFeedback new_packet = parseBuffer(buf, stamp);
     updateCounterStatsLocked(new_packet.counter);
@@ -89,11 +95,6 @@ public:
     result.error_info = latest.error_info;
     result.error_value = latest.error_value;
     result.ball_sensor = latest.ball_sensor;
-    result.camera_pos_x_div2 = latest.camera_pos_x_div2;
-    result.camera_pos_y = latest.camera_pos_y;
-    result.camera_radius_div4 = latest.camera_radius_div4;
-    result.camera_fps = latest.camera_fps;
-    result.check_ver = latest.check_ver;
     result.values = latest.values;
     std::copy(
       std::begin(latest.ball_detection), std::end(latest.ball_detection),
@@ -164,6 +165,7 @@ public:
     uint32_t valid_packet_count = 0;
     uint32_t invalid_packet_count = 0;
     uint32_t sync_error_count = 0;
+    uint32_t crc_error_count = 0;
     uint32_t size_mismatch_count = 0;
     uint32_t counter_jump_count = 0;
   };
@@ -181,6 +183,7 @@ public:
     result.valid_packet_count = valid_packet_count_;
     result.invalid_packet_count = invalid_packet_count_;
     result.sync_error_count = sync_error_count_;
+    result.crc_error_count = crc_error_count_;
     result.size_mismatch_count = size_mismatch_count_;
     result.counter_jump_count = counter_jump_count_;
     return result;
@@ -203,7 +206,6 @@ private:
     feedback.ball_detection[0] = protocol::readByte(buf, protocol::offset::BALL_DETECTION_0);
     feedback.ball_detection[1] = protocol::readByte(buf, protocol::offset::BALL_DETECTION_1);
     feedback.ball_detection[2] = protocol::readByte(buf, protocol::offset::BALL_DETECTION_2);
-    feedback.ball_detection[3] = protocol::readByte(buf, protocol::offset::BALL_DETECTION_3);
     feedback.kick_state =
       protocol::readByte(buf, protocol::offset::KICK_STATE) * protocol::KICK_STATE_SCALE;
 
@@ -213,23 +215,19 @@ private:
     feedback.error_value = protocol::readFloat(buf, protocol::offset::ERROR_VALUE);
 
     // モーター電流
-    feedback.motor_current[0] =
-      protocol::readByte(buf, protocol::offset::MOTOR_CURRENT_0) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[1] =
-      protocol::readByte(buf, protocol::offset::MOTOR_CURRENT_1) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[2] =
-      protocol::readByte(buf, protocol::offset::MOTOR_CURRENT_2) / protocol::MOTOR_CURRENT_SCALE;
-    feedback.motor_current[3] =
-      protocol::readByte(buf, protocol::offset::MOTOR_CURRENT_3) / protocol::MOTOR_CURRENT_SCALE;
+    for (int i = 0; i < 4; ++i) {
+      feedback.motor_current[i] = protocol::readByte(buf, protocol::offset::MOTOR_CURRENT_0 + i) /
+                                  protocol::MOTOR_CURRENT_SCALE;
+    }
 
     // 温度
-    feedback.temperature[0] = protocol::readByte(buf, protocol::offset::TEMPERATURE_0);
-    feedback.temperature[1] = protocol::readByte(buf, protocol::offset::TEMPERATURE_1);
-    feedback.temperature[2] = protocol::readByte(buf, protocol::offset::TEMPERATURE_2);
-    feedback.temperature[3] = protocol::readByte(buf, protocol::offset::TEMPERATURE_3);
-    feedback.temperature[4] = protocol::readByte(buf, protocol::offset::TEMPERATURE_4);
-    feedback.temperature[5] = protocol::readByte(buf, protocol::offset::TEMPERATURE_5);
-    feedback.temperature[6] = protocol::readByte(buf, protocol::offset::TEMPERATURE_6);
+    // RobotFeedback.msg の TEMP_* の並び（モーター 4、FET、コイル 2）に合わせる
+    for (int i = 0; i < 4; ++i) {
+      feedback.temperature[i] = protocol::readByte(buf, protocol::offset::TEMP_MOTOR_0 + i);
+    }
+    feedback.temperature[4] = protocol::readByte(buf, protocol::offset::TEMP_FET);
+    feedback.temperature[5] = protocol::readByte(buf, protocol::offset::TEMP_COIL_0);
+    feedback.temperature[6] = protocol::readByte(buf, protocol::offset::TEMP_COIL_1);
 
     // 角度と電圧
     feedback.diff_angle = protocol::readFloat(buf, protocol::offset::DIFF_ANGLE);
@@ -241,24 +239,32 @@ private:
     feedback.odom_speed[0] = protocol::readFloat(buf, protocol::offset::ODOM_SPEED_X);
     feedback.odom_speed[1] = protocol::readFloat(buf, protocol::offset::ODOM_SPEED_Y);
 
-    feedback.camera_pos_x_div2 = protocol::readByte(buf, protocol::offset::CAMERA_POS_X_DIV2);
-    feedback.camera_pos_y = protocol::readByte(buf, protocol::offset::CAMERA_POS_Y);
-    feedback.camera_radius_div4 = protocol::readByte(buf, protocol::offset::CAMERA_RADIUS_DIV4);
-    feedback.camera_fps = protocol::readByte(buf, protocol::offset::CAMERA_FPS);
-    feedback.check_ver = feedback.camera_pos_x_div2;
-
     // マウスセンサー
     feedback.mouse_odom[0] = protocol::readFloat(buf, protocol::offset::MOUSE_ODOM_X);
     feedback.mouse_odom[1] = protocol::readFloat(buf, protocol::offset::MOUSE_ODOM_Y);
     feedback.mouse_vel[0] = protocol::readFloat(buf, protocol::offset::MOUSE_VEL_X);
     feedback.mouse_vel[1] = protocol::readFloat(buf, protocol::offset::MOUSE_VEL_Y);
 
-    // デバッグ値
-    feedback.values.reserve(protocol::TX_VALUE_COUNT);
-    for (size_t i = 0; i < protocol::TX_VALUE_COUNT; ++i) {
-      const int offset =
-        protocol::offset::DEBUG_VALUES_START + static_cast<int>(i * protocol::FLOAT_SIZE);
-      feedback.values.push_back(protocol::readFloat(buf, offset));
+    // RobotFeedback.msg の VALUES_* の並び
+    const std::array<int, 14> values_offsets = {
+      protocol::offset::MOUSE_ODOM_X,
+      protocol::offset::MOUSE_ODOM_Y,
+      protocol::offset::MOUSE_VEL_X,
+      protocol::offset::MOUSE_VEL_Y,
+      protocol::offset::OUTPUT_VEL_X,
+      protocol::offset::OUTPUT_VEL_Y,
+      protocol::offset::MOTOR_FEEDBACK_0,
+      protocol::offset::MOTOR_FEEDBACK_0 + protocol::FLOAT_SIZE,
+      protocol::offset::MOTOR_FEEDBACK_0 + 2 * protocol::FLOAT_SIZE,
+      protocol::offset::MOTOR_FEEDBACK_0 + 3 * protocol::FLOAT_SIZE,
+      protocol::offset::LOCAL_ODOM_SPEED_MVF_X,
+      protocol::offset::LOCAL_ODOM_SPEED_MVF_Y,
+      protocol::offset::LOCAL_ODOM_SPEED_MVF_W,
+      protocol::offset::MOUSE_QUALITY,
+    };
+    feedback.values.reserve(values_offsets.size());
+    for (const int values_offset : values_offsets) {
+      feedback.values.push_back(protocol::readFloat(buf, values_offset));
     }
 
     return feedback;
@@ -281,6 +287,7 @@ private:
     feedback.valid_packet_count = valid_packet_count_;
     feedback.invalid_packet_count = invalid_packet_count_;
     feedback.sync_error_count = sync_error_count_;
+    feedback.crc_error_count = crc_error_count_;
     feedback.size_mismatch_count = size_mismatch_count_;
     feedback.counter_jump_count = counter_jump_count_;
   }
@@ -328,6 +335,7 @@ private:
   uint32_t valid_packet_count_ = 0;
   uint32_t invalid_packet_count_ = 0;
   uint32_t sync_error_count_ = 0;
+  uint32_t crc_error_count_ = 0;
   uint32_t size_mismatch_count_ = 0;
   uint32_t counter_jump_count_ = 0;
   bool has_last_counter_ = false;
@@ -394,6 +402,7 @@ public:
           robot_feedback_msg.valid_packet_count = s.valid_packet_count;
           robot_feedback_msg.invalid_packet_count = s.invalid_packet_count;
           robot_feedback_msg.sync_error_count = s.sync_error_count;
+          robot_feedback_msg.crc_error_count = s.crc_error_count;
           robot_feedback_msg.size_mismatch_count = s.size_mismatch_count;
           robot_feedback_msg.counter_jump_count = s.counter_jump_count;
         }
@@ -424,11 +433,6 @@ public:
           robot_feedback->mouse_vel.begin(), robot_feedback->mouse_vel.end());
         robot_feedback_msg.voltage.assign(
           robot_feedback->voltage.begin(), robot_feedback->voltage.end());
-        robot_feedback_msg.camera_pos_x_div2 = robot_feedback->camera_pos_x_div2;
-        robot_feedback_msg.camera_pos_y = robot_feedback->camera_pos_y;
-        robot_feedback_msg.camera_radius_div4 = robot_feedback->camera_radius_div4;
-        robot_feedback_msg.camera_fps = robot_feedback->camera_fps;
-        robot_feedback_msg.check_ver = robot_feedback->check_ver;
         robot_feedback_msg.values = robot_feedback->values;
         msg.feedback.push_back(robot_feedback_msg);
       }

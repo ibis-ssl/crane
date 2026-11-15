@@ -10,6 +10,7 @@ float32 feedback_age_ms
 uint32 valid_packet_count
 uint32 invalid_packet_count
 uint32 sync_error_count
+uint32 crc_error_count
 uint32 size_mismatch_count
 uint32 counter_jump_count
 
@@ -81,6 +82,8 @@ float32[] mouse_vel
 
 float32[] voltage
 
+# 共通 feedback 配置（specs common/feedback_packet.md）にローカルカメラ値は含まれないため、
+# camera_* と check_ver は常に 0。
 uint8 camera_pos_x_div2
 uint8 camera_pos_y
 uint8 camera_radius_div4
