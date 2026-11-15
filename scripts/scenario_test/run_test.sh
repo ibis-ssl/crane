@@ -16,15 +16,15 @@ CRANE_TAG="${CRANE_TAG:-local-scenario}"
 PLANNER="${PLANNER:-visibility_graph}"
 
 # 標準構成のトポロジ:
-#   crane --12345 mode4--> cm4-sim --12346 mode3--> simulator-cli
+#   crane --12400+id mode4--> cm4-sim --12346 mode3--> simulator-cli
 # 位置制御ループは cm4-sim（実機 CM4 相当）が閉じる。
-# CRANE_TARGET_PORT が cm4-sim の入力、IBIS_PORT が simulator-cli の入力。
+# CRANE_SIM_PORT_BASE が cm4-sim の入力、IBIS_PORT が simulator-cli の入力。
 IBIS_PORT="${IBIS_PORT:-12346}"
 # simulator-cli の ibis チーム色。crane の team 引数と揃えること。
 # referee からの自動検出(--ibis-use-referee)は rcst/autoref 環境では
 # チーム名 ibis を引けず永久に解決せず、feedback が 1 パケットも出ない。
 IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR:-yellow}"
-CRANE_TARGET_PORT="${CRANE_TARGET_PORT:-12345}"
+CRANE_SIM_PORT_BASE="${CRANE_SIM_PORT_BASE:-12400}"
 # feedback は実機と同じ multicast で受ける。true にすると crane と cm4-sim が
 # 127.0.0.1:50100+id を奪い合い、SO_REUSEPORT の振り分けは送信元を含む 4-tuple
 # ハッシュで決まるため片方が全パケットを取る。crane 側が当たると cm4-sim は
@@ -62,7 +62,7 @@ echo "=== シナリオテストの実行 ==="
 echo "モード: ${MODE_NAME}"
 echo "テスト: ${TEST_NAME}"
 echo "プランナー: ${PLANNER}"
-echo "経路: crane(${CRANE_TARGET_PORT}) -> cm4-sim -> simulator-cli(${IBIS_PORT})"
+echo "経路: crane(${CRANE_SIM_PORT_BASE}+id) -> cm4-sim -> simulator-cli(${IBIS_PORT})"
 if [ "${FEEDBACK_SIM_MODE}" = "true" ]; then
     echo "feedback: unicast 127.0.0.1:50100+id"
 else
@@ -93,7 +93,7 @@ if [ ! -f "${LOG_RECORDER}" ]; then
 fi
 
 # 念のため前回の残存コンテナを停止・削除。
-# cm4-sim が 12345 を bind したまま残ると今回の構成と衝突する。
+# cm4-sim が 12400+id を bind したまま残ると今回の構成と衝突する。
 # --remove-orphans は旧 profile 構成の残骸も対象にする。
 docker compose -f "${COMPOSE_FILE}" down --remove-orphans 2>/dev/null || true
 
@@ -105,7 +105,7 @@ docker compose -f "${COMPOSE_FILE}" down --remove-orphans 2>/dev/null || true
 echo "Docker Composeでサービスを起動中..."
 cd "${REPO_ROOT}"
 CRANE_TAG="${CRANE_TAG}" PLANNER="${PLANNER}" \
-    IBIS_PORT="${IBIS_PORT}" IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR}" CRANE_TARGET_PORT="${CRANE_TARGET_PORT}" \
+    IBIS_PORT="${IBIS_PORT}" IBIS_TEAM_COLOR="${IBIS_TEAM_COLOR}" CRANE_SIM_PORT_BASE="${CRANE_SIM_PORT_BASE}" \
     FEEDBACK_SIM_MODE="${FEEDBACK_SIM_MODE}" \
     RX_DELAY_MS="${RX_DELAY_MS}" RX_JITTER_MS="${RX_JITTER_MS}" RX_LOSS_RATE="${RX_LOSS_RATE}" \
     CM4_SIM_TAG="${CM4_SIM_TAG}" CM4_ROBOT_IDS="${CM4_ROBOT_IDS}" \
