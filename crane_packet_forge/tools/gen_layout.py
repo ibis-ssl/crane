@@ -327,14 +327,12 @@ def render(
     lines.append(
         f"FEEDBACK_SYNC = (0x{fb['SYNC_0_VALUE']:02X}, 0x{fb['SYNC_1_VALUE']:02X})"
     )
-    lines.append(f"FEEDBACK_TX_VALUE_COUNT = {fb['TX_VALUE_COUNT']}")
     lines.append(f"MOTOR_CURRENT_SCALE = {fb['MOTOR_CURRENT_SCALE']}")
     lines.append(f"KICK_STATE_SCALE = {fb['KICK_STATE_SCALE']}")
     lines.append(f"FLOAT_SIZE = {fb['FLOAT_SIZE']}")
     lines.append(
-        "# byte 2 は CRC ではない。G474 は定数 10 を書くだけなので検証に使わない"
+        "# byte 2 は CRC-8/ATM（byte 3..127 対象）。判定は sync と CRC の両方。"
     )
-    lines.append("# (robot_feedback_protocol.hpp のコメントを参照)。判定は sync のみ。")
     lines.append("FEEDBACK_OFFSETS = {")
     for name, value in sorted(fb_offsets.items(), key=lambda kv: (kv[1], kv[0])):
         lines.append(f"    {name!r}: {value},")

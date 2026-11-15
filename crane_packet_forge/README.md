@@ -133,7 +133,7 @@ python3 ../scenario_test/inject_feedback.py --robot-id 7 --duration 10 --multica
 - 読み直して組み直すと 2 バイト値が最大 1 LSB 落ちることがあります。`convertFloatToTwoByte` が
   丸めずに切り捨てるためで、C++ 側もまったく同じ挙動です（65536 通り中 189 通り）。
   発散はせず 3 パス以内・累積 2 LSB 以内で止まります
-- フィードバックの byte 2 は検証に使わず、判定は同期バイトだけで行います
+- フィードバックは同期バイトと byte 2 の CRC-8/ATM（byte 3..127 対象）の両方で判定します
   （[フィードバックパケット](https://github.com/ibis-ssl/specs/blob/main/common/feedback_packet.md)）
 
 ## レイアウトの正本

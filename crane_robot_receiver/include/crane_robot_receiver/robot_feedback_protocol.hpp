@@ -25,70 +25,56 @@ constexpr size_t PACKET_SIZE = 128;
 
 // 受信バッファサイズ
 constexpr size_t BUFFER_SIZE = 2048;
-constexpr size_t TX_VALUE_COUNT = 14;
 
-// バイトオフセット定義
+// バイトオフセット定義。正本は ibis-ssl/specs の common/feedback_packet.md。
+// 位置・速度・yaw などのバイト位置を旧定義（byte 4 から yaw が始まる配置）から読んではならない。
 namespace offset
 {
 constexpr int SYNC_0 = 0;
 constexpr int SYNC_1 = 1;
-// byte 2 はチェックサムではない。
-// G474 ファームウェア (Core/Src/ai_comm.c の sendRobotInfo()) は
-// `buf[2] = 10;  // CRC, 10:dummy` と定数を書くだけで、CRC は計算していない。
-// Orion_CM4 の doc/feedback_packet.md も
-// 「byte 2 はチェックサムではありません」
-// 「受信側でこの判定を有効にしてはいけません」と明記している。
-// 検証に使うと実機パケットが全て破棄されるため、オフセットの記録だけ残す。
-constexpr int DUMMY_CRC = 2;
+constexpr int CRC = 2;  // CRC-8/ATM。対象は byte 3..127
 constexpr int COUNTER = 3;
 
-constexpr int YAW_ANGLE = 4;
-constexpr int VOLTAGE_0 = 8;
+// コア機能
+constexpr int ERROR_ID = 5;
+constexpr int ERROR_INFO = 7;
+constexpr int ERROR_VALUE = 9;
 
-constexpr int BALL_DETECTION_0 = 12;
-constexpr int BALL_DETECTION_1 = 13;
-constexpr int BALL_DETECTION_2 = 14;
-constexpr int KICK_STATE = 15;
+// メイン基板
+constexpr int YAW_ANGLE = 13;  // imu_yaw_deg
+constexpr int BALL_DETECTION_0 = 17;
+constexpr int BALL_DETECTION_1 = 18;
+constexpr int BALL_DETECTION_2 = 19;  // ball_detection_extra
+constexpr int DIFF_ANGLE = 20;
 
-constexpr int ERROR_ID = 16;
-constexpr int ERROR_INFO = 18;
-constexpr int ERROR_VALUE = 20;
+// 電源基板
+constexpr int VOLTAGE_0 = 24;  // battery_voltage
+constexpr int KICK_STATE = 28;
+constexpr int TEMP_FET = 29;
+constexpr int TEMP_COIL_0 = 30;
+constexpr int TEMP_COIL_1 = 31;
+constexpr int VOLTAGE_1 = 32;  // capacitor_boost_voltage
+constexpr int MOUSE_ODOM_X = 36;
+constexpr int MOUSE_ODOM_Y = 40;
+constexpr int MOUSE_VEL_X = 44;
+constexpr int MOUSE_VEL_Y = 48;
+constexpr int MOUSE_QUALITY = 52;
 
-constexpr int MOTOR_CURRENT_0 = 24;
-constexpr int MOTOR_CURRENT_1 = 25;
-constexpr int MOTOR_CURRENT_2 = 26;
-constexpr int MOTOR_CURRENT_3 = 27;
+// モーター基板
+constexpr int MOTOR_CURRENT_0 = 56;
+constexpr int TEMP_MOTOR_0 = 60;
+constexpr int OUTPUT_VEL_X = 64;
+constexpr int OUTPUT_VEL_Y = 68;
+constexpr int MOTOR_FEEDBACK_0 = 72;
+constexpr int LOCAL_ODOM_SPEED_MVF_X = 88;
+constexpr int LOCAL_ODOM_SPEED_MVF_Y = 92;
+constexpr int LOCAL_ODOM_SPEED_MVF_W = 96;
 
-constexpr int BALL_DETECTION_3 = 28;
-
-constexpr int TEMPERATURE_0 = 29;
-constexpr int TEMPERATURE_1 = 30;
-constexpr int TEMPERATURE_2 = 31;
-constexpr int TEMPERATURE_3 = 32;
-constexpr int TEMPERATURE_4 = 33;
-constexpr int TEMPERATURE_5 = 34;
-constexpr int TEMPERATURE_6 = 35;
-
-constexpr int DIFF_ANGLE = 36;
-constexpr int VOLTAGE_1 = 40;
-
-constexpr int ODOM_X = 44;
-constexpr int ODOM_Y = 48;
-constexpr int ODOM_SPEED_X = 52;
-constexpr int ODOM_SPEED_Y = 56;
-
-constexpr int CAMERA_POS_X_DIV2 = 60;
-constexpr int CAMERA_POS_Y = 61;
-constexpr int CAMERA_RADIUS_DIV4 = 62;
-constexpr int CAMERA_FPS = 63;
-
-constexpr int MOUSE_ODOM_X = 64;
-constexpr int MOUSE_ODOM_Y = 68;
-constexpr int MOUSE_VEL_X = 72;
-constexpr int MOUSE_VEL_Y = 76;
-
-constexpr int DEBUG_VALUES_START = 64;
-constexpr int RESERVED_START = 120;
+// 制御
+constexpr int ODOM_X = 112;  // vision_based_position_x
+constexpr int ODOM_Y = 116;
+constexpr int ODOM_SPEED_X = 120;  // global_odom_speed_x
+constexpr int ODOM_SPEED_Y = 124;
 }  // namespace offset
 
 // 定数値
@@ -97,15 +83,28 @@ constexpr int KICK_STATE_SCALE = 10;
 constexpr int FLOAT_SIZE = 4;
 constexpr uint8_t SYNC_0_VALUE = 0xAB;
 constexpr uint8_t SYNC_1_VALUE = 0xEA;
-// offset::DUMMY_CRC にファームウェアが書く固定値。検証には使わない（上記コメント参照）。
-constexpr uint8_t DUMMY_CRC_VALUE = 10;
+
+// CRC-8/ATM（多項式 0x07、初期値 0、入出力反転なし、最終 XOR 0）。"123456789" → 0xF4
+template <typename BufferT>
+inline auto crc8(const BufferT & buffer, size_t begin, size_t end) -> uint8_t
+{
+  uint8_t crc = 0;
+  for (size_t i = begin; i < end; ++i) {
+    crc ^= static_cast<uint8_t>(buffer[i]);
+    for (int bit = 0; bit < 8; ++bit) {
+      crc = static_cast<uint8_t>((crc & 0x80) ? ((crc << 1) ^ 0x07) : (crc << 1));
+    }
+  }
+  return crc;
+}
 
 struct PacketValidationResult
 {
   bool size_valid = false;
   bool sync_valid = false;
+  bool crc_valid = false;
 
-  [[nodiscard]] auto valid() const -> bool { return size_valid && sync_valid; }
+  [[nodiscard]] auto valid() const -> bool { return size_valid && sync_valid && crc_valid; }
 };
 
 template <typename BufferT>
@@ -128,6 +127,7 @@ inline auto validatePacket(const BufferT & buffer, size_t received_size) -> Pack
 
   result.sync_valid = readRawByte(buffer, offset::SYNC_0) == SYNC_0_VALUE &&
                       readRawByte(buffer, offset::SYNC_1) == SYNC_1_VALUE;
+  result.crc_valid = crc8(buffer, offset::COUNTER, PACKET_SIZE) == readRawByte(buffer, offset::CRC);
   return result;
 }
 
@@ -170,6 +170,7 @@ struct RobotFeedback
 
   float motor_current[4] = {};
 
+  // 新配置の ball_detection は 3 要素で、[3] は常に 0
   uint8_t ball_detection[4] = {};
 
   bool ball_sensor = false;
@@ -196,19 +197,11 @@ struct RobotFeedback
 
   uint32_t sync_error_count = 0;
 
+  uint32_t crc_error_count = 0;
+
   uint32_t size_mismatch_count = 0;
 
   uint32_t counter_jump_count = 0;
-
-  uint8_t camera_pos_x_div2 = 0;
-
-  uint8_t camera_pos_y = 0;
-
-  uint8_t camera_radius_div4 = 0;
-
-  uint8_t camera_fps = 0;
-
-  uint8_t check_ver = 0;
 
   std::vector<float> values;
 };

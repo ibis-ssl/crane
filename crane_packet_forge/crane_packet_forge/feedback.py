@@ -26,6 +26,31 @@ from . import layout as L
 
 _OFF = L.FEEDBACK_OFFSETS
 
+# RobotFeedback.msg の VALUES_* の並び
+_VALUES_OFFSETS = (
+    _OFF["MOUSE_ODOM_X"],
+    _OFF["MOUSE_ODOM_Y"],
+    _OFF["MOUSE_VEL_X"],
+    _OFF["MOUSE_VEL_Y"],
+    _OFF["OUTPUT_VEL_X"],
+    _OFF["OUTPUT_VEL_Y"],
+    *(_OFF["MOTOR_FEEDBACK_0"] + i * L.FLOAT_SIZE for i in range(4)),
+    _OFF["LOCAL_ODOM_SPEED_MVF_X"],
+    _OFF["LOCAL_ODOM_SPEED_MVF_Y"],
+    _OFF["LOCAL_ODOM_SPEED_MVF_W"],
+    _OFF["MOUSE_QUALITY"],
+)
+
+
+def crc8(data: bytes) -> int:
+    """CRC-8/ATM（多項式 0x07、初期値 0、反転なし）。"123456789" → 0xF4。"""
+    crc = 0
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x07) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+    return crc
+
 
 def multicast_endpoint(robot_id: int) -> tuple[str, int]:
     return (
@@ -79,7 +104,6 @@ class Feedback:
     odom_speed: tuple[float, float]
     mouse_odom: tuple[float, float]
     mouse_vel: tuple[float, float]
-    camera: tuple[int, int, int, int]
     values: tuple[float, ...]
     sync_valid: bool
     boot_like: bool
@@ -101,7 +125,6 @@ class Feedback:
             "odom_speed": list(self.odom_speed),
             "mouse_odom": list(self.mouse_odom),
             "mouse_vel": list(self.mouse_vel),
-            "camera": list(self.camera),
             "values": list(self.values),
             "sync_valid": self.sync_valid,
             "boot_like": self.boot_like,
@@ -112,13 +135,20 @@ def decode_feedback(data: bytes) -> Feedback:
     if len(data) != L.FEEDBACK_SIZE:
         raise ValueError(f"フィードバックは {L.FEEDBACK_SIZE} バイト: {len(data)}")
 
-    sync_valid = (data[_OFF["SYNC_0"]], data[_OFF["SYNC_1"]]) == L.FEEDBACK_SYNC
-    temperature = tuple(data[_OFF[f"TEMPERATURE_{i}"]] for i in range(7))
-    voltage = (_f32(data, _OFF["VOLTAGE_0"]), _f32(data, _OFF["VOLTAGE_1"]))
-    values = tuple(
-        _f32(data, _OFF["DEBUG_VALUES_START"] + i * L.FLOAT_SIZE)
-        for i in range(L.FEEDBACK_TX_VALUE_COUNT)
+    # sync_valid は同期バイトと CRC-8/ATM の両方が合っていること
+    sync_valid = (
+        data[_OFF["SYNC_0"]],
+        data[_OFF["SYNC_1"]],
+    ) == L.FEEDBACK_SYNC and crc8(data[_OFF["COUNTER"] :]) == data[_OFF["CRC"]]
+    # RobotFeedback.msg の TEMP_*（モーター 4、FET、コイル 2）の並び
+    temperature = (
+        *(data[_OFF["TEMP_MOTOR_0"] + i] for i in range(4)),
+        data[_OFF["TEMP_FET"]],
+        data[_OFF["TEMP_COIL_0"]],
+        data[_OFF["TEMP_COIL_1"]],
     )
+    voltage = (_f32(data, _OFF["VOLTAGE_0"]), _f32(data, _OFF["VOLTAGE_1"]))
+    values = tuple(_f32(data, offset) for offset in _VALUES_OFFSETS)
 
     return Feedback(
         counter=data[_OFF["COUNTER"]],
@@ -129,7 +159,7 @@ def decode_feedback(data: bytes) -> Feedback:
         motor_current=tuple(
             data[_OFF[f"MOTOR_CURRENT_{i}"]] / L.MOTOR_CURRENT_SCALE for i in range(4)
         ),
-        ball_detection=tuple(data[_OFF[f"BALL_DETECTION_{i}"]] for i in range(4)),
+        ball_detection=(*(data[_OFF[f"BALL_DETECTION_{i}"]] for i in range(3)), 0),
         kick_state=data[_OFF["KICK_STATE"]] * L.KICK_STATE_SCALE,
         error_id=_u16(data, _OFF["ERROR_ID"]),
         error_info=_u16(data, _OFF["ERROR_INFO"]),
@@ -138,12 +168,6 @@ def decode_feedback(data: bytes) -> Feedback:
         odom_speed=(_f32(data, _OFF["ODOM_SPEED_X"]), _f32(data, _OFF["ODOM_SPEED_Y"])),
         mouse_odom=(_f32(data, _OFF["MOUSE_ODOM_X"]), _f32(data, _OFF["MOUSE_ODOM_Y"])),
         mouse_vel=(_f32(data, _OFF["MOUSE_VEL_X"]), _f32(data, _OFF["MOUSE_VEL_Y"])),
-        camera=(
-            data[_OFF["CAMERA_POS_X_DIV2"]],
-            data[_OFF["CAMERA_POS_Y"]],
-            data[_OFF["CAMERA_RADIUS_DIV4"]],
-            data[_OFF["CAMERA_FPS"]],
-        ),
         values=values,
         sync_valid=sync_valid,
         # 温度と電圧が全て 0 のパケットは G474 のリセット直後の値
@@ -233,7 +257,7 @@ class FeedbackWatcher:
 
             feedback = decode_feedback(data)
             if not feedback.sync_valid:
-                # byte 2 は CRC ではないので検証に使わない。同期バイトだけを見る。
+                # 同期バイトまたは CRC が不正。
                 self.stats.bad_sync += 1
                 self.stats._second_bad += 1
                 continue

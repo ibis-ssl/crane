@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <string>
 #include <vector>
 
 #include "crane_robot_receiver/robot_feedback_protocol.hpp"
@@ -15,16 +16,21 @@ namespace protocol = crane::robot_receiver::protocol;
 
 namespace
 {
+// 全ペイロードの確定後に byte 2 を書く
+void finalizeCrc(std::array<uint8_t, protocol::PACKET_SIZE> & packet)
+{
+  packet[protocol::offset::CRC] =
+    protocol::crc8(packet, protocol::offset::COUNTER, protocol::PACKET_SIZE);
+}
+
 auto makeValidPacket() -> std::array<uint8_t, protocol::PACKET_SIZE>
 {
   std::array<uint8_t, protocol::PACKET_SIZE> packet{};
   packet[protocol::offset::SYNC_0] = protocol::SYNC_0_VALUE;
   packet[protocol::offset::SYNC_1] = protocol::SYNC_1_VALUE;
-  // 実機と同じく byte 2 は定数。チェックサムではない。
-  packet[protocol::offset::DUMMY_CRC] = protocol::DUMMY_CRC_VALUE;
   packet[protocol::offset::COUNTER] = 42;
-  packet[protocol::offset::CAMERA_FPS] = 30;
   packet[protocol::offset::MOTOR_CURRENT_0] = 12;
+  finalizeCrc(packet);
   return packet;
 }
 }  // namespace
@@ -78,16 +84,33 @@ TEST(RobotFeedbackProtocolTest, ReceiveBufferLargerThanPacketIsAccepted)
   EXPECT_TRUE(result.valid());
 }
 
-// byte 2 は G474 ファームウェア (ai_comm.c: `buf[2] = 10;  // CRC, 10:dummy`) が
-// 定数 10 を書くだけで、チェックサムではない。
-// 受信側で byte 2 を検証すると実機パケットが全滅するため、
-// 「byte 2 が何であっても検証結果に影響しない」ことを回帰テストとして固定する。
-TEST(RobotFeedbackProtocolTest, DummyCrcByteDoesNotAffectValidation)
+TEST(RobotFeedbackProtocolTest, Crc8MatchesStandardCheckValue)
+{
+  const std::string check = "123456789";
+  EXPECT_EQ(protocol::crc8(check, 0, check.size()), 0xF4);
+}
+
+TEST(RobotFeedbackProtocolTest, CorruptedPayloadIsRejectedByCrc)
 {
   auto packet = makeValidPacket();
-  for (const uint8_t value : {uint8_t{0}, protocol::DUMMY_CRC_VALUE, uint8_t{0xFF}}) {
-    packet[protocol::offset::DUMMY_CRC] = value;
-    const auto result = protocol::validatePacket(packet, packet.size());
-    EXPECT_TRUE(result.valid()) << "byte 2 = " << static_cast<int>(value);
-  }
+  packet[protocol::offset::MOTOR_CURRENT_0] ^= 0x01;
+
+  const auto result = protocol::validatePacket(packet, packet.size());
+
+  EXPECT_TRUE(result.size_valid);
+  EXPECT_TRUE(result.sync_valid);
+  EXPECT_FALSE(result.crc_valid);
+  EXPECT_FALSE(result.valid());
+}
+
+// 同期バイトは CRC の対象外。同期バイトだけが違うパケットは sync で弾かれ、CRC は有効のまま。
+TEST(RobotFeedbackProtocolTest, SyncBytesAreOutsideCrcCoverage)
+{
+  auto packet = makeValidPacket();
+  packet[protocol::offset::SYNC_1] = 0xEB;
+
+  const auto result = protocol::validatePacket(packet, packet.size());
+
+  EXPECT_FALSE(result.sync_valid);
+  EXPECT_TRUE(result.crc_valid);
 }

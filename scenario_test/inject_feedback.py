@@ -35,40 +35,42 @@ import time
 
 PACKET_SIZE = 128
 
-# --- パケットオフセット（正本は G474 の ai_comm.c sendRobotInfo()） -----------
+# --- パケットオフセット（正本は ibis-ssl/specs の common/feedback_packet.md） ---
 SYNC_0 = 0
 SYNC_1 = 1
-# byte 2 はチェックサムではない。実機ファームウェア (G474_Orion_main の
-# Core/Src/ai_comm.c sendRobotInfo()) は `buf[2] = 10;  // CRC, 10:dummy` と
-# 定数を書くだけなので、この注入ツールも実機と同じ定数を書く。
-# ここに本物のチェックサムを書くと、実機では成立しない前提が sim でだけ成立し、
-# 「受信側で byte 2 を検証する」誤った修正が sim で緑になってしまう。
-DUMMY_CRC = 2
-DUMMY_CRC_VALUE = 10
+CRC = 2  # CRC-8/ATM。対象は byte 3..127
 COUNTER = 3
-YAW_ANGLE = 4
-VOLTAGE_0 = 8
-BALL_DETECTION_0 = 12
-KICK_STATE = 15
-ERROR_ID = 16
-MOTOR_CURRENT_0 = 24
-BALL_DETECTION_3 = 28
-TEMPERATURE_0 = 29
-DIFF_ANGLE = 36
-VOLTAGE_1 = 40
-ODOM_X = 44
-ODOM_Y = 48
-ODOM_SPEED_X = 52
-ODOM_SPEED_Y = 56
-CAMERA_POS_X_DIV2 = 60
-CAMERA_FPS = 63
-MOUSE_ODOM_X = 64
-MOUSE_ODOM_Y = 68
-MOUSE_VEL_X = 72
-MOUSE_VEL_Y = 76
+ERROR_ID = 5
+YAW_ANGLE = 13
+BALL_DETECTION_0 = 17
+DIFF_ANGLE = 20
+VOLTAGE_0 = 24
+KICK_STATE = 28
+TEMP_FET = 29
+VOLTAGE_1 = 32
+MOUSE_ODOM_X = 36
+MOUSE_ODOM_Y = 40
+MOUSE_VEL_X = 44
+MOUSE_VEL_Y = 48
+MOTOR_CURRENT_0 = 56
+TEMP_MOTOR_0 = 60
+ODOM_X = 112
+ODOM_Y = 116
+ODOM_SPEED_X = 120
+ODOM_SPEED_Y = 124
 
 SYNC_0_VALUE = 0xAB
 SYNC_1_VALUE = 0xEA
+
+
+def crc8(data: bytes) -> int:
+    """CRC-8/ATM（多項式 0x07、初期値 0、反転なし）。"""
+    crc = 0
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x07) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+    return crc
 
 
 def put_float(buf: bytearray, offset: int, value: float) -> None:
@@ -82,7 +84,6 @@ def build_packet(
     buf = bytearray(PACKET_SIZE)
     buf[SYNC_0] = SYNC_0_VALUE
     buf[SYNC_1] = SYNC_1_VALUE
-    buf[DUMMY_CRC] = DUMMY_CRC_VALUE
     buf[COUNTER] = counter & 0xFF
 
     put_float(buf, YAW_ANGLE, yaw)
@@ -95,25 +96,23 @@ def build_packet(
     put_float(buf, ODOM_SPEED_X, vx)
     put_float(buf, ODOM_SPEED_Y, vy)
 
-    # mouse odom は DEBUG_VALUES_START と領域を共有している（既知の設計上の重なり）
     put_float(buf, MOUSE_ODOM_X, x)
     put_float(buf, MOUSE_ODOM_Y, y)
     put_float(buf, MOUSE_VEL_X, vx)
     put_float(buf, MOUSE_VEL_Y, vy)
 
     buf[BALL_DETECTION_0] = 0
-    buf[BALL_DETECTION_3] = 0
     buf[KICK_STATE] = 0
     # error_id = 0（エラーなし）
     buf[ERROR_ID] = 0
     for i in range(4):
         buf[MOTOR_CURRENT_0 + i] = 5  # 0.5A 相当（scale 10）
-    for i in range(7):
-        buf[TEMPERATURE_0 + i] = 30
-    # ローカルカメラは未接続扱いでゼロ埋め（実機のカメラ未接続時と同じ）
-    for i in range(CAMERA_POS_X_DIV2, CAMERA_FPS + 1):
-        buf[i] = 0
+    for i in range(4):
+        buf[TEMP_MOTOR_0 + i] = 30
+    buf[TEMP_FET] = 30
 
+    # CRC は全ペイロードの確定後に書く
+    buf[CRC] = crc8(bytes(buf[COUNTER:]))
     return bytes(buf)
 
 
