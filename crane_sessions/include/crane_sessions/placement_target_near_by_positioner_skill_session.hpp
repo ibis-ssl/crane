@@ -25,8 +25,6 @@ public:
   }
 
 protected:
-  bool shouldExcludeGoalie() const override { return true; }
-
   std::string getPositioningPolicy() const override { return "goal"; }
 
   void setupBeforeRun(const std::shared_ptr<skills::BallNearByPositioner> & skill) override

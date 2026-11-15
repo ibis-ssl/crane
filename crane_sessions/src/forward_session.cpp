@@ -127,9 +127,8 @@ auto ForwardSession::calculatePositionCommand(const std::vector<RobotIdentifier>
     return {SessionBase::Status::RUNNING, {}};
   }
 
-  // スキル数がロボット数と異なる場合に再生成
-  if (forward_skills.size() != robots.size()) {
-    forward_skills.clear();
+  // 割り当てが変わると onRobotsChanged がスキルを空にするので、空なら作り直す
+  if (forward_skills.empty()) {
     visualizer->layer = "skill/forward";
     for (const auto & robot_id : robots) {
       auto skill = std::make_shared<skills::Forward>(robot_id.id, world_model);

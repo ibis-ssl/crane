@@ -5,9 +5,11 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_sessions/defense_functions.hpp>
-#include <range/v3/algorithm/min_element.hpp>
+#include <tuple>
 
 namespace crane
+{
+namespace
 {
 auto getDefenseLinePointParameterThresholds(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
@@ -20,6 +22,7 @@ auto getDefenseLinePointParameterThresholds(
   const double threshold3 = world_model->penaltyAreaSize().x() + offset_x + threshold2 + 0.5;
   return {threshold1, threshold2, threshold3};
 }
+}  // namespace
 
 auto getDefenseLinePoint(double parameter, const WorldModelWrapper::SharedPtr & world_model)
   -> Point
@@ -71,54 +74,6 @@ auto getDefenseLinePointParameter(
   } else {
     return std::nullopt;
   }
-}
-
-auto getDefenseArcPoints(
-  int robot_num, const Segment & ball_line, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::vector<Point>
-{
-  std::vector<Point> defense_points;
-  // ペナルティエリアの一番遠い点を通る円の半径
-  const double RADIUS =
-    std::hypot(world_model->penaltyAreaSize().x(), world_model->penaltyAreaSize().y() * 0.5) +
-    DEFENSE_RADIUS_OFFSET;
-  // r * theta = interval
-  // theta = interval / r
-  const double ANGLE_INTERVAL = DEFENSE_ARC_INTERVAL / RADIUS;
-
-  auto defense_point = [&]() -> Point {
-    Circle circle{.center = world_model->getOurGoalCenter(), .radius = RADIUS};
-    auto intersections = getIntersections(circle, ball_line);
-    switch (static_cast<int>(intersections.size())) {
-      case 0: {
-        // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
-        return world_model->getOurGoalCenter() +
-               (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
-      }
-      case 1: {
-        return intersections[0];
-      }
-      default: {
-        // ボールに一番近い交点を返す
-        Point default_point =
-          world_model->getOurGoalCenter() +
-          (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
-        auto it = ranges::min_element(intersections, {}, [&](const auto & intersection) {
-          return (world_model->ball().pos - intersection).norm();
-        });
-        return (it != intersections.end()) ? *it : default_point;
-      }
-    }
-  }();
-
-  double defense_angle = getAngle(defense_point - world_model->getOurGoalCenter());
-  for (int i = 0; i < robot_num; i++) {
-    double normalized_angle_offset = (robot_num - i - 1) / 2.;
-    defense_points.emplace_back(
-      world_model->getOurGoalCenter() +
-      getNormVec(defense_angle + ANGLE_INTERVAL * normalized_angle_offset) * RADIUS);
-  }
-  return defense_points;
 }
 
 auto getDefenseLinePoints(

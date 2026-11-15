@@ -49,6 +49,7 @@ endif()
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_auto_add_gtest(test_robot_reallocation test/test_robot_reallocation.cpp)
 endif ()
 
 ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)

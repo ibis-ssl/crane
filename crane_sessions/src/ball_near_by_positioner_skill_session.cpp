@@ -14,16 +14,8 @@ auto BallNearByPositionerSkillSession::calculatePositionCommand(
   const std::vector<RobotIdentifier> & robots)
   -> std::pair<SessionBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
-  // GlobalRobotAllocator対応: ロボット数またはIDが変更されたらスキルを再生成
-  auto ids_changed = [&] {
-    if (skills.size() != robots.size()) return true;
-    for (size_t i = 0; i < robots.size(); ++i) {
-      if (skills[i]->getID() != robots[i].id) return true;
-    }
-    return false;
-  };
-  if (ids_changed()) {
-    skills.clear();
+  // 割り当てが変わると onRobotsChanged がスキルを空にするので、空なら作り直す
+  if (skills.empty()) {
     visualizer->layer = "skill/ball_positioner";
 
     int index = 0;
