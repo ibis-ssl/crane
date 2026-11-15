@@ -60,6 +60,8 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_auto_add_gtest(test_vision_ball_velocity_estimator test/test_vision_ball_velocity_estimator.cpp)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE config)
