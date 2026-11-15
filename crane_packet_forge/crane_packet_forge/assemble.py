@@ -93,19 +93,18 @@ def assemble_command(
     return bytes(buf)
 
 
-def build_datagram(command: bytes, robot_id: int) -> bytes:
-    """65 バイト。先頭 1 バイトの robot_id に続けて 64B の指令を置く。
+def build_datagram(command: bytes) -> bytes:
+    """65 バイト。先頭 1 バイトに指令本体の CHECK_COUNTER を置き、64B の指令を続ける。
 
     crane と同じく機体ごとに 1 データグラムで、その機体の CM4 へユニキャストで送る。
+    機体は宛先で識別され、先頭バイトは機体 ID ではない。
     """
     if len(command) != L.CMD_SIZE:
         raise ValueError(
             f"指令は {L.CMD_SIZE} バイトでなければならない: {len(command)}"
         )
-    if not 0 <= robot_id <= L.MAX_ROBOT_ID:
-        raise ValueError(f"robot_id は 0..{L.MAX_ROBOT_ID}: {robot_id}")
 
-    return bytes([robot_id]) + command
+    return bytes([command[L.CHECK_COUNTER]]) + command
 
 
 def stop_command(spec: PacketSpec, *, check_counter: int | None = None) -> bytes:

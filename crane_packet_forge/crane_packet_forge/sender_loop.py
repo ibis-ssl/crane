@@ -212,7 +212,7 @@ class SenderSession:
                 command = assemble_command(
                     spec, check_counter=sent_counter, overrides=overrides
                 )
-                self._sender.send(build_datagram(command, spec.robot_id))
+                self._sender.send(build_datagram(command))
 
                 self.stats.sent += 1
                 self.stats.last_sent_at = time.time()
@@ -265,7 +265,7 @@ class SenderSession:
         for _ in range(STOP_REPEAT):
             command = stop_command(spec, check_counter=counter)
             try:
-                self._sender.send(build_datagram(command, spec.robot_id))
+                self._sender.send(build_datagram(command))
             except OSError:
                 break
             counter = next_check_counter(counter)

@@ -129,7 +129,7 @@ python3 ../scenario_test/inject_feedback.py --robot-id 7 --duration 10 --multica
 - **`flags.is_vision_available` が 0 だと G474 は出力しません。** 無指令のキープアライブには
   これで正しく、動作試験には 1 が要ります
 - **`control_mode` 4（位置指令）は CM4 が HEAD の機体だけ**です。旧 CM4 + G474 へ素通しすると暴走します
-- `robot_id` は **0..10**。宛先と形式は [機体別の制御パケット](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#機体別の制御パケット65-バイト) のとおりです
+- `robot_id` は **0..10** で、宛先（CM4 の IP）の決定にだけ使います。データグラム先頭は CHECK_COUNTER です。宛先と形式は [機体別の制御パケット](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#機体別の制御パケット65-バイト) のとおりです
 - 読み直して組み直すと 2 バイト値が最大 1 LSB 落ちることがあります。`convertFloatToTwoByte` が
   丸めずに切り捨てるためで、C++ 側もまったく同じ挙動です（65536 通り中 189 通り）。
   発散はせず 3 パス以内・累積 2 LSB 以内で止まります

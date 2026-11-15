@@ -254,7 +254,7 @@ TEST_F(SenderCallbackTest, NoMovementStopsEveryRobot)
 
 TEST_F(SenderCallbackTest, SendsOne65ByteDatagramPerRobot)
 {
-  // 送信先ポートで待ち受け、機体ごとに [robot_id][64B] が 1 つずつ届くことを確かめる
+  // 送信先ポートで待ち受け、機体ごとに [CHECK_COUNTER][64B] が 1 つずつ届くことを確かめる
   boost::asio::io_service io;
   boost::asio::ip::udp::socket rx(
     io, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::loopback(), 50999));
@@ -284,7 +284,7 @@ TEST_F(SenderCallbackTest, SendsOne65ByteDatagramPerRobot)
   });
   ASSERT_EQ(datagrams.size(), 2u);
   EXPECT_EQ(datagrams[0].size(), 65u);
-  EXPECT_EQ(datagrams[0][0], 1);
+  EXPECT_EQ(datagrams[0][0], datagrams[0][1 + CHECK_COUNTER]);
   EXPECT_EQ(datagrams[1].size(), 65u);
-  EXPECT_EQ(datagrams[1][0], 3);
+  EXPECT_EQ(datagrams[1][0], datagrams[1][1 + CHECK_COUNTER]);
 }

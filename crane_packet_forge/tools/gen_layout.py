@@ -277,7 +277,7 @@ def render(
     lines.append(f"CMD_SIZE = {cmd_size}")
     lines.append(f"ROBOT_NUM = {robot_num}")
     lines.append(
-        "PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [robot_id][64B] を 1 データグラム"
+        "PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [CHECK_COUNTER][64B] を 1 データグラム"
     )
     lines.append(f"DEFAULT_PORT = {comm['DEFAULT_PORT']}")
     lines.append(

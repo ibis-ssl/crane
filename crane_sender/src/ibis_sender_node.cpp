@@ -37,7 +37,9 @@ namespace CommConfig
 constexpr int DEFAULT_PORT = 12345;
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
-// 機体ごとのデータグラム: robot_id 1B + コマンド 64B（Orion_CM4 forward_ai_cmd_v2.cpp）
+// 機体ごとのデータグラム: CHECK_COUNTER 1B + コマンド 64B（specs common/control_packet.md）。
+// 先頭は機体 ID ではなくコマンド本体の byte 1 と同じ CHECK_COUNTER。
+// 機体は実機なら宛先 IP、sim なら宛先で識別される
 constexpr int AI_CMD_V2_PACKET_SIZE = AI_CMD_V2_SIZE + 1;
 // 位置制御設定パケットのフォーマット版（Orion_CM4 cm4/bridge/config_packet.h の byte 4）
 constexpr uint8_t POSITION_CONTROL_CONFIG_VERSION = 2;
@@ -125,7 +127,7 @@ public:
       "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); });
 
     // true: 機体 N の CM4（192.168.20.(100+N)）へ個別に送る（実機）。
-    // false: 全機体を target_address へ送る（シミュレーション。cm4_sim が byte 0 で振り分ける）
+    // false: 全機体を target_address へ送る（シミュレーション）
     const bool unicast_to_robot_ip =
       crane::get_or_declare_parameter(this, "unicast_to_robot_ip", true);
     const std::string target_address =
@@ -429,7 +431,8 @@ private:
         command, "SenderElapsedVisionMs", std::to_string(packet.elapsed_time_ms_since_last_vision));
 
       std::array<uint8_t, CommConfig::AI_CMD_V2_PACKET_SIZE> buf{};
-      buf[0] = command.robot_id;
+      // 受信側（ai_cmd_v2.out）は先頭が本体の CHECK_COUNTER と一致しないデータグラムを捨てる
+      buf[0] = serialized_packet.data[CHECK_COUNTER];
       memcpy(&buf[1], serialized_packet.data, CommConfig::AI_CMD_V2_SIZE);
 
       // 機体ごとに送るので、1 台の CM4 に届かなくても他の機体への送信は続ける。
