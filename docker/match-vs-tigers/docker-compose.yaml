@@ -17,15 +17,15 @@ services:
     restart: "no"
 
   # simulator-cli は 715 バイトしか受けないので、crane の機体別 65 バイト指令は cm4-sim を通す
-  # （12345 → cm4-sim → 12346）。イメージは docker/scenario/docker-compose.yaml と同じ SHA に固定する。
+  # （12400+id → cm4-sim → 12346）。イメージは docker/scenario/docker-compose.yaml と同じ SHA に固定する。
   cm4-sim:
-    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-e03b0f69a7ccd18073a01c6df7e3327bfe7dde2e}
+    image: ghcr.io/ibis-ssl/orion-cm4-sim:${CM4_SIM_TAG:-bc1a9afd63ff73b5fee8450ee4b6e21e4eb578ba}
     container_name: match_cm4_sim
     network_mode: host
     entrypoint: ["tini", "--"]
     command: >
       cm4_sim
-      --in-port 12345
+      --in-port-base 12400
       --out-addr 127.0.0.1
       --out-port 12346
       --feedback-port-base 50100

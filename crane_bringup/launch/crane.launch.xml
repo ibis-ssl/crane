@@ -45,6 +45,8 @@ limitations under the License.
   <let name="tracker_port" value="11010"/>
   <let name="ibis_target_address" value="127.0.0.1"/>
   <let name="ibis_target_port" value="12345"/>
+  <!-- cm4_sim の機体別受信ポートの基準（機体 N は 12400 + N） -->
+  <let name="ibis_sim_port_base" value="12400"/>
 
   <!-- 使用ポート情報の表示 -->
   <log message="[crane.launch.xml] sim=$(var sim), team=$(var team), initial_color=$(var team_color) | Ports: Vision=$(var vision_port), Referee=$(var referee_port), Tracker=$(var tracker_port)"/>
@@ -160,6 +162,7 @@ limitations under the License.
     <param name="unicast_to_robot_ip" value="$(var ibis_unicast_to_robot_ip)"/>
     <param name="target_address" value="$(var ibis_target_address)"/>
     <param name="target_port" value="$(var ibis_target_port)"/>
+    <param name="sim_port_base" value="$(var ibis_sim_port_base)"/>
     <param name="latency_ms" value="$(var sender_latency_ms)"/>
     <param name="kick_power_limit_straight" value="$(var sender_kick_power_limit_straight)"/>
     <param name="kick_power_limit_chip" value="1.0"/>

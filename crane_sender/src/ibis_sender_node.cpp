@@ -34,7 +34,10 @@ namespace crane
 
 namespace CommConfig
 {
+// 実機 CM4 の制御指令の受信ポート
 constexpr int DEFAULT_PORT = 12345;
+// cm4_sim の機体別受信ポートの基準。機体 N は DEFAULT_SIM_PORT_BASE + N（specs pc/simulation.md）
+constexpr int DEFAULT_SIM_PORT_BASE = 12400;
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
 // 機体ごとのデータグラム: CHECK_COUNTER 1B + コマンド 64B（specs common/control_packet.md）。
@@ -127,13 +130,15 @@ public:
       "/robot_commands", 10, [this](const VelocityCommandsMsg & msg) { callback(msg); });
 
     // true: 機体 N の CM4（192.168.20.(100+N)）へ個別に送る（実機）。
-    // false: 全機体を target_address へ送る（シミュレーション）
+    // false: 全機体を target_address の機体別ポート sim_port_base + id へ送る（シミュレーション）
     const bool unicast_to_robot_ip =
       crane::get_or_declare_parameter(this, "unicast_to_robot_ip", true);
     const std::string target_address =
       crane::get_or_declare_parameter(this, "target_address", std::string("127.0.0.1"));
     const int target_port =
       crane::get_or_declare_parameter(this, "target_port", CommConfig::DEFAULT_PORT);
+    const int sim_port_base =
+      crane::get_or_declare_parameter(this, "sim_port_base", CommConfig::DEFAULT_SIM_PORT_BASE);
     // position_control.* は CM4 側の位置制御 PID のゲイン（ki / kd の既定 0 は P 制御）。
     // 送り方は sendPositionControlConfig。詳細: framework/docs/robot-side-position-control.md
     crane::get_or_declare_parameter(this, "position_control.kp", position_control_kp_);
@@ -152,7 +157,8 @@ public:
       for (int id = 0; id < CommConfig::AI_CMD_V2_ROBOT_NUM; ++id) {
         const auto address = boost::asio::ip::address::from_string(
           unicast_to_robot_ip ? robotAddress(id) : target_address);
-        command_endpoints_[id] = boost::asio::ip::udp::endpoint(address, target_port);
+        const int command_port = unicast_to_robot_ip ? target_port : sim_port_base + id;
+        command_endpoints_[id] = boost::asio::ip::udp::endpoint(address, command_port);
         config_endpoints_[id] =
           boost::asio::ip::udp::endpoint(address, position_control_config_port);
       }
@@ -164,7 +170,7 @@ public:
         unicast_to_robot_ip ? "per-robot CM4 address" : "single target address");
       RCLCPP_INFO(
         get_logger(), "  Robot 0 Endpoint: %s:%d (config: %d)",
-        command_endpoints_[0].address().to_string().c_str(), target_port,
+        command_endpoints_[0].address().to_string().c_str(), command_endpoints_[0].port(),
         position_control_config_port);
       RCLCPP_INFO(
         get_logger(), "  Local Socket: %s:%d",
@@ -180,7 +186,7 @@ public:
 
     RCLCPP_INFO(
       get_logger(), "ibis_sender_node started (%s:%d)",
-      command_endpoints_[0].address().to_string().c_str(), target_port);
+      command_endpoints_[0].address().to_string().c_str(), command_endpoints_[0].port());
   }
 
 private:

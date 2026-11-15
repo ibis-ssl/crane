@@ -38,7 +38,7 @@ protected:
     options.parameter_overrides({
       {"unicast_to_robot_ip", false},
       {"target_address", "127.0.0.1"},
-      {"target_port", 50999},
+      {"sim_port_base", 50990},
       {"position_control.config_port", 50998},
       {"no_movement", no_movement},
       {"kick_power_limit_straight", 0.5},
@@ -252,13 +252,16 @@ TEST_F(SenderCallbackTest, NoMovementStopsEveryRobot)
   EXPECT_FLOAT_EQ(out.dribble_power, 0.0f);
 }
 
-TEST_F(SenderCallbackTest, SendsOne65ByteDatagramPerRobot)
+TEST_F(SenderCallbackTest, SendsOne65ByteDatagramPerRobotToItsOwnPort)
 {
-  // 送信先ポートで待ち受け、機体ごとに [CHECK_COUNTER][64B] が 1 つずつ届くことを確かめる
+  // 機体 N は sim_port_base + N のポートへ、[CHECK_COUNTER][64B] が 1 つ届く
   boost::asio::io_service io;
-  boost::asio::ip::udp::socket rx(
-    io, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::loopback(), 50999));
-  rx.non_blocking(true);
+  boost::asio::ip::udp::socket rx1(
+    io, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::loopback(), 50991));
+  boost::asio::ip::udp::socket rx3(
+    io, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::loopback(), 50993));
+  rx1.non_blocking(true);
+  rx3.non_blocking(true);
 
   startSender(false);
   publishWorldModel(0ms);
@@ -274,17 +277,21 @@ TEST_F(SenderCallbackTest, SendsOne65ByteDatagramPerRobot)
     EXPECT_EQ(factor->value, "1");
   }
 
-  std::vector<std::vector<uint8_t>> datagrams;
-  spinUntil([&] {
+  const auto receiveOne = [](boost::asio::ip::udp::socket & rx) {
     std::array<uint8_t, 1024> buf{};
     boost::system::error_code ec;
     const auto n = rx.receive(boost::asio::buffer(buf), 0, ec);
-    if (!ec) datagrams.emplace_back(buf.begin(), buf.begin() + n);
-    return datagrams.size() >= 2;
+    return ec ? std::vector<uint8_t>{} : std::vector<uint8_t>(buf.begin(), buf.begin() + n);
+  };
+  std::vector<uint8_t> datagram1;
+  std::vector<uint8_t> datagram3;
+  spinUntil([&] {
+    if (datagram1.empty()) datagram1 = receiveOne(rx1);
+    if (datagram3.empty()) datagram3 = receiveOne(rx3);
+    return !datagram1.empty() && !datagram3.empty();
   });
-  ASSERT_EQ(datagrams.size(), 2u);
-  EXPECT_EQ(datagrams[0].size(), 65u);
-  EXPECT_EQ(datagrams[0][0], datagrams[0][1 + CHECK_COUNTER]);
-  EXPECT_EQ(datagrams[1].size(), 65u);
-  EXPECT_EQ(datagrams[1][0], datagrams[1][1 + CHECK_COUNTER]);
+  for (const auto & datagram : {datagram1, datagram3}) {
+    ASSERT_EQ(datagram.size(), 65u);
+    EXPECT_EQ(datagram[0], datagram[1 + CHECK_COUNTER]);
+  }
 }
