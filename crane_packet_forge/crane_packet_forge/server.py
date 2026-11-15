@@ -116,7 +116,7 @@ class ForgeState:
         watcher = FeedbackWatcher(
             robot_id,
             interface_ip=self.interface_ip,
-            on_event=lambda kind, message, extra: self.log.emit(kind, message, **extra),
+            log=self.log,
         )
         watcher.start()
         self.watcher = watcher

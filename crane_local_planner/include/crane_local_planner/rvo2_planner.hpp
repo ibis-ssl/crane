@@ -155,9 +155,6 @@ private:
   double PENALTY_AREA_OFFSET_STOP = 0.4;  // ペナルティエリア判定マージン [m]（STOP時）
   double PENALTY_AREA_SURROUNDING_OFFSET = 0.2;         // 角回避の余白 [m]
   bool PENALTY_AREA_FORCE_WAYPOINT_ON_CROSSING = true;  // 横断時に強制迂回
-  // 加速度は減速度の何倍にするかという係数
-  ParameterWithEvent<double> acceleration_factor;
-
   // D成分ゲイン: 現在速度に比例したダンピング項のゲイン
   // target_vel = position_error - velocity_damping_gain * current_vel
   ParameterWithEvent<double> velocity_damping_gain;

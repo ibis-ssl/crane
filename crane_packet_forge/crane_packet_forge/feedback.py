@@ -18,11 +18,11 @@ import socket
 import struct
 import threading
 import time
-from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 
 from . import layout as L
+from .events import EventLog
 
 _OFF = L.FEEDBACK_OFFSETS
 
@@ -172,7 +172,7 @@ class WatchStats:
 class FeedbackWatcher:
     """1 機体ぶんのフィードバックを購読する背景スレッド。
 
-    無音・復帰・リセット直後を検出して on_event へ渡す。crane_robot_receiver が
+    無音・復帰・リセット直後を検出して EventLog へ流す。crane_robot_receiver が
     同じ group を購読していても multicast なので競合しない。
     """
 
@@ -183,12 +183,12 @@ class FeedbackWatcher:
         robot_id: int,
         *,
         interface_ip: str | None = None,
-        on_event: Callable[[str, str, dict], None] | None = None,
+        log: EventLog,
     ) -> None:
         self.robot_id = robot_id
         self.group, self.port = multicast_endpoint(robot_id)
         self._interface_ip = interface_ip
-        self._on_event = on_event or (lambda kind, message, fields: None)
+        self._log = log
         self.stats = WatchStats()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -200,10 +200,12 @@ class FeedbackWatcher:
             target=self._run, name=f"feedback-{self.robot_id}", daemon=True
         )
         self._thread.start()
-        self._on_event(
+        self._log.emit(
             "WATCH_START",
             f"robot {self.robot_id}: {self.group}:{self.port} を購読",
-            {"robot_id": self.robot_id, "group": self.group, "port": self.port},
+            robot_id=self.robot_id,
+            group=self.group,
+            port=self.port,
         )
 
     def stop(self) -> None:
@@ -239,20 +241,18 @@ class FeedbackWatcher:
                 continue
 
             if self.stats.silent_since is not None:
-                self._on_event(
+                self._log.emit(
                     "RESUME",
                     f"robot {self.robot_id}: {now - self.stats.silent_since:.2f}s の無音から復帰",
-                    {
-                        "robot_id": self.robot_id,
-                        "silence_s": round(now - self.stats.silent_since, 3),
-                    },
+                    robot_id=self.robot_id,
+                    silence_s=round(now - self.stats.silent_since, 3),
                 )
                 self.stats.silent_since = None
             if feedback.boot_like:
-                self._on_event(
+                self._log.emit(
                     "BOOT_LIKE",
                     f"robot {self.robot_id}: 温度・電圧が全て 0（G474 リセット直後）",
-                    {"robot_id": self.robot_id},
+                    robot_id=self.robot_id,
                 )
 
             self.stats.received += 1
@@ -261,16 +261,14 @@ class FeedbackWatcher:
             self.stats.last_feedback = feedback
 
             if now - last_rate_report >= 1.0:
-                self._on_event(
+                self._log.emit(
                     "RATE",
                     f"robot {self.robot_id}: {self.stats.rate():.0f} pkt/s bad_sync={self.stats._second_bad}",
-                    {
-                        "robot_id": self.robot_id,
-                        "rate": round(self.stats.rate(), 1),
-                        "bad_sync": self.stats._second_bad,
-                        "counter": feedback.counter,
-                        "voltage": list(feedback.voltage),
-                    },
+                    robot_id=self.robot_id,
+                    rate=round(self.stats.rate(), 1),
+                    bad_sync=self.stats._second_bad,
+                    counter=feedback.counter,
+                    voltage=list(feedback.voltage),
                 )
                 last_rate_report = now
                 self.stats._second_count = 0
@@ -286,8 +284,9 @@ class FeedbackWatcher:
             and now - self.stats.last_rx > self.SILENCE_S
         ):
             self.stats.silent_since = self.stats.last_rx
-            self._on_event(
+            self._log.emit(
                 "SILENCE",
                 f"robot {self.robot_id}: {self.SILENCE_S}s 以上パケットが来ない",
-                {"robot_id": self.robot_id, "last_rx": round(self.stats.last_rx, 3)},
+                robot_id=self.robot_id,
+                last_rx=round(self.stats.last_rx, 3),
             )
