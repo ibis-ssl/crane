@@ -30,7 +30,8 @@ import time
 
 # --- robot_packet.h のバイトレイアウト（正本） ---------------------------------
 COMMAND_SIZE = 64
-# 機体ごとに 1 データグラム: robot_id 1 byte + command 64 bytes
+# 機体ごとに 1 データグラム: CHECK_COUNTER 1 byte + command 64 bytes
+# 先頭は機体 ID ではないので、機体の区別は宛先ポート（受信側で bind したポート）で行う
 PACKET_SIZE = COMMAND_SIZE + 1
 
 HEADER = 0
@@ -154,10 +155,10 @@ def decode_command(command: bytes) -> dict:
     return decoded
 
 
-def format_slot(robot_id: int, decoded: dict) -> str:
+def format_slot(check_counter: int, decoded: dict) -> str:
     mode = decoded["control_mode"]
     mode_name = decoded["control_mode_name"]
-    head = f"  robot {robot_id:2d} | byte23={mode} {mode_name}"
+    head = f"  counter {check_counter:3d} | byte23={mode} {mode_name}"
     args = decoded["mode_args"]
     if mode == MODE_POSITION_TARGET_WITH_TERMINAL_VELOCITY:
         tx, ty = decoded["target_global_pos"]
@@ -198,9 +199,6 @@ def main() -> int:
         "--count", type=int, default=0, help="受信するデータグラム数 (0: Ctrl-C まで)"
     )
     parser.add_argument(
-        "--robot-id", type=int, default=None, help="このロボットIDの指令だけ表示"
-    )
-    parser.add_argument(
         "--every",
         type=int,
         default=1,
@@ -238,10 +236,9 @@ def main() -> int:
 
     datagrams = 0
     size_mismatch = 0
-    mode_counts = collections.defaultdict(
-        collections.Counter
-    )  # robot_id -> Counter(mode)
-    last_decoded = {}
+    counter_mismatch = 0
+    mode_counts = collections.Counter()  # mode -> 件数
+    last_decoded = None
     started = time.time()
 
     try:
@@ -278,18 +275,24 @@ def main() -> int:
                     f"({len(data)} bytes) ==="
                 )
 
-            robot_id = data[0]
+            check_counter = data[0]
             command = data[1:]
-            if slot_is_empty(command):
+            if check_counter != command[CHECK_COUNTER]:
+                # CM4 は先頭が本体の CHECK_COUNTER と一致しないデータグラムを採用しない
+                counter_mismatch += 1
+                print(
+                    f"[warn] 先頭バイト {check_counter} が本体の CHECK_COUNTER "
+                    f"{command[CHECK_COUNTER]} と不一致"
+                )
                 continue
-            if args.robot_id is not None and robot_id != args.robot_id:
+            if slot_is_empty(command):
                 continue
 
             decoded = decode_command(command)
-            mode_counts[robot_id][decoded["control_mode"]] += 1
-            last_decoded[robot_id] = decoded
+            mode_counts[decoded["control_mode"]] += 1
+            last_decoded = decoded
             if show:
-                print(format_slot(robot_id, decoded))
+                print(format_slot(check_counter, decoded))
                 print()
     except KeyboardInterrupt:
         print("\n(中断)")
@@ -302,19 +305,18 @@ def main() -> int:
     print(f"受信データグラム: {datagrams} ({elapsed:.1f} 秒, {rate_hz:.1f} Hz)")
     if size_mismatch:
         print(f"サイズ不一致: {size_mismatch}")
+    if counter_mismatch:
+        print(f"CHECK_COUNTER 不一致: {counter_mismatch}")
     if not mode_counts:
         print("空でない指令を 1 つも受信しませんでした。")
-    for robot_id in sorted(mode_counts):
-        counts = mode_counts[robot_id]
+    if mode_counts:
         breakdown = ", ".join(
             f"{MODE_NAMES.get(m, f'UNKNOWN({m})')} x{c}"
-            for m, c in sorted(counts.items())
+            for m, c in sorted(mode_counts.items())
         )
-        print(f"  robot {robot_id:2d}: {breakdown}")
+        print(f"  {breakdown}")
 
-    all_modes = collections.Counter()
-    for counts in mode_counts.values():
-        all_modes.update(counts)
+    all_modes = mode_counts
     if all_modes:
         expected = args.expect_mode
         if set(all_modes) == {expected}:
@@ -333,11 +335,9 @@ def main() -> int:
             "datagrams": datagrams,
             "elapsed_sec": elapsed,
             "size_mismatch": size_mismatch,
-            "mode_counts": {
-                str(r): {str(m): c for m, c in counts.items()}
-                for r, counts in mode_counts.items()
-            },
-            "last_decoded": {str(r): d for r, d in last_decoded.items()},
+            "check_counter_mismatch": counter_mismatch,
+            "mode_counts": {str(m): c for m, c in mode_counts.items()},
+            "last_decoded": last_decoded,
         }
         with open(args.json_out, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)

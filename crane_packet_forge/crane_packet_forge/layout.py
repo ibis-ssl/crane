@@ -25,7 +25,7 @@ import math
 # --- framing (ibis_sender_node.cpp CommConfig) ---
 CMD_SIZE = 64
 ROBOT_NUM = 11
-PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [robot_id][64B] を 1 データグラム
+PACKET_SIZE = CMD_SIZE + 1  # 機体ごとに [CHECK_COUNTER][64B] を 1 データグラム
 DEFAULT_PORT = 12345
 MAX_ROBOT_ID = ROBOT_NUM - 1  # 11 台固定。11 番以上は CM4 が受け付けない
 CHECK_COUNTER_MAX = 200

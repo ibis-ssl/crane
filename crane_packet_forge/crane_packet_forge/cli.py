@@ -264,17 +264,17 @@ def cmd_decode(args: argparse.Namespace) -> int:
         data = parse_hex(sys.stdin.read())
 
     if len(data) == L.PACKET_SIZE:
-        robot_id, command = split_datagram(data)
+        check_counter, command = split_datagram(data)
         if args.json_stdout:
             print(
                 json.dumps(
-                    {str(robot_id): [f.__dict__ for f in decode_command(command)]},
+                    {str(check_counter): [f.__dict__ for f in decode_command(command)]},
                     ensure_ascii=False,
                     default=str,
                 )
             )
             return EXIT_OK
-        print(f"--- robot {robot_id} ---")
+        print(f"--- check_counter {check_counter} ---")
         print(hex_dump(command))
         print(field_table(decode_command(command)))
         if not any(command):

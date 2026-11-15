@@ -117,7 +117,13 @@ def parse_hex(text: str) -> bytes:
 
 
 def split_datagram(data: bytes) -> tuple[int, bytes]:
-    """65 バイトのデータグラムを robot_id と 64B の指令に分ける。"""
+    """65 バイトのデータグラムを CHECK_COUNTER と 64B の指令に分ける。
+
+    先頭バイトが指令本体の CHECK_COUNTER と一致しないものは CM4 が採用しないので拒否する。
+    """
     if len(data) != L.PACKET_SIZE:
         raise ValueError(f"データグラムは {L.PACKET_SIZE} バイト: {len(data)}")
-    return data[0], data[1:]
+    command = data[1:]
+    if data[0] != command[L.CHECK_COUNTER]:
+        raise ValueError("先頭バイトが指令本体の CHECK_COUNTER と一致しない")
+    return data[0], command

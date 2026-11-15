@@ -227,21 +227,23 @@ def test_zeros_base_means_negative_range() -> None:
     ] == pytest.approx(0.0, abs=1e-3)
 
 
-@pytest.mark.parametrize("robot_id", range(L.ROBOT_NUM))
-def test_datagram_framing(robot_id) -> None:
-    """65 バイト。先頭バイトが robot_id で、その後に 64B の指令が続く。"""
-    spec = PacketSpec(robot_id=robot_id)
+def test_datagram_framing() -> None:
+    """65 バイト。先頭バイトが指令本体の CHECK_COUNTER で、その後に 64B の指令が続く。"""
+    spec = PacketSpec()
     spec.fields["check_counter"] = 42
     command = assemble_command(spec)
-    datagram = build_datagram(command, robot_id)
+    datagram = build_datagram(command)
 
     assert len(datagram) == L.PACKET_SIZE
-    assert split_datagram(datagram) == (robot_id, command)
+    assert datagram[0] == 42
+    assert split_datagram(datagram) == (42, command)
 
 
-def test_robot_id_beyond_robot_num_is_rejected() -> None:
+def test_datagram_with_mismatched_leading_byte_is_rejected() -> None:
+    datagram = bytearray(build_datagram(assemble_command(PacketSpec())))
+    datagram[0] ^= 0xFF
     with pytest.raises(ValueError):
-        build_datagram(bytes(L.CMD_SIZE), L.ROBOT_NUM)
+        split_datagram(bytes(datagram))
 
 
 def test_kick_power_quantization_is_lossy_but_stable() -> None:
