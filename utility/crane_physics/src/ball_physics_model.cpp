@@ -350,21 +350,7 @@ auto BallPhysicsModel::loadConfigFromYAML(const std::string & yaml_file_path) ->
   return config;
 }
 
-// 静的ファクトリーメソッドの実装
-auto BallPhysicsModel::getDefaultConfig() -> Config
-{
-  Config config;
-  // ER-Force シミュレータ実測値。Config の既定値・erforce_ball_physics.yaml・
-  // pass_kick::kDefaultDeceleration と揃えること。片方だけ更新すると
-  // 経路（yaml 経由か既定値か）によって物理が変わる。
-  config.deceleration = 0.36;      // 転がり時の減速度 (m/s²)
-  config.gravity = -9.81;          // 重力加速度 (m/s²)
-  config.air_resistance = 0.0;     // 空気抵抗係数
-  config.height_threshold = 0.05;  // 飛行判定の高度閾値 (m)
-  config.speed_threshold = 0.1;    // 移動判定の速度閾値 (m/s)
-  config.stop_threshold = 0.05;    // 停止判定の速度閾値 (m/s)
-  return config;
-}
+auto BallPhysicsModel::getDefaultConfig() -> Config { return Config{}; }
 
 auto BallPhysicsModel::createDefault() -> BallPhysicsModel
 {
