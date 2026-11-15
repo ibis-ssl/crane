@@ -15,7 +15,7 @@ Crane は RoboCup SSL 向けの ROS 2 Jazzy / C++20 フレームワークです�
 - ビルド後はワークスペースの `install/local_setup.bash` を読み込む。
 - 既存の ament_cmake_auto / make ベースのビルドを維持する。
 - 制御周期、座標・単位、通信タイミングを変更するときは、呼び出し側と実機への影響を確認する。
-- `robot_packet.h` の変更は Crane / Orion_CM4 / G474 の互換性確認と同期、各ビルド、統合通信テストが必要。[通信の変更手順](docs/network.md#通信仕様を変更するとき)と [specs の一致検査](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#正本と一致検査)を参照する。
+- `robot_packet.h` の変更は Crane / Orion_CM4 / G474 の互換性確認と同期、各ビルド、統合通信テストが必要。[通信の変更手順](docs/network.md#通信仕様を変更するとき)と [specs の実装参照先](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#定義と実装の参照先)を参照する。
 - シミュレーションと実機のネットワーク設定を混同しない。[ネットワーク設定](docs/network.md)を確認する。
 - バージョン番号を手動変更しない。リリースは GitHub Actions が管理する。
 - 既存の未コミット変更を保護し、生成物・IDE設定・秘密情報をコミットしない。コミット前にステージ対象と必要な検証結果を確認する。

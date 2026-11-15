@@ -45,7 +45,7 @@ Docker開発・シナリオ・対戦テストの起動スクリプトは隔離�
 
 ## ロボット側の位置制御
 
-位置制御ループはシステム全体で 1 つだけで、ロボットの CM4（シミュレーションでは `cm4-sim`）が閉じます。Crane 側に位置制御ループを作らないでください。Crane は位置指令を送るだけなので、無線区間は制御ループの外側に出ます。制御則と既定値は [CM4 の位置制御](https://github.com/ibis-ssl/specs/blob/main/cm4/position_control.md) を参照してください。
+位置制御ループはシステム全体で 1 つだけで、ロボットの CM4（シミュレーションでは `cm4-sim`）が閉じます。Crane 側に位置制御ループを作らないでください。Crane は位置指令を送るだけなので、無線区間は制御ループの外側に出ます。制御則と既定値は [CM4 の位置制御](https://github.com/ibis-ssl/Orion_CM4/blob/main/doc/position_control.md) を参照してください。
 
 | プランナー | ROS 制御モード | ワイヤ制御モード | CM4 / `cm4-sim` の動作 |
 |---|---|---|---|
@@ -64,7 +64,7 @@ ros2 launch crane_bringup crane.launch.xml sim:=true planner:=visibility_graph
 ros2 launch crane_bringup crane.launch.xml sim:=false planner:=visibility_graph
 ```
 
-`cm4-sim` が使う unicast のフィードバックポートは、観測のためでも別プロセスで bind しないでください。配送が片方に偏り、位置制御が効かなくなります。観測は再配信先の multicast で行います（理由は [シミュレーションの注意点](https://github.com/ibis-ssl/specs/blob/main/pc/simulation.md#注意点)）。
+`cm4-sim` が使う unicast のフィードバックポートは、観測のためでも別プロセスで bind しないでください。配送が片方に偏り、位置制御が効かなくなります。観測は再配信先の multicast で行います（理由は [シミュレーションの注意点](https://github.com/ibis-ssl/specs/blob/main/pc/simulation.md#ポート)）。
 
 ### ゲインの設定
 
@@ -82,7 +82,7 @@ ros2 param set /ibis_sender position_control.kp 2.5
 ros2 param get /ibis_sender position_control.kp
 ```
 
-設定パケットの形式は crane と CM4 で完全一致を要求されます。形式を変えたときは、Orion_CM4 側でイメージを発行したあと、`docker/dev/docker-compose.yaml`、`docker/scenario/docker-compose.yaml`（`.local.yaml` を含む）、`docker/match-vs-tigers/docker-compose.yaml` の `CM4_SIM_TAG` 既定値を更新します。更新しないと `cm4-sim` がゲイン設定を全数拒否します（[Docker イメージ](https://github.com/ibis-ssl/specs/blob/main/pc/simulation.md#docker-イメージ)）。
+設定パケットの形式は crane と CM4 で完全一致を要求されます。形式を変えたときは、Orion_CM4 側でイメージを発行したあと、`docker/dev/docker-compose.yaml`、`docker/scenario/docker-compose.yaml`（`.local.yaml` を含む）、`docker/match-vs-tigers/docker-compose.yaml` の `CM4_SIM_TAG` 既定値を更新します。更新しないと `cm4-sim` がゲイン設定を全数拒否します（[Docker イメージ](https://github.com/ibis-ssl/specs/blob/main/pc/simulation.md#dockerイメージ)）。
 
 ### 送った値の記録
 
@@ -111,7 +111,7 @@ ros2 bag play --rate 10 <bag>
 
 ## 通信仕様を変更するとき
 
-`RobotCommandSerializedV2` のレイアウトの正本は Crane の [robot_packet.h](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/include/crane_sender/robot_packet.h) です。Orion_CM4・G474・framework との対応と一致検査は [正本と一致検査](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#正本と一致検査) を参照してください。
+`RobotCommandSerializedV2` のレイアウトの正本は specs の [制御パケット](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md) です。Crane の実装は [robot_packet.h](https://github.com/ibis-ssl/crane/blob/develop/crane_sender/include/crane_sender/robot_packet.h) で、各リポジトリの実装との対応は [定義と実装の参照先](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#定義と実装の参照先) を参照してください。
 
 1. 各リポジトリのヘッダーを同期し、構造体サイズ・配置・エンディアン、制御モード、[座標・単位](coordinates.md)の解釈を確認する。
 2. Crane 側では [crane_packet_forge](https://github.com/ibis-ssl/crane/tree/develop/crane_packet_forge) の `layout.py` と基準ベクタを再生成する。

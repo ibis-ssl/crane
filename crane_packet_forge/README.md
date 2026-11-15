@@ -152,7 +152,7 @@ ros2 run crane_packet_forge dump_golden > test/golden_vectors.json  # 基準ベ�
 
 パケット仕様を変えるときは Crane / Orion_CM4 / G474 の同期と統合通信テストが要ります。
 [ネットワークと実機通信](https://github.com/ibis-ssl/crane/blob/develop/docs/network.md#通信仕様を変更するとき)と
-[正本と一致検査](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#正本と一致検査)を参照してください。
+[定義と実装の参照先](https://github.com/ibis-ssl/specs/blob/main/common/control_packet.md#定義と実装の参照先)を参照してください。
 
 ## テスト
 
